@@ -1,0 +1,31 @@
+---
+title: "Explo's Authentication"
+---
+
+Explo utilizes token-based authentication. To correctly make a call to the API,
+you must include the Explo-Authorization header with a valid team token. Below
+is an example of what the header would look like, replacing with a valid token.
+
+```bash
+'Explo-Authorization': 'Token <team_token>'
+```
+
+## API Tokens
+
+You can create multiple API tokens with different levels of permissions and
+access. On your team settings page, you can generate new tokens, refresh a
+current token value, delete tokens, and edit these permissions.
+
+![](/images/api-image.png)
+
+The API Token you authenticate your request with is associated with a [Data Visibility Group](/managing-permissions/visibility-groups). When creating an end user group, the token used will determine which visibility group the user group is added to. When otherwise getting or modifying end user groups, only groups in the associated visibility group will be accessible.
+
+### Permissions
+
+Currently Explo supports two types of API Token permissions, read-only and
+read-write. Granting a token read-write permissions will allow it to create,
+delete, and edit any end user group in its visibility group, while granting a token
+read-only permissions will only allow it to pull those end user groups.
+
+For more information about how API tokens interact with their visibility group, see
+[the visibility groups documentation](/managing-permissions/visibility-groups).

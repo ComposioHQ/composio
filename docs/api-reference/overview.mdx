@@ -1,0 +1,28 @@
+---
+title: "Overview"
+---
+
+<Info>
+  For all api requests, you must have a trailing slash (/) at the end of your request. Otherwise,
+  your request will be rejected as 'Method not allowed'
+</Info>
+
+## API Endpoints
+
+### End User Group API
+
+Use the End User Group API to programatically pull end user groups when embedding your dashboards. This allows you to use Explo without necessarily storing any of our tokens in your database, keeping your integration more clean and flexible.
+
+The API Token you authenticate your request with is associated with a [Data Visibility Group](/managing-permissions/visibility-groups). Only end user groups in that visibility group will be pulled.
+
+### End User API
+
+Use the End User API to programatically manage individual end users information.
+
+### Export Dashboard API
+
+Use the Export Dashboard API to programatically pull PDF or image screenshots of your dashboards.
+
+### Dashboard API
+
+Use the Dashboard API to pull a list of all your Explo dashboards and their various attributes.

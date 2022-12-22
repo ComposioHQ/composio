@@ -1,0 +1,86 @@
+---
+title: "Refresh User Group Token"
+sidebarTitle: "Refresh Token"
+api: "POST /api/refresh_user_group_token/"
+---
+
+This endpoint refreshes a user group token. This is useful when you want to force a user group token to rotate because an existing one may be compromised.
+
+### Body
+
+<ParamField body="current_token" type="string">
+  This is the current user group token you have for the user group that you want
+  to rotate.
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="number">
+  Indicates whether the call was successful. 1 if successful, 0 if not.
+</ResponseField>
+
+<ResponseField name="user_group" type="object">
+
+The contents of the user group
+
+<Expandable title="Toggle object">
+
+<ResponseField name="team_id" type="number">
+  This is Explo's internal ID for this user group. You don't need to record this
+  information, since you will not need to use it.
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  This is the user group token (userGroupToken or USER_GROUP_TOKEN) that will be
+  used to identify which user group is viewing the dashboard. You should save
+  this on your end to use when rendering an embedded dashboard.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  This is the name of the user group provided in the request body.
+</ResponseField>
+
+<ResponseField name="provided_id" type="string">
+  This is the user_group_id provided in the request body.
+</ResponseField>
+
+<ResponseField name="api_environment_tag" type="JSON or null">
+  This is the environment tag of the user group. Possible values are 'Customer'
+  and 'Testing'. User group id's must be unique to each environment, so you can
+  not create multiple user groups with with same id. If you have a production
+  customer and a test user group with the same id, you will be required to label
+  one as 'Customer' and another as 'Testing'
+</ResponseField>
+
+</Expandable>
+
+</ResponseField>
+
+<RequestExample>
+
+```bash Example Request
+curl --location --request POST 'https://api.explo.co/api/refresh_user_group_token/' \
+--header 'Content-Type: application/json' \
+--header 'Explo-Authorization: Token <token>' \
+--data-raw '{
+    "current_token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}'
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Response
+{
+  "success": 1,
+  "user_group": {
+    "team_id": 3,
+    "token": "<user_group_token_to_auth_dashboard>",
+    "name": "Example 1",
+    "provided_id": "example_1"
+  }
+}
+```
+
+</ResponseExample>

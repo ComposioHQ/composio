@@ -1,0 +1,73 @@
+{
+  "name": "Starter Kit",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#0069ED",
+    "light": "#4D9CFF",
+    "dark": "#0050B4",
+    "ultraLight": "#EBF3FE",
+    "ultraDark": "#003372"
+  },
+  "api": {
+    "baseUrl": "https://api.explo.co",
+    "auth": {
+      "method": "key",
+      "name": "Explo-Authorization"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Book a demo",
+      "url": "https://www.explo.co/book-a-demo"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://www.explo.co/request-a-trial"
+  },
+  "anchors": [
+    {
+      "name": "API Reference",
+      "icon": "rectangle-terminal",
+      "url": "api-reference"
+    },
+    {
+      "name": "Changelog",
+      "icon": "list",
+      "url": "https://www.explo.co/changelog"
+    },
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://www.explo.co/case-studies"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Home",
+      "pages": ["introduction", "quickstart"]
+    },
+    {
+      "group": "Learn More",
+      "pages": ["resources", "faq"]
+    },
+    {
+      "group": "API Documentation",
+      "pages": ["api-reference/explos-authentication", "api-reference/overview"]
+    },
+    {
+      "group": "End User Group API",
+      "pages": [
+        "api-reference/end-user-group-api",
+        "api-reference/end-user-group-api/get-or-create",
+        "api-reference/end-user-group-api/update",
+        "api-reference/end-user-group-api/delete",
+        "api-reference/end-user-group-api/refresh-token"
+      ]
+    }
+  ]
+}
