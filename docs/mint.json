@@ -12,13 +12,6 @@
     "ultraLight": "#EBF3FE",
     "ultraDark": "#003372"
   },
-  "api": {
-    "baseUrl": "https://api.explo.co",
-    "auth": {
-      "method": "key",
-      "name": "Explo-Authorization"
-    }
-  },
   "topbarLinks": [
     {
       "name": "Book a demo",
