@@ -46,7 +46,7 @@
     },
     {
       "group": "Learn More",
-      "pages": ["resources", "faq"]
+      "pages": ["features", "resources"]
     },
     {
       "group": "API Documentation",
@@ -55,7 +55,6 @@
     {
       "group": "End User Group API",
       "pages": [
-        "api-reference/end-user-group-api",
         "api-reference/end-user-group-api/get-or-create",
         "api-reference/end-user-group-api/update",
         "api-reference/end-user-group-api/delete",
