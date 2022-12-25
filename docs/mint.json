@@ -14,13 +14,13 @@
   },
   "topbarLinks": [
     {
-      "name": "Book a demo",
-      "url": "https://www.explo.co/book-a-demo"
+      "name": "Documentation",
+      "url": "https://mintlify.com/docs"
     }
   ],
   "topbarCtaButton": {
     "name": "Get Started",
-    "url": "https://www.explo.co/request-a-trial"
+    "url": "https://mintlify.com"
   },
   "anchors": [
     {
