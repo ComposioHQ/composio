@@ -1,64 +1,24 @@
 ---
-title: Resources
-description: "Follow along to this article to get started creating your first dashboard!"
+title: "Resources"
+description: "Learn more about how to take your documentation to the next level"
 ---
 
-## Set up your datasets
+<CardGroup>
 
-The first step to building your dashboard is to create **dashboard-specific datasets**. Although this is not required, this allows you to configure viewing permissions, configure variables, and optimize your queries that are specific to each dashboard.
+<Card title="Custom Domains" icon="browser" href="/settings/custom-domain/subdomain">
+  Get the documentation hosted at your custom domain
+</Card>
 
-<Frame>
-  <img class="w-full" src="/images/create_a_dashboard.gif" />
-</Frame>
+<Card title="Advanced Components" icon="paintbrush-pencil" href="/components/advanced/accordion">
+  Advanced components built for specific communication mediums
+</Card>
 
-Even if you don't require any additional changes to your data, we suggest you create a new dataset and select entire tables as shown below:
+<Card title="API Components" icon="square-code" href="/api-components/overview">
+  Add an API playground into your documentation
+</Card>
 
-```sql
-SELECT *
-FROM Table_1;
-```
+<Card title="Analytics" icon="chart-mixed" href="/analytics/supported-integrations">
+  Learn how users are interacting with your documentation
+</Card>
 
-## Create your first data panel
-
-After you've configured your dashboard-specific dataset(s), you're now ready to create a data panel in Explo!
-
-Simple drag and drop a `Chart Component` onto the canvas, and select the dataset you'd like to use.
-
-<Frame>
-  <img class="w-full" src="/images/create_panel.gif" />
-</Frame>
-
-Double click on the panel you created to access the editor. There are 2 separate sections in the editor.
-
-`Data` - select which visualization to use and configure the aggregations, filters, and different parameters
-
-`Format` - format your visualizations that adjust labels, colors, text, and more
-
-<Note>
-  We encourage users to build visualizations from dashboard-specific datasets
-  for each dashboard and not source datasets. This allows you to configure
-  variables for drop-downs, user access controls, and other custom variables to
-  interact with your dashboard.
-</Note>
-
-## Add additional components and configure variables
-
-### Adding components
-
-Add additional components to your dashboard by dragging and dropping them onto your canvas.
-
-### Configure variables in your datasets
-
-Some components such as [date selectors](https://www.notion.so/Components-d5d1325bf7fc475cac55a25448fa4c7c) and [dropdowns](https://www.notion.so/Components-d5d1325bf7fc475cac55a25448fa4c7c) require you to add variables into your SQL queries. For more information on how to configure variables, click [here](https://www.notion.so/Variables-8856276bb39445ffa2a52bd4fb1cbf0a).
-
-## Share and embed
-
-Once your dashboard is complete, you're ready to embed or share the dashboard! Please ensure that your user groups are set before this step to ensure your customer are only seeing their own data.
-
-For more details on how to embed a dashboard, click [here](https://www.notion.so/Embedded-Component-Documentation-91082e283e2846bc8ea9759571ca0f78).
-
-If you want your users to be able to share links or download the dashboards as a pdf, simply drag a Share component onto your dashboard.
-
-<Frame>
-  <img class="w-full" src="/images/share.gif" />
-</Frame>
+</CardGroup>

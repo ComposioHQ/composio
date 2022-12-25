@@ -1,0 +1,43 @@
+---
+title: "Development"
+description: "Run Mintlify on your computer to see changes locally"
+---
+
+## Installing
+
+Download the Mintlify <Tooltip tip="Command-line Interface">CLI</Tooltip> using the following command.
+
+```bash Terminal
+npm i -g mintlify
+```
+
+## Previewing Docs Locally
+
+Run the following command at the root of your documentation where `mint.json` is located. Mintlify will open at `localhost:3000`.
+
+```bash Terminal
+mintlify dev
+```
+
+<Tip>
+
+The Mintlify CLI will automatically move to the next port if you were already running something at `localhost:3000`. For example, if you were running two documentation sites, they would be at `localhost:3000` and `localhost:3001`.
+
+</Tip>
+
+## Troubleshooting
+
+Here's how to solve some common problems when working with the CLI.
+
+<AccordionGroup>
+  <Accordion title="Mintlify is not loading" icon="circle-exclamation">
+    Update to Node v18 and the latest version of Git.
+  </Accordion>
+
+  <Accordion
+    title="Mintlify is not loading after updating Node and Git"
+    icon="circle-exclamation"
+  >
+    Run `mintlify install` and try again.
+  </Accordion>
+</AccordionGroup>

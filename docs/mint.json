@@ -42,7 +42,7 @@
   "navigation": [
     {
       "group": "Home",
-      "pages": ["introduction", "quickstart"]
+      "pages": ["introduction", "development"]
     },
     {
       "group": "Learn More",
