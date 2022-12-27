@@ -1,6 +1,6 @@
 ---
 title: "Create User"
-api: "POST https://api.explo.co/api/user"
+api: "POST https://api.mintlify.com/api/user"
 description: "This endpoint creates a new user"
 ---
 
@@ -24,7 +24,7 @@ The contents of the user group
 <Expandable title="Toggle object">
 
 <ResponseField name="team_id" type="number">
-  This is Explo's internal ID for this user group. You don't need to record this
+  This is the internal ID for this user group. You don't need to record this
   information, since you will not need to use it.
 </ResponseField>
 
@@ -57,11 +57,11 @@ The contents of the user group
 <RequestExample>
 
 ```bash Example Request
-curl --location --request POST 'https://api.explo.co/api/refresh_user_group_token/' \
+curl --location --request POST 'https://api.mintlify.com/api/user' \
 --header 'Content-Type: application/json' \
---header 'Explo-Authorization: Token <token>' \
+--header 'Authorization: Token <token>' \
 --data-raw '{
-    "current_token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "current_token": ""
 }'
 ```
 

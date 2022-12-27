@@ -1,6 +1,6 @@
 ---
 title: "Delete User"
-api: "DELETE https://api.explo.co/api/user"
+api: "DELETE https://api.mintlify.com/api/user"
 description: "This endpoint deletes an existing user."
 ---
 
@@ -25,9 +25,9 @@ description: "This endpoint deletes an existing user."
 <RequestExample>
 
 ```bash Example Request
-curl --location --request DELETE 'https://api.explo.co/api/delete_user_group/' \
+curl --location --request DELETE 'https://api.mintlify.com/api/user' \
 --header 'Content-Type: application/json' \
---header 'Explo-Authorization: Token <token>' \
+--header 'Authorization: Token <token>' \
 --data-raw '{
 		"user_group_id": "example_1"
 		"current_token": "abcdef"
