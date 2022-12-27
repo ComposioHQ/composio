@@ -40,26 +40,28 @@ Select from the following guides to learn more about how Mintlify can best suit 
 Learn more about you can fully customize the starter template for your own documentation
 
 <AccordionGroup>
+  <Accordion title="Change name">Update the `name` property in `mint.json` to the name of your company or product</Accordion>
   <Accordion title="Customize the branding">
-    **Change primary name**
-
-    Update the `name` property in `mint.json` to the name of your company or product
-
-    **Update the logo**
+    #### Update the logo
 
     Update `logo` folder with the light and dark version of your logo (can be svg or png).
-
     <Note>Make sure that the path matches the values set in `logo` of `mint.json`</Note>
 
-    **Customize the colors**
+    #### Customize the colors
 
     Populate the `colors` object in `mint.json` with colors that match your brand
 
-    **Update the favicon**
+    #### Update the favicon
 
     Change the `favicon.png` with an image of the favicon
   </Accordion>
-  <Accordion title="Update the anchors">Add the logos in the `/logo` folder</Accordion>
-  <Accordion title="Update or remove the API Reference">Add the logos in the `/logo` folder</Accordion>
-  <Accordion title="Update the topbar navigation items">Add the logos in the `/logo` folder</Accordion>
+  <Accordion title="Update the anchors">Update the `anchors` array in `mint.json` with the links that you want to emphasize</Accordion>
+  <Accordion title="Update or remove the API Reference">
+    Either update the pages in `api-reference` or remove it entirely
+    <Note>If removing the API Reference, make sure to also remove it from the `anchors` and `navigation` from `mint.json`</Note>
+  </Accordion>
+  <Accordion title="Update the topbar navigation items">
+    Update the `topbarCtaButton` and `topbarLinks` properties in `mint.json` to the links that matter most
+    <Tip>The `topbarCtaButton` will receive the most number of clicks</Tip>
+  </Accordion>
 </AccordionGroup>
