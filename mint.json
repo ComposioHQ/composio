@@ -50,15 +50,15 @@
     },
     {
       "group": "API Documentation",
-      "pages": ["api-reference/explos-authentication", "api-reference/overview"]
+      "pages": ["api-reference/authentication"]
     },
     {
-      "group": "End User Group API",
+      "group": "Endpoint Examples",
       "pages": [
-        "api-reference/end-user-group-api/get-or-create",
-        "api-reference/end-user-group-api/update",
-        "api-reference/end-user-group-api/delete",
-        "api-reference/end-user-group-api/refresh-token"
+        "api-reference/endpoint/get",
+        "api-reference/endpoint/create",
+        "api-reference/endpoint/update",
+        "api-reference/endpoint/delete"
       ]
     }
   ],
