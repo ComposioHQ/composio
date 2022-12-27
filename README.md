@@ -1,16 +1,12 @@
 # Mintlify Starter Kit
 
-Simply `Use this template` to quickstarter your documentation setup with Mintlify. The starter kit contains examples including
+Click on `Use this template` to quickstarter your documentation setup with Mintlify. The starter kit contains examples including
 
 - Guide pages
 - Navigation
 - Customizations
 - API Reference pages
 - Use of popular components
-
-### 🚀 Quickstarter
-
-Navigate to [mintlify.com](https://mintlify.com) and click on [Get Started](https://mintlify.com/start)
 
 ### 👩‍💻 Development
 
