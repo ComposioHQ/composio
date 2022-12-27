@@ -1,6 +1,6 @@
 ---
 title: "Update User"
-api: "PUT https://api.explo.co/api/user"
+api: "PUT https://api.mintlify.com/api/user"
 description: "This endpoint updates an existing user."
 ---
 
@@ -71,9 +71,9 @@ The contents of the user group
 <RequestExample>
 
 ```bash Example Request
-curl --location --request POST 'https://api.explo.co/api/update_user_group/' \
+curl --location --request PUT 'https://api.mintlify.com/api/user' \
 --header 'Content-Type: application/json' \
---header 'Explo-Authorization: Token <token>' \
+--header 'Authorization: Token <token>' \
 --data-raw '{
     "user_group_id": "example_1",
     "name": "Example 1",
