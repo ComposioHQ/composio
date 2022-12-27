@@ -1,10 +1,8 @@
 ---
-title: "Get or Create User Group"
-sidebarTitle: "Get or Create"
-api: "POST https://api.explo.co/embed/create_user_group/"
+title: "Update User"
+api: "PUT https://api.explo.co/api/user"
+description: "This endpoint updates an existing user."
 ---
-
-This endpoint gets or creates a new user group. If the user_group_id does not exist, a new user group will be created and information about the group will be sent back. If the user_group_id exists, no action will be taken but the same information about the group will be sent back. There will be a flag in the response indicating if a new user group was created.
 
 ### Body
 
@@ -17,23 +15,20 @@ This endpoint gets or creates a new user group. If the user_group_id does not ex
 </ParamField>
 
 <ParamField body="mapping" type="object">
-  This is a JSON mapping of schema id to either the data source that this user group should be
-  associated with or id of the datasource you provided when creating it.
+  This is a JSON mapping of schema id to either the data source that this user
+  group should be associated with or id of the datasource you provided when
+  creating it.
 </ParamField>
 
 <ParamField body="properties" type="object">
-  This is a JSON object for properties assigned to this user group. These will be accessible through
-  variables in the dashboards and SQL editor
+  This is a JSON object for properties assigned to this user group. These will
+  be accessible through variables in the dashboards and SQL editor
 </ParamField>
 
 ### Response
 
 <ResponseField name="success" type="number">
   Indicates whether the call was successful. 1 if successful, 0 if not.
-</ResponseField>
-
-<ResponseField name="new_user_group" type="boolean">
-  Indicates whether a new user group was created.
 </ResponseField>
 
 <ResponseField name="user_group" type="object">
@@ -43,14 +38,13 @@ The contents of the user group
 <Expandable title="Toggle object">
 
 <ResponseField name="team_id" type="number">
-  This is Explo's internal ID for this user group. You don't need to record this information, since
-  you will not need to use it.
+  Indicates whether a new user group was created.
 </ResponseField>
 
 <ResponseField name="token" type="string">
-  This is the user group token (userGroupToken or USER_GROUP_TOKEN) that will be used to identify
-  which user group is viewing the dashboard. You should save this on your end to use when rendering
-  an embedded dashboard.
+  This is the user group token (userGroupToken or USER_GROUP_TOKEN) that will be
+  used to identify which user group is viewing the dashboard. You should save
+  this on your end to use when rendering an embedded dashboard.
 </ResponseField>
 
 <ResponseField name="name" type="string">
@@ -61,8 +55,13 @@ The contents of the user group
   This is the user_group_id provided in the request body.
 </ResponseField>
 
-<ResponseField name="properties" type="JSON or null">
+<ResponseField name="properties" type="JSON | Null">
   This is the properties object if it was provided in the request body
+</ResponseField>
+
+<ResponseField name="api_environment_tag" type="JSON or null">
+  This is the environment tag of the user group. Possible values are 'Customer'
+  and 'Testing'
 </ResponseField>
 
 </Expandable>
@@ -72,7 +71,7 @@ The contents of the user group
 <RequestExample>
 
 ```bash Example Request
-curl --location --request POST 'https://api.explo.co/embed/create_user_group/' \
+curl --location --request POST 'https://api.explo.co/api/update_user_group/' \
 --header 'Content-Type: application/json' \
 --header 'Explo-Authorization: Token <token>' \
 --data-raw '{
@@ -90,12 +89,11 @@ curl --location --request POST 'https://api.explo.co/embed/create_user_group/' \
 ```json Response
 {
   "success": 1,
-  "new_user_group": true,
   "user_group": {
-    "team_id": 3,
+    "team_id": 113,
     "token": "<user_group_token_to_auth_dashboard>",
-    "name": "Example 1",
-    "provided_id": "example_1"
+    "name": "ok",
+    "provided_id": "6"
   }
 }
 ```
