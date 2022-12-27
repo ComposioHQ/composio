@@ -31,12 +31,12 @@
     {
       "name": "Changelog",
       "icon": "list",
-      "url": "https://www.explo.co/changelog"
+      "url": "https://mintlify.com"
     },
     {
       "name": "Community",
       "icon": "discord",
-      "url": "https://www.explo.co/case-studies"
+      "url": "https://mintlify.com/community"
     }
   ],
   "navigation": [
