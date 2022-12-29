@@ -8,9 +8,7 @@
   "colors": {
     "primary": "#0069ED",
     "light": "#4D9CFF",
-    "dark": "#0050B4",
-    "ultraLight": "#EBF3FE",
-    "ultraDark": "#003372"
+    "dark": "#0050B4"
   },
   "topbarLinks": [
     {
