@@ -41,11 +41,7 @@
   "navigation": [
     {
       "group": "Home",
-      "pages": ["introduction", "development"]
-    },
-    {
-      "group": "Learn More",
-      "pages": ["features", "resources"]
+      "pages": ["introduction", "features"]
     },
     {
       "group": "API Documentation",
