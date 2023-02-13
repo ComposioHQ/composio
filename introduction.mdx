@@ -1,72 +1,58 @@
 ---
-title: "Introduction"
-description: "Welcome to the Mintlify Starter Kit"
+title: "Welcome to your new docs!"
+description: "Now, it's your time to shine. Keep reading to learn more on how to make your docs beautiful and powerful."
 ---
 
-<Note>
-  Update the content in main branch of your docs repo, and your documentation page will automatically be updated. It's that simple!
-</Note>
-
 ## Getting Started
+### 💻  Set up autodeploys
+- Install our Github Bot to setup autodeploying your docs. You should have received an email with a link. Didn't get an email? <a href="mailto:kate@mintlify.com">Contact us.</a>
+- Download our <a href="https://mintlify.com/docs/development">Mintlify CLI</a> to preview changes locally.
 
-Select from the following guides to learn more about how Mintlify can best suit your documentation.
+### 😎 Make it yours
+1. Change `name` in the `mint.json` file to your company or product's name.
+2. Update `logo` folder with the light and dark version of your logo (can be svg or png).
+3. Populate the `colors` object with colors that match your brand
+4. Change the `favicon.png` with an image of the favicon
+5. Update `footerSocials` with the right `[platform]: [url]` key-value pair
 
+### ✍️ Add content
+<Tip>
+Need inspiration? Check out some of <a href="https://mintlify.com/showcase">our customers' docs </a>.
+</Tip>
+Add anything from images and new pages on your docs to creating your own MDX components. Check out the components we have built out of the box <a href="https://mintlify.com/docs/writing-content/overview">here</a>.<br />
+
+Have existing docs and want support migrating? <a href="mailto:kate@mintlify.com">Contact us.</a>
+
+## Quick links
 <CardGroup>
-  <Card title="Development" icon="rectangle-terminal" href="/development">
+  <Card title="Developer setup" icon="rectangle-terminal" href="https://mintlify.com/docs/development">
     Run on your computer to see changes locally
   </Card>
-  <Card title="Global Settings" icon="sliders" href="https://mintlify.com/docs/settings/global">
+  <Card title="Style it up" icon="sliders" href="https://mintlify.com/docs/settings/global">
     Customizing the theme, branding, and other global configurations
   </Card>
-  <Card title="Page Titles and Metadata" icon="heading" href="https://mintlify.com/docs/settings/page">
+  <Card title="SEO and Metadata" icon="heading" href="https://mintlify.com/docs/settings/page">
     Setting the title and metadata for navigation and SEO
   </Card>
-  <Card title="Writing Content" icon="pen-nib" href="https://mintlify.com/docs/components/overview">
+  <Card title="Content Tips" icon="pen-nib" href="https://mintlify.com/docs/components/overview">
     Introduction on how to add and edit content
-  </Card>
-  <Card title="Learn More" icon="ellipsis" href="/resources">
-    See more in the resources page
   </Card>
 </CardGroup>
 
-## Customization Checklist
+## Advanced Topics
+Learn more about how to take your documentation to the next level
 
-Learn more about you can fully customize the starter template for your own documentation
-
-<AccordionGroup>
-  <Accordion title="Change name">Update the `name` property in `mint.json` to the name of your company or product</Accordion>
-  <Accordion title="Customize the branding">
-    Branding mostly happens in the `mint.json` file. You can learn more about all available [configuration properties](https://mintlify.com/docs/settings/global).
-
-    #### Update the logo
-
-    Update `logo` folder with the light and dark version of your logo (can be svg or png).
-
-    <Note>Make sure that the path matches the values set in `logo` of `mint.json`</Note>
-
-    #### Customize the colors
-
-    Populate the `colors` object with colors that match your brand
-
-    #### Update the favicon
-
-    Change the `favicon.png` with an image of the favicon
-
-    #### Update footer social icons
-
-    Update `footerSocials` with the right `[platform]: [url]` key-value pair
-  </Accordion>
-  <Accordion title="Update the anchors">Update the `anchors` array in `mint.json` with the links that you want to emphasize</Accordion>
-  <Accordion title="Update or remove the API Reference">
-    Either update the pages in `api-reference` or remove it entirely
-
-    <Note>If removing the API Reference, make sure to also remove it from the `anchors` and `navigation` from `mint.json`</Note>
-
-  </Accordion>
-  <Accordion title="Update the topbar navigation items">
-    Update the `topbarCtaButton` and `topbarLinks` properties in `mint.json` to the links that matter most
-
-    <Tip>The `topbarCtaButton` will receive the most number of clicks</Tip>
-
-  </Accordion>
-</AccordionGroup>
+<CardGroup>
+  <Card title="Custom Domains" icon="browser" href="https://mintlify.com/docs/settings/custom-domain/subdomain">
+    Get the documentation hosted at your custom domain
+  </Card>
+  <Card title="Advanced Components" icon="paintbrush-pencil" href="https://mintlify.com/docs/components/advanced/accordion">
+    Advanced components built for specific communication mediums
+  </Card>
+  <Card title="API Components" icon="square-code" href="https://mintlify.com/docs/api-components/overview">
+    Add an API playground into your documentation
+  </Card>
+  <Card title="Analytics" icon="chart-mixed" href="https://mintlify.com/docs/analytics/supported-integrations">
+    Learn how users are interacting with your documentation
+  </Card>
+</CardGroup>
