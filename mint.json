@@ -18,8 +18,8 @@
     }
   ],
   "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "https://github.com/mintlify/starter"
+    "name": "Dashboard",
+    "url": "https://dashboard.mintlify.com"
   },
   "tabs": [
     {
@@ -29,8 +29,12 @@
   ],
   "navigation": [
     {
-      "group": "Home",
-      "pages": ["introduction", "features"]
+      "group": "Get Started",
+      "pages": ["introduction", "quickstart", "development"]
+    },
+    {
+      "group": "Essentials",
+      "pages": ["markdown", "code", "images"]
     },
     {
       "group": "API Documentation",
