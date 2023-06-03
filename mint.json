@@ -1,15 +1,15 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Documentation Starter Kit",
+  "name": "Starter Kit",
   "logo": {
     "dark": "/logo/dark.png",
     "light": "/logo/light.png"
   },
   "favicon": "/favicon.png",
   "colors": {
-    "primary": "#0069ED",
-    "light": "#4D9CFF",
-    "dark": "#0050B4"
+    "primary": "#12A7D3",
+    "light": "#81D7F7",
+    "dark": "#004E7A"
   },
   "topbarLinks": [
     {
@@ -21,21 +21,14 @@
     "name": "Get Started",
     "url": "https://github.com/mintlify/starter"
   },
-  "anchors": [
+  "tabs": [
     {
       "name": "API Reference",
-      "icon": "rectangle-terminal",
       "url": "api-reference"
     },
     {
       "name": "Changelog",
-      "icon": "list",
       "url": "https://mintlify.com"
-    },
-    {
-      "name": "Community",
-      "icon": "discord",
-      "url": "https://mintlify.com/community"
     }
   ],
   "navigation": [
@@ -61,5 +54,6 @@
     "twitter": "https://twitter.com/mintlify",
     "github": "https://github.com/mintlify",
     "linkedin": "https://www.linkedin.com/company/mintsearch"
-  }
+  },
+  "backgroundImage": "/background.png"
 }
