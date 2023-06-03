@@ -5,7 +5,7 @@ icon: 'image'
 ---
 
 <img
-  className="rounded-md"
+  style={{ borderRadius: '0.5rem' }}
   src="https://mintlify-assets.b-cdn.net/bigbend.jpg"
 />
 
@@ -29,15 +29,7 @@ To get more customizability with images, you can also use [embeds](/writing-cont
 <img height="200" src="/path/image.jpg" />
 ```
 
-### Related
-
-For more information, we recommend the following sections:
-
-<Card title="Frame Component Reference" icon="frame" href="/components/frame">
-  Read the reference for the Frame component
-</Card>
-
-## Videos and other HTML elements
+## Embeds and HTML elements
 
 <iframe
   width="560"
@@ -47,6 +39,7 @@ For more information, we recommend the following sections:
   frameborder="0"
   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
   allowfullscreen
+  style={{ width: '100%', borderRadius: '0.5rem' }}
 ></iframe>
 
 <br />
@@ -64,25 +57,3 @@ Loads another HTML page within the document. Most commonly used for embedding vi
 ```html
 <iframe src="https://www.youtube.com/embed/4KzFe50RQkQ"> </iframe>
 ```
-
-To have videos autoplay, add `autoplay = {true}`.
-
-<Tip>
-  {' '}
-  Additionally, we support mp4 files up to 5 MB and you can also upload your videos
-  to storage services like Cloudinary to reference them in your Mintlify documentation!{' '}
-</Tip>
-
-### Line Breaks
-
-Add a linebreak
-
-```html
-<br />
-```
-
-<Tip>
-
-Although not required, we recommend adding the `alt` and `title` attributes to images for better SEO and accessability. Learn more at [image SEO](https://yoast.com/image-seo-alt-tag-and-title-tag-optimization/).
-
-</Tip>
