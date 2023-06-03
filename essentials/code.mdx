@@ -1,40 +1,24 @@
 ---
 title: 'Code Blocks'
-description: 'Display code with optional syntax highlighting'
+description: 'Display inline code and code blocks'
 icon: 'code'
 ---
 
-<RequestExample>
+## Basic
 
-````md Code Block Example
-```javascript Code Block Example
-const hello = 'world';
-```
-````
+### Inline Code
 
-</RequestExample>
-
-## Basic Code Block
-
-Use [fenced code blocks](https://www.markdownguide.org/extended-syntax/#fenced-code-blocks) by enclosing code in three backticks.
+To denote a `word` or `phrase` as code, enclose it in backticks (`).
 
 ```
-helloWorld();
+To denote a `word` or `phrase` as code, enclose it in backticks (`).
 ```
 
-````md
-```
-helloWorld();
-```
-````
+### Code Block
 
-## Syntax Highlighting
+Use [fenced code blocks](https://www.markdownguide.org/extended-syntax/#fenced-code-blocks) by enclosing code in three backticks and follow the leading ticks with the programming language of your snippet to get syntax highlighting. Optionally, you can also write the name of your code after the programming language.
 
-Put the name of your programming language after the three backticks to get syntax highlighting.
-
-We use [Prism](https://prismjs.com/#supported-languages) for syntax highlighting. [Test Drive Prism](https://prismjs.com/test.html#language=markup) lists all the languages supported.
-
-```java
+```java HelloWorld.java
 class HelloWorld {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
@@ -43,7 +27,7 @@ class HelloWorld {
 ```
 
 ````md
-```java
+```java HelloWorld.java
 class HelloWorld {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
@@ -52,24 +36,4 @@ class HelloWorld {
 ```
 ````
 
-## Names
-
-You can add more text after the programming language to set the name of your code example. The text can be anything as long as its all in one line.
-
-```javascript Code Block Example
-const hello = 'world';
-```
-
-````md Code Block Example
-```javascript Code Block Example
-const hello = 'world';
-```
-````
-
-## Code Groups
-
-Want to display multiple code examples in one code box? Check out the Code Group docs:
-
-<Card title="Code Group" href="/components/code-group" icon="columns-3">
-  Read the reference for the Code Group component
-</Card>
+Visit the [Code Block page](/components/code) for more detailed docs.
