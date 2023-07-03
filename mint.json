@@ -34,7 +34,7 @@
     },
     {
       "name": "Community",
-      "icon": "discord",
+      "icon": "slack",
       "url": "https://mintlify.com/community"
     }
   ],
