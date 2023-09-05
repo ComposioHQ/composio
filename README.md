@@ -24,9 +24,7 @@ mintlify dev
 
 ### 😎 Publishing Changes
 
-Changes will be deployed to production automatically after pushing to the default branch.
-
-You can also preview changes using PRs, which generates a preview link of the docs.
+Install our Github App to autopropagate changes from youre repo to your deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install on your dashboard. 
 
 #### Troubleshooting
 
