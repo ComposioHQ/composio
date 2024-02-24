@@ -1,0 +1,137 @@
+openapi: 3.0.0
+info:
+  title: Linear GraphQL API Subset
+  version: 1.0.0
+  description: A subset of Linear's GraphQL API exposed as REST endpoints.
+servers:
+  - url: https://api.linear.composio.dev
+    description: Composio Linear API server
+paths:
+  /getUsers:
+    get:
+      summary: Get a list of users
+      operationId: getUsers
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        email:
+                          type: string
+  /getProjects:
+    get:
+      summary: Get a list of projects
+      operationId: getProjects
+      responses:
+        '200':
+          description: A list of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+  /createIssue:
+    post:
+      summary: Create a new issue
+      operationId: createIssue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team_id:
+                  type: string
+                project_id:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Newly created issue details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  description:
+                    type: string
+  /getTeams:
+    post:
+      summary: Get teams for a project
+      operationId: getTeams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_Id:
+                  type: string
+      responses:
+        '200':
+          description: A list of teams for the specified project
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teams:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        projects:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                        members:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                              email:
+                                type: string
+

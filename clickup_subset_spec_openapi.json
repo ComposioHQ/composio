@@ -1,0 +1,267 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "ClickUp API Reference",
+      "description": "This is the ClickUp API Reference where you can learn about specific endpoints and parameters in detail.\n\nBrowse the available endpoints using the sidebar on the left.\n\n**Not sure where to begin?**\n[Get Started with the ClickUp API](https://clickup.com/api)\n",
+      "contact": {},
+      "version": "2.0"
+    },
+    "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+    "servers": [
+      {
+        "url": "https://api.clickup.com/api/v2",
+        "description": "ClickUp",
+        "variables": {}
+      },
+      {
+        "url": "https://a00fb6e0-339c-4201-972f-503b9932d17a.remockly.com",
+        "description": "Mock Server",
+        "variables": {}
+      }
+    ],
+    "paths": {
+        "/list/{list_id}/task": {
+        "post": {
+          "summary": "Create Task",
+          "tags": [
+            "Tasks"
+          ],
+          "description": "Create a new task.",
+          "operationId": "CreateTask",
+          "parameters": [
+
+          ],
+          "requestBody": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                    {
+                        "title": "CreateTaskrequest",
+                        "required": [
+                          "name"
+                        ],
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "assignees": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "contentEncoding": "int32"
+                            },
+                            "description": ""
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": ""
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "priority": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "contentEncoding": "int32"
+                          },
+                          "due_date": {
+                            "type": "integer",
+                            "contentEncoding": "int64"
+                          },
+                          "due_date_time": {
+                            "type": "boolean"
+                          },
+                          "time_estimate": {
+                            "type": "integer",
+                            "contentEncoding": "int32"
+                          },
+                          "start_date": {
+                            "type": "integer",
+                            "contentEncoding": "int64"
+                          },
+                          "start_date_time": {
+                            "type": "boolean"
+                          },
+                          "notify_all": {
+                            "type": "boolean",
+                            "description": "If `notify_all` is true, notifications will be sent to everyone including the creator of the comment."
+                          },
+                          "parent": {
+                            "description": "You can create a subtask by including an existing task ID.\\\n \\\nThe `parent` task ID you include cannot be a subtask, and must be in the same List specified in the path parameter.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "links_to": {
+                            "description": "Include a task ID to create a linked dependency with your new task.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "check_required_custom_fields": {
+                            "description": "When creating a task via API any required Custom Fields are ignored by default (`false`).\\\n \\\nYou can enforce required Custom Fields by including `check_required_custom_fields: true`.",
+                            "type": "boolean"
+                          },
+                          "custom_fields": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/CustomFields6"
+                            },
+                            "description": "[Filter by Custom Fields.](/developer-portal/filtertasks/)"
+                          }
+                        },
+                        "examples": [
+                          {
+                            "name": "New Task Name",
+                            "description": "New Task Description",
+                            "assignees": [
+                              183
+                            ],
+                            "tags": [
+                              "tag name 1"
+                            ],
+                            "status": "Open",
+                            "priority": 3,
+                            "due_date": 1508369194377,
+                            "due_date_time": false,
+                            "time_estimate": 8640000,
+                            "start_date": 1567780450202,
+                            "start_date_time": false,
+                            "notify_all": true,
+                            "parent": null,
+                            "links_to": null,
+                            "check_required_custom_fields": true,
+                            "custom_fields": [
+                              {
+                                "id": "0a52c486-5f05-403b-b4fd-c512ff05131c",
+                                "value": 23
+                              },
+                              {
+                                "id": "03efda77-c7a0-42d3-8afd-fd546353c2f5",
+                                "value": "Text field input"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                } 
+                },
+                "example": {
+                  "name": "New Task Name",
+                  "description": "New Task Description",
+                  "assignees": [
+                    183
+                  ],
+                  "tags": [
+                    "tag name 1"
+                  ],
+                  "status": "Open",
+                  "priority": 3,
+                  "due_date": 1508369194377,
+                  "due_date_time": false,
+                  "time_estimate": 8640000,
+                  "start_date": 1567780450202,
+                  "start_date_time": false,
+                  "notify_all": true,
+                  "parent": null,
+                  "links_to": null,
+                  "check_required_custom_fields": true,
+                  "custom_fields": [
+                    {
+                      "id": "0a52c486-5f05-403b-b4fd-c512ff05131c",
+                      "value": "This is a string of text added to a Custom Field."
+                    }
+                  ]
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "",
+              "headers": {},
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CreateTaskresponse"
+                  },
+                  "example": {
+                    "id": "9hx",
+                    "custom_id": null,
+                    "name": "New Task Name",
+                    "text_content": "New Task Content",
+                    "description": "New Task Content",
+                    "status": {
+                      "status": "in progress",
+                      "color": "#d3d3d3",
+                      "orderindex": 1,
+                      "type": "custom"
+                    },
+                    "orderindex": "1.00000000000000000000000000000000",
+                    "date_created": "1567780450202",
+                    "date_updated": "1567780450202",
+                    "date_closed": null,
+                    "date_done": null,
+                    "creator": {
+                      "id": 183,
+                      "username": "John Doe",
+                      "color": "#827718",
+                      "profilePicture": "https://attachments-public.clickup.com/profilePictures/183_abc.jpg"
+                    },
+                    "assignees": [],
+                    "checklists": [],
+                    "tags": [],
+                    "parent": "abc1234",
+                    "priority": null,
+                    "due_date": null,
+                    "start_date": null,
+                    "time_estimate": null,
+                    "time_spent": null,
+                    "custom_fields": [
+                      {
+                        "id": "0a52c486-5f05-403b-b4fd-c512ff05131c",
+                        "name": "My Text Custom field",
+                        "type": "text",
+                        "type_config": {},
+                        "date_created": "1622176979540",
+                        "hide_from_guests": false,
+                        "value": {
+                          "value": "This is a string of text added to a Custom Field."
+                        },
+                        "required": true
+                      }
+                    ],
+                    "list": {
+                      "id": "123"
+                    },
+                    "folder": {
+                      "id": "456"
+                    },
+                    "space": {
+                      "id": "789"
+                    },
+                    "url": "https://app.clickup.com/t/9hx"
+                  }
+                }
+              }
+            }
+          },
+          "deprecated": false
+        },
+        "parameters": []
+      },
+    }
+}
