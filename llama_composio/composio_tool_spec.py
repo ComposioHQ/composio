@@ -1,7 +1,10 @@
 import json
 from typing import Dict, Any, List
-import requests
 import logging
+import requests
+from inspect import Parameter, Signature
+from typing import List, Dict, Any
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,7 @@ class ComposioToolSpec:
                 function_name = tool["Name"] + "_" + action["Id"]
                 spec_functions.append(function_name)
                 input_params = action["Signature"]["Input"]["properties"]
-                setattr(self, function_name, self._create_function(action["Id"], action["Description"], input_params, action["Signature"]["Input"].get("required", []))
+                setattr(self, function_name, self._create_function(action["Id"], action["Description"], input_params, action["Signature"]["Input"].get("required", [])))
         return spec_functions
 
     def _create_function(self, action_id: str, description: str, input_params: Dict[str, Any], required_params: List[str] = []):
@@ -48,23 +51,24 @@ class ComposioToolSpec:
             params = {param: kwargs[param] for param in input_params if param in kwargs}
             logger.info(f"Executing action {action_id} with {params}")
             
-            # Placeholder for actual API call
-            # This should be replaced with the actual call to the tool's API
-            # For example:
-            # response = requests.post(f"http://api.example.com/{action_id}", json=params)
-            # return response.json()
+            request_body = json.dumps(params)
+            response = requests.post(f"http://api.example.com/{action_id}", data=request_body, headers={'Content-Type': 'application/json'})
+            return response.json()
 
             # Placeholder response
             return {"success": True, "action": action_id, "params": params}
 
         
         parameters = [
-            {"name": param, "type": map_composio_type_to_python(input_params[param]), "description": input_params[param].get("description", ""), "default": None if param not in required_params else ...}
+            Parameter(name=param, kind=Parameter.POSITIONAL_OR_KEYWORD, annotation=map_composio_type_to_python(input_params[param]["type"]), default=Parameter.empty if param in required_params else None)
             for param in input_params
         ]
+        new_sig = Signature(parameters, return_annotation=Dict[str, Any])
+
+        func = types.FunctionType(template_function.__code__, globals(), "function", closure=template_function.__closure__)
 
         # Assign the new signature to the function.
-        template_function.__signature__ = str(parameters)  # Simplified for demonstration
-        template_function.__doc__ = description
+        func.__signature__ = new_sig
+        func.__doc__ = description
 
-        return template_function
+        return func
