@@ -2,14 +2,12 @@ import os
 import json
 from typing import Sequence, List
 import logging
+import nest_asyncio
 
 from llama_index.llms.openai import OpenAI
 from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import BaseTool, FunctionTool
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
-
-
-import nest_asyncio
 
 nest_asyncio.apply()
 
@@ -99,4 +97,3 @@ class APIToolSpec(BaseToolSpec):
         func.__doc__ = description
 
         return func
-
