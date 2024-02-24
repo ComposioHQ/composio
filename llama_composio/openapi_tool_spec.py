@@ -1,5 +1,5 @@
 import os
-import json, yaml
+import yaml
 import requests
 from inspect import Parameter, Signature
 from typing import List, Dict, Any
