@@ -1,0 +1,47 @@
+import unittest
+from composio_tool_spec import ComposioToolSpec
+from inspect import signature
+
+class TestComposioToolSpec(unittest.TestCase):
+    def setUp(self):
+        with open("composio_tool.json", "r") as file:
+            self.tool_spec_json = file.read()
+        self.composio_tool_spec = ComposioToolSpec(self.tool_spec_json)
+
+    def test_spec_functions_generation(self):
+        """Test if spec functions are generated correctly based on the tool schema."""
+        expected_functions = [
+            "Clickup_CreateFolderView",
+            "Slack_SendMessage",
+            "Slack_UpdateMessage",
+            "Slack_DeleteMessage",
+            "Github_CreateIssue"
+        ]
+        self.assertEqual(sorted(self.composio_tool_spec.spec_functions), sorted(expected_functions))
+
+    def test_function_signature(self):
+        """Test if a specific function has the correct signature based on the tool schema."""
+        send_message_func = getattr(self.composio_tool_spec, "Slack_SendMessage", None)
+        self.assertIsNotNone(send_message_func)
+        signature = send_message_func.__signature__
+        expected_params = ['channel', 'text']
+        actual_params = list(signature.parameters.keys())
+        self.assertEqual(expected_params, actual_params)
+
+    def test_missing_required_params(self):
+        """Test if the function correctly handles missing required parameters."""
+        send_message_func = getattr(self.composio_tool_spec, "Slack_SendMessage", None)
+        self.assertIsNotNone(send_message_func)
+        response = send_message_func(text="Hello, World!")
+        self.assertIn("error", response)
+        self.assertIn("Missing required params", response["error"])
+    
+    def test_nested_request_signature(self):
+        """Test if the function correctly handles nested request body parameters."""
+        create_issue_func = getattr(self.composio_tool_spec, "Clickup_CreateFolderView", None)
+        self.assertIsNotNone(create_issue_func)
+        sig = signature(create_issue_func)
+        print("sig:", sig)
+
+if __name__ == '__main__':
+    unittest.main()
