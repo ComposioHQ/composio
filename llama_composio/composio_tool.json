@@ -1,6 +1,198 @@
 {
    "tools":[
     {
+        "Name":"Clickup",
+        "Description":"Add a List, Board, Calendar, or Gantt view to a Folder.",
+        "Authentication":{
+            "Type":"API Key",
+            "isAuthenticated":"False"
+        },
+        "Actions":[
+            {
+                "Id":"CreateFolderView",
+                "DisplayName":"Create Folder View",
+                "Description":"Add a List, Board, Calendar, or Gantt view to a Folder.",
+                "Signature":{
+                    "Input":{
+                        "type":"object",
+                        "properties":{
+                            "folderId":{
+                                "type":"number",
+                                "contentEncoding":"double",
+                                "examples":[
+                                    457
+                                ],
+                                "required": true
+                            },
+                            "name":{
+                                "type":"string",
+                                "required": true
+                            },
+                            "type":{
+                                "type":"string",
+                                "description":"The type of view to create. Options include: `list`, `board`, `calendar`, or `gantt`.",
+                                "required": true
+                            },
+                            "grouping":{
+                                "type":"object",
+                                "properties":{
+                                    "field":{
+                                        "type":"string",
+                                        "description":"Set the field to group by. Options include: `none`, `status`, `priority`, `assignee`, `tag`, or `dueDate`."
+                                    },
+                                    "dir":{
+                                        "type":"integer",
+                                        "contentEncoding":"int32",
+                                        "description":"Set a group sort order using `1` or `-1`."
+                                    },
+                                    "collapsed":{
+                                        "type":"array",
+                                        "items":{
+                                            "type":"string"
+                                        }
+                                    },
+                                    "ignore":{
+                                        "type":"boolean"
+                                    }
+                                }
+                            },
+                            "divide":{
+                                "type":"object",
+                                "properties":{
+                                    "field":{
+                                        "type":["string", "null"]
+                                    },
+                                    "dir":{
+                                        "type":["string", "null"]
+                                    },
+                                    "collapsed":{
+                                        "type":"array",
+                                        "items":{
+                                            "type":"string"
+                                        }
+                                    }
+                                }
+                            },
+                            "sorting":{
+                                "type":"object",
+                                "properties":{
+                                    "fields":{
+                                        "type":"array",
+                                        "items":{
+                                            "type":"string"
+                                        },
+                                        "description":"Include an array of fields to sort by."
+                                    }
+                                }
+                            },
+                            "filters":{
+                                "type":"object",
+                                "properties":{
+                                    "op":{
+                                        "type":"string",
+                                        "description":"The available operator (`op`) values are `AND` and `OR`."
+                                    },
+                                    "fields":{
+                                        "type":"array",
+                                        "items":{
+                                            "type":"string"
+                                        },
+                                        "description":"View the list of fields available to filter by."
+                                    },
+                                    "search":{
+                                        "type":"string"
+                                    },
+                                    "show_closed":{
+                                        "type":"boolean"
+                                    }
+                                }
+                            },
+                            "columns":{
+                                "type":"object",
+                                "properties":{
+                                    "fields":{
+                                        "type":"array",
+                                        "items":{
+                                            "type":"string"
+                                        }
+                                    }
+                                }
+                            },
+                            "team_sidebar":{
+                                "type":"object",
+                                "properties":{
+                                    "assignees":{
+                                        "type":"array",
+                                        "items":{
+                                            "type":"string"
+                                        }
+                                    },
+                                    "assigned_comments":{
+                                        "type":"boolean"
+                                    },
+                                    "unassigned_tasks":{
+                                        "type":"boolean"
+                                    }
+                                }
+                            },
+                            "settings":{
+                                "type":"object",
+                                "properties":{
+                                    "show_task_locations":{
+                                        "type":"boolean"
+                                    },
+                                    "show_subtasks":{
+                                        "type":"integer",
+                                        "contentEncoding":"int32"
+                                    },
+                                    "show_subtask_parent_names":{
+                                        "type":"boolean"
+                                    },
+                                    "show_closed_subtasks":{
+                                        "type":"boolean"
+                                    },
+                                    "show_assignees":{
+                                        "type":"boolean"
+                                    },
+                                    "show_images":{
+                                        "type":"boolean"
+                                    },
+                                    "collapse_empty_columns":{
+                                        "type":["string", "null"]
+                                    },
+                                    "me_comments":{
+                                        "type":"boolean"
+                                    },
+                                    "me_subtasks":{
+                                        "type":"boolean"
+                                    },
+                                    "me_checklists":{
+                                        "type":"boolean"
+                                    }
+                                }
+                            }
+                        },
+                        "required":["folderId", "name", "type"]
+                    },
+                    "Output":{
+                        "type":"object",
+                        "properties":{
+                            "ok":{
+                                "type":"boolean",
+                                "description":"Indicates if the view was created successfully"
+                            },
+                            "view_id":{
+                                "type":"string",
+                                "description":"The ID of the created view"
+                            }
+                        },
+                        "required":["ok","view_id"]
+                    }
+                }
+            }
+        ]
+    },
+    {
         "Name":"Slack",
         "Description":"Connect to Slack to send and receive messages",
         "Authentication":{

@@ -1,14 +1,13 @@
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Type
 import logging
 import requests
 from inspect import Parameter, Signature
-from typing import List, Dict, Any
 import types
 
 logger = logging.getLogger(__name__)
 
-def map_composio_type_to_python(type_spec):
+def map_composio_type_to_python(type_spec) -> Type:
     if isinstance(type_spec, dict):
         type_str = type_spec.get('type')
         if type_str == 'string':
@@ -17,9 +16,16 @@ def map_composio_type_to_python(type_spec):
             return float if '.' in str(type_spec.get('example', '')) else int
         elif type_str == 'boolean':
             return bool
+        elif type_str == 'object':
+            properties = type_spec.get('properties', {})
+            required = type_spec.get('required', [])
+            return Dict[str, Union[*tuple(map_composio_type_to_python(prop) for prop in properties.values()), Any]] if properties else Dict[str, Any]
+        elif type_str == 'array':
+            items_spec = type_spec.get('items', {})
+            return List[map_composio_type_to_python(items_spec)] if items_spec else List[Any]
         # Add more mappings as necessary
     # Fallback or default type
-    return str  # or any other default type
+    return Any  # Using Any for unspecified or complex types
 
 class ComposioToolSpec:
     """Generic tool spec based on composio_tool.json schema."""
@@ -45,7 +51,7 @@ class ComposioToolSpec:
 
         # Function template that uses **kwargs to accept any arguments and performs an actual API call.
         def template_function(**kwargs) -> Dict[str, Any]:
-            missing_params = [param for param in input_params if param not in kwargs and param in input_params['required']]
+            missing_params = [param for param in input_params if param not in kwargs and param in required_params]
             if missing_params:
                 return {"error": f"Missing required params: {missing_params}"}
             params = {param: kwargs[param] for param in input_params if param in kwargs}
@@ -55,17 +61,13 @@ class ComposioToolSpec:
             response = requests.post(f"http://api.example.com/{action_id}", data=request_body, headers={'Content-Type': 'application/json'})
             return response.json()
 
-            # Placeholder response
-            return {"success": True, "action": action_id, "params": params}
-
-        
         parameters = [
-            Parameter(name=param, kind=Parameter.POSITIONAL_OR_KEYWORD, annotation=map_composio_type_to_python(input_params[param]["type"]), default=Parameter.empty if param in required_params else None)
+            Parameter(name=param, kind=Parameter.POSITIONAL_OR_KEYWORD, annotation=map_composio_type_to_python(input_params[param]), default=Parameter.empty if param in required_params else Parameter.default)
             for param in input_params
         ]
         new_sig = Signature(parameters, return_annotation=Dict[str, Any])
 
-        func = types.FunctionType(template_function.__code__, globals(), "function", closure=template_function.__closure__)
+        func = types.FunctionType(template_function.__code__, globals(), name=action_id, closure=template_function.__closure__)
 
         # Assign the new signature to the function.
         func.__signature__ = new_sig
