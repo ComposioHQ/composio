@@ -1,0 +1,256 @@
+{
+        "tools":[
+            {
+                "Name":"Slack",
+                "Description":"Connect to Slack to send and receive messages",
+                "Authentication":{
+                    "Type":"OAuth",
+                    "Scopes":[
+                        "chat:write",
+                        "chat:write.public",
+                        "chat:write.customize",
+                        "chat:write.bot",
+                        "chat:write.user"
+                    ],
+                    "isAuthenticated":"False"
+                },
+                "Actions":[
+                    {
+                        "Id":"SendMessage",
+                        "DisplayName":"Send Message",
+                        "Description":"Send a message to a channel or user",
+                        "Signature":{
+                        "Input":{
+                            "type":"object",
+                            "properties":{
+                            "channel":{
+                                "type":"string",
+                                "description":"Channel or user to send the message to"
+                            },
+                            "text":{
+                                "type":"string",
+                                "description":"Text of the message"
+                            }
+                            },
+                            "required":["channel","text"]
+                        },
+                        "Output":{
+                            "type":"object",
+                            "properties":{
+                            "ok":{
+                                "type":"boolean",
+                                "description":"Indicates if the message was sent successfully"
+                            },
+                            "ts":{
+                                "type":"string",
+                                "description":"Timestamp of the message"
+                            }
+                            },
+                            "required":["ok","ts"]
+                        }
+                        }
+                    },
+                    {
+                        "Id":"UpdateMessage",
+                        "DisplayName":"Update Message",
+                        "Description":"Update a message in a channel or user",
+                        "Signature":{
+                        "Input":{
+                            "type":"object",
+                            "properties":{
+                            "channel":{
+                                "type":"string",
+                                "description":"Channel or user to update the message in"
+                            },
+                            "ts":{
+                                "type":"string",
+                                "description":"Timestamp of the message to update"
+                            },
+                            "text":{
+                                "type":"string",
+                                "description":"New text of the message"
+                            }
+                            },
+                            "required":["channel","ts","text"]
+                        },
+                        "Output":{
+                            "type":"object",
+                            "properties":{
+                            "ok":{
+                                "type":"boolean",
+                                "description":"Indicates if the message was updated successfully"
+                            }
+                            },
+                            "required":["ok"]
+                        }
+                        }
+                    },
+                    {
+                        "Id":"DeleteMessage",
+                        "DisplayName":"Delete Message",
+                        "Description":"Delete a message in a channel or user",
+                        "Signature":{
+                        "Input":{
+                            "type":"object",
+                            "properties":{
+                            "channel":{
+                                "type":"string",
+                                "description":"Channel or user to delete the message in"
+                            },
+                            "ts":{
+                                "type":"string",
+                                "description":"Timestamp of the message to delete"
+                            }
+                            },
+                            "required":["channel","ts"]
+                        },
+                        "Output":{
+                            "type":"object",
+                            "properties":{
+                            "ok":{
+                                "type":"boolean",
+                                "description":"Indicates if the message was deleted successfully"
+                            }
+                            },
+                            "required":["ok"]
+                        }
+                        }
+                    }
+                ],
+                "Triggers":[
+                {
+                    "Id":"MessageReceived",
+                    "DisplayName":"Message Received",
+                    "Description":"Triggered when a message is received in a channel or user",
+                    "Signature":{
+                    "Input":{
+                        "type":"object",
+                        "properties":{
+                        "channel":{
+                            "type":"string",
+                            "description":"Channel or user to listen to"
+                        },
+                        "text":{
+                            "type":"string",
+                            "description":"Text of the message"
+                        }
+                        },
+                        "required":["channel"]    
+                    },
+                    "Output":{
+                    }
+                    }
+                }
+                ]
+            },
+            {
+                "Name":"Github",
+                "Description":"Connect to Github to create and manage issues, pull requests, and more",
+                "Authentication":{
+                    "Type":"OAuth",
+                    "Scopes":[
+                        "repo",
+                        "repo:status",
+                        "repo_deployment",
+                        "public_repo",
+                        "admin:repo_hook",
+                        "write:repo_hook",
+                        "read:repo_hook",
+                        "admin:org_hook",
+                        "gist",
+                        "notifications",
+                        "user",
+                        "read:user",
+                        "user:email",
+                        "user:follow",
+                        "delete_repo",
+                        "write:discussion",
+                        "read:discussion",
+                        "write:packages",
+                        "read:packages",
+                        "delete:packages",
+                        "admin:gpg_key",
+                        "write:gpg_key",
+                        "read:gpg_key"
+                    ],
+                    "isAuthenticated":"False"
+                },
+                "Actions":[
+                {
+                    "Id":"CreateIssue",
+                    "DisplayName":"Create Issue",
+                    "Description":"Create a new issue in a repository",
+                    "Signature":{
+                    "Input":{
+                        "type":"object",
+                        "properties":{
+                        "owner":{
+                            "type":"string",
+                            "description":"Owner of the repository"
+                        },
+                        "repo":{
+                            "type":"string",
+                            "description":"Name of the repository"
+                        },
+                        "title":{
+                            "type":"string",
+                            "description":"Title of the issue"
+                        },
+                        "body":{
+                            "type":"string",
+                            "description":"Body of the issue"
+                        }
+                        },
+                        "required":["owner","repo","title"]
+                    },
+                    "Output":{
+                        "type":"object",
+                        "properties":{
+                        "id":{
+                            "type":"number",
+                            "description":"Id of the issue"
+                        },
+                        "number":{
+                            "type":"number",
+                            "description":"Number of the issue"
+                        },
+                        "title":{
+                            "type":"string",
+                            "description":"Title of the issue"
+                        },
+                        "body":{
+                            "type":"string",
+                            "description":"Body of the issue"
+                        },
+                        "state":{
+                            "type":"string",
+                            "description":"State of the issue"
+                        },
+                        "locked":{
+                            "type":"boolean",
+                            "description":"Indicates if the issue is locked"
+                        },
+                        "comments":{
+                            "type":"number",
+                            "description":"Number of comments on the issue"
+                        },
+                        "created_at":{
+                            "type":"string",
+                            "description":"Timestamp of when the issue was created"
+                        },
+                        "updated_at":{
+                            "type":"string",
+                            "description":"Timestamp of when the issue was last updated"
+                        }
+                        },
+                        "required":["id","number","title","body","state","locked","comments","created_at","updated_at"]
+                    }
+                    }
+                }
+                ],
+                "Triggers":[
+
+                ]
+            }
+        ]
+}

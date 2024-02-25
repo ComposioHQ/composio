@@ -1,0 +1,5 @@
+beaupy===3.7.2
+rich===13.7.0
+termcolor===2.4.0
+pyautogen===0.2.14
+autogenstudio===0.0.44a0
