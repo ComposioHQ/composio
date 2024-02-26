@@ -129,7 +129,7 @@ def run_user_session_logic():
     spinner.start()
 
     user_data = get_user_id()
-    if user_data == None:
+    if user_data is not None:
         # @TODO: Replace with actual wait call
         time.sleep(1)
         console.print(f" [green]✔[/green]\n");
@@ -154,7 +154,7 @@ def setup_integrations(integrations_selected):
     tools = list_tools()
     tools_map = {}
     for tool in tools["tools"]:
-        tools_map[tool["Name"]] = tool
+        tools_map[tool["Name"].capitalize()] = tool
 
     for integration in integrations_selected:
         skillAgent = tools_map[integration]
