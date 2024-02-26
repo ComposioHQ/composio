@@ -70,12 +70,17 @@ def list_tools(args):
         print("Error: No authenticated user found. Please authenticate first.")
         return
     print(f"Fetching tools for User ID: {user_id}...")
-    url = f"{BASE_URL}/tools"
+    url = f"{BASE_URL}/all_tools"
     headers = {
       'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
       'X_ENDUSER_ID': user_id
     }
-    response = requests.get(url, headers=headers)
+    response = requests.post(url, headers=headers, json={
+        "skip": 0,
+        "limit": 1000,
+        "actions": True,
+        "triggers": False
+    })
     if response.status_code == 200:
         tools_data = response.json()
         for tool in tools_data.get('tools', []):
@@ -101,13 +106,6 @@ def auth(args):
         save_user_id(user_id)
     else:
         print("Authentication failed.")
-
-def auth_tool(args):
-    user_id = get_user_id()
-    if user_id is None:
-        print("Error: No authenticated user found. Please authenticate first.")
-        return
-    print(f"Authenticating tool: {args.tool_name} for User ID: {user_id}")
 
 def main():
     parser = argparse.ArgumentParser(description='Composio CLI')
