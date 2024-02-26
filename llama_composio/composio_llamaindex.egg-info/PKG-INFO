@@ -1,0 +1,26 @@
+Metadata-Version: 2.1
+Name: composio-llamaindex
+Version: 0.0.1
+Summary: Provides integrations skill with 50+ services in LlamaIndex
+Home-page: https://github.com/SamparkAI/llama-composio
+Author: Karan
+Author-email: karan@composio.dev
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+
+Composio <> Llama Indxex
+Use Composio to get an array of tools with your llamaindex agent.
+
+# Usage
+Inside your llamaindex codebase:
+```
+from composio_llama import ComposioToolset
+toolset = ComposioToolset(<token>)
+agent = OpenAIAgent.from_tools(toolset.to_tool_list(), llm=llm, verbose=True)
+...
+```
+
+

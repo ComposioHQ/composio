@@ -1,0 +1,14 @@
+[project]
+dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
+
+name = "composio-llamaindex"
+
+[build-system]
+requires = [
+    "requests==2.25.1",
+    "jsonschema==3.2.0",
+    "argparse==1.4.0",
+    "setuptools>=42",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
