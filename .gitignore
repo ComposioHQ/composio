@@ -2,3 +2,4 @@
 user_data.json
 venv
 **/dist
+.DS_Store
