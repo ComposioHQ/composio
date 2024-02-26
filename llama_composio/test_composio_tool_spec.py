@@ -23,10 +23,16 @@ class TestComposioToolSpec(unittest.TestCase):
         """Test if a specific function has the correct signature based on the tool schema."""
         send_message_func = getattr(self.composio_tool_spec, "Slack_SendMessage", None)
         self.assertIsNotNone(send_message_func)
-        signature = send_message_func.__signature__
+        sign = send_message_func.__signature__
         expected_params = ['channel', 'text']
-        actual_params = list(signature.parameters.keys())
+        actual_params = list(sign.parameters.keys())
         self.assertEqual(expected_params, actual_params)
+        sig = signature(send_message_func)
+        expected_sig = "(channel: str, text: str) -> Dict[str, Any]"
+        self.assertEqual(str(sig), expected_sig)
+        description = send_message_func.__doc__
+        expected_desc = "Send a message to a channel or user"
+        self.assertEqual(description, expected_desc)
 
     def test_missing_required_params(self):
         """Test if the function correctly handles missing required parameters."""
@@ -42,6 +48,8 @@ class TestComposioToolSpec(unittest.TestCase):
         self.assertIsNotNone(create_issue_func)
         sig = signature(create_issue_func)
         print("sig:", sig)
+
+
 
 if __name__ == '__main__':
     unittest.main()

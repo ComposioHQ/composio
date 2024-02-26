@@ -30,7 +30,7 @@ def map_composio_type_to_python(type_spec) -> Type:
 class ComposioToolSpec:
     """Generic tool spec based on composio_tool.json schema."""
 
-    def __init__(self, tool_schema: str) -> None:
+    def __init__(self, tool_schema: str, composio_token: str, user_id: str) -> None:
         """Initialize with composio tool schema."""
         self.tool_schema = json.loads(tool_schema)
         self.spec_functions = self._generate_spec_functions()

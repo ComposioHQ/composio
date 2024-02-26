@@ -3,14 +3,11 @@ import requests
 from .composio_tool_spec import ComposioToolSpec
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
 
-class ComposioToolset(BaseToolSpec):
-    def __init__(self, base_url: str, composio_token: str):
-        self.base_url = base_url
-        self.composio_token = composio_token
-        self.user_id = self.get_user_id()
+class ComposioToolset(ComposioToolSpec):
+    def __init__(self, composio_token: str):
         self.authenticated_tools = self.get_authenticated_tools()
-        self.tool_spec = self.create_composio_tool_spec()
-        self.spec_functions = self.tool_spec.spec_functions
+        tools_schema = json.dumps({"tools": self.authenticated_tools})  # Combine all tools into a single schema
+        super().__init__(tools_schema, composio_token, self.get_user_id())
 
     def get_user_id(self):
         try:
@@ -38,9 +35,4 @@ class ComposioToolset(BaseToolSpec):
         else:
             print("Failed to fetch tools.")
             return []
-
-    def create_composio_tool_spec(self):
-        tools_schema = json.dumps({"tools": self.authenticated_tools})  # Combine all tools into a single schema
-        tool_spec = ComposioToolSpec(tools_schema)
-        return tool_spec
 
