@@ -2,6 +2,7 @@ import json
 import os
 import time
 import requests
+import jinja2
 
 
 COMPOSIO_TOKEN = 'ghp_1J2g3h4i5j6k7l8m9n0o33'
@@ -9,6 +10,11 @@ BASE_URL = "https://hermes-production-6901.up.railway.app/api"
 
 ACCESS_TOKEN = "COMPOSIO-X3125-ZUA-1"
 SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
+
+def save_user_id(user_id):
+    user_data = {'user_id': user_id}
+    with open('user_data.json', 'w') as outfile:
+        json.dump(user_data, outfile)
 
 def get_url_for_composio_action(toolName: str, actionName: str):
     return f"{BASE_URL}/tools/{toolName}/actions/{actionName}"
@@ -31,7 +37,7 @@ def get_user_id():
 
 def get_redirect_url_for_integration(integrationName: str, scopes = []):
     user_id = get_user_id()
-    response = requests.get(f"{BASE_URL}/user/auth", headers={
+    response = requests.post(f"{BASE_URL}/user/auth", headers={
         'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
         'X_ENDUSER_ID': user_id
     }, json={
@@ -60,6 +66,11 @@ def wait_for_tool_auth_completion(toolName: str):
             return True
         time.sleep(5)
     raise Exception("Authentication timeout or failed to get auth status for tool")
+
+def get_skills_file_template():
+    path = os.path.join(os.path.dirname(__file__), 'templates/skills.txt')
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
+    return env.get_template('templates/skills.txt')
 
 def list_tools():
     # @TODO: Dummy API call response, replace with actual API call after it is ready

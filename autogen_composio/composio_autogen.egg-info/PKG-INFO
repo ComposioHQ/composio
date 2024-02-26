@@ -10,6 +10,12 @@ Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
+Requires-Dist: beaupy===3.7.2
+Requires-Dist: rich===13.7.0
+Requires-Dist: termcolor===2.4.0
+Requires-Dist: pyautogen===0.2.14
+Requires-Dist: autogenstudio===0.0.44a0
+Requires-Dist: jinja2>=3.1.3
 
 # Autogen + Composio
 
