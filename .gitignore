@@ -3,3 +3,6 @@ user_data.json
 venv
 **/dist
 .DS_Store
+**/composio_autogen.egg-info
+**/composio_llamaindex.egg-info
+**/__pycache__
