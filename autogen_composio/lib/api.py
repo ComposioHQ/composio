@@ -3,7 +3,7 @@ import os
 import time
 import requests
 import jinja2
-from storage import get_user_id
+from .storage import get_user_id
 
 COMPOSIO_TOKEN = 'ghp_1J2g3h4i5j6k7l8m9n0o33'
 BASE_URL = "https://hermes-production-6901.up.railway.app/api"
@@ -62,22 +62,21 @@ def get_skills_file_template():
 
 def list_tools():
     # @TODO: Dummy API call response, replace with actual API call after it is ready
-    hardcoded_tools_response_path = os.path.join(os.path.dirname(__file__), 'hardcoded_tools.json');
-    with open(hardcoded_tools_response_path, 'r') as infile:
-        user_data = json.load(infile)
-        return user_data
-
     user_id = get_user_id()
     if user_id is None:
         raise Exception("No authenticated user found. Please authenticate first.")
     
-    url = f"{BASE_URL}/tools"
+    url = f"{BASE_URL}/all_tools"
     headers = {
       'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
       'X_ENDUSER_ID': user_id
     }
-    response = requests.get(url, headers=headers)
-    print(response.text)
+    response = requests.post(url, headers=headers, json={
+        "skip": 0,
+        "limit": 1000,
+        "actions": True,
+        "triggers": False
+    })
     if response.status_code == 200:
         tools_data = response.json()
         return tools_data
