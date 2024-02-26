@@ -5,6 +5,8 @@ import requests
 from inspect import Parameter, Signature
 import types
 
+from llama_index.core.tools.tool_spec.base import BaseToolSpec
+
 logger = logging.getLogger(__name__)
 
 def map_composio_type_to_python(type_spec) -> Type:
@@ -27,7 +29,7 @@ def map_composio_type_to_python(type_spec) -> Type:
     # Fallback or default type
     return Any  # Using Any for unspecified or complex types
 
-class ComposioToolSpec:
+class ComposioToolSpec(BaseToolSpec):
     """Generic tool spec based on composio_tool.json schema."""
 
     def __init__(self, tool_schema: str, composio_token: str, user_id: str) -> None:
