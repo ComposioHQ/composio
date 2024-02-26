@@ -8,7 +8,6 @@ from .storage import get_user_id
 COMPOSIO_TOKEN = 'ghp_1J2g3h4i5j6k7l8m9n0o33'
 BASE_URL = "https://hermes-production-6901.up.railway.app/api"
 
-ACCESS_TOKEN = "COMPOSIO-X3125-ZUA-1"
 SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
 
 def get_url_for_composio_action(toolName: str, actionName: str):

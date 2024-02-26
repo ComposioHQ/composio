@@ -181,10 +181,10 @@ def run():
         spinner.stop()
         console.print("[green]> All requirements are met... Good to go!\n[/green]")
 
-        # access_token = input("Paste your beta access token here: ")
-        # if access_token != ACCESS_TOKEN:
-        #     console.print("[red]\n> Invalid access token ❌\n[/red]")
-        #     return
+        access_token = input("Paste your beta access token here: ")
+        if access_token != ACCESS_TOKEN:
+            console.print("[red]\n> Invalid access token ❌\n[/red]")
+            return
 
         skills = load_skills()
         if skills:
