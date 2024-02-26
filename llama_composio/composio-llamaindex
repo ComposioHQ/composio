@@ -1,30 +1,68 @@
 #!/usr/bin/env python
 
 import argparse
+import webbrowser
 import requests
 import json
 import os
 from lib.storage import save_user_id, get_user_id
+import time
+from beaupy.spinners import Spinner, BARS
 
 COMPOSIO_TOKEN = 'ghp_1J2g3h4i5j6k7l8m9n0o33'
 BASE_URL = "https://hermes-production-6901.up.railway.app/api"
 
-def auth(args):
-    if not args.email:
-        print("Error: Email ID is required for authentication.")
+def auth_tool(args):
+    user_id = get_user_id()
+    if user_id is None:
+        print("Error: No authenticated user found. Please authenticate first.")
         return
-    print(f"Authenticating {args.email}...")
-    url = f"{BASE_URL}/user/create/{args.email}"
+    print(f"Authenticating tool: {args.tool_name} for User ID: {user_id}")
+    url = f"{BASE_URL}/user/auth"
+    payload = json.dumps({
+      "endUserID": user_id,
+      "provider": {
+        "name": args.tool_name,
+        "scope": [
+          "user.email",
+          "user.profile"
+        ]
+      },
+      "redirectURIClient": "https://composio.dev/"
+    })
     headers = {
-      'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN
+      'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
+      'Content-Type': 'application/json'
     }
-    response = requests.post(url, headers=headers)
+    response = requests.request("POST", url, headers=headers, data=payload)
     if response.status_code == 200:
-        user_id = response.text
-        print(f"Authenticated successfully. User ID: {user_id}")
-        save_user_id(user_id)
+        auth_url = response.json().get('providerAuthURL')
+        connReqID = response.json().get('connectionReqId')
+        print(f"Auth URL: {auth_url}")
+        print(f"Connection Request ID: {connReqID}")
+        webbrowser.open(auth_url)
     else:
-        print("Authentication failed.")
+        print("Failed to authenticate tool.")
+    spinner = Spinner(BARS, f"Authenticating you...")
+    spinner.start()
+
+    while True:  # Loop forever
+        status_check_url = f"{BASE_URL}/auth/{connReqID}/status"
+        status_payload = json.dumps({})
+        status_headers = {
+            'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
+            'Content-Type': 'application/json',
+        }
+        response = requests.request("GET", status_check_url, headers=status_headers, data=status_payload)
+        status_data = response.json()
+        status = status_data.get('status')
+        if status == 'PENDING' or status == 'STARTED':
+            time.sleep(1)  # Wait for 5 seconds before retrying
+        else:
+            print(f"Authentication status: {status_data.get('status')}")
+            break
+
+    spinner.stop()
 
 def list_tools(args):
     user_id = get_user_id()
@@ -47,6 +85,23 @@ def list_tools(args):
     else:
         print("Failed to fetch tools.")
 
+def auth(args):
+    if not args.email:
+        print("Error: Email ID is required for authentication.")
+        return
+    print(f"Authenticating {args.email}...")
+    url = f"{BASE_URL}/user/create/{args.email}"
+    headers = {
+      'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN
+    }
+    response = requests.post(url, headers=headers)
+    if response.status_code == 200:
+        user_id = response.json().get('userId')
+        print(f"Authenticated successfully. User ID: {user_id}")
+        save_user_id(user_id)
+    else:
+        print("Authentication failed.")
+
 def auth_tool(args):
     user_id = get_user_id()
     if user_id is None:
@@ -55,7 +110,7 @@ def auth_tool(args):
     print(f"Authenticating tool: {args.tool_name} for User ID: {user_id}")
 
 def main():
-    parser = argparse.ArgumentParser(description='Authenticate and use package')
+    parser = argparse.ArgumentParser(description='Composio CLI')
     subparsers = parser.add_subparsers(help='commands')
 
     # Auth command

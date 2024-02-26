@@ -6,7 +6,8 @@ dependencies = [
     "termcolor===2.4.0",
     "pyautogen===0.2.14",
     "autogenstudio===0.0.44a0",
-    "jinja2>=3.1.3"
+    "jinja2>=3.1.3",
+    "webbrowser"
 ]
 name = "composio-autogen"
 

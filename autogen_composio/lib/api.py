@@ -1,8 +1,10 @@
 import json
 import os
 import time
+import webbrowser
 import requests
 import jinja2
+from beaupy.spinners import Spinner, BARS
 from .storage import get_user_id
 
 COMPOSIO_TOKEN = 'ghp_1J2g3h4i5j6k7l8m9n0o33'
@@ -53,6 +55,29 @@ def wait_for_tool_auth_completion(toolName: str):
             return True
         time.sleep(5)
     raise Exception("Authentication timeout or failed to get auth status for tool")
+
+def wait_for_tool_auth_completion(connReqID: str, toolName: str):
+    user_id = get_user_id()
+    if user_id is None:
+        print("Error: No authenticated user found. Please authenticate first.")
+        return
+
+    while True:  # Loop forever
+        status_check_url = f"{BASE_URL}/auth/{connReqID}/status"
+        status_payload = json.dumps({})
+        status_headers = {
+            'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
+            'Content-Type': 'application/json',
+        }
+        response = requests.request("GET", status_check_url, headers=status_headers, data=status_payload)
+        status_data = response.json()
+        status = status_data.get('status')
+        if status == 'PENDING' or status == 'STARTED':
+            time.sleep(1)  # Wait for 5 seconds before retrying
+        else:
+            break
+    
+    return True
 
 def get_skills_file_template():
     path = os.path.join(os.path.dirname(__file__), 'templates/skills.txt')

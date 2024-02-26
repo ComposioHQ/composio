@@ -160,11 +160,11 @@ def setup_integrations(integrations_selected):
         is_authenticated = skillAgent.get("Authentication", {}).get("isAuthenticated")
         # TODO: Check with actual API, if is_autenticated is really a string
         if is_authenticated == "False":
-            auth_url = get_redirect_url_for_integration(integration.lower(), scopes=skillAgent.get("Authentication", {}).get("Scopes", []))
+            [auth_url, connReqId] = get_redirect_url_for_integration(integration.lower(), scopes=skillAgent.get("Authentication", {}).get("Scopes", []))
             spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] {integration} requires authentication. Please visit the following URL to authenticate: {auth_url}")
             spinner.start()
             time.sleep(2)
-            wait_for_tool_auth_completion(integration)
+            wait_for_tool_auth_completion(connReqId, integration)
             console.print(f"[green]✔[/green] {integration} authenticated successfully!")
             spinner.stop()
     print("\n")
