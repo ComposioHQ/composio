@@ -1,5 +1,6 @@
 # scripts/my_cli.py
 import argparse
+import webbrowser
 import requests
 import json
 import os
@@ -9,6 +10,7 @@ BASE_URL = "https://hermes-production-6901.up.railway.app/api"
 
 def save_user_id(user_id):
     user_data = {'user_id': user_id}
+    # TODO: Need to change to some other location once pip package is created.
     with open('user_data.json', 'w') as outfile:
         json.dump(user_data, outfile)
 
@@ -30,7 +32,7 @@ def auth(args):
     }
     response = requests.post(url, headers=headers)
     if response.status_code == 200:
-        user_id = response.text
+        user_id = response.json().get('userId')
         print(f"Authenticated successfully. User ID: {user_id}")
         save_user_id(user_id)
     else:
@@ -63,6 +65,28 @@ def auth_tool(args):
         print("Error: No authenticated user found. Please authenticate first.")
         return
     print(f"Authenticating tool: {args.tool_name} for User ID: {user_id}")
+    url = f"{BASE_URL}/user/auth"
+    payload = json.dumps({
+      "endUserID": user_id,
+      "provider": {
+        "name": args.tool_name,
+        "scope": [
+          "user.email",
+          "user.profile"
+        ]
+      },
+      "redirectURIClient": "https://composio.dev/"
+    })
+    headers = {
+      'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
+      'Content-Type': 'application/json'
+    }
+    response = requests.request("GET", url, headers=headers, data=payload)
+    if response.status_code == 200:
+        auth_url = response.json().get('providerAuthURL')
+        webbrowser.open(auth_url)
+    else:
+        print("Failed to authenticate tool.")
 
 def main():
     parser = argparse.ArgumentParser(description='Authenticate and use package')
