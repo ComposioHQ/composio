@@ -1,5 +1,0 @@
-requests
-jsonschema
-argparse
-llama_index
-nest_asyncio
