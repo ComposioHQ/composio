@@ -185,6 +185,7 @@ def run():
         if access_token != ACCESS_TOKEN:
             console.print("[red]\n> Invalid access token ❌\n[/red]")
             return
+        print("");
 
         skills = load_skills()
         if skills:
