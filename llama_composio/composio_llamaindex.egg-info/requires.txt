@@ -1,5 +1,5 @@
 requests
 jsonschema
 argparse
-nest_asyncio
 llama_index
+nest_asyncio

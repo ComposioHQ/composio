@@ -11,9 +11,9 @@ import requests
 import jinja2
 from uuid import getnode as get_mac
 
-from lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion, save_user_id
-
+from lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
 from lib.api import get_skills_file_template
+from lib.storage import get_user_id, save_user_id
 
 console = Console()
 
@@ -127,7 +127,9 @@ def run_user_session_logic():
     spinner = Spinner(BARS, f"Authenticating you...")
     spinner.start()
 
-    if os.path.exists('user_data.json'):
+    user_data = get_user_id()
+    if user_data == None:
+        # @TODO: Replace with actual wait call
         time.sleep(1)
         console.print(f" [green]✔[/green]\n");
     else:

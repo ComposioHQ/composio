@@ -2,21 +2,13 @@ import json
 import requests
 from .composio_tool_spec import ComposioToolSpec
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
+from storage import get_user_id
 
 class ComposioToolset(ComposioToolSpec):
     def __init__(self, composio_token: str):
         self.authenticated_tools = self.get_authenticated_tools()
         tools_schema = json.dumps({"tools": self.authenticated_tools})  # Combine all tools into a single schema
-        super().__init__(tools_schema, composio_token, self.get_user_id())
-
-    def get_user_id(self):
-        try:
-            with open('user_data.json', 'r') as infile:
-                user_data = json.load(infile)
-                return user_data.get('user_id')
-        except FileNotFoundError:
-            print("User data file not found. Please authenticate first.")
-            return None
+        super().__init__(tools_schema, composio_token, get_user_id())
 
     def get_authenticated_tools(self):
         if self.user_id is None:

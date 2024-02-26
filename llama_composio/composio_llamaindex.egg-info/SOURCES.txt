@@ -5,7 +5,9 @@ setup.py
 composio_llamaindex.egg-info/PKG-INFO
 composio_llamaindex.egg-info/SOURCES.txt
 composio_llamaindex.egg-info/dependency_links.txt
+composio_llamaindex.egg-info/requires.txt
 composio_llamaindex.egg-info/top_level.txt
-tool_spec/composio_tool_spec.py
-tool_spec/composio_toolset.py
-tool_spec/openapi_tool_spec.py
+lib/composio_tool_spec.py
+lib/composio_toolset.py
+lib/openapi_tool_spec.py
+lib/storage.py

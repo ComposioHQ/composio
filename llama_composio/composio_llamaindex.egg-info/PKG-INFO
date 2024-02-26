@@ -10,6 +10,11 @@ Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
+Requires-Dist: requests
+Requires-Dist: jsonschema
+Requires-Dist: argparse
+Requires-Dist: llama_index
+Requires-Dist: nest_asyncio
 
 Composio <> Llama Indxex
 Use Composio to get an array of tools with your llamaindex agent.
