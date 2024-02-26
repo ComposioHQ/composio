@@ -6,7 +6,7 @@ class TestComposioToolSpec(unittest.TestCase):
     def setUp(self):
         with open("lib/data/composio_tool.json", "r") as file:
             self.tool_spec_json = file.read()
-        self.composio_tool_spec = ComposioToolSpec(self.tool_spec_json)
+        self.composio_tool_spec = ComposioToolSpec(self.tool_spec_json, "composio_token", "user_id")
 
     def test_spec_functions_generation(self):
         """Test if spec functions are generated correctly based on the tool schema."""
