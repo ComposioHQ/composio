@@ -11,16 +11,16 @@ import requests
 import jinja2
 from uuid import getnode as get_mac
 
-from api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
+from lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
 
 console = Console()
 
 ACCESS_TOKEN = "COMPOSIO-X3125-ZUA-1"
-SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
+SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'lib/templates/skills.txt')
 
 jinja2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(''))
 def get_autogen_skill_content_from_func_signature(skillRawId, skillId, skillTitle, skillDescription, skillFileName, toolName, functionSignature):
-    template = jinja2_env.get_template('templates/skills.txt')
+    template = jinja2_env.get_template(SKILLS_FILE)
     descriptionComment = f"{skillTitle}\n# {skillDescription}"
     input_parameters = [];
     for parameter_name, parameter_info in functionSignature.get('Input', {}).get('properties', {}).items():

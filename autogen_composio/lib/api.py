@@ -63,7 +63,8 @@ def wait_for_tool_auth_completion(toolName: str):
 
 def list_tools():
     # @TODO: Dummy API call response, replace with actual API call after it is ready
-    with open('data/hardcoded_tools.json', 'r') as infile:
+    hardcoded_tools_response_path = os.path.join(os.path.dirname(__file__), 'hardcoded_tools.json');
+    with open(hardcoded_tools_response_path, 'r') as infile:
         user_data = json.load(infile)
         return user_data
 

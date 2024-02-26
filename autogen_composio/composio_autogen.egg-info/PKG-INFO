@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: composio-autogen
+Version: 0.0.4
+Summary: Provides integrations skill with 50+ services in autogen
+Home-page: https://github.com/SamparkAI/llama-composio
+Author: Utkarsh
+Author-email: utkarsh@composio.dev
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+
+# Autogen + Composio
+
+Provides integration with 50+ services in autogen.

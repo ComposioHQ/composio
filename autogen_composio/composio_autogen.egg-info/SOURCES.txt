@@ -1,0 +1,8 @@
+README.md
+composio-autogen
+setup.py
+composio_autogen.egg-info/PKG-INFO
+composio_autogen.egg-info/SOURCES.txt
+composio_autogen.egg-info/dependency_links.txt
+composio_autogen.egg-info/top_level.txt
+lib/api.py
