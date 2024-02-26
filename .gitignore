@@ -1,4 +1,4 @@
 *pycache*
 user_data.json
 venv
-dist*
+**/dist
