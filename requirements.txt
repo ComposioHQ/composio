@@ -1,7 +1,0 @@
-requests==2.25.1
-jsonschema==3.2.0
-PyYAML==5.4.1
-argparse==1.4.0
-webbrowser==0.0.1
-nest_asyncio==1.5.1
-llamaindex==0.1.0

@@ -1,10 +1,10 @@
 import unittest
-from composio_tool_spec import ComposioToolSpec
+from .lib.composio_tool_spec import ComposioToolSpec
 from inspect import signature
 
 class TestComposioToolSpec(unittest.TestCase):
     def setUp(self):
-        with open("composio_tool.json", "r") as file:
+        with open("lib/data/composio_tool.json", "r") as file:
             self.tool_spec_json = file.read()
         self.composio_tool_spec = ComposioToolSpec(self.tool_spec_json, "composio_token", "user_id")
 

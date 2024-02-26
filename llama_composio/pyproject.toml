@@ -1,0 +1,15 @@
+[project]
+dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
+dependencies = [
+    "requests",
+    "jsonschema",
+    "argparse",
+    "llama_index",
+    "nest_asyncio",
+    "beaupy===3.7.2"
+]
+name = "composio-llamaindex"
+
+[build-system]
+requires = [ "setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
