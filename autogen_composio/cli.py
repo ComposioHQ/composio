@@ -11,17 +11,16 @@ import requests
 import jinja2
 from uuid import getnode as get_mac
 
-from lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
-from lib.api import get_skills_file_template, COMPOSIO_TOKEN
-from lib.storage import get_user_id, save_user_id
+from autogen_composio.lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
 
 console = Console()
 
 ACCESS_TOKEN = "COMPOSIO-X3125-ZUA-1"
+SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
 
+jinja2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(''))
 def get_autogen_skill_content_from_func_signature(skillRawId, skillId, skillTitle, skillDescription, skillFileName, toolName, functionSignature):
-    template = get_skills_file_template()
-    user_token = get_user_id()
+    template = jinja2_env.get_template('templates/skills.txt')
     descriptionComment = f"{skillTitle}\n# {skillDescription}"
     input_parameters = [];
     for parameter_name, parameter_info in functionSignature.get('Input', {}).get('properties', {}).items():
@@ -32,7 +31,7 @@ def get_autogen_skill_content_from_func_signature(skillRawId, skillId, skillTitl
         })
 
     method_url = get_url_for_composio_action(toolName, actionName = skillRawId)
-    rendered_template = template.render(method_url=method_url,description=descriptionComment, method_name=skillRawId, method_parameters=input_parameters, composioHeaderToken=COMPOSIO_TOKEN, endUserToken=user_token)
+    rendered_template = template.render(method_url=method_url,description=descriptionComment, method_name=skillRawId, method_parameters=input_parameters)
     return rendered_template
 
 def get_python_types_from_json_types(type: str):
@@ -124,13 +123,16 @@ def print_intro():
 └───────────────────────────────────────────────────────────────────────────┘
         """)
 
+def save_user_id(user_id):
+    user_data = {'user_id': user_id}
+    with open('user_data.json', 'w') as outfile:
+        json.dump(user_data, outfile)
+
 def run_user_session_logic():
     spinner = Spinner(BARS, f"Authenticating you...")
     spinner.start()
 
-    user_data = get_user_id()
-    if user_data == None:
-        # @TODO: Replace with actual wait call
+    if os.path.exists('user_data.json'):
         time.sleep(1)
         console.print(f" [green]✔[/green]\n");
     else:
@@ -182,11 +184,10 @@ def run():
         spinner.stop()
         console.print("[green]> All requirements are met... Good to go!\n[/green]")
 
-        access_token = input("Paste your beta access token here: ")
-        if access_token != ACCESS_TOKEN:
-            console.print("[red]\n> Invalid access token ❌\n[/red]")
-            return
-        print("");
+        # access_token = input("Paste your beta access token here: ")
+        # if access_token != ACCESS_TOKEN:
+        #     console.print("[red]\n> Invalid access token ❌\n[/red]")
+        #     return
 
         skills = load_skills()
         if skills:

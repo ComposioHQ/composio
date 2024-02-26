@@ -6,7 +6,6 @@ dependencies = [
     "argparse",
     "llama_index",
     "nest_asyncio",
-    "webbrowser",
     "beaupy===3.7.2"
 ]
 name = "composio-llamaindex"

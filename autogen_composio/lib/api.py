@@ -38,23 +38,10 @@ def get_redirect_url_for_integration(integrationName: str, scopes = []):
     })
 
     if response.status_code == 200:
-        return response.json().get('providerAuthURL') 
+        return list([response.json().get('providerAuthURL'), response.json().get('connectionReqId')])
 
     print(response.text)
     raise Exception("Failed to get auth URL for integration")
-
-def wait_for_tool_auth_completion(toolName: str):
-    user_id = get_user_id()
-    start_time = time.time()
-    while time.time() - start_time < 40:
-        response = requests.get(f"{BASE_URL}/user/providerid/{toolName}/credentials", headers={
-            'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
-            'X_ENDUSER_ID': user_id
-        })
-        if response.status_code == 200 and response.json().get('is_authenticated') == True:
-            return True
-        time.sleep(5)
-    raise Exception("Authentication timeout or failed to get auth status for tool")
 
 def wait_for_tool_auth_completion(connReqID: str, toolName: str):
     user_id = get_user_id()
