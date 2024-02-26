@@ -4,6 +4,8 @@ import webbrowser
 import requests
 import json
 import os
+import time
+from beaupy.spinners import Spinner, BARS
 
 COMPOSIO_TOKEN = 'ghp_1J2g3h4i5j6k7l8m9n0o33'
 BASE_URL = "https://hermes-production-6901.up.railway.app/api"
@@ -81,15 +83,39 @@ def auth_tool(args):
       'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
       'Content-Type': 'application/json'
     }
-    response = requests.request("GET", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload)
     if response.status_code == 200:
         auth_url = response.json().get('providerAuthURL')
+        connReqID = response.json().get('connectionReqId')
+        print(f"Auth URL: {auth_url}")
+        print(f"Connection Request ID: {connReqID}")
         webbrowser.open(auth_url)
     else:
         print("Failed to authenticate tool.")
+    spinner = Spinner(BARS, f"Authenticating you...")
+    spinner.start()
+
+    while True:  # Loop forever
+        status_check_url = f"{BASE_URL}/auth/{connReqID}/status"
+        status_payload = json.dumps({})
+        status_headers = {
+            'X_COMPOSIO_TOKEN': COMPOSIO_TOKEN,
+            'Content-Type': 'application/json',
+        }
+        response = requests.request("GET", status_check_url, headers=status_headers, data=status_payload)
+        status_data = response.json()
+        status = status_data.get('status')
+        if status == 'PENDING' or status == 'STARTED':
+            time.sleep(1)  # Wait for 5 seconds before retrying
+        else:
+            print(f"Authentication status: {status_data.get('status')}")
+            break
+
+    spinner.stop()
+
 
 def main():
-    parser = argparse.ArgumentParser(description='Authenticate and use package')
+    parser = argparse.ArgumentParser(description='Composio CLI')
     subparsers = parser.add_subparsers(help='commands')
 
     # Auth command
