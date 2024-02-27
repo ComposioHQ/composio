@@ -1,6 +1,9 @@
 import unittest
-from llama_composio import ComposioToolSpec
+from .composio_tool_spec import ComposioToolSpec
 from inspect import signature
+from llama_index.agent.openai import OpenAIAgent
+from llama_index.llms.openai import OpenAI
+
 
 class TestComposioToolSpec(unittest.TestCase):
     def setUp(self):
@@ -48,6 +51,12 @@ class TestComposioToolSpec(unittest.TestCase):
         self.assertIsNotNone(create_issue_func)
         sig = signature(create_issue_func)
         print("sig:", sig)
+
+    def test_agent(self):
+        """Test the agent vy spec."""
+        llm = OpenAI(model="gpt-4-turbo-preview")
+        agent = OpenAIAgent.from_tools(self.composio_tool_spec.to_tool_list(), llm=llm, verbose=True)
+        agent.chat("Hello, World!")
 
 
 
