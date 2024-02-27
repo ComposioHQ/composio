@@ -13,7 +13,7 @@ BASE_URL = "https://hermes-production-6901.up.railway.app/api"
 SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
 
 def get_url_for_composio_action(toolName: str, actionName: str):
-    return f"{BASE_URL}/tools/{toolName}/actions/{actionName}"
+    return f"{BASE_URL}/{toolName}/{actionName}"
 
 def identify_user(identifer: str):
     response = requests.post(f"{BASE_URL}/user/create/${identifer}", headers={
