@@ -14,6 +14,6 @@ def {{ method_name }}({% for param in method_parameters %}{{ param.name }}: {{ p
     } json = {
         {% for param in method_parameters %}"{{ param.name }}": {{ param.name }}{% if not loop.last %}, {% endif %}
         {% endfor %}
-    }
+    })
 
     return response.json()
