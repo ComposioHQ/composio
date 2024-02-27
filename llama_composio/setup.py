@@ -11,7 +11,7 @@ readme_path = resolve_paths(get_current_dir(), 'README.md')
 
 setup(
     name = 'composio-llamaindex',
-    version = '0.0.1',
+    version = '0.0.3',
     author = 'Karan',
     author_email = 'karan@composio.dev',
     description = 'Provides integrations skill with 50+ services in LlamaIndex',
