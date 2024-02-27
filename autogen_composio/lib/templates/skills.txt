@@ -11,7 +11,7 @@ def {{ method_name }}({% for param in method_parameters %}{{ param.name }}: {{ p
         'Content-Type': 'application/json',
         'X_COMPOSIO_TOKEN': '{{composioHeaderToken}}',
         'X_ENDUSER_ID': '{{endUserToken}}'
-    } json = {
+    }, json = {
         {% for param in method_parameters %}"{{ param.name }}": {{ param.name }}{% if not loop.last %}, {% endif %}
         {% endfor %}
     })
