@@ -11,16 +11,17 @@ import requests
 import jinja2
 from uuid import getnode as get_mac
 
-from autogen_composio.lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
+from composio_autogen.lib.api import get_redirect_url_for_integration, get_url_for_composio_action, identify_user, list_tools, wait_for_tool_auth_completion
+from composio_autogen.lib.api import get_skills_file_template, COMPOSIO_TOKEN
+from composio_autogen.lib.storage import get_user_id, save_user_id
 
 console = Console()
 
 ACCESS_TOKEN = "COMPOSIO-X3125-ZUA-1"
-SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
 
-jinja2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(''))
 def get_autogen_skill_content_from_func_signature(skillRawId, skillId, skillTitle, skillDescription, skillFileName, toolName, functionSignature):
-    template = jinja2_env.get_template('templates/skills.txt')
+    template = get_skills_file_template()
+    user_token = get_user_id()
     descriptionComment = f"{skillTitle}\n# {skillDescription}"
     input_parameters = [];
     for parameter_name, parameter_info in functionSignature.get('Input', {}).get('properties', {}).items():
@@ -31,7 +32,7 @@ def get_autogen_skill_content_from_func_signature(skillRawId, skillId, skillTitl
         })
 
     method_url = get_url_for_composio_action(toolName, actionName = skillRawId)
-    rendered_template = template.render(method_url=method_url,description=descriptionComment, method_name=skillRawId, method_parameters=input_parameters)
+    rendered_template = template.render(method_url=method_url,description=descriptionComment, method_name=skillRawId, method_parameters=input_parameters, composioHeaderToken=COMPOSIO_TOKEN, endUserToken=user_token)
     return rendered_template
 
 def get_python_types_from_json_types(type: str):
@@ -123,16 +124,13 @@ def print_intro():
 └───────────────────────────────────────────────────────────────────────────┘
         """)
 
-def save_user_id(user_id):
-    user_data = {'user_id': user_id}
-    with open('user_data.json', 'w') as outfile:
-        json.dump(user_data, outfile)
-
 def run_user_session_logic():
     spinner = Spinner(BARS, f"Authenticating you...")
     spinner.start()
 
-    if os.path.exists('user_data.json'):
+    user_data = get_user_id()
+    if user_data is not None:
+        # @TODO: Replace with actual wait call
         time.sleep(1)
         console.print(f" [green]✔[/green]\n");
     else:
@@ -156,7 +154,7 @@ def setup_integrations(integrations_selected):
     tools = list_tools()
     tools_map = {}
     for tool in tools["tools"]:
-        tools_map[tool["Name"]] = tool
+        tools_map[tool["Name"].capitalize()] = tool
 
     for integration in integrations_selected:
         skillAgent = tools_map[integration]
@@ -184,10 +182,11 @@ def run():
         spinner.stop()
         console.print("[green]> All requirements are met... Good to go!\n[/green]")
 
-        # access_token = input("Paste your beta access token here: ")
-        # if access_token != ACCESS_TOKEN:
-        #     console.print("[red]\n> Invalid access token ❌\n[/red]")
-        #     return
+        access_token = input("Paste your beta access token here: ")
+        if access_token != ACCESS_TOKEN:
+            console.print("[red]\n> Invalid access token ❌\n[/red]")
+            return
+        print("");
 
         skills = load_skills()
         if skills:

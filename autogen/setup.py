@@ -11,7 +11,7 @@ readme_path = resolve_paths(get_current_dir(), 'README.md')
 
 setup(
     name = 'composio-autogen',
-    version = '0.0.4',
+    version = '0.0.5',
     author = 'Utkarsh',
     author_email = 'utkarsh@composio.dev',
     description = 'Provides integrations skill with 50+ services in autogen',

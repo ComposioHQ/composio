@@ -5,7 +5,7 @@ import webbrowser
 import requests
 import json
 import os
-from lib.storage import save_user_id, get_user_id
+from composio_llamaindex.lib import save_user_id, get_user_id
 import time
 from beaupy.spinners import Spinner, BARS
 
