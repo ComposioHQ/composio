@@ -84,9 +84,9 @@ def list_tools(args):
     if response.status_code == 200:
         tools_data = response.json()
         for tool in tools_data.get('tools', []):
-            print(f"Name: {tool['Name']}, Description: {tool['Description']}")
+            print(f"Name: {tool['name']}, Description: {tool['Description']}")
             if args.auth and tool['Authentication']['isAuthenticated'] == "False":
-                print(f"Tool {tool['Name']} requires authentication.")
+                print(f"Tool {tool['name']} requires authentication.")
     else:
         print("Failed to fetch tools.")
 

@@ -44,11 +44,11 @@ class ComposioToolSpec(BaseToolSpec):
         spec_functions = []
         for tool in self.tool_schema.get("tools", []):
             for action in tool.get("Actions", []):
-                function_name = tool["Name"] + "_" + action["Id"]
+                function_name = tool["name"] + "_" + action["Id"]
                 spec_functions.append(function_name)
                 input_params = action["Signature"]["Input"]["properties"]
                 print("input_params:", input_params)
-                setattr(self, function_name, self._create_function(tool["Name"], action["Id"], function_name, action["Description"], input_params, action["Signature"]["Input"].get("required", [])))
+                setattr(self, function_name, self._create_function(tool["name"], action["Id"], function_name, action["Description"], input_params, action["Signature"]["Input"].get("required", [])))
         return spec_functions
 
     def _create_function(self, tool_name: str, action_id: str, function_name: str, description: str, input_params: Dict[str, Any], required_params: List[str] = []):

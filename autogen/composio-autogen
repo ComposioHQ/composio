@@ -54,7 +54,7 @@ def get_python_types_from_json_types(type: str):
 def get_autogen_tools_from_composio_tools(composio_tools):
     autogen_tools = {}
     for tool in composio_tools["tools"]:
-        name = tool.get('Name')
+        name = tool.get('name')
         skills = [];
         for skill in tool.get('Actions', []):
             skillId = f"{name}-{skill.get('Id')}"
@@ -154,7 +154,7 @@ def setup_integrations(integrations_selected):
     tools = list_tools()
     tools_map = {}
     for tool in tools["tools"]:
-        tools_map[tool["Name"].capitalize()] = tool
+        tools_map[tool["name"].capitalize()] = tool
 
     for integration in integrations_selected:
         skillAgent = tools_map[integration]
