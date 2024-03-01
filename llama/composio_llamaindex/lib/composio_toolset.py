@@ -5,7 +5,7 @@ from llama_index.core.tools.tool_spec.base import BaseToolSpec
 from .storage import get_user_id
 from .composio_tool_spec import BASE_URL
 
-COMPOSIO_TOKEN = "ghp_1J2g3h4i5j6k7l8m9n0o33"
+COMPOSIO_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZWFjOWU1Yi00MTM5LTRjNTQtYjMzOS1kYWQ1NTk2YTU2OWUiLCJlbWFpbCI6ImhpbWFuc2h1QGNvbXBvc2lvLmRldiIsImlhdCI6MTcwOTI4NTg2NywiZXhwIjoxNzExODc3ODY3fQ.5wvDvGRQSTpxtlVpCfDT0uD1yD6pMFg4YHM-hvNDMJ8"
 
 class ComposioToolset(ComposioToolSpec):
     def __init__(self):

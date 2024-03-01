@@ -1,5 +1,5 @@
 from setuptools import setup
-import os 
+import os
 
 def get_current_dir():
     return os.path.dirname(os.path.realpath(__file__))
@@ -11,7 +11,7 @@ readme_path = resolve_paths(get_current_dir(), 'README.md')
 
 setup(
     name = 'composio-autogen',
-    version = '0.0.5',
+    version = '0.0.6',
     author = 'Utkarsh',
     author_email = 'utkarsh@composio.dev',
     description = 'Provides integrations skill with 50+ services in autogen',
