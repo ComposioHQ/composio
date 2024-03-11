@@ -1,0 +1,68 @@
+---
+title: 'Actions'
+sidebarTitle: 'Actions'
+description: 'Learn more about actions.'
+---
+
+# Overview
+
+Actions within Nango are designed to facilitate direct workflows with external APIs, such as creating a contact in Hubspot or sending a message via Slack. Unlike [syncs](/understand/concepts/syncs), actions require manual triggering and can provide immediate responses, making them ideally suited for dynamic, real-time interactions.
+
+# Use cases for Actions
+Actions shine in scenarios requiring two-way syncing or direct data manipulation. For instance, while syncs could be used to regularly import the latest contacts from Hubspot, actions enable the creation or modification of those contacts directly from your application. This capability ensures a seamless flow of information both to and from external services.
+
+# Main characteristics
+
+### Script-driven 
+
+Actions differ significantly from proxies by executing predefined scripts rather than mere individual requests. This allows for complex workflows, involving intricate request orchestration and data transformations, to be executed seamlessly.
+
+### Transient execution
+
+Action executions are transient, with no data persistence on Nango's part. This ensures that each action is performed in real-time, with the latest data and without reliance on cached information.
+
+### Defined inputs and outputs 
+
+Actions are defined with explicit input parameters and output responses. These schemas are meticulously outlined as models within the [integration configuration](/understand/concepts/scripts#integration-configuration), ensuring clarity and consistency in data handling.
+
+### Endpoint access 
+Once enabled, actions are accessible through specific endpoints, each with an automatically generated API reference available in the Nango UI. This setup facilitates easy integration and execution of actions within your application.
+
+### Immediate feedback
+
+The outcomes of action executions, whether errors or successes, are directly relayed in the response to your trigger request. This immediate feedback loop empowers you to handle retries or further processing as needed.
+
+### Unified modeling
+
+Actions support inputs and outputs that adhere to [unified models](/understand/concepts/api-unification), streamlining the integration process across different external APIs. 
+
+**Action vs. the proxy**
+
+Actions handle more complex scenarios that require multiple requests or data transformations, while the [Proxy](/understand/concepts/proxy) works for individual API requests.
+
+<Tip>
+The Proxy is actually the default way to make API requests in integration scripts, including action scripts.
+</Tip>
+
+# Action scripts
+Action executions are powered by [integration scripts](/understand/concepts/scripts) that encapsulate the logic for interfacing with external APIs. While Nango provides [script templates](understand/concepts/templates) for common use cases, there's also support for custom scripting to meet specific integration needs.
+
+Action scripts have the following structure:
+
+```typescript
+import type { NangoAction, ResponseModel, ParameterModel } from './models';
+
+export default async function runAction(
+    nango: NangoAction, 
+    input: ParameterModel): Promise<ResponseModel> {
+    // Your integration code goes here.
+}
+```
+
+The `runAction` function kicks off when an action is triggered. It takes inputs from the trigger API/SDK request and returns outputs in the response. The `ParameterModel` and `ResponseModel` are configurable via the [integration configuration](/understand/concepts/scripts#integration-configuration) and are auto-imported into your script.
+
+Actions focus solely on immediate tasks without persisting data to Nango's cache, thus calls to `nango.batchSave()`, `nango.batchUpdate()`, and `nango.batchDelete()` are not applicable. However, actions can call other actions, enabling complex workflows through the composition of multiple actions.
+
+# Getting started with actions
+
+Check out the actions [step-by-step guide](/integrate/guides/perform-workflows-with-an-api) or refer to the reference ([API](/reference/api/action/trigger) / [SDK](/reference/sdks/node#actions)).

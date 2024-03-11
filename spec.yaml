@@ -1,0 +1,1499 @@
+openapi: '3.1.0'
+info:
+    title: 'Nango API'
+    description: 'Nango API specs used to authorize & sync data with external APIs.'
+    version: '1.0.0'
+servers:
+    - url: https://api.nango.dev
+      description: Production server
+    - url: http://localhost:3003
+      description: Local server
+paths:
+    /config:
+        get:
+            description: Returns a list of integrations
+            responses:
+                '200':
+                    description: Successfully returned a list of integrations
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - configs
+                                properties:
+                                    configs:
+                                        type: array
+                                        items:
+                                            type: object
+                                            required:
+                                                - unique_key
+                                                - provider
+                                            properties:
+                                                unique_key:
+                                                    type: string
+                                                    description: The integration ID that you created in Nango.
+                                                provider:
+                                                    type: string
+                                                    description: The Nango API Configuration.
+        post:
+            description: Create a new integration
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider_config_key
+                                - provider
+                            properties:
+                                provider_config_key:
+                                    type: string
+                                    description: A unique integration ID, which you will use in the other API calls to reference this integration.
+                                provider:
+                                    type: string
+                                    description: The Nango API Configuration.
+                                oauth_client_id:
+                                    type: string
+                                    description: The ID of your OAuth app (registed with the external API). Required for OAuth APIs.
+                                oauth_client_secret:
+                                    type: string
+                                    description: The secret of your OAuth app (registed with the external API). Required for OAuth APIs.
+                                oauth_scopes:
+                                    type: string
+                                    description: Comma separated list of scopes.
+            responses:
+                '200':
+                    description: Successfully created an integration
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - config
+                                properties:
+                                    config:
+                                        type: object
+                                        required:
+                                            - unique_key
+                                            - provider
+                                        properties:
+                                            unique_key:
+                                                type: string
+                                                description: The integration ID that you created in Nango.
+                                            provider:
+                                                type: string
+                                                description: The Nango API Configuration.
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+        put:
+            description: Edits an integration (only for OAuth APIs)
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider_config_key
+                                - provider
+                                - oauth_client_id
+                                - oauth_client_secret
+                            properties:
+                                provider_config_key:
+                                    type: string
+                                    description: The integration ID that you created on Nango.
+                                provider:
+                                    type: string
+                                    description: The Nango API Configuration.
+                                oauth_client_id:
+                                    type: string
+                                    description: The ID of your OAuth app (registed with the external API).
+                                oauth_client_secret:
+                                    type: string
+                                    description: The secret of your OAuth app (registed with the external API).
+                                oauth_scopes:
+                                    type: string
+                                    description: Comma separated list of scopes.
+            responses:
+                '200':
+                    description: Successfully edit an integration
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - config
+                                properties:
+                                    config:
+                                        type: object
+                                        required:
+                                            - unique_key
+                                            - provider
+                                        properties:
+                                            unique_key:
+                                                type: string
+                                                description: The integration ID that you created in Nango.
+                                            provider:
+                                                type: string
+                                                description: The Nango API Configuration.
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: Unknown integration
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /config/{providerConfigKey}:
+        get:
+            description: Returns a specific integration
+            parameters:
+                - name: providerConfigKey
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID that you created in Nango.
+                - name: include_creds
+                  in: query
+                  required: false
+                  description: If true, the response will contain the client ID, secret, scopes, auth_mode and app link - if applicable. include_creds is false by default.
+                  schema:
+                      type: boolean
+            responses:
+                '200':
+                    description: Successfully returned an integration
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - config
+                                properties:
+                                    config:
+                                        type: object
+                                        required:
+                                            - unique_key
+                                            - provider
+                                        properties:
+                                            unique_key:
+                                                type: string
+                                                description: The integration ID that you created in Nango.
+                                            provider:
+                                                type: string
+                                                description: The Nango API Configuration.
+                                            actions:
+                                                type: array
+                                                items:
+                                                    type: object
+                                                    properties:
+                                                        name:
+                                                            type: string
+                                                            description: The name of the action.
+                                                        created_at:
+                                                            type: string
+                                                            description: The creation timestamp of the sync.
+                                                        updated_at:
+                                                            type: string
+                                                            description: The last updated timestamp of the sync.
+                                            syncs:
+                                                type: array
+                                                items:
+                                                    type: object
+                                                    properties:
+                                                        name:
+                                                            type: string
+                                                            description: The name of the sync.
+                                                        created_at:
+                                                            type: string
+                                                            description: The creation timestamp of the sync.
+                                                        updated_at:
+                                                            type: string
+                                                            description: The last updated timestamp of the sync.
+                                                        description:
+                                                            type: string
+                                                            description: Description of what the sync does and details about it
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: Unknown integration
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+        delete:
+            description: Deletes a specific integration
+            parameters:
+                - name: providerConfigKey
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID that you created in Nango.
+            responses:
+                '204':
+                    description: Successfully deleled an integration
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: Unknown integration
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /connection:
+        get:
+            description: Returns a list of connections without credentials
+            parameters:
+                - name: connectionId
+                  in: query
+                  schema:
+                      type: string
+                  description: Filter the list of connections based on this connection ID.
+            responses:
+                '200':
+                    description: Successfully returned a list of connections
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - configs
+                                properties:
+                                    configs:
+                                        type: array
+                                        items:
+                                            type: object
+                                            required:
+                                                - id
+                                                - connection_id
+                                                - provider
+                                                - provider_config_key
+                                                - created
+                                            properties:
+                                                id:
+                                                    type: integer
+                                                    description: The internal Nango ID used for the connection.
+                                                connection_id:
+                                                    type: string
+                                                    description: The connection ID used to create the connection.
+                                                provider:
+                                                    type: string
+                                                    description: The Nango API Configuration.
+                                                provider_config_key:
+                                                    type: string
+                                                    description: The integration ID used to create the connection (aka Unique Key, Provider Config Key).
+                                                created:
+                                                    type: string
+                                                    description: Connection creation date.
+                                                metadata:
+                                                    type: object
+                                                    description: Custom metadata attached to the connection
+
+        post:
+            description: Adds a connection for which you already have credentials.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - connection_id
+                                - provider_config_key
+                            properties:
+                                connection_id:
+                                    type: string
+                                    description: The connection ID used to create the connection.
+                                provider_config_key:
+                                    type: string
+                                    description: The integration ID that you created on Nango.
+                                access_token:
+                                    type: string
+                                    description: (OAuth 2, required) Existing access token.
+                                refresh_token:
+                                    type: string
+                                    description: (OAuth 2, optional) Pass the refresh token if you have it.
+                                expires_at:
+                                    type: string
+                                    format: date
+                                    description: (OAuth 2, optional) Safer and preferred.
+                                expires_in:
+                                    type: integer
+                                    description: (OAuth 2, optional) In seconds.
+                                no_expiration:
+                                    type: boolean
+                                    description: (OAuth2, optional) If the provider gives access tokens that don't expire, pass in `true` to avoid an import validation error.
+                                oauth_token:
+                                    type: string
+                                    description: (OAuth 1, required) The client token to be attached to the connection.
+                                oauth_token_secret:
+                                    type: string
+                                    description: (OAuth 1, required) The client token secret to be attached to the connection.
+                                metadata:
+                                    type: object
+                                    description: (OAuth, required for some APIs) Metadata to be attached to the connection.
+                                connection_config:
+                                    type: object
+                                    description: (OAuth, required for some APIs) Additional configuration to be attached to the connection.
+                                username:
+                                    type: string
+                                    description: (Basic, required) username to be attached to the connection.
+                                password:
+                                    type: string
+                                    description: (Basic, required) password to be attached to the connection.
+                                api_key:
+                                    type: string
+                                    description: (API Key, required) API key to be attached to the connection.
+            responses:
+                '200':
+                    description: Successfully created an integrations
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+    /connection/{connectionId}:
+        get:
+            description: Returns a specific connection with credentials
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - name: provider_config_key
+                  in: query
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+                - name: force_refresh
+                  in: query
+                  description: If true, Nango will attempt to refresh the access access token regardless of its expiration status (false by default).
+                  schema:
+                      type: boolean
+                - name: refresh_token
+                  in: query
+                  description: If true, return the refresh token as part of the response (false by default).
+                  schema:
+                      type: boolean
+            responses:
+                '200':
+                    description: Successfully returned a connection
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: Unknown Connection
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+        delete:
+            description: Deletes a specific connection
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - name: provider_config_key
+                  in: query
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+            responses:
+                '204':
+                    description: Successfully deleled an connection
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: Unknown connection
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /connection/{connectionId}/metadata:
+        post:
+            description: Set custom metadata for the connection.
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - name: Provider-Config-Key
+                  in: header
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+
+            responses:
+                '201':
+                    description: Successfully created an integrations
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+        patch:
+            description: Edit custom metadata for the connection (only overrides specified properties, not the entire metadata).
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - name: Provider-Config-Key
+                  in: header
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+            responses:
+                '200':
+                    description: Successfully updated the metadata
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+    /scripts/config:
+        get:
+            description: Return the configuration for all scripts
+            responses:
+                '200':
+                    description: Successfully returned scripts config
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    providerConfigKey:
+                                        type: string
+                                    syncs:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                name:
+                                                    type: string
+                                                    example: "github-issues"
+                                                type:
+                                                    type: string
+                                                    example: "sync"
+                                                models:
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                        properties:
+                                                            name:
+                                                                type: string
+                                                                example: "GithubIssue"
+                                                            fields:
+                                                                type: array
+                                                                items:
+                                                                    type: object
+                                                                    properties:
+                                                                        name:
+                                                                            type: string
+                                                                            example: "title"
+                                                                        type:
+                                                                            type: string
+                                                                            example: "string"
+                                                sync_type:
+                                                    type: string
+                                                    example: "INCREMENTAL"
+                                                runs:
+                                                    type: string
+                                                    example: "every 30 minutes"
+                                                track_deletes:
+                                                    type: boolean
+                                                auto_start:
+                                                    type: boolean
+                                                last_deployed:
+                                                    type: string
+                                                    example: "2024-02-01T09:09:03.502Z"
+                                                is_public:
+                                                    type: boolean
+                                                pre_built:
+                                                    type: boolean
+                                                version:
+                                                    type: string
+                                                    example: "0.0.3"
+                                                attributes:
+                                                    type: object
+                                                input:
+                                                    type: object
+                                                returns:
+                                                    type: array
+                                                    items:
+                                                        type: string
+                                                        example: "GithubIssue"
+                                                description:
+                                                    type: string
+                                                    example: "Fetches the Github issues from all a user's repositories.\nDetails: full sync, doesn't track deletes, metadata is not required.\n"
+                                                scopes:
+                                                    type: array
+                                                    items:
+                                                        type: string
+                                                        example: "public_repo"
+                                                endpoints:
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                nango_yaml_version:
+                                                    type: string
+                                                    example: "v2"
+                                                webhookSubscriptions:
+                                                    type: array
+                                    actions:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                name:
+                                                    type: string
+                                                    example: "github-issues"
+                                                type:
+                                                    type: string
+                                                    example: "sync"
+                                                models:
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                        properties:
+                                                            name:
+                                                                type: string
+                                                                example: "GithubIssue"
+                                                            fields:
+                                                                type: array
+                                                                items:
+                                                                    type: object
+                                                                    properties:
+                                                                        name:
+                                                                            type: string
+                                                                            example: "id"
+                                                                        type:
+                                                                            type: string
+                                                                            example: "integer"
+                                                last_deployed:
+                                                    type: string
+                                                    example: "2024-02-28T20:16:38.052Z"
+                                                is_public:
+                                                    type: boolean
+                                                    example: false
+                                                pre_built:
+                                                    type: boolean
+                                                    example: false
+                                                version:
+                                                    type: string
+                                                    example: "4"
+                                                attributes:
+                                                    type: object
+                                                input:
+                                                    type: object
+                                                returns:
+                                                    type: object
+                                                description:
+                                                    type: string
+                                                    example: "Fetches the Github issues from all a user's repositories.\nDetails: full sync, doesn't track deletes, metadata is not required.\n"
+                                                scopes:
+                                                    type: array
+                                                    items:
+                                                        type: string
+                                                        example: "public_repo"
+                                                endpoints:
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                nango_yaml_version:
+                                                    type: string
+                                                    example: "v2"
+                                    postConnectionScripts:
+                                        type: array
+                                    provider:
+                                        type: string
+                                        example: "github"
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+    /records:
+        get:
+            description: Returns data synced with Nango Sync
+            parameters:
+                - name: model
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                  description: The data model to fetch
+                - name: cursor
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: |
+                    Each record from this method comes with a synchronization cursor in `_nango_metadata.cursor`. Save the last fetched record's cursor to track how far you've synced. By providing the cursor to this endpoint, you'll continue syncing from where you left off, receiving only post-cursor changes. This same cursor is used to paginate through the results of this endpoint.
+                - name: limit
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                  description: The maximum number of records to return. Defaults to 100.
+                - name: filter
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [added, updated, deleted]
+                  description: Filter to only show results that have been added or updated or deleted.
+                - name: modified_after
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: Timestamp, e.g. 2023-05-31T11:46:13.390Z. If passed only records modified after this timestamp are returned, otherwise all records are returned.
+                - name: delta (deprecated)
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: DEPRECATED (use modified_after) Timestamp, e.g. 2023-05-31T11:46:13.390Z. If passed, only records modified after this timestamp are returned, otherwise all records are returned.
+                - name: Connection-Id
+                  in: header
+                  required: true
+                  description: The connection ID used to create the connection.
+                  schema:
+                      type: string
+                - name: Provider-Config-Key
+                  in: header
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+
+            responses:
+                '200':
+                    description: Successfully returned records
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    records:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                your-properties:
+                                                    type: string
+                                                    description: The data Nango synced in for you
+                                                    example: "Your synced data, in the schema you (or Nango) defined in nango.yaml"
+                                                _nango_metadata:
+                                                    type: object
+                                                    properties:
+                                                        deleted_at:
+                                                            type: string
+                                                            nullable: true
+                                                            description: The timestamp at which Nango detected the record as deleted
+                                                        last_action:
+                                                            type: string
+                                                            description: The last action seen on this record
+                                                            enum: ["ADDED", "UPDATED", "DELETED"]
+                                                        first_seen_at:
+                                                            type: string
+                                                            description: The timestamp at which Nango first saw this record
+                                                            example: "2023-09-18T15:20:35.941305+00:00"
+                                                        last_modified_at:
+                                                            type: string
+                                                            description: The timestamp at which Nango last detected a change to this record
+                                                            example: "2023-09-18T15:20:35.941305+00:00"
+                                                        cursor:
+                                                            type: string
+                                                            description: The current cursor of the record. Use this to fetch records updated after this record
+                                                            example: "MjAyNC0wMy0wNFQwNjo1OTo1MS40NzE0NDEtMDU6MDB8fDE1Y2NjODA1LTY0ZDUtNDk0MC1hN2UwLTQ1ZmM3MDQ5OTdhMQ=="
+                                    next_cursor:
+                                        type: string
+                                        description: The base64-encoded cursor for pagination
+                                        example: "MjAyMy0xMS0xN1QxMTo0NzoxNC40NDcrMDI6MDB8fDAzZTA1NzIxLWNiZmQtNGYxNS1iYTNhLWFlNjM2Y2MwNmEw=="
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /sync/records:
+        get:
+            description: Returns data synced with Nango Sync
+            parameters:
+                - name: model
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                  description: The data model to fetch
+                - name: delta
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: Timestamp, e.g. 2023-05-31T11:46:13.390Z. If passed only records added or updated after this timestamp are returned, otherwise all records are returned.
+                - name: limit
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                  description: The maximum number of records to return. If not passed, all records are returned.
+                - name: offset
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                  description: The number of records to skip. If not passed, no records are skipped.
+                - name: sort_by
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [created_at, updated_at, id]
+                  description: Set how the records are sorted. The default is id. The options are 'created_at', 'updated_at', 'id'.
+                - name: order
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [desc, asc]
+                  description: Set the order of results. The default is 'desc'. The options are 'desc' or 'asc'.
+                - name: filter
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [added, updated, deleted]
+                  description: Filter to only show results that have been added or updated or deleted. Helpful when used in conjuction with the delta parameter to retrieve a subset or records that were added, updated, or deleted with the latest sync.
+                - name: Connection-Id
+                  in: header
+                  required: true
+                  description: The connection ID used to create the connection.
+                  schema:
+                      type: string
+                - name: Provider-Config-Key
+                  in: header
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+
+            responses:
+                '200':
+                    description: Successfully returned records
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        your-properties:
+                                            type: string
+                                            description: The data Nango synced in for you
+                                            example: "Your synced data, in the schema you (or Nango) defined in nango.yaml"
+                                        _nango_metadata:
+                                            type: object
+                                            properties:
+                                                deleted_at:
+                                                    type: string
+                                                    nullable: true
+                                                    description: The timestamp at which Nango detected the record as deleted
+                                                last_action:
+                                                    type: string
+                                                    description: The last action seen on this record
+                                                    enum: ["ADDED", "UPDATED", "DELETED"]
+                                                first_seen_at:
+                                                    type: string
+                                                    description: The timestamp at which Nango first saw this record
+                                                    example: "2023-09-18T15:20:35.941305+00:00"
+                                                last_modified_at:
+                                                    type: string
+                                                    description: The timestamp at which Nango last detected a change to this record
+                                                    example: "2023-09-18T15:20:35.941305+00:00"
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /sync/trigger:
+        post:
+            description: Triggers an additional, one-off execution of specified sync(s) (for a given connection or all applicable connections if no connection is specified).
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider_config_key
+                                - syncs
+                            properties:
+                                provider_config_key:
+                                    type: string
+                                    description: The ID of the integration that you established within Nango.
+                                connection_id:
+                                    type: string
+                                    description: The ID of the connection. If omitted, the syncs will be triggered for all relevant connections.
+                                syncs:
+                                    type: array
+                                    description: An array of sync names to trigger. If the array is empty, all syncs are triggered.
+                                    items:
+                                        type: string
+                                full_resync:
+                                    type: boolean
+                                    description: Clear the records and reset the "lastSyncDate" associated with the sync before triggering a new sync job.
+
+            responses:
+                '200':
+                    description: Successfully triggered the sync
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+    /sync/start:
+        post:
+            description: Starts the schedule of specified sync(s) for a given connection or all applicable connections if no connection is specified.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider_config_key
+                                - syncs
+                            properties:
+                                provider_config_key:
+                                    type: string
+                                    description: The ID of the integration that you established within Nango.
+                                connection_id:
+                                    type: string
+                                    description: The ID of the connection. If omitted, the syncs will be started for all relevant connections.
+                                syncs:
+                                    type: array
+                                    description: A list of sync names that you wish to start.
+                                    items:
+                                        type: string
+            responses:
+                '200':
+                    description: Successfully started the sync
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /sync/pause:
+        post:
+            description: Pauses the schedule of specified sync(s) for a given connection or all applicable connections if no connection is specified.
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider_config_key
+                                - syncs
+                            properties:
+                                provider_config_key:
+                                    type: string
+                                    description: The ID of the integration that you established within Nango.
+                                connection_id:
+                                    type: string
+                                    description: The ID of the connection. If omitted, the syncs will be paused for all relevant connections.
+                                syncs:
+                                    type: array
+                                    description: A list of sync names that you wish to pause.
+                                    items:
+                                        type: string
+            responses:
+                '200':
+                    description: Successfully paused the sync
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+    /sync/status:
+        get:
+            description: Get the status of specified sync(s) (for a given connection or all applicable connections if no connection is specified)
+            parameters:
+                - name: provider_config_key
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                  description: The ID of the integration you established within Nango
+                - name: syncs
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                  description: The name of the syncs you want to fetch a status for. Pass in "*" to return all syncs per the integration
+                - name: connection_id
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: The ID of the connection. If omitted, all connections will be surfaced.
+            responses:
+                '200':
+                    description: Successfully returned a list of syncs and their status
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    syncs:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                id:
+                                                    type: string
+                                                    description: The unique identifier for the sync.
+                                                name:
+                                                    type: string
+                                                    description: The name of the sync.
+                                                status:
+                                                    type: string
+                                                    enum: ["RUNNING", "PAUSED", "STOPPED", "SUCCESS", "ERROR"]
+                                                    description: The current status of the sync.
+                                                type:
+                                                    type: string
+                                                    description: The most recent sync type completed
+                                                    enum: ["INCREMENTAL", "INITIAL"]
+                                                finishedAt:
+                                                    type: string
+                                                    description: ISO string of the most recently completed sync
+                                                nextScheduledSyncAt:
+                                                    type: string
+                                                    description: ISO string of the next scheduled sync time
+                                                frequency:
+                                                    type: string
+                                                    description: The execution frequency of the sync
+                                                latestResult:
+                                                    type: object
+                                                    description: Additional information regarding the latest result of the sync. Contains a model name with added, updated and deleted records
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+    /sync/update-connection-frequency:
+        put:
+            description: Override a sync's default frequency for a specific connection, or revert to the default frequency.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider_config_key
+                                - connection_id
+                                - sync_name
+                                - frequency
+                            properties:
+                                provider_config_key:
+                                    type: string
+                                    description: The ID of the integration you established within Nango
+                                connection_id:
+                                    type: string
+                                    description: The ID of the connection
+                                sync_name:
+                                    type: string
+                                    description: The name of the sync you want to update
+                                frequency:
+                                    type: string
+                                    nullable: true
+                                    description: "The frequency you want to set (ex: 'every hour'). Set null to revert to the default frequency"
+            responses:
+                '200':
+                    description: Successfully updated the frequency
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    frequency:
+                                        type: string
+                                        description: The updated frequency value
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+    /action/trigger:
+        post:
+            description: Triggers an action for a connection
+            parameters:
+                - name: Connection-Id
+                  in: header
+                  required: true
+                  description: The connection ID used to create the connection.
+                  schema:
+                      type: string
+                - name: Provider-Config-Key
+                  in: header
+                  required: true
+                  description: The integration ID used to create the connection (aka Unique Key).
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - action_name
+                            properties:
+                                action_name:
+                                    type: string
+                                    description: The name of the action to trigger.
+                                input:
+                                    type: object
+                                    description: The necessary input for your action's 'runAction' function.
+
+            responses:
+                '200':
+                    description: Returns the result of the action
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    your-properties:
+                                        type: string
+                                        description: The data returned by the action
+                                        example: "The data returned by the action"
+
+                '400':
+                    description: Invalid request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+
+
+    /environment-variables:
+        get:
+            description: Retrieve the environment variables as added in the Nango dashboard
+            responses:
+                '200':
+                    description: Retrieve the environment variables as added in the Nango dashboard
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        name:
+                                            type: string
+                                            description: The name of the environment variable
+                                            example: "MY_SECRET_KEY"
+                                        value:
+                                            type: string
+                                            description: The value of the environment variable
+                                            example: "SK_373892NSHFNCOWFO..."
+
+
+    /proxy/{anyPath}:
+        get:
+            description: Make a GET request with the Proxy.
+            parameters:
+                - name: anyPath
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                - name: $ANY_QUERY_PARAMS
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                - in: header
+                  name: Connection-Id
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - in: header
+                  name: Provider-Config-Key
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID used to create the connection (aka Unique Key).
+                - in: header
+                  name: Retries
+                  schema:
+                      type: string
+                  description: The number of retries in case of failure (with exponential back-off). Optional, default 0.
+                - in: header
+                  name: Retry On
+                  schema:
+                      type: string
+                  description: Comma separated status codes to explicitly retry on in addition to the default 5xx and 429.
+                - in: header
+                  name: Base-Url-Override
+                  schema:
+                      type: string
+                  description: Provide an API base URL when the base API is not listed in the providers.yaml or it needs to be overridden. Optional
+                - in: header
+                  name: Decompress
+                  schema:
+                      type: string
+                  description: Override the decompress option when making requests. Optional, defaults to false
+                - in: header
+                  name: nango-proxy-$ANY_HEADER
+                  schema:
+                      type: string
+                  description: Any other headers you send are passed on to the external API
+            responses:
+                '200':
+                    description: The response exactly as returned by the external API
+        post:
+            description: Make a POST request with the Proxy.
+            parameters:
+                - name: anyPath
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                - in: header
+                  name: Connection-Id
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - in: header
+                  name: Provider-Config-Key
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID used to create the connection (aka Unique Key).
+                - in: header
+                  name: Retries
+                  schema:
+                      type: string
+                  description: The number of retries in case of failure (with exponential back-off). Optional, default 0.
+                - in: header
+                  name: Base-Url-Override
+                  schema:
+                      type: string
+                  description: Provide an API base URL when the base API is not listed in the providers.yaml or it needs to be overridden. Optional
+                - in: header
+                  name: Decompress
+                  schema:
+                      type: string
+                  description: Override the decompress option when making requests. Optional, defaults to false
+                - in: header
+                  name: nango-proxy-$ANY_HEADER
+                  schema:
+                      type: string
+                  description: Any other headers you send are passed on to the external API
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                $ANY_BODY_PARAMS:
+                                    type: string
+            responses:
+                '200':
+                    description: The response exactly as returned by the external API
+        put:
+            description: Make a PUT request with the Proxy.
+            parameters:
+                - name: anyPath
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                - in: header
+                  name: Connection-Id
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - in: header
+                  name: Provider-Config-Key
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID used to create the connection (aka Unique Key).
+                - in: header
+                  name: Retries
+                  schema:
+                      type: string
+                  description: The number of retries in case of failure (with exponential back-off). Optional, default 0.
+                - in: header
+                  name: Base-Url-Override
+                  schema:
+                      type: string
+                  description: Provide an API base URL when the base API is not listed in the providers.yaml or it needs to be overridden. Optional
+                - in: header
+                  name: Decompress
+                  schema:
+                      type: string
+                  description: Override the decompress option when making requests. Optional, defaults to false
+                - in: header
+                  name: nango-proxy-$ANY_HEADER
+                  schema:
+                      type: string
+                  description: Any other headers you send are passed on to the external API
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                $ANY_BODY_PARAMS:
+                                    type: string
+            responses:
+                '200':
+                    description: The response exactly as returned by the external API
+        patch:
+            description: Make a PATCH request with the Proxy.
+            parameters:
+                - name: anyPath
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                - in: header
+                  name: Connection-Id
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - in: header
+                  name: Provider-Config-Key
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID used to create the connection (aka Unique Key).
+                - in: header
+                  name: Retries
+                  schema:
+                      type: string
+                  description: The number of retries in case of failure (with exponential back-off). Optional, default 0.
+                - in: header
+                  name: Base-Url-Override
+                  schema:
+                      type: string
+                  description: Provide an API base URL when the base API is not listed in the providers.yaml or it needs to be overridden. Optional
+                - in: header
+                  name: Decompress
+                  schema:
+                      type: string
+                  description: Override the decompress option when making requests. Optional, defaults to false
+                - in: header
+                  name: nango-proxy-$ANY_HEADER
+                  schema:
+                      type: string
+                  description: Any other headers you send are passed on to the external API
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                $ANY_BODY_PARAMS:
+                                    type: string
+            responses:
+                '200':
+                    description: The response exactly as returned by the external API
+        delete:
+            description: Make a DELETE request with the Proxy.
+            parameters:
+                - name: anyPath
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                - name: $ANY_QUERY_PARAMS
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                - in: header
+                  name: Connection-Id
+                  required: true
+                  schema:
+                      type: string
+                  description: The connection ID used to create the connection.
+                - in: header
+                  name: Provider-Config-Key
+                  required: true
+                  schema:
+                      type: string
+                  description: The integration ID used to create the connection (aka Unique Key).
+                - in: header
+                  name: Retries
+                  schema:
+                      type: string
+                  description: The number of retries in case of failure (with exponential back-off). Optional, default 0.
+                - in: header
+                  name: Base-Url-Override
+                  schema:
+                      type: string
+                  description: Provide an API base URL when the base API is not listed in the providers.yaml or it needs to be overridden. Optional
+                - in: header
+                  name: Decompress
+                  schema:
+                      type: string
+                  description: Override the decompress option when making requests. Optional, defaults to false
+                - in: header
+                  name: nango-proxy-$ANY_HEADER
+                  schema:
+                      type: string
+                  description: Any other headers you send are passed on to the external API
+            responses:
+                '200':
+                    description: The response exactly as returned by the external API

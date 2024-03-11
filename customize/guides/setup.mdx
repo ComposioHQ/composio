@@ -1,0 +1,39 @@
+---
+title: 'Set up the CLI and folder'
+sidebarTitle: 'Set up the CLI and folder'
+description: 'Step-by-step guide to setting up the Nango CLI and integrations folder.'
+---
+
+Set up the [Nango CLI](/understand/concepts/scripts#the-nango-cli) and an [integration folder](/understand/concepts/scripts#integration-folder) to develop custom integrations with Nango.
+
+# Install the Nango CLI
+
+Install the Nango CLI globally: 
+```bash
+npm install -g nango
+```
+
+# Create your Nango integrations folder
+
+All your integrations live in a folder called `nango-integrations`. Whether located in your main codebase or a dedicated repository, this folder should be version-controlled.
+
+To initialize your integrations folder (e.g. at the root of your repository), run:
+```bash
+nango init # Creates `./nango-integrations` folder with some initial configuration
+```
+
+# Authenticate the CLI
+
+In an `.env` file in `./nango-integrations`, add the following environment variables:
+```bash
+NANGO_SECRET_KEY_PROD='<PROD-SECRET-KEY>'
+NANGO_SECRET_KEY_DEV='<DEV-SECRET-KEY>'
+```
+
+Get your secret keys from the _Environment Settings_ tab (toggle between the `Production` and `Development` environment in the left nav bar).
+
+Learn more about the [Nango CLI](/understand/concepts/scripts#the-nango-cli) ([reference](/reference/cli)) and the content of the [integrations folder](/understand/concepts/scripts#integration-folder).
+
+<Tip>
+**Questions, problems, feedback?** Please reach out in the [Slack community](https://nango.dev/slack).
+</Tip>
