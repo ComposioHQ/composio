@@ -1,0 +1,51 @@
+---
+title: Freshdesk
+sidebarTitle: Freshdesk
+---
+
+API configuration: [`freshdesk`](https://nango.dev/providers.yaml)
+
+## Features
+
+| Features | Status |
+| - | - |
+| [Auth (API Key)](/integrate/guides/authorize-an-api) | ✅ |
+| [Sync data](/integrate/guides/sync-data-from-an-api) | ✅ |
+| [Perform workflows](/integrate/guides/perform-workflows-with-an-api) | ✅ |
+| [Proxy requests](/integrate/guides/proxy-requests-to-an-api) | ✅ |
+| [Receive webhooks](/integrate/guides/receive-webhooks-from-an-api) | 🚫 (time to contribute: &lt;48h) |
+
+<Tip>We can implement missing features in &lt;48h, just ask for it in the [community](https://nango.dev/slack).</Tip>
+
+## Getting started
+
+-   [Where can I find my API key?](https://support.freshdesk.com/en/support/solutions/articles/215517-how-to-find-your-api-key)
+-   [Freshservice API Docs](https://developers.freshdesk.com/api/#introduction)
+
+<Tip>Need help getting started? Get help in the [community](https://nango.dev/slack).</Tip>
+
+## Connection configuration in Nango
+
+Freshdesk requires a user specific subdomain for the API requests.
+
+You should request this from the user and pass it to Nango in the `nango.auth()` call:
+
+```js
+nango.auth('freshdesk', '<CONNECTION-ID>', {
+    params: {
+        subdomain: '<freshdesk-subdomain>'
+    },
+    credentials: {
+            username: '<API-KEY>',
+            password: 'x' // freshdesk asks you to leave "x" here
+    }});
+```
+
+For more details, see the [docs here](/integrate/guides/authorize-an-api#apis-requiring-connection-specific-configuration-for-authorization).
+
+## API gotchas
+
+- For Basic Auth, Freshdesk uses API key as a username and dummy characters as a password.
+- API calls are directed to your subdomain of Freshdesk.
+
+<Note>Add Getting Started links and Gotchas by [editing this page](https://github.com/nangohq/nango/tree/master/docs-v2/integrations/all/freshservice.mdx)</Note>

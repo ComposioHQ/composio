@@ -1,0 +1,269 @@
+---
+title: 'Create a custom integration'
+sidebarTitle: 'Create a custom integration'
+description: 'Step-by-step guide on how to create a custom integration with Nango.'
+---
+
+In Nango, integration use-cases are mapped to [syncs](/understand/concepts/syncs) and [actions](/understand/concepts/actions). Before starting, determine if a sync, an action, or a combination of both fits your use case.
+
+<Info>
+Pre-requisite: set up an integrations folder ([step-by-step guide](/customize/guides/setup)).
+</Info>
+
+# Edit the `nango.yaml` configuration
+
+In your `nango-integrations` folder, open the `nango.yaml` configuration file ([reference](/reference/integration-configuration)).
+
+### Configure a sync
+
+This example `nango.yaml` configuration describes a sync that continuously fetches contacts from Salesforce:
+```yaml nango.yaml
+integrations:
+    salesforce: # Integration ID
+        syncs:
+            salesforce-contacts: # Sync name (must match script name)
+                description: |
+                    Syncs contacts based on a field mapping object.
+                runs: every day # Sync frequency
+                output: Contact # Output model
+                endpoint: /crm/contact # Unified Nango endpoint (always GET for syncs)
+                scopes: offline_access,api # Necessary scopes
+
+models:
+    Contact: # Data model reference above
+        id: string # Required unique ID
+        first_name: string
+        last_name: string
+        email: string
+        account_id: string
+        last_modified_date: string
+```
+
+<Tip>
+Learn more about sync configurations in the [reference](/reference/integration-configuration) and check out [example templates](/integrations/overview).
+</Tip>
+
+### Configure an action
+
+This example `nango.yaml` configuration describes an action that synchronously fetches a contact by ID from Salesforce:
+```yaml nango.yaml
+integrations:
+    salesforce: # Integration ID
+        actions:
+            salesforce-contact-fields: # Action name (must match script name)
+                description: Fetch available contact fields
+                output: ContactSchema # Output model
+                endpoint: /crm/contact-field # Unified Nango endpoint (defaults to GET for actions)
+                scopes: offline_access,api # Necessary scopes
+
+models:
+    ContactSchema:
+        fields: string[]
+```
+
+<Tip>
+Learn more about actions configurations in the [reference](/reference/integration-configuration) and check out [example templates](/integrations/overview).
+</Tip>
+
+# Write an integration script
+
+### Generate the integration script scaffolding
+
+Everytime that you modify the `nango.yaml` configuration, run: 
+
+```bash
+nango generate # (in `./nango-integrations`)
+```
+
+Among other things, this will generate the script files with initial scaffolding for any sync or action that you added (existing script files stay untouched).
+
+### Start script development mode
+
+Before you plan to modify your scripts, run:
+```bash
+nango dev # Keep the tab open
+```
+
+This command starts a process that continuously compiles your integration scripts and prints code syntax errors. 
+
+### Write a sync script
+
+Open the generated sync script (named `[sync-name].ts`) which should contain the following scaffolding : 
+
+```typescript salesforce-contacts.ts
+import { NangoSync, Contact } from './models';
+
+export default async function fetchData(nango: NangoSync): Promise<void> {
+	// Integration code goes here.
+}
+```
+
+Fill in the `fetchData` method with your integration code (in the example here, we fetch tasks from Salesforce):
+
+```ts salesforce-contacts.ts
+import { NangoSync, Contact } from './models';
+
+export default async function fetchData(nango: NangoSync): Promise<void> {
+    const query = buildQuery(nango.lastSyncDate);
+    await fetchAndSaveRecords(nango, query);
+    await nango.log('Sync run completed!');
+}
+
+function buildQuery(lastSyncDate?: Date): string {
+    let baseQuery = `SELECT Id, FirstName, LastName, Email, AccountId, LastModifiedDate FROM Contact`;
+
+    if (lastSyncDate) { // Only fetch the new data.
+        baseQuery += ` WHERE LastModifiedDate > ${lastSyncDate.toISOString()}`;
+    }
+
+    return baseQuery;
+}
+
+async function fetchAndSaveRecords(nango: NangoSync, query: string) {
+    let endpoint = '/services/data/v53.0/query';
+
+    while (true) {
+        const response = await nango.get({
+            endpoint: endpoint,
+            params: endpoint === '/services/data/v53.0/query' ? { q: query } : {}
+        });
+
+        const mappedRecords = mapContacts(response.data.records);
+
+        await nango.batchSave(mappedRecords, 'SalesforceContact'); // Saves records to Nango cache.
+
+        if (response.data.done) {
+            break;
+        }
+
+        endpoint = response.data.nextRecordsUrl;
+    }
+}
+
+function mapContacts(records: any[]): SalesforceContact[] {
+    return records.map((record: any) => {
+        return {
+            id: record.Id as string,
+            first_name: record.FirstName,
+            last_name: record.LastName,
+            email: record.Email,
+            account_id: record.AccountId,
+            last_modified_date: record.LastModifiedDate
+        };
+    });
+}
+```
+
+In this script, the following Nango utilities are used: 
+- `nango.lastSyncDate` is the last date at which the sync has run
+- `await nango.batchSave()` to persist external data in Nango's cache
+- `await nango.get()` to perform an API request (automatically authenticated by Nango)
+- `await nango.log()` to print console logs (replaces `console.log()`)
+
+<Tip>
+Learn more about sync scripts: [understanding syncs](/understand/concepts/syncs), [script reference](/reference/scripts), [example templates](/integrations/overview).
+</Tip>
+
+### Write an action script
+
+Open the generated action script (named `[action-name].ts`) which should contain the following scaffolding : 
+
+```typescript salesforce-contact-fields.ts
+import type { NangoAction, FieldSchema } from './models';
+
+export default async function runAction(nango: NangoAction): Promise<FieldSchema> {
+    // Integration code goes here.
+}
+```
+
+Fill in the `runAction` method with your integration code (in the example here, we fetch available contact fields from Salesforce):
+
+```ts salesforce-contact-fields.ts
+import type { NangoAction, FieldSchema } from './models';
+
+export default async function runAction(nango: NangoAction): Promise<FieldSchema> {
+    try {
+        const response = await nango.get({
+            endpoint: '/services/data/v51.0/sobjects/Contact/describe'
+        });
+
+        await nango.log('Salesforce fields fetched!');
+
+        const { data } = response;
+        const { fields, childRelationships } = data;
+
+        return {
+            fields: mapFields(fields)
+        };
+    } catch (error: any) {
+        throw new nango.ActionError({
+            message: 'Failed to fetch fields in the runAction call',
+            details: {
+                message: error?.message,
+                method: error?.config?.method,
+                url: error?.config?.url,
+                code: error?.code
+            }
+        });
+    }
+}
+
+function mapFields(fields: any) {
+    return fields.map((field) => {
+        const { name, label, type, relationshipName } = field;
+        return {
+            name,
+            label,
+            type,
+            relationshipName: relationshipName as string
+        };
+    });
+}
+```
+
+In this script, the following Nango utilities are used: 
+- `await nango.get()` to perform an API request (automatically authenticated by Nango)
+- `nango.ActionError()` to report errors in the execution of the script
+- `await nango.log()` to print console logs (replaces `console.log()`)
+- `return` will synchronously return results from the action trigger request
+
+<Tip>
+Learn more about action scripts: [understanding actions](/understand/concepts/actions), [script reference](/reference/scripts), [example templates](/integrations/overview).
+</Tip>
+
+### Test your scripts locally
+
+Easily test your scripts locally as you develop them with the `dryrun` function of the CLI ([reference](/reference/cli)):
+
+```bash
+nango dryrun salesforce-contacts '<CONNECTION-ID>' # Sync
+nango dryrun salesforce-contact-fields '<CONNECTION-ID>' # Action
+nango dryrun --help # Display help for command
+```
+
+Because this is a dry run, syncs won't persist data in Nango (and actions never persist data); instead, the retrieved data will be printed to the console.
+
+<Tip>
+By default, `dryrun` retrieves connections from your `Dev` environment.
+</Tip>
+
+# Deploy your integration scripts
+
+Nango provides multiple cloud environments so you can test your scripts more thoroughly before releasing them to customers. 
+
+To deploy all scripts at once, run ([reference](/reference/cli)): 
+```bash
+nango deploy dev # Deploy to your Development environment
+# or
+nango deploy prod # Deploy to your Production environment
+```
+
+In the Nango UI, navigate to the _Scripts_ tab of the relevant integration(s) to verify the deployment succeeded. 
+
+<Tip>
+Learn more about [scripts](/understand/concepts/scripts).
+</Tip>
+
+<Tip>
+**Questions, problems, feedback?** Please reach out in the [Slack community](https://nango.dev/slack).
+</Tip>

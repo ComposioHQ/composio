@@ -1,0 +1,114 @@
+---
+title: 'Instructions & configuration'
+sidebarTitle: 'Instructions & configuration'
+description: 'Instructions & configuration options for self-hosting Nango.'
+---
+
+<Info>
+These instructions only apply for **free** self-hosting features, not Enterprise features ([feature list](/host/cloud)).
+</Info>
+
+## Server URL, Callback URL & Custom Domains[](#custom-urls 'Direct link to Server URL, Callback URL & Custom Domains')
+
+Add server environment variables for the instance URL and port (in the `.env`
+file or directly on Heroku/Render):
+
+```
+NANGO_SERVER_URL=<INSTANCE-URL>
+SERVER_PORT=<PORT>
+```
+
+The resulting callback URL for OAuth will be `<INSTANCE-URL>/oauth/callback`.
+
+<Note>You can customize the callback URL by updating "Callback URL" field in the "Project Settings" tab in the Nango admin.</Note>
+
+<Note>
+    If you are using a custom domain, you should change the `NANGO_SERVER_URL` server environment variable accordingly (in the `.env` file or directly on
+    Heroku/Render).
+</Note>
+
+## Persistent storage[](#persistent-storage 'Direct link to Persistent storage')
+
+If deploying with Docker Compose (e.g. AWS, GCP, DO), the database is bundled in
+a docker container with local storage using Docker registries. This is a no-go for production.
+
+Connect Nango to an external Postgres DB that lives outside the docker setup to
+mitigate this.
+
+To do so, modify the default values of the following server env variables (in
+the `.env` file):
+
+```
+NANGO_DB_USER=<REPLACE>
+NANGO_DB_PASSWORD=<REPLACE>
+NANGO_DB_HOST=<REPLACE>
+NANGO_DB_PORT=<REPLACE>
+NANGO_DB_NAME=<REPLACE>
+NANGO_DB_SSL=true
+```
+
+<Tip>
+Deploying with Render or Heroku automatically generates a persistent database
+connected to your Nango instance.
+
+For Render, the environment variables above are automatically set for you. For
+Heroku, check out our Heroku docs page for specific instructions.
+
+</Tip>
+
+## Securing your instance[](#securing-your-instance 'Direct link to Securing your instance')
+
+### Securing the dashboard[](#securing-the-dashboard 'Direct link to Securing the dashboard')
+
+By default, the dashboard of your Nango instance is open to anybody who has
+access to your instance URL.
+
+You can secure it with Basic Auth by setting the following environment variables
+and restarting the server:
+
+```bash
+NANGO_DASHBOARD_USERNAME=<PICK-A-USERNAME>
+NANGO_DASHBOARD_PASSWORD=<PICK-A-PASSWORD>
+```
+
+### Encrypt sensitive data[](#encrypt-sensitive-data 'Direct link to Encrypt sensitive data')
+
+You can enforce encryption of sensitive data (tokens, secret key, app secret)
+using the AES-GCM encryption algorithm. To do so, set the following environment
+variable to a randomly generated 256-bit base64-encoded key:
+
+```
+NANGO_ENCRYPTION_KEY=<ADD-BASE64-256BIT-KEY>
+```
+
+Once you restart the Nango server, the encryption of the database will happen
+automatically. Please note that, at the current time, you cannot modify this
+encryption key once you have set it.
+
+### Custom websockets path[](#custom-websockets-path 'Direct link to Custom websockets path')
+
+The Nango server serves websockets from the `/` path by default for use by `@nangohq/frontend` during the login flow. 
+If you want more isolation between websockets and the dashboard (also served from `/`), then you can set the `NANGO_SERVER_WEBSOCKETS_PATH` environment variable to serve websockets from a different path:
+
+```
+NANGO_SERVER_WEBSOCKETS_PATH=</YOUR-WEBSOCKETS-PATH>
+```
+
+If you do set this variable to a different path, you will need to configure the `websocketsPath` parameter when initializing the `Nango` object in the `@nangohq/frontend` SDK:
+
+```js
+import Nango from '@nangohq/frontend';
+
+let nango = new Nango({ host: 'https://<YOUR-NANGO-INSTANCE>', websocketsPath: '</YOUR-WEBSOCKETS-PATH>' });
+```
+
+## Telemetry[](#telemetry 'Direct link to Telemetry')
+
+We use telemetry to understand Nango's usage at a high-level and improve it over
+time.
+
+Telemetry on self-hosted instances is very light by default. We only track core
+actions and do not track sensitive information.
+
+You can disable telemetry by setting the env var `TELEMETRY=false` (in the
+`.env` file or directly on Heroku/Render).
