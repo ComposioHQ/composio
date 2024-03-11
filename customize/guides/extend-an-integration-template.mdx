@@ -1,0 +1,39 @@
+---
+title: 'Extend an integration template'
+sidebarTitle: 'Extend an integration template'
+description: 'Step-by-step guide on how to extend an integration template.'
+---
+
+Nango publishes [integration templates](/understand/concepts/templates) for the most popular APIs & use cases. Templates are a starting point for your custom integrations to reuse and extend. 
+
+Here is the [list of publicly available integration templates](/integrations/overview).
+
+You can activate template integrations directly in the Nango UI to get started fast. But if you want to edit their code or configuration, you must pull them in your [integrations folder](/understand/concepts/scripts#integration-folder) as described below.
+
+<Info>
+Pre-requisite: set up an integrations folder ([step-by-step guide](/customize/guides/setup)).
+</Info>
+
+# Download the template code
+
+Download the template code locally. The code is available on [GitHub](https://github.com/NangoHQ/nango/tree/master/integration-templates) or directly in the Nango UI in the _Scripts_ tab of an integration.
+
+# Copy/paste the configuration & scripts
+
+Copy/paste the necessary configuration from the `nango.yaml` file of the template folder into your own `nango.yaml` configuration (in your `nango-integrations` folder). 
+
+Copy/paste the necessary script files (ending in `.ts`) from the template folder into your `nango-integrations` folder. 
+
+There is no need to copy/paste the `models.ts` file from the template folder; it is a generated file that will be regenerated separately in your integrations folder when you run `nango dev`.
+
+# Customize the template at will
+
+Edit the `nango.yaml` configuration and scripts as you see fit ([step-by-step guide](/customize/guides/create-a-custom-integration)).
+
+<Warning>
+If a custom script name conflicts with a template name, the custom script will override the template in the Nango UI.
+</Warning>
+
+<Tip>
+**Questions, problems, feedback?** Please reach out in the [Slack community](https://nango.dev/slack).
+</Tip>

@@ -1,71 +1,74 @@
 ---
-title: Introduction
-description: 'Welcome to the home of your new documentation'
+title: 'Introduction'
+sidebarTitle: 'Introduction'
+description: 'One platform for all your integrations.'
 ---
 
-<img
-  className="block dark:hidden"
-  src="/images/hero-light.svg"
-  alt="Hero Light"
-/>
-<img
-  className="hidden dark:block"
-  src="/images/hero-dark.svg"
-  alt="Hero Dark"
-/>
+Nango is a single API to interact with all other external APIs. It should be the only API you need to integrate to your app. 
 
-## Setting up
+<Frame caption="One API, many integrations.">
+  <img src="/images/overview.png" />
+</Frame>
 
-The first step to world-class documentation is setting up your editing environments.
+# 👩‍💻 Sample code 
 
-<CardGroup cols={2}>
-  <Card
-    title="Edit Your Docs"
-    icon="pen-to-square"
-    href="https://mintlify.com/docs/quickstart"
-  >
-    Get your docs set up locally for easy development
-  </Card>
-  <Card
-    title="Preview Changes"
-    icon="image"
-    href="https://mintlify.com/docs/development"
-  >
-    Preview your changes before you push to make sure they're perfect
-  </Card>
-</CardGroup>
+Initiate a new OAuth flow from your frontend:
 
-## Make it yours
+```js
+nango.auth('github', 'user123');
+```
 
-Update your docs to your brand and add valuable content for the best user conversion.
+Get structured objects from external APIs from your backend:
 
-<CardGroup cols={2}>
-  <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
-  >
-    Customize your docs to your company's colors and brands
-  </Card>
-  <Card
-    title="Reference APIs"
-    icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
-  >
-    Automatically generate endpoints from an OpenAPI spec
-  </Card>
-  <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/components/accordion"
-  >
-    Build interactive features and designs to guide your users
-  </Card>
-  <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
-  >
-    Check out our showcase of our favorite documentation
-  </Card>
-</CardGroup>
+```ts
+nango.listRecords<GithubIssue>({
+    providerConfigKey: 'github',
+    connectionId: 'user123',
+    model: 'GithubIssue',
+});
+```
+
+# 👩🏻‍🔧 Choose your level of service
+
+Nango's flexibility ensures it supports any API integration:
+
+1. **Pre-built integrations**: Utilize pre-built integrations for popular APIs and standard use-cases to ship fast.
+2. **Custom integrations**: Build your own integrations in code with limitless customization capabilities.
+3. **Managed integrations**: Leverage Nango experts to create and maintain your integrations end-to-end.
+
+# 🔌 150+ pre-built APIs & integrations, or build your own!
+
+[Over 150 APIs are pre-configured](https://nango.dev/integrations) to work right out of the box. We support 25+ categories such:
+- **Accounting**: Netsuite, Quickbooks, Xero, ...
+- **Communications**: Slack, Discord, Teams, ...
+- **CRMs**: Hubspot, Salesforce, ...
+- **Emails**: Gmails, Outlook, ...
+- **HR**: Deel, Gusto, BambooHR, Personio, ...
+- **Identity**: Okta, Auth0, ...
+- **Knowledge Bases**: Notion, Drive, ...
+- **Ticketing**: Linear, Jira, ...
+- **Support**: Zendesk, ...
+- **Video**: Zoom, Google Meet, ...
+- and [many more](https://nango.dev/integrations)
+
+But remember, Nango can work with **any API and any use-case**!
+
+# 🚀 Get started
+
+Sign up for free and try the interactive demo:
+
+<a href="https://app.nango.dev/signup" target="_blank">
+  <img alt="Try Nango Cloud" src="/images/nango-deploy-button.svg" noZoom />
+</a>
+
+# 🙋‍♀️ Why is Nango open-source?
+
+Our mission is to enable all SaaS to seamlessly integrate together. By being open source, every engineer can contribute improvements to the platform for everyone:
+- [Contribute an API](/customize/guides/contribute-an-api)
+- [Contribute integration templates](/customize/guides/contribute-an-integration-template)
+
+# 📚 Learn more
+
+- [Learn how to integrate Nango](/integrate/overview)
+- [Asks questions on the community](https://nango.dev/slack)
+- [Book a demo](https://calendly.com/rguldener/30min)

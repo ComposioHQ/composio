@@ -1,0 +1,40 @@
+---
+title: 'Get records (Deprecated)'
+sidebarTitle: 'Get records (Deprecated)'
+openapi: 'GET /sync/records'
+---
+
+## Receive webhooks on data updates
+
+Receive webhooks from Nango when new records are available ([step-by-step guide](/integrate/guides/receive-webhooks-from-nango)).
+
+## Keeping track of where you left off
+
+Each record from this endpoint comes with a synchronization cursor in `_nango_metadata.cursor`.
+
+Save the last fetched record's cursor to track how far you've synced.
+
+By providing the cursor to this endpoint, you'll continue syncing from where you left off, receiving only post-cursor changes.
+
+This same cursor is used to paginate through the results of this endpoint.
+
+## Response
+
+By default, this returns an array of records in the data model that you queried, with some metadata about each record.
+
+```json
+[
+    {
+        id: 123,
+        ..., // Fields as specified in the model you queried
+        _nango_metadata: {
+            deleted_at: null,
+            last_action: 'ADDED',
+            first_seen_at: '2023-09-18T15:20:35.941305+00:00',
+            last_modified_at: '2023-09-18T15:20:35.941305+00:00',
+            cursor: 'MjAyNC0wMy0wNFQwNjo1OTo1MS40NzE0NDEtMDU6MDB8fDE1Y2NjODA1LTY0ZDUtNDk0MC1hN2UwLTQ1ZmM3MDQ5OTdhMQ=='
+        }
+    },
+    ...
+]
+```

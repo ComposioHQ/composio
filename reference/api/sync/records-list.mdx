@@ -1,0 +1,40 @@
+---
+title: 'Get records'
+sidebarTitle: 'Get records'
+openapi: 'GET /records'
+---
+
+## Receive webhooks on data updates
+
+Receive webhooks from Nango when new records are available ([step-by-step guide](/integrate/guides/receive-webhooks-from-nango)).
+
+## Response
+
+<Tip>
+This endpoint returns a list of records, ordered by modification date ascending. If some records are updated while you paginate through this endpoint, you might see these records multiple times.
+</Tip>
+
+### Default behaviour
+By default this returns an array of objects in the data model that you queried with some metadata about each record.
+
+```json
+{ 
+    records: 
+        [
+            {
+                id: 123,
+                ..., // Fields as specified in the model you queried
+                _nango_metadata: {
+                    deleted_at: null,
+                    last_action: 'ADDED',
+                    first_seen_at: '2023-09-18T15:20:35.941305+00:00',
+                    last_modified_at: '2023-09-18T15:20:35.941305+00:00',
+                    cursor: 'MjAyNC0wMy0wNFQwNjo1OTo1MS40NzE0NDEtMDU6MDB8fDE1Y2NjODA1LTY0ZDUtNDk0MC1hN2UwLTQ1ZmM3MDQ5OTdhMQ=='
+                }
+            },
+            ...
+        ],
+    next_cursor: "MjAyMy0xMS0xN1QxMTo0NzoxNC40NDcrMDI6MDB8fDAzZTA1NzIxLWNiZmQtNGYxNS1iYTNhLWFlNjM2Y2MwNmEw=="
+}
+```
+

@@ -1,0 +1,173 @@
+---
+title: 'Frontend SDK'
+sidebarTitle: 'Frontend SDK'
+icon: 'js'
+---
+
+Trigger authorization flows in your frontend with this SDK. It is available on [NPM](https://www.npmjs.com/package/@nangohq/frontend) as `@nangohq/frontend`.
+
+# Instantiate the frontend SDK
+
+```ts
+import Nango from '@nangohq/frontend';
+
+let nango = new Nango({ publicKey: '<PUBLIC-KEY>' });
+```
+
+**Parameters**
+
+<Expandable>
+  <ResponseField name="config" type="object" required>
+    <Expandable title="options" defaultOpen>
+      <ResponseField name="publicKey" type="string" required>
+    Get your public key in the environment settings of the Nango UI. This is key is not sensitive.
+      </ResponseField>
+
+      <ResponseField name="host" type="string">
+        Omitting the host points to Nango Cloud. For local development, use `http://localhost:3003`. Use your instance URL if self-hosting. 
+      </ResponseField>
+
+      <ResponseField name="websocketsPath" type="string">
+        For self-hosted instances only to specify a customs path for the WebSocket connection.
+      </ResponseField>
+
+      <ResponseField name="width" type="number">
+        Specify a specific width for the OAuth authorization modal.
+      </ResponseField>
+
+      <ResponseField name="height" type="number">
+        Specify a specific height for the OAuth authorization modal.
+      </ResponseField>
+
+      <ResponseField name="debug" type="boolean">
+        Print additional console logs to debug authorization issues.
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+</Expandable>
+
+
+# Collect & store end-user credentials
+
+You store end-user credentials with the `nango.auth` method. It creates a [connection](/understand/concepts/connections) in Nango.
+
+<Tabs>
+
+<Tab title="OAuth">
+
+For OAuth, this will open a modal to let the user log in to their external account.
+
+```js
+const result = await nango.auth('<INTEGRATION-ID>', '<CONNECTION-ID>').catch((error) => {
+...
+});
+```
+
+</Tab>
+
+<Tab title="API Key">
+
+For API key authorization, pass the end-user's previously-collected API key directly in the parameters.
+
+```js
+const result = await nango.auth('<INTEGRATION-ID>', '<CONNECTION-ID>', {
+    credentials: { apiKey: '<END-USER-API-KEY>' }
+}).catch((error) => {
+    ...
+});
+```
+
+</Tab>
+
+<Tab title="Basic Auth">
+
+For Basic Auth, pass the end-user's previously-collected username & password in the parameters.
+
+```js
+const result = nango.auth('<INTEGRATION-ID>', '<CONNECTION-ID>', {
+    credentials: { username: '<END-USER-API-KEY>', password: '<END-USER-PASSWORD>' }
+}).catch((error) => {
+    ...
+});
+```
+</Tab>
+
+</Tabs>
+
+**Parameters**
+<Expandable>
+  <ResponseField name="providerConfigKey" type="string" required>
+    The integration ID that you can find in the integration settings on the Nango UI.
+  </ResponseField>
+
+  <ResponseField name="connectionId" type="string" required>
+    The connection ID that you can find in the _Connections_ tab on the Nango UI.
+  </ResponseField>
+
+  <ResponseField name="options" type="object">
+    <Expandable title="options" defaultOpen>
+      <ResponseField name="params" type="object">
+        Specify additional [connection configuration](/integrate/guides/authorize-an-api#apis-requiring-connection-specific-configuration-for-authorization) necessary to perform the authorization request.
+      </ResponseField>
+
+      <ResponseField name="hmac" type="string">
+        HMAC key to secure the authorization flow (cf. (instructions)[TODO]).
+      </ResponseField>
+
+      <ResponseField name="detectClosedAuthWindow" type="boolean">
+        If `true`, `nango.auth()` would fail if the login window is closed before the authorization flow is completed.
+      </ResponseField>
+
+      <ResponseField name="authorization_params" type="object">
+        For OAuth, specify the query parameters of the authorization URL. 
+      </ResponseField>
+
+      <ResponseField name="user_scope" type="string[]">
+        For Slack OAuth, specify user-specific scopes. 
+      </ResponseField>
+
+      <ResponseField name="credentials" type="object">
+        <Expandable title="credentials" defaultOpen>
+          <ResponseField name="apiKey" type="string">
+            For API key authorization, pass in the user's API key.
+          </ResponseField>
+
+          <ResponseField name="username" type="string">
+            For Basic authorization, pass in the user's username.
+          </ResponseField>
+
+          <ResponseField name="password" type="string">
+            For Basic authorization, pass in the user's password.
+          </ResponseField>
+        </Expandable>
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+</Expandable>
+
+**Success response**
+
+<Expandable>
+  <ResponseField name="providerConfigKey" type="string">
+    The integration ID that you can find in the integration settings on the Nango UI.
+  </ResponseField>
+
+  <ResponseField name="connectionId" type="string">
+    The connection ID that you can find in the _Connections_ tab on the Nango UI.
+  </ResponseField>
+</Expandable>
+
+**Error response**
+<Expandable>
+  <ResponseField name="error" type="object">
+    <Expandable title="error" defaultOpen>
+      <ResponseField name="type" type="string">
+        The type of error (e.g. 'authorization_cancelled').
+      </ResponseField>
+
+      <ResponseField name="message" type="string">
+        The detailed error message (e.g. 'Authorization fail: The user has closed the authorization modal before the process was complete.').
+      </ResponseField>
+    </Expandable>
+  </ResponseField>
+</Expandable>

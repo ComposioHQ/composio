@@ -1,0 +1,32 @@
+---
+title: Twitter
+sidebarTitle: Twitter
+---
+
+API configurations: [`twitter`](https://nango.dev/providers.yaml) for OAuth1, [`twitter-v2`](https://nango.dev/providers.yaml) for OAuth2
+
+## Features
+
+| Features | Status |
+| - | - |
+| [Auth (OAuth)](/integrate/guides/authorize-an-api) | ✅ |
+| [Sync data](/integrate/guides/sync-data-from-an-api) | ✅ |
+| [Perform workflows](/integrate/guides/perform-workflows-with-an-api) | ✅ |
+| [Proxy requests](/integrate/guides/proxy-requests-to-an-api) | ✅ |
+| [Receive webhooks](/integrate/guides/receive-webhooks-from-an-api) | 🚫 (time to contribute: &lt;48h) |
+
+<Tip>We can implement missing features in &lt;48h, just ask for it in the [community](https://nango.dev/slack).</Tip>
+
+## Getting started
+
+-   [OAuth2-related docs](https://developer.twitter.com/en/docs/authentication/oauth-2-0/user-access-token)
+-   [OAuth2 scopes (scroll down)](https://developer.twitter.com/en/docs/authentication/oauth-2-0/authorization-code#:~:text=a%20public%20client.-,Scopes,-Scopes%20allow%20you)
+
+<Tip>Need help getting started? Get help in the [community](https://nango.dev/slack).</Tip>
+
+## API gotchas
+
+-   The OAuth1 and OAuth2 APIs give access to different data. Both are supported by Nango.
+-   For the OAuth 2 API: To get your `client_id` and `client_secret` you need to generate a "user authentication" within your app in the Twitter development portal.
+
+<Note>Add Getting Started links and Gotchas by [editing this page](https://github.com/nangohq/nango/tree/master/docs-v2/integrations/all/twitter.mdx)</Note>
