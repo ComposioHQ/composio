@@ -1,10 +1,4 @@
-from crewai import Crew
-from textwrap import dedent
-from linear_agent import DemoAgent
-
-from dotenv import load_dotenv
-load_dotenv()
-
+from agent import DemoAgent
 if __name__ == "__main__":
   agent = DemoAgent()
 

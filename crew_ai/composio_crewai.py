@@ -3,23 +3,27 @@ import json
 from langchain.tools import tool
 from core.sdk.client import ComposioClient  # Adjust the import path as necessary
 
+class AvailableAPPsModel(BaseModel):
+    list_of_apps: list[str]
+
+class ActionInputData(BaseModel):
+    action_name: str
+    connection_id: str
+    input_data: dict
+
+class ActionOutputData(BaseModel):
+    action_name: str
+    connection_id: str
+    output_data: dict
+
 class ComposioCrewAI:
 
     def __init__(self):
         # Initialize the ComposioClient with your specific configuration
         self.client = ComposioClient()
 
-    @tool("List Available Apps")
-    def list_available_apps(self):
-        """Lists all available apps in the Composio ecosystem."""
-        try:
-            apps = self.client.get_list_of_apps()
-            return json.dumps(apps, indent=2)
-        except Exception as e:
-            return str(e)
-
     @tool("Execute Action")
-    def execute_tool_action(self, query: str):
+    def execute_tool_action(self, inputData: ActionInputData) -> ActionOutputData:
         """
         Executes a specified action for a tool.
         input to this tool should be a pipe-separated string with the following format:
@@ -29,7 +33,7 @@ class ComposioCrewAI:
             action_name, connection_id, input_data_str = query.split('|', 2)
             input_data = json.loads(input_data_str)
             result = self.client.execute_action(action_name, connection_id, input_data)
-            return json.dumps(result, indent=2)
+            return ActionOutputData(action_name=action_name, connection_id=connection_id, output_data=result)
         except Exception as e:
             return str(e)
 
@@ -42,32 +46,10 @@ class ComposioCrewAI:
         except Exception as e:
             return str(e)
 
-    @tool("Get URL for Action")
-    def get_url_for_action(self, query: str):
-        """
-        Gets the URL for a specific action of a tool.
-        input to this tool should be a pipe-separated string with the following format:
-        <tool_name>|<action_name>
-        """
-        try:
-            tool_name, action_name = query.split('|', 1)
-            url = self.client.get_url_for_composio_action(tool_name, action_name)
-            return url
-        except Exception as e:
-            return str(e)
-        
-    @tool("Create user for Composio")
-    def create_user(self, email: str):
-        """Creates a new user in Composio."""
-        try:
-            user_id = self.client.identify_user(email)
-            return json.dumps({"user_id": user_id}, indent=2)
-        except Exception as e:
-            return str(e)
 
     @tool("List Tools")
     def list_tools(self):
-        """Lists all available tools."""
+        """Lists all available tools. The tool are platform which can be used to perform actions on the platform."""
         try:
             tools = self.client.list_tools()
             return json.dumps(tools, indent=2)
