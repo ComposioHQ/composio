@@ -1,0 +1,6 @@
+requests
+jsonschema
+argparse
+nest_asyncio
+llama_index
+beaupy===3.7.2
