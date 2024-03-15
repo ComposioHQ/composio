@@ -18,33 +18,6 @@ class ComposioCrewAI:
         except Exception as e:
             return str(e)
 
-    @tool("Get Connector Details")
-    def get_connector_details(self, tool_name: str):
-        """Retrieves details about a specific connector by its tool name."""
-        try:
-            connector = self.client.get_connector(tool_name)
-            return json.dumps(connector, indent=2)
-        except Exception as e:
-            return str(e)
-
-    @tool("Create Connection")
-    def create_connection_for_tool(self, tool_name: str):
-        """Creates a connection for a specified tool."""
-        try:
-            connection = self.client.create_connection(tool_name)
-            return json.dumps(connection, indent=2)
-        except Exception as e:
-            return str(e)
-    
-    @tool("Get Connection Details")
-    def get_connection_details(self, connection_id: str):
-        """Retrieves details about a specific connection by its ID."""
-        try:
-            connection = self.client.get_connection(connection_id)
-            return json.dumps(connection, indent=2)
-        except Exception as e:
-            return str(e)
-
     @tool("Execute Action")
     def execute_tool_action(self, query: str):
         """
@@ -57,15 +30,6 @@ class ComposioCrewAI:
             input_data = json.loads(input_data_str)
             result = self.client.execute_action(action_name, connection_id, input_data)
             return json.dumps(result, indent=2)
-        except Exception as e:
-            return str(e)
-
-    @tool("Wait for Connection Activation")
-    def wait_for_connection_activation(self, connection_id: str):
-        """Waits for a connection to become active."""
-        try:
-            self.client.wait_for_connection(connection_id)
-            return "Connection is now active."
         except Exception as e:
             return str(e)
 
@@ -98,21 +62,6 @@ class ComposioCrewAI:
         try:
             user_id = self.client.identify_user(email)
             return json.dumps({"user_id": user_id}, indent=2)
-        except Exception as e:
-            return str(e)
-
-    @tool("Get Redirect URL for Integration")
-    def get_redirect_url_for_integration(self, query: str):
-        """
-        Gets the redirect URL for an integration with optional scopes.
-        input to this tool should be a pipe-separated string with the following format:
-        <integration_name>|<scopes>
-        """
-        try:
-            integration_name, scopes_str = query.split('|', 1)
-            scopes = json.loads(scopes_str) if scopes_str else []
-            redirect_url, connection_req_id = self.client.get_redirect_url_for_integration(integration_name, scopes)
-            return json.dumps({"redirect_url": redirect_url, "connection_req_id": connection_req_id}, indent=2)
         except Exception as e:
             return str(e)
 
