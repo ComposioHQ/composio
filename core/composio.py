@@ -32,28 +32,26 @@ def parse_arguments():
     return parser.parse_args()
 
 def add_integration(args):
+    client = ComposioClient()
+    auth_user(client)
+
     integration_name = args.integration_name
-    console.print(f"\n[green]> Adding integration: {integration_name}...[/green]\n")
-    tools = list_tools()
-    tools_map = {tool["name"].capitalize(): tool for tool in tools["tools"]}
+    console.print(f"\n[green]> Adding integration: {integration_name.capitalize()}...[/green]\n")
+    try:
+        # @TODO: add logic to wait and ask for API_KEY
+        connection = client.create_connection(integration_name)
+        print(f"{integration_name.capitalize()} requires authentication. Please visit the following URL to authenticate: {connection.redirectUrl}")
+        print("")
+        spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
 
-    if integration_name.capitalize() not in tools_map:
-        console.print(f"[red]> Integration {integration_name} not found. Please check the name and try again.[/red]")
-        return
-
-    skillAgent = tools_map[integration_name.capitalize()]
-    is_authenticated = skillAgent.get("Authentication", {}).get("isAuthenticated")
-    if is_authenticated == "False":
-        [auth_url, connReqId] = get_redirect_url_for_integration(integration_name.lower(), scopes=skillAgent.get("Authentication", {}).get("Scopes", []))
-        spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] {integration_name} requires authentication. Please visit the following URL to authenticate: {auth_url}")
         spinner.start()
-        time.sleep(2)  # Simulate waiting time
-        wait_for_tool_auth_completion(connReqId, integration_name)
-        console.print(f"[green]✔[/green] {integration_name} authenticated successfully!")
+        client.wait_for_connection(connection.connectionId)
         spinner.stop()
-    else:
-        console.print(f"[green]✔[/green] {integration_name} is already authenticated.")
-    print("\n")
+        print("")
+        console.print(f"[green]✔[/green] {integration_name} added successfully!")
+    except Exception as e:
+        console.print(f"[red] Error occurred during adding integration: {e}[/red]")
+        sys.exit(1)
 
 def show_apps(args):
     client = ComposioClient()

@@ -5,6 +5,13 @@ import requests
 import jinja2
 # from .storage import get_user_id
 
+from pydantic import BaseModel
+
+class ConnectionResponse(BaseModel):
+        connectionStatus: str
+        connectionId: str
+        redirectUrl: str
+
 class ComposioClient:
 
     def __init__(self, base_url = "https://backend.composio.dev/api", manage_auth = True):
@@ -39,14 +46,14 @@ class ComposioClient:
             return resp.json()
 
         raise Exception("Failed to get connector")
-    
-    def create_connection(self, tool_name: str):
+
+    def create_connection(self, tool_name: str) -> ConnectionResponse:
         connector_id = f"test-{tool_name}-connector"
         resp = self.http_client.post(f"{self.base_url}/v1/connections", json={
             "connectorId": connector_id,
         })
         if resp.status_code == 200:
-            return resp.json()
+            return ConnectionResponse(**resp.json())
         
         raise Exception("Failed to create connection")
 
