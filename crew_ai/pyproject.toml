@@ -1,0 +1,11 @@
+[project]
+dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
+dependencies = [
+    "crewai",
+    "langchain",
+]
+name = "composio/crewai"
+
+[build-system]
+requires = [ "setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
