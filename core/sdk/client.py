@@ -91,12 +91,12 @@ class ComposioClient:
         action_id = resp.get('actionId')
         return self.get_action_result(action_id)
 
-    def wait_for_connection(self, connection_id: str):
+    def wait_for_connection(self, connection_id: str, app_name: str):
         while True:
             connection_info = self.get_connection(connection_id)
             if connection_info.get('status') == 'ACTIVE':
                 if self.manage_auth:
-                    app_name = connection_info.get("appName", "github")
+                    app_name = connection_info.get("appName", app_name)
                     save_user_connection(connection_id, app_name)
                     return True
             time.sleep(1)  # Wait for a bit before retrying

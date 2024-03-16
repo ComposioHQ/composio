@@ -44,7 +44,7 @@ def add_integration(args):
         print("")
         spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
         spinner.start()
-        client.wait_for_connection(connection.connectionId)
+        client.wait_for_connection(connection.connectionId, integration_name)
         spinner.stop()
         save_user_connection(connection.connectionId, integration_name)
         print("")
