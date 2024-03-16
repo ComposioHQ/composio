@@ -83,7 +83,7 @@ class ComposioClient:
         raise Exception("Failed to execute action")
     
     def execute_action(self, action_name: str, tool_name: str, input_data: dict):
-        connection = get_user_connection(tool_name)
+        connection = get_user_connection(tool_name.lower())
         if not connection:
             raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
 
