@@ -45,9 +45,41 @@ def json_schema_to_pydantic_field(name: str, json_schema: Dict[str, Any], requir
     # Get the field examples.
     examples = json_schema.get('examples')
 
-    # Create a Field object with the type, description, and examples.
-    # The 'required' flag will be set later when creating the model.
-    return (type_, Field(description=description, examples=examples, default=... if name in required else None))
+    # Determine the default value based on the type and requirement.
+    if name in required:
+        default = ...
+    else:
+        default = get_default_value_for_type(type_)
+
+    # Create a Field object with the type, description, examples, and default value.
+    return (type_, Field(description=description, examples=examples, default=default))
+
+def get_default_value_for_type(type_: Any) -> Any:
+    """
+    Returns a default value for a given Pydantic type.
+
+    Args:
+        type_: The Pydantic type.
+
+    Returns:
+        A default value for the type.
+    """
+    if type_ == str:
+        return ''
+    elif type_ == int:
+        return 0
+    elif type_ == float:
+        return 0.0
+    elif type_ == bool:
+        return False
+    elif type_ == List:
+        return []
+    elif type_ == Dict:
+        return {}
+    elif type_ == Optional[Any]:
+        return None
+    else:
+        return None
 
 def json_schema_to_pydantic_type(json_schema: Dict[str, Any]) -> Any:
     """
