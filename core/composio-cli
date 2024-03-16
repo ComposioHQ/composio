@@ -10,7 +10,7 @@ from rich.console import Console
 import termcolor
 import requests
 from uuid import getnode as get_mac
-
+from sdk.storage import save_user_connection
 from sdk.client import ComposioClient
 
 console = Console()
@@ -43,10 +43,10 @@ def add_integration(args):
         print(f"{integration_name.capitalize()} requires authentication. Please visit the following URL to authenticate: {connection.redirectUrl}")
         print("")
         spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
-
         spinner.start()
         client.wait_for_connection(connection.connectionId)
         spinner.stop()
+        save_user_connection(connection.connectionId, integration_name)
         print("")
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
     except Exception as e:
