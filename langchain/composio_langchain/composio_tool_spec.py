@@ -21,4 +21,4 @@ def ComposioTool(client : ComposioClient, action_schema: dict[str, any]) ->  Str
 def ComposioToolset(tool_names: List[str] = []) -> List[StructuredTool]:
     client = ComposioClient()
     actions = client.get_actions(tool_names)
-    return [ComposioTool(action) for action in actions["items"]]
+    return [ComposioTool(client, action) for action in actions["items"]]

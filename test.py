@@ -1,4 +1,4 @@
-from core.sdk import ComposioClient
+from composio.sdk import ComposioClient
 
 client = ComposioClient()
 
