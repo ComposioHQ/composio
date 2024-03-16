@@ -102,7 +102,10 @@ class ComposioClient:
             time.sleep(1)  # Wait for a bit before retrying
     
     def get_actions(self, tool_names: list[str]):
-        resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(tool_names)}")
+        if not tool_names:
+            resp = self.http_client.get(f"{self.base_url}/v1/actions")
+        else:
+            resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(tool_names)}")
         if resp.status_code == 200:
             return resp.json()
         
