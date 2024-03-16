@@ -11,7 +11,7 @@ readme_path = resolve_paths(get_current_dir(), 'README.md')
 
 setup(
     name = 'composio_core',
-    version = '0.0.2',
+    version = '0.0.3',
     author = 'Utkarsh',
     author_email = 'utkarsh@composio.dev',
     description = 'Core package to act as a bridge between composio platform and other services.',

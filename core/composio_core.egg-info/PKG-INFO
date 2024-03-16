@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: composio_core
-Version: 0.0.2
+Version: 0.0.3
 Summary: Core package to act as a bridge between composio platform and other services.
 Home-page: https://github.com/SamparkAI/composio_sdk
 Author: Utkarsh
