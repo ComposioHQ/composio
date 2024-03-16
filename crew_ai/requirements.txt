@@ -1,8 +1,10 @@
 crewai
-langchain
 requests
 jsonschema
 argparse
 nest_asyncio
-llama_index
-beaupy===3.7.2
+langchain===0.1.0
+langchain-openai===0.0.2.post1
+langchainhub==0.1.15
+pydantic===2.6.4
+composio_core===0.0.3

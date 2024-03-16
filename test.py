@@ -1,7 +1,7 @@
 from langchain.agents import create_openai_functions_agent
 from langchain.agents import AgentExecutor
 from langchain import hub
-from composio_langchain import ComposioToolset
+from langchain.composio_langchain import ComposioToolset
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(openai_api_key="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")
