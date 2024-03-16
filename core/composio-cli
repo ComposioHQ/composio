@@ -10,8 +10,8 @@ from rich.console import Console
 import termcolor
 import requests
 from uuid import getnode as get_mac
-from sdk.storage import save_user_connection
-from sdk.client import ComposioClient
+from composio.sdk.storage import save_user_connection
+from composio.sdk.client import ComposioClient
 import webbrowser
 
 console = Console()
