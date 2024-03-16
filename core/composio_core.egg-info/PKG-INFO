@@ -16,6 +16,7 @@ Requires-Dist: argparse
 Requires-Dist: llama_index
 Requires-Dist: nest_asyncio
 Requires-Dist: beaupy===3.7.2
+Requires-Dist: termcolor==2.4.0
 
 # Composio Core Package
 

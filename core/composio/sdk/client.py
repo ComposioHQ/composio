@@ -88,8 +88,7 @@ class ComposioClient:
             raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
 
         resp = self._execute_action(action_name, connection, input_data)
-        action_id = resp.get('actionId')
-        return self.get_action_result(action_id)
+        return resp
 
     def wait_for_connection(self, connection_id: str, app_name: str):
         while True:

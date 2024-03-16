@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: composio_langchain
-Version: 0.0.1
+Version: 0.0.2
 Summary: Use Composio to get an array of tools with your LangChain agent.
 Home-page: https://github.com/SamparkAI/composio_sdk
 Author: Karan
@@ -16,6 +16,7 @@ Requires-Dist: argparse
 Requires-Dist: nest_asyncio
 Requires-Dist: langchain===0.1.0
 Requires-Dist: langchain-openai===0.0.2.post1
+Requires-Dist: langchainhub==0.1.15
 Requires-Dist: pydantic===2.6.4
 
 Composio <> LangChain
