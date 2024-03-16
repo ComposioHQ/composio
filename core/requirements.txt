@@ -3,4 +3,5 @@ jsonschema
 argparse
 nest_asyncio
 llama_index
-beaupy===3.7.2
+beaupy==3.7.2
+termcolor==2.4.0

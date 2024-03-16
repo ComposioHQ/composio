@@ -75,7 +75,7 @@ def print_intro():
         print(f"""
 ┌───────────────────────────────────────────────────────────────────────────┐
 │                                                                           │
-│                           {text} <-> AutoGen                            │
+│                                       {text}                            │
 │                                                                           │
 │                     Plug {aiPlatformText} platforms in your agent                     │
 │                                                                           │

@@ -6,7 +6,8 @@ dependencies = [
     "argparse",
     "llama_index",
     "nest_asyncio",
-    "beaupy===3.7.2"
+    "beaupy===3.7.2",
+    "termcolor==2.4.0"
 ]
 name = "composio_core"
 
