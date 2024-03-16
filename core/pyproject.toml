@@ -8,7 +8,7 @@ dependencies = [
     "nest_asyncio",
     "beaupy===3.7.2"
 ]
-name = "composio/core"
+name = "composio"
 
 [build-system]
 requires = [ "setuptools>=42", "wheel"]

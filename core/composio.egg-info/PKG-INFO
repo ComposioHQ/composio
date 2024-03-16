@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: composio
+Version: 0.0.1
+Summary: Core package to act as a bridge between composio platform and other services.
+Home-page: https://github.com/SamparkAI/composio_sdk
+Author: Utkarsh
+Author-email: utkarsh@composio.dev
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: requests
+Requires-Dist: jsonschema
+Requires-Dist: argparse
+Requires-Dist: llama_index
+Requires-Dist: nest_asyncio
+Requires-Dist: beaupy===3.7.2
+
+# Composio Core Package
+
+Core package to act as a bridge between composio platform and other services.
