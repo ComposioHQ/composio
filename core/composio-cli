@@ -12,6 +12,7 @@ import requests
 from uuid import getnode as get_mac
 from sdk.storage import save_user_connection
 from sdk.client import ComposioClient
+import webbrowser
 
 console = Console()
 
@@ -40,8 +41,8 @@ def add_integration(args):
     try:
         # @TODO: add logic to wait and ask for API_KEY
         connection = client.create_connection(integration_name)
-        print(f"{integration_name.capitalize()} requires authentication. Please visit the following URL to authenticate: {connection.redirectUrl}")
-        print("")
+        webbrowser.open(connection.redirectUrl)
+        print(f"Please authenticate {integration_name} in the browser and come back here.")
         spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
         spinner.start()
         client.wait_for_connection(connection.connectionId, integration_name)
