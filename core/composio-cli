@@ -12,6 +12,8 @@ import requests
 from uuid import getnode as get_mac
 from composio.sdk.storage import save_user_connection
 from composio.sdk.client import ComposioClient
+from composio.sdk.utils import generate_enums
+
 import webbrowser
 
 console = Console()
@@ -35,7 +37,15 @@ def parse_arguments():
     list_connections_parser.add_argument('appName', type=str, help='Name of the app to list connections for')
     list_connections_parser.set_defaults(func=list_connections)
 
+    # Generate enums command
+    generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
+    generate_enums_parser.set_defaults(func=handle_update)
+
     return parser.parse_args()
+
+def handle_update(args):
+    generate_enums()
+    console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
 
 def add_integration(args):
     client = ComposioClient()

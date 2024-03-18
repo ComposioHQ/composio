@@ -1,6 +1,6 @@
-from composio.sdk import ComposioSdk
+from .sdk import ComposioSdk
 
-def test():
+def generate_enums():
         sdk_client = ComposioSdk("hrhdegyxh44twa8zhtpkg")
         apps = sdk_client.get_list_of_apps()
         # print(apps)
@@ -19,8 +19,5 @@ def test():
             action_name = action['name'].upper().replace(' ', '_').replace('-', '_')
             enum_content += f'    {action_name} = "{action["name"]}"\n'
 
-        with open('composio/sdk/enums.py', 'w') as f:
+        with open('enums.py', 'w') as f:
             f.write(enum_content)
-
-
-test()
