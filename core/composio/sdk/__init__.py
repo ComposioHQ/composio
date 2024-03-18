@@ -1,1 +1,1 @@
-from .client import ComposioClient
+from .sdk import ComposioSdk

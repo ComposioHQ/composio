@@ -10,8 +10,7 @@ class ConnectionResponse(BaseModel):
         redirectUrl: str
 
 class ComposioSdk:
-
-    def __init__(self, api_key: str, base_url = "https://backend.composio.dev/api"):
+    def __init__(self, api_key: str = None, base_url = "https://backend.composio.dev/api"):
         self.base_url = base_url
         self.api_key = api_key
         self.http_client = requests.Session()
@@ -19,6 +18,10 @@ class ComposioSdk:
             'Content-Type': 'application/json',
             'x-api-key': self.api_key
         })
+
+    def get_connections(self, app_name: str):
+        resp = self.http_client.get(f"{self.base_url}/v1/connections?appName={app_name}")
+        return resp.json()
 
     def get_list_of_apps(self):
         resp = self.http_client.get(f"{self.base_url}/v1/apps") 
@@ -83,8 +86,8 @@ class ComposioSdk:
                 return True
             time.sleep(1)  # Wait for a bit before retrying
     
-    def get_actions(self, tool_names: list[str]):
-        if not tool_names:
+    def get_actions(self, tool_names: list[str] = None):
+        if tool_names is None:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
             resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(tool_names)}")
