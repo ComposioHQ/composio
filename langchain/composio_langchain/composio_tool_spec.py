@@ -8,13 +8,11 @@ def ComposioTool(client : ComposioClient, action_schema: dict[str, any]) ->  Str
     description = action_schema["description"]
     parameters = json_schema_to_model(action_schema["parameters"])
     appName = action_schema["appName"]
-    print(parameters.schema())
     return StructuredTool.from_function(
         name=name,
         description=description,
         args_schema=parameters,
         return_schema=True,
-        # TODO use execute action here
         func = lambda **kwargs: client.execute_action(name, appName, kwargs)
     )
 

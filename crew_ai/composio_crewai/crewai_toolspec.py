@@ -14,7 +14,6 @@ def ComposioTool(client : ComposioClient, action_schema: dict[str, any]) ->  Str
         description=description,
         args_schema=parameters,
         return_schema=True,
-        # TODO use execute action here
         func = lambda **kwargs: client.execute_action(name, appName, kwargs)
     )
 
