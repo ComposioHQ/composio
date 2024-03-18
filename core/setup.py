@@ -9,6 +9,16 @@ def resolve_paths(*paths):
 
 readme_path = resolve_paths(get_current_dir(), 'README.md')
 
+
+from setuptools import setup
+from setuptools.command.install import install
+
+class InstallCommandMiddleware(install):
+    """Customized setuptools install command."""
+    def run(self):
+        install.run(self)
+        # Place your custom script here
+
 setup(
     name = 'composio_core',
     version = '0.0.3',
@@ -26,4 +36,7 @@ setup(
     python_requires = '>=3.7',
     include_package_data = True,
     scripts = ['composio-cli'],
+    cmdclass={
+        'install': InstallCommandMiddleware,
+    },
 )
