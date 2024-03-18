@@ -1,0 +1,87 @@
+---
+title: "Alerting status updates in Teams"
+sidebarTitle: "Teams"
+description: "Get status updates in your Teams channel."
+---
+
+<img
+  alt="Teams"
+  src="https://img.icons8.com/color-glass/512/microsoft-teams.png"
+  width="300"
+/>
+
+## Overview of steps
+
+1. Set up webhooks for Teams
+2. Update Mage project settings
+
+---
+
+## Set up webhooks for Teams
+
+Follow these
+[instructions on Teams](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
+to setup incoming webhooks for your workspace.
+
+---
+
+## Update Mage project settings
+
+Once you’ve set up webhooks for Teams, you should have a webhook URL that Teams
+provides.
+
+Here is an example webhook (yours may vary):
+
+```
+https://teams.webhook.office.com/webhookb2/B04XXXXGY67/IncomingWebhook/1UgUkao8pXXXXPmsuXXXX2lk
+```
+
+Follow these steps to add that webhook URL to your project settings:
+
+1. Open the Mage tool in your browser (e.g. http://localhost:6789/).
+2. Open a pipeline and start editing it (e.g.
+   http://localhost:6789/pipelines/example_pipeline/edit).
+3. In your left sidebar in the file browser, scroll all the way down and click
+   on a file named `metadata.yaml`.
+4. In the `metadata.yaml` file, add a section with the following
+   configuration or update the existing `notification_config` section:
+
+    ```yaml
+    notification_config:
+      alert_on:
+        - trigger_failure
+        - trigger_passed_sla
+    ```
+
+    If you omit the `alert_on` section it will default to `trigger_failure` and `trigger_passed_sla`.
+
+    Options:
+
+    - `trigger_failure`: alert when a run of a trigger fails
+    - `trigger_success`: alert when a run of a trigger succeeds
+    - `trigger_passed_sla`: alert when a run of a trigger passes sla
+
+5. In the `metadata.yaml` file, add the following values:
+
+    ```yaml
+    notification_config:
+      alert_on:
+        ...
+      teams_config:
+        webhook_url: 'https://teams.webhook.office.com/webhookb2/B04XXXXGY67/IncomingWebhook/1UgUkao8pXXXXPmsuXXXX2lk'
+    ```
+
+    Change the `webhook_url` value to be the webhook URL you created from Teams.
+
+---
+
+## What next?
+
+Whenever a pipeline run is successfully completed or fails, a Teams message will
+appear in the channel you configured the webhook URL for.
+
+Here is an example of what that message could look like:
+
+|                                                                                                        |
+| ------------------------------------------------------------------------------------------------------ |
+| ![Teams](https://github.com/mage-ai/assets/blob/main/third-party/teams-message-run-alert.jpg?raw=true) |

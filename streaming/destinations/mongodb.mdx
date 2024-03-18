@@ -1,0 +1,21 @@
+---
+title: "MongoDB"
+---
+
+## Basic config
+
+```yaml
+connection_string: "mongodb://mongodb_container_name:27017/"
+database_name: database_name
+collection_name: collection_name
+```
+
+* `connection_string`: URI defines connection between application and MongoDB instance.
+* `database_name`: The database where you want to store the data.
+* `collection_name`: The collection where you want to group the documents.
+
+## Optional fields
+
+```yaml
+unique_constraints: ['col1', 'col2']    # Upsert documents based on unique constraints
+```

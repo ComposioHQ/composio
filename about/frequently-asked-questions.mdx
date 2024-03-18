@@ -1,0 +1,138 @@
+---
+title: "Frequently Asked Questions"
+sidebarTitle: "FAQ"
+icon: "question"
+description: "Here are some frequently asked questions about Mage and our best answers."
+---
+<div align="center">
+<img src="https://github.com/mage-ai/assets/blob/main/notion-faq.png?raw=True"/>
+</div>
+
+<AccordionGroup>
+
+<Accordion title ="What is Mage?">
+
+Mage is an open-source data pipeline tool for transforming and integrating data.
+
+🧙 A mage is someone who uses magic. Advanced technology is indistinguishable from magic.
+
+We’re on a mission to make AI technology more accessible by building data tools for engineers and scientists.
+
+Find out more about our story: [https://www.mage.ai/blog/mage-heros-journey-fantasy-epic-on-how-a-startup-rose-from-the-ashes](https://www.mage.ai/blog/mage-heros-journey-fantasy-epic-on-how-a-startup-rose-from-the-ashes)
+
+</Accordion>
+
+<Accordion title ="Who is the ideal user for this tool?">
+
+Our tool was built with data engineers and data scientists in mind, but is not limited to those roles. Other data professionals could find value in the tool.
+
+</Accordion>
+
+<Accordion title ="How difficult is Mage to setup?">
+
+You can quickly and easily get started by installing Mage using Docker (recommended), **`pip`**, or **`conda`**. Click [here](https://docs.mage.ai/introduction/overview#quick-start) for details.
+
+</Accordion>
+
+<Accordion title ="How much does Mage cost?">
+
+Mage is free as long as you are self-hosted (AWS, GCP, Azure, or Digital Ocean).
+
+</Accordion>
+
+<Accordion title ="How is Mage’s data pipeline engine software different from Airflow, Dagster, etc?">
+
+Our 4 [core design principles](/design/core-design-principles) that differentiate ourselves are:
+
+1. Easy developer experience
+
+2. Engineering best practices built-in
+
+3. Data is a first-class citizen
+
+4. Scaling is made simple
+
+Features that set us apart (some of the others might eventually have these features):
+
+1. Mix and match SQL and Python in data pipeline tasks.
+2. UI/IDE for building and managing data pipelines.
+3. Data centric: we designed and built a pipeline engine ONLY for moving and transforming data. This makes it possible for us to make datasets a 1st class citizen; enabling native features such as partitioning, versioning, backfilling, data validation, testing, and data quality monitoring.
+4. Extensible: we designed and built the tool with developers in mind, making sure it’s really easy to add new functionality to the source code or through plug-ins.
+5. Scalable: the tool can handle very, very large datasets while transforming the data or charting it.
+6. Production ready: when you build your data pipeline, it runs exactly the same in development as it does in production. Deploying the tool and managing the infrastructure in production is very easy and simple, unlike Airflow.
+7. Modular: every block/cell you write is a standalone file that is interoperable; meaning it can be used in other pipelines or in other code bases.
+
+</Accordion>
+
+<Accordion title ="What’s the difference between Mage and Fivetran?">
+
+Check out our blog [Mage vs. Fivetran](https://www.mage.ai/blog/mage-vs-fivetran).
+
+</Accordion>
+
+<Accordion title ="What’s the difference between Mage and Airbyte?">
+
+Check out our blog [Mage vs Airbyte](https://www.mage.ai/blog/mage-vs-airbyte).
+
+</Accordion>
+
+<Accordion title ="What’s the difference between Mage and Prefect?">
+
+Mage provides an interactive notebook with built-in engineering best practices for building pipelines, which makes prototyping and building production-ready pipelines much easier.
+
+Mage supports writing pipelines in multiple languages which include Python, SQL, and R.
+
+Mage supports multiple types of pipelines natively such as:
+
+- Standard batch pipelines
+- Data integration pipelines
+- Streaming pipelines
+- Spark pipelines
+- DBT pipelines
+
+</Accordion>
+
+<Accordion title ="What languages does Mage support?">
+
+We currently support SQL, Python, R, and PySpark. Coming soon: Spark SQL.
+
+</Accordion>
+
+<Accordion title ="Does Mage integrate with Spark?">
+
+Yes! [Here](https://docs.mage.ai/integrations/spark-pyspark) is a step-by-step tutorial to use Mage with Spark on EMR.
+
+</Accordion>
+
+<Accordion title ="What’s the difference between Mage and Sagemaker?">
+
+Sagemaker is used to train machine learning models and serve them via api.
+
+Mage is an engine for running data pipelines that can move and transform data. That data can then be stored anywhere (e.g. S3) and used to train models in Sagemaker.
+
+</Accordion>
+
+<Accordion title ="What’s the difference between Mage and Databricks?">
+
+Databricks provides infrastructure to run Spark. They also provide notebooks that can run your code in Spark as well.
+
+Mage can execute your code in a Spark cluster, managed by AWS, GCP, or even Databricks.
+
+</Accordion>
+
+<Accordion title ="How do I send pipeline notifications to Slack?">
+
+[Here is a doc](/integrations/observability/alerting-slack) to help you set up alerting for pipeline status updates in [Slack](https://www.mage.ai/chat).
+
+</Accordion>
+
+<Accordion title ="How can I contribute or request features?">
+
+We love and welcome community contributions! [Here is a doc](/contributing/overview) to get you started.
+
+To request features, add a “Feature request” using the `New issue` button in GitHub from this [link](https://github.com/mage-ai/mage-ai/issues), or join our [feature-request](https://www.mage.ai/chat) Slack channel.
+
+</Accordion>
+</AccordionGroup>
+
+*Can’t find what you’re looking for? [Ask a question here](https://github.com/mage-ai/mage-ai/discussions/categories/q-a) or [join our slack](https://mage.ai/chat) for additional support!*

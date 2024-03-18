@@ -1,0 +1,207 @@
+---
+title: "Sign in with Active Directory"
+sidebarTitle: "Active Directory"
+description: "Enable signing in with a Microsoft account in Mage."
+---
+
+### Pre-requisites
+
+First, you'll need to enable user authentication within Mage. You can find out more about
+this in the [Overview page](/production/authentication/overview).
+
+### Enable Microsoft sign in
+
+There are two ways to enable Microsoft sign in. You can either register an application in your organization's
+own Microsoft Entra ID, or use the default Mage application. We recommend registering your own application unless
+there is a specific reason you cannot do so.
+
+<AccordionGroup>
+
+<Accordion title="Register and use your own Mage application">
+
+You will need to register an application in your organization's Microsoft Entra ID.
+
+<Steps>
+
+<Step title="Log into your Azure Portal">
+</Step>
+
+<Step title="Click into the Microsoft Entra ID service">
+<Frame>
+    <img
+        alt="Azure Active Directory"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad.png?raw=true"
+    />
+</Frame>
+</Step>
+
+<Step title="Navigate to the tenant you want users to sign into">
+</Step>
+
+<Step title="Click App registrations on the left sidebar">
+<Frame>
+    <img
+        alt="App registrations"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-app-registrations.png?raw=true"
+    />
+</Frame>
+</Step>
+
+<Step title="Register a new application for Mage">
+
+Click the "New registration" button at the top of the page, and fill in the details for your application.
+
+<Frame>
+    <img
+        alt="New registration"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-new-registration.png?raw=true"
+    />
+</Frame>
+
+Make sure you add the following web redirect URI: `http(s)://<your-mage-url>/oauth`.
+
+</Step>
+
+<Step title="Create client secret for the application">
+
+Click into the application you created, and click "Certificates & secrets" in the left sidebar.
+
+<Frame>
+    <img
+        alt="Certificates & secrets"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-certificates.png?raw=true"
+    />
+</Frame>
+
+Copy the "Application (client) ID" and the "Directory (tenant) ID" values.
+
+<Frame>
+    <img
+        alt="Copy values"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-application-fields.png?raw=true"
+    />
+</Frame>
+
+Create a new client secret and copy the value.
+
+</Step>
+
+<Step title="Set environment variable for Mage">
+
+Once you have registered your application, you will need to set the following environment variables
+in your Mage setup.
+
+| Name | Value |
+| --- | --- |
+| `ACTIVE_DIRECTORY_DIRECTORY_ID` | `<tenant_id>` |
+| `ACTIVE_DIRECTORY_CLIENT_ID` | `<application_client_id>` |
+| `ACTIVE_DIRECTORY_CLIENT_SECRET` | `<application_client_secret>` |
+
+You should now see the "Sign in with Microsoft" button when you start Mage and attempt to sign in.
+You may need to restart your Mage server for the changes to take effect.
+
+<Frame>
+    <img
+        alt="Sign in with Microsoft"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/sign-in-with-microsoft.png?raw=true"
+    />
+</Frame>
+
+</Step>
+
+</Steps>
+
+</Accordion>
+
+<Accordion title="Use the default Mage application">
+
+You will need to get your organization's Tenant ID. You can find this in the 
+Azure Portal:
+
+<Steps>
+
+<Step title="Log into your Azure Portal">
+</Step>
+
+<Step title="Click into the Microsoft Entra ID service">
+<Frame>
+    <img
+        alt="Azure Active Directory"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad.png?raw=true"
+    />
+</Frame>
+</Step>
+
+<Step title="Navigate to the directory you want users to sign into">
+</Step>
+
+<Step title="Click 'Properties' in the left sidebar">
+<Frame>
+    <img
+        alt="Active Directory Properties"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-properties.png?raw=true"
+    />
+</Frame>
+</Step>
+
+<Step title="Copy the value under Tenant ID">
+<Frame>
+    <img
+        alt="Active Directory Tenant ID"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-tenant-id.png?raw=true"
+    />
+</Frame>
+</Step>
+
+<Step title="Set environment variable for Mage">
+
+Once you have found your tenant ID, you will need to set the following environment variable
+in your Mage setup.
+
+|   |   |
+| --- | --- |
+| Name | `ACTIVE_DIRECTORY_DIRECTORY_ID` |
+| Value | `<tenant_id>` |
+
+You should now see the "Sign in with Microsoft" button when you start Mage and attempt to sign in.
+You may need to restart your Mage server for the changes to take effect.
+
+<Frame>
+    <img
+        alt="Sign in with Microsoft"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/sign-in-with-microsoft.png?raw=true"
+    />
+</Frame>
+
+</Step>
+
+</Steps>
+
+</Accordion>
+
+</AccordionGroup>
+
+### Map AD role to Mage role
+
+<Note>
+
+You will need to have created your own application and have app roles in order for this mapping to work.
+
+</Note>
+
+You can map Active Directory roles to Mage roles by setting the `ACTIVE_DIRECTORY_ROLES_MAPPING` environment variable.
+The value should be a JSON object with the AD role as the key and the name of the Mage role as the value. For example:
+
+`export ACTIVE_DIRECTORY_ROLES_MAPPING='{"Mage.Edit": "Editor", "Mage.Admin": "Admin"}'`
+
+You can find the AD role value in the App roles section of your application in the Azure Portal.
+
+<Frame>
+    <img
+        alt="App roles"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/ad-app-role-value.png?raw=true"
+    />
+</Frame>
+
+When a user signs in for the first time with their Microsoft account, Mage will use this mapping to automatically add
+the appropriate roles to the user.

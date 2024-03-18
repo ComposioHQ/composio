@@ -1,0 +1,129 @@
+---
+title: "Workspace management"
+sidebarTitle: "Overview"
+description: "Use Mage in multiple workspaces in the cloud"
+---
+
+We recommend running your production environment in the cloud. Mage has a built in
+workspace manager that can be enabled in production. This feature is similar to the
+[multi-development environments](/production/developing-in-the-cloud/cloud-dev-environments/overview), but
+there are settings that can be shared across the workspaces. For example, the project owner
+can set workspace level permissions for users. The current additional features supported are:
+
+* workspace level permissions
+* workspace level git settings
+
+still to come...
+
+* customizable permissions and roles
+
+## Setup
+
+In order to start using workspace management, you will first need to create a "main project". The
+main project is the parent project that will handle the management of all the workspaces. To create
+a main project, you will need to set the `PROJECT_TYPE` environment variable.
+
+If you want to use workspace level permissions, you will also need to enable user authentication
+and [provide an external database](/production/configuring-production-settings/overview#databases)
+(not the default SQLite DB) that will be shared among your workspaces. To enable user authentication,
+you will need to set the `REQUIRE_USER_AUTHENTICATION` variable.
+
+| Variable Name | Value |
+| --- | --- |
+| `PROJECT_TYPE` | `main` |
+| `CLUSTER_TYPE` | `k8s` |
+| `REQUIRE_USER_AUTHENTICATION` | `1` |
+| `MAGE_DATABASE_CONNECTION_URL` | `postgresql+psycopg2://...` |
+
+If you run into issues deploying your infrastructure, feel free to reach out in our
+[Slack](https://www.mage.ai/chat).
+
+Depending on your cloud environment, Mage may expect additional environment variables.
+Mage currently natively supports creating workspaces in these cloud providers:
+
+* [Kubernetes](/production/developing-in-the-cloud/workspaces/kubernetes)
+
+still to come...
+
+* Amazon ECS
+* Google Cloud Run
+
+### Project metadata
+
+There are a few additional settings that can be configured for a main project. You can access the project
+metadata in the "Settings" tab on the left hand side of the Workspaces UI.
+
+#### Workspace config defaults
+
+<Note>
+
+Available in version >= 0.9.56
+
+</Note>
+
+You can set default values for the workspace config. This will be the default config that is populated
+in the UI when creating a new workspace. When creating the workspace, you can manually override the
+default values as needed. All fields in the workspace config defaults are optional.
+
+```yaml
+# <your_project_name>/metadata.yaml
+
+...
+workspace_config_defaults:
+  name: str
+  lifecycle_config:
+    termination_policy:
+      enable_auto_termination: bool
+      max_idle_seconds: int
+    pre_start_script_path: str
+    post_start:
+      command: str
+      hook_path: str
+  k8s:
+    namespace: str
+    ingress_name: str
+    service_account_name: str
+    storage_access_mode: str
+    storage_class_name: str
+    storage_request_size: int
+
+...
+
+```
+
+## User management
+
+<Note>
+    Only the global owner can manage users from the workspace management page.
+</Note>
+
+If you enabled user authentication and connected an external database, you will be able to use
+project level permissions for your workspaces. When a workspace is created, project level roles will
+be automatically created for your workspaces as well. Click on the "Users" tab in the sidebar to view
+and manage user roles.
+
+<Frame>
+    <img
+        alt="Workspaces users"
+        src="https://github.com/mage-ai/assets/blob/main/production/workspaces/workspaces-users.png?raw=true"
+    />
+</Frame>
+
+If you click on a user or create a new user, you should see all your workspaces and the role that the
+user has for each workspace. If you want to give a user global permissions, then you can add a global role
+on the left hand side. Otherwise, you can set project level permissions on the right.
+
+<Frame>
+    <img
+        alt="Workspaces users"
+        src="https://github.com/mage-ai/assets/blob/main/production/workspaces/workspaces-user-management.png?raw=true"
+    />
+</Frame>
+
+## Settings
+
+In the settings tab, you can adjust the project metadata for the main project. This tab will be mostly useful
+if any of the initial settings are incorrect. In the future, we plan on allowing users to configure their
+workspace metadata from the settings page.
+
+

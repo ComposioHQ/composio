@@ -1,0 +1,123 @@
+---
+title: "BigQuery"
+---
+
+<img
+  alt=""
+  src="https://www.vectorlogo.zone/logos/google_bigquery/google_bigquery-ar21.svg"
+  height="200"
+/>
+
+## Add credentials
+
+<Snippet file="google-auth.mdx"/>
+
+## Required permissions
+
+```
+bigquery.datasets.create
+bigquery.datasets.get
+bigquery.jobs.create
+bigquery.readsessions.create
+bigquery.readsessions.getData
+bigquery.tables.create
+```
+
+If you're running queries in the existing BigQuery dataset, make sure your account also have "BigQuery Data Editor"
+role for the BigQuery dataset.
+
+## Using SQL blocks
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block.
+3. Select `SQL`.
+4. Under the `Data provider` dropdown, select `BigQuery`.
+5. Under the `Profile` dropdown, select `default` (or the profile you added
+   credentials underneath).
+6. Next to the `Database` label, enter the database name you want this block to
+   save data to.
+7. Next to the `Save to schema` label, enter the schema name you want this block
+   to save data to.
+8. Under the `Write policy` dropdown, select `Replace` or `Append` (please see
+   [SQL blocks guide](/guides/blocks/sql-blocks)
+   for more information on write policies).
+9. Enter in this test query: `SELECT 1`.
+10. Run the block.
+
+## Using Python blocks
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block (the code snippet
+   below is for a data loader).
+3. Select `Generic (no template)`.
+4. Enter this code snippet (note: change the `config_profile` from `default` if
+   you have a different profile):
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.bigquery import BigQuery
+from mage_ai.io.config import ConfigFileLoader
+from os import path
+from pandas import DataFrame
+
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+
+
+@data_loader
+def load_data_from_big_query(**kwargs) -> DataFrame:
+    query = 'SELECT 1'
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    return BigQuery.with_config(ConfigFileLoader(config_path, config_profile)).load(query)
+```
+
+5. Run the block.
+
+
+### Export a dataframe
+
+Here is an example code snippet to export a dataframe to BigQuery:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.bigquery import BigQuery
+from mage_ai.io.config import ConfigFileLoader
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_big_query(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a BigQuery warehouse.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#bigquery
+    """
+    table_id = 'your-project.your_dataset.your_table_name'
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    BigQuery.with_config(ConfigFileLoader(config_path, config_profile)).export(
+        df,
+        table_id,
+        if_exists='replace',  # Specify resolution policy if table name already exists
+        overwrite_types=None, # Specify the column types to overwrite in a dictionary
+    )
+```
+
+To overwrite a column type when running a python export block, simply specify the column name and type in the `overwrite_types` dict in data exporter config.
+You can find the supported types in this [doc](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.type). Here is the example code:
+```python
+    BigQuery.with_config(ConfigFileLoader(config_path, config_profile)).export(
+        df,
+        table_id,
+        if_exists='replace',  # Specify resolution policy if table name already exists
+        overwrite_types={'col_name': 'STRING'}, # Specify the column types to overwrite
+    )
+```

@@ -1,0 +1,67 @@
+---
+title: "Data validation"
+description:
+  "Every data loader and transformer block has data validation capabilities
+  built-in."
+---
+
+You can define 1 or more test functions in a single block. Each test function
+accepts a data object as an argument.
+
+Within the body of the function, you can write any type of test you want to
+validate the input data.
+
+After the block’s main code is executed, the output data is passed into each
+test function for validation. If any tests fail, then the block run will also
+fail.
+
+---
+
+### Example
+
+Here is an example of a transformer block with 2 tests:
+
+```python
+from pandas import DataFrame
+
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+COLUMNS_TO_USE = ['name']
+
+
+@transformer
+def transform_df(df: DataFrame, *args, **kwargs) -> DataFrame:
+    return df.iloc[:1][COLUMNS_TO_USE]
+
+
+@test
+def test_number_of_rows(df) -> None:
+    assert len(df.index) >= 2, 'The output has more than 1 row.'
+
+
+@test
+def test_columns(df) -> None:
+    assert df.columns[0] != COLUMNS_TO_USE[0], 'The output columns don’t match.'
+```
+
+<Note>
+  You can combine all your data validations into 1 test function or you can
+  split them up into multiple test functions. The benefit of splitting them up
+  is that they can run in parallel, speeding up the data validation.
+</Note>
+
+---
+
+### Log output
+
+Each test run is recorded and can be viewed in the logs. Here is an example:
+
+```
+Start executing block.
+--------------------------------------------------------------
+2/2 tests passed.
+Finish executing block.
+```

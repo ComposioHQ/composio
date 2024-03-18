@@ -1,0 +1,65 @@
+---
+title: "Metaplane in Mage"
+sidebarTitle: "Metaplane"
+description: "Run monitors in Metaplane."
+---
+
+![Metaplane](https://assets.website-files.com/6010c8c1dcb1d8def7311218/62fba80fddc9a0e808d2cff0_metaplane_full_filled_dark_purple.svg)
+
+## Configuration
+
+Here are the following keyword arguments that can be used for configuration:
+
+| Keyword argument | Description | Sample value |
+| --- | --- | --- |
+| `api_token` | Metaplane API token. | `abc123...` |
+
+---
+
+## Get all connections
+
+```python
+from mage_ai.services.metaplane.metaplane import Metaplane
+
+
+client = Metaplane(config=dict(api_token='abc123...'))
+client.connections()
+```
+
+## Example code
+
+Trigger sync with `source_id`.
+
+```python
+from mage_ai.services.metaplane.metaplane import Metaplane
+
+
+client = Metaplane(config=dict(api_token='abc123...'))
+connection_id = client.connections()[0]['id']
+
+# Run all monitors for a connection, and keep polling until they are all complete.
+client.process(
+    connection_id=connection_id,
+    poll_interval=60,            # optional: check the status of a monitor every N seconds
+    raise_on_failure=False,      # optional: if a monitor test fails, raise an error
+)
+```
+
+Sample output:
+
+```
+Metaplane process started.
+Running 1 monitor(s).
+Running monitor ID ab501e82-8412-444c-74a3-fb12f15ad572.
+Monitor ID ab501e82-8412-444c-74a3-fb12f15ad572 ran with status 200.
+Checking status for monitor ID ab501e82-8412-444c-74a3-fb12f15ad572.
+Monitor ID ab501e82-8412-444c-74a3-fb12f15ad572 completed: False; started 2023-01-24 11:39:41.161332, last created 2023-01-24 11:35:52.125462+00:00).
+Checking status for monitor ID ab501e82-8412-444c-74a3-fb12f15ad572.
+Monitor ID ab501e82-8412-444c-74a3-fb12f15ad572 completed: False; started 2023-01-24 11:39:41.161332, last created 2023-01-24 11:35:52.125462+00:00).
+Checking status for monitor ID ab501e82-8412-444c-74a3-fb12f15ad572.
+Monitor ID ab501e82-8412-444c-74a3-fb12f15ad572 completed: False; started 2023-01-24 11:39:41.161332, last created 2023-01-24 11:35:52.125462+00:00).
+Checking status for monitor ID ab501e82-8412-444c-74a3-fb12f15ad572.
+Monitor ID ab501e82-8412-444c-74a3-fb12f15ad572 completed: True; started 2023-01-24 11:39:41.161332, last created 2023-01-24 11:39:50.791930+00:00).
+Monitor ID ab501e82-8412-444c-74a3-fb12f15ad572 passed: True.
+Metaplane process completed.
+```

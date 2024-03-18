@@ -1,0 +1,56 @@
+If your Mage project requires user authentication, `REQUIRE_USER_AUTHENTICATION=1`, you'll need to create a new session before you can make any API calls. If your project _does not_ require user auth, you can skip straight to making API calls with your API key.
+
+To initialize a session, see the `POST /api/sessions` endpoint. You'll need to supply your email and password as a JSON payload. Here's an example of how to do this in Python.
+
+Before starting, first `nano ~/YOUR_SECRETS_PATH/.env.mage`, replacing `YOUR_SECRETS_PATH` with an apporpriate directory, to create a new secrets file. Then add the following to your secrets file:
+
+``` bash
+EMAIL=YOUR_EMAIL
+API_KEY=YOUR_API_KEY
+PASSWORD=YOUR_PASSWORD
+```
+
+Then, in a Python script, you can do the following:
+
+``` python
+import requests
+import json
+import os
+from dotenv import load_dotenv
+from pprint import pprint
+
+# Be sure to replace this with the path to your secrets file
+secrets_path = os.path.expanduser("~/YOUR_SECRETS_PATH/.env.mage")
+
+load_dotenv(secrets_path)
+
+API_KEY = os.getenv('API_KEY')
+EMAIL = os.getenv('EMAIL')
+PASSWORD = os.getenv('PASSWORD')
+
+base_url = 'http://localhost:6789'
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-KEY": API_KEY
+}
+
+json_data = {
+    "session": {
+        "email": EMAIL,
+        "password": PASSWORD
+    }
+}
+
+s = requests.Session()
+s.headers = headers
+sessions_url = base_url + "/api/sessions"
+
+r = s.post(url=sessions_url, json=json_data)
+
+if r.json().get('error'):
+    raise ValueError(r.text)
+else:
+    mage_session = r.json().get('session')
+    pprint(mage_session)
+```

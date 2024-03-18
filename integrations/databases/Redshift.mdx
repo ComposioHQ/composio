@@ -1,0 +1,120 @@
+---
+title: "Redshift"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198754422-f3800160-b36a-4e3c-af78-cf322e55a7d3.png)
+
+## Add credentials
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+
+```yaml
+version: 0.1.1
+default:
+  REDSHIFT_DBNAME: ...
+  REDSHIFT_HOST: ...
+  REDSHIFT_PORT: ...
+  REDSHIFT_TEMP_CRED_USER: ...
+  REDSHIFT_TEMP_CRED_PASSWORD: ...
+```
+
+When connecting to **Redshift Serverless**, you can use `workgroup-name.account-number.aws-region.redshift-serverless.amazonaws.com`
+as the `REDSHIFT_HOST` value.
+
+<br />
+
+## Using SQL block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block.
+3. Select `SQL`.
+4. Under the `Data provider` dropdown, select `Redshift`.
+5. Under the `Profile` dropdown, select `default` (or the profile you added
+   credentials underneath).
+6. Next to the `Save to schema` label, enter the schema name you want this block
+   to save data to.
+7. Under the `Write policy` dropdown, select `Replace` or `Append` (please see
+   [SQL blocks guide](/guides/blocks/sql-blocks)
+   for more information on write policies).
+8. Enter in this test query: `SELECT 1`.
+9. Run the block.
+
+<br />
+
+## Using Python block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block (the code snippet
+   below is for a data loader).
+3. Select `Generic (no template)`.
+4. Enter this code snippet (note: change the `config_profile` from `default` if
+   you have a different profile):
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.redshift import Redshift
+from os import path
+from pandas import DataFrame
+
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+
+
+@data_loader
+def load_data_from_redshift(**kwargs) -> DataFrame:
+    query = 'SELECT 1'
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    with Redshift.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        return loader.load(query)
+```
+
+5. Run the block.
+
+<br />
+
+6. Custom types.
+
+To overwrite a column type when running a python export block, simply specify the column name and type in the `overwrite_types` dict in data exporter config
+
+Here is an example code snippet:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.redshift import Redshift
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_redshift(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a Redshift cluster.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#redshift
+    """
+    table_name = 'your_table_name'
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+    overwrite_types = {'column_name': 'VARCHAR(255)'}
+
+    with Redshift.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        loader.export(
+            df,
+            table_name,
+            if_exists='replace',  # Specify resolution policy if table already exists
+            overwrite_types=overwrite_types,
+        )
+
+```

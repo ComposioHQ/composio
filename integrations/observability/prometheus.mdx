@@ -1,0 +1,14 @@
+---
+title: "Monitoring with Prometheus"
+sidebarTitle: "Prometheus"
+---
+
+## Enable Prometheus
+
+You will need to add `ENABLE_PROMETHEUS` environment variable as `true` in order to
+enable Prometheus style metrics on the \<BASE_PATH\>/metrics route.
+
+## Prometheus metrics
+
+When enabled, Mage will publish Metrics for the HTTP Server (Tornado) as well as for
+the Python Runtime. The /metrics route will be updated on-demand to respond to scrape requests.

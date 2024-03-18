@@ -1,0 +1,61 @@
+---
+title: "Git integration"
+description: "Mage's Git integration provides a way for you to push changes to a remote repository— for example collaborating on a Mage project with your teammates."
+---
+
+"Git integration" in Mage is a way to collaborate with teammates using Git. It provides a way to push changes to a branch in an external repository. If you're using GitHub, we recommend Mage's direct [GitHub integration](/production/data-sync/github) rather than this method. 
+
+First, you'll need to configure Git— see this [guide](/development/git/configure). Once your git settings are configured, you can perform various Git actions in Mage. To start, click the button at the top right with the name of the current branch.
+
+<Frame>
+    <img src="https://github.com/mage-ai/assets/blob/main/version-control/git-integration/branch-button.png?raw=true"/>
+</Frame>
+
+Once the modal is open, you can start performing actions. Currently, the Git integration supports the following actions:
+
+<AccordionGroup>
+    <Accordion title="Clone repository">
+        Clone repository will allow you to clone the specified git repository to your local machine.
+        _This operation will overwrite all local changes you have in the local git directory._
+    </Accordion>
+    <Accordion title="Create new branch">
+        Create new branch will create a new branch in your local git directory. Specify the name of the branch and click `Create`. You will
+        automatically be switched to the new branch.
+
+        <img src="https://github.com/mage-ai/assets/blob/main/version-control/git-integration/create-new-branch.png?raw=true" width="100%"/>
+    </Accordion>
+    <Accordion title="Switch branch">
+        To switch your local branch, you can click the dropdown menu with the current active branch and select the branch you would like to switch to.
+
+        <img src="https://github.com/mage-ai/assets/blob/main/version-control/git-integration/switch-branch.png?raw=true" width="100%"/>
+    </Accordion>
+    <Accordion title="Commit & push">
+        <Steps>
+            <Step title="Select files">
+                First, select the files you would like to commit. You can select all files by clicking the `Include all changes` button.
+
+                <img src="https://github.com/mage-ai/assets/blob/main/version-control/git-integration/select-files.png?raw=true" width="100%"/>
+            </Step>
+            <Step title="Commit your changes">
+                Then, enter a descriptive commit message and click `Commit`. This will commit your changes to your local git directory.
+
+                <img src="https://github.com/mage-ai/assets/blob/main/version-control/git-integration/commit-changes.png?raw=true" width="100%"/>
+            </Step>
+            <Step title="Push to remote">
+                Once your changes are commited, you can push your commit to the remote repository by clicking `Push`.
+
+                <img src="https://github.com/mage-ai/assets/blob/main/version-control/git-integration/push-to-remote.png?raw=true" width="100%"/>
+            </Step>
+        </Steps>
+    </Accordion>
+    <Accordion title="Pull">
+        Pull your changes from the remote branch to your local branch. This operation is equivalent to `git pull mage-repo <current-branch>`.
+    </Accordion>
+    <Accordion title="Hard reset">
+        Hard reset your local branch with the remote branch. This operation is equivalent to `git reset --hard mage-repo/<current-branch>`.
+
+        _This operation will overwrite your local changes._
+    </Accordion>
+</AccordionGroup>
+
+For any other operations you may need, you can perform them through the terminal. You can open the terminal by clicking the terminal toggle in the top right of the modal.

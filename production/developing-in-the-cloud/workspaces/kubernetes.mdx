@@ -1,0 +1,264 @@
+---
+title: "Kubernetes"
+sidebarTitle: "Kubernetes"
+---
+
+## Setup
+
+<Note>
+We recommend creating your ingress separately from the Mage Helm chart if you are planning
+to add your workspaces to the ingress. You can either create the ingress manually through
+[the Kubernetes CLI](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+or use [the mageai-ingress Helm chart](https://github.com/mage-ai/helm-charts/tree/master/charts/ingress).
+</Note>
+
+We recommend using Helm to set up your Kubernetes cluster. You can find our Mage Helm
+documentation [here](/production/deploying-to-cloud/using-helm). You will need to create
+a persistent volume for your cluster.
+
+You will need to include your Kubernetes namespace as an environment variable when setting
+up your Kubernetes deployment. Here is a sample config for the `values.yaml` file for the
+Helm chart:
+
+```yaml
+volumes:
+  - name: mage-fs
+    persistentVolumeClaim:
+      claimName: gke-mage-pvc
+
+
+env:
+  - name: KUBE_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: PROJECT_TYPE
+    value: main
+  - name: MAGE_DATABASE_CONNECTION_URL
+    value: <database_connection_url>
+  - name: REQUIRE_USER_AUTHENTICATION
+    value: "1"
+```
+
+### Ingress
+
+If you want to access your workspaces through the same url, i.e. `https://your-domain.com/<workspace-name>`,
+you will need to set up an ingress.
+
+You will need to first install an ingress controller in your kubernetes cluster if you do not already have one.
+The most common ingress controller is the Ingress-Nginx Controller . You
+can find instructions on how to install the controller [here](https://kubernetes.github.io/ingress-nginx/deploy/).
+
+Once the ingress controller is installed, you can add an ingress to your Kubernetes cluster. If you're
+using the mageai-ingress Helm chart, you can add the following configuration to your `values.yaml` file:
+
+```yaml
+ingress:
+  enabled: true
+  className: nginx # your ingress class name
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: your-domain.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+```
+
+There is additional configuration for the ingress that you can set, but that will depend on your
+own requirements. When a workspace is created, you can specify the name of the ingress created above
+to automatically add the workspace to the ingress rules. The workspace will be added to the ingress rules
+like this:
+
+```yaml
+spec:
+  rules:
+    - host: your-domain.com
+      http:
+        paths:
+          - path: /<workspace-name>
+            path_type: Prefix
+            backend:
+              service:
+                name: <service-name>
+                port: 6789
+          - path: ...
+```
+
+
+## Permissions
+
+Once your cluster and initial deployment is created, you will also need to give your
+Kubernetes service account some permissions in order to create the necessary resources.
+You can run the folliwng `kubectl` command to create the `ClusterRole` required for 
+managing the Kubernetes resources.
+
+```bash
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manage-role
+rules:
+  - apiGroups:
+      - ""
+      - apps
+    resources:
+      - nodes
+      - persistentvolumeclaims
+      - services
+      - statefulsets
+      - statefulsets/scale
+      - ingresses
+      - configmaps
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+EOF
+```
+
+Once the cluster role is created, you will need to bind the role to the 
+service account. You will need to change the service account name if it is not `default`:
+
+```bash
+kubectl create clusterrolebinding manage-role-binding \
+  --clusterrole=manage-role  \
+  --serviceaccount=default:default
+```
+
+## Configuration
+
+When creating a new Kubernetes workspace, you can configure the following Kubernetes settings:
+
+<Frame>
+    <img
+        alt="Kubernetes configuration"
+        src="https://github.com/mage-ai/assets/blob/main/production/workspaces/workspaces-k8s-settings.png?raw=true"
+		/>
+</Frame>
+
+| Field | Description |
+| --- | --- |
+| Workspace name | Name of workspace. This name will be used to create all resources for the workspace. |
+| Namespace | Kubernetes namespace to create workspace resources. Defaults to the value of the `KUBE_NAMESPACE` environment variable or `default` if empty. |
+| Service account name | Kubernetes service account to use to create the resources. Defaults to current pod's service account name. |
+| Ingress name | Name of ingress to add the new workspace to. See more information about the ingress set up below. |
+| Storage class name | Name of storage class to provision storage from for the stateful set. Defaults to current pvc's storage class name. |
+| Storage request size | Amount of storage to provision for the persistent volume claim (in GB). Defaults to current pvc's storage request. |
+| Access mode | Access mode for persistent volume claim. [More info in Kubernetes docs.](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) Defaults to current pvc's access mode. |
+| Retention policy | Retention policy for the stateful set PVC. Defaults to "Retain". |
+| Configure container | Customize the configuration for the container. [Configuration options](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Container.md) |
+
+### Lifecycle management
+
+<Note>
+
+Available in version <b>`0.9.41`</b> and greater.
+
+</Note>
+
+Mage provides some support for managing the lifecycle of the workspace. For Kubernetes workspaces, Mage
+supports the following lifecycle management options:
+
+<AccordionGroup>
+<Accordion title="Auto termination">
+
+<Note>
+When the workspace is stopped, Mage will scale down the stateful set to 0, but all the other resources will still exist. The
+workspace can be resumed after being stopped through the UI.
+</Note>
+
+<Frame>
+    <img
+        alt="Auto termination configuration"
+        src="https://github.com/mage-ai/assets/blob/main/production/workspaces/lifecycle-auto-termination.png?raw=true"
+		/>
+</Frame>
+
+Mage will automatically stop the workspace after the specified amount of time (max idle time).
+
+</Accordion>
+
+<Accordion title="Pre start script">
+
+<Frame>
+    <img
+        alt="Auto termination configuration"
+        src="https://github.com/mage-ai/assets/blob/main/production/workspaces/lifecycle-pre-start.png?raw=true"
+		/>
+</Frame>
+
+You can select a Python pre start script that will be run before the container is started. The script must
+must be a valid Python script with a `get_custom_configs` method that returns a dictionary. The `get_custom_configs`
+method will be passed the container config of the workspace as an argument. Here is an example script:
+
+```python
+### example_pre_start.py
+
+from typing import Dict
+
+def get_custom_configs(mage_container_config: Dict) -> Dict:
+    current_env = config.get('env', [])
+    current_env.append({
+        'name': 'RANDOM_ENV_VAR',
+        'value': 'HI HELLO',
+    })
+    config['env'] = current_env
+    return config
+```
+
+This script will add an environment variable to the container config before the container is started. This will be run
+when the Kubernetes pod is restarted as well. The returned Dictionary must be a valid Kubernetes container config. You
+can find the schema for a container config [here](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Container.md)
+
+</Accordion>
+
+<Accordion title="Post start hook">
+
+<Frame>
+    <img
+        alt="Auto termination configuration"
+        src="https://github.com/mage-ai/assets/blob/main/production/workspaces/lifecycle-post-start.png?raw=true"
+		/>
+</Frame>
+
+You can also configure a post start hook that will be run after the container is started. This setting leverages the 
+native Kubernetes container lifecycle [PostStart hook](https://kubernetes.io/docs/tasks/configure-pod-container/attach-handler-lifecycle-event/).
+Mage provides two configuration fields:
+
+1. `Command`: corresponds to the Kubernetes `lifecycle.postStart.exec.command` field. This field is required if you are
+using a post start hook. This can be a string command or a list.
+2. `Path to hook`: Mage will mount the file specified by this setting to the container. You can reference this fild in your
+post start `command` to perform more advanced operations. The path of this file will be `/app/<file_name>` in the container.
+
+Example:
+```
+Command: ["/bin/sh", "-c", "/app/example_post_start.sh"]
+Path to hook: /home/src/my_mage_project/example_post_start.sh
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+## Ingress
+
+When an ingress is provided, the `MAGE_BASE_PATH` environment variable will be set automatically 
+to the name of the workspace. Thus, the workspace will be accessible at the `/<workspace-name>` path.
+
+Providing an ingress name will add the workspace to the ingress rules like this:
+
+```
+spec:
+  rules:
+    - host: "your host"
+      http:
+        paths:
+          ...
+          - path: /<workspace-name>
+            path_type: Prefix
+            backend:
+              service:
+                name: <service-name>
+                port: 6789
+```

@@ -1,0 +1,63 @@
+---
+title: "Sign in with Google"
+sidebarTitle: "Google"
+description: "Enable signing in with a Google account in Mage."
+---
+
+### Pre-requisites
+
+First, you'll need to enable user authentication within Mage. You can find out more about
+this in the [Overview page](/production/authentication/overview).
+
+### Enable Google sign in
+
+<Note>
+
+Mage will request access for the following scopes:
+
+```
+https://www.googleapis.com/auth/userinfo.email
+https://www.googleapis.com/auth/userinfo.profile
+```
+
+</Note>
+
+By default, users will not see the "Sign in with Google" option in their sign in page.
+
+<Steps>
+
+<Step title="Add Oauth application">
+
+You will need to add Mage as an OAuth client in your Google Cloud Platform project.
+For more instructions on how to do this, please see the [Google Cloud Platform documentation](https://developers.google.com/identity/protocols/oauth2/openid-connect#appsetup).
+
+</Step>
+
+<Step title="Retrieve credentials">
+
+Once you have created the credentials, you will need to get the application's client ID and client secret.
+You will also need to add `http(s)://<your-mage-url>/oauth` as an authorized redirect URI.
+
+</Step>
+
+<Step title="Set environment variables">
+
+Set the following environment variables in your Mage setup.
+
+| Name | Value |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` | `<client id>` |
+| `GOOGLE_CLIENT_SECRET` | `<client secret>` |
+
+</Step>
+
+</Steps>
+
+You should now see the "Sign in with Google" button when you start Mage and attempt to sign in. 
+
+<Frame>
+    <img
+        alt="Sign in with Google"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/sign-in-with-google.png?raw=true"
+    />
+</Frame>

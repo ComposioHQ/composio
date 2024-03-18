@@ -1,0 +1,78 @@
+---
+title: "Airbyte in Mage"
+sidebarTitle: "Airbyte"
+description: "Trigger a connection sync in Airbyte."
+---
+
+## Configuration
+
+Here are the following keyword arguments that can be used to configure `Airbyte`:
+
+| Keyword argument | Description | Default value |
+| --- | --- | --- |
+| `api_version` | API version | `v1` |
+| `host` | Airbyte server host | `host.docker.internal` |
+| `password` | Password to log into Airbyte | `password` |
+| `port` | Airbyte server port | `8000` |
+| `use_ssl` | If `True`, then service will use HTTPS | `False` |
+| `username` | Username to log into Airbyte | `airbyte` |
+
+---
+
+## Example code
+```python
+from mage_ai.services.airbyte import Airbyte
+
+
+client = Airbyte(
+    api_version='v1',
+    host='host.docker.internal',
+    password='password',
+    port=8000,
+    use_ssl=False,
+    username='airbyte',
+)
+job = client.run_sync('7a749f2f-74b4-492e-9d13-30a3f390d111', poll_interval=2)
+```
+
+Sample result:
+
+```json
+{
+  "connection_id": "7a749f2f-74b4-492e-9d13-30a3f390d111",
+  "connection_status": "active",
+  "job": {
+    "id": 9,
+    "configType": "sync",
+    "configId": "7a749f2f-74b4-492e-9d13-30a3f390d111",
+    "createdAt": 1671909838,
+    "updatedAt": 1671909843,
+    "status": "succeeded"
+  }
+}
+```
+
+---
+
+## Example data loader
+
+You can either explicitly hard code the `connection_id` in the data loader block
+or you can add the value of the `connection_id`
+as a [runtime variable](/getting-started/runtime-variable#creating-runtime-variables-in-editor).
+
+```python
+from mage_ai.services.airbyte import Airbyte
+
+
+@data_loader
+def load_data(*args, **kwargs):
+    connection_id = kwargs['connection_id']
+    client = Airbyte(
+        host='host.docker.internal',
+        password='password',
+        username='airbyte',
+    )
+    job = client.run_sync(connection_id, poll_interval=2)
+
+    return job
+```

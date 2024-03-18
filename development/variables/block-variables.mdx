@@ -1,0 +1,83 @@
+---
+title: "Mage block variables"
+sidebarTitle: "Block variables"
+description: "Use pipeline-specific variables scoped to an individual block."
+---
+
+<Note>Requires version `0.9.23` or greater.</Note>
+
+In addition to the global runtime variables that can be used by any block in
+a pipeline, there are also variables scoped at the block-level, meaning
+they are accessible in a specific block but not other blocks in the same pipeline.
+Block variables are not accessible by other pipelines that use the same block.
+
+## Using block variables
+
+Block variables can be accessed via the `kwargs` parameter in your block function.
+The variables are stored in a block's configuration, which is accessible through
+`kwargs['configuration']`.
+
+```python
+@data_exporter
+def export_data(*args, **kwargs):
+    demo_block_var = kwargs['configuration'].get('demo_block_var')
+
+```
+
+### Supported block types
+
+Block variables are currently only supported for Python blocks with the
+following block types:
+  1. `data_loader`
+  2. `transformer`
+  3. `data_exporter`
+  4. `custom`
+  5. `sensor`
+
+## Creating block variables
+
+### In Mage UI
+
+You can create new block variables from the Mage UI through the "Block settings" tab
+in the Sidekick of the Pipeline Editor page. The block settings can also be quickly accessed
+by clicking the settings icon in a block's header.
+
+In the "Block variables" section of the block settings, click the `+ New` button, enter
+the variable's name and value in the input fields and then press `Enter` or `Return` on
+your keyboard while still focused on one of the input fields (this step can be repeated
+multiple times).
+
+This will add the variable(s), but not save it. You need to also click the blue
+`Update block settings` button below the "Block variables" section in order to save
+and persist these new variables. You can also edit/delete existing block variables by
+hovering over a variable and clicking the edit/trash icons. You can press the `Escape`
+key to exit a variable's edit mode.
+
+### In code
+
+You can also create or edit block variables by going to a pipeline's `metadata.yaml` file
+(located in the `pipelines/[pipeline_uuid]` directory) and adding them to a block's
+`configuration` property. 
+
+```yaml
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration:
+    demo_block_var: block_var_value
+    block_var2: val2
+    block_var3: val3
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: billowing snow
+  retry_config: {}
+  status: updated
+  timeout: '60'
+  type: data_exporter
+  upstream_blocks:
+  - muddy_waterfall
+  uuid: billowing_snow
+```

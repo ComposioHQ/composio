@@ -1,0 +1,322 @@
+---
+title: "Cast spells with the Command Center"
+sidebarTitle: "Spellcaster"
+description: "Command the data elements with the almighty Command Center and transform yourself into a Mage Spellcaster."
+icon: "superpowers"
+"og:image": "https://comicvine.gamespot.com/a/uploads/original/11144/111444934/8718235-02a6ede3-79ba-478c-b4a9-266176010b4a.gif"
+---
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Cast spells with the Command Center"
+        src="https://github.com/mage-ai/assets/blob/main/dev-ux/command-center/spellcaster.gif?raw=true"
+    />
+    </p>
+</Frame>
+
+The Command Center is an ancient magical artifact that imbues its wielder with godlike
+capabilities such as:
+
+1. <b>Teleport</b> between different pages (*go to different pages*).
+1. <b>Cast</b> spells that trigger pipelines, immortalize code, etc. (*perform an action*).
+1. <b>Conjure</b> new entities such as files, folders, pipelines, and more (*create new objects*).
+1. <b>Enchant</b> objects and reveal their inner details (*view object details*).
+1. <b>Summon</b> applications to do your bidding and fight alongside you (*open applications*).
+1. <b>Heal</b> wounds suffered from bugs and errors (*get help and support*).
+1. <b>Alchemize</b> entities and update their inherent properties (*update object attributes*).
+
+---
+
+## Setup
+
+<Note>
+    Available on versions `>= 0.9.60`
+</Note>
+
+To enable this feature:
+
+<Steps>
+  <Step title="Project settings">
+    Go to your [project settings](http://localhost:6789/settings/workspace/preferences).
+  </Step>
+  <Step title="Enable feature">
+    Enable the feature named <b>Command Center</b>.
+  </Step>
+  <Step title="Optional">
+    Restart Mage so that your files can be re-indexed.
+  </Step>
+</Steps>
+
+---
+
+## Launch Command Center
+
+There are several ways to launch the Command Center:
+
+<AccordionGroup>
+    <Accordion title="Header dropdown menu" icon="bars" iconType="duotone" defaultOpen>
+        1. In the top right corner of the screen, click on your avatar.
+        1. In the dropdown menu, click the option labeled <b>Launch Command Center</b>.
+
+        <Frame>
+            <p align="center">
+            <img
+                alt="Launch dropdown menu."
+                src="https://github.com/mage-ai/assets/blob/main/dev-ux/command-center/launch-header-dropdown.png?raw=true"
+            />
+            </p>
+        </Frame>
+    </Accordion>
+
+    <Accordion title="Keyboard shortcuts" icon="keyboard" iconType="duotone" defaultOpen>
+        - <b>MacOS</b>
+
+            <kbd>`⌘`</kbd> + <kbd>`.`</kbd> aka <kbd>`Command`</kbd> + <kbd>`Period`</kbd>
+        
+        - <b>Windows</b>
+
+            <kbd>`⊞`</kbd> + <kbd>`.`</kbd> aka <kbd>`Win`</kbd> + <kbd>`Period`</kbd>
+    </Accordion>
+</AccordionGroup>
+
+### Customize launch keyboard shortcuts
+
+You can change the default keyboard shortcuts to launch the Command Center:
+
+<Frame>
+    <video
+        controls
+        className="w-full aspect-video"
+        src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/customize-launch-shortcuts.mp4"
+    />
+</Frame>
+
+## Keyboard shortcuts
+
+<AccordionGroup>
+    <Accordion title="Launch Command Center " icon="rocket" iconType="duotone">
+        #### MacOS
+        
+        <kbd>`⌘`</kbd> + <kbd>`.`</kbd> aka <kbd>`Command`</kbd> + <kbd>`Period`</kbd>
+
+        #### Windows
+
+        <kbd>`⊞`</kbd> + <kbd>`.`</kbd> aka <kbd>`Win`</kbd> + <kbd>`Period`</kbd>
+    </Accordion>
+
+    <Accordion title="Scroll through actions and items" icon="scroll" iconType="duotone" defaultOpen>
+        <kbd>`⬇`</kbd> or <kbd>`⬆`</kbd>
+    </Accordion>
+
+    <Accordion title="Initiate action or delve deeper into selected row" icon="wand-sparkles" iconType="duotone" defaultOpen>
+        <kbd>`⌅ Enter`</kbd> or <kbd>`↵ Return`</kbd>
+    </Accordion>
+
+    <Accordion title="Scroll through previously searched results" icon="rectangle-history" iconType="duotone" defaultOpen>
+        <kbd>`⬆`</kbd> when search query is blank
+    </Accordion>
+
+    <Accordion title="Clear search query" icon="eraser" iconType="duotone" defaultOpen>
+        <kbd>`⎋ Esc`</kbd> when search query isn’t blank
+    </Accordion>
+
+    <Accordion title="Go back a level in the stack" icon="pancakes" iconType="duotone" defaultOpen>
+        <kbd>`⎋ Esc`</kbd> after delving deeper into a selected row
+    </Accordion>
+
+    <Accordion title="Close command center" icon="handcuffs" iconType="duotone" defaultOpen>
+        <kbd>`⎋ Esc`</kbd> when search query is blank
+    </Accordion>
+</AccordionGroup>
+
+## Actions
+
+These are some of the actions you can invoke from the Command Center.
+
+<CardGroup cols={2}>
+  <Card title="Page navigation" icon="person-from-portal" iconType="duotone" color="#9ECBFF">
+    Open a page such as the Triggers page, your profile preferences, a specific pipeline, etc.
+  </Card>
+  <Card title="Recent pages" icon="page-caret-down" iconType="duotone" color="#B1B8C3">
+    After landing on a page, you can go back to that page from the Command Center.
+    By default, 5 recent pages are available to jump back to.
+  </Card>
+  <Card title="New folder" icon="folder" iconType="duotone" color="#2A60FE">
+    Create a new folder in the project.
+  </Card>
+  <Card title="New file" icon="file" iconType="duotone" color="#FFCC19">
+    Create a new file in the project.
+  </Card>
+  <Card title="New pipeline" icon="diagram-sankey" iconType="duotone" color="#65E3FF">
+    Create a new pipeline.
+  </Card>
+  <Card title="Run pipeline" icon="bolt" iconType="duotone" color="#D1A2AB">
+    Trigger a pipeline to run once immediately.
+  </Card>
+  <Card title="Instant help" icon="comments" iconType="duotone" color="#8ADE00">
+    Get instant help from the community and maintainers.
+  </Card>
+  <Card title="Docs" icon="book" iconType="duotone" color="#24B400">
+    Open the developer documentation.
+  </Card>
+</CardGroup>
+
+<br />
+
+<AccordionGroup>
+    <Accordion title="Run pipeline once" icon="bolt" iconType="duotone" defaultOpen>
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/trigger-pipeline-once.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Create new pipeline demo" icon="diagram-sankey" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/create-pipeline.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Create new file demo" icon="file" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/create-file.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Nagivate pages demo" icon="person-from-portal" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/navigate-pages.mp4"
+            />
+        </Frame>
+    </Accordion>
+</AccordionGroup>
+
+## Items
+
+Here are some examples of items you can enchant and interact with from the Command Center.
+
+<CardGroup cols={3}>
+    <Card title="Pages" icon="page-caret-down" iconType="duotone" color="#9ECBFF">
+        Overview
+        
+        Pipelines
+        
+        Account profile
+        
+        *and more...*
+    </Card>
+    <Card title="Files" icon="file" iconType="duotone" color="#FFCC19">
+        Create
+
+        View details
+    </Card>
+    <Card title="Blocks" icon="code" iconType="duotone" color="#6B50D7">
+        View details
+    </Card>
+    <Card title="Pipelines" icon="diagram-sankey" iconType="duotone" color="#65E3FF">
+        Create
+
+        View
+    </Card>
+    <Card title="Triggers" icon="bolt" iconType="duotone" color="#D1A2AB">
+        Create
+
+        View
+    </Card>
+    <Card title="Pipeline runs" icon="rabbit-running" iconType="duotone" color="#00B4CC">
+        Create
+
+        View
+    </Card>
+</CardGroup>
+
+<AccordionGroup>
+    <Accordion title="View block details" icon="code" iconType="duotone" defaultOpen>
+        <Frame>
+            <p align="center">
+            <img
+                alt="View block details"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/view-details-block.gif?raw=true"
+            />
+            </p>
+        </Frame>
+    </Accordion>
+    <Accordion title="View trigger and run details" icon="bolt" iconType="duotone" defaultOpen>
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/view-trigger-details.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="View pipeline" icon="diagram-sankey" iconType="duotone">
+        <Frame>
+            <p align="center">
+            <img
+                alt="View pipeline details"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/view-details-pipeline.gif?raw=true"
+            />
+            </p>
+        </Frame>
+    </Accordion>
+    <Accordion title="View file contents" icon="file" iconType="duotone">
+        <Frame>
+            <p align="center">
+            <img
+                alt="View file details"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/view-details-file.gif?raw=true"
+            />
+            </p>
+        </Frame>
+    </Accordion>
+</AccordionGroup>
+
+## Modes
+
+The Command Center by default will show a standard list of actions and items that are
+useful throughout Mage.
+
+However, there comes a time when you must transform into a different mode to better tackle
+specific quests. Currently supported modes are:
+
+<Card title="Version Control" icon="code-branch" iconType="duotone" color="#FFCC19">
+    Switch into the Version Control mode to become the master of Git workflows.
+    This mode comes with spells and artifacts for
+    pulling code, viewing file diffs, committing changes, pushing features, etc.
+</Card>
+
+*More modes coming very soon!*
+
+## Application launcher
+
+The Command Center can launch Mage applications within the currently running Mage instance. 
+These applications can be used simultaneously throughout your journey in Mage.
+
+Currently supported applications:
+
+<Card title="Arcane Library" icon="scroll" iconType="duotone" color="#7D55EC">
+    This is the file browser and the code editor self-contained in a single application.
+</Card>
+
+<Card title="Portal Terminal" icon="person-to-portal" iconType="duotone" color="#FF1E59">
+    This is the terminal with multi-terminal support and can be launched and used on any page.
+</Card>
+
+<Card title="Code Matrix" icon="code-simple" iconType="duotone" color="#8ADE00">
+    This application provides a new and revolutionary way to write code, test, and debug.
+</Card>
+
+*More applications coming very soon!*

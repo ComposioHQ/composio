@@ -1,0 +1,128 @@
+---
+title: "Update block"
+api: "PUT /api/pipelines/:pipeline_uuid/blocks/:block_uuid"
+---
+`PUT /api/pipelines/:pipeline_uuid/blocks/:block_uuid`
+
+<ParamField query="name" type="string" required>
+  Human readable block name. This is used to generate the UUID, e.g. `restless dust`. Names will be slugified to a safe-uuid.
+</ParamField>
+<ParamField query="type" type="string" required>
+  Type of block:
+  `callback`, `chart`, `conditional`, `custom`, `data_exporter`, `data_loader`, `dbt`, `extension`, `global_data_product`, `markdown`, `scratchpad`, `sensor`, `transformer`
+</ParamField>
+<ParamField query="bookmark_values" type="[string]">
+  Data integration bookmark values as a list of strings.
+</ParamField>
+<ParamField query="callback_blocks" type="[string]">
+  Array of [callback](/development/blocks/callbacks) block objects. Same shape as `blocks`.
+</ParamField>
+<ParamField query="color" type="string">
+  Block color displayed by the frontend for `custom` blocks. All other block types have predefined colors.
+</ParamField>
+<ResponseField name="configuration" type="object">
+    Miscellaneous configuration settings for the block.
+    <Expandable title="properties">
+    <ResponseField name="data_provider" type="string">
+      Database or data warehouse for the SQL block to connect to.
+    </ResponseField>
+    <ResponseField name="data_provider_database" type="string">
+      Database name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="data_provider_profile" type="string">
+      Profile target for the dbt block.
+    </ResponseField>
+    <ResponseField name="data_provider_schema" type="string">
+      Schema name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="data_provider_table" type="string">
+      Table name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="export_write_policy" type="string">
+      Whether to `replace` the existing table of the SQL block output, `append`, or
+      raise an error and `fail`.
+    </ResponseField>
+    <ResponseField name="use_raw_sql" type="string">
+      Toggle writing raw SQL in the block. Read more [here](/guides/blocks/sql-blocks#using-raw-sql).
+    </ResponseField>
+    </Expandable>
+  </ResponseField>
+<ParamField query="content" type="string">
+  The content of block formatted as a string. Use `/n` for newlines. Omitting will create an empty block.
+</ParamField>
+<ParamField query="destination_table" type="string">
+  The destination table for a data integration pipeline.
+</ParamField>
+<ParamField query="downstream_blocks" type="[string]">
+  Array of blocks downstream from the created block.
+</ParamField>
+<ParamField query="executor_config" type="object">
+  Used when configuring a Kubernetes executor. See the [Kubernetes config](/production/configuring-production-settings/compute-resource#2-set-executor-type-and-customize-the-compute-resource-of-the-mage-executor) page for more details
+</ParamField>
+<ParamField query="executor_type" type="string">
+  Used when configuring a Kubernetes executor. See the [Kubernetes config](/production/configuring-production-settings/compute-resource#2-set-executor-type-and-customize-the-compute-resource-of-the-mage-executor) page for more details
+</ParamField>
+<ParamField query="extension_uuid" type="string">
+  UUID of extensions, currently [Great Expectations](/development/testing/great-expectations) is the only extension supported.
+</ParamField>
+<ParamField query="language" type="string">
+  The block language:
+  `python`, `sql`, `r`, `yaml`, `markdown`
+</ParamField>
+
+<ParamField query="pipelines" type="[string]">
+  Array of strings containing the pipeline uuids for which the block is a member.
+</ParamField>
+<ParamField query="retry_config" type="object">
+  The configuration for block retry logic. See the [pipeline runs](/orchestration/pipeline-runs/retrying-block-runs) docs for retry config examples.
+</ParamField>
+<ParamField query="tap_stream_id" type="string">
+  The block tap stream ID for data integration pipelines.
+</ParamField>
+<ParamField query="upstream_blocks" type="[string]">
+  An array of strings representing the uuids of upstream blocks (the blocks on which the new block depends). For example, `["a", "b"]` will create a block that depends on blocks `a` and `b`.
+</ParamField>
+<ParamField query="uuid" type="string">
+  The unique id of the block. This is generated from `name`, so it's not necessary to populate this field.
+</ParamField>
+
+<RequestExample>
+
+```bash Request
+curl --location --request PUT 'http://localhost:6789/api/pipelines/broken_wave/blocks/solitary_silence' \
+--header 'Cookie: oauth_token=long_token_string' \
+--header 'Content-Type: text/plain' \
+--header 'X-API-KEY: zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' \
+--data '{
+ "block": {
+   "color": "teal"
+ }
+}'
+```
+
+</RequestExample>
+<ResponseExample>
+
+```json Response
+{
+    "block": {
+        "all_upstream_blocks_executed": true,
+        "color": "teal",
+        "configuration": {},
+        "downstream_blocks": [],
+        "executor_config": null,
+        "executor_type": "local_python",
+        "has_callback": false,
+        "name": "solitary silence",
+        "language": "python",
+        "retry_config": null,
+        "status": "not_executed",
+        "type": "data_loader",
+        "upstream_blocks": [],
+        "uuid": "solitary_silence",
+        "content": "some_long_content_string"
+    }
+}
+```
+
+</ResponseExample>

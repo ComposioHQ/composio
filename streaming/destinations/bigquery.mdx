@@ -1,0 +1,19 @@
+---
+title: "BigQuery"
+---
+
+## Basic config
+
+```yaml
+connector_type: bigquery
+profile: default    # profile in the io_config.yaml
+config:
+  table_id: table_id
+  if_exists: "append"
+```
+
+## Optional fields
+
+```yaml
+database: database  # Override the database
+```

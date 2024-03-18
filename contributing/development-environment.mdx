@@ -1,0 +1,82 @@
+---
+title: "Configure your development environment"
+sidebarTitle: "Environment setup"
+icon: "alien"
+description: "Want to get started contributing code? You're in the right place! Read on to learn how to set up your development environment."
+---
+
+## Getting started
+
+Configuring a development environment can be _hard_, but at Mage we're trying to make things as simple and straightforward as possible. 
+
+To get started, you'll need Docker installed on your machine. You can read more about Docker [here](https://www.docker.com/).
+
+## Environment setup
+
+Next, you'll need to configure your development environment. This should be as simple as running a few commands. You can watch the video below or skip to the numbered instructions.
+
+<Frame>
+<iframe
+   width="560"
+   height="315"
+   src="https://www.youtube.com/embed/mxKh2062sTc"
+   title="YouTube video player"
+   frameborder="0"
+   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+   allowFullScreen
+></iframe>
+</Frame>
+
+<Steps>
+<Step title="Configure your development environment">
+   Configure your coding environment for local development: `pyenv`, pre-commit hooks, etc. Follow the instructions [here](https://github.com/mage-ai/mage-ai/blob/master/README_dev.md).
+</Step>
+<Step title="Create a new project">
+   ```bash
+   ./scripts/init.sh [project_name]
+   ```
+</Step>
+<Step title="Build the dev docker image and run all services">
+   ```bash
+   ./scripts/dev.sh [project_name]
+   ```
+</Step>
+<Step title="Open Mage">
+    When developing frontend, use port 3000. If you only need to develop backend, you can use port 6789. Find these ports at [http://localhost:3000](http://localhost:3000) & [http://localhost:6789](http://localhost:6789).
+</Step>
+</Steps>
+
+## Push code changes
+
+Once your environment is configured, you can make edits and see changes in real time! Now you're ready to contribute to the Mage repo. This is very similar to contributing to other open source projects on GitHub. 
+
+If you _don't_ have any experience contributing code and this is confusing, feel free to reach out in Slack and we'll help you get started.
+
+Otherwise, follow the steps below to push your code changes to the Mage repo.
+
+<Snippet file="contribution-process.mdx"/>
+
+## Troubleshoot
+
+### Permission denied
+
+If you get an error relating to permission denied when trying to execute a script,
+it might have something to do with SELinux.
+
+Two or more containers are trying to mount the same volume. With SELinux it’s not possible without
+the `z` option.
+
+For more information about using the `z` option,
+read [Docker’s documentation](https://docs.docker.com/storage/bind-mounts/).
+
+### No such file or directory for "install_and_run.sh" file
+
+If you are using a Windows machine and run into the following error while executing the
+`docker-compose.yml` file: `exec ./scripts/install_and_run.sh: no such file or directory`,
+it may be due to a difference in line-endings used on Windows versus Macs.
+
+You can check the `mage_ai/frontend/scripts/install_and_run.sh` file in VSCode to see if
+it is using CRLFs (carriage return line feeds), and if it is, change it to LFs (line feeds)
+and save the file. Then try running the `docker-compose` command again.
+
+<img src="https://github.com/mage-ai/assets/blob/main/development/windows/update-crlf-to-lf-vscode.gif?raw=True"/>

@@ -1,0 +1,28 @@
+---
+title: "Postgres"
+---
+
+## Basic config
+
+```yaml
+connector_type: postgres
+database: database
+host: host
+password: password
+port: 5432
+schema: schema
+username: username
+table: table
+```
+
+## Upsert record
+
+To upsert records to Postgres, you can define `unique_conflict_method` and `unique_constraints` params
+in the config.
+
+```yaml
+unique_conflict_method: UPDATE
+unique_constraints:
+- col1
+- col2
+```

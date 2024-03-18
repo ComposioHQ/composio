@@ -1,0 +1,61 @@
+---
+title: "Extension block"
+sidebarTitle: "Extension"
+description: "An extension block adds extra functionality to blocks in your pipeline."
+---
+
+<Note>Requires version `0.8.25` or greater.</Note>
+
+Extension blocks are part of your pipeline but don’t run as individual steps in your pipeline like
+data loader blocks, transformer blocks, etc. However, extension blocks are associated to other
+blocks within the pipeline (e.g. data loaders, transformers, data exporters, etc).
+
+After those other blocks are executed, any associated extension blocks will also be executed.
+Those extension blocks will perform some function on its associated blocks.
+
+## Example
+
+1. Your pipeline has the following blocks:
+    1. `load_data_from_api` (data loader)
+    1. `clean_column_names` (transformer)
+    1. `save_data` (data exporter)
+
+1. Then, you add the following extension block to your pipeline:
+
+    ```python
+    @extension('...')
+    def some_powerful_function(*args, **kwargs):
+        # some code...
+    ```
+
+1. You associate the above extension block to the following 2 blocks:
+
+    - `load_data_from_api` (data loader)
+    - `clean_column_names` (transformer)
+
+1. When you run the pipeline, it’ll execute the `load_data_from_api` (data loader) block first.
+Once that is complete, the associated extension block will run.
+
+1. Next, the pipeline will execute the `clean_column_names` (transformer) block. After that is done,
+the associated extension block will run.
+
+1. Finally, the `save_data` (data exporter) block will run. Since it has no associated extension block,
+the pipeline will finish.
+
+## How to add extensions to your pipeline
+
+1. Create a new pipeline or open an existing pipeline.
+1. Edit the pipeline.
+1. On the right side of the page, click the <b>Power ups</b> icon in the navigation.
+If you don’t see it, try expanding the right area of the page.
+    ![Power ups](https://github.com/mage-ai/assets/blob/main/notebook/extensions/power-ups.jpg?raw=true)
+1. You’ll be shown a list of power ups you can add to your pipeline.
+1. Click on a power up to configure it and add extension blocks to your pipeline.
+
+## Supported extensions
+
+Here are the currently supported extensions:
+
+- [`great_expectations`](/development/testing/great-expectations)
+
+*More coming soon!*

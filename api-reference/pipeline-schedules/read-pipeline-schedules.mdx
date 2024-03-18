@@ -1,0 +1,82 @@
+---
+title: "Read pipeline schedules"
+api: "GET /api/pipelines/:pipeline_uuid/pipeline_schedules"
+---
+
+`GET /api/pipelines/:pipeline_uuid/pipeline_schedules`
+
+<ParamField path="pipeline_uuid" type="string" required>
+  Pipeline UUID that the pipeline schedules should all belong to.
+</ParamField>
+
+<ParamField query="tag[]" type="string">
+  Fetch pipeline schedules that have the specified tag.
+
+  If you include 2 or more `tag[]` query parameters,
+  then the pipeline schedules will be fetched if it has at
+  least 1 of the tags specified.
+</ParamField>
+
+<RequestExample>
+```curl cURL
+curl --request GET \
+  --url 'http://localhost:6789/api/pipelines/:pipeline_uuid/pipeline_schedules?api_key=zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' \
+  --header 'Authorization: Bearer ZKXScwLKLZUujbw7vwMeWnhtTTSLqifw8_RnBHYipww' \
+```
+</RequestExample>
+<ResponseExample>
+```json Response
+{
+  "pipeline_schedules": [
+    {
+      "id": 42,
+      "created_at": "2023-03-01 22:04:33.609624+00:00",
+      "updated_at": "2023-03-01 22:04:35.163834+00:00",
+      "name": "dry darkness",
+      "pipeline_uuid": "dry_bird",
+      "schedule_type": "time",
+      "start_time": "2023-03-01 22:04:00+00:00",
+      "schedule_interval": "@hourly",
+      "status": "inactive",
+      "variables": null,
+      "sla": null,
+      "tags": ["core data"],
+      "token": "f176321c4eac425782236acd0eb9886d",
+      "settings": {},
+      "event_matchers": [],
+      "last_pipeline_run_status": null,
+      "pipeline_runs_count": 0
+    },
+    {
+      "id": 41,
+      "created_at": "2023-03-01 20:27:23.645692+00:00",
+      "updated_at": "2023-03-31 05:15:51.171762+00:00",
+      "name": "dark brook",
+      "pipeline_uuid": "dry_bird",
+      "schedule_type": "time",
+      "start_time": "2023-03-01 22:04:00+00:00",
+      "schedule_interval": "@once",
+      "status": "inactive",
+      "variables": {
+        "env": "dev2"
+      },
+      "sla": 950400,
+      "tags": [],
+      "token": "1dca215c01564d48bf0d3db7d5450a20",
+      "settings": {
+        "allow_blocks_to_fail": true,
+        "create_initial_pipeline_run": false,
+        "skip_if_previous_running": true
+      },
+      "event_matchers": [],
+      "last_pipeline_run_status": null,
+      "pipeline_runs_count": 0
+    }
+  ],
+  "metadata": {
+    "count": 3,
+    "next": false
+  }
+}
+```
+</ResponseExample>

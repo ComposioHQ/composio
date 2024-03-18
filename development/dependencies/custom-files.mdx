@@ -1,0 +1,40 @@
+---
+title: "Import your own Python code"
+sidebarTitle: "Custom files"
+description: "You can import any Python code from any file that is in your Mage project directory."
+---
+
+<p align='center'>
+<img
+  alt="Python mecha"
+  src="https://github.com/mage-ai/assets/blob/main/development/python-2.png?raw=true"
+  width="250"
+></img>
+</p>
+
+## Importing custom Python code
+
+When you’re writing code in Mage, you can import any other Python files using this format:
+
+```python
+from [project_name].foo import bar
+```
+
+For example, if your project name is `demo_project` and you have the following folder structure:
+
+```
+demo_project/
+|   pipelines/
+|   utils/
+|   |   helpers/
+|   |   |   shared.py
+|   |   |   __init__.py
+|   |   __init__.py
+```
+
+You can write the following import statement to use functions in the
+`demo_project/utils/helpers/shared.py` file:
+
+```python
+from demo_project.utils.helpers import shared
+```

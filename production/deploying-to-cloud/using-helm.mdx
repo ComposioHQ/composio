@@ -1,0 +1,106 @@
+---
+title: "Helm"
+icon: "anchor"
+---
+
+![](https://avatars.githubusercontent.com/u/15859888?s=200&v=4)
+
+Deploy Mage to Kubernetes cluster with Helm.
+
+---
+
+# Prerequisites
+
+## Install Helm
+
+<CodeGroup>
+
+```bash From Homebrew (macOS)
+brew install helm
+```
+
+```bash From Apt (Debian/Ubuntu)
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+```
+
+</CodeGroup>
+
+Full installation guide: https://helm.sh/docs/intro/install/
+
+## Setup a Kubernetes Cluster
+
+### Local
+[Enable Kubernetes](https://docs.docker.com/desktop/kubernetes/#enable-kubernetes) in Docker Desktop to start a kubernetes cluster locally.
+
+Other options for starting a Kubernetes cluster locally:
+* [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
+* [Minikube](https://minikube.sigs.k8s.io/docs/start/)
+
+
+### AWS EKS
+Follow the [guide](/production/deploying-to-cloud/aws/setup#deploy-to-eks-cluster) to set up the EKS cluster.
+
+### Google Kubernetes Engine (GKE)
+Follow the [guide](https://cloud.google.com/kubernetes-engine/docs/deploy-app-cluster#create_cluster) to create a GKE cluster.
+
+---
+
+# Deploy Mage using Helm
+
+Mage helm repo: https://mage-ai.github.io/helm-charts/
+
+### Add Helm repository
+```bash
+helm repo add mageai https://mage-ai.github.io/helm-charts
+```
+
+### Install Helm charts with default config
+```
+helm install my-mageai mageai/mageai
+```
+
+### Customize deployment 
+You can customize the deployment by updating the `values.yaml` file.
+
+- Get the `values.yaml` with the command
+    
+    ```bash
+    helm show values mageai/mageai > values.yaml
+    ```
+    
+- Customize the mount volume
+  - **Local**: Edit the `volumes` config in `values.yaml` to mount to your Mage project path
+  - **AWS EKS**: Provision the Elastic File System and create the [PersistentVolumeClaim](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws-eks/kube/efs-pvc.yaml) (using ReadWriteMany access mode). Then edit the `volumes` config to 
+    ```
+    volumes:
+      - name: mage-fs
+        persistentVolumeClaim:
+            claimName: pvc-name
+    ```
+  - **GKE**: Provision the [PersistentVolume](https://cloud.google.com/kubernetes-engine/docs/concepts/persistent-volumes#dynamic_provisioning) and create the PersistentVolumeClaim (using ReadWriteMany access mode) and edit the `volumes` config to 
+    ```
+    volumes:
+      - name: mage-fs
+        persistentVolumeClaim:
+            claimName: pvc-name
+    ```
+  - **Azure**: Provision the [PersistentVolume](https://learn.microsoft.com/en-us/azure/aks/concepts-storage#persistent-volume-claims) and create the PersistentVolumeClaim (using ReadWriteMany access mode) and edit the `volumes` config to
+    ```
+    volumes:
+      - name: mage-fs
+        persistentVolumeClaim:
+            claimName: pvc-name
+    ```
+
+- Install the Helm charts with updated `values.yaml`
+    ```bash
+    helm install --values path/to/values.yaml my-mageai mageai/mageai
+    ```
+    
+## Releases
+
+https://github.com/mage-ai/helm-charts/releases

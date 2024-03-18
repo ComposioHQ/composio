@@ -1,0 +1,23 @@
+---
+title: "Writing metrics to Datadog"
+sidebarTitle: "Datadog"
+---
+
+## Provide your Datadog credentials
+
+You will need to add the following environment variables in order to use
+Datadog in mage:
+* DD_API_KEY: your datadog api key
+* DD_APP_KEY: your datadog app key
+
+## Using Datadog in Mage
+
+You can now call Datadog helper functions in your Mage blocks to create or update metrics.
+You can see the existing helper functions [here](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/services/datadog/__init__.py).
+
+Example:
+```python
+from mage_ai.services import datadog as dd
+
+dd.increment('<your metric here>', tags=dict(pipeline='<pipeline_uuid>'))
+```

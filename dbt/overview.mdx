@@ -1,0 +1,94 @@
+---
+title: "dbt Integration"
+sidebarTitle: "Overview"
+description: "Transform dbt with Mage."
+---
+
+<Warning>
+  dbt integration is currently only supported when using Mage in
+  [Docker](/getting-started/setup#using-docker).
+</Warning>
+
+<Frame>
+  <img src="https://c.tenor.com/gbLWPf5HCsYAAAAC/devastator-constructicons.gif" />
+</Frame>
+
+## Overview
+
+Build, run, and manage your dbt models with Mage.
+
+<Frame>
+  <img src="https://user-images.githubusercontent.com/59450879/252510713-4fd2ed03-7867-4038-8b0e-24eb1c40c518.png" />
+</Frame>
+
+### Analytics engineers
+
+With Mage and dbt combined, you can expand build and run complex data pipelines.
+
+### Data engineers
+
+Simplify your data infrastructure and reduce the amount of redundant tools in your “modern” data stack. Replace dbt cloud and Airflow with Mage’s native integration with dbt.
+
+## Features
+
+### Schedule dbt model runs
+
+Trigger your dbt model runs on a regular schedule, from an event, or via API request.
+
+### Run specific dbt models and their dependencies
+
+<Frame>
+  <img src="https://github.com/mage-ai/assets/blob/main/dbt/add-dbt-model.gif?raw=true" />
+</Frame>
+
+### Run all models and optionally exclude others
+
+![](https://raw.githubusercontent.com/mage-ai/assets/main/dbt/add-dbt-models.gif)
+
+### dbt models can depend on non-dbt related tasks
+
+Examples:
+
+- Build model after data ingestion from API
+- Build model after another pipeline completes
+
+### Preview dbt model results as you write SQL
+
+<Frame>
+  <img src="https://github.com/mage-ai/assets/blob/main/dbt/dbt-preview.gif?raw=true" />
+</Frame>
+
+### Build dynamic dbt pipelines using flexible variable interpolation
+
+Examples:
+
+- `{{ env_var('...') }}`
+- `{{ variables('...') }}`
+- `{{ mage_secret_var('...') }}`
+
+### Automatically run dbt tests every time a pipeline runs
+
+Write checks using dbt tests, then Mage will run them and fail the pipeline if the test results produce any failures.
+
+### Observability built-in
+
+Monitor your dbt pipelines and get alerted when things break.
+
+## Supported connectors
+
+1. `dbt-bigquery`
+1. `dbt-clickhouse`
+1. `dbt-core`
+1. `dbt-dremio`
+1. `dbt-duckdb`
+1. `dbt-postgres`
+1. `dbt-redshift`
+1. `dbt-snowflake`
+1. `dbt-spark`
+1. `dbt-sqlserver`
+1. `dbt-synapse`
+1. `dbt-trino`
+
+## Tutorials
+
+- [Set up dbt models & orchestrate dbt runs](/guides/setup-dbt)

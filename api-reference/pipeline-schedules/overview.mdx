@@ -1,0 +1,147 @@
+---
+title: "Overview"
+description: "Triggers for a pipeline."
+---
+
+### Pipeline schedule object
+
+<ResponseExample>
+```json Response
+{
+  "created_at": "2023-03-01 20:27:23.645692+00:00",
+  "event_matchers": [],
+  "id": 41,
+  "last_pipeline_run_status": null,
+  "name": "dark brook",
+  "pipeline_runs_count": 0,
+  "pipeline_uuid": "dry_bird",
+  "schedule_interval": "@once",
+  "schedule_type": "time",
+  "settings": {
+    "allow_blocks_to_fail": true,
+    "create_initial_pipeline_run": true,
+    "skip_if_previous_running": false
+  },
+  "sla": 950400,
+  "start_time": "2023-03-01 22:04:00+00:00",
+  "status": "inactive",
+  "tags": ["core data"],
+  "token": "1dca215c01564d48bf0d3db7d5450a20",
+  "updated_at": "2023-03-01 22:04:29.761238+00:00",
+  "variables": {
+    "env": "dev"
+  }
+}
+```
+</ResponseExample>
+
+<ResponseField name="created_at" type="string" required>
+  Date and time the trigger was created.
+</ResponseField>
+
+<ResponseField name="event_matchers" type="array of objects">
+  Event matching logic for event triggers.
+
+  <Expandable title="properties">
+    <ResponseField name="event_type" type="string" required>
+      `aws_event`
+    </ResponseField>
+    <ResponseField name="id" type="string" required>
+      Event matcher ID.
+    </ResponseField>
+    <ResponseField name="name" type="string" required>
+      Name of event matcher.
+    </ResponseField>
+    <ResponseField name="pattern" type="string">
+    </ResponseField>
+    <ResponseField name="pipeline_schedule_ids" type="array of integers">
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="id" type="integer" required>
+  Trigger ID.
+</ResponseField>
+
+<ResponseField name="last_pipeline_run_status" type="string">
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of trigger.
+</ResponseField>
+
+<ResponseField name="pipeline_runs_count" type="integer">
+</ResponseField>
+
+<ResponseField name="pipeline_uuid" type="string" required>
+  Pipeline UUID the trigger belongs to.
+</ResponseField>
+
+<ResponseField name="schedule_interval" type="string">
+  `@once`, `@hourly`, `@daily`, `@weekly`, `@monthly`
+</ResponseField>
+
+<ResponseField name="schedule_type" type="string" required>
+  Trigger type: `api`, `event`, `time`
+</ResponseField>
+
+<ResponseField name="settings" type="object">
+  Additional settings for the trigger.
+
+  <Expandable title="properties" defaultOpen="true">
+    <ResponseField name="allow_blocks_to_fail" type="boolean">
+      If `true`, then blocks in the pipeline will continue to run even if unrelated blocks fail.
+    </ResponseField>
+
+    <ResponseField name="create_initial_pipeline_run" type="boolean">
+      If `true`, then an initial pipeline run will be created immediately after enabling the
+      trigger if the trigger's current execution date is after its start date time but before
+      current time.
+
+      For example, if the current time is `1/4/24 12:00 UTC` and you create a daily trigger, the
+      current execution date would be `2024-01-04 00:00`. If the start date was set to
+      `1/3/24 12:00 UTC`, which is before the current execution date, and the `create_initial_pipeline_run`
+      setting was enabled, a pipeline run with execution date `2024-01-04 00:00` would get created
+      immediately.
+    </ResponseField>
+
+    <ResponseField name="skip_if_previous_running" type="boolean">
+      If `true`, then new pipeline runs won’t be triggered until the most recent pipeline run is
+      no longer running.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="sla" type="integer">
+  If the pipeline run has been running for more than the SLA value, then the pipeline will fail.
+</ResponseField>
+
+<ResponseField name="start_time" type="datetime">
+  Date and time when the trigger should start running.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  `active`, `inactive`
+</ResponseField>
+
+<ResponseField name="tags" type="array">
+  An array of tag names.
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  Unique string used in the URL when triggering pipeline via API request.
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime" required>
+  Date and time the trigger was last updated.
+</ResponseField>
+
+<ResponseField name="variables" type="object">
+  Object containing variables for the pipeline that is being overwritten by this trigger.
+
+  <Expandable title="properties" defaultOpen="true">
+    <ResponseField name="[key]" type="string">
+      The property name is user defined.
+    </ResponseField>
+  </Expandable>
+</ResponseField>

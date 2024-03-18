@@ -1,0 +1,151 @@
+---
+title: "Global data products"
+sidebarTitle: "Global data products"
+description: "Generate and orchestrate the final output of a pipeline (aka data product). Data products can be globally referenced from any pipeline and its data output can be used in any block."
+icon: "globe"
+"og:image": "https://j.gifs.com/0grLrN.gif"
+---
+
+<Frame>
+    <img
+        alt="Global data products"
+        src="https://j.gifs.com/0grLrN.gif"
+    />
+</Frame>
+
+## Overview
+
+A data product is any piece of data created by 1 or more blocks in a pipeline.
+For example, a block can create a data product that is an in-memory DataFrame,
+or a JSON serializable data structure, or a table in a database.
+
+A global data product is a data product that can be referenced and used in any pipeline across the
+entire project.
+A global data product is entered into the global registry (`global_data_products.yaml`)
+under a unique ID (UUID) and it references an existing pipeline.
+
+This feature is important because multiple pipelines can depend on a single global data product,
+without having to regenerate the global data product.
+
+In addition, the global data product doesn’t have to run unless something needs its data and
+its data is outdated. Its data is outdated if it hasn’t ran for a preset amount of time.
+This preset time is configurable.
+
+<b>Example</b>
+
+If you have a computationally expensive data pipeline called `users_ltv`
+that generates the lifetime value (LTV) of each user, and if you have 2 downstream pipelines
+that require the data from the `users_ltv` pipeline, then using a global data product
+will make sure that the `users_ltv` pipeline is ran only once as long as the `users_ltv`
+data product isn’t outdated.
+
+### Minimize number of runs
+
+A global data product is configured to be outdated after a certain amount of time has passed
+since its most recent successful run.
+
+It can also be configured to be outdated starting at a specific time of the
+year, month, week, day, hour, minute, etc.
+
+A global data product won’t regenerate unless its been outdated.
+
+### Lazy triggering
+
+A global data product won’t run unless something requires its data. For example, if a block in
+another pipeline depends on a global data product, then the global data product will be triggered
+to run when that block is complete.
+
+If multiple blocks in the same or different pipelines depend on a global data product and they
+all attempt to trigger the global data product, it will only run once no matter how many other
+blocks depend on it.
+
+### Global referencing
+
+A global data product can be added as a block in any pipeline.
+Once added, any other blocks in that pipeline can depend on it or it can depend on other blocks.
+
+---
+
+## Register global data product
+
+<Note>
+    You must have at least 1 pipeline already created.
+</Note>
+
+1. Go to the global data products list page (e.g. http://localhost:6789/global-data-products)
+    and click the button labeled <b>+ New global data product</b>.
+
+    You must enter a unique ID (UUID) that is unique across your entire project.
+1. Choose the object type `Pipeline`.
+    The object types that are currently supported are:
+
+        - `Pipeline`
+
+    **`Block` object type coming soon.**
+1. From the Object UUID dropdown, select the pipeline you want to register as a global data product.
+1. Click the button labeled <b>Create global data product</b>.
+
+---
+
+## Configure settings
+
+Once you’ve created a global data product, you can configure several different settings.
+
+### Outdated after
+
+After the global data product successfully completes running,
+how long after that will the global data product be outdated?
+
+You can set how many seconds, weeks, months, or years will have to pass
+after the most recent successful run for the global data product to be considered outdated.
+
+### Outdated starting at
+
+If enough time has passed since the last global data product has ran successfully and
+the global data product is determined to be outdated,
+then you can configure it to be outdated at a specific date or time.
+
+For example, let’s say the global data product is outdated after 12 hours.
+The last successful run was yesterday at 18:00.
+The global data product will be outdated today at 06:00.
+However, if the Outdated starting at has a value of 17 for Hour of day,
+then the global data product won’t run again until today at 17:00.
+
+### Block data to output
+
+The data output from the block(s) you select below will be the data product that is returned
+when a downstream entity is requesting data from this global data product.
+
+When requesting data from this global data product,
+the selected block(s) will return data from its most recent partition.
+You can override this by adding a value in the partitions setting.
+For example, if you set the partitions value to 5,
+then the selected block will return data from its 5 most recent partitions.
+If you set the partitions value to 0, then all the partitions will be returned.
+
+---
+
+## Add to a pipeline
+
+In a pipeline, you can add a block and choose `Global data product`.
+After selecting an existing global data product, it’ll be added to the current pipeline as
+a block.
+
+### Override global settings
+
+The default settings for the global data product will be used when it’s triggered from
+another pipeline. However, you can override those default settings by configuring the
+global data product block settings.
+
+Select the global data product block you added to your pipeline.
+Then, in the top right corner of the block, click the settings icon to open the block settings
+in the right sidekick. From there, you can override the
+<b>Outdated after</b>, <b>Outdated starting at</b>, and <b>Block data to output</b> settings.
+
+## Guides
+
+<video
+    controls
+    className="w-full aspect-video"
+    src="https://github.com/mage-ai/assets/raw/main/global-data-products/overview.mp4">
+</video>

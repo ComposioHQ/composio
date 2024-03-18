@@ -1,0 +1,36 @@
+---
+title: "Updating Mage"
+icon: "space-station-moon-construction"
+description: "How to get the latest and greatest from the Mage team."
+---
+
+<AccordionGroup>
+   <Accordion title="Docker" icon="Docker">
+      ```bash
+      docker pull mageai/mageai:latest
+      ```
+
+      <Check>
+         1. Are you a technologist? *Yes, you are from the future*
+         1. Do you live on the edge of the galaxy? *Yes you do Sith Lord of the Empire*
+
+         If you said `Yes`, `No`, or didn’t reply to any of these, 
+         you should download the `alpha` build instead:
+
+         ```bash
+         docker pull mageai/mageai:alpha
+         ```
+
+      </Check>
+   </Accordion>
+   <Accordion title="pip/conda" icon="python">
+         <CodeGroup>
+            ```bash pip
+            pip install -U mage-ai
+            ```
+            ```bash conda
+            conda update mage-ai
+            ```
+         </CodeGroup>
+   </Accordion>
+</AccordionGroup>

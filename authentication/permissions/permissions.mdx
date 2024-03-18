@@ -1,0 +1,279 @@
+---
+title: "Permissions"
+sidebarTitle: "Permissions"
+description: "Create granular permissions for CRUD operations on any API endpoint."
+"og:image": "https://media.tenor.com/NFeV9svhtREAAAAC/community-ken-jeong.gif"
+---
+
+<Frame>
+    <p align="center">
+    <img
+        alt="User defined permissions"
+        src="https://media.tenor.com/NFeV9svhtREAAAAC/community-ken-jeong.gif"
+    />
+    </p>
+</Frame>
+
+## Overview
+
+- A permission grants or denies read and write operations and access on a specific entity.
+- An entity maps to an existing API endpoint in the Mage application.
+- A permission can grant or deny access to a specific entity with a specific UUID.
+- Each operation and attribute operation has an access level that denies access
+    to a specific entity for that particular operation or attribute operation.
+
+    - When denying an attribute operation,
+        define the set of attributes that the permission forbids the user from
+        querying, reading, or writing.
+
+## Operations
+
+<AccordionGroup>
+    <Accordion title="List">
+        This access level grants permission to perform a `GET` request
+        to the collections API endpoint for a specific entity.
+    </Accordion>
+    <Accordion title="Create">
+        This access level grants permission to perform a `POST` request
+        to an API endpoint for a specific entity.
+    </Accordion>
+    <Accordion title="Detail">
+        This access level grants permission to perform a `GET` request
+        to the details API endpoint for a specific entity.
+    </Accordion>
+    <Accordion title="Update">
+        This access level grants permission to perform a `PUT` request
+        to an API endpoint for a specific entity.
+    </Accordion>
+    <Accordion title="Delete">
+        This access level grants permission to perform a `DELETE` request
+        to an API endpoint for a specific entity.
+    </Accordion>
+    <Accordion title="All operations">
+        This access level grants allows the following operations to be
+        performed for a specific entity:
+
+        - List
+        - Create
+        - Detail
+        - Update
+        - Delete
+    </Accordion>
+</AccordionGroup>
+
+## Attribute operations
+
+<AccordionGroup>
+    <Accordion title="Query">
+        This access level grants permission to use a specific set of query parameters
+        when making an API request for a given entity.
+    </Accordion>
+    <Accordion title="Read">
+        This access level grants permission to read a specific set of attributes
+        from an API response for a specific entity.
+    </Accordion>
+    <Accordion title="Write">
+        This access level grants permission to write a specific set of attributes
+        when submitting a payload in the API request body for a specific entity.
+    </Accordion>
+</AccordionGroup>
+
+### Query attributes
+
+When granting `Query` access, you must define the set of query parameters this permission allows.
+
+### Read attributes
+
+When granting `Read` access, you must define the set of attributes this permission
+allows the user to read.
+
+### Write attributes
+
+When granting `Write` access, you must define the set of attributes this permission
+allows the user to write.
+
+---
+
+## Groups
+
+The following access levels contain logic that grants access to multiple operations
+and attribute operations.
+
+<Note>
+    The attribute operation that the group access grants still requires you
+    to define the specific set of attributes that the user is permitted to
+    query, read, or write.
+</Note>
+
+<AccordionGroup>
+    <Accordion title="Viewer">
+        This access level grants the following for a specific entity:
+
+        - Operations
+            - List
+            - Detail
+        - Attribute operations
+            - Read
+    </Accordion>
+    <Accordion title="Editor">
+        This access level grants the following for a specific entity:
+
+        - Operations
+            - *Everything from Viewer*
+            - Create
+            - Update
+            - Delete
+        - Attribute operations
+            - *Everything from Viewer*
+            - Query
+            - Write
+    </Accordion>
+    <Accordion title="Admin">
+        This access level grants the following for a specific entity:
+
+        - Operations
+            - *Everything from Viewer*
+            - *Everything from Editor*
+        - Attribute operations
+            - *Everything from Viewer*
+            - *Everything from Editor*
+    </Accordion>
+    <Accordion title="Owner">
+        This access level grants the following for a specific entity:
+
+        - Operations
+            - *Everything from Viewer*
+            - *Everything from Editor*
+            - *Everything from Admin*
+        - Attribute operations
+            - *Everything from Viewer*
+            - *Everything from Editor*
+            - *Everything from Admin*
+    </Accordion>
+    <Accordion title="All">
+        This access level grants every operation, attribute operation,
+        all query attributes, all read attributes, and all write attributes
+        for a specific entity.
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Special conditions
+
+<AccordionGroup>
+    <Accordion title="Disable unless user has notebook edit access">
+        This access level will deny the user from performing an operation or attribute operation
+        on a specific entity
+        unless the user has notebook edit access.
+    </Accordion>
+    <Accordion title="Disable unless user has pipeline edit access">
+        This access level will deny the user from performing an operation or attribute operation
+        on a specific entity
+        unless the user has pipeline edit access.
+    </Accordion>
+    <Accordion title="Disable unless user owns the current entity">
+        This access level will deny the user from performing an operation or attribute operation
+        on a specific entity
+        unless the user owns the current entity they are attempting to perform an action on.
+
+        <Warning>
+            The only entity this access level supports currently is the `User` entity.
+        </Warning>
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Entity names
+
+<Accordion title="List of available entities">
+    1. `ALL`
+    1. `ALL_EXCEPT_RESERVED`
+    1. `AutocompleteItem`
+    1. `Backfill`
+    1. `Block`
+    1. `BlockLayoutItem`
+    1. `BlockOutput`
+    1. `BlockRun`
+    1. `BlockTemplate`
+    1. `Chart`
+    1. `ClientPage`
+    1. `Cluster`
+    1. `CustomTemplate`
+    1. `DataProvider`
+    1. `Database`
+    1. `EventMatcher`
+    1. `EventRule`
+    1. `ExtensionOption`
+    1. `Feature`
+    1. `File`
+    1. `FileContent`
+    1. `FileVersion`
+    1. `Folder`
+    1. `GitBranch`
+    1. `GitCustomBranch`
+    1. `GitFile`
+    1. `GlobalDataProduct`
+    1. `IntegrationDestination`
+    1. `IntegrationSource`
+    1. `IntegrationSourceStream`
+    1. `Interaction`
+    1. `Kernel`
+    1. `Llm`
+    1. `Log`
+    1. `MonitorStat`
+    1. `Oauth`
+    1. `OauthAccessToken`
+    1. `OauthApplication`
+    1. `Output`
+    1. `PageBlockLayout`
+    1. `PageComponent`
+    1. `Permission`
+    1. `Pipeline`
+    1. `PipelineInteraction`
+    1. `PipelineRun`
+    1. `PipelineSchedule`
+    1. `PipelineTrigger`
+    1. `Project`
+    1. `PullRequest`
+    1. `Role`
+    1. `RolePermission`
+    1. `Scheduler`
+    1. `SearchResult`
+    1. `Secret`
+    1. `Session`
+    1. `SparkApplication`
+    1. `SparkEnvironment`
+    1. `SparkExecutor`
+    1. `SparkJob`
+    1. `SparkSql`
+    1. `SparkStage`
+    1. `SparkStageAttempt`
+    1. `SparkStageAttemptTask`
+    1. `SparkStageAttemptTaskSummary`
+    1. `SparkThread`
+    1. `Status`
+    1. `Sync`
+    1. `Tag`
+    1. `User`
+    1. `UserRole`
+    1. `Variable`
+    1. `Widget`
+    1. `Workspace`
+</Accordion>
+
+### `ALL`
+
+Using this entity for a permission will grant the operation or attribute operation
+for every entity listed above.
+
+### `ALL_EXCEPT_RESERVED`
+
+Using this entity for a permission will grant the operation or attribute operation
+for every entity listed except the following entities:
+
+1. `Oauth`
+1. `OauthAccessToken`
+1. `OauthApplication`
+1. `Workspace`

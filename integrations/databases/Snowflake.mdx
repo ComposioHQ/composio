@@ -1,0 +1,63 @@
+---
+title: "Snowflake"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198754469-d3c289d7-65c7-44d0-818c-a7a15b393d4c.png)
+
+## Add credentials
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+
+```yaml
+version: 0.1.1
+default:
+  SNOWFLAKE_USER: ...
+  SNOWFLAKE_PASSWORD: ...
+  SNOWFLAKE_ACCOUNT: ...
+  SNOWFLAKE_DEFAULT_WH: ...
+  SNOWFLAKE_DEFAULT_DB: ...
+  SNOWFLAKE_DEFAULT_SCHEMA: ...
+  SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: ...
+  SNOWFLAKE_PRIVATE_KEY_PATH: ...
+  SNOWFLAKE_ROLE: ...
+  SNOWFLAKE_TIMEOUT: ...
+```
+
+<br />
+
+## Using SQL block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block.
+3. Select `SQL`.
+4. Under the `Data provider` dropdown, select `Snowflake`.
+5. Under the `Profile` dropdown, select `default` (or the profile you added
+   credentials underneath).
+6. In the `Database` input in the block header, enter the database name you want this block to
+   save data to.
+7. In the `Schema` input in the block header, enter the schema name you want this block
+   to save data to.
+8. Under the `Write policy` dropdown, select `Replace` or `Append` (please see
+   [SQL blocks guide](/guides/blocks/sql-blocks)
+   for more information on write policies).
+9. Enter in this test query: `SELECT 1`.
+10. Run the block.
+
+## Methods for configuring database and schema
+
+You only need to include the database and schema config in one of these 3 places, in
+order of priority (so if all 3 are included, #1 takes priority, then #2, then #3):
+1. Inlude the db and schema directly in the query (e.g.
+`select * from [database_name].[schema_name].[table_name];`). This is supported
+when NOT using the "raw sql" query option.
+2. Include the db and schema in the SQL code block header inputs, as mentioned in Steps
+6 and 7 of the "Using SQL block" section above.
+3. Include the default db and schema in the `io_config.yaml` file using these fields:
+```
+SNOWFLAKE_DEFAULT_DB: YOUR_DB_NAME
+SNOWFLAKE_DEFAULT_SCHEMA: YOUR_SCHEMA_NAME
+```

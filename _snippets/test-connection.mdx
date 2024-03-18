@@ -1,0 +1,12 @@
+We need a `test_connection` method to enable testing the tap in the Mage UI. This is a simple method that instantiates the tap and closes it. Just replace `YourSource` with the source class, e.g. `GitHub` and provide the configuration arguments to the tap. Here's a [good example](https://github.com/mage-ai/mage-ai/blob/master/mage_integrations/mage_integrations/sources/sftp/__init__.py#L28-L35) from the sFTP tap.
+
+```python
+def test_connection(self) -> None:
+        client = SFTPConnection(host=self.config['host'],
+                                username=self.config['username'],
+                                password=self.config['password'],
+                                private_key_file=self.config.get(
+                                    'private_key_file'),
+                                port=self.config['port'])
+        client.close()
+```

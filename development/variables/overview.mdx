@@ -1,0 +1,36 @@
+---
+title: "Mage variables"
+sidebarTitle: "Overview"
+description: "There are a few ways to set up variables in Mage, here's how you can use them to make the best pipelines the world has ever seen. 🌎"
+---
+
+There are four types of variable in Mage: Environment variables, runtime variables, block variables, and secrets.
+
+| Variable Type        | Scope    | Creation | Reference                       | Encrypted |
+| -------------------- | -------- | -------- | ------------------------------- | --------- |
+| Environment variable | System   | Code     | `{{ env_var() }}`               | 🚫       |
+| Runtime variable     | Pipeline | Code/UI  | `kwargs` or `{{ variables() }}` | 🚫       |
+| Block variable       | Block    | Code/UI  | `kwargs['configuration'][key]`  | 🚫       |
+| Secret               | Project  | UI       | `{{ mage_secret_var() }}`       | ✅        |
+
+Here's a brief overview of each:
+
+## Environment variables
+
+Environment variables are a type of variable that is used to store configuration settings and other system-level information for operating systems and applications. These variables are accessible to any process running on the system, which allows multiple programs to share the same configuration information. Environment variables exist in virtually all operating systems, including Linux, macOS, and Windows.
+
+When running Mage in Docker, Mage will inherit the environment variables from the host machine. You can also set environment variables in the Dockerfile. Read more about environment variables in Mage [here](/development/variables/environment-variables) and Docker [here](https://docs.docker.com/compose/environment-variables/set-environment-variables/).
+
+## Runtime variables
+
+Runtime Variables are a set of global variables that can be used by every block in a pipeline. These are useful for storing constants shared by multiple blocks or constants whose value is determined at pipeline runtime (hence runtime variables).
+
+If you're familiar with Airflow, you can runtime variables are similar to the Airflow "context" object. You can use runtime variables to pass information between blocks in a pipeline. Read more [here](/getting-started/runtime-variable).
+
+## Block variables
+
+In addition to the global runtime variables that can be used by any block in a pipeline, there are also variables scoped at the block-level, meaning they are accessible in a specific block but not other blocks in the same pipeline. Block variables are not accessible by other pipelines that use the same block. Read more [here](/development/variables/block-variables).
+
+## Secrets
+
+Secrets are a way to input sensitive information _via the Mage UI_ that can be used by blocks in a pipeline. Secrets are stored in the Mage database and are encrypted. Secrets can come in handy when you have multiple users developing in an environment or are otherwise unable to use environment variables. Read more [here](/development/variables/secrets).

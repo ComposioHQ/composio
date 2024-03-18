@@ -1,0 +1,31 @@
+---
+title: "Local timezone"
+description: "Display timestamps throughout the app in your local timezone."
+---
+
+You can display dates on various pages (e.g. the Pipelines list and
+Triggers/Pipeline runs/Block runs pages) in your local timezone, as
+well as configure the start date for triggers and backfills in local
+time.
+
+## Steps to enable local timezone setting
+
+1. Go to your project's `Settings` page (with the wrench icon) from the
+left vertical navigation panel.
+2. Under the "Features" section, click the toggle to turn the `Display local timezone`
+setting on.
+3. Then click the blue `Save project settings` button to save and persist the
+new settings. If you do not click this button, you will lose any changes when
+leaving the page.
+
+- Alternatively (starting with v0.9.48), you can simply click on the time in the header
+and toggle on the `Display local timezone` setting from the dropdown menu. This may
+require a page refresh for the timestamps to change to UTC or local time.
+
+<Info>
+  Please note that certain pages (e.g. a pipeline's Monitor page) or components
+  (e.g. Pipeline run bar charts) may still be in UTC time. These UTC dates may
+  only display the date (e.g. 2023-09-01) without any time. Dates in local time
+  will have a timezone offset (e.g. -07:00) in the timestamp (e.g.
+  2023-09-01T12:30:45-07:00).
+</Info>

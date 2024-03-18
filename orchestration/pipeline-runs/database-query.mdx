@@ -1,0 +1,48 @@
+---
+title: "Query pipeline run metadata from database"
+sidebarTitle: "Database query"
+---
+
+Pipeline runs and Block runs data are stored in `pipeline_run` and `block_run` tables in the database.
+If you want to query the `PipelineRun` and `BlockRun` metadata, you can either directly query the data
+from database or use Python code to fetch `PipelineRun` and `BlockRun` models.
+
+## Query from DB
+Here is the query from Postgres. You can adapt it to the syntax of other databases when needed.
+```sql
+SELECT
+    *
+FROM pipeline_run
+WHERE pipeline_uuid = 'example_pipeline' -- Filter by pipeline_uuid
+AND status = 'COMPLETED' -- Filter by status
+```
+
+## Query DB models via Python
+```python
+from mage_ai.orchestration.db import db_connection
+from mage_ai.orchestration.db.models.schedules import PipelineRun, BlockRun
+
+db_connection.start_session()
+
+# Fetch running pipeline runs of a pipeline
+pipeline_runs = PipelineRun.query.filter(
+    # Filter by pipeline uuid
+    PipelineRun.pipeline_uuid == 'example_pipeline',
+    # Filter by status
+    PipelineRun.status == PipelineRun.PipelineRunStatus.RUNNING,
+    # Filter by execution_date
+    PipelineRun.execution_date >= '2024-01-01',
+    PipelineRun.execution_date < '2024-02-01',
+)
+
+# Get the block runs of a pipeline run
+block_runs = pipeline_runs.all()[0].block_runs
+print(f'Block runs: {[b.to_dict() for b in block_runs]}')
+
+# Get pipeline run count
+print(f'Number of pipeline runs {pipeline_runs.count()}')
+
+# Batch update pipeline run status
+PipelineRun.batch_update_status([p.id for p in pipeline_runs], PipelineRun.PipelineRunStatus.CANCELLED)
+
+```

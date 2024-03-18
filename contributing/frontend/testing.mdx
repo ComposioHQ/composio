@@ -1,0 +1,65 @@
+---
+title: "Frontend testing"
+sidebarTitle: "Testing"
+description: "Making Mage invincible so that nothing can break it, not even itself."
+icon: "swords"
+---
+
+## Prerequisites
+
+- It is not recommended to run tests on your working project, since failed tests can leave behind
+empty pipelines, triggers, etc. Set up your
+[development environment](https://docs.mage.ai/contributing/development-environment).
+- Make sure [user authentication](https://docs.mage.ai/production/authentication/overview) is enabled.
+- Make sure your development server is running.
+
+## Configuration
+
+- Tests default to "fail" if a client error occurs. Add the following to the top of the test file to disable this check.
+
+```ts
+test.use({ failOnClientError: false });
+```
+
+- Certain setting features are enabled by default. Refer to `base.ts` for more information, and use the following snippet when needed.
+
+```ts
+test.use({ settingFeaturesToDisable: { [FeatureUUIDEnum.LOCAL_TIMEZONE]: true } });
+```
+
+## Running the tests
+
+You have the option to just run one specific test or all tests at once. There are
+[several ways](https://playwright.dev/docs/running-tests) to run specific tests.
+
+```bash
+# Run everything, headless by default.
+yarn test
+# Run everything with a browser.
+yarn test:h
+
+# Run test files that have the word "pipelines" in their names.
+yarn test pipelines
+```
+
+You can run the frontend tests using the CI/CD Playwright configuration with the following command:
+```bash
+yarn test:ci
+```
+
+## Creating a test
+
+Refer to the [Playwright docs](https://playwright.dev/docs/writing-tests) for examples on writing frontend tests.
+
+## Debugging
+
+The easiest way to debug is to run tests in UI mode so you can see what went wrong.
+
+```bash
+yarn test --ui
+
+# Or
+yarn test:ci --ui
+```
+
+If you are running into issues with the app and would like to report it, you can tell us about it either on [GitHub](https://github.com/mage-ai/mage-ai/issues/new/choose) or [Slack](https://www.mage.ai/chat).

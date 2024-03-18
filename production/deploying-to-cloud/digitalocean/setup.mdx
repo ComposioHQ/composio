@@ -1,0 +1,138 @@
+---
+title: "Deploy to DigitalOcean with Terraform"
+sidebarTitle: "Setup"
+---
+
+## Pre-requisites
+
+### Setup
+
+[Download Mage maintained Terraform scripts](/production/deploying-to-cloud/using-terraform).
+
+## Terraform plan
+
+You can run the following command to see all the resources that will be created
+by Terraform:
+
+```bash
+cd 
+terraform plan
+```
+
+---
+
+## 1. Configure access token
+
+Generate DigitalOcean access token by following the guide: https://developer.hashicorp.com/terraform/tutorials/applications/digitalocean-provider#generate-digitalocean-access-token
+
+Set the token in `DIGITALOCEAN_ACCESS_TOKEN` environment variable 
+
+---
+
+## 2. Create ssh key
+
+Create ssh key with command: `ssh-keygen`. In the file
+[./digitalocean/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/digitalocean/variables.tf), update the value of `ssh_pub_key` to your path of public key.
+
+---
+
+## 3. Customize Terraform settings
+
+**Application name (optional)**
+
+In the file
+[./digitalocean/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/digitalocean/variables.tf),
+you can change the default application name that will appear in DigitalOcean:
+
+```
+variable "app_name" {
+  type        = string
+  description = "Application Name"
+  default     = "mage-data-prep"
+}
+```
+
+**Region (optional)**
+
+In the file
+[./digitalocean/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/digitalocean/variables.tf),
+you can change the region:
+
+```
+variable "region" {
+  type        = string
+  description = "Region of the datacenters"
+  default     = "sfo3"
+}
+```
+
+**More**
+
+Other variables defined in
+[./digitalocean/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/digitalocean/variables.tf)
+can also be customized to your needs.
+
+---
+
+## 4. Provision resources
+
+**Using CLI**
+
+1. Change directory into scripts folder:
+   ```bash
+   cd digitalocean
+   ```
+2. Initialize Terraform:
+   ```bash
+   terraform init
+   ```
+3. Deploy:
+   ```bash
+   terraform apply
+   ```
+
+Once it’s finished deploying, you can get the IP from the output.
+
+## 5. Run app in the provisioned Droplet
+
+SSH into the instance: `ssh -i [path_to_private_key] root@[ip]`
+
+Run command to start Mage app in :
+```bash
+docker run -d -p 6789:6789 -v $(pwd):/home/src mageai/mageai /app/run_app.sh mage start default_repo
+```
+
+<br />
+
+To update Mage to latest version, you can pull latest docker image with command:
+```bash
+docker pull mageai/mageai:latest
+```
+Then, just restart the Mage app with the same `docker run` command above.
+
+## 6. Open browser with Mage
+
+Once you’ve launched the Droplet and started Mage, you can access Mage from your web browser by entering the following:
+
+`http://[ip]:[port]`
+
+Change the IP to match the IP of your Droplet and the port that you’re using for Mage.
+
+---
+
+## Misc
+
+### Terminate all resources
+
+If you want to delete all resources created from deploying, run the following
+command:
+
+```bash
+terraform destroy
+```
+
+A sample output could look like this:
+
+```
+Destroy complete! Resources: 10 destroyed.
+```

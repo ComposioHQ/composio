@@ -1,0 +1,48 @@
+---
+title: "Google Cloud Run"
+sidebarTitle: "Google Cloud Run"
+---
+
+## Pre-requisites
+
+[Download Mage maintained Terraform scripts](/production/deploying-to-cloud/using-terraform).
+
+For multi dev, you should use the `gcp-dev` terraform directory to create your infrastructure.
+
+### Permissions
+
+Go to the IAM management dashboard, find the service account associated to the
+account you just logged into, and then add these roles to that service account
+(e.g. choose your account as the principal when adding new roles):
+
+1. Artifact Registry Read
+2. Artifact Registry Writer
+3. Cloud Run Developer
+4. Cloud SQL
+5. Service Account Token Creator
+
+### PostgreSQL Database
+
+By default, Mage will use a SQLite database for each dev environment. SQLite
+does not perform well in the cloud, so we recommend using a Postgres database
+instead.
+
+If you are using Google Cloud SQL, then the connection url will be in the following
+form. The `gcp-dev` terraform scripts will automatically create and connect to the PostgreSQL
+database for you, but if you need the connection URL, it will look like this following:
+
+```
+postgresql://{db_user}:{db_password}@/{db_name}?host=/cloudsql/${connection_name}
+```
+
+## Terraform
+
+You can refer to the [GCP Terraform instructions](/production/deploying-to-cloud/gcp/setup)
+for how to deploy your infrastructure using Terraform. Make sure to set the variables in the
+`variables.tf` file.
+
+### Creating instances
+
+Once the Terraform scripts are run, you can create your development instances. There should be
+a Cloud Run service created, and you can access it through the external IP address that is printed
+at the end of `terraform apply`. From there, you should be able to create your dev instances.
