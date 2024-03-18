@@ -1,0 +1,185 @@
+---
+title: "MySQL"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198753513-4a149790-853a-4dcd-8c93-388f84ef6aeb.png)
+
+## Add credentials
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+
+```yaml
+version: 0.1.1
+default:
+  MYSQL_DATABASE: ...
+  MYSQL_HOST: ...
+  MYSQL_PASSWORD: ...
+  MYSQL_PORT: 3306
+  MYSQL_USER: root
+```
+
+---
+
+## Using SQL block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block.
+3. Select `SQL`.
+4. Under the `Data provider`/`Connection` dropdown, select `Mysql`.
+5. Under the `Profile` dropdown, select `default` (or the profile you added
+   credentials underneath).
+6. Enter the optional table name of the table to write to.
+7. Under the `Write policy` dropdown, select `Replace` or `Append` (please see
+   [SQL blocks guide](/guides/blocks/sql-blocks) for more information on write policies).
+8. Enter in this test query: `SELECT 1`.
+9. Run the block.
+
+---
+
+## Using Python block
+
+### Using MySQL connector
+```python
+import mysql.connector
+
+conn = mysql.connector.connect(
+    host='...',
+    password='...',
+    port=3306,
+    user='root',
+    database='...',
+)
+
+sql = """
+SELECT
+  id
+  , email
+FROM auth_user
+"""
+
+
+cursor = conn.cursor()
+cursor.execute(sql)
+
+rows = cursor.fetchall()
+
+import pandas as pd
+
+df = pd.DataFrame(rows, columns=['id', 'email'])
+df.to_csv('default_repo/users.csv', index=False)
+```
+
+---
+
+### Using Mage's MySQL python blocks
+
+1. Create a Data Loader block from the MySQL Template
+
+Example snippet:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.mysql import MySQL
+from os import path
+
+@data_loader
+def load_data_from_mysql(*args, **kwargs):
+    """
+    Template for loading data from a MySQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#mysql
+    """
+    query = 'Your MySQL query'  # Specify your SQL query here
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    with MySQL.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        return loader.load(query)
+
+```
+
+2. Create a Data Exporter block from the MySQL Template
+
+Example snippet:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.mysql import MySQL
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_mysql(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a MySQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#mysql
+    """
+    table_name = 'your_table_name'  # Specify the name of the table to export data to
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    with MySQL.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        loader.export(
+            df,
+            None,
+            table_name,
+            index=False,  # Specifies whether to include index in exported table
+            if_exists='replace',  # Specify resolution policy if table name already exists
+        )
+
+```
+
+3. Custom types
+
+To overwrite a column type when running a python export block, simply specify the column name and type in the `overwrite_types` dict in data exporter config
+
+Here is an example code snippet:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.mysql import MySQL
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_mysql(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a MySQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#mysql
+    """
+    table_name = 'your_table_name'  # Specify the name of the table to export data to
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+    overwrite_types = {'column_name': 'VARCHAR(255)'}
+
+    with MySQL.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        loader.export(
+            df,
+            None,
+            table_name,
+            index=False,  # Specifies whether to include index in exported table
+            if_exists='replace',  # Specify resolution policy if table name already exists
+            overwrite_types=overwrite_types,
+        )
+
+```

@@ -1,0 +1,72 @@
+---
+title: "Terraform"
+icon: "hammer"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198754720-d6b1e5bd-caa8-431e-a4cb-e26743c0ef36.png)
+
+Deploy Mage to your cloud provider using Terraform.
+
+Cloud providers currently supported with Mage Terraform scripts:
+
+- AWS
+- Azure
+- GCP
+- DigitalOcean
+
+---
+
+## Pre-install
+
+Clone Mage’s
+[Terraform template repository](https://github.com/mage-ai/mage-ai-terraform-templates):
+
+```bash
+git clone https://github.com/mage-ai/mage-ai-terraform-templates.git
+```
+
+---
+
+## Install Terraform CLI
+
+<CodeGroup>
+
+```bash Using Homebrew
+brew tap hashicorp/tap && brew install hashicorp/tap/terraform
+```
+
+```bash Using Docker
+docker pull hashicorp/terraform:latest
+```
+
+</CodeGroup>
+
+### Windows
+
+Follow [Microsoft’s instructions](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash?tabs=bash#4-install-terraform-for-windows) to install Terraform on Windows.
+
+### Errors
+
+If you’re installing Terraform using Homebrew on an Apple M1 laptop, you may get this error:
+
+```
+Error: Incompatible provider version
+
+Provider registry.terraform.io/hashicorp/template v2.2.0 does not have a package available for your current platform, darwin_arm64.
+
+Provider releases are separate from Terraform CLI releases, so not all providers are available for all platforms. 
+Other versions of this provider may have different platforms supported.
+```
+
+Follow this [guide](https://blog.sanjayhona.com.np/terraform-error-incompatible-provider-version-m1-or-darwin-arm64-fae0159f913f) to fix the issue.
+
+## Cloud specific Terraform instructions
+
+Read the following documentation for the cloud provider of your choice:
+
+- [Amazon Web Services (AWS)](/production/deploying-to-cloud/aws)
+- [Microsoft Azure](/production/deploying-to-cloud/azure)
+- [Google Cloud Platform (GCP)](/production/deploying-to-cloud/gcp)
+- [DigitalOcean](/production/deploying-to-cloud/digitalocean)
+
+---

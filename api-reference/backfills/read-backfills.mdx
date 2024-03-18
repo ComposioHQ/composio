@@ -1,0 +1,66 @@
+---
+title: "Read backfills"
+api: "GET /api/backfills"
+---
+`GET /api/backfills`
+
+<ParamField query="_limit" type="integer">
+  Maximum number of logs to be returned in the API response.
+
+  Example: `20`
+</ParamField>
+
+<ParamField query="_offset" type="integer">
+  Read logs after N number of logs, where N equals `_offset`.
+
+  Example: `10`
+</ParamField>
+
+<ParamField query="pipeline_uuid" type="string">
+  The pipeline uuid for which to read backfills.
+</ParamField>
+
+<ParamField query="include_run_count" type="boolean">
+  A boolean which indicates wheter to return the run count in the response metadata object.
+</ParamField>
+
+<RequestExample>
+```curl cURL
+curl --request GET \
+  --url 'http://localhost:6789/api/backfills?_limit=20&_offset=0&include_run_count=true&pipeline_uuid=example_pipeline&api_key=zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' \
+  --header 'OAUTH-TOKEN=some_really_long_string' \
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "backfills": [
+    {
+      "block_uuid": null,
+      "completed_at": null,
+      "created_at": "2023-03-23 18:27:58.848959+00:00",
+      "end_datetime": "2023-03-05 00:00:00+00:00",
+      "failed_at": null,
+      "id": 9,
+      "interval_type": "hour",
+      "interval_units": 4,
+      "metrics": null,
+      "name": "sparkling glitter",
+      "pipeline_schedule_id": null,
+      "pipeline_uuid": "example_pipeline",
+      "start_datetime": "2023-03-01 00:00:00+00:00",
+      "started_at": null,
+      "status": null,
+      "total_run_count": 25,
+      "updated_at": "2023-03-23 18:28:22.379725+00:00",
+      "variables": null
+    }
+  ],
+  "metadata": {
+    "count": 0,
+    "next": false
+  }
+}
+```
+</ResponseExample>

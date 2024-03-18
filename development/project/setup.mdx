@@ -1,0 +1,70 @@
+---
+title: "Project setup"
+sidebarTitle: "Overview"
+description: "How to set up a folder containing your Mage project code and other files."
+---
+
+## Parent folder
+
+Create a parent folder that will contain your Mage project code:
+
+```bash
+mkdir data_monorepo
+```
+
+Change directory into the parent folder:
+
+```bash
+cd data_monorepo
+```
+
+## Create a Dockerfile
+
+Create an empty Dockerfile:
+
+```bash
+echo "" > Dockerfile
+```
+
+Paste the contents from this [Dockerfile](https://github.com/mage-ai/docker/blob/master/Dockerfile)
+into the Dockerfile you just created.
+
+## Create a .gitignore file
+
+Create an empty .gitignore file:
+
+```bash
+echo "" > .gitignore
+```
+
+Paste the following contents into the .gitignore file you just created:
+
+```
+.DS_Store
+.file_versions
+.gitkeep
+.log
+.logs/
+.mage_temp_profiles
+.preferences.yaml
+.variables/
+__pycache__/
+docker-compose.override.yml
+logs/
+mage-ai.db
+mage_data/
+secrets/
+```
+
+## Create Mage project
+
+Follow these [instructions](/getting-started/setup) to create a Mage project in your
+current directory. If you named your project `demo_project`, your current folder structure
+will look like this:
+
+```
+data_monorepo/
+|-- demo_project/
+|-- .gitignore
+|-- Dockerfile
+```

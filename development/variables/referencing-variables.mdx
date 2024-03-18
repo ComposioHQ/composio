@@ -1,0 +1,19 @@
+---
+title: "Accessing variables in Mage"
+sidebarTitle: "Accessing variables"
+description: "You've got all of these great variables and secrets, now let's put them to use. Learn how to access them in your code. 🦸🏻‍♂️"
+---
+
+Mage allows users to interpolate variables specific to your [pipeline](/getting-started/runtime-variable) or [project](/development/variables/environment-variables). The following syntax is specific to `yaml` and `SQL` files.
+
+Here's a list of the different variables and functions you can use in your code:
+
+| Syntax                              | Description                                                                           |
+| ----------------------------------- | ------------------------------------------------------------------------------------- |
+| `{{ env_var('secret') }}`           | Get secret from [environment variables](/development/variables/environment-variables). |
+| `{{ variables('secret') }}`         | Get secret from [runtime variables](/getting-started/runtime-variable).                |
+| `{{ mage_secret_var('secret') }}`   | Get secret from [Mage secrets](/development/variables/secrets).                        |
+| `{{ aws_secret_var('secret') }}`    | Get secret from [AWS Secrets Manager](/production/deploying-to-cloud/secrets/AWS).     |
+| `{{ azure_secret_var('secret') }}`  | Get secret from [Azure Key Vault](/production/deploying-to-cloud/secrets/Azure).       |
+| `{{ json_value(json_obj, 'key') }}` | Extract value from a JSON string.                                                     |
+| `{{ n_days_ago(N) }}`               | Get the date `N` days ago (data integration pipelines only).                          |

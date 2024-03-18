@@ -1,0 +1,118 @@
+---
+title: "Create block"
+api: "POST /api/pipelines/:pipeline_uuid/blocks"
+---
+`POST /api/pipelines/:pipeline_uuid/blocks`
+
+Create a new block in one or more pipelines.
+
+<ParamField query="name" type="string" required>
+  Human readable block name. This is used to generate the UUID, e.g. `restless dust`. Names will be slugified to a safe-uuid.
+</ParamField>
+<ParamField query="type" type="string" required>
+  Type of block:
+  `callback`, `chart`, `conditional`, `custom`, `data_exporter`, `data_loader`, `dbt`, `extension`, `global_data_product`, `markdown`, `scratchpad`, `sensor`, `transformer`
+</ParamField>
+<ParamField query="color" type="string">
+  Block color displayed by the frontend for `custom` blocks. All other block types have predefined colors.
+</ParamField>
+<ParamField query="config" type="object">
+  An optional parameter specifying a block configuration file For example, `{data_source: "s3"}` will create an s3 data loader.
+</ParamField>
+<ResponseField name="configuration" type="object">
+    Miscellaneous configuration settings for the block.
+
+    <Expandable title="properties">
+    <ResponseField name="data_provider" type="string">
+      Database or data warehouse for the SQL block to connect to.
+    </ResponseField>
+    <ResponseField name="data_provider_database" type="string">
+      Database name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="data_provider_profile" type="string">
+      Profile target for the dbt block.
+    </ResponseField>
+    <ResponseField name="data_provider_schema" type="string">
+      Schema name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="data_provider_table" type="string">
+      Table name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="export_write_policy" type="string">
+      Whether to `replace` the existing table of the SQL block output, `append`, or
+      raise an error and `fail`.
+    </ResponseField>
+    <ResponseField name="use_raw_sql" type="string">
+      Toggle writing raw SQL in the block. Read more [here](/guides/blocks/sql-blocks#using-raw-sql).
+    </ResponseField>
+    </Expandable>
+  </ResponseField>
+<ParamField query="content" type="string">
+  The content of block formatted as a string. Use `/n` for newlines. Omitting will create an empty block.
+</ParamField>
+<ParamField query="extension_uuid" type="string">
+  UUID of extensions, currently [Great Expectations](/development/testing/great-expectations) is the only extension supported.
+</ParamField>
+<ParamField query="language" type="string">
+  The block language:
+  `python`, `sql`, `r`, `yaml`, `markdown`
+</ParamField>
+
+<ParamField query="pipelines" type="[string]">
+  Array of strings containing the pipeline uuids for which the block is a member.
+</ParamField>
+<ParamField query="priority" type="integer">
+  The 0-indexed position of the block in the pipeline, e.g. 0 is the first block location.
+</ParamField>
+<ParamField query="upstream_blocks" type="[string]">
+  An array of strings representing the uuids of upstream blocks (the blocks on which the new block depends). For example, `["a", "b"]` will create a block that depends on blocks `a` and `b`.
+</ParamField>
+<ParamField query="uuid" type="string">
+  The unique id of the block. This is generated from `name`, so it's not necessary to populate this field.
+</ParamField>
+
+<RequestExample>
+
+  ```bash Request
+  curl 'http://localhost:6789/api/pipelines/broken_wave/blocks?api_key=zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Authorization: Bearer 018Cc8ydDUa6YWoLad2oMdw0EKdWWJuyg85D02GN1ww' \
+  -H 'Content-Type: application/json' \
+  --data-raw '
+    {
+    "block": {
+        "name": "silent fire",
+        "priority": 2,
+        "configuration": {
+            "data_source": null
+        },
+        "language": "python",
+        "type": "data_exporter"
+    },
+    "api_key": "zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2"
+  }
+  ' \
+  --compressed
+  ```
+  
+</RequestExample>
+
+<ResponseExample>
+
+```json Response
+{
+    "block": {
+        "content": null,
+        "name": "silent fire",
+        "priority": 2,
+        "config": {
+            "data_source": null
+        },
+        "language": "python",
+        "type": "data_loader",
+        "configuration": {},
+        "upstream_blocks": []
+    },
+}
+```
+</ResponseExample>

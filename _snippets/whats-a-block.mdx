@@ -1,0 +1,20 @@
+Blocks are just Python files that live in your project. You can navigate through your blocks on the left side of the screen, drag and drop them into your pipeline, or create new ones from the pipeline editor.
+
+Blocks are reusable, atomic pieces of code that perform certain actions. Changing one block _will_ change it everywhere it's used, but don't worry, it's easy to detach blocks to separate instances if necessary.
+
+Blocks can be used to perform a variety of actions, from simple data transformations to complex machine learning models. You can even use blocks to run custom code, or to connect to external services.
+
+Within a block, the _decorated_ function (`custom`, `loader`, `transformer`, etc) will be executed. The first argument to the function _must_ be a dataframe or JSON serializable object. The function can return a dataframe or JSON serializable object, or it can return nothing.
+
+You can think of this function like a python `main()` function, when we run the block, this function will be executed. For example, the following block will return the first 10 rows of the dataframe passed in:
+
+```python
+from pandas import DataFrame
+
+
+@transformer
+def transform_df(df: DataFrame, *args, **kwargs) -> DataFrame:
+    return df.iloc[:10]
+```
+
+Other code outside the block will be executed, but it _will_ not be returned. You can read more about blocks [here](/design/blocks).

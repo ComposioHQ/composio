@@ -1,0 +1,55 @@
+---
+title: "Overview"
+description: "Sign in and retrieve an OAuth token."
+---
+
+### Session object
+<ResponseExample>
+```json Response
+{
+  "expires": "2023-04-30 03:02:14.781970+00:00",
+  "token": "...",
+  "user": {
+    "avatar": null,
+    "first_name": null,
+    "id": 1,
+    "last_name": null,
+    "owner": true,
+    "roles": null,
+    "roles_display": "Owner",
+    "username": "admin"
+  }
+}
+```
+</ResponseExample>
+<ResponseField name="expires" type="datetime" required>
+  The date and time the session is no longer valid.
+</ResponseField>
+
+<ResponseField name="token" type="string" required>
+  OAuth token used to authenticate each API request.
+</ResponseField>
+
+<ResponseField name="user" type="object" required>
+  Object containing variables for the pipeline.
+
+  <Expandable title="properties">
+    <ResponseField name="id" type="integer" required>
+      User ID
+    </ResponseField>
+    <ResponseField name="owner" type="boolean">
+      If true, the current user has owner permissions.
+    </ResponseField>
+    <ResponseField name="roles" type="integer">
+      Roles a user has, represented as an integer.
+    </ResponseField>
+    <ResponseField name="roles_display" type="integer">
+      Human-readable role.
+    </ResponseField>
+    <ResponseField name="username" type="string">
+      Unique username for user.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Snippet file="initialize-session.mdx"/>

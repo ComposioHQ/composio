@@ -1,0 +1,76 @@
+---
+title: "Replicating blocks"
+description: "Reuse the same block multiple times within a single pipeline."
+"og:image": "https://64.media.tumblr.com/7354b3e96228024e5ae2924814053f98/tumblr_pcpk4z3lX11sgefjfo9_500.gif"
+---
+
+<Frame>
+  <img alt="Replicate blocks" src="https://64.media.tumblr.com/7354b3e96228024e5ae2924814053f98/tumblr_pcpk4z3lX11sgefjfo9_500.gif" />
+</Frame>
+
+## What does it mean to replicate a block
+
+Let’s say you have a pipeline named `fire_pipeline` with the following 3 blocks:
+
+```
+[load_source_a]            [load_source_b]
+      ↓
+[transform_data]
+```
+
+The transformer block named `transform_data` contains reusable code. Instead of creating a brand
+new block in this pipeline that does the exact same thing as `transform_data`, you can replicate
+the `transform_data` block.
+
+Once you replicate the `transform_data` block, you can configure it however you want. For example,
+you can name the replica block `transform_source_b` or
+set the replica block’s upstream block to `load_source_b`.
+
+The `fire_pipeline` will now look like this:
+
+```
+[load_source_a]            [load_source_b]
+       ↓                          ↓
+[transform_data]         [transform_source_b]
+```
+
+A replica block’s code and execution logic mirrors the block it replicated.
+In this example, the `transform_source_b` block will get its code from the `transform_data` block.
+
+### Why is replicating blocks useful
+
+Replicating blocks make it easier to reuse code in a pipeline while maintaining observability of
+each branch in the pipeline because each block, even when replicated, will have its own block
+run instance when a pipeline is executed.
+
+These block run instances have monitoring, alerting, and logging built-in as well as producing
+partitioned data products when successfully completed.
+
+### Terminology
+
+| Term | Definition |
+| --- | --- |
+| Replicated block | An original block in a pipeline that has 1 or more replica blocks. |
+| Replica block | A block in a pipeline that uses the code from another block in the same pipeline. |
+
+## How to replicate a block
+
+All block types, except dbt blocks, can be replicated. In the top right corner of the block,
+click the triple dot icon to display a dropdown menu. Under the dropdown menu, click the option
+labeled <b>`Replicate block`</b>.
+
+This will add a new block to your current pipeline. You can optionally name the new replica block.
+
+When the pipeline runs, it’ll create a block run for each block in the pipeline. When a block run
+is created for a replica block, the block run will reference that block using the following
+block UUID convention: `[replica_block_uuid]:[replicated_block_uuid]`.
+
+For example:
+
+1. Original block’s UUID is `transform_data`.
+1. The `transform_data` block is replicated.
+1. The newly created replica block’s UUID is `transform_source_b`.
+It’s replicated from the block `transform_data`.
+
+A block run’s `block_uuid` attribute for the replica block `transform_source_b` will appear in
+dashboards and logs as `transform_source_b:transform_data`.

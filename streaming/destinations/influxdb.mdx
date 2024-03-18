@@ -1,0 +1,94 @@
+---
+title: "InfluxDB"
+---
+
+## InfluxDB instance
+
+InfluxDB can be [run locally](https://docs.influxdata.com/influxdb/v2.7/install/) or in the cloud.
+
+## Basic config
+
+Basic configuration includes the server connection details:
+
+```yaml
+connector_type: influxdb
+url: "http://localhost:8086"
+token: "my-token"
+org: "my-org"
+bucket: "data"
+```
+
+## Data format
+
+The InfluxDB data exporter accepts only dictionaries as messages following a specific format:
+
+```
+message = {
+    'data': <Any>
+    'metadata': <Optional[Dict]>
+}
+```
+Every message contains at least some data in a `data` field. The following messages are valid:
+
+```python
+message_1 = {'data': {'bees': 23, 'ants': 30}}
+message_2 = {'data': 23}  # implicit for {'_value': 23}
+message_3 = {'data': [23, 30]}  # implicit for {'_value': 23} and {'_value': 30}
+```
+
+InfluxDB supports [data elements](https://docs.influxdata.com/influxdb/v2.7/reference/key-concepts/data-elements/) for structuring your data. 
+The influxdb data exporter can create these elements if the messages received contain a metadata dictionary: 
+
+```python
+message['metadata'] = {
+    'measurement': str
+    'time': int
+    'tags': Dict
+}
+```
+
+The following message shows the configuration of all possible elements data and metadata:
+
+```python
+message = {
+    "data": {'bees': 23},
+    "metadata": {
+        'measurement': 'census',
+        'time': 1693472675783,  # timestamp with ms precision
+        'tags': {'location': 'klamath', 'scientist': 'anderson'}
+    }
+}
+```
+
+If not all elements are configured, default values are assumed.
+
+- The default measurement name is `default` and can be configured in the yaml file.
+
+```yaml
+connector_type: influxdb
+url: "http://localhost:8086"
+token: "my-token"
+org: "my-org"
+bucket: "data"
+measurement: "default"
+```
+
+- The default time timestamp is the current time of execution.
+- The default tags are none.
+
+The `data` part of the message is taken for the fields elements. 
+If the data is a scalar value or a list type it will be written to the database with the field name `_value`.
+
+## Advanced config
+
+The influxdb data exporter writes data to the InfluxDB server in batches, if either the batch size or the timeout are reached. Both values can be changed if necessary in the config file:
+
+```yaml
+connector_type: influxdb
+url: "http://localhost:8086"
+token: "my-token"
+org: "my-org"
+bucket: "data"
+batch_size: 100
+timeout_ms: 500
+```

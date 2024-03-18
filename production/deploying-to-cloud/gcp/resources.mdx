@@ -1,0 +1,366 @@
+---
+title: "Terraform GCP resources"
+sidebarTitle: "Resources"
+---
+
+Here is the default output of `terraform plan`:
+
+```bash
+data.http.myip: Reading...
+data.http.myip: Read complete after 0s [id=http://ipv4.icanhazip.com]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # google_cloud_run_service.run_service will be created
+  + resource "google_cloud_run_service" "run_service" {
+      + autogenerate_revision_name = true
+      + id                         = (known after apply)
+      + location                   = "us-west2"
+      + name                       = "mage-data-prep"
+      + project                    = (known after apply)
+      + status                     = (known after apply)
+
+      + metadata {
+          + annotations      = {
+              + "run.googleapis.com/ingress"      = "internal-and-cloud-load-balancing"
+              + "run.googleapis.com/launch-stage" = "BETA"
+            }
+          + generation       = (known after apply)
+          + labels           = (known after apply)
+          + namespace        = (known after apply)
+          + resource_version = (known after apply)
+          + self_link        = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + template {
+          + metadata {
+              + annotations      = (known after apply)
+              + generation       = (known after apply)
+              + name             = (known after apply)
+              + namespace        = (known after apply)
+              + resource_version = (known after apply)
+              + self_link        = (known after apply)
+              + uid              = (known after apply)
+            }
+
+          + spec {
+              + container_concurrency = (known after apply)
+              + service_account_name  = (known after apply)
+              + serving_state         = (known after apply)
+              + timeout_seconds       = (known after apply)
+
+              + containers {
+                  + image = "region-docker.pkg.dev/project_id/repository_name/mageai"
+
+                  + env {
+                      + name  = "FILESTORE_IP_ADDRESS"
+                      + value = (known after apply)
+                    }
+                  + env {
+                      + name  = "FILE_SHARE_NAME"
+                      + value = "share1"
+                    }
+
+                  + ports {
+                      + container_port = 6789
+                      + name           = (known after apply)
+                    }
+
+                  + resources {
+                      + limits = {
+                          + "cpu"    = "2000m"
+                          + "memory" = "1G"
+                        }
+                    }
+                }
+            }
+        }
+
+      + traffic {
+          + latest_revision = true
+          + percent         = 100
+          + url             = (known after apply)
+        }
+    }
+
+  # google_cloud_run_service_iam_member.run_all_users will be created
+  + resource "google_cloud_run_service_iam_member" "run_all_users" {
+      + etag     = (known after apply)
+      + id       = (known after apply)
+      + location = "us-west2"
+      + member   = "allUsers"
+      + project  = (known after apply)
+      + role     = "roles/run.invoker"
+      + service  = "mage-data-prep"
+    }
+
+  # google_compute_backend_service.backend will be created
+  + resource "google_compute_backend_service" "backend" {
+      + connection_draining_timeout_sec = 300
+      + creation_timestamp              = (known after apply)
+      + fingerprint                     = (known after apply)
+      + id                              = (known after apply)
+      + load_balancing_scheme           = "EXTERNAL"
+      + name                            = "mage-data-prep-backend"
+      + port_name                       = "http"
+      + project                         = (known after apply)
+      + protocol                        = "HTTP"
+      + security_policy                 = "mage-data-prep-security-policy"
+      + self_link                       = (known after apply)
+      + session_affinity                = (known after apply)
+      + timeout_sec                     = 30
+
+      + backend {
+          + balancing_mode               = "UTILIZATION"
+          + capacity_scaler              = 1
+          + group                        = (known after apply)
+          + max_connections              = (known after apply)
+          + max_connections_per_endpoint = (known after apply)
+          + max_connections_per_instance = (known after apply)
+          + max_rate                     = (known after apply)
+          + max_rate_per_endpoint        = (known after apply)
+          + max_rate_per_instance        = (known after apply)
+          + max_utilization              = (known after apply)
+        }
+
+      + cdn_policy {
+          + cache_mode                   = (known after apply)
+          + client_ttl                   = (known after apply)
+          + default_ttl                  = (known after apply)
+          + max_ttl                      = (known after apply)
+          + negative_caching             = (known after apply)
+          + serve_while_stale            = (known after apply)
+          + signed_url_cache_max_age_sec = (known after apply)
+
+          + cache_key_policy {
+              + include_host           = (known after apply)
+              + include_named_cookies  = (known after apply)
+              + include_protocol       = (known after apply)
+              + include_query_string   = (known after apply)
+              + query_string_blacklist = (known after apply)
+              + query_string_whitelist = (known after apply)
+            }
+
+          + negative_caching_policy {
+              + code = (known after apply)
+              + ttl  = (known after apply)
+            }
+        }
+
+      + log_config {
+          + enable      = (known after apply)
+          + sample_rate = (known after apply)
+        }
+    }
+
+  # google_compute_global_address.ip will be created
+  + resource "google_compute_global_address" "ip" {
+      + address            = (known after apply)
+      + creation_timestamp = (known after apply)
+      + id                 = (known after apply)
+      + name               = "mage-data-prep-service-ip"
+      + project            = (known after apply)
+      + self_link          = (known after apply)
+    }
+
+  # google_compute_global_forwarding_rule.frontend will be created
+  + resource "google_compute_global_forwarding_rule" "frontend" {
+      + id                    = (known after apply)
+      + ip_address            = (known after apply)
+      + ip_protocol           = (known after apply)
+      + label_fingerprint     = (known after apply)
+      + load_balancing_scheme = "EXTERNAL"
+      + name                  = "mage-data-prep-frontend"
+      + network               = (known after apply)
+      + port_range            = "80"
+      + project               = (known after apply)
+      + psc_connection_id     = (known after apply)
+      + psc_connection_status = (known after apply)
+      + self_link             = (known after apply)
+      + target                = (known after apply)
+    }
+
+  # google_compute_region_network_endpoint_group.cloudrun_neg will be created
+  + resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
+      + id                    = (known after apply)
+      + name                  = "mage-data-prep-neg"
+      + network_endpoint_type = "SERVERLESS"
+      + project               = (known after apply)
+      + region                = "us-west2"
+      + self_link             = (known after apply)
+
+      + cloud_run {
+          + service = "mage-data-prep"
+        }
+    }
+
+  # google_compute_security_policy.policy will be created
+  + resource "google_compute_security_policy" "policy" {
+      + fingerprint = (known after apply)
+      + id          = (known after apply)
+      + name        = "mage-data-prep-security-policy"
+      + project     = (known after apply)
+      + self_link   = (known after apply)
+      + type        = (known after apply)
+
+      + advanced_options_config {
+          + json_parsing = (known after apply)
+          + log_level    = (known after apply)
+
+          + json_custom_config {
+              + content_types = (known after apply)
+            }
+        }
+
+      + rule {
+          + action      = "allow"
+          + description = "Whitelist IP"
+          + preview     = (known after apply)
+          + priority    = 100
+
+          + match {
+              + versioned_expr = "SRC_IPS_V1"
+
+              + config {
+                  + src_ip_ranges = [
+                      + "11.111.11.111/32",
+                    ]
+                }
+            }
+        }
+      + rule {
+          + action      = "deny(403)"
+          + description = "default rule"
+          + preview     = (known after apply)
+          + priority    = 2147483647
+
+          + match {
+              + versioned_expr = "SRC_IPS_V1"
+
+              + config {
+                  + src_ip_ranges = [
+                      + "*",
+                    ]
+                }
+            }
+        }
+    }
+
+  # google_compute_target_http_proxy.http_proxy will be created
+  + resource "google_compute_target_http_proxy" "http_proxy" {
+      + creation_timestamp = (known after apply)
+      + id                 = (known after apply)
+      + name               = "mage-data-prep-http-proxy"
+      + project            = (known after apply)
+      + proxy_bind         = (known after apply)
+      + proxy_id           = (known after apply)
+      + self_link          = (known after apply)
+      + url_map            = (known after apply)
+    }
+
+  # google_compute_url_map.url_map will be created
+  + resource "google_compute_url_map" "url_map" {
+      + creation_timestamp = (known after apply)
+      + default_service    = (known after apply)
+      + fingerprint        = (known after apply)
+      + id                 = (known after apply)
+      + map_id             = (known after apply)
+      + name               = "mage-data-prep-urlmap"
+      + project            = (known after apply)
+      + self_link          = (known after apply)
+    }
+
+  # google_filestore_instance.instance will be created
+  + resource "google_filestore_instance" "instance" {
+      + create_time = (known after apply)
+      + etag        = (known after apply)
+      + id          = (known after apply)
+      + location    = "us-west2-a"
+      + name        = "mage-data-prep"
+      + project     = (known after apply)
+      + tier        = "BASIC_HDD"
+      + zone        = (known after apply)
+
+      + file_shares {
+          + capacity_gb = 1024
+          + name        = "share1"
+        }
+
+      + networks {
+          + connect_mode      = "DIRECT_PEERING"
+          + ip_addresses      = (known after apply)
+          + modes             = [
+              + "MODE_IPV4",
+            ]
+          + network           = "default"
+          + reserved_ip_range = (known after apply)
+        }
+    }
+
+  # google_project_service.artifactregistry will be created
+  + resource "google_project_service" "artifactregistry" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = (known after apply)
+      + service            = "artifactregistry.googleapis.com"
+    }
+
+  # google_project_service.cloudrun will be created
+  + resource "google_project_service" "cloudrun" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = (known after apply)
+      + service            = "run.googleapis.com"
+    }
+
+  # google_project_service.iam will be created
+  + resource "google_project_service" "iam" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = (known after apply)
+      + service            = "iam.googleapis.com"
+    }
+
+  # google_project_service.resourcemanager will be created
+  + resource "google_project_service" "resourcemanager" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = (known after apply)
+      + service            = "cloudresourcemanager.googleapis.com"
+    }
+
+  # google_project_service.vpcaccess will be created
+  + resource "google_project_service" "vpcaccess" {
+      + disable_on_destroy = false
+      + id                 = (known after apply)
+      + project            = (known after apply)
+      + service            = "vpcaccess.googleapis.com"
+    }
+
+  # google_vpc_access_connector.connector will be created
+  + resource "google_vpc_access_connector" "connector" {
+      + id             = (known after apply)
+      + ip_cidr_range  = "10.8.0.0/28"
+      + max_throughput = 300
+      + min_throughput = 200
+      + name           = "mage-data-prep-connector"
+      + network        = "default"
+      + project        = (known after apply)
+      + region         = "us-west2"
+      + self_link      = (known after apply)
+      + state          = (known after apply)
+    }
+
+Plan: 16 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + service_ip = (known after apply)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
+```

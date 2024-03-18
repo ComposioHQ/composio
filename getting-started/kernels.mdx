@@ -1,0 +1,89 @@
+---
+title: "Kernels"
+description: "We support multiple kernels in the code editor."
+---
+
+1. [Python3](#python3)
+1. [PySpark](#pyspark)
+1. [Switching Kernels](#switching_kernels)
+
+## Python3 kernel <a name="python3"></a>
+
+Python3 is the default kernel. You can prototype and transform small to medium
+size datasets with this kernel. Pipelines built with this kernel can be executed
+in Python environments.
+
+## PySpark kernel <a name="pyspark"></a>
+
+We support running PySpark kernel to prototype with large datasets and build
+pipelines to transform large datasets.
+
+Instructions for running PySpark kernel
+
+- Launch editor with docker:
+  `docker run -it -p 6789:6789 -v $(pwd):/home/src mageai/mageai /app/run_app.sh mage start [project_name]`
+- Specify PySpark kernel related [metadata](#metadata) in project's
+  metadata.yaml file
+- Launch a remote AWS EMR Spark cluster. Install mage_ai library in bootstrap
+  actions. Make sure the EMR cluster is publicly accessible.
+  - You can use the `create_emr.py` script under
+    [scripts/spark](https://github.com/mage-ai/mage-ai/tree/master/scripts/spark)
+    folder to launch a new EMR cluster. Example:
+    `python3 create_cluster.py [project_path]`. Please make sure your AWS
+    crendentials are provided in `~/.aws/credentials` file or environment
+    variables (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) when executing
+    the script.
+- Connect to the remote spark cluster with command
+  `ssh -i [path_to_key_pair] -L 0.0.0.0:9999:localhost:8998 [master_ec2_public_dns_name]`
+  - `path_to_key_pair` is the path to the `ec2_key_pair_name` configured in
+    `metadata.yaml` file
+  - Find the `master_ec2_public_dns_name` in your newly created EMR cluster page
+    under attribute `Master public DNS`
+
+Once you finish using the PySpark kernel, please remember to terminate the
+cluster in AWS console to avoid unnecessary costs.
+
+### Metadata
+
+When using PySpark kernel, we need to specify a s3 path as the variables dir,
+which will be used to store the output of each block. We also need to provide
+EMR cluster related config fields for cluster creation. The config fields can be
+configured in project's metadata.yaml file. Example:
+
+```yaml
+remote_variables_dir: s3://bucket/path
+
+emr_config:
+  master_security_group: "sg-xxxxxxxxxxxx" # Optional. Use EMR-managed security group by default.
+  slave_security_group: "sg-yyyyyyyyyyyy" # Optional. Use EMR-managed security group by default.
+  master_instance_type: "r5.4xlarge" # Optional. Default value: r5.4xlarge
+  slave_instance_type: "r5.4xlarge" # Optional. Default value: r5.4xlarge
+  # ec2_key_name must be configured during cluster launch to enable SSH access.
+  # You can create a key pair in page https://console.aws.amazon.com/ec2#KeyPairs and download the key file.
+  ec2_key_name: "[ec2_key_pair_name]"
+```
+
+### Pipeline execution
+
+Pipelines built with this kernel can be executed in PySpark environments.
+
+We support executing PySpark pipelines in EMR cluster automatically. You'll need
+to specify the some EMR config fields in project's metadata.yaml file. And then
+we'll launch an EMR cluster when you executing the pipeline with
+`mage run [project_name] [pipeline]` command. Example EMR config:
+
+## Restart kernel
+
+If your block execution is hanging in the notebook and no block ouput is printed, you can try interrupting the block execution and
+restarting the kernel. You can find the "Restart kernel" button in the "Run" menu at the top of the notebook.
+
+## Switching kernels <a name="switching_kernels"></a>
+
+To switch kernels, you first need to follow the steps in the corresponding
+section above. Then, you can switch kernels through the kernel selection menu in
+the UI.
+
+If you're switching back to the Python3 kernel, you may need to undo the
+configuration changes needed for the other kernel types.
+
+![](https://github.com/mage-ai/assets/blob/main/switch_kernels.png?raw=True)

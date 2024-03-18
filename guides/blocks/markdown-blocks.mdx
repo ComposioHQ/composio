@@ -1,0 +1,93 @@
+---
+title: "Markdown blocks"
+description: "A markdown block is a standalone text block that supports markdown and can be used to make notes or organize your blocks."
+---
+
+
+## Adding a markdown block to the pipeline
+
+1. Create a new pipeline or open an existing pipeline.
+2. Edit the pipeline.
+3. Add a markdown block by clicking on the `Markdown` button from the list of block types available.
+The `Markdown` button is visible at the bottom of the main section or when hovering over the divider between two blocks.
+4. You can rearrange the blocks by clicking on the block header and dragging it to another position in the pipeline.
+
+### Shortcuts
+- Edit mode: Double-click the markdown block's content area to open the content editor. You can
+also click the "Edit" icon in the block header to edit the content.
+- Exit edit mode: Press `Escape` on your keyboard while the content editor is active.
+You may need to press `Escape` twice, once to exit the editor and another time to deselect
+the block. When the block is deselected, the editor will automatically close.
+
+### Directory
+The files associated with the markdown blocks are located in the `markdowns` directory
+in the File Browser.
+
+### Deleting a markdown block
+When you delete a markdown block that is not used in any other pipeline,
+the file may also be deleted automatically as well.
+
+## Supported syntax
+
+#### Horizontal breaks
+---
+
+#### H1-H5 Headlines
+
+Normal text
+
+**bold text**
+
+*italicized text*
+
+> blockquote
+
+#### Ordered list
+1. First item
+2. Second item
+3. Third item
+
+#### Unordered list
+- First item
+- Second item
+- Third item
+
+You can use inline `test_code` in your sentences.
+
+Links: [Mage homepage](https://www.mage.ai)
+
+#### Tables
+| Column1 | Column2 | Column3 |
+| --- | --- | --- |
+| Text1 | TextA | TextI |
+| Text2 | TextB | TextII |
+| Text3 | TextC | TextIII |
+
+
+#### Code blocks
+```
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "age": 25
+}
+```
+
+#### Checkboxes
+
+- [x] Todo 1 checked
+- [ ] Todo 2 unchecked
+- [ ] Todo 3 unchecked
+
+
+#### Images
+
+Images are supported with the typical image markdown syntax:
+```
+![](https://images.photowall.com/products/57215/golden-retriever-puppy.jpg?h=699&q=85)
+```
+or with the `<img>` HTML tag syntax:
+```
+<img src="https://images.photowall.com/products/57215/golden-retriever-puppy.jpg?h=699&q=85" alt="drawing" width="200"/>
+```
+With the `<img>` syntax, you can create customizable image sizes with `width` and `height` attributes.

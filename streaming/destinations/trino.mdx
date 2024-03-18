@@ -1,0 +1,18 @@
+---
+title: "Trino"
+---
+
+## Basic config
+
+```yaml
+connector_type: trino
+profile: default    # profile in the io_config.yaml
+config:
+  table_name: table_name
+```
+
+## Optional fields
+
+```yaml
+schema_name: schema_name    # Override the schema name.
+```

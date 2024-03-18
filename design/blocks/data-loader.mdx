@@ -1,0 +1,30 @@
+---
+title: "Data loader"
+description: "Write your code for fetching data from a remote source or loading it from disk."
+---
+
+## Example
+
+```python
+import io
+import pandas as pd
+import requests
+
+
+@data_loader
+def load_data_from_api(*args, **kwargs):
+    url = 'https://raw.githubusercontent.com/mage-ai/datasets/master/restaurant_user_transactions.csv'
+
+    response = requests.get(url)
+    return pd.read_csv(io.StringIO(response.text), sep=',')
+```
+
+## How data is passed to other blocks
+
+The object that is returned from the decorated function (e.g. `load_data_from_api`)
+will be made available in all blocks that depend on this block.
+
+## Templates
+
+To read about Mage's data loading clients that interface with popular data
+storage systems, see docs on [Data loading](/design/data-loading).

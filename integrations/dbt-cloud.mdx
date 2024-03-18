@@ -1,0 +1,51 @@
+---
+title: "dbt Cloud in Mage"
+sidebarTitle: "dbt Cloud"
+description: "Trigger model runs in dbt Cloud."
+---
+
+## Configuration
+
+Here are the following keyword arguments that can be used for configuration:
+
+| Keyword argument | Description | Sample value |
+| --- | --- | --- |
+| `account_id` | dbt Cloud account ID | `12345` |
+| `api_token` | [Service account tokens](https://docs.getdbt.com/docs/dbt-cloud-apis/service-tokens) | `abc123` |
+
+---
+
+## Example code
+
+Trigger job run with `job_id`.
+```python
+from mage_ai.services.dbt.dbt import DbtCloudClient
+
+
+client = DbtCloudClient(dict(account_id=12345, api_token='abcdefg'))
+
+# Set poll_status=True to wait for job completion.
+# Set poll_status=False to not wait for job completion.
+client.trigger_job_run(12345, poll_status=True)
+```
+
+Sample output:
+
+```
+Polling dbt Cloud run 12345. Current status: Starting.
+Polling dbt Cloud run 12345. Current status: Running.
+Polling dbt Cloud run 12345. Current status: Success.
+Job run status for run 12345: Success. Polling complete
+```
+
+---
+
+## Methods
+
+Common [APIs in dbt Cloud](https://docs.getdbt.com/dbt-cloud/api-v2) implemented in the
+[`DbtCloudClient`](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/services/dbt/dbt.py).
+
+1. `get_run`
+1. `list_jobs`
+1. `list_runs`
+1. `trigger_job_run`

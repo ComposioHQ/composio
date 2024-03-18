@@ -1,0 +1,71 @@
+---
+title: "Documentation"
+sidebarTitle: "Overview"
+description: "Like every other part of Mage, our documentation is open-source. Read on to learn how to make edits or even write entirely new docs for Mage!"
+---
+
+<div align="center">
+<img src="https://github.com/mage-ai/mage-ai/assets/59450879/769a5faf-37ea-453c-8bd6-83270366fe00" width="65%"/>
+</div>
+
+## Overview
+
+Mage uses [Mintlify](mintlify.com/) as our documentation framework. Mintlify provides hosting and deployment for our docs, which makes editing quite simple. In this guide, we'll discuss different "levels" of contributing to our docs, starting from simplest to most advanced.
+
+All of our docs are written in plain text as Markdown files. If you're not familiar with Markdown, check out [this guide](https://www.markdownguide.org/basic-syntax/) to get started. You can take a look at the structure and contents of our docs by navigating this site and checking out the [docs directory](https://github.com/mage-ai/mage-ai) on GitHub.
+
+## Level 1: Suggesting Edits 🦸🏻‍♂️
+
+The very simplest way to contribute to the Mage docs is directly in the browser, using GitHub's file editing feature. This is a great way to suggest small edits to existing docs, but it's not the best way to add entirely new docs or complex formatting, images, etc.
+
+To make edits, simply click on the "Suggest Edit" button at the bottom of every page. This will open a new tab with the file you're editing. Make your changes, then click "Commit changes." This will open a new pull request with your changes. Be sure to add appropriate details to your pull request & tag `@wangxiaoyou1993` or `@mattppal`. Once the pull request is merged, your changes will be live on the site!
+
+<Frame>
+  <img src="https://github.com/mage-ai/assets/blob/main/contributing-docs.png?raw=True" />
+</Frame>
+
+## Level 2: Add complex components 💪
+
+### Images
+
+To add images to the Mage docs, you'll need to contact a team member or host the images in GitHub. Our assets currently live in a private repo to keep the docs repo lightweight.
+
+Reach out in [Slack](https://www.mage.ai/chat) if you're editing documentation that requires additional assets and we'll get them hosted for you.
+
+When adding images, we use centered divs or the Mintlify frame component. You can see the code in this page for examples of both.
+
+### Mintlify elements
+
+To learn more about Mintlify-specific elements, visit the Mintlify docs [here](https://mintlify.com/docs/content/page). You can add things like accordion groups, interactive lists, html elements, and more. Anything you can do in Mintlify, you can do in our docs.
+
+## Level 3: Add entirely new docs 🪄
+
+### Adding a new page
+
+Each page is an MDX file that should begin with the following metadata syntax with `---` at the start and end. Here are basics to get you started:
+
+1. [Page basics](https://mintlify.com/docs/content/page)
+2. [Headers and text](https://mintlify.com/docs/content/text)
+3. [Images and embeds](https://mintlify.com/docs/content/image-embeds)
+
+Once you add a new page in the appropriate folder in our `docs` directory, you'll need to add it to our site navigation. That is accomplished through the `mint.json` file in the root of our `docs` directory. 
+
+You'll need to add a new entry to the `pages` array in that file. The `path` should be the relative path to your new page, and the `title` should be the title of your page. Paths in `mint.json` should _not_ include file extensions.
+
+The best way to understand the structure is to read about it in the [Mintlify docs](https://mintlify.com/docs/settings/global) and to take a look at our `mint.json` file [here](https://github.com/mage-ai/mage-ai/blob/master/docs/mint.json).
+
+### Developing locally in Mintlify
+
+If you _really_ want to level up your docs contributions, you can create a local development environment. This will allow you to see changes _live_ as you make them on your machine.
+
+Follow the instructions from Mintlify [here](https://mintlify.com/docs/quickstart#2-updating-your-docs) to get started. Once configured, you'll be able to run a local server that will allow you to see your changes in real-time.
+
+Simply `cd mage-ai/docs` + `mintlify dev` and you'll be able to navigate to a live version at `localhost:3000`.
+
+### Adding icons
+
+Some elements in Mintlify have icons. Those are sourced from [fontawesome](https://fontawesome.com/). Any icon you find there can be added as an icon to the Mage docs, where appropriate. We only add icons to top-level items in our sidebar. 
+
+## Level 4: Adding entirely new sections 🧙🏻‍♂️
+
+If you'd like to contribute a larger, more structured section of our documentation, please reach out to a member of our team via Slack. They'll be able to guide you through the process of making sweeping changes. 

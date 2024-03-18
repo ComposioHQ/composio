@@ -1,0 +1,20 @@
+---
+title: "ClickHouse"
+---
+
+## Basic config
+
+```yaml
+connector_type: clickhouse
+profile: default    # profile in the io_config.yaml
+config:
+  table_name: table_name
+```
+Enter the DB connection credentials in [`io_config.yaml`](/development/io_config) file and specify the profile in the config.
+
+## Optional fields
+
+```yaml
+database: database                  # Override the database
+create_table_statement: true/false  # Whether to run create table statement
+```

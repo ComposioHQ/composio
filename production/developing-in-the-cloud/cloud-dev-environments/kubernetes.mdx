@@ -1,0 +1,88 @@
+---
+title: "Kubernetes"
+sidebarTitle: "Kubernetes"
+---
+
+## Google Kubernetes Engine
+
+### Pre-requisites
+
+You need to already have a Kubernetes cluster with a namespace running.
+
+#### Permissions
+
+In order for Mage to create the dev resources, the namespace service account
+needs to have certain permissions. To create the `ClusterRole` required for the
+service account, you can run the following `kubectl` command:
+
+```bash
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manage-role
+rules:
+  - apiGroups:
+        - ""
+        - apps
+    resources:
+      - services
+      - statefulsets
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+EOF
+```
+
+Once the cluster role is created, you will need to bind the role to the 
+service account. You will need to change the service account name if it is
+different:
+
+```bash
+kubectl create clusterrolebinding manage-role-binding \
+  --clusterrole=manage-role  \
+  --serviceaccount=default:default
+```
+
+#### PostgreSQL Database
+
+By default, Mage will use a SQLite database for each dev environment. SQLite
+does not perform well in the cloud, so we recommend using a Postgres database
+instead.
+
+To connect to a Cloud SQL PostgreSQL database from your GKE workload, you'll 
+need to follow these steps. These steps can be found in the
+[official Google documentation](https://cloud.google.com/sql/docs/postgres/connect-kubernetes-engine)
+
+* [Create your DB secrets](https://cloud.google.com/sql/docs/postgres/connect-kubernetes-engine#create_a_secret_object)
+* [Create your service account secrets](https://cloud.google.com/sql/docs/postgres/connect-kubernetes-engine#service-account-key-file)
+  * Make sure to record the path of the service account credential file. 
+
+You'll need to add the names of the secrets you created above as environment variables when
+creating your manager workload.
+
+### Configuring the manager workload
+
+Currently, you will need to create the manager workload on your own. You can create
+a `Deployment` workload with the following environment variables:
+
+| Variable Name                        | Value                                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| MANAGE_INSTANCE                      | 1                                                                                                  |
+| KUBE_NAMESPACE                       | Your Kubernetes namespace                                                                          |
+| KUBE_SERVICE_TYPE                    | Service type for Kubernetes Service (default = 'LoadBalancer')                                     |
+| KUBE_SERVICE_GCP_BACKEND_CONFIG      | Identifier for GCP Service backend config annotation: 'cloud.google.com/backend-config' (optional) |
+| KUBE_STORAGE_CLASS_NAME              | Kubernetes storage class name for stateful set storage (optional, uses cluster default if empty)   |
+| CLOUD_SQL_CONNECTION_NAME            | Cloud SQL instance connection name (required for PostgreSQL DB)                                    |
+| CONNECTION_URL_SECRETS_NAME          | Connection url secrets name (required for PostgreSQL DB if DB_SECRETS_NAME is empty)               |
+| DB_SECRETS_NAME                      | DB secrets name (required for PostgreSQL DB if CONNECTION_URL_SECRETS_NAME is empty)               |
+| SERVICE_ACCOUNT_SECRETS_NAME         | Service account secrets name (required for PostgreSQL DB)                                          |
+| SERVICE_ACCOUNT_CREDENTIAL_FILE_PATH | Credentials file path in previous step (required for PostgreSQL DB)                                |
+
+You can also create a service to create an ip address to access the deployment. You will
+need your service to point to port 6789 in order to access Mage.
+
+### Creating instances
+
+Once the manager workload is created, you can create your development instances. If all the
+prerequisites were completed successfully, you should be able to simply enter a name for the
+StatefulSet workload, and press the `Create` button.

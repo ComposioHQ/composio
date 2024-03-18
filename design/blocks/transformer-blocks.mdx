@@ -1,0 +1,661 @@
+---
+title: "Transformer blocks"
+sidebarTitle: "Transformer"
+description: "Transformer Actions are a library of modular, reusable data transformations, reducing the boilerplate to perform common transformations on your data."
+---
+
+## Core Concepts
+
+The core object of any transformer action is the **payload**, a JSON object that describes the transformation to perform alongside settings for that transformation. A sample transformer action payload is shown below:
+
+```json
+{
+    "action_type": "impute",
+    "action_arguments": ["age", "name"],
+    "action_options": {
+        "strategy": "constant",
+        "value": "32"
+    },
+    "axis": "column",
+    "action_variables": {
+        "age": {
+            "uuid": "age",
+            "column_type": "number"
+        },
+        "name": {
+            "uuid": "hourly_salary",
+            "column_type": "text"
+        }
+    }
+}
+```
+The above transformer action imputes missing values in the "age" and "hourly_salary" columns with the constant value `32`. Here is a list of the keys used in transformer action payloads:
+
+| Key              | Description                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| axis             | Axis to perform the transformation on. Either 'row' or 'column'.                                                                                                                    |
+| action_type      | Type of action to perform. See [Transformer Action Reference](#transformer-action-reference) for the list of action types.                                                          |
+| action_code      | Text field for specifying any code such as filters.                                                                                                                                 |
+| action_arguments | The columns to perform the transformation on.                                                                                                                                       |
+| action_options   | Other settings to provide to the transformer action. See [Transformer Action Reference](#transformer-action-reference) for specific details on which actions require which options. |
+| action_variables | Variable metadata for each input argument (column). Specifies column name and type.                                                                                                 |
+| outputs          | Variable metadata for each output column. Specifies column name and type. See [Column Types](#appendix-column-types) for information on possible column types to specify.           |
+
+This JSON formatted payload is difficult to generate so it is recommended to use the `build_transformer_action` factory to generate the payload. The above snippet generates the same payload as above:
+
+```python
+from mage_ai.data_cleaner.transformer_actions.utils import build_transformer_action
+
+df = pd.DataFrame({...}) # your input data frame
+payload = build_transformer_action(
+    df,
+    action_type=ActionType.IMPUTE,
+    arguments=['age'],
+    axis=Axis.COLUMN,
+    options={'strategy': 'constants', 'values': 32},
+)
+```
+See [Building Transformer Actions](#building-transformer-actions) for detailed information on using `build_transformer_action`.
+
+The transformer action payload, once built, can be used to construct a `BaseAction` object. This object processes the payload to identify the transformations to apply a data frame. Through this action object, the transformer action can be applied to a data frame using the `execute` function:
+
+```python
+payload = build_transformer_action(...)
+transformed_df = BaseAction(payload).execute(df)
+```
+
+# Building Transformer Actions
+
+**_build_transformer_action_** - `build_transformer_action(df: DataFrame, action_type: ActionType | str, arguments: List[str], action_code: str, options: Dict, axis: Axis | str, outputs: List[Dict]) -> Dict:`
+
+Source: `mage_ai.data_cleaner.transformer_actions.utils.build_transformer_action`
+
+Builds transformer action payload from arguments. The output of this function can be passed
+as input to `transformer_actions.base.BaseAction` in order to perform the requested transformation.
+
+Note: Action variables are inferred from `arguments` and `df`.
+
+- **Args**:
+    - `df (DataFrame)`: The data frame to build a transformer action payload for.
+    - `action_type (ActionType | str)`: Transformer action to perform.
+    - `arguments (List[str], optional)`: Columns to perform this action on. Defaults to `[]`.
+    - `action_code (str, optional)`: Special code or query to execute with action. Defaults to `''`.
+    - `options (Dict, optional)`: Options specifying behavior of action. Defaults to `{}`.
+    - `axis (Union[Axis, str], optional)`: Axis of the data frame to apply the action to. Defaults to `Axis.COLUMN`.
+    - `outputs (List[Dict], optional)`: Specifies metadata of newly created columns. Defaults to `[]`.
+- **Returns**: (`Dict`) Transformer action payload to use with `transformer_actions.base.BaseAction`
+- **Example**:
+  ```python
+    action = build_transformer_action(
+        df,
+        action_type=ActionType.FIRST,
+        action_code='retailer != null and retail_price >= 0',  # Enter filtering condition on rows before aggregation
+        arguments=['retail_price', 'review'],  # Enter the columns to compute aggregate over
+        axis=Axis.COLUMN,
+        options={'groupby_columns': ['retailer']},  # Enter columns to group by
+        outputs=[
+            # The number of outputs below must match the number of arguments
+            {'uuid': 'first_retail_price', 'column_type': 'number_with_decimals'},
+            {'uuid': 'first_review', 'column_type': 'category'},
+        ],
+    )
+  ```
+
+# Transformer Action Reference
+- [Building Transformer Actions](#building-transformer-actions)
+- [Transformer Action Reference](#transformer-action-reference)
+- [Column Actions](#column-actions)
+  - [Aggregation Actions](#aggregation-actions)
+  - [Formatting Actions](#formatting-actions)
+    - [Clean Column Names](#clean-column-names)
+    - [Fix Syntax Errors](#fix-syntax-errors)
+    - [Reformat Values](#reformat-values)
+  - [Column Removal Actions](#column-removal-actions)
+    - [Select Columns](#select-columns)
+    - [Remove Columns](#remove-columns)
+  - [Row Shifting Actions](#row-shifting-actions)
+    - [Shift Up](#shift-up)
+    - [Shift Down](#shift-down)
+  - [Feature Scaling Actions](#feature-scaling-actions)
+    - [Normalize Data](#normalize-data)
+    - [Standardize Data](#standardize-data)
+  - [Other Column Actions](#other-column-actions)
+    - [Difference](#difference)
+    - [Fill In Missing Values](#fill-in-missing-values)
+    - [Remove Outliers](#remove-outliers)
+- [Row Actions](#row-actions)
+    - [Drop Duplicates](#drop-duplicates)
+    - [Filter](#filter)
+    - [Remove Rows](#remove-rows)
+    - [Sort](#sort)
+- [Appendix: Filter Syntax](#appendix-filter-syntax)
+- [Appendix: Column Types](#appendix-column-types)
+# Column Actions
+
+## Aggregation Actions
+
+Applies some aggregation function over groups determined by values in some columns. A set of grouping columns are provided, whose unique combinations of values are used to form groups. For example, consider the dataset below:
+
+| Paid Dues | Due Amount |
+| --------- | ---------- |
+| Yes       | $5.00      |
+| No        | $15.20     |
+| Yes       | $3.50      |
+| Yes       | $1.28      |
+| No        | $25.03     |
+
+The data could be grouped by "Paid Dues" to form the following groups:
+
+| Paid Dues | Due Amount |
+| --------- | ---------- |
+| Yes       | $5.00      |
+| Yes       | $3.50      |
+| Yes       | $1.28      |
+
+| Paid Dues | Due Amount |
+| --------- | ---------- |
+| No        | $15.20     |
+| No        | $25.03     |
+
+Then an aggregation function is applied to each group over the input columns. In the example, we can compute the total dues by group by aggregating over "Due Amount":
+| Paid Dues | Total Due Amount |
+| --------- | ---------------- |
+| Yes       | $9.78            |
+| No        | $40.23           |
+
+
+Then the output of this aggregation is used to create a new column for each input column, where each row receives the corresponding aggregate of the group it falls into. In the example above, the final output data frame would be:
+
+| Paid Dues | Due Amount | Total Due Amount by Payment Status |
+| --------- | ---------- | ---------------------------------- |
+| Yes       | $5.00      | $9.78                              |
+| No        | $15.20     | $40.23                             |
+| Yes       | $3.50      | $9.78                              |
+| Yes       | $1.28      | $9.78                              |
+| No        | $25.03     | $40.23                             |
+
+
+All of these transformer actions have the same set of arguments when using `build_transformer_action`, but have different types corresponding to the different aggregation functions that could be applied to the groups.
+
+**Example**
+
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.AVERAGE,
+    action_code='brand != null',
+    arguments=['revenue', 'cost'],
+    axis=Axis.COLUMN,
+    options={'groupby_columns': ['brand']},
+    outputs=[
+        {'uuid': 'avg_rev_per_brand', 'column_type': 'number_with_decimals'},
+        {'uuid': 'avg_cost_per_brand', 'column_type': 'number_with_decimals'},
+    ],
+)
+```
+
+**Args**
+- **_action_code:_** Filter for selecting rows before aggregation is performed. See [Filter Syntax](#appendix-filter-syntax) for more information on valid filter syntax.
+- **_arguments:_** Columns to compute aggregate values over. For each argument a new column will be created to store the aggregates values over the column.
+    - If no arguments are provided, no aggregation is performed
+- **_options_:**
+    - `groupby_columns` (optional) - list of columns to form groups with when aggregating. A group consists of each unique combination of values chosen from each of the columns specified in this option.
+        - If this is empty, aggregation is performed over the first column specified in _arguments_ (only if _arguments_ is nonempty - if empty no aggregation is performed) and only one column is added
+
+```
+The following options are used as a shortcut to simplify filtering over time windows.
+Let $A$ and $B$ be datetime columns, and let $\text{window}$ be an integer describing the length of
+a time window in seconds. If the following options are specified, rows for which the time value for
+$B \in [A, A + \text{window}]$ are selected (All rows where value for $B$ must (a) be greater than
+or equal to the value for $A$ and (b) less than or equal to the value $A+window$).
+```
+
+- `timestamp_feature_a` (optional) - time feature A (a column in the data frame)
+- `timestamp_feature_b` (optional) - time feature B (a column in the data frame)
+- `window` (optional) - max time window between feature A and feature B in seconds
+
+If some (or none) of these options are specified, then the filtering is not performed. Regardless if this filtering is performed, _action_code_ filtering is still performed.
+- **_outputs_:** Specifies the metadata for each output column of the aggregation (corresponding to the aggregation created from input argument in _arguments_). This array must be the same length as _arguments_, and each entry must contain the following metadata:
+    - `uuid (string)`: Name of the new column
+    - `column_type (string | ColumnType)`: Type of the new column ( See `mage_ai.data_cleaner.column_types.constants.ColumnType` for options)
+
+**Aggregation Functions**
+These are the possible aggregations that can be applied to each group per each input column. To use the aggregation function specify the corresponding action type in `build_transformer_action`.
+
+| Name                 | Action Type Enum            | Description                                                                                                    |
+| -------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **_Average_**        | `ActionType.AVERAGE`        | Averages input column value over each group                                                                    |
+| **_Count Distinct_** | `ActionType.COUNT_DISTINCT` | Counts the number of distinct rows in each group per input column                                              |
+| **_Count_**          | `ActionType.COUNT`          | Counts the number of rows in each group per input column                                                       |
+| **_First_**          | `ActionType.FIRST`          | For each input column, selects first item in each group (as appearing in the order of the original data frame) |
+| **_Last_**           | `ActionType.LAST`           | For each input column, selects last item in each group (as appearing in the order of the original data frame)  |
+| **_Maximum_**        | `ActionType.MAX`            | Gets the maximum value per group for each input column                                                         |
+| **_Median_**         | `ActionType.MEDIAN`         | Gets the median value per group for each input column                                                          |
+| **_Minimum_**        | `ActionType.MIN`            | Gets the maximum value per group for each input column                                                         |
+| **_Sum_**            | `ActionType.SUM`            | Sums over all values in each group per input column                                                            |
+
+## Formatting Actions
+These transformer actions involve reformatting column names or the values in columns
+### Clean Column Names
+Cleans column names according to the following rules:
+1. Names are converted to snake case
+2. All wrapping whitespace or underscores are removed
+3. All non-alphanumeric characters (except "_") are removed
+4. Numbers are prefixed with "number_"
+5. All Python keywords are postfixed by "_"
+
+
+Snake case is chosen as
+1. all characters are lower case
+2. no whitespace is used (which makes referring to columns in code easier)
+
+
+| Original Name          | Cleaned Name       | Notes                                             |
+| ---------------------- | ------------------ | ------------------------------------------------- |
+| good_name              | good_name          | columns in snake case are left unchanged          |
+| bad case               | bad_case           |                                                   |
+| %@#342%34@@#342        | number_34234342    | Symbols are removed first, then number is cleaned |
+| PascalCaseColumn       | pascal_case_column |                                                   |
+| camelCaseText          | camel_case_text    |                                                   |
+| \_\_\_snake_case\_\_\_ | snake_case         | Surrounding underscores are stripped              |
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.CLEAN_COLUMN_NAME,
+    arguments=df.columns,
+    axis=Axis.COLUMN,
+)
+```
+**Args**
+- **_arguments:_** Columns whose name to clean. If empty, no columns names are cleaned.
+
+### Fix Syntax Errors
+Marks syntax errors in column values. Syntax errors are defined as values that are improperly formatted or of the incorrect type. For example:
+- A number in a text column
+- An improperly formatted email, phone number, or zip code
+- An improperly formatted date
+
+Values that break these syntax errors are currently marked as:
+- `"invalid"` if column is of categorical or string type
+- `pandas.NaT` if column is a datetime
+- `np.nan` if column is a number type
+
+_WIP_: Intelligently fix syntax errors in these columns automatically
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.FIX_SYNTAX_ERRORS,
+    arguments=df.columns,
+    axis=Axis.COLUMN,
+)
+```
+**Args**
+- **_arguments:_** Columns to mark syntax errors for. If empty no columns are checked.
+### Reformat Values
+Reformats values in column based on requested action. The currently supported reformats are:
+- Standardize capitalization (`reformat = 'caps_standardization'`): Forces text column to follow a single capitalization strategy (either lowercase or uppercase)
+- Convert currencies to a number (`reformat = 'currency_to_num'`): Converts a currency value (by default stored as a string) to a decimal number. If unable to convert, doesn't perform conversion
+  - Supported currencies: **$, CAD, £, €, ¥, Rs, 元**
+    | Original String  | Parsed Decimal | Notes                                           |
+    | ---------------- | -------------- | ----------------------------------------------- |
+    | "  $ 10000"      | 10000          |                                                 |
+    | "- ¥ 22.324523"  | -22.324523     | Negation in front of symbol supported           |
+    | " 10000 元   "   | 10000          | Currencies with postfixed symbols are supported |
+    | "0.42 €"         | 0.42           |                                                 |
+    | "-  3.42032 CAD" | -3.42032       |                                                 |
+    | "Rs - 100000.23" | -100000.23     | Negation after symbol is supported              |
+- Convert string to datetime (`reformat = 'date_time_conversion'`): Converts a string value representing a datetime to a `pandas.Timestamp` object if correctly formatted, else converts to `None`.
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.REFORMAT,
+    arguments=[],
+    axis=Axis.COLUMN,
+    options={'reformat': 'caps_standardization', 'capitalization': 'lowercase'},
+)
+```
+**Args**
+- **_arguments:_** Columns to apply the reformat action to
+- **_options:_**
+  - `reformat` (optional): The reformat action to apply to the specified columns. Can be:
+    - `None` - no reformat is applied
+    - `'caps_standardization'` - standardize capitalization
+    - `'currency_to_num'` - convert currency string to number
+    - `'date_format_conversion'` - convert datetime string to `pandas.Timestamp`
+  - `capitalization` (optional): Specifies the capitalization strategy to use when standardizing capitalization. This argument is ignored unless `reformat = "caps_standardization"`. Options are `['lowercase', 'uppercase']`.
+
+## Column Removal Actions
+### Select Columns
+Keeps only the specified columns; removes all other columns from data frame.
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.SELECT,
+    arguments=[],
+    axis=Axis.COLUMN,
+)
+```
+**Args**
+- **_arguments:_** The columns to keep in the data frame. If empty, all columns are removed.
+
+### Remove Columns
+Drops the specified columns.
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.REMOVE,
+    arguments=[],
+    axis=Axis.COLUMN,
+)
+```
+**Args**
+- **_arguments:_** The columns to remove in the data frame. If empty, no columns are removed.
+## Row Shifting Actions
+
+These actions copy a column with all rows shifted up or down by a certain amount. When rows are shifted, one or more values are deleted and some new values have to be filled in. The fill-in data types are:
+
+| Type        | Fill Value   |
+| ----------- | ------------ |
+| Numeric     | `np.nan`     |
+| Datetime    | `pandas.NaT` |
+| Other Types | `None`       |
+### Shift Up
+Shifts all rows in a column up by one. The first entry is deleted and the last entry is turned to a null type.
+
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.SHIFT_UP,
+    arguments=['Name'],
+    axis=Axis.COLUMN,
+    outputs=[{'uuid': 'shifted_name', 'type': 'text'}],
+)
+```
+**Args**
+- **_arguments:_** The column to shift up. At most one column can be shifted at once:
+  - If multiple columns are provided as arguments, only the first is shifted up
+  - If no columns are provided then no shifting is performed
+- **_outputs:_** Metadata for the newly added upshifted column. Must have at most a single entry containing the following information:
+  - `uuid`: Name of the new upshifted column
+  - `type`: Data type of the new upshifted column
+### Shift Down
+Shifts all rows up by _periods_ rows. The last _periods_ entries are deleted and the first _periods_ are converted to a null type.
+
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.SHIFT_DOWN,
+    arguments=['created_time'],
+    axis=Axis.COLUMN,
+    options={'periods': 3},
+    outputs=[{'uuid': 'downshifted_created_time', 'type': 'datetime'}],
+)
+```
+**Args**
+- **_arguments:_** The column to shift down. At most one column can be shifted at once:
+  - If multiple columns are provided as arguments, only the first is shifted down
+  - If no columns are provided then no shifting is performed
+- **_options:_**
+  - `periods` (optional): Specifies how many rows to shift down. Defaults to 1.
+  - `groupby_columns` (optional): Specifies columns to group by. If specified, shifts each _group_ by _periods_ rows instead of the entire data frame. The resulting column is then returned. If unspecified no grouping is performed. Multiple columns can be specified to group by.
+- **_outputs:_** Metadata for the newly added downshifted column. Must have at most a single entry containing the following information:
+  - `uuid`: Name of the new downshifted column
+  - `type`: Data type of the new downshifted column
+
+## Feature Scaling Actions
+
+These actions are used to normalize the range of independent variables or features of data. These actions are  generally performed during the data preprocessing step.
+
+| Type              | Formula                |
+| -----------       | ---------------------- |
+| Normalization     | `(X-Xmin)/(Xmax-Xmin)` |
+| Standardization   | `(X-Xmean)/Xstd`       |
+
+### Normalize Data
+Perform Normalization on the desired columns of a dataset.
+
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.NORMALIZE,
+    arguments=['Column1','Column2'],
+    axis=Axis.COLUMN,
+)
+```
+**Args**
+- **_arguments:_** The columns to Normalize.
+  - If no columns are provided then no Normalization is performed
+
+### Standardize Data
+Perform Standardization on the desired columns of a dataset.
+
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.STANDARDIZE,
+    arguments=['Column1','Column2'],
+    axis=Axis.COLUMN,
+)
+```
+**Args**
+- **_arguments:_** The columns to Standardize.
+  - If no columns are provided then no Standardization is performed
+
+## Other Column Actions
+
+### Difference
+Adds a new column where each row is the difference between every consecutive two rows in the original column.
+
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.DIFF,
+    arguments=['position'],
+    axis=Axis.COLUMN,
+    outputs=[{'uuid': 'delta_position', 'column_type': 'number_with_decimals'}],
+)
+```
+**Args**
+- **_arguments:_** The column to calculate difference on. At most one column can be specified:
+  - If multiple columns are provided as arguments, only the first is used in calculated
+  - If no columns are provided then no calculation
+- **_outputs:_** Metadata for the newly added difference column. Must have at most a single entry containing the following information:
+  - `uuid`: Name of the difference column
+  - `type`: Data type of the difference column (most often will be a number)
+
+### Fill In Missing Values
+Imputes missing values using different strategies:
+| Strategy   | Description                                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Average    | Fill missing values with the average per column.                                                                                           |
+| Column     | Fill missing values with values from another column.                                                                                       |
+| Constant   | Fill missing values with a placeholder constant. Can fill with a specific value; otherwise a default placeholder is chosen by column type. |
+| Median     | Fill missing values with the median per column.                                                                                            |
+| Mode       | Fill missing values with the most frequent value per column.                                                                               |
+| Random     | Fill missing values with a randomly sampled non-null value from same column.                                                               |
+| Sequential | Fill missing values with the previous row. Should only be used with timeseries columns.                                                    |
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.IMPUTE,
+    arguments=df.columns,  # Specify columns to impute
+    axis=Axis.COLUMN,
+    options={'strategy': ImputationStrategy.CONSTANT},  # Specify imputation strategy
+)
+```
+**Args**
+- **_arguments:_** The columns to impute (fill in the missing values).
+- **_options:_**
+  - `strategy` (required): Specifies strategy to use. See table above or enum `ImputationStrategy`
+  - `value` (optional): Value to fill in missing value with. This argument is ignored unless `strategy = 'constant'`, in which case the constant value used to impute is `value`.
+  - `timeseries_cols = []` (optional): Columns which specify the time series in the data frame. This argument is ignored unless `strategy = 'sequential'`, in which case the data frame is sorted along these columns to sequentially impute data in the order of the time series.
+
+### Remove Outliers
+Removes multidimensional outliers in the data frame by analyzing numerical columns. If there are no numerical columns, no check is performed. Null values are ignored when checking for outliers.
+
+The following methods are supported for detecting outliers:
+| Method    | Description                                                                                                                                                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'itree'` | Uses the [Isolation Tree](https://scikit-learn.org/stable/modules/outlier_detection.html#isolation-forest) algorithm. Number of trees is set to 100.                                                                                |
+| `'lof'`   | Uses the [Local Outlier Factor](https://scikit-learn.org/stable/modules/outlier_detection.html#local-outlier-factor) algorithm.  Number of neighbors for computing local density scales with amount of data and contamination rate. |
+| `'auto'`  | Automatically determines from above methods based on number of data points and dimensionality of the data.                                                                                                                          |
+
+Notes:
+- The contamination rate for both algorithms is estimated via the per-dimension IQR (which discounts multidimensional interactions but still estimates how many outliers there likely are)
+- If the input data has more than 20 dimensions, the dimensionality is reduced using PCA
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.REMOVE_OUTLIERS,
+    arguments=df.columns,  # Specify columns to remove outliers from
+    axis=Axis.COLUMN,
+    options={'method': 'auto'},  # Specify algorithm to use for outlier removal
+)
+```
+**Args**
+- **_arguments:_** The set of columns to consider when checking for outliers. Of these columns, only numerical columns will be used to calculate outliers.
+- **_options:_**
+  - `method` (optional): Specifies outlier detection method to use:
+    - `'itree'`
+    - `'lof'`
+    - `'auto'`
+
+    Defaults to `'auto'`.
+
+# Row Actions
+
+These are transformer actions that can be applied to each row of a data frame, and so have `axis = Axis.ROW`.
+
+### Drop Duplicates
+Drops duplicate rows from the data frame.
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.DROP_DUPLICATE,
+    arguments=[],
+    axis=Axis.ROW,
+    options={'keep': 'first'},
+)
+```
+**Args**
+- **_arguments:_** the columns along which comparisons will be made to check for duplicate rows. If empty, all columns will be used to perform comparison.
+- **_options:_**
+  - `keep` (optional): specifies policy on keeping duplicates:
+    - `'first'` - keeps the first occurrence of the row
+    - `'last'` - keeps the last occurrence of the row
+    - `False` - removes occurrences of duplicates
+
+    Defaults to `'last'`.
+
+### Filter
+Filters row by boolean condition. Selects all rows that meets the filter condition.
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.FILTER,
+    axis=Axis.ROW,
+    action_code='column1 != null and column2 <= 5'
+)
+```
+**Args**
+- **_action_code:_** filter to apply to select rows. See [Filter Syntax](#appendix-filter-syntax) for more information on valid filter syntax.
+
+### Remove Rows
+Removes rows specified by their index.
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.REMOVE,
+    axis=Axis.ROW,
+    options={'rows': []},
+)
+```
+**Args**
+- **_options:_**
+  - `rows`: List of the indices corresponding to the rows to remove. If empty, no rows are removed.
+
+### Sort
+Sorts rows in the specified order.
+
+**Example**:
+```python
+build_transformer_action(
+    df,
+    action_type=ActionType.SORT,
+    arguments=[],
+    axis=Axis.ROW,
+    options={'ascending': True},
+)
+```
+**Args**
+- **_arguments:_** the columns whose value to consider while sorting rows. If empty then sort is not performed.
+- **_options:_**
+  - `ascending` (optional): Specifies how to sort rows. If `True`, then rows are sorted in ascending order; if `False` sorted in descending order. Defaults to `True`.
+    - If sorted in ascending order, null values are placed at the top of the data frame in the same order as they appeared in the original data frame
+    - If sorted in descending order, null values are placed at the bottom of the data frame in the same order as they appeared in the original data frame
+  - `ascendings` (optional): A list of booleans specifying if each column specified in _arguments_ should be sorted in ascending order (must be the same length). If specified, this list will take precedence over the `ascending` option.
+
+# Appendix: Filter Syntax
+Valid filters are composed of clauses of the form:
+```
+[column_name] [op] [value or column_name]
+```
+- List of valid operations: `==, !=, <=, <, >, >=, contains, not contains`
+  - `contains` (and `not contains`) checks if the value is a substring (or not a substring) of values in the column specified.
+- The right hand side of each clause can either be a literal value (boolean, number, string) or another column to compare to.
+
+Clauses can be connected using the `and` and `or` operators and grouped with parentheses.
+```
+(brand != null and value > 60) or (discounted == null)
+```
+**Rules on Naming Columns**
+- If column names contain only alphanumeric characters and the special character '_', then the raw column name can used to filter code.
+    Example: `age != null and price_of_item >= 50.23`
+- If columns contain whitespace, newlines, and some of the following special characters: `+=-*&^%$! ?~|<>(){}[],.`, then the quoted column name can be used to filter code. Any quote character can be used.
+    Example: `("+= -*&^%$! ?~ |<>" == False and ' kas22d fe ($)' > 50.23) or ("dis>>> ??cou nted" contains "partial")`
+- If columns contain any other special characters apart from those listed above, the column cannot be filtered. This is a fundamental limitation of pandas, see [here](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html?highlight=query#pandas.DataFrame.query:~:text=During%20parsing%20a,not%20be%20escaped) for more information.
+
+# Appendix: Column Types
+These are list of column types used in the Mage tool. One of these column types should be specified for every entry in the _options_ argument of a transformer action. The enum source is `mage_ai.data_cleaner.column_types.constants.ColumnType`.
+| Type                      | Enum                                   | String Value                | Description                                                                                           |
+| ------------------------- | -------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Category                  | `ColumnType.CATEGORY`                  | "category"                  | Categorical variable that takes one of some finite set of values. This set has at most 255 entries.   |
+| High Cardinality Category | `ColumnType.CATEGORY_HIGH_CARDINALITY` | "category_high_cardinality" | Categorical variable that takes one of some finite set of values. This set has more than 255 entries. |
+| Datetime                  | `ColumnType.DATETIME`                  | "datetime"                  | Datetime objects or strings representing a datetime.                                                  |
+| Email                     | `ColumnType.EMAIL`                     | "email"                     | Strings that contains emails.                                                                         |
+| List                      | `ColumnType.LIST`                      | "list"                      | Lists of primitives (integers, strings, booleans, floats) of variable length.                         |
+| Number                    | `ColumnType.NUMBER`                    | "number"                    | Integer numbers. Can be a Python integer, NumPy integer or a stringified integer.                     |
+| Floating Point Number     | `ColumnType.NUMBER_WITH_DECIMALS`      | "number_with_decimals"      | Floating point numbers. Can be a Python float, NumPy float, or a stringified float.                   |
+| Phone Number              | `ColumnType.PHONE_NUMBER`              | "phone_number"              | Phone numbers (either in string form or integer form).                                                |
+| Text                      | `ColumnType.TEXT`                      | "text"                      | Text values, such as sentences or paragraphs.                                                         |
+| Binary                    | `ColumnType.TRUE_OR_FALSE`             | "true_or_false"             | A variable that takes on two different values (including booleans).                                   |
+| Zip Code                  | `ColumnType.ZIP_CODE`                  | "zip_code"                  | Zip codes (either in string form or integer form).                                                    |

@@ -1,0 +1,875 @@
+---
+title: "Terraform AWS resources"
+sidebarTitle: "Resources"
+---
+
+Here is the default output of `terraform plan`:
+
+```bash
+data.http.myip: Reading...
+data.http.myip: Read complete after 0s [id=http://ipv4.icanhazip.com]
+data.aws_iam_policy_document.assume_role_policy: Reading...
+data.aws_iam_policy_document.assume_role_policy: Read complete after 0s [id=320642683]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+ <= read (data resources)
+
+Terraform will perform the following actions:
+
+  # data.aws_ecs_task_definition.main will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_ecs_task_definition" "main" {
+      + arn                  = (known after apply)
+      + arn_without_revision = (known after apply)
+      + execution_role_arn   = (known after apply)
+      + family               = (known after apply)
+      + id                   = (known after apply)
+      + network_mode         = (known after apply)
+      + revision             = (known after apply)
+      + status               = (known after apply)
+      + task_definition      = "mage-data-prep-task"
+      + task_role_arn        = (known after apply)
+    }
+
+  # data.template_file.env_vars will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "env_vars" {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = jsonencode(
+            [
+              + {
+                  + name  = "ENV"
+                  + value = "production"
+                },
+              + {
+                  + name  = "AWS_ACCESS_KEY_ID"
+                  + value = "${aws_access_key_id}"
+                },
+              + {
+                  + name  = "AWS_SECRET_ACCESS_KEY"
+                  + value = "${aws_secret_access_key}"
+                },
+              + {
+                  + name  = "AWS_REGION_NAME"
+                  + value = "${aws_region_name}"
+                },
+              + {
+                  + name  = "MAGE_DATABASE_CONNECTION_URL"
+                  + value = "${database_connection_url}"
+                },
+              + {
+                  + name  = "MAGE_EC2_SUBNET_ID"
+                  + value = "${ec2_subnet_id}"
+                },
+            ]
+        )
+      + vars     = {
+          + "aws_access_key_id"       = "AWS_ACCESS_KEY_ID"
+          + "aws_region_name"         = "us-west-2"
+          + "aws_secret_access_key"   = "AWS_SECRET_ACCESS_KEY"
+          + "database_connection_url" = (sensitive value)
+          + "ec2_subnet_id"           = (known after apply)
+        }
+    }
+
+  # aws_alb.application_load_balancer will be created
+  + resource "aws_alb" "application_load_balancer" {
+      + arn                                         = (known after apply)
+      + arn_suffix                                  = (known after apply)
+      + desync_mitigation_mode                      = "defensive"
+      + dns_name                                    = (known after apply)
+      + drop_invalid_header_fields                  = false
+      + enable_deletion_protection                  = false
+      + enable_http2                                = true
+      + enable_tls_version_and_cipher_suite_headers = false
+      + enable_waf_fail_open                        = false
+      + enable_xff_client_port                      = false
+      + id                                          = (known after apply)
+      + idle_timeout                                = 60
+      + internal                                    = false
+      + ip_address_type                             = (known after apply)
+      + load_balancer_type                          = "application"
+      + name                                        = "mage-data-prep-production-alb"
+      + preserve_host_header                        = false
+      + security_groups                             = (known after apply)
+      + subnets                                     = (known after apply)
+      + tags                                        = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-alb"
+        }
+      + tags_all                                    = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-alb"
+        }
+      + vpc_id                                      = (known after apply)
+      + xff_header_processing_mode                  = "append"
+      + zone_id                                     = (known after apply)
+    }
+
+  # aws_cloudwatch_log_group.log-group will be created
+  + resource "aws_cloudwatch_log_group" "log-group" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + name              = "mage-data-prep-production-logs"
+      + name_prefix       = (known after apply)
+      + retention_in_days = 0
+      + skip_destroy      = false
+      + tags              = {
+          + "Application" = "mage-data-prep"
+          + "Environment" = "production"
+        }
+      + tags_all          = {
+          + "Application" = "mage-data-prep"
+          + "Environment" = "production"
+        }
+    }
+
+  # aws_db_instance.rds will be created
+  + resource "aws_db_instance" "rds" {
+      + address                               = (known after apply)
+      + allocated_storage                     = 20
+      + apply_immediately                     = false
+      + arn                                   = (known after apply)
+      + auto_minor_version_upgrade            = true
+      + availability_zone                     = (known after apply)
+      + backup_retention_period               = (known after apply)
+      + backup_window                         = (known after apply)
+      + ca_cert_identifier                    = (known after apply)
+      + character_set_name                    = (known after apply)
+      + copy_tags_to_snapshot                 = false
+      + db_name                               = "mage"
+      + db_subnet_group_name                  = (known after apply)
+      + delete_automated_backups              = true
+      + endpoint                              = (known after apply)
+      + engine                                = "postgres"
+      + engine_version                        = "13.7"
+      + engine_version_actual                 = (known after apply)
+      + hosted_zone_id                        = (known after apply)
+      + id                                    = (known after apply)
+      + identifier                            = "mage-data-prep-production-db"
+      + identifier_prefix                     = (known after apply)
+      + instance_class                        = "db.t3.micro"
+      + iops                                  = (known after apply)
+      + kms_key_id                            = (known after apply)
+      + latest_restorable_time                = (known after apply)
+      + license_model                         = (known after apply)
+      + listener_endpoint                     = (known after apply)
+      + maintenance_window                    = (known after apply)
+      + master_user_secret                    = (known after apply)
+      + master_user_secret_kms_key_id         = (known after apply)
+      + monitoring_interval                   = 0
+      + monitoring_role_arn                   = (known after apply)
+      + multi_az                              = false
+      + name                                  = (known after apply)
+      + nchar_character_set_name              = (known after apply)
+      + network_type                          = (known after apply)
+      + option_group_name                     = (known after apply)
+      + parameter_group_name                  = (known after apply)
+      + password                              = (sensitive value)
+      + performance_insights_enabled          = false
+      + performance_insights_kms_key_id       = (known after apply)
+      + performance_insights_retention_period = (known after apply)
+      + port                                  = (known after apply)
+      + publicly_accessible                   = true
+      + replica_mode                          = (known after apply)
+      + replicas                              = (known after apply)
+      + resource_id                           = (known after apply)
+      + skip_final_snapshot                   = true
+      + snapshot_identifier                   = (known after apply)
+      + status                                = (known after apply)
+      + storage_throughput                    = (known after apply)
+      + storage_type                          = (known after apply)
+      + tags                                  = {
+          + "Environment" = "production"
+        }
+      + tags_all                              = {
+          + "Environment" = "production"
+        }
+      + timezone                              = (known after apply)
+      + username                              = "mageuser"
+      + vpc_security_group_ids                = (known after apply)
+    }
+
+  # aws_db_subnet_group.rds_subnet_group will be created
+  + resource "aws_db_subnet_group" "rds_subnet_group" {
+      + arn                     = (known after apply)
+      + description             = "mage-data-prep RDS subnet group"
+      + id                      = (known after apply)
+      + name                    = "mage-data-prep-production-rds-subnet-group"
+      + name_prefix             = (known after apply)
+      + subnet_ids              = (known after apply)
+      + supported_network_types = (known after apply)
+      + tags                    = {
+          + "Environment" = "production"
+        }
+      + tags_all                = {
+          + "Environment" = "production"
+        }
+      + vpc_id                  = (known after apply)
+    }
+
+  # aws_ecs_cluster.aws-ecs-cluster will be created
+  + resource "aws_ecs_cluster" "aws-ecs-cluster" {
+      + arn                = (known after apply)
+      + capacity_providers = (known after apply)
+      + id                 = (known after apply)
+      + name               = "mage-data-prep-production-cluster"
+      + tags               = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-ecs"
+        }
+      + tags_all           = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-ecs"
+        }
+
+      + setting {
+          + name  = "containerInsights"
+          + value = "enabled"
+        }
+    }
+
+  # aws_ecs_service.aws-ecs-service will be created
+  + resource "aws_ecs_service" "aws-ecs-service" {
+      + cluster                            = (known after apply)
+      + deployment_maximum_percent         = 200
+      + deployment_minimum_healthy_percent = 100
+      + desired_count                      = 1
+      + enable_ecs_managed_tags            = false
+      + enable_execute_command             = false
+      + force_new_deployment               = true
+      + iam_role                           = (known after apply)
+      + id                                 = (known after apply)
+      + launch_type                        = "FARGATE"
+      + name                               = "mage-data-prep-production-ecs-service"
+      + platform_version                   = (known after apply)
+      + scheduling_strategy                = "REPLICA"
+      + tags_all                           = (known after apply)
+      + task_definition                    = (known after apply)
+      + triggers                           = (known after apply)
+      + wait_for_steady_state              = false
+
+      + load_balancer {
+          + container_name   = "mage-data-prep-production-container"
+          + container_port   = 6789
+          + target_group_arn = (known after apply)
+        }
+
+      + network_configuration {
+          + assign_public_ip = true
+          + security_groups  = (known after apply)
+          + subnets          = (known after apply)
+        }
+    }
+
+  # aws_ecs_task_definition.aws-ecs-task will be created
+  + resource "aws_ecs_task_definition" "aws-ecs-task" {
+      + arn                      = (known after apply)
+      + arn_without_revision     = (known after apply)
+      + container_definitions    = (known after apply)
+      + cpu                      = "512"
+      + execution_role_arn       = (known after apply)
+      + family                   = "mage-data-prep-task"
+      + id                       = (known after apply)
+      + memory                   = "1024"
+      + network_mode             = "awsvpc"
+      + requires_compatibilities = [
+          + "FARGATE",
+        ]
+      + revision                 = (known after apply)
+      + skip_destroy             = false
+      + tags                     = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-ecs-td"
+        }
+      + tags_all                 = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-ecs-td"
+        }
+      + task_role_arn            = (known after apply)
+
+      + volume {
+          + name = "mage-data-prep-fs"
+
+          + efs_volume_configuration {
+              + file_system_id     = (known after apply)
+              + root_directory     = "/"
+              + transit_encryption = "ENABLED"
+            }
+        }
+    }
+
+  # aws_efs_file_system.file_system will be created
+  + resource "aws_efs_file_system" "file_system" {
+      + arn                     = (known after apply)
+      + availability_zone_id    = (known after apply)
+      + availability_zone_name  = (known after apply)
+      + creation_token          = (known after apply)
+      + dns_name                = (known after apply)
+      + encrypted               = true
+      + id                      = (known after apply)
+      + kms_key_id              = (known after apply)
+      + number_of_mount_targets = (known after apply)
+      + owner_id                = (known after apply)
+      + performance_mode        = "generalPurpose"
+      + size_in_bytes           = (known after apply)
+      + tags                    = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-efs"
+        }
+      + tags_all                = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-efs"
+        }
+      + throughput_mode         = "elastic"
+    }
+
+  # aws_efs_mount_target.mount_target[0] will be created
+  + resource "aws_efs_mount_target" "mount_target" {
+      + availability_zone_id   = (known after apply)
+      + availability_zone_name = (known after apply)
+      + dns_name               = (known after apply)
+      + file_system_arn        = (known after apply)
+      + file_system_id         = (known after apply)
+      + id                     = (known after apply)
+      + ip_address             = (known after apply)
+      + mount_target_dns_name  = (known after apply)
+      + network_interface_id   = (known after apply)
+      + owner_id               = (known after apply)
+      + security_groups        = (known after apply)
+      + subnet_id              = (known after apply)
+    }
+
+  # aws_efs_mount_target.mount_target[1] will be created
+  + resource "aws_efs_mount_target" "mount_target" {
+      + availability_zone_id   = (known after apply)
+      + availability_zone_name = (known after apply)
+      + dns_name               = (known after apply)
+      + file_system_arn        = (known after apply)
+      + file_system_id         = (known after apply)
+      + id                     = (known after apply)
+      + ip_address             = (known after apply)
+      + mount_target_dns_name  = (known after apply)
+      + network_interface_id   = (known after apply)
+      + owner_id               = (known after apply)
+      + security_groups        = (known after apply)
+      + subnet_id              = (known after apply)
+    }
+
+  # aws_iam_role.ecsTaskExecutionRole will be created
+  + resource "aws_iam_role" "ecsTaskExecutionRole" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "ecs-tasks.amazonaws.com"
+                        }
+                      + Sid       = ""
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "mage-data-prep-execution-task-role"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + role_last_used        = (known after apply)
+      + tags                  = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-iam-role"
+        }
+      + tags_all              = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-iam-role"
+        }
+      + unique_id             = (known after apply)
+    }
+
+  # aws_iam_role_policy_attachment.ecsTaskExecutionRole_policy will be created
+  + resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+      + role       = "mage-data-prep-execution-task-role"
+    }
+
+  # aws_internet_gateway.aws-igw will be created
+  + resource "aws_internet_gateway" "aws-igw" {
+      + arn      = (known after apply)
+      + id       = (known after apply)
+      + owner_id = (known after apply)
+      + tags     = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-igw"
+        }
+      + tags_all = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-igw"
+        }
+      + vpc_id   = (known after apply)
+    }
+
+  # aws_lb_listener.listener will be created
+  + resource "aws_lb_listener" "listener" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + load_balancer_arn = (known after apply)
+      + port              = 80
+      + protocol          = "HTTP"
+      + ssl_policy        = (known after apply)
+      + tags_all          = (known after apply)
+
+      + default_action {
+          + order            = (known after apply)
+          + target_group_arn = (known after apply)
+          + type             = "forward"
+        }
+    }
+
+  # aws_lb_target_group.target_group will be created
+  + resource "aws_lb_target_group" "target_group" {
+      + arn                                = (known after apply)
+      + arn_suffix                         = (known after apply)
+      + connection_termination             = false
+      + deregistration_delay               = "300"
+      + id                                 = (known after apply)
+      + ip_address_type                    = (known after apply)
+      + lambda_multi_value_headers_enabled = false
+      + load_balancing_algorithm_type      = (known after apply)
+      + load_balancing_cross_zone_enabled  = (known after apply)
+      + name                               = "mage-data-prep-production-tg"
+      + port                               = 6789
+      + preserve_client_ip                 = (known after apply)
+      + protocol                           = "HTTP"
+      + protocol_version                   = (known after apply)
+      + proxy_protocol_v2                  = false
+      + slow_start                         = 0
+      + tags                               = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-lb-tg"
+        }
+      + tags_all                           = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-lb-tg"
+        }
+      + target_type                        = "ip"
+      + vpc_id                             = (known after apply)
+
+      + health_check {
+          + enabled             = true
+          + healthy_threshold   = 3
+          + interval            = 30
+          + matcher             = "200"
+          + path                = "/api/kernels"
+          + port                = "traffic-port"
+          + protocol            = "HTTP"
+          + timeout             = 5
+          + unhealthy_threshold = 2
+        }
+    }
+
+  # aws_route.public will be created
+  + resource "aws_route" "public" {
+      + destination_cidr_block = "0.0.0.0/0"
+      + gateway_id             = (known after apply)
+      + id                     = (known after apply)
+      + instance_id            = (known after apply)
+      + instance_owner_id      = (known after apply)
+      + network_interface_id   = (known after apply)
+      + origin                 = (known after apply)
+      + route_table_id         = (known after apply)
+      + state                  = (known after apply)
+    }
+
+  # aws_route_table.public will be created
+  + resource "aws_route_table" "public" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + route            = (known after apply)
+      + tags             = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-routing-table-public"
+        }
+      + tags_all         = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-routing-table-public"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # aws_route_table_association.public[0] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # aws_route_table_association.public[1] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # aws_security_group.load_balancer_security_group will be created
+  + resource "aws_security_group" "load_balancer_security_group" {
+      + arn                    = (known after apply)
+      + description            = "Managed by Terraform"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = ""
+              + from_port        = 0
+              + ipv6_cidr_blocks = [
+                  + "::/0",
+                ]
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = [
+                  + "11.111.11.111/32",
+                ]
+              + description      = ""
+              + from_port        = 443
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 443
+            },
+          + {
+              + cidr_blocks      = [
+                  + "11.111.11.111/32",
+                ]
+              + description      = ""
+              + from_port        = 80
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 80
+            },
+        ]
+      + name                   = (known after apply)
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-sg"
+        }
+      + tags_all               = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-sg"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # aws_security_group.mount_target_security_group will be created
+  + resource "aws_security_group" "mount_target_security_group" {
+      + arn                    = (known after apply)
+      + description            = "Managed by Terraform"
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = []
+              + description      = ""
+              + from_port        = 2049
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = (known after apply)
+              + self             = false
+              + to_port          = 2049
+            },
+        ]
+      + name                   = (known after apply)
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-efs-sg"
+        }
+      + tags_all               = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-efs-sg"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # aws_security_group.rds_sg will be created
+  + resource "aws_security_group" "rds_sg" {
+      + arn                    = (known after apply)
+      + description            = "mage-data-prep RDS Security Group"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = ""
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = []
+              + description      = ""
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = true
+              + to_port          = 0
+            },
+          + {
+              + cidr_blocks      = []
+              + description      = ""
+              + from_port        = 5432
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = (known after apply)
+              + self             = false
+              + to_port          = 5432
+            },
+        ]
+      + name                   = "mage-data-prep-production-rds-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-production-rds-sg"
+        }
+      + tags_all               = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-production-rds-sg"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # aws_security_group.service_security_group will be created
+  + resource "aws_security_group" "service_security_group" {
+      + arn                    = (known after apply)
+      + description            = "Managed by Terraform"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + description      = ""
+              + from_port        = 0
+              + ipv6_cidr_blocks = [
+                  + "::/0",
+                ]
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = [
+                  + "11.111.11.111/32",
+                ]
+              + description      = ""
+              + from_port        = 6789
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = (known after apply)
+              + self             = false
+              + to_port          = 6789
+            },
+        ]
+      + name                   = (known after apply)
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-service-sg"
+        }
+      + tags_all               = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-service-sg"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # aws_subnet.private[0] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.32.0.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-private-subnet-1"
+        }
+      + tags_all                                       = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-private-subnet-1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_subnet.private[1] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.32.1.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-private-subnet-2"
+        }
+      + tags_all                                       = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-private-subnet-2"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_subnet.public[0] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.32.100.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = true
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-public-subnet-1"
+        }
+      + tags_all                                       = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-public-subnet-1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_subnet.public[1] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.32.101.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = true
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-public-subnet-2"
+        }
+      + tags_all                                       = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-public-subnet-2"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_vpc.aws-vpc will be created
+  + resource "aws_vpc" "aws-vpc" {
+      + arn                                  = (known after apply)
+      + cidr_block                           = "10.32.0.0/16"
+      + default_network_acl_id               = (known after apply)
+      + default_route_table_id               = (known after apply)
+      + default_security_group_id            = (known after apply)
+      + dhcp_options_id                      = (known after apply)
+      + enable_classiclink                   = (known after apply)
+      + enable_classiclink_dns_support       = (known after apply)
+      + enable_dns_hostnames                 = true
+      + enable_dns_support                   = true
+      + enable_network_address_usage_metrics = (known after apply)
+      + id                                   = (known after apply)
+      + instance_tenancy                     = "default"
+      + ipv6_association_id                  = (known after apply)
+      + ipv6_cidr_block                      = (known after apply)
+      + ipv6_cidr_block_network_border_group = (known after apply)
+      + main_route_table_id                  = (known after apply)
+      + owner_id                             = (known after apply)
+      + tags                                 = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-vpc"
+        }
+      + tags_all                             = {
+          + "Environment" = "production"
+          + "Name"        = "mage-data-prep-vpc"
+        }
+    }
+
+Plan: 28 to add, 0 to change, 0 to destroy.
+```

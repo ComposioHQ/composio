@@ -1,0 +1,368 @@
+---
+title: "No-code UI interactions"
+sidebarTitle: "Interactions"
+description: "Configure and run pipelines using no-code UI text fields, dropdown menus, checkboxes, toggle switches, and more."
+icon: "person-sign"
+"og:image": "https://media.tenor.com/eVXHLyK4c-kAAAAC/building-lego.gif"
+---
+
+<Frame>
+    <p align="center">
+    <img
+        alt="No-code UI interactions"
+        src="https://media.tenor.com/eVXHLyK4c-kAAAAC/building-lego.gif"
+    />
+    </p>
+</Frame>
+
+<br />
+
+<Warning>
+  Available in version <b>`0.9.35`</b> and greater.
+</Warning>
+
+## Overview
+
+Once you build a pipeline, you can add UI elements to enable other teams
+(e.g. marketing, sales, etc.) to configure the pipeline’s variables without writing or
+changing the code for the pipeline and it’s blocks.
+
+### Why is this important?
+
+Empower other people and teams to customize and run pipelines themselves.
+Run a pipeline for someone and feed them for a day.
+Teach them how to fish and they are fed for life:
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Fishing"
+        src="https://gifbin.com/bin/112013/1383848317_man_jumps_off_boat_after_marlin_jumps_in.gif"
+    />
+    </p>
+</Frame>
+
+---
+
+## Features
+
+- Add UI elements to a pipeline that can be used to customize the value of pipeline variables.
+- Re-use UI elements in multiple different pipelines (don’t repeat yourself).
+- Re-arrange UI elements using drag-and-drop actions.
+- Restrict and permit specific user roles that can configure and run a pipeline that uses no-code interactions.
+
+---
+
+## How to add interactions
+
+### Enable feature
+
+1. Go to the [project preferences](http://localhost:6789/settings/workspace/preferences) and
+    enable the feature labeled <b>`Interactions`</b>.
+
+### Create pipeline
+
+1. Create a new batch pipeline.
+1. Add a block.
+1. Add variables to the block by using `kwargs['some_variable_uuid']` in the code.
+    For example:
+
+    ```python
+    @data_loader
+    def load_data(*args, **kwargs):
+        superhero_name = kwargs['superhero_name']
+
+        return dict(
+            superhero_name=superhero_name,
+        )
+    ```
+
+### Add block interactions
+
+1. In the top right corner of the block, click the triple dot icon (e.g. `...`) and
+    click on the dropdown menu option labeled <b>Add / Edit interactions</b>.
+
+    <Frame>
+        <p align="center">
+        <img
+            alt="Click interactions block"
+            src="https://github.com/mage-ai/assets/blob/main/interactions/click-interactions-block.png?raw=true"
+        />
+        </p>
+    </Frame>
+
+    Alternatively, open the right sidekick menu and
+    click the navigation item labeled <b>Interactions</b>.
+
+    <Frame>
+        <p align="center">
+        <img
+            alt="Click interactions sidekick"
+            src="https://github.com/mage-ai/assets/blob/main/interactions/click-interactions-sidekick2.png?raw=true"
+        />
+        </p>
+    </Frame>
+
+1. If you don’t see that the block is currently selected,
+    click on the button labeled <b>+ Add interactions</b> underneath the block that you want to add
+    interactions to.
+
+    <Frame>
+        <p align="center">
+        <img
+            alt="Click add interactions"
+            src="https://github.com/mage-ai/assets/blob/main/interactions/click-add-interactions.png?raw=true"
+        />
+        </p>
+    </Frame>
+
+1. On the block interaction detail view for a single block,
+    click the button labeled <b>+ Create new set of interactions</b>.
+
+1. Enter a unique name for the set of interactions.
+    This unique name will be the file path to the interaction.
+    For example, an interaction name with `heroes/fire` will create the following file:
+    `[repo_path]/[project_name]/interactions/heroes/fire.yaml`.
+
+### Configure interactions
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Interaction detail start"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/interaction-detail-start.png?raw=true"
+    />
+    </p>
+</Frame>
+
+1. A set of interactions can have a label and description associated with it.
+    For example, a group of UI elements are related to a set of variables specifically used for
+    querying demographic data.
+1. Optionally enter a label for the interaction.
+1. Optionally enter a description for the interaction.
+
+#### Variables
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Interaction detail variables"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/interaction-detail-variables.png?raw=true"
+    />
+    </p>
+</Frame>
+
+1. Under the section labeled <b>Variables</b>, click the button labeled <b>+ Add new variable</b>.
+1. Enter a unique UUID for the new variable and click the button labeled <b>Create variable</b>.
+    This UUID will be the key that is used in the keyword arguments in the block’s code.
+    For example, the variable UUID `superhero_name` will be accessed in
+    code using `kwargs['superhero_name']`.
+
+    <Note>
+        Variable UUIDs are unique across the entire pipeline.
+        The value from `kwargs['superhero_name']` can be accessed and used in any block
+        within the same pipeline.
+
+        Read this [documentation](/getting-started/runtime-variable) for more information about
+        pipeline variables.
+    </Note>
+1. Optionally set the variable to be required.
+1. Add a label and description to the variable. This will be displayed alongside the UI element
+    associated to this variable.
+1. Select 1 or more valid data types for this variable.
+    The value entered through the UI element associated to this variable
+    will be casted to the valid data types.
+1. Under the <b>Input</b> option for this variable, select an existing input or create a new one
+    and associate it to this variable by selecting the dropdown option
+    labeled <b>+ Add a new input</b>.
+
+    If you’re adding a new input, go to the next section for a step-by-step guide on how to add
+    and configure an input.
+
+<Warning>
+    You must click the button at the bottom labeled <b>Save changes for all interactions</b>
+    to save your changes.
+</Warning>
+
+#### Inputs
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Interaction detail inputs"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/interaction-detail-inputs.png?raw=true"
+    />
+    </p>
+</Frame>
+
+1. Under the section labeled <b>Inputs</b>, click the button labeled <b>+ Add new input</b>.
+1. Enter a unique UUID for the new input and click the button labeled <b>Create input</b>.
+    This input UUID must be unique within the same set of interactions.
+    An input can be used for multiple different variables.
+    For example, you may have multiple variables that are strings and you can reuse a single
+    text field input as the UI element for that variable.
+1. Under the <b>Type</b> option for this input, select the dropdown option
+    labeled <b>Text field</b>.
+1. Each input type has its own set of additional options that allow you to customize
+    the UI element further.
+
+<Warning>
+    You must click the button at the bottom labeled <b>Save changes for all interactions</b>
+    to save your changes.
+</Warning>
+
+#### Layout
+
+If you have 2 or more variables in the same set of interactions,
+you can re-arrange the UI elements in different rows and columns.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Interaction detail layout"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/interaction-detail-layout.png?raw=true"
+    />
+    </p>
+</Frame>
+
+1. Under the section labeled <b>Interaction layout</b>,
+    hover over a UI element and drag it to another row or another column in the same row.
+    Then, drop the UI element to rearrange the layout.
+
+<Warning>
+    You must click the button at the bottom labeled <b>Save changes for all interactions</b>
+    to save your changes.
+</Warning>
+
+### Preview and test block interactions
+
+1. In the pipeline code section, click on the block with interactions.
+1. Near the top of the block, click on the tab labeled <b>INTERACTIONS</b>.
+1. Enter in values for each UI element.
+1. Execute and run the block.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Block interactions preview"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/block-interactions-preview.png?raw=true"
+    />
+    </p>
+</Frame>
+
+The block code to the example in the image above is:
+
+```python
+@data_loader
+def load_data(*args, **kwargs):
+    superhero_name = kwargs['superhero_name']
+    power_level = kwargs['power_level']
+
+    print(
+        f'Hello, my name is {superhero_name}, and my power level is {power_level}.',
+    )
+```
+
+The interactions YAML file (e.g. `[repo_path]/[project_name]/interactions/heroes/fire.yaml`) is:
+
+```yaml
+inputs:
+  checkboxes:
+    options:
+    - label: Weak
+      value: '0'
+    - label: Strong
+      value: '1'
+    - label: Godlike
+      value: '3'
+    type: checkbox
+  single line text field:
+    type: text_field
+layout:
+- - variable: superhero_name
+    width: 1
+  - variable: power_level
+    width: 1
+variables:
+  power_level:
+    description: Can you defeat Thanos?
+    input: checkboxes
+    name: How strong are you?
+    types:
+    - list
+    - integer
+  superhero_name:
+    description: What should people call you?
+    input: single line text field
+    name: Superhero name
+    required: true
+    types:
+    - string
+```
+
+### Permissions
+
+Add permissions to allow specific user roles the ability to trigger a pipeline
+using interactions defined in the pipeline.
+
+1. Open the right sidekick menu and
+    click the navigation item labeled <b>Interactions</b>.
+1. Under the section labeled <b>Permissions</b>, click the button labeled <b>+ Add permission</b>.
+1. A new row will be appended.
+1. In the row for a single permission, click the button labeled <b>+ Add trigger</b>.
+1. Select a trigger type and optionally a trigger interval that you want to allow a user to create
+    for this pipeline through these interactions.
+
+    1. You can add as many trigger type and trigger interval combinations as you want to a single
+        permission row.
+1. In the row for a single permission, click the button labeled <b>+ Add role</b>.
+1. Select a role that a user must have in order to trigger this pipeline.
+    A user with a valid role will be able to trigger this pipeline using only the permitted
+    combination(s) of trigger types and trigger intervals defined in the same permission as
+    the permitted role.
+
+<Warning>
+    You must click the button at the bottom labeled <b>Save changes for all interactions</b>
+    to save your changes.
+</Warning>
+
+In the example image below,
+a user with the role `Viewer` can trigger this pipeline only using a
+scheduled trigger with the interval `@once`.
+
+A user with the role `Editor` can do everything a `Viewer` role can do.
+In addition, the role `Editor` can trigger this pipeline using a
+scheduled trigger with the interval `@hourly`.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Block interactions preview"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/block-interactions-preview.png?raw=true"
+    />
+    </p>
+</Frame>
+
+---
+
+## Trigger pipeline using interactions
+
+1. Go to the pipeline’s triggers page (e.g. `http://localhost:6789/pipelines/[uuid]/triggers`)
+    and click the button labeled <b>Create trigger with no-code</b>.
+1. Enter in the information for every field under the <b>SETTINGS</b> tab,
+    then click the button labeled <b>Next: Customize</b>.
+1. Enter in the information for every required field under the <b>CUSTOMIZE</b> tab,
+    then click the button labeled <b>Next: Review</b>.
+1. On the <b>REVIEW</b> tab, verify all the information is correct.
+1. Optionally, toggle the switch with the label <b>Set trigger to be active immediately after creating</b>
+    to immediately make the trigger active so it runs as soon as create the trigger.
+1. Click the button labeled <b>Create trigger</b> to save the trigger.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Trigger pipeline"
+        src="https://github.com/mage-ai/assets/blob/main/interactions/trigger-pipeline.png?raw=true"
+    />
+    </p>
+</Frame>

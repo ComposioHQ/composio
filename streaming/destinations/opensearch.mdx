@@ -1,0 +1,24 @@
+---
+title: "Opensearch"
+---
+
+## Basic config
+
+```yaml
+connector_type: opensearch
+host: https://[cluster_name].[region].es.amazonaws.com
+index_name: test_index
+```
+
+## Authentication
+
+```yaml
+verify_certs: true
+http_auth: "@awsauth"
+```
+
+- **verify_certs**: Whether to verify SSL certificates to authenticate.
+- **http_auth**: Authentication setting
+   1. "@awsauth": Authenticate with AWS Signature Version 4. Need to provide
+      AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in environment variables.
+   2. "username:password": Authenticate with username and password.

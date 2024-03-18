@@ -1,0 +1,282 @@
+---
+title: "Version Control mode"
+sidebarTitle: "Version Control mode"
+description: "Switch into the Version Control mode to become the master of Git workflows.
+This mode comes with spells and artifacts for
+pulling code, viewing file diffs, committing changes, pushing features, etc.
+"
+icon: "code-branch"
+"og:image": "https://64.media.tumblr.com/268c25733a4726bcc8fb0bd6ee44c5f9/tumblr_pcpp35bV8F1qhjdd8o2_540.gif"
+---
+
+With the Version Control mode in the Command Center, you can initialize as many Git repositories
+in a single Mage application as your desire.
+
+The Version Control mode enables you to invoke Git commands for any Git repository without 
+having to constantly change working directories.
+
+## Activate mode
+
+<AccordionGroup>
+    <Accordion title="Transform into a version control master" icon="code-branch" iconType="duotone" color="#FFCC19" defaultOpen>
+        <Frame>
+            <p align="center">
+            <img
+                alt="Transform into a version control master"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/activate.gif?raw=true"
+            />
+            </p>
+        </Frame>
+    </Accordion>
+</AccordionGroup>
+
+<Steps>
+  <Step title="Launch Command Center">
+    Open the Command Center. 
+    For all the ways to do this, [read more here](/developer-ux/command-center/spellcaster#launch-command-center).
+  </Step>
+  <Step title="Search for mode">
+    In the search bar, start typing the words `Version Control`.
+  </Step>
+  <Step title="Invoke action">
+    Once you see the row titled <b>Activate version control mode</b>, 
+    select that row and invoke its action.
+  </Step>
+</Steps>
+
+---
+
+## Projects
+
+Here are the steps to setup 1 or more Git projects in Mage:
+
+<AccordionGroup>
+    <Accordion title="Initialize Git repo/project" icon="bolt" iconType="duotone" defaultOpen>
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/create-project.mp4"
+            />
+        </Frame>
+    </Accordion>
+</AccordionGroup>
+
+<Steps>
+  <Step title="New Git project">
+    Select the row title <b>New Git project</b>.
+  </Step>
+  <Step title="Select directory">
+    Choose a location to initialize a Git repository. 
+    The `git init` command will be executed in this directory and it’ll contain the `.git` folder.
+  </Step>
+  <Step title="Initialize repo">
+    Click the button labeled <b>Initalize repo</b>.
+  </Step>
+</Steps>
+
+Once you have at least 1 Git project setup, here are more actions you can invoke from within
+a Git project:
+
+<AccordionGroup>
+    <Accordion title="Add remote" icon="plug" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/create-remote.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Create branch" icon="code-branch" iconType="duotone" defaultOpen>
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/create-branch.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Set global configs" icon="gears" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/update-project-config.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Setup 1-way git sync" icon="rotate" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/update-project-1-way-sync.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Setup 2-way git sync" icon="group-arrows-rotate" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/update-project-2-way-sync.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Additional actions available" icon="grip-dots-vertical" iconType="duotone" defaultOpen>
+        <CardGroup cols={2}>
+            <Card title="Delete project" icon="trash" iconType="duotone">
+                <br />
+                Delete the `.git` folder and any saved git preferences in selected folder.
+            </Card>
+        </CardGroup>
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Remotes
+
+<AccordionGroup>
+    <Accordion title="Additional actions available" icon="grip-dots-vertical" iconType="duotone" defaultOpen>
+        <CardGroup cols={2}>
+            <Card title="View all remotes" icon="gallery-thumbnails" iconType="duotone">
+                <br />
+                `git remote -v`
+            </Card>
+            <Card title="Add a new remote" icon="plus" iconType="duotone">
+                <br />
+                `git remote add [name] [url]`
+            </Card>
+            <Card title="Update remote configurations" icon="sliders" iconType="duotone">
+                <br />
+                `git remote set-url [name] [url]`
+            </Card>
+            <Card title="Fetch from remote" icon="code-merge" iconType="duotone">
+                <br />
+                `git fetch [name]`
+            </Card>
+            <Card title="Remove remote" icon="trash" iconType="duotone">
+                <br />
+                `git remote rm [name]`
+            </Card>
+        </CardGroup>
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Branches
+
+<AccordionGroup>
+    <Accordion title="Additional actions available" icon="grip-dots-vertical" iconType="duotone" defaultOpen>
+        <CardGroup cols={2}>
+            <Card title="Create a new branch" icon="code-branch" iconType="duotone">
+                <br />
+                `git checkout -b [branch]`
+            </Card>
+            <Card title="Switch branches" icon="code-compare" iconType="duotone">
+                <br />
+                `git checkout [branch]`
+            </Card>
+            <Card title="Push" icon="cloud-arrow-up" iconType="duotone">
+                <br />
+                `git push [remote] [branch]`
+            </Card>
+            <Card title="Pull" icon="code-pull-request-draft" iconType="duotone">
+                <br />
+                `git pull [remote] [branch]`
+            </Card>
+            <Card title="Clone" icon="code-fork" iconType="duotone">
+                <br />
+                `git clone [remote] [branch]`
+            </Card>
+            <Card title="Merge" icon="code-merge" iconType="duotone">
+                <br />
+                `git merge [remote] [branch]`
+            </Card>
+            <Card title="Rebase" icon="code-pull-request" iconType="duotone">
+                <br />
+                `git rebase [remote] [branch]`
+            </Card>
+            <Card title="Delete branch" icon="trash" iconType="duotone">
+                <br />
+                `git branch -d [branch]`
+            </Card>
+        </CardGroup>
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Files
+
+<AccordionGroup>
+    <Accordion title="File diffs and staging selected files" icon="diagram-venn" iconType="duotone" defaultOpen>
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/file-diff.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="File status" icon="signal" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/file-status.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Commit files with a message" icon="code-commit" iconType="duotone">
+        <Frame>
+            <video
+                controls
+                className="w-full aspect-video"
+                src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/file-commit-message.mp4"
+            />
+        </Frame>
+    </Accordion>
+    <Accordion title="Additional actions available" icon="grip-dots-vertical" iconType="duotone" defaultOpen>
+        <CardGroup cols={2}>
+          <Card title="Reset files" icon="trash-undo" iconType="duotone" color="#9ECBFF">
+            <br />
+            `git reset [pattern]`
+          </Card>
+          <Card title="Checkout files" icon="cart-shopping" iconType="duotone" color="#B1B8C3">
+            <br />
+            `git checkout [pattern]`
+          </Card>
+        </CardGroup>
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Other git actions
+
+If a git action isn’t available in the Command Center, 
+you can type in the search bar the full git command you want to run and click <kbd>`⌅ Enter`</kbd>
+to submit the command.
+
+---
+
+## Authentication
+
+From the Command Center, you can initiate the Authentication flow with Git providers such as
+GitHub and GitHub Enterprise (GHE). 
+
+<Frame>
+    <video
+        controls
+        className="w-full aspect-video"
+        src="https://github.com/mage-ai/assets/raw/main/dev-ux/command-center/modes/version-control/authenticate-github.mp4"
+    />
+</Frame>
+
+Additional providers coming soon.
+
+---

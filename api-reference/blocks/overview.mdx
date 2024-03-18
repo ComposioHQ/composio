@@ -1,0 +1,105 @@
+---
+title: "Overview"
+description: "The Blocks API is used to create, update, and delete blocks objects from a pipeline."
+---
+### Block Object
+
+<ResponseField name="all_upstream_blocks_executed" type="boolean">
+    Whether or not all upstream blocks have been successfully executed.
+  </ResponseField>
+  <ResponseField name="color" type="string">
+    The color of the block in the notebook UI.
+  </ResponseField>
+  <ResponseField name="configuration" type="object">
+    Miscellaneous configuration settings for the block.
+    <Expandable title="properties">
+    <ResponseField name="data_provider" type="string">
+      Database or data warehouse for the SQL block to connect to.
+    </ResponseField>
+    <ResponseField name="data_provider_database" type="string">
+      Database name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="data_provider_profile" type="string">
+      Profile target for the dbt block.
+    </ResponseField>
+    <ResponseField name="data_provider_schema" type="string">
+      Schema name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="data_provider_table" type="string">
+      Table name to use when saving the output of the SQL block.
+    </ResponseField>
+    <ResponseField name="export_write_policy" type="string">
+      Whether to `replace` the existing table of the SQL block output, `append`, or
+      raise an error and `fail`.
+    </ResponseField>
+    <ResponseField name="use_raw_sql" type="string">
+      Toggle writing raw SQL in the block. Read more [here](/guides/blocks/sql-blocks#using-raw-sql).
+    </ResponseField>
+    </Expandable>
+  </ResponseField>
+  <ResponseField name="content" type="string">
+    Block file contents.
+  </ResponseField>
+  <ResponseField name="downstream_blocks" type="array of strings">
+    The block UUIDs that depend on this block.
+  </ResponseField>
+  <ResponseField name="executor_config" type="object">
+    Used when configuring a Kubernetes executor. See the [Kubernetes config](/production/configuring-production-settings/compute-resource#2-set-executor-type-and-customize-the-compute-resource-of-the-mage-executor) page for more details
+  </ResponseField>
+  <ResponseField name="executor_type" type="string">
+    The type of executor to use for the block:
+    `ecs`, `gcp_cloud_run`, `azure_container_instance`, `k8s`, `local_python`, `pyspark`
+
+    See the [Kubernetes config](/production/configuring-production-settings/compute-resource#2-set-executor-type-and-customize-the-compute-resource-of-the-mage-executor) page for more details.
+  </ResponseField>
+  <ResponseField name="has_callback" type="boolean">
+  </ResponseField>
+  <ResponseField name="language" type="string">
+    `python`, `r`, `sql`, `yaml`, `markdown`
+  </ResponseField>
+  <ResponseField name="metadata" type="object">
+  </ResponseField>
+  <ResponseField name="name" type="string" required>
+    Human readable name of block.
+  </ResponseField>
+  <ResponseField name="status" type="string">
+    Status of block: `executed`, `failed`, `not_executed`, `updated`
+  </ResponseField>
+  <ParamField query="type" type="string" required>
+    Type of block:
+    `callback`, `chart`, `conditional`, `custom`, `data_exporter`, `data_loader`, `dbt`, `extension`, `global_data_product`, `markdown`, `scratchpad`, `sensor`, `transformer`
+  </ParamField>
+  <ResponseField name="upstream_blocks" type="string">
+    The block UUIDs that this block depends on.
+  </ResponseField>
+  <ResponseField name="uuid" type="string" required>
+    Unique identifier for the block.
+  </ResponseField>
+
+<ResponseExample>
+
+```json Response
+{
+    "block": {
+        "all_upstream_blocks_executed": true,
+        "color": null,
+        "configuration": {},
+        "content": "some_long_block_content_string",
+        "downstream_blocks": [],
+        "executor_config": null,
+        "executor_type": "local_python",
+        "has_callback": false,
+        "name": "solitary silence",
+        "language": "python",
+        "retry_config": null,
+        "status": "not_executed",
+        "type": "data_loader",
+        "upstream_blocks": [],
+        "uuid": "solitary_silence",
+        "content": "some_long_block_content_string",
+        "outputs": []
+    }
+}
+```
+
+</ResponseExample>

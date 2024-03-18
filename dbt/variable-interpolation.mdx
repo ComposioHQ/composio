@@ -1,0 +1,62 @@
+---
+title: "dbt variable interpolation"
+sidebarTitle: "Variable interpolation"
+---
+## Overview
+
+Mage allows users to reference variables specific to your
+[pipeline](/getting-started/runtime-variable) or
+[project](/development/variables/environment-variables).
+These variables are accessible throughout your dbt profiles, and pipelines by using the following syntax.
+
+| Syntax                   | Description                     | Example                             |
+| ------------------------ | ------------------------------- | ----------------------------------- |
+| `{{ env_var('...') }}`   | Get from environment variables. | `{{ env_var('ENV') }}`              |
+| `{{ variables('...') }}` | Get from runtime variables (used in YAML).     | `{{ variables('execution_date') }}` |
+| `{{ var('...') }}` | Get from runtime variables (used in SQL).     | `{{ var('execution_date') }}` |
+
+DBT also comes with variable and environment variable support. By default we forward
+[pipeline](/getting-started/runtime-variable)
+variables as dbt [Project variables](https://docs.getdbt.com/docs/build/project-variables).
+
+## Variable interpolation examples
+
+### dbt models
+
+```sql
+  SELECT
+    *
+  # get the global environment variable for prod/dev
+  FROM {{ env_var('ENV') }}_users.accounts
+  WHERE
+    # limit query based on the runtime variable, execution_date
+    created_at BETWEEN '2023-01-01' AND {{ var('execution_date') }}
+```
+
+### dbt profiles
+
+```yaml
+jaffle_shop:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: host.docker.internal
+      user: postgres
+      password: postgres
+      port: 5432
+      dbname: postgres
+      schema: {{ variables('DBT_SCHEMA') }}
+      threads: 4
+```
+
+### dbt targets
+
+![dbt target](https://github.com/mage-ai/assets/blob/main/connection-profiles/dbt-target.png?raw=True)
+
+Here, we've used a manually entered target to specify a postgres database dependent on the environment `postgres_{{ env_var('ENV') }}`.
+
+| Environment | Key   | Example string                  | Result          |
+| ----------- | ----- | ------------------------------- | --------------- |
+| `prod`      | `ENV` | `postgres_{{ env_var('ENV') }}` | `postgres_prod` |
+| `dev`       | `ENV` | `postgres_{{ env_var('ENV') }}` | `postgres_dev`  |

@@ -1,0 +1,187 @@
+---
+title: "Microsoft SQL Server"
+---
+
+![](https://www.commvault.com/wp-content/uploads/2019/08/sql-server_logo.jpg)
+
+## Add credentials
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+
+```yaml
+version: 0.1.1
+default:
+  MSSQL_DATABASE: database
+  MSSQL_SCHEMA: schema
+  MSSQL_DRIVER: "ODBC Driver 18 for SQL Server"
+  MSSQL_HOST: host
+  MSSQL_PASSWORD: password
+  MSSQL_PORT: 1433
+  MSSQL_USER: SA
+```
+
+## Dependencies
+
+To connect to the Microsoft SQL Server, you'll need to make sure the driver is installed.
+By default, ODBC Driver 18 is installed in the docker image.
+If you want to use other ODBC Driver versions, you'll need to build a custom docker image (use Mage image as the base image) and install the drivers.
+Here is the doc for installing ODBC drivers for SQL Server: https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server
+
+---
+
+## Using SQL block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block.
+3. Select `SQL`.
+4. Under the `Data provider`/`Connection` dropdown, select `Microsoft SQL Server`.
+5. Under the `Profile` dropdown, select `default` (or the profile you added
+   credentials underneath).
+6. Enter the schema and optional table name of the table to write to.
+7. Under the `Write policy` dropdown, select `Replace` or `Append` (please see
+   [SQL blocks guide](/guides/blocks/sql-blocks) for more information on write policies).
+8. Enter in this test query: `SELECT 1`.
+9. Run the block.
+
+<br />
+
+## Using Python block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block (the code snippet
+   below is for a data loader).
+3. Select `Generic (no template)`.
+4. Enter this code snippet (note: change the `config_profile` from `default` if
+   you have a different profile):
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.mssql import MSSQL
+from os import path
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+
+
+@data_loader
+def load_data_from_mssql(*args, **kwargs):
+    """
+    Template for loading data from a MSSQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+    Set the following in your io_config:
+
+    Docs: /integrations/databases/MicrosoftSQLServer
+    """
+    query = 'Your MSSQL query'  # Specify your SQL query here
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    with MSSQL.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        return loader.load(query)
+```
+
+5. Run the block.
+
+
+### Export a dataframe
+
+Here is an example code snippet to export a dataframe to MSSQL:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.mssql import MSSQL
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_mssql(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a MSSQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+    Set the following in your io_config:
+
+    Docs: /integrations/databases/MicrosoftSQLServer
+    """
+    schema_name = 'dbo'  # Specify the name of the schema to export data to
+    table_name = 'your_table_name'  # Specify the name of the table to export data to
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    with MSSQL.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        loader.export(
+            df,
+            schema_name,
+            table_name,
+            index=False,  # Specifies whether to include index in exported table
+            if_exists='replace',  # Specify resolution policy if table name already exists
+            fast_execute=True,  # Use fast_executemany option to speed up bulk inserting rows
+            unique_conflict_method='UPDATE',  # Specify method to resolve row conflicts
+            unique_constraints=['col'],
+        )
+```
+
+<br />
+
+6. Custom types
+
+To overwrite a column type when running a python export block, simply specify the column name and type in the `overwrite_types` dict in data exporter config
+
+Here is an example code snippet:
+
+```python
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.mssql import MSSQL
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_mssql(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a MSSQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+    Set the following in your io_config:
+
+    Docs: /integrations/databases/MicrosoftSQLServer
+    """
+    schema_name = 'dbo'  # Specify the name of the schema to export data to
+    table_name = 'your_table_name'  # Specify the name of the table to export data to
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+    overwrite_types = {'column_name': 'VARCHAR(255)'}
+
+    with MSSQL.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        loader.export(
+            df,
+            schema_name,
+            table_name,
+            index=False,  # Specifies whether to include index in exported table
+            if_exists='replace',  # Specify resolution policy if table name already exists
+            overwrite_types=overwrite_types,
+        )
+```
+
+<br />
+
+## Troubleshooting errors
+
+### `error: ODBC SQL type -155 is not yet supported.`
+
+<Check>
+    *“I changed the datetime with timezone data type to a datetime and it starting working”*
+</Check>
+
+- [Windy Martin](https://mageai.slack.com/archives/C068SHY6YG6/p1705874712639659?thread_ts=1705668895.141169&cid=C068SHY6YG6)

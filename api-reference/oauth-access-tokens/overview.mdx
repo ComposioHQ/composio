@@ -1,0 +1,37 @@
+---
+title: "Overview"
+description: "Fetch OAuth access tokens."
+---
+
+### OAuth access token object
+
+<ResponseExample>
+```json Response
+{
+  "oauth_access_tokens": [
+    {
+      "expires": "2023-08-18 23:41:52.480598+00:00",
+      "token": "JS3Umh826UoZzbuGQUsj36PSBwruVCzQYlRFf3KmJWA",
+      "user_id": 2
+    }
+  ],
+  "metadata": {
+    "count": 1,
+    "next": false
+  }
+}
+```
+</ResponseExample>
+
+<ResponseField name="expires" type="string" required>
+  Datetime in UTC when the access token expires and is no longer valid to use.
+</ResponseField>
+
+<ResponseField name="token" type="string" required>
+  The token used to make authenticated API requests to Mage.
+</ResponseField>
+
+<ResponseField name="user_id" type="integer" required>
+  ID of user that the OAuth access token belongs to.
+</ResponseField>
+

@@ -1,0 +1,51 @@
+---
+title: "Adding an IO class"
+sidebarTitle: "Add a Class"
+description: "IO classes power Mage sources and destinations. Read on to learn how you can contribute an IO class to Mage."
+---
+
+## What's an IO class?
+
+IO classes are at the heart of Mage— they're the code that enables Mage to read and write data. When you configure your [`io_config`](https://docs.mage.ai/development/io_config) to use a source or destination, you're telling Mage to use a specific IO class.
+
+IO classes are defined [here](https://github.com/mage-ai/mage-ai/tree/master/mage_ai/io) in the Mage repository. You can see that there are a few different types of IO classes— some are for reading data, some are for writing data, and some are for both.
+
+## Why should I contribute?
+
+If you have a favorite IO class _that's not currently supported_, you can reach out _or_ contribute it to Mage! Contributing is a great way to build your skills, become a part of the Mage community, and help others.
+
+## How do I contribute?
+
+### Configure your development environment
+
+The first step to contributing an IO class is to configure your development environment. You can find instructions for doing so [here](https://docs.mage.ai/contributing/development-environment).
+
+### Create a new IO class
+
+Once configured, you'll want to create a new file in the `mage_ai/io` directory. The file should be named after the IO class you're contributing. For example, if you're contributing an IO class called `MyIOClass`, you should create a file called `my_io_class.py`.
+
+Some IO classes are relatively straightforward, like [exporting to local files](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/io/file.py) or [writing to Google Sheets](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/io/google_sheets.py). Others, like full database integrations, can be pretty complex. [Google BigQuery](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/io/bigquery.py) is a good example of a complex IO class.
+
+Most classes are platform specific, but for a database, you might need the following methods:
+
+- `alter_table`: Alter the table schema
+- `load`: Load data from the database
+- `export`: Export data to the database
+- `execute`: Execute a query on the database
+  - `execute_queries`: Execute multiple queries on the database
+
+Additionally, every class will need to have the following methods:
+
+- `__init__`: Initialize the class
+- `with_config`: Initialize the database client from the configuration loader. You'll notice that this method is used in _all_ of our templates. 
+
+### Test your IO class
+
+In order to test your class, you should perform all of the methods you defined in the class itself. Once you pass our linting checks (outlined in the development environment link above) _and_ your tests pass, you're ready to submit a pull request! Learn more about pull requests on the contribution.
+
+## Create a pull request
+
+<Snippet file="contribution-process.mdx"/>
+
+
+

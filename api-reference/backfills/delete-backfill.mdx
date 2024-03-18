@@ -1,0 +1,51 @@
+---
+title: "Delete backfill"
+api: "DELETE /api/backfills/:backfill_id"
+---
+`DELETE /api/backfills/:backfill_id`
+
+<RequestExample>
+```curl cURL
+curl -X DELETE 
+--url http://localhost:6789/api/backfills/1
+-H 'Content-Type: application/json' 
+-H 'Cookie: oauth_token=some_really_long_string' 
+-H 'X-API-KEY: zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' 
+```
+```python Python
+headers = {
+"Content-Type": "application/json",
+"X-API-KEY": "zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2",
+"Cookie": "oauth_token=some_really_long_string"
+}
+
+r = requests.delete('http://localhost:6789/api/backfills/1', headers=headers)
+```
+
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+    "backfill": {
+        "id": 1,
+        "block_uuid": null,
+        "completed_at": null,
+        "created_at": "2023-07-17 21:48:42",
+        "end_datetime": null,
+        "failed_at": null,
+        "interval_type": null,
+        "interval_units": null,
+        "metrics": null,
+        "name": "arwen_starlight_backfill",
+        "pipeline_schedule_id": null,
+        "pipeline_uuid": "arwen_starlight",
+        "start_datetime": null,
+        "started_at": null,
+        "status": null,
+        "updated_at": "2023-07-17 21:48:42",
+        "variables": null
+    }
+}
+```
+</ResponseExample>

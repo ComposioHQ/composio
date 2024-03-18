@@ -1,0 +1,151 @@
+---
+title: "User defined permissions"
+sidebarTitle: "Overview"
+description: "Create granular permissions for CRUD operations on any API endpoint. Add permissions to roles and add roles to users."
+"og:image": "https://i.pinimg.com/originals/4d/96/3b/4d963bcbda38f5981a3c83b8f99933ae.gif"
+---
+
+<Frame>
+    <p align="center">
+    <img
+        alt="User defined permissions"
+        src="https://i.pinimg.com/originals/4d/96/3b/4d963bcbda38f5981a3c83b8f99933ae.gif"
+    />
+    </p>
+</Frame>
+
+<br />
+
+<Warning>
+  Available in version <b>`0.9.35`</b> and greater.
+</Warning>
+
+## Overview
+
+Define roles with 1 or more permissions.
+Each permission can grant or deny read and write operations on
+specific resources (e.g. API endpoints).
+One or more roles can be assigned to 1 or multiple users.
+
+### Why is this important?
+
+Control which user can perform specific actions at a granular level.
+
+---
+
+## Features
+
+- Define roles.
+- Define permissions.
+- Add permissions to 1 or more roles.
+- Add roles to 1 or more users.
+
+---
+
+## How to use
+
+### Turn on and require user permissions
+
+<Note>
+    You must have [User authentication](/production/authentication/overview) enabled.
+</Note>
+
+Set the environment variable named `REQUIRE_USER_PERMISSIONS` to the value `1`.
+
+You may need to restart your Mage application for the environment variable to be updated and
+for the application to enable user permissions.
+
+### Create roles
+
+<Note>
+    You must be the owner or have a role that grants permissions to read and write on the following
+    entities:
+
+    - `Permission`
+    - `Role`
+    - `RolePermission`
+    - `UserRole`
+    - `User`
+</Note>
+
+1. Go the the Mage project settings and click on the navigation row labeled <b>Roles</b>.
+1. On the roles list page, there is a button labeled <b>Create default roles and permissions</b>.
+    If you click this button, 6 roles and a few hundred permissions will be created.
+
+    The roles are:
+
+    - Admin default permissions
+    - Editor default permissions
+    - Editor with notebook edit access
+    - Editor with pipeline edit access
+    - Owner default permissions
+    - Viewer default permissions
+
+    Each role will have a set of permissions that match the Mage API policies that are normally
+    used to authenticate operations when the user authentication feature is turned on but
+    the user permissions feature is turned off.
+1. Alternatively, click the button <b>Add new role</b> to create a single new role.
+1. Enter in a unique name for the role.
+1. Click the button <b>Create new role</b> to save the role.
+1. Once you create the role, you’ll be taken to the role detail page.
+1. From here, you can add existing permissions to the role.
+1. From here, you can add existing users to the role. This will grant permissions or
+    deny operations for user.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Roles"
+        src="https://github.com/mage-ai/assets/blob/main/authentication/permissions/roles-detail.png?raw=true"
+    />
+    </p>
+</Frame>
+
+### Create permissions
+
+1. Go the the Mage project settings and click on the navigation row labeled <b>Permissions</b>.
+1. Click the button <b>Add new permission</b> to create a new permission.
+1. Select an entity that these permissions will be applied to.
+    An entity refers to a defined API endpoint that currently exists in the Mage application.
+
+    For example, the entity `Pipeline` applies to the API endpoints `/pipelines`.
+1. Optionally enter an entity UUID that these permissions are applied to.
+    For example, you can grant or deny permissions to a specific pipeline by selecting the entity
+    `Pipeline` and entering the entity `UUID` `example_pipeline`.
+    This permission will only be applied to the pipeline with the UUID `example_pipeline`.
+1. Under the section labeled <b>Access</b>, toggle 1 or more accesses to grant.
+    For more information on what each access grants or denies,
+    read the [permissions documentation](/authentication/permissions/permissions).
+1. Click the button <b>Create new permission</b> to save the permission.
+1. Once you create the role, you’ll be taken to the role detail page.
+1. From here, you can edit the permission.
+1. From here, you can add this permission to existing roles.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Permissions"
+        src="https://github.com/mage-ai/assets/blob/main/authentication/permissions/permissions-detail.png?raw=true"
+    />
+    </p>
+</Frame>
+
+### Assign roles to users
+
+1. Go the the Mage project settings and click on the navigation row labeled <b>Users</b>.
+1. Click on a row for an existing user.
+1. From here, you can assign existing roles to the user.
+1. Alternatively, you can add a user to a role by following these steps:
+    1. Go to the [roles list page](http://localhost:6789/settings/workspace/roles).
+    1. Click on a row for an existing role.
+    1. Click the button labeled <b>+Add user</b>.
+    1. Select 1 or more users to assign this role to.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Users"
+        src="https://github.com/mage-ai/assets/blob/main/authentication/permissions/users-detail.png?raw=true"
+    />
+    </p>
+</Frame>

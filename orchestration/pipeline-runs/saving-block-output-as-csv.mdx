@@ -1,0 +1,26 @@
+---
+title: "Saving block output as CSV file"
+sidebarTitle: "Saving block output as CSV"
+---
+
+<Note>Requires version `0.8.92` or greater.</Note>
+
+For standard pipelines (not currently supported in integration or streaming
+pipelines), you can save the output of a block that has been successfully
+run and saved to disk as a CSV file.
+
+Note that there may be limitations for saving very
+large block outputs (e.g. greater than 200 mb). Downloading block output
+saved to the cloud (e.g. S3) is not currently supported.
+
+There are two places to save the block output as a CSV file:
+1. In the Pipeline Editor page after successfully running a block
+  - After a block has been successfully run, click the `Save` icon
+  in the block output footer.
+2. In the Block Runs table after a block run has successfully completed
+  - The Block Runs table can be found by going to a pipeline's `Runs`
+  section (found in left navigation sidebar) of the Pipeline Detail page
+  and clicking the `Block runs` tab or clicking the `X / X`
+  link under the `Block runs` column of the Pipeline Runs table.
+  - Go to the far right of the Block Runs table and click the `Save` button
+  under the `Output` column.

@@ -1,0 +1,253 @@
+---
+title: "Deploy to AWS ECS with AWS CodePipeline"
+sidebarTitle: "CodePipeline"
+---
+
+## Pre-requisites
+
+### Terraform and AWS ECS
+
+This document assumes you're using Terraform to modify and deploy your AWS instructure. If you're
+not using Terraform yet, you can set it up by reading [this document](production/deploying-to-cloud/using-terraform).
+
+This document also assumes that you have already set up your ECS cluster, services, and tasks.
+* If you are not using ECS to run Mage, then this document will not apply for you.
+  You can submit a feature request in our [Slack channel](https://www.mage.ai/chat) if you want Mage to
+  support deploying to your infrastructure through AWS CodePipeline.
+* If you have not set up your ECS yet, you can check out [this document](/production/deploying-to-cloud/aws/setup#deploy-to-ecs-cluster)
+  to set it up with Terraform.
+
+### AWS CodeCommit
+
+The pipeline that is created through the Terraform scripts has a AWS CodeCommit repo as a source. You
+will need to have a CodeCommit repo already set up that has your Mage repository code.
+
+Your CodeCommit repository should have a Dockerfile in the top level of your CodeCommit.
+[Here is a reference Dockerfile](https://github.com/mage-ai/docker/blob/master/Dockerfile)
+that you can use for your own Dockerfile.
+
+You will also need to add a `buildspec.yml` file to your repository.
+The `buildspec.yml` file can follow the following format:
+
+```
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...          
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+```
+
+### AWS ECR
+
+One pipeline created by the script will push a Docker build to AWS ECR, and the other pipeline will read from the same
+AWS ECR repo. Make sure you have already created your AWS ECR repository.
+
+## Setting up AWS CodePipeline pipeline with Terraform
+
+Use Terraform scripts in [aws-code-pipeline](https://github.com/mage-ai/mage-ai-terraform-templates/tree/master/aws-code-pipeline)
+folder to provision resources for AWS CodePipeline.
+
+---
+
+### Terraform plan
+
+You can run the following command to see all the resources that will be created
+by Terraform:
+
+```bash
+cd aws
+terraform plan
+```
+
+---
+
+### 1. Environment variables
+
+If you don’t have the AWS CLI installed, you’ll need to create this file:
+`~/.aws/credentials`.
+
+In that file, add the following values:
+
+```
+[default]
+aws_access_key_id = XXX
+aws_secret_access_key = XXX
+```
+
+Alternatively, you can install the AWS CLI by following 
+[Amazon’s instructions](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+
+---
+
+### 2. Customize Terraform variables
+
+In the file
+[./aws/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws-code-pipeline/variables.tf),
+you will need to update the default values for the following variables:
+
+**AWS settings**
+
+```
+variable "AWS_ACCESS_KEY_ID" {
+  type    = string
+  default = "AWS_ACCESS_KEY_ID"
+}
+
+variable "AWS_SECRET_ACCESS_KEY" {
+  type    = string
+  default = "AWS_SECRET_ACCESS_KEY"
+}
+
+variable "aws_region" {
+  type        = string
+  description = "AWS Region"
+  default     = "us-west-2"
+}
+
+variable "aws_account_id" {
+  type        = string
+  description = "AWS Account ID"
+  default     = "12345678910"
+}
+```
+
+**S3 bucket name**
+
+```
+variable "s3_bucket_name" {
+  type        = string
+  description = "S3 bucket to store pipeline artifacts"
+  default     = "s3-bucket-name"
+}
+```
+
+**Code pipeline name (optional)**
+
+```
+variable "code_pipeline_name" {
+  type        = string
+  description = "Name for AWS CodePipeline"
+  default     = "mage-codepipeline"
+}
+```
+
+**ECR repo values**
+
+```
+variable "ecr_repo_name" {
+  type        = string
+  description = "ECR repo name"
+  default     = "ecr-repo-name"
+}
+
+variable "ecr_image_tag" {
+  type        = string
+  description = "ECR docker image tag"
+  default     = "latest"
+}
+```
+
+**ECS values**
+
+```
+variable "ecs_cluster_name" {
+  type        = string
+  description = "ECS cluster name"
+  default     = "ecs-cluster-name"
+}
+
+variable "ecs_service_name" {
+  type        = string
+  description = "ECS service name"
+  default     = "ecs-service-name"
+}
+
+variable "ecs_container_name" {
+  type        = string
+  description = "ECS container name"
+  default     = "ecs-container-name"
+}
+
+variable "ecs_task_role_name" {
+  type        = string
+  description = "ECS execution task role name"
+  default     = "ecs-task-role-name"
+}
+```
+
+**AWS CodeCommit values**
+
+```
+variable "codecommit_repo_name" {
+  type        = string
+  description = "Codecommit repo name"
+  default     = "codecommit_repo_name"
+}
+
+variable "codecommit_branch" {
+  type        = string
+  description = "Codecommit repo branch"
+  default     = "main"
+}
+```
+
+### 3. IAM Permissions
+
+The IAM permissions are defined in the `aws-code-pipeline/iam.tf` file. Make adjustments to the 
+permissions as needed.
+
+### 4. Apply Terraform
+
+**Using CLI**
+
+1. Change directory into scripts folder:
+   ```bash
+   cd aws-code-pipeline
+   ```
+2. Initialize Terraform:
+   ```bash
+   terraform init
+   ```
+   - If you run into errors like the following:
+     ```
+     │ Error: Failed to install provider
+     │
+     │ Error while installing hashicorp/template v2.2.0: the local package for registry.terraform.io/hashicorp/template 2.2.0 doesn't match any of the checksums previously recorded in the dependency lock file (this might be because the available checksums are for packages targeting different
+     │ platforms); for more information: https://www.terraform.io/language/provider-checksum-verification
+     ```
+     then run the following commands to resolve this:
+     ```
+     brew install kreuzwerker/taps/m1-terraform-provider-helper
+     m1-terraform-provider-helper activate
+     m1-terraform-provider-helper install hashicorp/template -v v2.2.0
+     rm .terraform.lock.hcl
+     terraform init --upgrade
+     ```
+3. Deploy:
+   ```bash
+   terraform apply
+   ```
+
+### Results
+
+After running the Terraform script, you should see two AWS CodePipeline pipelines created, `mage-codepipeline`
+and `mage-codepipeline-ecr` (unless you changed the `code_pipeline_name` variable). The `mage-codepipeline` pipeline
+will be triggered every time a change is detected in the AWS CodeCommit repo. The `mage-codepipeline-ecr` pipeline
+will be triggered every time a new image is pushed with into the AWS ECR repo. 
+
+![mage-codepipeline](https://github.com/mage-ai/assets/blob/main/mage-codepipeline.png?raw=True)
+
+![mage-codepipeline-ecr](https://github.com/mage-ai/assets/blob/main/mage-codepipeline-ecr.png?raw=True)

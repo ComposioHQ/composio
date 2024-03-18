@@ -1,0 +1,36 @@
+---
+title: "EMR policies"
+---
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "elasticmapreduce:AddJobFlowSteps",
+        "elasticmapreduce:CancelSteps",
+        "elasticmapreduce:DescribeCluster",
+        "elasticmapreduce:DescribeStep",
+        "elasticmapreduce:ListClusters",
+        "elasticmapreduce:ListSteps",
+        "elasticmapreduce:ModifyCluster",
+        "elasticmapreduce:ModifyInstanceFleet",
+        "elasticmapreduce:ModifyInstanceGroups",
+        "elasticmapreduce:PutAutoScalingPolicy",
+        "elasticmapreduce:PutAutoTerminationPolicy",
+        "elasticmapreduce:PutManagedScalingPolicy",
+        "elasticmapreduce:RemoveAutoScalingPolicy",
+        "elasticmapreduce:RemoveAutoTerminationPolicy",
+        "elasticmapreduce:RemoveManagedScalingPolicy",
+        "elasticmapreduce:RunJobFlow",
+        "elasticmapreduce:SetTerminationProtection",
+        "elasticmapreduce:TerminateJobFlows"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```

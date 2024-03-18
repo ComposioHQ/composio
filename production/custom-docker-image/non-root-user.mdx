@@ -1,0 +1,32 @@
+---
+title: "Run docker image as non-root user"
+description: "Run Mage docker image as non-root user to restrict access to the system"
+---
+
+By default, the official Mage docker images in DockerHub are using the root users. For production deployment,
+it's reocmmended to use non-root users in the docker image to restict the access to the system for better security.
+Here is the Dockerfile template that you can use to build your custom docker image that runs Mage as non-root user.
+
+```dockerfile
+ARG VERSION
+
+FROM mageai/mageai:$VERSION
+
+# Add non-root user for Mage service
+RUN adduser --disabled-password --gecos '' mage && adduser mage mage
+
+# Grant the user permissions to the Mage related directories
+RUN mkdir /home/src/mage_data; chown -R mage /home/src/mage_data
+RUN mkdir /home/src/default_repo; chown -R mage /home/src/default_repo
+
+RUN pip3 install -r path/to/requirements.txt
+
+# Set the Mage user
+USER mage
+
+ENV PYTHONPATH="${PYTHONPATH}:/home/mage/.local/lib/python3.10/site-packages"
+
+WORKDIR /home/src
+
+CMD ["/bin/sh", "-c", "/app/run_app.sh"]
+```

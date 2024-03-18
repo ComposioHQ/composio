@@ -1,0 +1,130 @@
+---
+title: "Create a new destination"
+---
+
+Here is an example PR for adding a new destination: https://github.com/mage-ai/mage-ai/pull/2277
+
+In this guide, we'll build a sample destination called `SampleDest`. When you're building your own destination, you can swap out the `SampleDest` name for the real name of your new destination.
+
+1. Create a directory for the new destination
+1. Define custom destination class
+1. Add main function
+1. Add your destination to the UI (optional)
+1. Test your destination
+
+<br />
+
+## 1. Create a directory for the new destination
+
+In the `mage_integrations/destinations/` directory, add a new directory named after your destination.
+Use snake case and lowercase for your directory name: `mage_integrations/destinations/sample_dest/`.
+
+In this new directory, create the following subdirectories and files:
+
+- `mage_integrations/destinations/sample_dest/templates/config.json`
+- `mage_integrations/destinations/sample_dest/__init__.py`
+- `mage_integrations/destinations/sample_dest/README.md`
+
+The directory structure should look like this:
+
+```
+mage_integrations/
+|   destinations/
+|   |   sample_dest/
+|   |   |   templates/
+|   |   |   |   config.json
+|   |   |   __init__.py
+|   |   |   README.md
+```
+
+### Templates folder
+
+This folder contains a sample configuration JSON file that’s
+displayed to the user when they are setting up a synchronization using this destination.
+
+The `config.json` file contains keys and values that are used to configure the
+behavior of the destination as well as credentials to authenticate requests to the destination.
+
+#### Naming convention
+
+You must use the exact filename `config.json`.
+
+#### Examples
+
+```json
+{
+  "api_key": "",
+  "secret_key": ""
+}
+```
+
+### `__init__.py`
+
+This is where majority of the destination logic will exist.
+
+#### Examples
+
+[`mage_integrations/destinations/amazon_s3/__init__.py`](https://github.com/mage-ai/mage-ai/blob/master/mage_integrations/mage_integrations/destinations/amazon_s3/__init__.py)
+
+### `README.md`
+
+Document how to configure and use your destination in the `README.md` file.
+
+<br />
+
+## 2. Define custom destination class
+
+In the `mage_integrations/destinations/sample_dest/__init__.py`,
+create a new class named after your destination and subclass the
+[base destination class](https://github.com/mage-ai/mage-ai/blob/master/mage_integrations/mage_integrations/destinations/base.py).
+
+If you're adding a destination for a SQL data warehouse or database, you can subclass the
+[base sql destination class](https://github.com/mage-ai/mage-ai/blob/master/mage_integrations/mage_integrations/destinations/sql/base.py)
+
+```python
+from mage_integrations.destinations.base import Destination
+
+
+class SampleDest(Destination):
+    pass
+```
+
+### Override the `export_batch_data` method
+
+The base `Destination` class has an instance method called `export_batch_data`. Here is the interface:
+
+```python
+def export_batch_data(self, record_data: List[Dict], stream: str) -> None:
+    ...
+```
+
+Override this method to contain the logic for exporting data that is specific to your destination.
+
+
+## 3. Add main function
+
+In the file `mage_integrations/destinations/sample_dest/__init__.py`, add the main function to the bottom of the file
+like below:
+
+```python
+if __name__ == '__main__':
+    destination = SampleDest(
+        argument_parser=argparse.ArgumentParser(),
+        batch_processing=True,
+    )
+    destination.process(sys.stdin.buffer)
+```
+
+## 4. Add your destination to the UI (optional)
+
+Add the new destination to the `DESTINATIONS` list constant in this file: https://github.com/mage-ai/mage-ai/blob/master/mage_ai/data_integrations/destinations/constants.py
+
+## 5. Test your desination
+
+Follow this [doc](https://github.com/mage-ai/mage-ai/tree/master/mage_integrations) to test your new destination.
+
+To test the destination in the UI, you can install your updated `mage_integrations` module by running the following commands in Mage terminal:
+```bash
+pip uninstall -y mage_integrations
+pip install "git+https://github.com/your_repo.git@your_branch#egg=mage-integrations&subdirectory=mage_integrations"
+```

@@ -1,0 +1,87 @@
+---
+title: "Configure triggers in code"
+description: "Configure triggers in triggers.yaml under pipeline folder."
+---
+
+In addition to configuring triggers via UI, you can also configure triggers in code.
+
+You can either manually define the triggers in code or you can go to the triggers detail page in the
+UI and click the button labeled <b>Save trigger in code</b> on the left side panel to store the
+current trigger’s settings to code.
+
+## Create and configure triggers
+
+Here are the steps to create and configure triggers via code:
+1. Create a `triggers.yaml` file under your pipeline folder. The file path should be `pipelines/[pipeline_uuid]/triggers.yaml`.
+1. Enter your trigger configs into the `triggers.yaml` file.
+    1. Content structure
+        ```yaml
+        triggers:
+        - name: test_trigger
+          schedule_type: time
+          start_time: 2023-01-01
+          status: active
+        - name: xxx
+          ...
+        - name: xxx
+          ...
+        ```
+    1. Required trigger fields
+        1. `name`: Unique identifier of the trigger
+        1. `schedule_type`: `time`, `api`, or `event`
+        1. `schedule_interval`: `@once`, `@hourly`, `@daily`, `@weekly`, `@monthly`, `@always_on`, or Cron syntax(`* * * * *`)
+        1. `start_time`: The start time of the trigger (e.g. `2023-01-01`)
+    1. Optional trigger fields
+        1. `status`: `active` or `inactive`
+        1. `variables`: A dictionary of variables that's associated with the trigger
+        1. `sla`: SLA in seconds
+        1. `settings`: a dictionary of [advanced settings](/guides/triggering-pipelines#additional-trigger-settings)
+            1. `skip_if_previous_running`: `true`/`false`
+            1. `allow_blocks_to_fail`: `true`/`false`
+            1. `create_initial_pipeline_run`: `true`/`false`
+        1. `envs`: The environments that the trigger runs in. If envs is not set or empty, the trigger will run in all environments. The environment of the Mage app is set via `ENV` [environment variable](/development/variables/environment-variables). Supported `envs` values: `dev`, `staging`, `prod`, `test`.
+1. Save the `triggers.yaml` file. The trigger configs will be synced to the triggers UI shortly.
+
+
+### Example triggers config:
+
+```yaml
+triggers:
+- name: test_example_trigger
+  schedule_type: time
+  schedule_interval: "@daily"
+  start_time: 2023-01-01
+  status: active
+- name: test_example_trigger_2
+  schedule_type: time
+  schedule_interval: "@hourly"
+  start_time: 2023-03-01
+  status: inactive
+- name: test_example_trigger_with_extra_settings
+  schedule_type: time
+  schedule_interval: "@hourly"
+  start_time: 2023-03-01
+  status: inactive
+  settings:
+    skip_if_previous_running: true
+    allow_blocks_to_fail: true
+  envs:
+  - prod
+  - dev
+```
+
+## Modify triggers
+
+If an existing trigger is configured in the yaml file, any updates to it through the UI will also update
+trigger config in the yaml file. If you modify the trigger settings directly in the yaml, it will
+automatically update the trigger in the UI. The new trigger configs are synced to the triggers in UI.
+
+
+## Delete triggers
+
+If you don't want to use a trigger anymore, you can either update the trigger status to `inactive` or
+delete the trigger completely.
+
+To delete the trigger completely, you can delete the trigger from the UI by clicking the delete button
+(with trash can icon) in the Pipeline triggers table (`/pipeline/[pipeline_uuid]/triggers`). This will
+also remove the trigger from the pipeline's `triggers.yaml` config file.

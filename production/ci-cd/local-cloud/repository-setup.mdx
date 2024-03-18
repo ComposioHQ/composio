@@ -1,0 +1,82 @@
+---
+title: "Repository setup"
+description: "Setup your Mage project respository."
+---
+
+1.  Create a parent folder for your Mage project (e.g. `my_team`).
+2.  Change directory (e.g. `cd my_team`) into the parent folder and start Mage
+    locally: For example:
+
+    ```bash
+    docker run -it -p 6789:6789 -v $(pwd):/home/src mageai/mageai \
+      /app/run_app.sh mage start demo_project
+    ```
+
+    For more examples, read the [setup guide](/getting-started/setup).
+
+3.  Once you’re done developing, copy the contents of the this
+    [Dockerfile template](https://github.com/mage-ai/docker/blob/master/Dockerfile)
+    and paste it into a new `Dockerfile` located in the parent folder of your
+    Mage project (e.g. `my_team/Dockerfile`). Replace all instances of the
+    string `[project_name]` with your project name. For example, if your project
+    name is `demo_project`, then your Dockerfile will look like this: The
+    contents of your `Dockerfile` are:
+
+    ```dockerfile
+    FROM mageai/mageai:latest
+
+    ARG PROJECT_NAME=[project_name]
+    ARG MAGE_CODE_PATH=/home/mage_code
+    ARG USER_CODE_PATH=${MAGE_CODE_PATH}/${PROJECT_NAME}
+
+    WORKDIR ${MAGE_CODE_PATH}
+
+    # Replace [project_name] with the name of your project (e.g. demo_project)
+    COPY ${PROJECT_NAME} ${PROJECT_NAME}
+
+    # Set the USER_CODE_PATH variable to the path of user project.
+    # The project path needs to contain project name.
+    # Replace [project_name] with the name of your project (e.g. demo_project)
+    ENV USER_CODE_PATH=${USER_CODE_PATH}
+
+    # Install custom Python libraries
+    RUN pip3 install -r ${USER_CODE_PATH}/requirements.txt
+    # Install custom libraries within 3rd party libraries (e.g. dbt packages)
+    RUN python3 /app/install_other_dependencies.py --path ${USER_CODE_PATH}
+
+    ENV PYTHONPATH="${PYTHONPATH}:/home/mage_code"
+
+    CMD ["/bin/sh", "-c", "/app/run_app.sh"]
+    ```
+
+4.  Your current folder structure should look like this:
+    ```
+    my_team/
+    |   demo_project/
+    |   Dockerfile
+    ```
+5.  Build a custom Docker image using `mageai/mageai:latest` as the base and
+    using the newly created Dockerfile as the additional set of instructions:
+
+    ```
+    docker build --platform linux/amd64 --tag mageprod:latest .
+    ```
+
+    <Note>
+      Change `mageprod` to any other name. You’ll need this tag name when
+      deploying to production in the cloud.
+    </Note>
+
+6.  To test the new image works, run the following command:
+    ```bash
+    docker run -it -p 6789:6789 mageprod:latest /app/run_app.sh mage start demo_project
+    ```
+7.  Open your browser and go to http://localhost:6789/
+    1. You should see all your pipelines there.
+    1. Changing the contents of files won’t change the contents on your local
+       file system because all your code was packaged together within the Docker
+       image (this is intentional).
+8.  The next steps depends on your deployment method. If you are using
+    [Terraform](/production/deploying-to-cloud/using-terraform), then you’ll need to use the previously
+    tag name (e.g. `mageprod`) when pushing a Docker image to a remote Docker
+    registry.

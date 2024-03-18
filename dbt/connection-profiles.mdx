@@ -1,0 +1,31 @@
+---
+title: "dbt connection profiles"
+sidebarTitle: "Connection profiles"
+---
+
+Mage will look for a file named `profiles.yml` located in your dbt project root
+folder.
+
+For example, if your Mage project is named `demo_project` and your dbt project
+name is `demo`, then your `profiles.yml` file for that dbt project should be
+located in `demo_project/dbt/demo/profiles.yml`.
+
+If you have a 2nd dbt project (e.g. named `example`), the connection profiles
+for that project should be located in `demo_project/dbt/example/profiles.yml`.
+
+For more information on how to configure your connection profiles, read
+[dbt’s documentation](https://docs.getdbt.com/docs/get-started/connection-profiles).
+
+Using Mage, you may also [interpolate variables](/dbt/variable-interpolation) in your connection profiles.
+
+---
+
+## How connection profiles are used
+
+When you run a [single dbt model](/dbt/run-single-model) or
+[selected dbt models](/dbt/run-selected-model), there is an input field labeled
+`dbt profile target`. The value in that field will be the connection profile
+target that Mage uses when running a dbt model block.
+
+The command Mage executes is `dbt run` with the flag `--target` and the value of
+that flag is the value from the input field labeled `dbt profile target`.

@@ -1,0 +1,475 @@
+---
+title: "Deploy to GCP with Terraform"
+sidebarTitle: "Setup"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198754786-3c4618dd-d648-4af7-b288-5ff18371335b.png)
+
+## Pre-requisites
+
+### Setup
+
+[Download Mage maintained Terraform scripts](/production/deploying-to-cloud/using-terraform).
+
+### Permissions
+
+Go to the IAM management dashboard, find the service account associated to the
+account you just logged into, and then add these roles to that service account
+(e.g. choose your account as the principal when adding new roles):
+
+1. Artifact Registry Read
+2. Artifact Registry Writer
+3. Cloud Run Developer
+4. Cloud SQL
+5. Service Account Token Creator
+
+---
+
+## Terraform plan
+
+You can run the following command to see all the resources that will be created
+by Terraform:
+
+```bash
+cd gcp
+```
+
+```bash
+terraform plan
+```
+
+By default, here are the **[resources](/production/deploying-to-cloud/gcp/resources)** that will be
+created.
+
+---
+
+## 1. Install `gcloud` CLI
+
+Follow these [instructions](https://cloud.google.com/sdk/docs/install) to
+install the CLI on your workstation.
+
+For macOS and Homebrew, you can do the following:
+
+```bash
+brew install --cask google-cloud-sdk
+```
+
+---
+
+## 2. Log into GCP from CLI
+
+If you don’t already have an account in GCP, create one
+[here](https://cloud.google.com/).
+
+Once you created an account, from your terminal run the following command to log
+in:
+
+```bash
+gcloud init
+```
+
+```bash
+gcloud auth application-default login
+```
+
+## 3. Customize Terraform settings
+
+**Project ID (REQUIRED)**
+
+Before running any Terraform commands, please change the `default` value of the
+variable named `project_id` in the
+[./gcp/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/variables.tf)
+file.
+
+```js
+variable "project_id" {
+  type        = string
+  description = "The name of the project"
+  default     = "unique-gcp-project-id"
+}
+```
+
+**Docker Image (REQUIRED)**
+
+Google Cloud Run supports pulling Docker images directly from Docker Hub. To use the latest Mage image (default):
+
+```js
+variable "docker_image" {
+  type        = string
+  description = "The docker image to deploy to Cloud Run."
+  default     = "mageai/mageai:latest"
+}
+```
+
+Simply change the tag to adjust the version of Mage you want to deploy. If you need to build your own image, you can push it to Docker Hub or follow our guide to use [GCP Artifact Registry](/production/deploying-to-cloud/gcp/gcp-artifact-registry).
+
+**Application Name**
+
+In the file
+[./gcp/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/variables.tf),
+you can change the `default` value under `app_name`:
+
+```js
+variable "app_name" {
+  type        = string
+  description = "Application Name"
+  default     = "mage-data-prep"
+}
+```
+
+**Region**
+
+In the file
+[./gcp/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/variables.tf),
+you can change the `default` value under `region`:
+
+```js
+variable "region" {
+  type        = string
+  description = "The default compute region"
+  default     = "us-west2"
+}
+```
+
+### Environment variables for application
+
+Set your environment variables in your running cloud environment by adding the
+following under the resource named `google_cloud_run_service` in the file
+[./gcp/main.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/main.tf):
+
+```js
+resource "google_cloud_run_service" "run_service" {
+  ...
+
+  template {
+    spec {
+      containers {
+        ...
+        env {
+          name  = "NAME_OF_ENVIRONMENT_VARIABLE"
+          value = "value of environment variable"
+        }
+      }
+    }
+  }
+}
+```
+
+### Secrets
+
+See our [docs](/production/deploying-to-cloud/secrets/GCP) for configuring secrets in Google Secret Manager and using secrets locally while developing.
+
+#### Method A: Terraform configurations
+
+1.  Once you save a secret in Google Secret Manager, click on the
+    **PERMISSIONS** tab.
+2.  Click the button **`+ GRANT ACCESS`**.
+3.  Under the field labeled **New principles**, add the service account that is
+    associated to your Google Cloud Run. If you can’t find this, try deploying
+    GCP with Terraform and you’ll receive an error that looks like this:
+
+    ```
+    ╷
+    │ Error: resource is in failed state "Ready:False", message: Revision 'mage-2992l' is not ready and cannot serve traffic. spec.template.spec.volumes[1].secret.items[0].key: Permission denied on secret: projects/1054912425479/secrets/bigquery_credentials/versions/latest for Revision service account 1054912425479-compute@developer.gserviceaccount.com. The service account used must be granted the 'Secret Manager Secret Accessor' role (roles/secretmanager.secretAccessor) at the secret, project or higher level.
+    │
+    │   with google_cloud_run_service.run_service,
+    │   on main.tf line 88, in resource "google_cloud_run_service" "run_service":
+    │   88: resource "google_cloud_run_service" "run_service" {
+    │
+    ╵
+    ```
+
+    If you still get this error when re-running `terraform apply` even after granting access,
+    try **Method B** down below.
+
+    <Note>
+      By default, the service account used by Cloud Run that needs access to the secret is the `Compute Engine` default service account.
+      If you want to grant access to a different service account,
+      configure the `service_account_name` argument in the `spec` block in
+      [`main.tf`](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/main.tf#L99):
+
+      ```
+      # Create the Cloud Run service
+      resource "google_cloud_run_service" "run_service" {
+        name = var.app_name
+        location = var.region
+
+        template {
+          spec {
+            service_account_name = "[your service account email here]"
+          }
+        }
+      }
+      ```
+    </Note>
+
+4.  Under the field labeled **Select a role**, enter the value
+    `Secret Manager Secret Accessor`.
+5.  Click the button **SAVE**.
+6.  Mount secrets to Google Cloud Run via Terraform in the file
+    [./gcp/main.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/main.tf):
+
+    ```
+    resource "google_cloud_run_service" "run_service" {
+      ...
+
+      template {
+        spec {
+          containers {
+            ...
+            env {
+              name = "path_to_keyfile"
+              value = "/secrets/bigquery/bigquery_credentials"
+            }
+            volume_mounts {
+              name       = "secrets-bigquery_credentials"
+              mount_path = "/secrets/bigquery"
+            }
+          }
+          volumes {
+            name = "secrets-bigquery_credentials"
+            secret {
+              secret_name  = "bigquery_credentials"
+              items {
+                key  = "latest"
+                path = "bigquery_credentials"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+
+7.  In your Python code or in any field that support variable interpolation,
+    enter the following to get the value from the secret: 1
+
+    <CodeGroup>
+    ```python Python
+    import os
+
+
+    with open(os.getenv('path_to_keyfile'), 'r') as f:
+        print(f.read())
+    ```
+
+    ```yaml YAML
+    demo:
+    target: prod
+    outputs:
+      prod_bigquery:
+        dataset: mage_demo
+        keyfile: "{{ env_var('path_to_keyfile') }}"
+        method: service-account
+        project: my_cool_gcp_project
+        threads: 1
+        type: bigquery
+    ```
+
+    </CodeGroup>
+
+#### Method B: through GCP UI (aka console but not to be confused with CLI)
+
+1. Go to your Google Cloud Run dashboard, find the service running Mage, and
+   click on it to view its details.
+1. Follow these
+   [Google provided instructions](https://cloud.google.com/run/docs/configuring/secrets#mounting-secrets-service)
+   to manually mount the secret to the running Mage Cloud Run service and grant
+   the right permissions for that service to access those secrets.
+After you mount the secrets, you can create environment variables in your Cloud Run that reference
+your secrets. Follow the below example to setup the mounted secret and environment variable for that
+secret:
+
+    | <b>Secrets</b> |   |
+    | --- | --- |
+    | Secret name | `bigquery_credentials` |
+    | Reference method | `Mounted as volume` |
+    | Mount path | `/secrets/bigquery` |
+    | Path 1 | `bigquery_credentials` |
+    | Version 1 | `latest` |
+
+    | <b>Environment variables</b> |   |
+    | --- | --- |
+    | Name | `path_to_keyfile` |
+    | Value | `/secrets/bigquery/bigquery_credentials` |
+
+### More
+
+Other variables defined in
+[./gcp/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/variables.tf)
+can also be customized to your needs.
+
+## 4. Deploy
+
+1. Change directory into scripts folder:
+   ```bash
+   cd gcp
+   ```
+1. Initialize Terraform:
+
+   ```bash
+   terraform init
+   ```
+
+   A sample output could look like this:
+
+   ```
+   Initializing the backend...
+
+   Initializing provider plugins...
+   - Finding hashicorp/google versions matching ">= 3.3.0"...
+   - Finding latest version of hashicorp/http...
+   - Installing hashicorp/google v4.38.0...
+   - Installed hashicorp/google v4.38.0 (signed by HashiCorp)
+   - Installing hashicorp/http v3.1.0...
+   - Installed hashicorp/http v3.1.0 (signed by HashiCorp)
+
+   Terraform has created a lock file .terraform.lock.hcl to record the provider
+   selections it made above. Include this file in your version control repository
+   so that Terraform can guarantee to make the same selections by default when
+   you run "terraform init" in the future.
+
+   Terraform has been successfully initialized!
+
+   You may now begin working with Terraform. Try running "terraform plan" to see
+   any changes that are required for your infrastructure. All Terraform commands
+   should now work.
+
+   If you ever set or change modules or backend configuration for Terraform,
+   rerun this command to reinitialize your working directory. If you forget, other
+   commands will detect it and remind you to do so if necessary.
+   ```
+
+1. Deploy:
+
+   ```bash
+   terraform apply
+   ```
+
+   A sample output could look like this:
+
+   ```
+   Apply complete! Resources: 7 added, 1 changed, 0 destroyed.
+
+   Outputs:
+
+   service_ip = "34.107.187.208"
+   ```
+
+   It’ll take a few minutes for GCP Cloud Run to start up and be ready to
+   receive requests.
+
+   After a few minutes, open a browser and go to `http://[IP_address]`
+
+   <Note>
+     Change the `IP_address` to the IP address that was output in your terminal
+     after successfully running `terraform apply`.
+   </Note>
+
+### Errors
+
+#### 403 Forbidden
+
+If you get this error when trying to open the above IP address in your browser,
+open the security group named
+[`[application_name]-security-policy`](https://console.cloud.google.com/net-security/securitypolicies/list).
+Click on that security group and verify your IP address is whitelisted.
+
+If it isn’t, add a new rule with the following values:
+
+| Mode       | Match                                                   | Action | Priority |
+| ---------- | ------------------------------------------------------- | ------ | -------- |
+| Basic mode | [Enter your IP address](https://whatismyipaddress.com/) | Allow  | 100      |
+
+If you still get 403, check to see if you’re using `http://` and NOT `https://`.
+
+#### Container can’t start
+
+If Cloud Run is deployed but the service failed because the container could’t start, 
+it is usually caused by the Docker image not being built using the correct platform tag.
+
+Pull the Mage Docker image using this command:
+
+```
+docker pull --platform linux/amd64 mageai/mageai:latest
+```
+
+Once pulled, tag your image and push to GCP Artifact Registry again.
+
+---
+
+## Updating Mage versions
+
+After Mage is running in your cloud, you can update the Mage Docker image
+version by running the following command in your CLI tool:
+
+```bash
+gcloud run deploy [app_name] --image [docker_image]
+```
+
+> `app_name`
+>
+> This is the value you changed when editing the
+> [./gcp/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/variables.tf)
+> file.
+
+---
+
+## Misc
+
+### Security
+
+To enable other IP addresses access to Mage, open the security group named
+[`[application_name]-security-policy`](https://console.cloud.google.com/net-security/securitypolicies/list).
+Click on that security group and add a new rule with the following values:
+
+| Mode       | Match                                                   | Action | Priority |
+| ---------- | ------------------------------------------------------- | ------ | -------- |
+| Basic mode | [Enter your IP address](https://whatismyipaddress.com/) | Allow  | 100      |
+
+To enable IP addresses access to specific endpoints, you can follow
+[this example](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/load_balancer.tf#L23-L33)
+to add rules to security policy. Another way is to add a new rule through UI
+with the following values:
+
+| Mode | Match | Action | Priority |
+| --- | --- | --- | --- |
+| Advanced mode | `request.path.startsWith('/api/pipeline_schedules/123/pipeline_runs') && inIpRange(origin.ip, '[IP address]/32')` | Allow | 200 |
+
+### HTTPS enabling
+
+To enable HTTPS for Mage app deployed on GCP, you need to firstly make sure you
+have a domain. Then follow the steps below to set up HTTPS:
+
+1. In
+   [./gcp/variables.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/variables.tf)
+   file, update the `default` value of `ssl` to be `true`, and set the `default`
+   value of `domain` variable to be the domain url you want to use.
+2. Run `terraform apply` to create the HTTPS load balancer.
+3. Get the `service_ip` from the output of terraform command.
+4. Update the DNS A and AAAA records to point the domain url to the load
+   balancer's IP address:
+   https://cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs#update-dns
+5. Visit the domain url to access your Mage app.
+
+### Terminate all resources
+
+If you want to delete all resources created from deploying, run the following
+command:
+
+```bash
+terraform destroy
+```
+
+A sample output could look like this:
+
+```
+Destroy complete! Resources: 10 destroyed.
+```
+
+---
+
+## dbt
+
+For information about how to serve dbt docs in production,
+[see here](/dbt/docs).

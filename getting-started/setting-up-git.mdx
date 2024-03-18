@@ -1,0 +1,29 @@
+---
+title: "Git in Mage"
+sidebarTitle: "Get started with Git"
+description: "There are a number of ways to enable version control, collaboration, and easy deployment using Git in Mage. We'll cover them all on this page."
+---
+
+<div align="center">
+<img src="https://github.com/mage-ai/assets/blob/main/getting-started/adventure-time.gif?raw=True" width="75%"/>
+</div>
+
+## Choose your adventure
+
+There three different ways to use Git in Mage and _four_ ways to version control your files— we'll discussing each of them. We note that our methods for using Git are mutually exclusive.
+
+If you're simply looking for version control, you're in luck! It ships out-of-the-box with Mage. That means you can _always_ restore previous versions of your files, even if you haven't configured any version control system. Check out [this page](/getting-started/file-versions) for more info.
+
+## Methods of using Git in Mage
+
+| Recommended | Use                                                 | Recommendation          | Ease of use | Functionality          |
+| ----------- | --------------------------------------------------- | ----------------------- | ----------- | ---------------------- |
+| ✅          | I want to see a history of my file edits            | [Mage version control](/getting-started/file-versions)    | Beginner    | File-level versioning  |
+| ✅          | I want to develop/deploy Mage using GitHub | [GitHub version control](/production/data-sync/github)     | Moderate    | Full w/ OAuth          |
+| ✅          | I want to deploy Mage using Git with any provider   | [Git integration with Git Sync](/production/data-sync/git-sync) | Advanced    | Full w/ SSH/HTTPS Auth |
+| ⚠️          | I want to develop Mage using Git with any provider  | [Git integration _without_ Git Sync](/production/data-sync/git-integration)  | Advanced    | Full w/ SSH/HTTPS Auth |
+
+
+Git Sync is particularly useful in production instances, where other Git methods are can be used more meaningfully in development instances. Since Git sync is a one-way sync, it's not very useful for collaboration, since changes get overridden. However, this makes it great for a production Mage instance, where verified changes should only be accepted from development environments.
+
+A common pattern is to use development instances to edit and push (Git integration), then have production instances use Git Sync or CI/CD.

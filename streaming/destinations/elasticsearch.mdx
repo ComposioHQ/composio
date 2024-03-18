@@ -1,0 +1,26 @@
+---
+title: "Elasticsearch"
+---
+
+## Basic config
+
+```yaml
+connector_type: elasticsearch
+host: http://localhost
+index_name: elastic_index
+# Whether to have update for the documents, need to mention the unique key field in the document as _id
+# _id: _key
+# # Whether to verify SSL certificates to authenticate.
+# verify_certs: true
+# ca_cert: "certificate.cert"
+```
+
+## Authentication
+
+```yaml
+verify_certs: true
+api_key: api_key_for_elastic_search
+ca_cert: "certificate.cert"
+```
+
+- **verify_certs**: Whether to verify SSL certificates to authenticate.

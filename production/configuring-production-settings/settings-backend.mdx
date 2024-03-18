@@ -1,0 +1,70 @@
+---
+title: "Configuring Mage settings backend"
+sidebarTitle: "Settings backend"
+---
+
+## Overview
+
+<Note>
+
+Available in Mage versions >= 0.9.66
+
+Not all Mage settings can be read through a settings backend. You can find a list of settings
+that can be read through a settings backend [here](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/settings/keys/__init__.py).
+
+When any settings backend is enabled, Mage will first attempt to read the settings value
+from the settings backend before falling back to environment variables.
+
+</Note>
+
+By default, many of Mage's configurable settings are read from environment variables. This may make sense
+for more settings, but there are some settings that are too sensitive to be stored as environment
+variables. 
+
+You can configure a settings backend to read settings from a different source. To set this up, you will
+need to add a `settings_backend` section to your project's `metadata.yaml` file.
+
+```yaml
+
+settings_backend:
+  backend_type: ...
+
+```
+
+Only the `backend_type` field is required for all settings backends. The other fields will be passed
+to the backend as keyword arguments when initializing the backend.
+
+See below sections for the different types of settings backends that are available.
+
+## AWS Secrets Manager
+
+When the AWS Secrets Manager settings backend is enabled, Mage will read the value from the 
+AWS secret name: `{prefix}{settings_name}`. For example if the setting is `OKTA_CLIENT_SECRET`
+and the prefix is `default_repo/settings/`, Mage will fetch the value for `default_repo/settings/OKTA_CLIENT_SECRET`.
+
+```yaml
+
+settings_backend:
+  backend_type: aws_secrets_manager
+  prefix: default_repo/settings/  # optional
+  use_cache: true  # optional
+  cache_config:  # optional
+    max_cache_size: 1024
+    exception_retry_delay_base: 1
+    exception_retry_growth_factor: 2
+    exception_retry_delay_max: 3600
+    default_version_stage: "AWSCURRENT"
+    secret_refresh_interval: 3600  # in seconds
+
+```
+
+Optional fields:
+* `prefix`: A prefix to add to the settings name when fetching the value from AWS Secrets Manager.
+* `use_cache`: Whether to use a cache for the settings backend. Defaults to `false`.
+* `cache_config`: configuration options for the cache if `use_cache` is `true`.
+  * `max_cache_size` (int): The maximum number of secrets to cache.
+  * `exception_retry_delay_base` (int): The number of seconds to wait after an exception is encountered and before retrying the request.
+  * `exception_retry_growth_factor` (int): The growth factor to use for calculating the wait time between retries of failed requests.
+  * `exception_retry_delay_max` (int): The maximum amount of time in seconds to wait between failed requests.
+  * `default_version_stage` (str): The default version stage to request.
+  * `secret_refresh_interval` (int): The number of seconds to wait between refreshing cached secret information.

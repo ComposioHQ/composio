@@ -1,0 +1,84 @@
+---
+title: "Using AI (artificial intelligence)"
+sidebarTitle: "Using AI"
+description: "Use AI to perform various actions in Mage."
+icon: "microchip-ai"
+"og:image": "https://steamuserimages-a.akamaihd.net/ugc/813376249149384255/EC3222795DC2961599F7FC0B69E0241C8EC7293E/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false"
+---
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Using artificial intelligence"
+        src="https://steamuserimages-a.akamaihd.net/ugc/813376249149384255/EC3222795DC2961599F7FC0B69E0241C8EC7293E/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false"
+    />
+    </p>
+</Frame>
+
+## Setup
+
+You need to add an OpenAI API key to your project before you can use AI for various actions.
+
+<Note>
+    Read [OpenAI’s documentation](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key)
+    to get your API key.
+</Note>
+
+Once you have your OpenAI API key, go to project settings (click the "wizard" in the top right > Workspace > Preferences) and enter the OpenAI API key under the section labeled <b>OpenAI</b>.
+
+## Generate pipeline using AI
+
+When creating a new pipeline, select the option labeled <b>Using AI</b>.
+
+Then, type the description of what the pipeline should do.
+
+For example:
+
+*Load data from an API,
+then clean the column names,
+and finally export the dataframe to PostgreSQL.*
+
+<img
+    alt="Generate pipeline using AI"
+    src="https://github.com/mage-ai/assets/blob/main/guides/ai/generate-pipeline.png?raw=true"
+/>
+
+## Generate block using AI
+
+<Note>
+    You must turn on the feature named `add_new_block_v2`
+    in your project settings. (click the "wizard" in the top right > Workspace > Preferences)
+</Note>
+
+When adding a new block, type in the description of what you want the block to do.
+In the autocomplete dropdown list, select the 1st option with a label starting with
+
+<b>Generate block using AI: ...</b>
+
+<img
+    alt="Generate block using AI"
+    src="https://github.com/mage-ai/assets/blob/main/guides/ai/generate-block.png?raw=true"
+/>
+
+## Document code using AI
+
+<img
+    alt="Add documentation using AI"
+    src="https://github.com/mage-ai/assets/blob/main/guides/ai/document.png?raw=true"
+/>
+
+### Add documentation for a block
+
+On the edit pipeline page in the top right corner of a block, click the AI actions icon.
+Select the option labeled <b>Document block</b>.
+
+
+### Add documentation for a pipeline and all its blocks
+
+On the edit pipeline page in the top right corner of a block, click the AI actions icon.
+Select the option labeled <b>Document pipeline and all blocks</b>.
+
+### Add comments in a block
+
+On the edit pipeline page in the top right corner of a block, click the AI actions icon.
+Select the option labeled <b>Add comments in code</b>.

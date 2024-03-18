@@ -1,0 +1,28 @@
+---
+title: "RabbitMQ"
+---
+
+## Basic config
+
+```yaml
+
+connector_type: 'rabbitmq'
+connection_host: 'localhost'
+connection_port: 5672
+queue_name: 'default'
+username: 'guest'
+password: 'guest'
+amqp_url_virtual_host: '%2f'
+url_protocol: 'amqp'
+```
+
+You can even control some of the RabbitMQ consumer configurations using the following fields.
+
+```yaml
+configure_consume: True
+
+consume_config:
+  auto_ack: False
+  exclusive: False
+  inactivity_timeout: 10.0
+```

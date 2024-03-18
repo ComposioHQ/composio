@@ -1,0 +1,65 @@
+---
+title: "Serve dbt docs in production"
+sidebarTitle: "Docs"
+description: "To serve dbt docs in production, you will need to enable a container to host the dbt docs webserver in the cloud service you are using."
+---
+
+## Generating docs
+
+Before enabling dbt docs in production, we need to make sure the static files for the docs are generated.
+
+1. Configure the dbt super project.
+    * Your dbt projects should be in the `/path/to/<mage_project>/dbt` directory.
+        * The `/dbt` directory will serve as a "super-project" for all of your dbt projects in your Mage project.
+    * Make sure the `/.../<mage_project>/dbt` directory has the files `dbt_project.yml`, `profiles.yml`, and `packages.yml`. These files are needed for dbt to create docs for all the projects within this directory.
+        1. `dbt_project.yml`
+            ```yaml
+            name: 'base'
+            version: '1.0.0'
+            config-version: 2
+            profile: 'base'
+            target-path: "target"
+            clean-targets:
+              - "target"
+              - "dbt_packages"
+            ```
+        1. `profiles.yml`: The config in this file is not used, but it needs to still be a valid output target in order for the project to compile.
+            ```yaml
+            base:
+              target: dev
+              outputs:
+                dev:
+                  <output_config>
+            ```
+        1. `packages.yml`: Add all projects that you want to be included in the documentation.
+            ```yaml
+            packages:
+              - local: ./project1
+              - local: ./project2
+            ```
+2. Generate the dbt docs
+    ```bash
+      dbt deps
+      dbt docs generate
+    ```
+
+
+## Terraform
+
+### GCP
+
+In the [mage-ai-terraform-templates](https://github.com/mage-ai/mage-ai-terraform-templates) repository, the terraform templates for GCP have commented out resources at the end of the following files for enabling the dbt docs service.
+* [main.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/main.tf#L184)
+* [load_balancer.tf](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/gcp/load_balancer.tf#L81)
+
+Once you uncomment those resources, you should see an output `docs_service_ip` at the end of `terraform apply` with the IP to access the dbt docs in the cloud.
+
+```bash
+Outputs:
+docs_service_ip = "<dbt_docs_ip>"
+service_ip = "<mage_ip>"
+```
+
+### AWS
+
+Coming soon...
