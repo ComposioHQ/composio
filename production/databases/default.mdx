@@ -1,0 +1,38 @@
+---
+title: "Databases"
+icon: "database"
+---
+
+By default, Mage uses sqlite to store orchestration data (trigger, pipeline run, and block run). To use a different database, you can set the `MAGE_DATABASE_CONNECTION_URL` environment variable.
+
+In production, you can set the environment variable in the corresponding Terraform script.
+
+## PostgreSQL
+`export MAGE_DATABASE_CONNECTION_URL=postgresql+psycopg2://user:password@host:port/dbname`
+
+To use a specific `schema_name` in PostgreSQL:
+
+`export MAGE_DATABASE_CONNECTION_URL="postgresql+psycopg2://user:password@host:port/dbname?options=-c%20search_path%3Dschema_name"`
+
+### Get credentials from AWS Secret Manager
+
+You can also instruct Mage to fetch your Postgres DB credentials from AWS Secret Manager. You will need to
+set the following environment variables:
+
+| Variable | Value |
+| --- | --- |
+| `AWS_DB_SECRETS_NAME` | name of secret in AWS Secret Manager |
+| `AWS_DEFAULT_REGION` | AWS region the secret is stored in |
+| `AWS_ACCESS_KEY_ID` | AWS access key id (not needed if using IAM role to authenticate) |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key (not needed if using IAM role to authenticate) |
+
+The expected format of the secret is JSON string with the following keys:
+* username
+* password
+* engine (must be `postgres`)
+* host
+* port
+* dbname
+
+## MSSQL
+`export MAGE_DATABASE_CONNECTION_URL="mssql+pyodbc://?odbc_connect=DRIVER={ODBC Driver 18 for SQL Server};SERVER=host;DATABASE=dbname;UID=user;PWD=password;ENCRYPT=yes;TrustServerCertificate=yes;"`

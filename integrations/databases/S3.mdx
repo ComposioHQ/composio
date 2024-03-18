@@ -1,0 +1,72 @@
+---
+title: "S3"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198754439-87922b6d-e8ed-4b6c-852c-96a1d3545612.png)
+
+## Add credentials
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+   `yaml version: 0.1.1 default: AWS_ACCESS_KEY_ID: ... AWS_SECRET_ACCESS_KEY: ... `
+
+<br />
+
+## Using Python block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader or transformer block (the code snippet below is for a data
+   loader).
+3. Select `Generic (no template)`.
+4. Enter this code snippet (note: change the `config_profile` from `default` if
+   you have a different profile):
+
+   ```python
+   from mage_ai.settings.repo import get_repo_path
+   from mage_ai.io.config import ConfigFileLoader
+   from mage_ai.io.s3 import S3
+   from os import path
+   from pandas import DataFrame
+
+   if 'data_loader' not in globals():
+       from mage_ai.data_preparation.decorators import data_loader
+
+
+   @data_loader
+   def load_from_s3_bucket(**kwargs) -> DataFrame:
+       config_path = path.join(get_repo_path(), 'io_config.yaml')
+       config_profile = 'default'
+
+       bucket_name = '...'  # Change to your bucket name
+       object_key = '...'   # Change to your object key
+
+       return S3.with_config(ConfigFileLoader(config_path, config_profile)).load(
+           bucket_name,
+           object_key,
+       )
+   ```
+
+5. Run the block.
+
+### MinIO Support
+
+To execute requests on MinIO databases, simply add:
+
+```yaml
+AWS_ENDPOINT: your_endpoint:port #example: "https://play.min.io:9000"
+```
+to the `io_config.yaml` file
+### Errors
+
+<b>S3 connection endpoint URL error</b>
+
+Open the `io_config.yaml` file at the root of your project (e.g.
+`default_repo/io_config.yaml`).
+
+Change the value for the `AWS_REGION` key to the region of your S3 bucket (e.g.
+`us-west-2`).
+
+<br />

@@ -1,0 +1,74 @@
+---
+title: "Overview"
+description: "Fetch log entries for your Mage instance."
+---
+
+### Log object
+
+<ResponseExample>
+```json Response
+{
+  "block_run_logs": [
+    {
+      "name": "export_titanic_clean.log",
+      "path": "/root/.mage_data/default_repo/pipelines/example_pipeline/.logs/54/20230308T045259/export_titanic_clean.log",
+      "content": ""
+    }
+  ],
+  "pipeline_run_logs": [
+    {
+      "name": "pipeline.log",
+      "path": "/root/.mage_data/default_repo/pipelines/example_pipeline/.logs/55/20230308T045408/pipeline.log",
+      "content": "2023-03-08T04:54:08 {\"cpu\": 0.21, \"cpu_total\": 8, \"cpu_usage\": 0.02625, \"memory\": 4013, \"memory_total\": 17010, \"memory_usage\": 0.23592004703115815, \"pipeline_run_id\": 543, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Pipeline example_pipeline for run 543 in schedule 55 is alive.\", \"timestamp\": 1678251248.712125, \"uuid\": \"161125d3c3944d109ce945fa31f8c8a2\"}\n2023-03-08T04:54:08 {\"block_run_id\": 648, \"block_uuid\": \"load_titanic\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Execute PipelineRun 543, BlockRun 648: pipeline example_pipeline block load_titanic\", \"timestamp\": 1678251248.796509, \"uuid\": \"2223dba30d2d4217828ce031f5aa0f05\"}\n2023-03-08T04:54:09 {\"block_run_id\": 648, \"block_uuid\": \"load_titanic\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"BlockRun 648 (block_uuid: load_titanic) completes.\", \"timestamp\": 1678251249.079394, \"uuid\": \"8c2a6c5ce8d64bbf96b51de463b0e91a\"}\n2023-03-08T04:54:18 {\"cpu\": 0.21, \"cpu_total\": 8, \"cpu_usage\": 0.02625, \"memory\": 4016, \"memory_total\": 17010, \"memory_usage\": 0.23609641387419164, \"pipeline_run_id\": 543, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Pipeline example_pipeline for run 543 in schedule 55 is alive.\", \"timestamp\": 1678251258.908166, \"uuid\": \"fd079d501f33478985bf260b92d567f3\"}\n2023-03-08T04:54:18 {\"block_run_id\": 649, \"block_uuid\": \"fill_in_missing_values\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Execute PipelineRun 543, BlockRun 649: pipeline example_pipeline block fill_in_missing_values\", \"timestamp\": 1678251258.997002, \"uuid\": \"8c4c4d69560a4083a4ff0bf30722e3fa\"}\n2023-03-08T04:54:19 {\"block_run_id\": 649, \"block_uuid\": \"fill_in_missing_values\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"BlockRun 649 (block_uuid: fill_in_missing_values) completes.\", \"timestamp\": 1678251259.224986, \"uuid\": \"44a35d24ae874e77af98cc1e6ab86278\"}\n2023-03-08T04:54:29 {\"cpu\": 0.2, \"cpu_total\": 8, \"cpu_usage\": 0.025, \"memory\": 4016, \"memory_total\": 17010, \"memory_usage\": 0.23609641387419164, \"pipeline_run_id\": 543, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Pipeline example_pipeline for run 543 in schedule 55 is alive.\", \"timestamp\": 1678251269.186595, \"uuid\": \"97affe68017a4c65a69fad3492b80ea5\"}\n2023-03-08T04:54:29 {\"block_run_id\": 650, \"block_uuid\": \"export_titanic_clean\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Execute PipelineRun 543, BlockRun 650: pipeline example_pipeline block export_titanic_clean\", \"timestamp\": 1678251269.292511, \"uuid\": \"97aa24db4b6e4da1b6f98222e1d0cd06\"}\n2023-03-08T04:54:29 {\"block_run_id\": 650, \"block_uuid\": \"export_titanic_clean\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"BlockRun 650 (block_uuid: export_titanic_clean) completes.\", \"timestamp\": 1678251269.383662, \"uuid\": \"d06e3d9dcb2448a583ae323e25e04045\"}\n2023-03-08T04:54:30 {\"block_run_id\": 651, \"block_uuid\": \"falling_glitter\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Execute PipelineRun 543, BlockRun 651: pipeline example_pipeline block falling_glitter\", \"timestamp\": 1678251270.335112, \"uuid\": \"70b81921cb374e0d9c712ce6379f2148\"}\n2023-03-08T04:54:30 {\"block_run_id\": 651, \"block_uuid\": \"falling_glitter\", \"pipeline_run_id\": 543, \"pipeline_schedule_id\": 55, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"BlockRun 651 (block_uuid: falling_glitter) completes.\", \"timestamp\": 1678251270.571607, \"uuid\": \"f2220d588ca746f49b5fafca1113be16\"}\n2023-03-08T04:54:38 {\"cpu\": 0.2, \"cpu_total\": 8, \"cpu_usage\": 0.025, \"memory\": 4019, \"memory_total\": 17010, \"memory_usage\": 0.23627278071722516, \"pipeline_run_id\": 543, \"pipeline_uuid\": \"example_pipeline\", \"level\": \"INFO\", \"message\": \"Pipeline example_pipeline for run 543 in schedule 55 is alive.\", \"timestamp\": 1678251278.430712, \"uuid\": \"3de507ebca894100b20ae4a1645724d7\"}\n"
+    }
+  ],
+  "total_block_run_log_count": 1,
+  "total_pipeline_run_log_count": 1
+}
+```
+</ResponseExample>
+
+<ResponseField name="block_run_logs" type="array of objects" required>
+  Logs for block runs.
+
+  <Expandable title="properties" defaultOpen="true">
+    <ResponseField name="name" type="string" required>
+      File name of log file.
+    </ResponseField>
+
+    <ResponseField name="path" type="string" required>
+      Full path of log file.
+    </ResponseField>
+
+    <ResponseField name="content" type="string" required>
+      Contents of log file.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pipeline_run_logs" type="array of objects" required>
+  Logs for pipeline runs.
+
+  <Expandable title="properties" defaultOpen="true">
+    <ResponseField name="name" type="string" required>
+      File name of log file.
+    </ResponseField>
+
+    <ResponseField name="path" type="string" required>
+      Full path of log file.
+    </ResponseField>
+
+    <ResponseField name="content" type="string" required>
+      Contents of log file.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_block_run_log_count" type="integer" required>
+  Number of block run logs in the API response.
+</ResponseField>
+
+<ResponseField name="total_pipeline_run_log_count" type="integer" required>
+  Number of pipeline run logs in the API response.
+</ResponseField>
+

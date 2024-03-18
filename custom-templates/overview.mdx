@@ -1,0 +1,98 @@
+---
+title: "Custom templates"
+sidebarTitle: "Custom templates"
+description: "Create custom block and pipeline templates for your project."
+"og:image": "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/364278a0-b366-4445-9f91-c84cdb7f0fe1/dg06go5-851273f2-458e-4f19-bcc0-e2fcf4dae9b9.gif?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzM2NDI3OGEwLWIzNjYtNDQ0NS05ZjkxLWM4NGNkYjdmMGZlMVwvZGcwNmdvNS04NTEyNzNmMi00NThlLTRmMTktYmNjMC1lMmZjZjRkYWU5YjkuZ2lmIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.1yEj6EQahAtsjEB9lpEC_0rT24g0a8akJUz6sEqKnPk"
+---
+
+<Frame>
+    <div align='center'>
+    <img
+        alt="Custom templates"
+        src="https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/364278a0-b366-4445-9f91-c84cdb7f0fe1/dg06go5-851273f2-458e-4f19-bcc0-e2fcf4dae9b9.gif?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzM2NDI3OGEwLWIzNjYtNDQ0NS05ZjkxLWM4NGNkYjdmMGZlMVwvZGcwNmdvNS04NTEyNzNmMi00NThlLTRmMTktYmNjMC1lMmZjZjRkYWU5YjkuZ2lmIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.1yEj6EQahAtsjEB9lpEC_0rT24g0a8akJUz6sEqKnPk"
+        width="75%"
+    />
+    </div>
+</Frame>
+
+## Overview
+
+Create a template for a block or a pipeline that can be reused throughout your project.
+
+This feature is important because it’ll reduce the amount of code writing you and your team
+have to do to get started on a pipeline or to create a new block.
+
+For example, let’s say you have a template for all ETL pipelines in your project.
+Instead of starting from scratch each time, your teammates can create a new pipeline from the
+template you created.
+
+---
+
+## Block templates
+
+### Browse block templates
+
+1. Go to [http://localhost:6789/templates](http://localhost:6789/templates)
+1. Click the tab labeled <b>Blocks</b>.
+
+### Create a block template
+
+1. Go to [http://localhost:6789/templates](http://localhost:6789/templates)
+1. Click the tab labeled <b>Blocks</b>.
+1. Click the button labeled <b>+ New block template</b>.
+1. Fill in the required fields: `Template UUID`, `Block type`, and `Language`.
+1. Click the button labeled <b>Create new template</b>.
+1. Once saved, write in the code for the template.
+
+### Add block to pipeline using template
+
+1. While editing a pipeline, add a new block.
+1. Before selecting a template, choose the option labeled <b>Browse templates</b>.
+1. A modal will appear with all the custom block templates to choose from.
+1. Select a custom block template.
+
+---
+
+## Pipeline templates
+
+### Browse pipeline templates
+
+1. Go to [http://localhost:6789/templates](http://localhost:6789/templates)
+1. Click the tab labeled <b>Pipelines</b>.
+
+### Create a pipeline template
+
+1. Go to [http://localhost:6789/pipelines](http://localhost:6789/pipelines)
+1. Right click on a row for the pipeline you want to use as the template.
+1. In the right click menu, select the option labeled <b>Create template</b>.
+1. Fill in the required fields: `Template UUID`
+1. Click the button labeled <b>Create new template</b>.
+1. You can optionally click the tab labeled <b>Document</b> and fill in the template name and description.
+
+### New pipeline from a template
+
+1. Go to [http://localhost:6789/pipelines](http://localhost:6789/pipelines)
+1. Click the button labeled <b>+ New</b>.
+1. In the dropdown menu, select the option labeled <b>From a template</b>.
+1. A modal will appear with all the custom pipeline templates to choose from.
+1. Select a custom pipeline template.
+
+---
+
+## Guides
+
+### Block templates
+
+<video
+    controls
+    className="w-full aspect-video"
+    src="https://github.com/mage-ai/assets/raw/main/custom-templates/blocks/overview.mp4">
+</video>
+
+### Pipeline templates
+
+<video
+    controls
+    className="w-full aspect-video"
+    src="https://github.com/mage-ai/assets/raw/main/custom-templates/pipelines/overview.mp4">
+</video>

@@ -1,0 +1,36 @@
+---
+title: "Hightouch in Mage"
+sidebarTitle: "Hightouch"
+description: "Trigger syncs in Hightouch."
+---
+
+## Configuration
+
+Here are the following keyword arguments that can be used for configuration:
+
+| Keyword argument | Description | Sample value |
+| --- | --- | --- |
+| `api_key` | [Hightouch API key](https://hightouch.com/docs/developer-tools/api-guide) | `abc123` |
+
+---
+
+## Example code
+
+Trigger sync with `sync_id`.
+```python
+from mage_ai.services.hightouch.hightouch import HightouchClient
+
+
+client = HightouchClient(config=dict(api_key='api_key'))
+syncs = client.list_syncs()      # Get all the syncs
+sync_id = syncs['data'][0]['id'] # Get sync id
+client.sync_and_poll(sync_id)    # Trigger sync and poll status
+```
+
+Sample output:
+
+```
+Polling Hightouch Sync [id]. Current status: querying. 0% completed.
+Polling Hightouch Sync [id]. Current status: success. 100% completed.
+Sync request status: success. Polling complete
+```

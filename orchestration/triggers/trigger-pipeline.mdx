@@ -1,0 +1,47 @@
+---
+title: "Trigger pipeline from a block"
+sidebarTitle: "Trigger from block"
+description: "You can trigger another pipeline from a block within a different pipeline."
+---
+
+## How to trigger a pipeline
+
+There are 2 ways you can trigger a pipeline from code:
+
+### Block template
+
+Add a [data loader](/development/blocks/data_loaders/templates#trigger-pipeline)
+or [data exporter](/development/blocks/data_exporters/templates#trigger-pipeline)
+block template named `Orchestration → Trigger pipeline`.
+
+### Custom code
+
+Add a block and use the following code example within the block’s function:
+
+```python
+from mage_ai.orchestration.triggers.api import trigger_pipeline
+
+
+trigger_pipeline(
+    'pipeline_uuid',
+    variables={},
+    check_status=False,
+    error_on_failure=False,
+    poll_interval=60,
+    poll_timeout=None,
+    schedule_name=None,  # Enter a unique name to create a new trigger each time
+    verbose=True,
+)
+```
+
+## Parameters
+
+| Parameter name | Description | Default | Sample | Required |
+| --- | --- | --- | --- | --- |
+| `pipeline_uuid` | The UUID of the pipeline to trigger. | | `example_pipeline` | ✅ |
+| `variables` | Runtime variables for the pipeline. | `{}` | `{ 'env': 'dev' }` | |
+| `check_status` | Poll and check the status of the triggered pipeline. | `False` | `False` or `True` | |
+| `error_on_failure` | Raise an exception if the triggered pipeline fails. | `False` | `False` or `True` | |
+| `poll_interval` | Check the status of triggered pipeline every N seconds. | `60` | `300` | |
+| `poll_timeout` | After N seconds have elapsed, raise an exception if the triggered pipeline hasn’t finished running successful. | `None` | `3600` | |
+| `verbose` | Print status of triggered pipeline run. | `True` | `False` or `True` | |

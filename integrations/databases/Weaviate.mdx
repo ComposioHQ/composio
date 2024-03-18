@@ -1,0 +1,40 @@
+---
+title: "Weaviate"
+sidebarTitle: "Weaviate"
+---
+
+## Credentials
+
+Open the file named `io_config.yaml` at the root of your Mage project and enter weaviate required fields:
+
+```yaml
+version: 0.1.1
+default:
+  WEAVIATE_ENDPOINT: https://some-endpoint.weaviate.network
+  WEAVIATE_INSTANCE_API_KEY: YOUR-WEAVIATE-API-KEY
+  WEAVIATE_INFERENCE_API_KEY: YOUR-OPENAI-API-KEY
+  WEAVIATE_COLLECTION: collectionn_name
+```
+
+## Required Weaviate Libraries
+
+Add `weaviate-client==3.25.3` into `requirements.txt` to install the required weaviate library.
+
+## Using Python block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader or data exporter with Template. Under "Databases" category you can
+ find the "Weaviate" template. Then use corresponding load and export functions.
+
+- data loader arguments:
+  - properties (List): list of columns to load.
+  - collection (str): name of the collection. Defaults to the name defined in io_config.yaml.
+  - with_limit (int): limit number of results returned.
+  - with_text (str): text to query.
+
+- data exporter arguments:
+  - df (DataFrame): data frame to write.
+  - collection (str): name of the collection.
+
+3. Add your customized code into the loader, exporter or add extra transformer blocks.
+4. Run the block.

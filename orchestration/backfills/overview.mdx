@@ -1,0 +1,87 @@
+---
+title: "Backfilling pipelines"
+sidebarTitle: "Overview"
+description: "Run a pipeline multiple times."
+---
+
+A backfill creates 1 or more pipeline runs for a pipeline. There are 2 types of backfills:
+
+1. Date and time window
+1. Custom code
+
+## Date and time window
+
+Create 1 or more pipeline runs between 2 datetime values.
+
+The datetime of each instance is used as the `execution_date` for the pipeline run.
+
+For example, if the backfill has the following attributes:
+
+| Attribute | Value|
+| --- | --- |
+| Start datetime | `2023-01-01T03:00:00` |
+| End datetime | `2023-01-05T03:00:00` |
+| Interval type | `day` |
+| Interval units | `2` |
+
+Then the following pipeline runs will be created:
+
+| `id` | `execution_date` | `ds` | `hr` |
+| --- | --- | --- | --- |
+| 1 | `2023-01-01T03:00:00` | `2023-01-01` | `03` |
+| 2 | `2023-01-03T03:00:00` | `2023-01-03` | `03` |
+
+---
+
+## Custom code
+
+The output of a backfill code will be used to generate the pipeline runs.
+
+For example, if the backfill code has the following content:
+
+```python
+backfill_data = []
+
+for index, _ in range(3):
+    backfill_data.append(dict(
+        partition=index,
+        power=5,
+    ))
+
+backfill_data
+```
+
+Then the following pipeline runs will be created:
+
+
+| `id` | `execution_date` | `ds` | `hr` | `partition` | `power` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `2023-01-01T00:00:00` | `2023-01-01` | `00` | `0` | `5` |
+| 2 | `2023-01-01T00:00:00` | `2023-01-01` | `00` | `1` | `5` |
+| 3 | `2023-01-01T00:00:00` | `2023-01-01` | `00` | `2` | `5` |
+
+---
+
+## Extra runtime variables from pipeline run
+
+If your pipeline run belongs to a trigger that is scheduled, then the following extra
+variables are available in your Python block’s keyword arguments (e.g. `kwargs`).
+
+| Key | Description | Example |
+| --- | --- | --- |
+| `interval_start_datetime` | The `datetime` when the pipeline run is scheduled for. | `datetime.datetime(2023, 7, 23, 7, 0, 0, 0)` |
+| `interval_end_datetime` | The `datetime` when the next pipeline run is scheduled for. | `datetime.datetime(2023, 7, 24, 7, 0, 0, 0)` |
+| `interval_seconds` | The number of seconds between the current pipeline run and the next pipeline run. | `86400` |
+| `interval_start_datetime_previous` | The `datetime` when the previous pipeline run was scheduled for. | `datetime.datetime(2023, 7, 22, 7, 0, 0, 0)` |
+
+### SQL block
+
+If you’re using a SQL block, here is an example of how you can access these variables:
+
+```sql
+SELECT
+    '{{ interval_start_datetime }}' AS interval_start_datetime
+    , '{{ interval_end_datetime }}' AS interval_end_datetime
+    , '{{ interval_seconds }}' AS interval_seconds
+    , '{{ interval_start_datetime_previous }}' AS interval_start_datetime_previous
+```

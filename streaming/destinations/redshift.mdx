@@ -1,0 +1,63 @@
+---
+title: "Redshift"
+---
+
+## Basic config
+
+```yaml
+connector_type: redshift
+profile: default            # profile in the io_config.yaml
+config:
+  table_name: table_name
+  schema_name: schema_name  # Override the schema name. Default schema is "public"
+```
+
+## Alternative
+
+Another option to stream data into Redshift is to stream data to Kinesis.
+You can configure streaming ingestion for your Amazon Redshift cluster and create a materialized view using SQL statements.
+
+
+You can follow [the guide from AWS](https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-streaming-ingestion-getting-started.html) to set it up.
+
+
+Or you can follow the steps below to set up the materialized view.
+
+### 1. Create and attach IAM role to Redshift cluster
+
+Create an IAM Role which has the policies `AmazonKinesisReadOnlyAccess` and `AmazonRedshiftFullAccess`.
+Go to the Redshift cluster's `Properties` tab. In the `Cluster permissions` section, attach the IAM role to the Redshift cluster.
+
+### 2. Create an external schema from Kinesis
+
+Go to Redshift cluster's query editor, execute the command to create the schema:
+
+```sql
+CREATE EXTERNAL SCHEMA redshift_stream_test
+FROM KINESIS
+IAM_ROLE <kinesis-redshift-iam-role-arn>;
+```
+
+### 3. Create a materialized view which loads data from Kinesis stream
+
+Execute the command in query editor to create the materialized view from the kinesis stream:
+
+```sql
+CREATE MATERIALIZED VIEW mage_kinesis_redshift_stream
+AUTO REFRESH YES
+AS
+SELECT
+    *,
+    json_parse(kinesis_data) as payload
+FROM redshift_stream_test."kinesis-stream-name"
+```
+
+You can change the materialized view name to the name you want to use.
+
+### 4. Query data in the materialized view.
+
+Execute the command to query the data:
+
+```sql
+SELECT * FROM mage_kinesis_redshift_stream;
+```

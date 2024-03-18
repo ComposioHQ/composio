@@ -1,0 +1,296 @@
+---
+title: "Pipeline Management"
+sidebarTitle: "Pipelines"
+icon: "pipe-section"
+"og:image": "https://github.com/mage-ai/assets/blob/main/orchestration-overview.gif?raw=true"
+---
+
+<Frame>
+  <img
+    alt="Mage orchestration"
+    src="https://github.com/mage-ai/assets/blob/main/orchestration-overview.gif?raw=true"
+  />
+</Frame>
+
+## Setup
+
+If you haven’t setup a project before, check out the
+[setup guide](/getting-started/setup) before starting.
+
+---
+
+## Pipelines
+
+<sub>`http://localhost:3000/pipelines`</sub>
+
+This page will show all the pipelines in your project.
+
+> Core abstraction: [Pipeline](/design/core-abstractions#pipeline)
+>
+> A pipeline contains references to all the blocks of code you want to run,
+> charts for visualizing data, and organizes the dependency between each block
+> of code.
+
+![Pipelines](https://github.com/mage-ai/assets/blob/main/pipelines/pipelines-index.jpg?raw=true)
+
+Learn more about
+[**projects and pipelines here**](/design/core-abstractions#project).
+
+From this page, you can also create a new pipeline by clicking the
+
+**`[+ New pipeline]`** button.
+
+#### Creating new pipeline
+
+Creating a new pipeline will take you to the **Pipeline edit page**; a
+notebook-like experience for adding blocks, creating dependencies between
+blocks, testing code, and visualizing data with charts.
+
+<sub>
+  Learn more about the [Notebook for building data
+  pipelines](/about/features#notebook-for-building-data-pipelines)
+</sub>
+
+---
+
+## Pipeline runs
+
+<sub>
+  [`http://localhost:3000/pipeline-runs`](http://localhost:3000/pipeline-runs)
+</sub>
+
+View all the runs for every pipeline in your current project.
+
+> Core abstraction: [Run](/design/core-abstractions#run)
+>
+> A run record stores information about when it was started, its status, when it
+> was completed, any runtime variables used in the execution of the pipeline or
+> block, etc.
+
+![Pipeline runs](https://github.com/mage-ai/assets/blob/main/pipelines/pipeline-runs.jpg?raw=true)
+
+---
+
+## Pipeline detail
+
+<sub>`http://localhost:3000/pipelines/[uuid]`</sub>
+
+This page contains all the information and history for a single pipeline:
+
+1. [Triggers](/design/core-abstractions#trigger)
+1. [Runs](/design/core-abstractions#run)
+1. [Logs](/design/core-abstractions#log)
+
+---
+
+## Triggers
+
+<sub>
+  [`http://localhost:3000/pipelines/example_pipeline/triggers`](http://localhost:3000/pipelines/example_pipeline/triggers)
+</sub>
+
+This page shows all the active and inactive triggers for a single pipeline.
+
+> Core abstraction: [Trigger](/design/core-abstractions#trigger)
+>
+> A trigger is a set of instructions that determine when or how a pipeline
+> should run.
+
+![Pipeline detail](https://github.com/mage-ai/assets/blob/main/pipelines/pipeline-detail.jpg?raw=true)
+
+---
+
+#### Create trigger
+
+<sub>`http://localhost:3000/pipelines/[uuid]/triggers/[id]/edit`</sub>
+
+Create a new trigger for this pipeline by clicking the **`[+ Create]`** button
+near the top of the page.
+
+You can configure the trigger to run the pipeline on a schedule, when an event
+occurs, or when an API is called.
+
+> Core abstraction: [Schedule](/design/core-abstractions#schedule)
+>
+> A schedule type trigger will instruct the pipeline to run after a start date
+> and on a set interval.
+
+---
+
+> Core abstraction: [Event](/design/core-abstractions#event)
+>
+> An event type trigger will instruct the pipeline to run whenever a specific
+> event occurs.
+
+---
+
+> Core abstraction: [API](/design/core-abstractions#api)
+>
+> An API trigger will instruct the pipeline to run whenever a specific API
+> is called.
+
+![Trigger create](https://github.com/mage-ai/assets/blob/main/pipelines/trigger-create.jpg?raw=true)
+
+<sub>
+  <i>Example page for creating a schedule type trigger.</i>
+</sub>
+
+---
+
+#### Trigger detail
+
+On this page, you can start or pause the trigger. Starting the trigger will make
+it active. Pausing the trigger will prevent it from running the pipeline.
+
+<Note>
+  If you have other triggers for this pipeline, pausing 1 trigger may not stop
+  the pipeline from running since other triggers can also run the pipeline.
+</Note>
+
+---
+
+![Trigger detail](https://github.com/mage-ai/assets/blob/main/pipelines/trigger-detail.jpg?raw=true)
+
+You can also edit the trigger after creating it by clicking the
+
+**`[Edit trigger]`** button.
+
+---
+
+## Runs
+
+<sub>
+  [`http://localhost:3000/pipelines/example_pipeline/runs`](http://localhost:3000/pipelines/example_pipeline/runs)
+</sub>
+
+View the pipeline runs and block runs for a pipeline.
+
+> Core abstraction: [Run](/design/core-abstractions#run)
+>
+> A run record stores information about when it was started, its status, when it
+> was completed, any runtime variables used in the execution of the pipeline or
+> block, etc.
+
+![Pipeline detail runs](https://github.com/mage-ai/assets/blob/main/pipelines/pipeline-detail-runs.jpg?raw=true)
+
+#### Retry run
+
+_WIP_
+
+---
+
+## Logs
+
+<sub>
+  [`http://localhost:3000/pipelines/example_pipeline/logs`](http://localhost:3000/pipelines/example_pipeline/logs)
+</sub>
+
+Browse all logs for a pipeline. You can search and filter logs by log level,
+block type, block UUID, and more.
+
+> Core abstraction: [**Log**](/design/core-abstractions#log)
+>
+> A log is a file that contains system output information.
+
+![Pipeline detail logs](https://github.com/mage-ai/assets/blob/main/pipelines/pipeline-detail-logs.jpg?raw=true)
+
+---
+
+## Backfill
+
+_WIP_
+
+---
+
+## Monitor
+
+You can monitor many metrics for each of your pipelines and blocks. Soon, you’ll
+be able to monitor aggregate metrics across all pipelines and blocks.
+
+<img
+  alt="Monitoring"
+  src="https://github.com/mage-ai/assets/blob/main/monitoring.jpg?raw=true"
+/>
+
+Read more [here](/development/observability/monitoring).
+
+
+## Concurrency
+
+You can limit the concurrency of the block execution to reduce resource consumption.
+
+### Global concurrency
+You can configure the maximum number of concurrent block runs in project’s metadata.yaml via queue_config.
+
+```yaml
+queue_config:
+  concurrency: 100
+```
+The default value of concurrency is 20.
+
+### Pipeline level concurrency
+You can edit the `concurrency_config` in each pipeline's metadata.yaml file to enforce pipeline level concurrency.
+Here is the example:
+```yaml
+concurrency_config:
+  block_run_limit: 5
+  pipeline_run_limit: 3
+```
+* `block_run_limit`: limit the concurrent blocks runs in one pipeline run.
+* `pipeline_run_limit`: limit the concurrent pipeline runs in one pipeline trigger.
+* `pipeline_run_limit_all_triggers`: limit the concurrent pipeline runs across all trigers in a pipeline.
+* `on_pipeline_run_limit_reached`: choose whether to `wait` or `skip` when the pipeline run limit is reached.
+
+## Variable storage
+Mage automatically persists the output of block runs on disk. You can specify the path or the storage for block output variables
+in the following ways.
+* Specify the data directory path via `MAGE_DATA_DIR` environment variable. If you use Mage docker image, this environment
+  variable is set to `/home/src/mage_data` by default.
+* If the `MAGE_DATA_DIR` environment variable is not set, you can set the `variables_dir` path in project's metadata.yaml. Here is
+  an example:
+  ```yaml
+  variables_dir: /home/src/mage_data
+  ```
+* You can also use an external storage to store the block output variables by specifying the `remote_variables_dir` path in project's
+  metadata.yaml.
+  * AWS S3 storage:
+    ```yaml
+    variables_dir: /home/src/mage_data
+    remote_variables_dir: s3://bucket/path_prefix
+    ```
+  * Google Cloud Storage:
+    ```yaml
+    variables_dir: /home/src/mage_data
+    remote_variables_dir: gs://bucket/path_prefix
+    ```
+    When using GCS for your remote variables directory, if you run into a "Your default credentials were not found"
+    error, you may need to set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your
+    `application_default_credentials.json` file with your Google Cloud credentials and the `GOOGLE_CLOUD_PROJECT`
+    environment variable to your Google Cloud project ID.
+
+## Variable retention
+If you want to clean up the old variables in your variable storage, you can set the `variables_retention_period`
+config in project's metadata.yaml. The valid period should end with "d", "h", or "w".
+
+Example config:
+```yaml
+variables_retention_period: 30d
+```
+
+After configuring `variables_retention_period` in project's metadata.yaml, you can run the following command
+to clean up old variables:
+```bash
+mage clean-cached-variables [project_path]
+```
+
+## Cache block output in memory
+
+By default, Mage persists block output on disk. In pipeline's metadata.yaml, you have the option to configure the pipeline to cache
+the block output in memory instead of persisting the block output on disk. The feature is only supported in standard batch
+pipeline (without dynamic blocks) for now.
+
+Example config:
+```yaml
+cache_block_output_in_memory: true
+run_pipeline_in_one_process: true
+```

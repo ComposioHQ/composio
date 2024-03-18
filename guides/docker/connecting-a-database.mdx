@@ -1,0 +1,147 @@
+---
+title: "Connect a local db in Docker"
+sidebarTitle: "Connect a local db in Docker"
+icon: "docker"
+description: "Here's how you can connect a local database to Mage in Docker for development."
+---
+
+## Overview
+
+When you develop in Docker, you can connect a database to your Mage container. This allows you to use the database in your data pipelines.
+
+A Docker Network is a virtual network that allows containers to communicate with each other. 
+By creating a network, you can connect database containers to your Mage instances.
+Read more about Docker Networks [here](https://docs.docker.com/network/). 
+
+The following guides detail various methods for creating databases and connecting them to your Mage project. 
+
+We recommend starting with a [docker compose](https://docs.docker.com/compose/) file, as it affords the most flexibility and customizability. You might 
+choose to use `docker run` instead, as it's a bit simpler.
+
+## Guides
+
+<AccordionGroup>
+<Accordion title="PostgreSQL - Docker compose" icon="docker">
+
+If you're using Mage in docker compose, you can easily connect a PostgreSQL database to your Mage container. To do so, first define a `.env` file with the following variables:
+
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_HOST`
+- `PG_HOST_PORT`
+
+Then, add the following to your `docker-compose.yml` file:
+
+```yaml
+version: '3'
+services:
+  mage:
+    image: mageai/mageai:latest
+    container_name: magic
+    depends_on:
+      - postgres
+    command: mage start magic
+    env_file:
+      - .env
+    environment:
+      ENV: dev
+      POSTGRES_DB: ${POSTGRES_SCHEMA}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      PG_HOST_PORT: ${PG_HOST_PORT}
+    ports:
+      - 6789:6789
+    volumes:
+      - .:/home/src/
+    restart: on-failure:5
+  
+  postgres:
+    image: postgres:14
+    restart: on-failure
+    container_name: postgres-magic
+    build:
+      context: ./db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${PG_HOST_PORT}:5432"
+```
+</Accordion>
+<Accordion title="PostgreSQL - Docker run" icon="elephant">
+
+The following steps will create a PostgreSQL database container and connect it to a Mage container.
+
+<Steps>
+<Step title="Create Docker network">
+  ```bash
+   docker network create mage-app
+   ```
+</Step>
+<Step title="Start PostgreSQL Docker container">
+   ```bash
+   docker run --network mage-app --network-alias postgres_db \
+      -it -p 5432:5432 -v pgdata:/var/lib/postgresql/data \
+      -e POSTGRES_USER=<username> -e POSTGRES_PASSWORD=<password> \
+      -e POSTGRES_DB=<database> -e PG_DATA=/var/lib/postgresql/data/pgdata \
+      postgres:13-alpine3.17 postgres
+   ```
+</Step>
+<Step title="Launch Mage with `MAGE_DATABASE_CONNECTION_URL`">
+```bash
+   docker run --network mage-app -it -p 6789:6789 -v $(pwd):/home/src \
+      -e MAGE_DATABASE_CONNECTION_URL=postgresql+psycopg2://<username>:<password>@postgres_db:5432/<database> \
+      mageai/mageai \
+      /app/run_app.sh mage start [project_name]
+   ```
+   To use a specific schema in the PostgreSQL database, the connection string could contain the schema name as a parameter:
+
+   ```bash
+   docker run --network mage-app -it -p 6789:6789 -v $(pwd):/home/src \
+      -e MAGE_DATABASE_CONNECTION_URL="postgresql+psycopg2://<username>:<password>@postgres_db:5432/<database>?options=-c%%20search_path%%3D<schema_name>" \
+      mageai/mageai \
+      /app/run_app.sh mage start [project_name]
+   ```
+</Step>
+</Steps>
+</Accordion>
+<Accordion title="MSSQL - Docker run" icon="microsoft">
+<Steps>
+<Step title="Create Docker network">
+  ```bash
+   docker network create mage-app
+   ```
+</Step>
+<Step title="Start MSSQL Docker container">
+   ```bash
+   docker run --network mage-app --network-alias mssql_db \
+   -it -p 1433:1433 -e "ACCEPT_EULA=Y" \
+   -e "MSSQL_SA_PASSWORD=test_Password123" \
+   mcr.microsoft.com/mssql/server:2022-latest
+   ```
+</Step>
+<Step title="Launch Mage with `MAGE_DATABASE_CONNECTION_URL`">
+```bash
+   docker run --network mage-app -it -p 6789:6789 -v $(pwd):/home/src \
+   -e MAGE_DATABASE_CONNECTION_URL="mssql+pyodbc://?odbc_connect=DRIVER={ODBC Driver 18 for SQL Server};SERVER=mssql_db;DATABASE=master;UID=SA;PWD=test_Password123;ENCRYPT=yes;TrustServerCertificate=yes;" \
+   mageai/mageai \
+   /app/run_app.sh mage start [project_name]
+   ```
+   Here are the parameteres we're using in that command:
+
+   * `DRIVER={ODBC Driver 18 for SQL Server}`: a formatted string with a version number matching that of the SQL server
+   * `SERVER=database_server`: the name or IP address of the database server
+   * `DATABASE=database`: the name of the database
+   * `UID=user`: the user ID for the database
+   * `PWD=password`: the password for the user
+   * `ENCRYPT=yes`: whether to use encryption
+   * `TrustServerCertificate=yes`: whether to trust the server certificate
+</Step>
+</Steps>
+</Accordion>
+</AccordionGroup>

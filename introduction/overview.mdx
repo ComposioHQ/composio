@@ -1,0 +1,129 @@
+---
+title: "🧙‍♀️ Welcome to Mage"
+sidebarTitle: "Overview"
+icon: "hat-wizard"
+description: "Mage is an open-source, hybrid framework for transforming and integrating data. ✨"
+---
+
+<Snippet file="overview-shields.mdx" />
+
+<br/>
+
+<CardGroup>
+  <Card
+    title="Product tour"
+    icon="circle-play"
+    href="https://youtu.be/GswOdShLGmg"
+  >
+    Get a 5 minute overview
+  </Card>
+  <Card title="Live demo" icon="bullseye-pointer" href="https://demo.mage.ai">
+    Open our interactive demo
+  </Card>
+</CardGroup>
+
+## 🦄 Make data magical
+
+We put the _fun_ in fun-ctional programming. Mage is a hybrid framework that combines the best of both worlds: the flexibility of notebooks with the rigor of modular code.
+
+- **Extract** and synchronize data from 3rd party sources.
+- **Transform** data with real-time and batch pipelines using Python, SQL, and R.
+- **Load** data into your data warehouse or data lake using our pre-built connectors.
+- Run, monitor, and **orchestrate** thousands of pipelines without losing sleep.
+
+<Steps titleSize="h2">
+  <Step title="🔨 Build">
+    Have you met anyone who loves developing in Airflow? That's why we designed an easy developer experience that you'll enjoy.
+
+    - **Simple developer experience**: Start developing locally with a single command or launch a dev environment in your cloud using Terraform.
+    - **Language of choice**: Write code in Python, SQL, or R in the same pipeline for _ultimate_ flexibility.
+    - **Engineering best practices built-in**: Every step in your pipeline is a standalone file with modular code that's reusable and testable. No more DAGs with spaghetti code 🍝.
+    - **Bring your favorite tools:** Write [dbt](/dbt/overview) models, use your favorite [IDE](/development/text-editor), [track changes with Git](/getting-started/setting-up-git), and much much more.
+
+    <p align="center">
+      <img src="https://github.com/mage-ai/assets/blob/main/overview/mage-build.gif?raw=True"/>
+    </p>
+  </Step>
+  <Step title="🔍 Preview">
+  Don't waste time waiting for your DAGs to finish testing. Get instant feedback from your code _every_ time you run it.
+
+  - **Interactive code**: Immediately see results from your code's output with an interactive notebook UI.
+  - **Data is a first-class citizen**: Each block of code in your pipeline produces data that can be versioned, partitioned, and cataloged for future use.
+  - **Collaborate on cloud**: Develop collaboratively on [cloud resources](/production/deploying-to-cloud/architecture), version control with [Git](/getting-started/setting-up-git), and [test](/development/data-validation) pipelines without waiting for an available shared staging environment.
+
+  <p align="center">
+    <img src="https://github.com/mage-ai/assets/blob/main/overview/mage-preview.gif?raw=True"/>
+  </p>
+</Step>
+<Step title="🚀 Launch" >
+  Don't have a large team dedicated to Airflow? Mage makes it easy for a single developer or small team to scale up and manage thousands of pipelines.
+
+  - **Fast deploy**: Deploy Mage to [AWS](/production/deploying-to-cloud/aws/setup), [GCP](/production/deploying-to-cloud/gcp/setup), or [Azure](/production/deploying-to-cloud/azure/setup) with only 2 commands using maintained Terraform templates.
+  - **Scaling made simple**: Transform very large datasets directly in your data warehouse or through a native integration with [Spark](/integrations/spark-pyspark).
+  - **Observability**: Operationalize your pipelines with built-in monitoring, alerting, and observability through an intuitive UI.
+
+  <p align="center">
+    <img src="https://github.com/mage-ai/assets/blob/main/overview/observability.gif?raw=True"/>
+  </p>
+</Step>
+</Steps>
+
+## 🔮 [Features](/about/features)
+|       |                                                                  |                                                                        |
+| ----- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 🎶   | [Orchestration](/design/data-pipeline-management)                | Schedule and manage data pipelines with observability.                 |
+| 📓   | [Notebook editor](/about/features#notebook-for-building-data-pipelines) | Interactive Python, SQL, & R editor for coding data pipelines.         |
+| 🏗️ | [Data integration](/data-integrations)                          | Synchronize data from 3rd party sources to your internal destinations. |
+| 🚰   | [Streaming](/guides/streaming-pipeline)                | Ingest and transform real-time data.                                   |
+| 🧱   | [dbt](/dbt)                                                      | Build, run, and manage your dbt models with Mage.                      |
+
+## 🏔️ [Core design principles](/design/core-design-principles)
+
+Every user experience and technical design decision adheres to these principles.
+
+|     |                                                                                                           |                                                                                                                              |
+| --- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 💻 | [Easy developer experience](/design/core-design-principles#easy-developer-experience)                     | Open-source engine that comes with a custom notebook UI for building data pipelines.                                         |
+| 🚢 | [Engineering best practices](/design/core-design-principles#engineering-best-practices-built-in) | Build and deploy data pipelines using modular code. No more writing throwaway code or trying to turn notebooks into scripts. |
+| 💳 | [Data as a first-class citizen](/design/core-design-principles#data-is-a-first-class-citizen)             | Designed from the ground up specifically for running data-intensive workflows.                                               |
+| 🪐 | [Scaling made simple](/design/core-design-principles#scaling-is-made-simple)                           | Analyze and process large data quickly for rapid iteration.                                                                  |
+
+## 🛸 [Core abstractions](/design/core-abstractions)
+
+These are the fundamental concepts that Mage uses to operate.
+|          |                                                        |                                                                                                                                                             |
+| -------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🏢      | [Project](/design/core-abstractions#project)           | Like a repository on GitHub; this is where you write all your code.                                                                                         |
+| 🪈      | [Pipeline](/design/core-abstractions#pipeline)         | Contains references to all the blocks of code you want to run, charts for visualizing data, and organizes the dependency between each block of code.        |
+| 🧱      | [Block](/design/core-abstractions#block)               | A file with code that can be executed independently or within a pipeline.                                                                                   |
+| 🤓      | [Data product](/design/core-abstractions#data-product) | Every block produces data after it's been executed. These are called data products in Mage.                                                                 |
+| ⏰        | [Trigger](/design/core-abstractions#trigger)           | A set of instructions that determine when or how a pipeline should run.                                                                                     |
+| 🏃‍♂️ | [Run](/design/core-abstractions#run)                   | Stores information about when it was started, its status, when it was completed, any runtime variables used in the execution of the pipeline or block, etc. |
+
+## 👨‍👩‍👧‍👦 Community
+
+Individually, we're a mage.
+
+> 🧙 Mage
+>
+> Magic is indistinguishable from advanced technology. A mage is someone who
+> uses magic (aka advanced technology). 
+
+Together, we're Magers!
+
+> 🧙‍♂️🧙 Magers (`/ˈmājər/`)
+>
+> A group of mages who help each other realize their full potential! Join us on [Slack](https://www.mage.ai/chat).
+
+✨ This documentation & project are brought to you by the following _magical_ individuals (learn more about contributing [here](/contributing/overview)):
+<p align="center">
+  <a href="https://github.com/mage-ai/mage-ai/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=mage-ai/mage-ai&columns=10" />
+  </a>
+</p>
+
+## 🪪 [License](https://github.com/mage-ai/mage-ai/blob/master/LICENSE)
+
+<p align="center">
+<img src="https://github.com/mage-ai/assets/blob/main/mascots/mascots-shorter.jpeg?raw=true" noZoom />
+</p>

@@ -1,0 +1,41 @@
+---
+title: "Amazon S3"
+---
+
+## Basic config
+
+```yaml
+connector_type: amazon_s3
+bucket: bucket
+prefix: prefix
+file_type: parquet
+buffer_size_mb: 5
+buffer_timeout_seconds: 300
+```
+
+* `bucket`: The S3 bucket you want to use to store the data.
+* `prefix`: The S3 path prefix. The whole S3 path will be `s3://{bucket}/{prefix}`.
+* `file_type`: `parquet` or `csv`
+* `buffer_size_mb` and `buffer_timeout_seconds`: Mage puts messages in a buffer before uploading to S3.
+  You can configure the size and timeout of the buffer to control the file size and the delay.
+
+## Configure time-based partition
+
+```yaml
+date_partition_format: "%Y%m%dT%H"
+
+```
+
+If you want to store the S3 data in time-based paratition folders. You can add `date_partition_format`
+to the config. Example values: `%Y%m%d`, `%Y%m%dT%H`.
+
+
+## Authentication
+Here are the options to authenticate with the AWS S3 bucket.
+1. Add the following keys and values to your environment variables
+  * `AWS_ACCESS_KEY_ID`
+  * `AWS_SECRET_ACCESS_KEY`
+  * `AWS_REGION`
+2. If you deploy Mage on AWS ECS cluster, you can use ECS execution task role to authenticate.
+   You can grant the ECS task permissions to access other AWS services by attaching IAM policies
+   to this ECS task execution role.

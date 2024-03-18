@@ -1,0 +1,75 @@
+---
+title: "Overview"
+---
+
+## Trigger
+
+A trigger is a set of instructions that determine when or how a pipeline should
+run. A pipeline can have 1 or more triggers.
+
+There are 3 types of triggers:
+
+1. Schedule
+2. Event
+3. API
+
+#### Schedule
+
+A schedule-type trigger will instruct the pipeline to run after a start date and
+on a set interval.
+
+Currently, the frequency pipelines can be scheduled for include:
+
+- Run exactly once
+- Hourly
+- Daily
+- Weekly
+- Monthly
+- Every N minutes (coming soon)
+
+#### Event
+
+An event-type trigger will instruct the pipeline to run whenever a specific
+event occurs.
+
+For example, you can have a pipeline start running when a database query is
+finished executing or when a new object is created in Amazon S3 or Google
+Storage.
+
+You can also trigger a pipeline using your own custom event by making a `POST`
+request to the `http://localhost/api/events` endpoint with a custom event
+payload.
+
+<sub>
+  Check out this
+  [tutorial](/design/data-pipeline-management#create-trigger) on how to
+  create an event trigger.
+</sub>
+
+#### API
+
+An API-type trigger will instruct the pipeline to run after a specific API call
+is made.
+
+You can make a POST request to an endpoint provided in the UI when creating or
+editing a trigger. You can optionally include runtime variables in your request
+payload.
+
+#### Additional trigger settings
+* Overwrite global variables
+  * You can overwrite the global variables that are defined in the pipeline to differentiate the variables used in different triggers.
+  * The `Overwrite global variables` option won't show if you don't have any global variables defined in the pipeline.
+* (Schedule triggers only) Skip run if previous run still in progress
+  * Enabling this setting will tell the scheduler to not initialize the current run if any
+    previous run for this trigger is still in progress.
+* (Schedule triggers only) [available starting in v0.9.62] Create initial pipeline run if start date is before current execution period
+  * Enabling this setting will create an initial pipeline run if the pipeline schedule's current
+    execution date is after its start datetime but before the current time.
+  * For example, if the current time is `1/4/24 12:00 UTC` and you create a daily trigger with a start date of `1/3/24 12:00 UTC` and
+    then enable it, a pipeline run with execution date `2024-01-04 00:00` (after the start date time but before the current time) gets
+    immediately created, even though the "next run date" is `2024-01-05 00:00`, which is the next pipeline run date in the future
+    after `1/4/24 12:00`.
+* Allow blocks to fail
+  * Enabling this setting will tell the scheduler to continue running the trigger even if 
+    a block in the pipeline fails during the execution. The pipeline will continue to run 
+    blocks that are not dependent on the failed blocks until the pipeline is complete.

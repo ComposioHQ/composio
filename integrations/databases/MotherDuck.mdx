@@ -1,0 +1,51 @@
+---
+title: "MotherDuck"
+sidebarTitle: "MotherDuck"
+description: "Execute SQL commands against a MotherDuck database."
+---
+<div align="center">
+<img src="https://github.com/mage-ai/mage-ai/assets/59450879/0e410c12-73a0-43d8-97fe-396772d2767b" width="60%"/>
+</div>
+
+<Note>
+The MotherDuck intergration is supported in Mage versions `>=0.9.63`
+</Note>
+
+## Credentials
+
+Open the file named `io_config.yaml` at the root of your Mage project and enter DuckDB database name & schema. 
+To connect to a MotherDuck database, you'll need to add a `MOTHERDUCK_TOKEN` and a `md:` to the database name.
+
+```yaml
+version: 0.1.1
+default:
+  DUCKDB_DATABASE: md:database
+  DUCKDB_SCHEMA: main
+  MOTHERDUCK_TOKEN: token
+```
+
+## How to use
+
+1. Create a new pipeline or edit an existing pipeline.
+
+1. Add a data loader or transformer SQL block.
+
+1. In the block’s header, click the dropdown menu labeled <b>Connection</b> and select the option
+labeled <b>DuckDB</b>.
+
+1. In the block’s header, click the dropdown menu labeled <b>Profile</b> and select the option
+labeled <b>default</b>.
+
+    <Note>
+        If the name of your profile in the `io_config.yaml` file is different,
+        then select the profile name that matches your settings.
+    </Note>
+
+1. You can optionally check the box labeled <b>Use raw SQL</b>.
+If you do, read more about [how to use SQL blocks with raw SQL](/guides/blocks/sql-blocks#using-raw-sql).
+
+1. Write your SQL statements in the SQL block.
+
+1. Once you’re finished writing your SQL statements,
+click the play button in the top right corner of the block to execute the SQL block and preview
+the results.

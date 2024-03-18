@@ -1,0 +1,31 @@
+---
+title: "Google Cloud Storage"
+---
+
+## Basic config
+
+```yaml
+connector_type: google_cloud_storage
+bucket: bucket
+prefix: prefix
+file_type: parquet
+buffer_size_mb: 5
+buffer_timeout_seconds: 300
+path_to_credentials_json_file: /path/to/your/service/account/key.json
+```
+
+* `bucket`: The Google Cloud Storage bucket you want to use to store the data.
+* `prefix`: The Google Cloud Storage path prefix. The whole S3 path will be `s3://{bucket}/{prefix}`.
+* `file_type`: `parquet` or `csv`
+* `buffer_size_mb` and `buffer_timeout_seconds`: Mage puts messages in a buffer before uploading to Google Cloud Storage.
+  You can configure the size and timeout of the buffer to control the file size and the delay.
+* `path_to_credentials_json_file`: Google service account credential json file. If Mage is running on GCP, you can leave this value null and then Mage will use the instance service account to authenticate.
+
+## Configure time-based partition
+
+```yaml
+date_partition_format: "%Y%m%dT%H"
+```
+
+If you want to store the Google Cloud Storage data in time-based paratition folders. You can add `date_partition_format`
+to the config. Example values: `%Y%m%d`, `%Y%m%dT%H`.

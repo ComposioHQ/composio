@@ -1,0 +1,144 @@
+---
+title: "API policies"
+sidebarTitle: "Policies"
+description: "Policies for resources determine what actions can be taken on the resource, what attributes can
+be read, and which attributes can be written."
+---
+
+Define your policy by creating a file `api/policies/SwordPolicy`:
+
+```python
+from .BasePolicy import BasePolicy
+
+class SwordPolicy(BasePolicy):
+    pass
+```
+
+## API actions
+
+There are 5 actions you can permit:
+
+1. Create: `operations.CREATE` aka `SwordResource.create` method
+1. Delete: `operations.DELETE` aka `SwordResource().delete` method
+1. Detail: `operations.DETAIL` aka `SwordResource.member` method
+1. List: `operations.LIST` aka `SwordResource.collection` method
+1. Update: `operations.UPDATE` aka `SwordResource().update` method
+
+## API scopes
+
+There are 2 scopes you can permit:
+
+1. Private: `OauthScope.CLIENT_PRIVATE`; user must be logged in to have access
+1. Public: `OauthScope.CLIENT_PUBLIC`; user must be logged out to have access
+
+## Permit CRUD actions
+
+Define which actions a user can perform:
+
+```python
+from api import operations
+from api.oauth_scope import OauthScope
+
+class SwordPolicy(BasePolicy):
+    pass
+
+SwordPolicy.allow_actions([
+    operations.CREATE,
+    operations.LIST,
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+])
+```
+
+If you want to permit certain actions for a user only if a condition is met, do the following:
+
+```python
+SwordPolicy.allow_actions([
+    operations.DELETE,
+    operations.DETAIL,
+    operations.UPDATE,
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+], condition=lambda policy: policy.current_user.is_staff)
+```
+
+## Permit query parameters
+Define which URL query parameters a user is allowed to use:
+
+```python
+SwordPolicy.allow_query([
+    'is_powerful',
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+])
+```
+
+If you want to permit a different query parameter for a specific action, do the following:
+
+```python
+SwordPolicy.allow_query([
+    'is_super_powerful',
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+], on_action=[
+    operations.LIST,
+])
+```
+
+You can also add a condition to these permissions:
+
+```python
+SwordPolicy.allow_query([
+    'is_super_powerful',
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+], on_action=[
+    operations.LIST,
+], condition=lambda policy: policy.current_user.is_staff)
+```
+
+## Permit read attributes
+Define which attributes of the resource the current user can read:
+
+```python
+class SwordPolicy(BasePolicy):
+    def belongs_to_current_user(self):
+        return self.current_user.id == self.resource.user_id
+
+SwordPolicy.allow_read([
+    'id',
+    'name',
+    'strength',
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+], on_action=[
+    operations.DETAIL,
+    operations.LIST,
+    operations.UPDATE,
+], condition=lambda policy: policy.belongs_to_current_user())
+```
+
+## Permit write attributes
+Define which attributes of the resource the current user can write to when creating a new
+resource or updating an existing resource:
+
+```python
+# Allow writing the name and strength attribute when creating a new resource
+SwordPolicy.allow_write([
+    'name',
+    'strength',
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+], on_action=[
+    operations.CREATE,
+])
+
+# Only allow writing the strength attribute when updating the resource
+SwordPolicy.allow_write([
+    'strength',
+], scopes=[
+    OauthScope.CLIENT_PRIVATE,
+], on_action=[
+    operations.UPDATE,
+], condition=lambda policy: policy.belongs_to_current_user())
+```

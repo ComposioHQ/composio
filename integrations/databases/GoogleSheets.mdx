@@ -1,0 +1,38 @@
+---
+title: "Google Sheets"
+description: "Mage supports writing/reading from Google Sheets using the Google Sheets API via the gspread library. Read on to learn about reading/writing data to Sheets."
+---
+<div align="center">
+<img
+  alt=""
+  src="https://github.com/mage-ai/mage-ai/assets/59450879/0a10316e-1b0d-4727-858f-c743cc1e296c"
+  width="55%"
+/>
+</div>
+
+## Configuration
+
+To configure Google Sheets with Mage, you'll need to enable several APIs in your GCP project and add credentials to Mage.
+
+### Enable relevant APIs
+
+Using Google Sheets in Mage requires the following to be enabled via GCP:
+
+- Google Drive API
+- Google Sheets API
+
+Additionaly, the Google Sheet must be shared with the service account used in Mage. 
+
+You can follow [this guide](https://docs.gspread.org/en/latest/oauth2.html) to enable relevant services.
+
+### Add credentials
+
+Adding credentials for Sheets is the same as adding credentials for other Google services, i.e. BigQuery, GCP.
+
+<Snippet file="google-auth.mdx"/>
+
+## Usage
+
+We have two templates for using Google Sheets with Mage. They can be found in Python "Data Loader" and "Data Exporter" templates.
+
+You can see the source code for the templates [here](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/data_preparation/templates/data_exporters/google_sheets.py) and [here](https://github.com/mage-ai/mage-ai/blob/master/mage_ai/data_preparation/templates/data_loaders/google_sheets.py).

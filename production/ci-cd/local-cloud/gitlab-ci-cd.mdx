@@ -1,0 +1,123 @@
+---
+title: "GitLab CI/CD"
+description: "Development (local) and production (cloud) using GitLab CI/CD."
+---
+
+## Mage project setup
+
+Follow the [Mage project setup instructions](/production/ci-cd/local-cloud/repository-setup).
+
+---
+
+## GitLab CI/CD setup
+
+1. Create a new repository on GitLab.
+1. Open your repository on GitLab, then click the tab labeled **Settings**.
+1. Click the section labeled **CI/CD**.
+1. Under the section labeled **Variables**, click the button labeled **Expand**.
+1. Click the button labeled **Add variable**.
+1. Follow the instructions below for your specific cloud provider:
+
+---
+
+## AWS
+
+1. If you haven’t already, create a new AWS ECR repository.
+1. You’ll need AWS credentials with the following policy permissions:
+    ```json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:CompleteLayerUpload",
+            "ecr:GetAuthorizationToken",
+            "ecr:InitiateLayerUpload",
+            "ecr:PutImage",
+            "ecr:UploadLayerPart",
+            "ecs:DeregisterTaskDefinition",
+            "ecs:DescribeClusters",
+            "ecs:DescribeServices",
+            "ecs:DescribeTaskDefinition",
+            "ecs:RegisterTaskDefinition",
+            "ecs:UpdateService",
+            "iam:PassRole"
+          ],
+          "Resource": "*"
+        }
+      ]
+    }
+    ```
+1. When adding a variable, in the field labeled **Key**, enter the value `AWS_ACCESS_KEY_ID`.
+1. When adding a variable, in the field labeled **Value**, enter your AWS Access Key ID.
+1. Check the box labeled **Mask variable**..
+1. Click the button labeled **Add variable** to save.
+1. Add a 2nd secret by clicking the button labeled **Add variable** in
+   the top right corner.
+1. In the field labeled **Key**, enter the value `AWS_SECRET_ACCESS_KEY`.
+1. In the field labeled **Value**, enter your AWS Secret Access Key.
+1. Check the box labeled **Mask variable**..
+1. Click the button labeled **Add variable** to save.
+1. In the field labeled **Key**, enter the value `AWS_DEFAULT_REGION`.
+1. In the field labeled **Value**, enter your AWS default region.
+1. Click the button labeled **Add variable** to save.
+1. Create a new file in your repository and name it `.gitlab-ci.yml`.
+   If you followed the [Mage project setup instructions](/production/ci-cd/local-cloud/repository-setup),
+   then your current folder structure could look like this:
+    ```
+    my_team/
+    |   demo_project/
+    |   .gitlab-ci.yml
+    |   Dockerfile
+    ```
+1. Copy the contents of this [GitLab CI/CD template file](https://github.com/mage-ai/mage-ai/blob/master/templates/gitlab_cicd/aws.gitlab-ci.yml)
+   and paste it into the file named `.gitlab-ci.yml`.
+1. Change the following values in the file named `.gitlab-ci.yml` under the key labeled `variables`:
+    ```yaml
+    variables:
+      REPOSITORY_URL: ...
+      CLUSTER_NAME: ...
+      SERVICE_NAME: ...
+      TASK_DEFINITION_NAME: ...
+    ```
+
+    | Key                   | Description                                                                                                                                                                                                                                                                        | Sample value                         |
+    | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+    | `REPOSITORY_URL`      | The URL of the AWS ECR repository you created to store your Docker images. | `679812356111.dkr.ecr.us-west-2.amazonaws.com/mage-data` |
+    | `CLUSTER_NAME`         | The name of your AWS ECS cluster. | `mage-production-cluster` |
+    | `SERVICE_NAME`         | The name of your AWS ECS service. | `mage-production-ecs-service` |
+    | `TASK_DEFINITION_NAME` | Go to your AWS ECS task definition for the above service. Use the name of that task definition. | `mage-production-task` |
+
+1. If you use a different branch than `main`, for example `master`,
+    you must edit the value `only` under the `build` and `deploy` key in the file `.gitlab-ci.yml`.
+    For example:
+    ```yaml
+    build:
+      # other settings
+      only:
+        - master
+
+    deploy:
+      # other settings
+      only:
+        - master
+    ```
+1. Commit your changes with the new file `.gitlab-ci.yml`.
+1. Push your commits to GitLab.
+1. Every time you merge a pull request into the main or master branch, this GitLab
+   CI/CD pipeline will run, building a Docker image using your GitLab code, then
+   updating AWS ECS to use the new image with the updated code.
+
+---
+
+## GCP
+
+_Coming soon..._
+
+---
+
+## Azure
+
+_Coming soon..._

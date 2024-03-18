@@ -1,0 +1,34 @@
+Before you begin, you’ll need to create a service account key. Please read Google Cloud’s
+[documentation](https://cloud.google.com/iam/docs/creating-managing-service-account-keys)
+on how to create that.
+
+Once your finished, following these steps:
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+5. Note: you only need to add the keys under `GOOGLE_SERVICE_ACC_KEY` or the
+   value for key `GOOGLE_SERVICE_ACC_KEY_FILEPATH` (both are not simultaneously
+   required. If you use `GOOGLE_SERVICE_ACC_KEY_FILEPATH`, please delete `GOOGLE_SERVICE_ACC_KEY`
+   in the `io_config.yaml`).
+
+```yaml
+version: 0.1.1
+default:
+  GOOGLE_SERVICE_ACC_KEY:
+    type: service_account
+    project_id: project-id
+    private_key_id: key-id
+    private_key:
+      "-----BEGIN PRIVATE KEY-----\nyour_private_key\n-----END_PRIVATE_KEY"
+    client_email: your_service_account_email
+    auth_uri: "https://accounts.google.com/o/oauth2/auth"
+    token_uri: "https://accounts.google.com/o/oauth2/token"
+    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+    client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/your_service_account_email"
+  GOOGLE_SERVICE_ACC_KEY_FILEPATH: "/path/to/your/service/account/key.json"
+```
+
+---

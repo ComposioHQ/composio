@@ -1,0 +1,38 @@
+---
+title: "Druid"
+---
+
+![](https://druid.apache.org/img/druid_nav.png)
+
+## Add credentials
+
+1. Create a new pipeline or open an existing pipeline.
+2. Expand the left side of your screen to view the file browser.
+3. Scroll down and click on a file named `io_config.yaml`.
+4. Enter the following keys and values under the key named `default` (you can
+   have multiple profiles, add it under whichever is relevant to you)
+
+```yaml
+version: 0.1.1
+default:
+  DRUID_HOST: ...
+  DRUID_PASSWORD: ...
+  DRUID_PATH: /druid/v2/sql/
+  DRUID_PORT: 8082
+  DRUID_SCHEME: http
+  DRUID_USER: ...
+```
+
+<br />
+
+## Using SQL block
+
+1. Create a new pipeline or open an existing pipeline.
+2. Add a data loader, transformer, or data exporter block.
+3. Select `SQL`.
+4. Under the `Data provider` dropdown, select `Druid`.
+5. Under the `Profile` dropdown, select `default` (or the profile you added
+   credentials underneath).
+6. Select `Use raw SQL`.
+6. Enter in this test query: `SELECT 1`.
+7. Run the block.

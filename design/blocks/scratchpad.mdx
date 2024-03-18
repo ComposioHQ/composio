@@ -1,0 +1,22 @@
+---
+title: "Scratchpad"
+description: "Use these blocks to experiment and write throw away code."
+---
+
+Scratchpad blocks aren't used when executing a pipeline.
+
+![Blocks](https://github.com/mage-ai/assets/blob/main/blocks/scratchpad.gif?raw=true)
+
+## Getting data from other blocks
+
+If you want to read the output data from another block, use the following sample code:
+
+```python
+from mage_ai.data_preparation.variable_manager import get_variable
+
+
+df = get_variable('pipelined_uuid', 'block_uuid', 'output_0')
+```
+
+- Change the value of `pipelined_uuid` to match your current pipeline UUID.
+- Change the value of `block_uuid` to match the UUID of the block you want to read data from.

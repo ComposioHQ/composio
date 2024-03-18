@@ -1,0 +1,124 @@
+---
+title: "Troubleshooting"
+description: "Debugging common issues in Mage and other frequently asked questions."
+---
+
+## Pipeline edit page freezes browser
+
+The data output of a block contains too much information for the browser to render.
+
+To temporarily fix this, open the `/terminal` page in Mage.
+Then type the following command press enter to run it:
+
+```bash
+rm -rf mage_data/[project_name]/pipelines/[pipeline_name]/.variables
+```
+
+<Info>Change `[project_name]` to your Mage project name and change `[pipeline_name]` to the name of the pipeline that is freezing the browser.</Info>
+
+The above command will remove the data output files for each block in your pipeline.
+
+---
+
+## Can’t connect to local database from within Mage via Docker
+
+If you’re running Mage via Docker and you’re trying to connect to a local database outside of
+Docker, you must use the following `host` or `IP` value when trying to connect to it:
+`host.docker.internal`.
+
+---
+
+## Unpredictable Columns in an Upstream Dataframe
+
+Sometimes, upstream data is out of our contol. If we're expecting a column in a dataframe and writing SQL against it, we might see a `SQL compilation` error: `invalid identifier.`
+
+<Frame><img alt="Oh no" src="https://media0.giphy.com/media/t1RCtCTlFUhby/200w.gif" /></Frame>
+
+Thankfully, [Mage Community](https://www.mage.ai/chat) member [Josh Pachner](https://mageai.slack.com/team/U05B9DLK0N7) has a solution. 
+
+Say you have an upstream block that looks like:
+
+```SQL
+SELECT 
+  df."col_1",
+  df."col_2",
+  df."col_3",
+FROM {{ df }} df
+```
+
+Where the underlying `df` might all three columns... or just a subset. For example, `col_1` isn't always present.
+
+For cases where expected columns _might_ not in our dataframe, we can add a transformer block upstream of an exporter:
+
+```python
+# headers = [cols we need in our dataframe]
+# df = our DataFrame()
+
+for head in headers:
+  if head not in df.columns:
+       df[head] = None
+```
+This is especially helpful in databases like Snowflake, which don't have an `iferror()` function to check for missing columns.
+
+
+---
+
+## `InvalidToken` error when accessing data in S3
+
+Accessing data located in S3, you may see an error like this:
+
+```text
+An error occurred (InvalidToken) when calling the GetObject operation: 
+The provided token is malformed or otherwise invalid.
+```
+
+This [Stack Overflow](https://stackoverflow.com/questions/54837248/an-error-occurred-invalidtoken-when-calling-the-listbuckets-operation-the-pr) article details the issue. Removing the `AWS_SESSION_TOKEN` line from the `io_config.yaml` should resolve the problem.
+
+## Mage doesn't load properly when running locally
+
+When attempting to connect to Mage with a port _other_ than `6789`, the browser may not render the page correctly with `localhost:port`.
+
+Instead, use `127.0.0.1:port` to connect to Mage.
+
+## Using credential files in Docker
+
+If you have files containing secret credentials (e.g. GCP credentials JSON files), you’ll need to mount them as a volume so that those files appear in your running Docker container.
+
+Use the `-v` command in your `docker run` command to mount the directory containing your files:
+
+```bash
+docker run -it -p 6789:6789
+    -v /Users/dragon/secrets:/home/secrets \
+    -v $(pwd):/home/src mageai/mageai \
+    /app/run_app.sh mage start [project_name]
+```
+
+or, using `docker compose`, add a volume mount to your Mage service. The following is an example of mounting the `~/.aws` directory for authenticating via the AWS CLI:
+
+```yaml
+services:
+  mage:
+    image: mageai/mageai:latest
+    ...
+    volumes:
+      - ~/.aws:/root/.aws
+```
+
+## "Run block" button doesn't work when running Mage with Nginx
+
+If Mage terminal or "Run block" button doesn't work, it usually means there's a WebSocket connection issue. If Mage server is deployed with Nginx, you can add the below config to Nginx config to enable WebScoket connection.
+
+```
+        location / {
+          proxy_pass      http://127.0.0.1:6789;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "Upgrade";
+          proxy_set_header Host $host;
+        }
+```
+
+## Server fails to start or keeps restarting due to healthcheck failures
+
+When deploying your Mage server on Cloud (Kubernetes, AWS, GCP, Azure, etc.) with Terraform scripts or Helm chart, there're health checks set up for the
+cloud services. If you notice the server keeps restarting, one possible reason is the health check keeps failing due to timeout. You can try increasing the timeout or the initial delay of the health checks to resolve the issue.

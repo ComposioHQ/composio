@@ -1,567 +1,1200 @@
 {
-    "$schema": "https://mintlify.com/schema.json",
-    "name": "Nango Docs",
-    "logo": {
-        "light": "/logo/light.svg",
-        "dark": "/logo/dark.svg"
-    },
-    "favicon": "/favicon.png",
-
-    "feedback": {
-        "suggestEdit": true,
-        "raiseIssue": true,
-        "thumbsRating": true
-    },
-    "colors": {
-        "primary": "#6B98FF",
-        "light": "#2c6dff",
-        "dark": "#6B98FF",
-        "background":{
-            "dark": "#000",
-            "light": "#fff"
-        }
-    },
-    "api": {
-        "baseUrl": [
-            "https://api.nango.dev",
-            "http://localhost:3003"
-        ],
-        "auth": {
-            "method": "bearer"
-        }
-    },
-    "topbarCtaButton": {
-        "type": "github",
-        "url": "https://github.com/nangoHQ/nango"
-    },
-    "topbarLinks": [
-        {
-            "name": "Sign Up",
-            "url": "https://app.nango.dev/signup"
-        }
-    ],
-    "topAnchor": {
-        "name": "Documentation"
-    },
-    "anchors": [
-        {
-            "name": "APIs & Templates",
-            "icon": "bars",
-            "url": "integrations"
-        },
-        {
-            "name": "Reference",
-            "icon": "book",
-            "url": "reference"
-        },
-        {
-            "name": "Community",
-            "icon": "slack",
-            "url": "https://nango.dev/slack"
-        }
-    ],
-    "redirects": [
-        {
-            "source": "/guides/custom",
-            "destination": "/customize/guides/create-a-custom-integration"
-        },
-        {
-            "source": "/guides/action",
-            "destination": "/integrate/guides/perform-workflows-with-an-api"
-        },
-        {
-            "source": "/guides/sync",
-            "destination": "/integrate/guides/sync-data-from-an-api"
-        },
-        {
-            "source": "/guides/oauth",
-            "destination": "/integrate/guides/authorize-an-api"
-        },
-        {
-            "source": "/guides/proxy",
-            "destination": "/integrate/guides/proxy-requests-to-an-api"
-        },
-        {
-            "source": "/guides/webhooks",
-            "destination": "/integrate/guides/receive-webhooks-from-nango"
-        },
-        {
-            "source": "/guides/advanced-auth",
-            "destination": "/integrate/guides/authorize-an-api"
-        },
-        {
-            "source": "/guides/field-mapping",
-            "destination": "/integrate/guides/advanced/use-custom-field-mappings"
-        },
-        {
-            "source": "/guides/api-key",
-            "destination": "/integrate/guides/authorize-an-api"
-        },
-        {
-            "source": "/guides/contribute",
-            "destination": "/customize/guides/contribute-an-api"
-        },
-        {
-            "source": "/integration-templates",
-            "destination": "/integrations/overview"
-        },
-        {
-            "source": "/guides/cloud",
-            "destination": "/host/cloud"
-        },
-        {
-            "source": "/guides/managed-integrations",
-            "destination": "/host/managed-integrations"
-        }
-    ],
-    "navigation": [
-        {
-            "group": "Get Started",
-            "pages": [
-                "introduction",
-                "demo"
-            ]
-        },
-        {
-            "group": "Use Integrations",
-            "pages": [
-                "integrate/overview",
-                {
-                    "group": "Step-by-step guides",
-                    "pages": [
-                        "integrate/guides/authorize-an-api",
-                        "integrate/guides/sync-data-from-an-api",
-                        "integrate/guides/perform-workflows-with-an-api",
-                        "integrate/guides/proxy-requests-to-an-api",
-                        "integrate/guides/receive-webhooks-from-nango",
-                        "integrate/guides/receive-webhooks-from-an-api",
-                        {
-                            "group": "Advanced",
-                            "pages": [
-                                "integrate/guides/advanced/store-customer-specific-data",
-                                "integrate/guides/advanced/use-custom-field-mappings"
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "group": "Build Integrations",
-            "pages": [
-                "customize/overview",
-                {
-                    "group": "Step-by-step guides",
-                    "pages": [
-                        "customize/guides/setup",
-                        "customize/guides/create-a-custom-integration",
-                        "customize/guides/extend-an-integration-template",
-                        "customize/guides/contribute-an-api",
-                        "customize/guides/contribute-an-integration-template",
-                        {
-                            "group": "Advanced",
-                            "pages": [
-                                "customize/guides/advanced/validate-api-responses",
-                                "customize/guides/advanced/handle-rate-limits",
-                                "customize/guides/advanced/sync-data-incrementally",
-                                "customize/guides/advanced/support-custom-field-mappings",
-                                "customize/guides/advanced/detect-deletions",
-                                "customize/guides/advanced/paginate-api-responses",
-                                "customize/guides/advanced/use-environment-variables",
-                                "customize/guides/advanced/unify-apis-and-models",
-                                "customize/guides/advanced/handle-errors-in-scripts",
-                                "customize/guides/advanced/handle-large-datasets",
-                                "customize/guides/advanced/migrate-integration-configuration"
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "group": "Understand Nango",
-            "pages": [
-                "understand/core-concepts",
-                "understand/architecture",
-                {
-                    "group": "All concepts",
-                    "pages": [
-                        "understand/concepts/integrations",
-                        "understand/concepts/connections",
-                        "understand/concepts/scripts",
-                        "understand/concepts/syncs",
-                        "understand/concepts/actions",
-                        "understand/concepts/proxy",
-                        "understand/concepts/webhooks",
-                        "understand/concepts/environments",
-                        "understand/concepts/templates",
-                        "understand/concepts/api-unification"
-                    ]
-                }
-            ]
-        },
-        {
-            "group": "Host Nango",
-            "pages": [
-                "host/cloud",
-                "host/managed-integrations",
-                {
-                    "group": "Self-hosting instructions",
-                    "pages": [
-                        "host/self-host/self-hosting-instructions",
-                        "host/self-host/local",
-                        "host/self-host/aws",
-                        "host/self-host/gcp",
-                        "host/self-host/digital-ocean",
-                        "host/self-host/render",
-                        "host/self-host/heroku"
-                    ]
-                }
-            ]
-        },
-        {
-            "group": "APIs & Templates",
-            "pages": [
-                "integrations/overview",
-                {
-                    "group": "APIs By Category",
-                    "icon": "grid-2",
-                    "pages": [
-                        "integrations/accounting",
-                        "integrations/analytics",
-                        "integrations/ats",
-                        "integrations/banking",
-                        "integrations/cms",
-                        "integrations/communication",
-                        "integrations/crm",
-                        "integrations/design",
-                        "integrations/dev-tools",
-                        "integrations/ecommerce",
-                        "integrations/erp",
-                        "integrations/gaming",
-                        "integrations/invoicing",
-                        "integrations/hr",
-                        "integrations/knowledge-base",
-                        "integrations/legal",
-                        "integrations/marketing",
-                        "integrations/payment",
-                        "integrations/productivity",
-                        "integrations/social",
-                        "integrations/sports",
-                        "integrations/storage",
-                        "integrations/support",
-                        "integrations/surveys",
-                        "integrations/ticketing",
-                        "integrations/video",
-                        "integrations/other"
-                    ]
-                },
-                {
-                    "group": "Integration Templates",
-                    "icon": "sheet-plastic",
-                    "pages": [
-                        "integrations/integration-templates/asana",
-                        "integrations/integration-templates/ashby",
-                        "integrations/integration-templates/bamboohr",
-                        "integrations/integration-templates/confluence",
-                        "integrations/integration-templates/clari-copilot",
-                        "integrations/integration-templates/github",
-                        "integrations/integration-templates/gmail",
-                        "integrations/integration-templates/google-workspace",
-                        "integrations/integration-templates/greenhouse",
-                        "integrations/integration-templates/hackerrank-work",
-                        "integrations/integration-templates/hibob",
-                        "integrations/integration-templates/hubspot",
-                        "integrations/integration-templates/intercom",
-                        "integrations/integration-templates/jira",
-                        "integrations/integration-templates/lever",
-                        "integrations/integration-templates/linear",
-                        "integrations/integration-templates/microsoft-active-directory",
-                        "integrations/integration-templates/next-cloud",
-                        "integrations/integration-templates/notion",
-                        "integrations/integration-templates/pipedrive",
-                        "integrations/integration-templates/salesforce",
-                        "integrations/integration-templates/slack",
-                        "integrations/integration-templates/teamtailor",
-                        "integrations/integration-templates/workable",
-                        "integrations/integration-templates/zendesk",
-                        "integrations/integration-templates/zoho-crm",
-                        "integrations/integration-templates/zoho-mail"
-                    ]
-                }
-            ]
-        },
-        {
-            "group": "Pre-Configured APIs",
-            "pages": [
-                "integrations/all/accelo",
-                        "integrations/all/adobe",
-                        "integrations/all/affinity",
-                        "integrations/all/aircall",
-                        "integrations/all/airtable",
-                        "integrations/all/amazon",
-                        "integrations/all/anrok",
-                        "integrations/all/amplitude",
-                        "integrations/all/apollo",
-                        "integrations/all/apple-app-store",
-                        "integrations/all/asana",
-                        "integrations/all/ashby",
-                        "integrations/all/atlassian",
-                        "integrations/all/attio",
-                        "integrations/all/auth0",
-                        "integrations/all/aws",
-                        "integrations/all/bamboohr",
-                        "integrations/all/battlenet",
-                        "integrations/all/bitbucket",
-                        "integrations/all/blackbaud",
-                        "integrations/all/boldsign",
-                        "integrations/all/box",
-                        "integrations/all/braintree",
-                        "integrations/all/brex",
-                        "integrations/all/calendly",
-                        "integrations/all/clari-copilot",
-                        "integrations/all/clickup",
-                        "integrations/all/close",
-                        "integrations/all/coda",
-                        "integrations/all/confluence",
-                        "integrations/all/contentstack",
-                        "integrations/all/deel",
-                        "integrations/all/digitalocean",
-                        "integrations/all/discord",
-                        "integrations/all/dropbox",
-                        "integrations/all/docusign",
-                        "integrations/all/entrata",
-                        "integrations/all/epic-games",
-                        "integrations/all/evaluagent",
-                        "integrations/all/eventbrite",
-                        "integrations/all/exact-online",
-                        "integrations/all/exist",
-                        "integrations/all/facebook",
-                        "integrations/all/factorial",
-                        "integrations/all/figjam",
-                        "integrations/all/figma",
-                        "integrations/all/fitbit",
-                        "integrations/all/freshbooks",
-                        "integrations/all/freshdesk",
-                        "integrations/all/freshservice",
-                        "integrations/all/front",
-                        "integrations/all/guru",
-                        "integrations/all/github",
-                        "integrations/all/gitlab",
-                        "integrations/all/gong",
-                        "integrations/all/google",
-                        "integrations/all/google-ads",
-                        "integrations/all/google-calendar",
-                        "integrations/all/google-drive",
-                        "integrations/all/google-mail",
-                        "integrations/all/google-sheet",
-                        "integrations/all/gorgias",
-                        "integrations/all/greenhouse",
-                        "integrations/all/gumroad",
-                        "integrations/all/gusto",
-                        "integrations/all/hackerrank-work",
-                        "integrations/all/healthgorilla",
-                        "integrations/all/helpscout",
-                        "integrations/all/hibob",
-                        "integrations/all/highlevel",
-                        "integrations/all/hubspot",
-                        "integrations/all/instagram",
-                        "integrations/all/intercom",
-                        "integrations/all/intuit",
-                        "integrations/all/jira",
-                        "integrations/all/keap",
-                        "integrations/all/klaviyo",
-                        "integrations/all/lever",
-                        "integrations/all/linear",
-                        "integrations/all/linkedin",
-                        "integrations/all/mailchimp",
-                        "integrations/all/microsoft-teams",
-                        "integrations/all/microsoft-tenant-specific",
-                        "integrations/all/miro",
-                        "integrations/all/mixpanel",
-                        "integrations/all/monday",
-                        "integrations/all/mural",
-                        "integrations/all/nationbuilder",
-                        "integrations/all/netsuite",
-                        "integrations/all/next-cloud",
-                        "integrations/all/notion",
-                        "integrations/all/okta",
-                        "integrations/all/one-drive",
-                        "integrations/all/osu",
-                        "integrations/all/outreach",
-                        "integrations/all/pagerduty",
-                        "integrations/all/pandadoc",
-                        "integrations/all/payfit",
-                        "integrations/all/paypal",
-                        "integrations/all/pendo",
-                        "integrations/all/pennylane",
-                        "integrations/all/pinterest",
-                        "integrations/all/pipedrive",
-                        "integrations/all/qualtrics",
-                        "integrations/all/quickbooks",
-                        "integrations/all/ramp",
-                        "integrations/all/reddit",
-                        "integrations/all/ring-central",
-                        "integrations/all/sage",
-                        "integrations/all/salesforce",
-                        "integrations/all/salesloft",
-                        "integrations/all/segment",
-                        "integrations/all/sendgrid",
-                        "integrations/all/servicem8",
-                        "integrations/all/servicenow",
-                        "integrations/all/shopify",
-                        "integrations/all/shortcut",
-                        "integrations/all/slack",
-                        "integrations/all/smartrecruiters",
-                        "integrations/all/smartsheet",
-                        "integrations/all/smugmug",
-                        "integrations/all/splitwise",
-                        "integrations/all/spotify",
-                        "integrations/all/squareup",
-                        "integrations/all/stackexchange",
-                        "integrations/all/strava",
-                        "integrations/all/stripe",
-                        "integrations/all/stripe-app",
-                        "integrations/all/stripe-express",
-                        "integrations/all/survey-monkey",
-                        "integrations/all/teamtailor",
-                        "integrations/all/teamwork",
-                        "integrations/all/tiktok-accounts",
-                        "integrations/all/tiktok-ads",
-                        "integrations/all/timely",
-                        "integrations/all/todoist",
-                        "integrations/all/trello",
-                        "integrations/all/twitch",
-                        "integrations/all/twitter",
-                        "integrations/all/twinfield",
-                        "integrations/all/typeform",
-                        "integrations/all/uber",
-                        "integrations/all/wakatime",
-                        "integrations/all/wave-accounting",
-                        "integrations/all/whoop",
-                        "integrations/all/wildix-pbx",
-                        "integrations/all/workable",
-                        "integrations/all/xero",
-                        "integrations/all/yahoo",
-                        "integrations/all/yandex",
-                        "integrations/all/youtube",
-                        "integrations/all/zapier-nla",
-                        "integrations/all/zendesk",
-                        "integrations/all/zenefits",
-                        "integrations/all/zoho-bigin",
-                        "integrations/all/zoho-books",
-                        "integrations/all/zoho-crm",
-                        "integrations/all/zoho-desk",
-                        "integrations/all/zoho-inventory",
-                        "integrations/all/zoho-invoice",
-                        "integrations/all/zoho-mail",
-                        "integrations/all/zoom"
-            ]
-        },
-        {
-            "group": "Reference",
-            "pages": [
-                "reference/overview"
-            ]
-        },
-        {
-            "group": "Use Integrations",
-            "pages": [
-                {
-                    "group": "HTTP API",
-                    "icon": "cloud",
-                    "pages": [
-                        "reference/api/authentication",
-                        {
-                            "group": "Integrations",
-                            "pages": [
-                                "reference/api/integration/list",
-                                "reference/api/integration/get",
-                                "reference/api/integration/create",
-                                "reference/api/integration/update",
-                                "reference/api/integration/delete"
-                            ]
-                        },
-                        {
-                            "group": "Connections",
-                            "pages": [
-                                "reference/api/connection/list",
-                                "reference/api/connection/get",
-                                "reference/api/connection/post",
-                                "reference/api/connection/set-metadata",
-                                "reference/api/connection/update-metadata",
-                                "reference/api/connection/delete"
-                            ]
-                        },
-                        {
-                            "group": "Scripts",
-                            "pages": [
-                                "reference/api/scripts/config"
-                            ]
-                        },
-                        {
-                            "group": "Syncs",
-                            "pages": [
-                                "reference/api/sync/records-list",
-                                "reference/api/sync/records-get",
-                                "reference/api/sync/trigger",
-                                "reference/api/sync/start",
-                                "reference/api/sync/pause",
-                                "reference/api/sync/status",
-                                "reference/api/sync/update-connection-frequency",
-                                "reference/api/sync/environment-variables"
-                            ]
-                        },
-                        {
-                            "group": "Actions",
-                            "pages": [
-                                "reference/api/action/trigger"
-                            ]
-                        },
-                        {
-                            "group": "Proxy",
-                            "pages": [
-                                "reference/api/proxy/get",
-                                "reference/api/proxy/post",
-                                "reference/api/proxy/put",
-                                "reference/api/proxy/patch",
-                                "reference/api/proxy/delete"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "group": "Backend SDKs",
-                    "pages": [
-                        "reference/sdks/node",
-                        "reference/sdks/python",
-                        "reference/sdks/java",
-                        "reference/sdks/ruby",
-                        "reference/sdks/go",
-                        "reference/sdks/rust",
-                        "reference/sdks/php"
-                    ],
-                    "icon": "cubes"
-                },
-                "reference/sdks/frontend",
-                "reference/webhooks"
-            ]
-        },
-        {
-            "group": "Build Integrations",
-            "pages": [
-                "reference/cli",
-                "reference/api-configuration",
-                "reference/integration-configuration",
-                "reference/scripts"
-            ]
-        }
-    ],
-    "footerSocials": {
-        "twitter": "https://twitter.com/NangoHQ",
-        "linkedin": "https://www.linkedin.com/company/nangohq/",
-        "github": "https://github.com/NangoHQ/nango",
-        "slack": "https://nango.dev/slack",
-        "website": "https://www.nango.dev/"
+  "name": "Mage",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#7E53F8",
+    "light": "#BFA8FF",
+    "dark": "#4C22C0",
+    "ultraLight": "#E4DAFF",
+    "ultraDark": "#270A7A",
+    "background": {
+      "dark": "#121212"
     }
+  },
+  "feedback": {
+    "suggestEdit": true,
+    "raiseIssue": true,
+    "thumbsRating": true
+  },
+  "search": {
+    "prompt": "✨ Make magic..."
+  },
+  "metadata": {
+    "og:image": "https://github.com/mage-ai/mage-ai/blob/master/docs/og.png?raw=True",
+    "og:description": "Mage is an open-source, hybrid framework for transforming and integrating data. Our docs are the best place to learn about making magical data pipelines.",
+    "og:site_name": "Mage Docs",
+    "twitter:site": "@mage_ai"
+  },
+  "topbarCtaButton": {
+    "type": "github",
+    "url": "https://github.com/mage-ai/mage-ai"
+  },
+  "topAnchor": {
+    "name": "Documentation",
+    "icon": "book-open"
+  },
+  "primaryTab": {
+    "name": "Docs"
+  },
+  "tabs": [
+    {
+      "name": "Guides",
+      "url": "guides"
+    },
+    {
+      "name": "Dev UX",
+      "url": "developer-ux"
+    },
+    {
+      "name": "API",
+      "url": "api-reference"
+    },
+    {
+      "name": "Deploy",
+      "url": "production"
+    },
+    {
+      "name": "Platform",
+      "url": "platform"
+    },
+    {
+      "name": "Contribute",
+      "url": "contributing"
+    },
+    {
+      "name": "Slack",
+      "url": "https://www.mage.ai/chat"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Releases",
+      "icon": "megaphone",
+      "url": "https://docs.mage.ai/about/releases"
+    },
+    {
+      "name": "Roadmap",
+      "icon": "map",
+      "url": "https://docs.mage.ai/about/roadmap"
+    },
+    {
+      "name": "Troubleshooting",
+      "icon": "question",
+      "url": "https://docs.mage.ai/development/troubleshooting"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": [
+        "introduction/overview",
+        "getting-started/setup",
+        "design/core-design-principles",
+        {
+          "group": "Abstractions",
+          "icon": "object-subtract",
+          "pages": [
+            "design/core-abstractions",
+            "design/abstractions/project-structure"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Concepts",
+      "pages": [
+        {
+          "group": "Backfills",
+          "icon": "database",
+          "pages": [
+            "orchestration/backfills/overview",
+            "orchestration/backfills/guides"
+          ]
+        },
+        {
+          "group": "Blocks",
+          "icon": "block-brick",
+          "pages": [
+            "design/blocks",
+            {
+              "group": "Types",
+              "pages": [
+                "design/blocks/callbacks",
+                "design/blocks/conditionals",
+                "design/blocks/data-exporter",
+                "design/blocks/data-loader",
+                "design/blocks/extension",
+                "design/blocks/scratchpad",
+                "design/blocks/sensor",
+                "design/blocks/transformer"
+              ]
+            },
+            "design/blocks/dynamic-blocks",
+            {
+              "group": "Resources",
+              "pages": [
+                {
+                  "group": "Data loader",
+                  "pages": [
+                    "design/data-loading",
+                    "development/blocks/data_loaders/templates"
+                  ]
+                },
+                {
+                  "group": "Transformer",
+                  "pages": [
+                    "development/blocks/transformers/templates"
+                  ]
+                },
+                {
+                  "group": "Data exporter",
+                  "pages": [
+                    "development/blocks/data_exporters/templates"
+                  ]
+                },
+                {
+                  "group": "Sensors",
+                  "pages": [
+                    "development/blocks/sensors/templates"
+                  ]
+                },
+                {
+                  "group": "Callbacks",
+                  "pages": [
+                    "development/blocks/callbacks/templates"
+                  ]
+                },
+                {
+                  "group": "Conditionals",
+                  "pages": [
+                    "development/blocks/conditionals/templates"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "group": "Data integration",
+          "icon": "rotate",
+          "pages": [
+            "data-integrations/overview",
+            "data-integrations/configuration",
+            {
+              "group": "Sources",
+              "pages": [
+                "data-integrations/sources/overview",
+                "data-integrations/sources/postgresql"
+              ]
+            },
+            {
+              "group": "Destinations",
+              "pages": [
+                "data-integrations/destinations/overview"
+              ]
+            },
+            "data-integrations/batch-pipelines"
+          ]
+        },
+        {
+          "group": "dbt",
+          "icon": "arrow-progress",
+          "pages": [
+            "dbt/overview",
+            {
+              "group": "Configuration",
+              "pages": [
+                "dbt/sources",
+                "dbt/connection-profiles",
+                "dbt/variable-interpolation",
+                "dbt/run-dbt-spark"
+              ]
+            },
+            {
+              "group": "Models",
+              "pages": [
+                "dbt/add-existing-dbt",
+                "dbt/incremental-models",
+                "dbt/run-single-model",
+                "dbt/run-selected-model"
+              ]
+            },
+            {
+              "group": "Commands",
+              "pages": [
+                "dbt/docs",
+                "dbt/snapshots",
+                "dbt/running-dbt-tests"
+              ]
+            },
+            "dbt/developer-experience"
+          ]
+        },
+        "orchestration/global-data-products/overview",
+        "design/data-pipeline-management",
+        {
+          "group": "Pipeline runs",
+          "icon": "pipe-circle-check",
+          "pages": [
+            "orchestration/pipeline-runs/retrying-block-runs",
+            "orchestration/pipeline-runs/saving-block-output-as-csv",
+            "orchestration/pipeline-runs/database-query"
+          ]
+        },
+        {
+          "group": "Schedules and triggers",
+          "icon": "clock",
+          "pages": [
+            "orchestration/triggers/configure-triggers-in-code",
+            {
+              "group": "Event triggers",
+              "pages": [
+                "orchestration/triggers/events/overview",
+                "orchestration/triggers/events/aws"
+              ]
+            },
+            "orchestration/triggers/trigger-pipeline",
+            "orchestration/triggers/trigger-pipeline-api",
+            "orchestration/triggers/schedule-pipelines",
+            "orchestration/triggers/database-query"
+          ]
+        },
+        {
+          "group": "Streaming",
+          "icon": "water",
+          "pages": [
+            "streaming/overview",
+            {
+              "group": "Sources",
+              "pages": [
+                "streaming/sources/activemq",
+                "streaming/sources/amazon-sqs",
+                "streaming/sources/azure-event-hub",
+                "streaming/sources/google-cloud-pubsub",
+                "streaming/sources/influxdb",
+                "streaming/sources/kafka",
+                "streaming/sources/kinesis",
+                "streaming/sources/nats",
+                "streaming/sources/rabbitmq"
+              ]
+            },
+            {
+              "group": "Destinations",
+              "pages": [
+                "streaming/destinations/activemq",
+                "streaming/destinations/amazon-s3",
+                "streaming/destinations/bigquery",
+                "streaming/destinations/clickhouse",
+                "streaming/destinations/duckdb",
+                "streaming/destinations/dummy",
+                "streaming/destinations/elasticsearch",
+                "streaming/destinations/google-cloud-pubsub",
+                "streaming/destinations/google-cloud-storage",
+                "streaming/destinations/influxdb",
+                "streaming/destinations/kafka",
+                "streaming/destinations/kinesis",
+                "streaming/destinations/mongodb",
+                "streaming/destinations/mssql",
+                "streaming/destinations/mysql",
+                "streaming/destinations/opensearch",
+                "streaming/destinations/postgres",
+                "streaming/destinations/rabbitmq",
+                "streaming/destinations/redshift",
+                "streaming/destinations/snowflake",
+                "streaming/destinations/trino"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "User defined permissions",
+          "icon": "fingerprint",
+          "pages": [
+            "authentication/permissions/overview",
+            "authentication/permissions/roles",
+            "authentication/permissions/permissions"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Reference",
+      "icon": "gear",
+      "pages": [
+        {
+          "group": "Configuration",
+          "icon": "gear",
+          "pages": [
+            {
+              "group": "Variables",
+              "pages": [
+                "development/variables/overview",
+                "development/variables/referencing-variables",
+                {
+                  "group": "Variable Types",
+                  "pages": [
+                    "development/variables/environment-variables",
+                    "getting-started/runtime-variable",
+                    "development/variables/block-variables",
+                    "development/variables/secrets"
+                  ]
+                }
+              ]
+            },
+            "custom-templates/overview",
+            {
+              "group": "Dependencies",
+              "pages": [
+                "development/dependencies/requirements",
+                "development/dependencies/custom-files"
+              ]
+            },
+            "development/io_config",
+            {
+              "group": "Storage",
+              "pages": [
+                "integrations/databases/Algolia",
+                "integrations/databases/BigQuery",
+                "integrations/databases/ClickHouse",
+                "integrations/databases/Chroma",
+                "integrations/databases/Druid",
+                "integrations/databases/DuckDB",
+                "integrations/databases/GoogleSheets",
+                "integrations/databases/MicrosoftSQLServer",
+                "integrations/databases/MongoDB",
+                "integrations/databases/MotherDuck",
+                "integrations/databases/MySQL",
+                "integrations/databases/Pinot",
+                "integrations/databases/PostgreSQL",
+                "integrations/databases/Qdrant",
+                "integrations/databases/Redshift",
+                "integrations/databases/S3",
+                "integrations/databases/Snowflake",
+                "integrations/databases/trino",
+                "integrations/databases/weaviate"
+              ]
+            },
+            "getting-started/kernels"
+          ]
+        },
+        {
+          "group": "Development",
+          "icon": "flask",
+          "pages": [
+            "development/project/setup",
+            "getting-started/setting-up-git",
+            "development/git/configure",
+            "getting-started/file-versions",
+            "development/text-editor"
+          ]
+        },
+        {
+          "group": "External tools",
+          "icon": "puzzle",
+          "pages": [
+            {
+              "group": "Computation",
+              "pages": [
+                "integrations/spark-pyspark",
+                "integrations/databricks"
+              ]
+            },
+            {
+              "group": "Orchestration",
+              "pages": [
+                "integrations/airflow",
+                "integrations/prefect"
+              ]
+            },
+            {
+              "group": "Data integration",
+              "pages": [
+                "integrations/airbyte",
+                "integrations/stitch"
+              ]
+            },
+            {
+              "group": "Transformation",
+              "pages": [
+                "integrations/dbt-cloud",
+                "integrations/polars"
+              ]
+            },
+            {
+              "group": "Observability",
+              "pages": [
+                {
+                  "group": "Monitoring",
+                  "pages": [
+                    "integrations/observability/datadog",
+                    "integrations/observability/great-expectations",
+                    "integrations/observability/metaplane",
+                    "integrations/observability/newrelic",
+                    "integrations/observability/sentry",
+                    "integrations/observability/prometheus",
+                    "integrations/observability/opentelemetry"
+                  ]
+                },
+                {
+                  "group": "Alerting",
+                  "pages": [
+                    "integrations/observability/alerting-email",
+                    "integrations/observability/alerting-opsgenie",
+                    "integrations/observability/alerting-slack",
+                    "integrations/observability/alerting-teams",
+                    "integrations/observability/alerting-discord",
+                    "integrations/observability/alerting-telegram"
+                  ]
+                }
+              ]
+            },
+            {
+              "group": "Reverse ETL",
+              "pages": [
+                "integrations/hightouch"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "Monitoring",
+          "icon": "eye",
+          "pages": [
+            "development/observability/monitoring",
+            "development/observability/logging"
+          ]
+        },
+        {
+          "group": "Testing",
+          "icon": "vial",
+          "pages": [
+            "development/data-validation",
+            "development/testing/great-expectations",
+            "development/testing/unit-tests"
+          ]
+        },
+        "development/ai/overview",
+        {
+          "group": "Visualizations",
+          "icon": "chart-line-up-down",
+          "pages": [
+            "visualizations/dashboards"
+          ]
+        },
+        {
+          "group": "No-code interactions",
+          "icon": "universal-access",
+          "pages": [
+            "interactions/overview"
+          ]
+        },
+        "development/updating-mage"
+      ]
+    },
+    {
+      "group": "About",
+      "icon": "info",
+      "pages": [
+        "about/code-of-conduct",
+        "about/statistics",
+        "about/frequently-asked-questions"
+      ]
+    },
+    {
+      "group": "Get Started",
+      "pages": [
+        "guides/overview"
+      ]
+    },
+    {
+      "group": "Quickstarts",
+      "pages": [
+        "guides/load-api-data",
+        "guides/data-integration-pipeline",
+        "guides/setup-dbt",
+        "guides/integrate-mage-airflow"
+      ]
+    },
+    {
+      "group": "Tutorials",
+      "pages": [
+        {
+          "group": "Blocks",
+          "icon": "block-brick",
+          "pages": [
+            "guides/blocks/transformer-blocks",
+            "guides/blocks/sql-blocks",
+            "guides/blocks/dynamic-blocks",
+            "guides/blocks/custom-blocks",
+            "guides/blocks/markdown-blocks",
+            "guides/blocks/r-blocks",
+            "guides/blocks/replicate-blocks",
+            "guides/blocks/reorder-blocks",
+            "guides/blocks/detach-blocks"
+          ]
+        },
+        {
+          "group": "Pipelines",
+          "icon": "pipe-section",
+          "pages": [
+            "guides/streaming-pipeline",
+            "guides/streaming/magic-devcontainer",
+            "guides/streaming-pipeline-rabbitmq",
+            "guides/train-model",
+            "guides/pipelines/importing-pipelines"
+          ]
+        },
+        "guides/dbt/developing-dbt-in-mage",
+        {
+          "group": "Using AI",
+          "icon": "microchip-ai",
+          "pages": [
+            "guides/ai/overview",
+            "guides/ai/ai-client"
+          ]
+        },
+        "guides/docker/connecting-a-database",
+        "guides/community-examples",
+        "guides/tips-and-tricks"
+      ]
+    },
+    {
+      "group": "Get Started",
+      "icon": "robot",
+      "pages": [
+        "api-reference/overview",
+        {
+          "group": "Design",
+          "icon": "pencil",
+          "pages": [
+            "api-reference/resources",
+            "api-reference/policies",
+            "api-reference/presenters"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Endpoints",
+      "icon": "robot",
+      "pages": [
+        {
+          "group": "Backfills",
+          "icon": "database",
+          "pages": [
+            "api-reference/backfills/overview",
+            "api-reference/backfills/read-backfills",
+            "api-reference/backfills/create-backfills",
+            "api-reference/backfills/update-backfill",
+            "api-reference/backfills/delete-backfill"
+          ]
+        },
+        {
+          "group": "Blocks",
+          "icon": "block-brick",
+          "pages": [
+            "api-reference/blocks/overview",
+            "api-reference/blocks/read-block",
+            "api-reference/blocks/create-block",
+            "api-reference/blocks/update-block",
+            "api-reference/blocks/delete-block"
+          ]
+        },
+        {
+          "group": "Logs",
+          "icon": "scroll",
+          "pages": [
+            "api-reference/logs/overview",
+            "api-reference/logs/read-logs"
+          ]
+        },
+        {
+          "group": "OAuth access tokens",
+          "icon": "key",
+          "pages": [
+            "api-reference/oauth-access-tokens/overview",
+            "api-reference/oauth-access-tokens/read-oauth-access-tokens"
+          ]
+        },
+        {
+          "group": "Pipeline runs",
+          "icon": "pipe-valve",
+          "pages": [
+            "api-reference/pipeline-runs/overview",
+            "api-reference/pipeline-runs/read-pipeline-runs",
+            "api-reference/pipeline-runs/trigger-pipeline"
+          ]
+        },
+        {
+          "group": "Pipeline schedules",
+          "icon": "pipe-circle-check",
+          "pages": [
+            "api-reference/pipeline-schedules/overview",
+            "api-reference/pipeline-schedules/read-pipeline-schedules",
+            "api-reference/pipeline-schedules/create-pipeline-schedule"
+          ]
+        },
+        {
+          "group": "Pipelines",
+          "icon": "pipe-collar",
+          "pages": [
+            "api-reference/pipelines/overview",
+            "api-reference/pipelines/read-pipeline",
+            "api-reference/pipelines/create-pipeline",
+            "api-reference/pipelines/update-pipeline",
+            "api-reference/pipelines/delete-pipeline"
+          ]
+        },
+        {
+          "group": "Sessions",
+          "icon": "window",
+          "pages": [
+            "api-reference/sessions/overview",
+            "api-reference/sessions/create-session"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Get Started",
+      "pages": [
+        "production/deploying-to-cloud/architecture",
+        {
+          "group": "Providers",
+          "icon": "clouds",
+          "pages": [
+            {
+              "group": "AWS",
+              "pages": [
+                "production/deploying-to-cloud/aws/setup",
+                "production/deploying-to-cloud/aws/resources",
+                "production/deploying-to-cloud/aws/aws-ecs-architecture",
+                "production/deploying-to-cloud/aws/terraform-apply-policy",
+                "production/deploying-to-cloud/aws/terraform-destroy-policy",
+                "production/deploying-to-cloud/aws/emr-policy",
+                "production/deploying-to-cloud/aws-without-terraform",
+                "production/deploying-to-cloud/aws/code-pipeline"
+              ]
+            },
+            {
+              "group": "Azure",
+              "pages": [
+                "production/deploying-to-cloud/azure/setup",
+                "production/deploying-to-cloud/azure/resources"
+              ]
+            },
+            {
+              "group": "DigitalOcean",
+              "pages": [
+                "production/deploying-to-cloud/digitalocean/setup"
+              ]
+            },
+            {
+              "group": "GCP",
+              "pages": [
+                "production/deploying-to-cloud/gcp/setup",
+                "production/deploying-to-cloud/gcp/resources",
+                "production/deploying-to-cloud/gcp/gcp-artifact-registry"
+              ]
+            }
+          ]
+        },
+        "production/deploying-to-cloud/using-terraform",
+        "production/deploying-to-cloud/using-helm"
+      ]
+    },
+    {
+      "group": "Concepts",
+      "pages": [
+        {
+          "group": "Authentication",
+          "icon": "passport",
+          "pages": [
+            "production/authentication/overview",
+            "production/authentication/google",
+            "production/authentication/okta",
+            "production/authentication/microsoft"
+          ]
+        },
+        {
+          "group": "CI/CD",
+          "icon": "circle-check",
+          "pages": [
+            "production/ci-cd/overview",
+            "production/ci-cd/local-cloud/repository-setup",
+            "production/ci-cd/local-cloud/github-actions",
+            "production/ci-cd/local-cloud/gitlab-ci-cd",
+            "production/ci-cd/local-cloud/buildkite"
+          ]
+        },
+        {
+          "group": "Configuration",
+          "icon": "gear",
+          "pages": [
+            "production/configuring-production-settings/overview",
+            "production/configuring-production-settings/compute-resource",
+            "production/configuring-production-settings/settings-backend"
+          ]
+        },
+        "production/databases/default",
+        {
+          "group": "Secrets",
+          "icon": "lock",
+          "pages": [
+            "production/deploying-to-cloud/secrets/AWS",
+            "production/deploying-to-cloud/secrets/Azure",
+            "production/deploying-to-cloud/secrets/GCP"
+          ]
+        },
+        {
+          "group": "Team management",
+          "icon": "user-plus",
+          "pages": [
+            "production/developing-in-the-cloud/cloud-dev-environments/overview",
+            {
+              "group": "Environments",
+              "pages": [
+                "production/developing-in-the-cloud/cloud-dev-environments/aws-ecs",
+                "production/developing-in-the-cloud/cloud-dev-environments/cloud-run",
+                "production/developing-in-the-cloud/cloud-dev-environments/kubernetes"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "Version control",
+          "icon": "code-branch",
+          "pages": [
+            "production/data-sync/git-sync",
+            "production/data-sync/github"
+          ]
+        },
+        {
+          "group": "Workspaces",
+          "icon": "boxes-stacked",
+          "pages": [
+            "production/developing-in-the-cloud/workspaces/overview",
+            {
+              "group": "Environments",
+              "pages": [
+                "production/developing-in-the-cloud/workspaces/kubernetes"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "Custom docker image",
+          "pages": [
+            "production/custom-docker-image/non-root-user"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Features",
+      "pages": [
+        "developer-ux/overview",
+        "developer-ux/personalize",
+        "developer-ux/file-browser",
+        "developer-ux/code-editor",
+        "developer-ux/block-dependency-tree",
+        "developer-ux/sidekick"
+      ]
+    },
+    {
+      "group": "Command Center",
+      "pages": [
+        "developer-ux/command-center/spellcaster",
+        "developer-ux/command-center/modes/version-control"
+      ]
+    },
+    {
+      "group": "Applications",
+      "pages": [
+        "developer-ux/applications/overview",
+        "developer-ux/applications/arcane-library",
+        "developer-ux/applications/portal-terminal"
+      ]
+    },
+    {
+      "group": "Overview",
+      "pages": [
+        "platform/overview"
+      ]
+    },
+    {
+      "group": "Designs",
+      "pages": [
+        "platform/designs/setup"
+      ]
+    },
+    {
+      "group": "Projects",
+      "pages": [
+        "platform/projects/management"
+      ]
+    },
+    {
+      "group": "Get Started",
+      "pages": [
+        "contributing/overview",
+        "contributing/development-environment"
+      ]
+    },
+    {
+      "group": "Components",
+      "pages": [
+        {
+          "group": "Backend",
+          "icon": "server",
+          "pages": [
+            "contributing/backend/overview",
+            {
+              "group": "Data integration",
+              "pages": [
+                "contributing/data-integrations/adapt-existing-source",
+                "contributing/data-integrations/add-new-source",
+                "contributing/data-integrations/add-new-destination"
+              ]
+            },
+            {
+              "group": "IO classes",
+              "pages": [
+                "contributing/backend/io/adding-a-class"
+              ]
+            },
+            {
+              "group": "Streaming",
+              "pages": [
+                "contributing/backend/streaming/sources-and-destinations"
+              ]
+            },
+            {
+              "group": "Testing",
+              "pages": [
+                "contributing/backend/testing/overview"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "Frontend",
+          "icon": "browser",
+          "pages": [
+            "contributing/frontend/overview",
+            "contributing/charts/how-to-add",
+            "contributing/frontend/testing"
+          ]
+        },
+        {
+          "group": "Documentation",
+          "icon": "book",
+          "pages": [
+            "contributing/documentation/overview"
+          ]
+        }
+      ]
+    }
+  ],
+  "backgroundImage": "/background.png",
+  "footerSocials": {
+    "linkedin": "https://www.linkedin.com/company/magetech/",
+    "twitter": "https://twitter.com/mage_ai",
+    "facebook": "https://www.facebook.com/mageai",
+    "instagram": "https://www.instagram.com/mage_ai/",
+    "github": "https://www.github.com/mage-ai"
+  },
+  "analytics": {
+    "amplitude": {
+      "apiKey": "b3c3b09423fea2abaae92c08b44de1c3"
+    }
+  },
+  "api": {
+    "playground": {
+      "mode": "hide"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/getting-started/secrets",
+      "destination": "/development/variables/secrets"
+    },
+    {
+      "source": "/development/environment-variables",
+      "destination": "/development/variables/environment-variables"
+    },
+    {
+      "source": "/contributing/code-of-conduct",
+      "destination": "/about/code-of-conduct"
+    },
+    {
+      "source": "/contributing/statistics/overview",
+      "destination": "/about/statistics"
+    },
+    {
+      "source": "/guides/streaming/contributing",
+      "destination": "/contributing/backend/streaming/sources-and-destinations"
+    },
+    {
+      "source": "/community/contributing",
+      "destination": "/contributing/overview"
+    },
+    {
+      "source": "/development/blocks/callbacks/overview",
+      "destination": "/design/blocks/callbacks"
+    },
+    {
+      "source": "/development/blocks/conditionals/overview",
+      "destination": "/design/blocks/conditionals"
+    },
+    {
+      "source": "/development/blocks/sql/trino",
+      "destination": "/integrations/databases/trino"
+    },
+    {
+      "source": "/guides/data-validation",
+      "destination": "/development/data-validation"
+    },
+    {
+      "source": "/production/observability/logging",
+      "destination": "/development/observability/logging"
+    },
+    {
+      "source": "/production/observability/monitoring",
+      "destination": "/development/observability/monitoring"
+    },
+    {
+      "source": "/development/versioning/file-versions",
+      "destination": "/getting-started/file-versions"
+    },
+    {
+      "source": "/production/configuring-production-settings/runtime-",
+      "destination": "/getting-started/runtime-variable"
+    },
+    {
+      "source": "/development/secrets/secrets",
+      "destination": "/development/variables/secrets"
+    },
+    {
+      "source": "/developing-in-the-cloud/setting-up-git",
+      "destination": "/getting-started/setting-up-git"
+    },
+    {
+      "source": "/guides/r-blocks",
+      "destination": "/guides/blocks/r-blocks"
+    },
+    {
+      "source": "/design/blocks/replicate-blocks",
+      "destination": "/guides/blocks/replicate-blocks"
+    },
+    {
+      "source": "/guides/sql-blocks",
+      "destination": "/guides/blocks/sql-blocks"
+    },
+    {
+      "source": "/guides/transformer-blocks",
+      "destination": "/guides/blocks/transformer-blocks"
+    },
+    {
+      "source": "/tutorials/examples",
+      "destination": "/guides/community-examples"
+    },
+    {
+      "source": "/tutorials/load-api-data",
+      "destination": "/guides/load-api-data"
+    },
+    {
+      "source": "/tutorials/setup-dbt",
+      "destination": "/guides/setup-dbt"
+    },
+    {
+      "source": "/tutorials/train-model",
+      "destination": "/guides/train-model"
+    },
+    {
+      "source": "/tutorials/train/complete-project",
+      "destination": "/guides/train/complete-project"
+    },
+    {
+      "source": "/production/observability/alerting-email",
+      "destination": "/integrations/observability/alerting-email"
+    },
+    {
+      "source": "/production/observability/alerting-opsgenie",
+      "destination": "/integrations/observability/alerting-opsgenie"
+    },
+    {
+      "source": "/production/observability/alerting-slack",
+      "destination": "/integrations/observability/alerting-slack"
+    },
+    {
+      "source": "/production/observability/alerting-teams",
+      "destination": "/integrations/observability/alerting-teams"
+    },
+    {
+      "source": "/production/observability/alerting-discord",
+      "destination": "/integrations/observability/alerting-discord"
+    },
+    {
+      "source": "/production/observability/alerting-telegram",
+      "destination": "/integrations/observability/alerting-telegram"
+    },
+    {
+      "source": "/production/observability/datadog",
+      "destination": "/integrations/observability/datadog"
+    },
+    {
+      "source": "/integrations/great-expectations",
+      "destination": "/integrations/observability/great-expectations"
+    },
+    {
+      "source": "/integrations/metaplane",
+      "destination": "/integrations/observability/metaplane"
+    },
+    {
+      "source": "/production/observability/newrelic",
+      "destination": "/integrations/observability/newrelic"
+    },
+    {
+      "source": "/production/observability/sentry",
+      "destination": "/integrations/observability/sentry"
+    },
+    {
+      "source": "/production/observability/prometheus",
+      "destination": "/integrations/observability/prometheus"
+    },
+    {
+      "source": "/guides/triggers/configure-triggers-in-code",
+      "destination": "/orchestration/triggers/configure-triggers-in-code"
+    },
+    {
+      "source": "/guides/triggers/events/aws",
+      "destination": "/orchestration/triggers/events/aws"
+    },
+    {
+      "source": "/guides/triggers/events/overview",
+      "destination": "/orchestration/triggers/events/overview"
+    },
+    {
+      "source": "/guides/schedule-pipelines",
+      "destination": "/orchestration/triggers/schedule-pipelines"
+    },
+    {
+      "source": "/guides/trigger-pipeline-api",
+      "destination": "/orchestration/triggers/trigger-pipeline-api"
+    },
+    {
+      "source": "/production/configuring-production-settings/secrets",
+      "destination": "/production/deploying-to-cloud/secrets/AWS"
+    },
+    {
+      "source": "/development/secrets/GCP",
+      "destination": "/production/deploying-to-cloud/secrets/GCP"
+    },
+    {
+      "source": "/developing-in-the-cloud/cloud-dev-environments/aws-ecs",
+      "destination": "/production/developing-in-the-cloud/cloud-dev-environments/aws-ecs"
+    },
+    {
+      "source": "/developing-in-the-cloud/cloud-dev-environments/cloud-run",
+      "destination": "/production/developing-in-the-cloud/cloud-dev-environments/cloud-run"
+    },
+    {
+      "source": "/developing-in-the-cloud/cloud-dev-environments/kubernetes",
+      "destination": "/production/developing-in-the-cloud/cloud-dev-environments/kubernetes"
+    },
+    {
+      "source": "/developing-in-the-cloud/cloud-dev-environments/overview",
+      "destination": "/production/developing-in-the-cloud/cloud-dev-environments/overview"
+    },
+    {
+      "source": "/developing-in-the-cloud/workspaces/kubernetes",
+      "destination": "/production/developing-in-the-cloud/workspaces/kubernetes"
+    },
+    {
+      "source": "/developing-in-the-cloud/workspaces/overview",
+      "destination": "/production/developing-in-the-cloud/workspaces/overview"
+    },
+    {
+      "source": "/guides/streaming/destinations/amazon-s3",
+      "destination": "/streaming/destinations/amazon-s3"
+    },
+    {
+      "source": "/guides/streaming/destinations/elasticsearch",
+      "destination": "/streaming/destinations/elasticsearch"
+    },
+    {
+      "source": "/guides/streaming/destinations/azure_data_lake",
+      "destination": "/streaming/destinations/azure_data_lake"
+    },
+    {
+      "source": "/guides/streaming/destinations/dummy",
+      "destination": "/streaming/destinations/dummy"
+    },
+    {
+      "source": "/guides/streaming/destinations/kafka",
+      "destination": "/streaming/destinations/kafka"
+    },
+    {
+      "source": "/guides/streaming/destinations/kinesis",
+      "destination": "/streaming/destinations/kinesis"
+    },
+    {
+      "source": "/guides/streaming/destinations/mongodb",
+      "destination": "/streaming/destinations/mongodb"
+    },
+    {
+      "source": "/guides/streaming/destinations/opensearch",
+      "destination": "/streaming/destinations/opensearch"
+    },
+    {
+      "source": "/guides/streaming/destinations/redshift",
+      "destination": "/streaming/destinations/redshift"
+    },
+    {
+      "source": "/guides/streaming/overview",
+      "destination": "/streaming/overview"
+    },
+    {
+      "source": "/guides/streaming/sources/amazon-sqs",
+      "destination": "/streaming/sources/amazon-sqs"
+    },
+    {
+      "source": "/guides/streaming/sources/azure-event-hub",
+      "destination": "/streaming/sources/azure-event-hub"
+    },
+    {
+      "source": "/guides/streaming/sources/google-cloud-pubsub",
+      "destination": "/streaming/sources/google-cloud-pubsub"
+    },
+    {
+      "source": "/guides/streaming/sources/kafka",
+      "destination": "/streaming/sources/kafka"
+    },
+    {
+      "source": "/guides/streaming/sources/kinesis",
+      "destination": "/streaming/sources/kinesis"
+    },
+    {
+      "source": "/data-integrations/sources/adapt-existing-source",
+      "destination": "/contributing/data-integrations/adapt-existing-source"
+    },
+    {
+      "source": "/data-integrations/sources/add-new-source",
+      "destination": "/contributing/data-integrations/add-new-source"
+    },
+    {
+      "source": "/data-integrations/destination/add-new-destination",
+      "destination": "/contributing/data-integrations/add-new-destination"
+    },
+    {
+      "source": "/development/git/generate-an-ssh-token",
+      "destination": "/development/git/configure#generate-ssh-token"
+    }
+  ]
 }
+

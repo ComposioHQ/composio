@@ -1,0 +1,74 @@
+---
+title: "Contributing to the backend server"
+sidebarTitle: "Overview"
+description: "Mage backend code is written in Python 🐍 and our server uses the Tornado 🌪️ framework. Here are some guides on adding features to the Mage backend."
+---
+
+## Guides
+
+### API
+
+- [Overview](/api-reference/overview)
+
+### Data integrations
+
+- [Add a new source to the data integration pipeline](/contributing/data-integrations/add-new-source)
+- [Add a new destination to the data integration pipeline](/contributing/data-integrations/add-new-destination)
+
+### Streaming pipelines
+
+- [Add a new source or destination to the streaming pipeline](/contributing/backend/streaming/sources-and-destinations)
+
+### IO classes
+
+- [Add a new IO class](/contributing/backend/io/adding-a-class)
+
+## Style guide
+
+### Linter
+Install `flake8` in your IDE to lint the Python code.
+
+To run the linter locally, execute this script:
+
+```bash
+./scripts/server/lint.sh
+```
+
+## Testing
+
+### Unit tests
+
+Add unit tests for the feature in
+[mage_ai/tests](https://github.com/mage-ai/mage-ai/tree/master/mage_ai/tests) directory.
+
+To run the tests locally, execute this script:
+
+```bash
+./scripts/server/test.sh
+```
+
+It is also possible to run unit tests directly in a live docker instance, as given in the following steps.
+
+1. Find out the backend server container name, with the command `docker container ls` in a terminal:
+```bash
+ % docker container ls
+
+CONTAINER ID   IMAGE       COMMAND                  CREATED      STATUS          PORTS                    NAMES
+8dbcfbe41755   mage/data   "./scripts/install_a…"   5 days ago   Up 38 minutes   0.0.0.0:3000->3000/tcp   mage-ai-app-1
+b9d811e1e3e8   mage/data   "python mage_ai/serv…"   5 days ago   Up 38 minutes   0.0.0.0:6789->6789/tcp   mage-ai-server-1
+```
+
+2. Start an interactive `bash` session with the backend server container:
+```bash
+% docker exec -it mage-ai-server-1 /bin/bash
+```
+
+3. Run unit tests with the following command:
+```bash
+root@b9d811e1e3e8:/home/src# python3 -m unittest discover -s mage_ai.tests --failfast
+```
+
+## Debugging
+
+<Snippet file="debugging-backend.mdx"/>
+

@@ -1,0 +1,59 @@
+---
+title: "Create backfill"
+api: "POST /api/pipelines/:pipeline_uuid/backfills"
+---
+`POST /api/pipelines/:pipeline_uuid/backfills`
+
+<ParamField path="pipeline_uuid" type="string" required>
+  Pipeline UUID to create the backfill for.
+</ParamField>
+
+<b>Body</b>
+<br />
+<br />
+
+<ParamField body="backfill" type="object" required>
+  <Expandable title="payload" defaultOpen="true">
+    <ParamField body="name" type="string" required>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<RequestExample>
+```curl cURL
+curl --request POST \
+  --url 'http://localhost:6789/api/pipelines/example_pipeline/backfills' \
+  --header 'OAUTH-TOKEN=some_really_long_string' \
+  --header 'X-API-KEY: zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' \
+  --data '{
+    "backfill": {
+      "name": "fire wind"
+    }
+  }'
+```
+</RequestExample>
+<ResponseExample>
+```json Response
+{
+  "backfill": {
+    "id": 10,
+    "block_uuid": null,
+    "completed_at": null,
+    "created_at": "2023-04-01 01:02:18.411997+00:00",
+    "end_datetime": null,
+    "failed_at": null,
+    "interval_type": null,
+    "interval_units": null,
+    "metrics": null,
+    "name": "fire wind",
+    "pipeline_schedule_id": null,
+    "pipeline_uuid": "example_pipeline",
+    "start_datetime": null,
+    "started_at": null,
+    "status": null,
+    "updated_at": "2023-04-01 01:02:18.411997+00:00",
+    "variables": null
+  }
+}
+```
+</ResponseExample>

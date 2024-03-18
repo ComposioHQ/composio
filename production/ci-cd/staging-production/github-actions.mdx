@@ -1,0 +1,98 @@
+---
+title: "GitHub Actions"
+description: "Development (local), staging (cloud), and production (cloud) using GitHub Actions"
+sidebarTitle: "Deploy with staging environment"
+---
+
+Mage supports GitHub Actions for CI/CD workflows. We have templates for deploying to [AWS ECS, GCP Cloud Run, and Azure](https://github.com/mage-ai/mage-ai/tree/master/templates/github_actions).
+
+## GitHub Actions setup
+
+1. Create a new repository on GitHub.
+2. Open your repository on GitHub, then click the tab labeled **Settings**.
+3. Click the section labeled **Secrets and variables** on the left hand side to expand it.
+4. Create separate staging and production GitHub environments in the **Environments** section.
+    1. You can also choose to require approval before running jobs in your production environment.
+    More information [here](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#required-reviewers).
+    2. You may need to change the `environment` variable in the jobs section of the GitHub Actions below
+    based on the name of your GitHub environments.
+5. Click the link labeled **Actions**.
+6. Click the button labeled **New repository secret** in the top right corner.
+7. Follow the instructions below for your specific cloud provider:
+
+---
+
+## AWS
+
+1. If you haven’t already, create a new AWS ECR repository.
+2. You’ll need AWS credentials with the following policy permissions:
+    ```json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:CompleteLayerUpload",
+            "ecr:GetAuthorizationToken",
+            "ecr:InitiateLayerUpload",
+            "ecr:PutImage",
+            "ecr:UploadLayerPart",
+            "ecs:DeregisterTaskDefinition",
+            "ecs:DescribeClusters",
+            "ecs:DescribeServices",
+            "ecs:DescribeTaskDefinition",
+            "ecs:RegisterTaskDefinition",
+            "ecs:UpdateService",
+            "iam:PassRole"
+          ],
+          "Resource": "*"
+        }
+      ]
+    }
+    ```
+3. In the field labeled **Name**, enter the value `AWS_ACCESS_KEY_ID`.
+4. In the field labeled **Secret**, enter your AWS Access Key ID.
+5. Click the button labeled **Add secret** to save.
+6. Add a 2nd secret by clicking the button labeled **New repository secret** in
+   the top right corner.
+7. In the field labeled **Name**, enter the value `AWS_SECRET_ACCESS_KEY`.
+8. In the field labeled **Secret**, enter your AWS Secret Access Key.
+9. Click the button labeled **Add secret** to save.
+10. Click on the tab labeled **Actions**.
+11. On the left side, click the button labeled **New workflow**.
+12. Find the link labeled **`set up a workflow yourself`** and click it.
+13. Copy the contents from the GitHub Action YAML file for AWS at
+    [templates/github_actions/build_and_deploy_to_aws_ecs_staging_production.yml](https://github.com/mage-ai/mage-ai/blob/master/templates/github_actions/build_and_deploy_to_aws_ecs_staging_production.yml),
+    and paste it into the textarea.
+14. Change the following values under the key labeled `env`:
+
+```yaml
+env:
+  AWS_REGION: ...
+  CONTAINER_NAME: ...
+  ECR_REPOSITORY: ...
+  ECS_CLUSTER: ...
+  ECS_STAGING_SERVICE: ...
+  ECS_PRODUCTION_SERVICE: ...
+  ECS_STAGING_TASK_DEFINITION: ...
+  ECS_PRODUCTION_TASK_DEFINITION: ...
+```
+
+| Key                               | Description                                                                                                                                                                                                                                                                                   | Sample value                         |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `AWS_REGION`                      | Region of your AWS ECS cluster.                                                                                                                                                                                                                                                               | `us-west-2`                          |
+| `CONTAINER_NAME`                  | Set this to the name of the container in the containerDefinitions section of your task definition.                                                                                                                                                                                            | `mage-data-production-container`     |
+| `ECR_REPOSITORY`                  | The name of the AWS ECR repository you created to store your Docker images.                                                                                                                                                                                                                   | `mage-data`                          |
+| `ECS_CLUSTER`                     | The name of your AWS ECS cluster.                                                                                                                                                                                                                                                             | `mage-production-cluster`            |
+| `ECS_STAGING_SERVICE`             | The name of your AWS ECS staging service.                                                                                                                                                                                                                                                     | `mage-production-cluster`            |
+| `ECS_PRODUCTION_SERVICE`          | The name of your AWS ECS production service.                                                                                                                                                                                                                                                  | `mage-production-ecs-service`        |
+| `ECS_STAGING_TASK_DEFINITION`     | Go to your AWS ECS task definition for the staging service. Click on the **JSON** tab on the task definition detail page. Copy the JSON string content and save it to a file in your root folder containing your Mage project. Use the path to that file as the value in this field.          | `some_path/ecs-task-definition.json` |
+| `ECS_PRODUCTION_TASK_DEFINITION`  | Go to your AWS ECS task definition for the production service. Click on the **JSON** tab on the task definition detail page. Copy the JSON string content and save it to a file in your root folder containing your Mage project. Use the path to that file as the value in this field.       | `some_path/ecs-task-definition.json` |
+
+1. Click the button labeled **Start commit** in the top right corner.
+1. Click the button labeled **Commit new file**.
+1. Every time you merge a pull request into the master branch, this GitHub
+   Action will run, building a Docker image using your GitHub code, then
+   updating AWS ECS to use the new image with the updated code.

@@ -1,0 +1,88 @@
+---
+title: "Features"
+---
+
+![](https://user-images.githubusercontent.com/78053898/198751496-22d51f03-f09f-454c-8f98-409b5dbec8f9.svg)
+
+<CardGroup>
+  <Card
+    title="Data pipeline management"
+    icon="diagram-project"
+    href="/design/data-pipeline-management"
+  ></Card>
+  <Card
+    title="Notebook for building data pipelines"
+    icon="notebook"
+    href="/about/features#1-data-centric-editor"
+  ></Card>
+  <Card
+    title="Changelog"
+    icon="list-check"
+    href="https://github.com/mage-ai/mage-ai/releases"
+  ></Card>
+  <Card
+    title="Roadmap"
+    icon="map"
+    href="https://airtable.com/shrJS0cDOmQywb8vp"
+  ></Card>
+</CardGroup>
+
+## Data pipeline management
+
+👉 See more
+[details here](/design/data-pipeline-management).
+
+![](https://github.com/mage-ai/assets/blob/main/orchestration-overview.gif?raw=true)
+
+## Notebook for building data pipelines
+
+### 1\. Data centric editor
+
+An interactive coding experience designed for preparing data to train ML models.
+
+Visualize the impact of your code every time you load, clean, and transform
+data.
+
+<img
+  alt="Data centric editor"
+  src="https://github.com/mage-ai/assets/blob/main/data-centric-editor.png?raw=True"
+/>
+
+### 2\. Production ready code
+
+No more writing throw away code or trying to turn notebooks into scripts.
+
+Each block (aka cell) in this editor is a modular file that can be tested,
+reused, and chained together to create an executable data pipeline locally or in
+any environment.
+
+Read more about [blocks](/design/blocks) and how they work.
+
+<img
+  alt="Production ready code"
+  src="https://github.com/mage-ai/assets/blob/main/data-pipeline.png?raw=True"
+/>
+
+Run your data pipeline end-to-end using the command line function:
+`$ mage run [project] [pipeline]`
+
+You can run your pipeline in production environments with the orchestration
+tools
+
+- [Airflow](/guides/integrate-mage-airflow)
+
+- [Prefect](/integrations/prefect)
+
+### 3\. Extensible
+
+Easily add new functionality directly in the source code or through plug-ins
+(coming soon).
+
+Adding new API endpoints ([Tornado](https://www.tornadoweb.org/en/stable/)),
+transformations (Python, PySpark, SQL), and charts (using
+[React](https://reactjs.org/)) is easy to do (tutorial coming soon).
+
+<img
+  alt="Extensible charts"
+  src="https://github.com/mage-ai/assets/blob/main/extensible-charts.gif?raw=True"
+/>

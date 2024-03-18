@@ -1,0 +1,49 @@
+---
+title: "Production Configuration"
+sidebarTitle: "Overview"
+---
+
+## Settings
+
+### Read only access
+
+You can configure Mage to not allow any edits to pipelines or blocks and/or not allow edit or execute
+access for the notebook. Users will only be able to create triggers and view the existing pipelines.
+They will have access to features such as syncing with GitHub and future remote repository integrations.
+
+To enable this feature set the following environment variable:
+`export DISABLE_NOTEBOOK_EDIT_ACCESS=<value>`
+
+The available values are 
+* 0: this is the same as omitting the variable
+* 1 (most restrictive): no edit/execute access to the notebook within Mage. Users will not be able to use the notebook to edit pipeline content, execute blocks,
+  create secrets, or create variables.
+* 2 (less restrictive): only disables edits for pipelines and blocks. Users will not be able to edit pipeline/block metadata or content.
+
+### Databases
+
+By default, Mage uses sqlite to store orchestration data (trigger, pipeline run, and block run). To use a different database, you can set the `MAGE_DATABASE_CONNECTION_URL` environment variable.
+
+In production, you can set the environment variable in the corresponding Terraform script.
+
+#### PostgreSQL
+`export MAGE_DATABASE_CONNECTION_URL=postgresql+psycopg2://user:password@host:port/dbname`
+
+To use a specific `schema_name` in PostgreSQL:
+
+`export MAGE_DATABASE_CONNECTION_URL="postgresql+psycopg2://user:password@host:port/dbname?options=-c%%20search_path%%3Dschema_name"`
+
+#### MSSQL
+`export MAGE_DATABASE_CONNECTION_URL="mssql+pyodbc://?odbc_connect=DRIVER={ODBC Driver 18 for SQL Server};SERVER=host;DATABASE=dbname;UID=user;PWD=password;ENCRYPT=yes;TrustServerCertificate=yes;"`
+
+### ulimit
+
+ulimit is a built-in Linux command that allows viewing or limiting system resource used in processes.
+
+If you get `OSError: [Errno 24] Too many open files` error when running in Mage in production,
+you can set the environment variable `ULIMIT_NO_FILE` to a larger number (e.g. 8192 or 16384) and restart
+Mage server to increase the maximum number of open files allowed in Mage processes.
+
+If you get `OSError: [Errno 24] Too many open files` error when running Mage locally on your laptop,
+you can increase the limit with the command `ulimit -n 8192` (or a larger number). Add this command to
+`~/.bash_profile` or `~/.zshrc` file so that this config can be applied automatically in the terminal.

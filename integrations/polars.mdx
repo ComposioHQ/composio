@@ -1,0 +1,33 @@
+---
+title: "Polars"
+description: "Use Polars DataFrame in Mage blocks"
+---
+
+Mage supports using Polars DataFrame in addition to Pandas DataFrame to process the data.
+
+## Example code
+```python
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+import polars as pl
+
+
+@data_loader
+def load_data(*args, **kwargs):
+    df = pl.DataFrame(
+        {
+            'A': [1, 2, 3, 4, 5] * 10,
+            'fruits': ['banana', 'banana', 'apple', 'apple', 'banana'] * 10,
+            'ham': ['a', 'b', 'c', 'd', 'e'] * 10,
+            'dt': ['2023-03-01', '2023-03-02', '2023-03-03', '2023-03-04', '2023-03-05'] * 10,
+            'arr': [[1, 2], [1, 2], [1, 2], [1, 2], [1, 2]] * 10,
+            'obj': [dict(a=[1, 2]), dict(a=[3, 4]), dict(a=[5, 6]), dict(a=[7, 8]), dict(a=[9, 10])] * 10,
+        }
+    )
+    df = df.with_columns(
+        pl.col('dt').str.to_datetime('%Y-%m-%d')
+    )
+    return df
+```
+
+![Untitled](https://media.graphassets.com/FBfwDhuzSnyc2O3pLyMS)

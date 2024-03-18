@@ -1,0 +1,103 @@
+---
+title: "Customize Mage’s design and layout"
+sidebarTitle: "Custom designs"
+description: "Change the visuals and customize parts of the user interface to best suite your needs."
+icon: "paintbrush-pencil"
+"og:image": "https://i.gifer.com/FJQR.gif"
+---
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Customize Mage’s design and layout"
+        src="https://i.gifer.com/FJQR.gif"
+    />
+    </p>
+</Frame>
+
+<br />
+
+## Header image
+
+1. Enable the feature named `Custom design` in your project settings (e.g. http://localhost:6789/settings/workspace/preferences).
+1. Add a file at the root of your project’s directory (e.g. `main_project/design.yaml`). 
+    The folder structure can look something like this:
+
+    ```
+    main_project/
+        data_loaders/
+        pipelines/
+        io_config.yaml
+        design.yaml
+    ```
+
+## Logo
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Custom logo design"
+        src="https://github.com/mage-ai/assets/blob/main/platform/design-header-logo.png?raw=true"
+    />
+    </p>
+</Frame>
+
+
+Change the logo that appears in the top left corner by adding the following settings in the
+`design.yaml` file:
+
+```yaml
+components:
+  header:
+    media:
+      url: https://assetsio.reedpopcdn.com/mtg-planeswalker-jace-the-mind-sculptor-artwork.jpg
+```
+
+## Add block buttons
+
+Customize the buttons that show up by default on the Add new block bar on the notebook page
+while building a pipeline.
+
+<Frame>
+    <p align="center">
+    <img
+        alt="Custom button layout"
+        src="https://github.com/mage-ai/assets/blob/main/platform/design-add-block_buttons.png?raw=true"
+    />
+    </p>
+</Frame>
+
+
+<Note>
+    You must enable the feature labeled `Add new block v2` for this to take effect.
+</Note>
+
+Add the following to the `design.yaml` file:
+
+```yaml
+pages:
+  pipelines:
+    edit:
+      buttons:
+        block:
+          add:
+            items:
+              - global_data_product
+              - templates/list
+            items_more:
+              - custom
+              - data_exporter
+              - data_loader
+              - dbt
+              - markdown
+              - sensor
+              - templates/new
+              - transformer
+```
+
+You can change the order of what appears first as well as which buttons are visible by default
+and which are displayed when the dropdown menu is shown after clicking the button <b>All blocks</b>.
+
+For buttons you want shown by default, add the button to the key labeled `items`.
+
+For buttons you want in the dropdown menu, add the button to the key labeled `items_more`.

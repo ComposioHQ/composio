@@ -1,0 +1,117 @@
+---
+title: "Trigger from AWS events"
+sidebarTitle: "AWS"
+description: "Run a pipeline whenever an AWS event occurs."
+---
+
+<Note>Event triggered pipelines only work when Mage is running in a cloud provider like AWS, GCP, or Azure.</Note>
+
+## TLDR
+
+1. Create a CloudWatch event rule.
+1. Add AWS credentials to environment variables for Mage to use.
+1. Create an event trigger for a pipeline.
+
+## Create a CloudWatch event rule
+
+The following steps will walk you through how to create an event rule for SQS.
+
+1. Go to the AWS CloudWatch dashboard; e.g. https://us-west-2.console.aws.amazon.com/cloudwatch/home
+1. Under the <b>Events</b> section, click the <b>Rules</b> link.
+1. Click the button <b>Create rule</b>; it should take you to a page like this https://us-west-2.console.aws.amazon.com/cloudwatch/home?#rules:action=create
+1. Under the <b>Event Source</b> section, select the option for <b>Event Pattern</b>.
+1. In the dropdown menu next to <b>Service Name</b>, select any option; e.g. `Simple Queue Service`.
+1. In the dropdown menu next to <b>Event Type</b>, select an option; e.g. `All Events`.
+1. Under the <b>Targets</b> section, click the <b>+ Add target</b> button.
+1. In the 1st dropdown menu, select a service; e.g. `SQS queue`.
+1. In the dropdown menu next to <b>Queue</b>, select an option.
+1. In the <b>Configure input</b> radio selection, choose <b>Matched event</b>.
+1. In the bottom right corner, click the button labeled <b>Configure details</b>.
+1. Enter a name for this event rule; e.g. `events_from_my_sqs_queue`.
+1. Check the status box labeled `Enabled`.
+1. In the bottom right corner, click the button labeled <b>Create rule</b>.
+
+![](https://github.com/mage-ai/assets/blob/main/guides/triggers/events/create-event.png?raw=true)
+
+## Add AWS credentials to environment variables
+
+If you’re using Mage in Docker, add the following environment variables when you run
+Mage:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+
+> Permissions
+>
+> The AWS credentials need to have the following permissions: `events:ListRules`.
+
+Follow these [instructions](/getting-started/setup#environment-variables)
+to learn more how to add environment variables when running Docker. For example:
+
+```bash
+docker run -it -p 6789:6789 -v $(pwd):/home/src mageai/mageai \
+  -e AWS_ACCESS_KEY_ID=... \
+  -e AWS_SECRET_ACCESS_KEY=... \
+  /app/run_app.sh mage start [project_name]
+```
+
+If you’re not using Docker to run Mage, run the following commands:
+
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+```
+
+## Set up Lambda Function
+
+For event trigger, Mage uses a Lambda Function to relay the event from CloudWatch to Mage.
+
+If you deploy Mage to AWS with [terraform scripts](https://github.com/mage-ai/mage-ai-terraform-templates/tree/master/aws),
+you can uncomment the code in the following places and run `terraform apply` to create the Lambda Function:
+* https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws/lambda.tf#L1-L23
+* https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws/iam.tf#L29-L73
+* https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws/main.tf#L46-L47
+* Add the `LAMBDA_FUNCTION_ARN` and `LAMBDA_FUNCTION_NAME` environment variables to https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws/env_vars.json
+  ```json
+  {
+      "name": "LAMBDA_FUNCTION_ARN",
+      "value": "${lambda_func_arn}"
+  },
+  {
+      "name": "LAMBDA_FUNCTION_NAME",
+      "value": "${lambda_func_name}"
+  },
+  ```
+
+If you don't use the terraform script to deploy Mage, you can set up the Lambda Function with the following steps:
+1. Create a Lambda Function.
+    1. Select `Python 3.9` as Runtime.
+    1. Use the same VPC and subnets of your Mage service. 
+    1. Create a security group. Edit your security group of the Mage instance to allow traffic from the Lambda Function's security group.
+1. Set the environment variable `MAGE_API_HOST` in the Lambda Function. 
+1. Copy the code from the [event_handler.py](https://github.com/mage-ai/mage-ai-terraform-templates/blob/master/aws/python/event_handler.py) to
+   your Lamdba Function.
+1. Test the connection by the executing Lambda Function with a test event json.
+1. Add environment variables `LAMBDA_FUNCTION_ARN` and `LAMBDA_FUNCTION_NAME` to your Mage service.
+
+
+
+## Create an event trigger
+
+1. Follow these [instructions](/design/data-pipeline-management#create-trigger)
+to create a trigger.
+1. When you choose the trigger type, select `Event`.
+1. Under the <b>Events</b> section, in the <b>Provider</b> dropdown menu, select the option `AWS`.
+1. Under the <b>Events</b> section, in the <b>Event</b> dropdown menu, select the name of the event
+you created in the previous steps; e.g. `events_from_my_sqs_queue`.
+1. At the top left corner, click the button <b>Save changes</b>.
+
+![](https://github.com/mage-ai/assets/blob/main/guides/triggers/events/create-trigger.png?raw=true)
+
+## Test pipeline trigger
+
+1. Go to the AWS SQS dashboard; e.g. https://us-west-2.console.aws.amazon.com/sqs/v2/home
+1. Click on a row for the queue that is referenced from the event you created in a previous step.
+1. In the top right corner, click the button <b>Send and receive messages</b>.
+1. In the input field labeled <b>Message body</b>, type `test`.
+1. In the top right corner, click the button <b>Send message</b>.

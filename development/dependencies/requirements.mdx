@@ -1,0 +1,36 @@
+---
+title: "Install Python packages"
+sidebarTitle: "Requirements.txt"
+description: "Use 3rd party Python packages in your project and pipelines."
+---
+<p align='center'>
+<img
+  alt="Python mecha"
+  src="https://github.com/mage-ai/assets/blob/main/development/python-package.png?raw=true"
+  width="250"
+></img>
+</p>
+
+## Add Python packages to `requirements.txt`
+
+At the root of your project directory, there is a file named `requirements.txt`. Open this file
+and add the Python package you want installed and available throughout your entire project.
+
+For example, if your project is named `demo_project` then the file will be located at
+`demo_project/requirements.txt`.
+
+## Example
+
+`[project_name]/requirements.txt`
+
+```
+matplotlib
+tqdm
+```
+
+## Automatic installation
+
+To automatically install the packages in `requirements.txt`, you'll need to make sure the
+environment variable `USER_CODE_PATH` is set to the value of your project path (e.g. `/home/src/project_name`).
+
+Mage's `run_app.sh` script automatically installs the requirements.txt under the `USER_CODE_PATH` before server starts.

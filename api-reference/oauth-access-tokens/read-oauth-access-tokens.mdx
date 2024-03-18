@@ -1,0 +1,81 @@
+---
+title: "Read OAuth tokens"
+sidebarTitle: "Read OAuth tokens"
+api: "GET /api/oauth_access_tokens"
+---
+```GET /api/oauth_access_tokens```
+
+<ParamField query="_limit" type="integer">
+  Maximum number of logs to be returned in the API response.
+
+  Example: `20`
+</ParamField>
+
+<ParamField query="_offset" type="integer">
+  Read logs after N number of logs, where N equals `_offset`.
+
+  Example: `10`
+</ParamField>
+
+<ParamField query="show_all" type="integer">
+  If `show_all` isn’t present, then only show active OAuth access tokens for the current user.
+
+  If `show_all` is `1`, then show active and expired OAuth access tokens for the current user.
+
+  Example: `1`
+</ParamField>
+
+<RequestExample>
+```bash Request
+curl --request GET \
+  --url 'http://localhost:6789/api/pipelines/oauth_access_tokens/logs?_limit=20&_offset=0&show_all=1&api_key=zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' \
+  --header 'OAUTH-TOKEN=some_really_long_string' \
+```
+</RequestExample>
+<ResponseExample>
+```json Response
+{
+  "oauth_access_tokens": [
+    {
+      "expires": "2023-08-18 23:41:52.480598+00:00",
+      "token": "JS3Umh826UoZzbuGQUsj36PSBwruVCzQYlRFf3KmJWA",
+      "user_id": 2
+    },
+    {
+      "expires": "2023-08-18 23:41:51.418942+00:00",
+      "token": "bScSh2uTtnjMlfOjMqyytvbXj1HHQ-CJJt17qIzaP9g",
+      "user_id": 2
+    },
+    {
+      "expires": "2023-08-11 18:37:52.832016+00:00",
+      "token": "ZBVozeqrPgnF-CoaUHEzMW1BbDJS2o66EJ6T2XOk2xE",
+      "user_id": 2
+    },
+    {
+      "expires": "2023-08-07 20:34:40.608736+00:00",
+      "token": "dAq4jS5XaPrntFMIcQMNaXpKEUyi2ajAsgqAWXFw1fI",
+      "user_id": 2
+    },
+    {
+      "expires": "2023-08-04 20:28:16.966716+00:00",
+      "token": "tQYy-W363hpWK7JRHur8gOFb-3BFe6Tp9afWDGtrQh4",
+      "user_id": 2
+    },
+    {
+      "expires": "2023-08-01 01:24:37.132478+00:00",
+      "token": "dUSVnZc_8JirhcB1QHXqyFTIUFwwpoWLdHT4I8Fuxmc",
+      "user_id": 2
+    },
+    {
+      "expires": "2023-08-01 01:24:36.096940+00:00",
+      "token": "Uv2C4YklZaKtEPFigzGblFZ8fCx33598ZvZ3JJCyDiw",
+      "user_id": 2
+    }
+  ],
+  "metadata": {
+    "count": 7,
+    "next": false
+  }
+}
+```
+</ResponseExample>

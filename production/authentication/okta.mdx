@@ -1,0 +1,54 @@
+---
+title: "Sign in with Okta"
+sidebarTitle: "Okta"
+description: "Enable signing in with Okta in Mage."
+---
+
+### Pre-requisites
+
+First, you'll need to enable user authentication within Mage. You can find out more about
+this in the [Overview page](/production/authentication/overview).
+
+### Enable Okta sign in
+
+By default, users will not see the "Sign in with Okta" option in their sign in page.
+
+<Steps>
+
+<Step title="Add Oauth application">
+
+You will need to add Mage as an OAuth client in your Okta organization admin dashboard.
+For more instructions on how to do this, please see the [Okta developer documentation](https://developer.okta.com/docs/guides/implement-oauth-for-okta/main/#create-an-oauth-2-0-app-in-okta).
+Make sure you select the "Authorization Code" grant flow, and add `http(s)://<your-mage-url>/oauth` as a Sign-in redirect URI.
+
+</Step>
+
+<Step title="Retrieve credentials">
+
+Once you have created the credentials, you will need to get the application's client ID and client secret.
+Make sure you also have your Okta domain URL.
+
+</Step>
+
+<Step title="Set environment variables">
+
+Set the following environment variables in your Mage setup.
+
+| Name | Value |
+| --- | --- |
+| `OKTA_DOMAIN_URL` | `<okta domain url>` |
+| `OKTA_CLIENT_ID` | `<client id>` |
+| `OKTA_CLIENT_SECRET` | `<client secret>` |
+
+</Step>
+
+</Steps>
+
+You should now see the "Sign in with Okta" button when you start Mage and attempt to sign in.
+
+<Frame>
+    <img
+        alt="Sign in with Okta"
+        src="https://github.com/mage-ai/assets/blob/main/production/authentication/sign-in-with-okta.png?raw=true"
+    />
+</Frame>

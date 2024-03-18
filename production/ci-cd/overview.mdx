@@ -1,0 +1,49 @@
+---
+title: "Overview"
+description: "There are 4 development and deployment workflows."
+---
+
+## Single environment
+
+### Development and production (local)
+
+Develop locally and run pipelines locally in a single environment.
+
+| Resources | Development | Production |
+| --- | --- | --- |
+| Local | `X` | `X` |
+| Cloud |   |   |
+
+### Development and production (cloud)
+
+Develop on cloud and run pipelines on cloud in a single environment.
+
+| Resources | Development | Production |
+| --- | --- | --- |
+| Local |   |   |
+| Cloud | `X` | `X` |
+
+---
+
+## Multiple environments
+
+### Development (local) and production (cloud)
+
+Develop locally (development environment) and
+run pipelines on cloud (production environment) in a separate environments.
+
+| Resources | Development | Production |
+| --- | --- | --- |
+| Local | `X` |   |
+| Cloud |   | `X` |
+
+### Development (cloud) and production (cloud)
+
+Develop on cloud (development environment) and
+run pipelines on cloud (production environment) in a separate environments.
+
+| Resources | Development | Production |
+| --- | --- | --- |
+| Local |   |   |
+| Cloud | `X` |   |
+| Cloud |   | `X` |

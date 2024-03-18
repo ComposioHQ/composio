@@ -1,0 +1,57 @@
+---
+title: "Detaching blocks"
+description: "Detach other pipeline associations from a block shared by multiple pipelines."
+---
+
+## Overview
+
+If a block is being used by multiple pipelines, changing the content of that block
+will change it for all of the pipelines sharing that block. If you want to create an
+isolated copy of that block for a specific pipeline so it doesn't affect other
+pipelines sharing it, you can "detach" it.
+
+Detaching a block duplicates it so it is no longer shared with any other pipelines,
+removing/detaching other pipeline associations. A new block file is created with the
+original block's contents, and the original block's dependencies in the current pipeline
+are preserved.
+
+### Supported pipeline types
+
+Detaching a block is supported in `standard` and `streaming` pipelines. It is not supported
+in `integration` pipelines.
+
+### Supported block types
+
+- Data loader
+- Transformer
+- Data exporter
+- Sensor
+- Custom
+
+### Unsupported block types
+
+- DBT
+- Callback
+- Conditional
+- Extension
+
+## How to detach a block
+
+<img src="https://github.com/mage-ai/assets/blob/main/blocks/detach_block.png?raw=True" />
+
+1. If a block is shared by multiple pipelines, there will be a symbol, which looks something
+like `<> X pipelines`, with the number of pipelines in the block's header on the Pipeline
+Editor page. Refer to the screenshot above for an example. All 3 of the example pipeline's
+blocks in the screenshot are shared by multiple pipelines.
+
+2. Click on the shared pipelines symbol (`<>`) or the block settings icon in the block
+header to go to the Block Settings panel in the Sidekick.
+
+3. Click on the `Detach </>` button at the top right of the block settings panel. Note
+that this button will only be visible if the selected block is shared by multiple pipelines.
+Blocks that are not shared by any other pipelines do not have the option to detach itself.
+
+4. A popup will appear allowing you to name the new block that will be created to replace
+the existing block. This new block will not be shared by any other pipelines.
+
+5. Click `Save and replace block`.

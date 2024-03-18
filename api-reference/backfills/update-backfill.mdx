@@ -1,0 +1,92 @@
+---
+title: "Update backfill"
+api: "PUT /api/pipelines/:pipeline_uuid/backfills/:backfill_id"
+---
+`PUT /api/pipelines/:pipeline_uuid/backfills/:backfill_id`
+
+All default attributes for a backfill may be updated in addittion to the following:
+
+<ParamField query="start_datetime" type="string">
+  A datetime formatted string representing the start time of the backfill, e.g. `"2023-09-05 23:56:05"`.
+</ParamField>
+<ParamField query="end_datetime" type="">
+  A datetime formatted string representing the end time of the backfill, e.g. `"2023-09-05 23:56:05"`.
+</ParamField>
+<ParamField query="interval_type" type="string">
+  The interval type for the backfill. One of: `minute`, `hour`, `day`, `week`, `month`, or `year`.
+</ParamField>
+<ParamField query="interval_units" type="integer">
+  The number of interval units for the backfill.
+</ParamField>
+<ParamField query="name" type="string">
+  A new name for the backfill.
+</ParamField>
+<ParamField query="status" type="status">
+  The backfill status. One of `initial`, `running`, `completed`, `failed`, `cancelled`.
+</ParamField>
+<ParamField query="variables" type="object">
+  An object containing Global Pipeline Variables to be overriden by the backfill. Any Global Variable may be overridden.
+</ParamField>
+
+![Global Pipeline Vars](https://github.com/mage-ai/assets/blob/main/pipeline-variables.png?raw=True)
+
+<RequestExample>
+  ```curl cURL
+  curl -X PUT
+  --url http://localhost:6789/api/pipelines/arwen_starlight/backfills/6
+  -H 'Content-Type: application/json'
+  -H 'Cookie: oauth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzIjoxNjkyMzE0ODM3LjE1MTkzOSwidG9rZW4iOiJieHlQajlVcHE5N2phTC1nTGtOQTVnM2draWZwRjJwSEZZZkNzLTJ2NmpnIn0.bWqUP7Xg9PmHBW703AGPOE270Cc73F4kb0IKHLppGbM'
+  -H 'X-API-KEY: zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2' 
+  -d '{
+    "backfill": {
+      "start_datetime": "2023-07-17 23:56:05",
+      "end_datetime": "2023-07-18 23:56:05",
+      "name": "new_name"
+    }
+  }' 
+
+  ```
+  ```python Python
+  import requests
+
+  headers = {
+    "Content-Type": "application/json",
+    "X-API-KEY": "zkWlN0PkIKSN0C11CfUHUj84OT5XOJ6tDZ6bDRO2",
+    "Cookie": "oauth_token=some_really_long_string"
+  }  
+  json_data = {
+    'backfill': {
+            "start_datetime": '2023-07-17 23:56:05',
+            "end_datetime": '2023-07-18 23:56:05',
+            'name':'new_name'
+            }
+  }
+
+  r = r.put('http://localhost:6789/api/pipelines/arwen_starlight/backfills/6', json=json_data, headers=headers)
+  ```
+</RequestExample>
+<ResponseExample>
+```json Response
+{
+  "backfill": {
+    "id": 6,
+    "block_uuid": null,
+    "completed_at": null,
+    "created_at": "2023-07-18 23:30:26",
+    "end_datetime": "2023-07-18 23:56:05",
+    "failed_at": null,
+    "interval_type": null,
+    "interval_units": null,
+    "metrics": null,
+    "name": "new_name",
+    "pipeline_schedule_id": null,
+    "pipeline_uuid": "arwen_starlight",
+    "start_datetime": "2023-07-17 23:56:05",
+    "started_at": null,
+    "status": null,
+    "updated_at": "2023-07-18 23:31:57",
+    "variables": null
+  }
+}
+```
+</ResponseExample>

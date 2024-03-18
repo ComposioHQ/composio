@@ -1,0 +1,80 @@
+---
+title: "Schedules"
+sidebarTitle: "Schedules"
+description: "Schedule pipelines to run periodically"
+---
+
+<Frame>
+    <img
+        alt="Schedule pipelines to run periodically"
+        src="https://media.tenor.com/lyU9j2EckEUAAAAd/running-out-of-time-no-time.gif"
+    />
+</Frame>
+
+You can schedule your pipeline to run on these intervals:
+
+- Once
+- Hourly
+- Daily
+- Weekly
+- Monthly
+- Always on
+    - The pipeline will be run as soon as the previous pipeline run is finished
+- Custom schedule using
+  [CRON Expression](https://en.wikipedia.org/wiki/Cron#CRON_expression)
+- Every minute using CRON expression: `* * * * *`
+- _Streaming pipeline_: coming soon
+Learn more about how to
+[schedule pipelines](/design/data-pipeline-management#create-trigger).
+
+## Landing times
+
+If the trigger type is a schedule then instead of choosing when the pipeline will run,
+you can choose the pipeline’s landing time.
+
+This is useful if you want your data pipeline to finish at a specific time instead of start at
+a specific time.
+
+For example, a pipeline is scheduled to land daily at 17:00 UTC.
+If this pipeline takes 10 hours on average to complete, then the pipeline will be triggered and
+start running at 05:00 UTC each day.
+
+### Enable landing time
+
+When editing a trigger with schedule type, there is a toggle called `Enable landing time`.
+Turn that on to enable landing time for the trigger.
+
+### Configure landing time
+
+Depending on the frequency, you’ll be able to configure the following times the pipeline
+should complete:
+
+- Day of the month
+- Day of the week
+- Hour of the day
+- Minute of the hour
+- Second of the minute
+
+## Extra runtime variables from pipeline run
+
+If your pipeline run belongs to a trigger that is scheduled, then the following extra
+variables are available in your Python block’s keyword arguments (e.g. `kwargs`).
+
+| Key | Description | Example |
+| --- | --- | --- |
+| `interval_start_datetime` | The `datetime` when the pipeline run is scheduled for. | `datetime.datetime(2023, 7, 23, 7, 0, 0, 0)` |
+| `interval_end_datetime` | The `datetime` when the next pipeline run is scheduled for. | `datetime.datetime(2023, 7, 24, 7, 0, 0, 0)` |
+| `interval_seconds` | The number of seconds between the current pipeline run and the next pipeline run. | `86400` |
+| `interval_start_datetime_previous` | The `datetime` when the previous pipeline run was scheduled for. | `datetime.datetime(2023, 7, 22, 7, 0, 0, 0)` |
+
+### SQL block
+
+If you’re using a SQL block, here is an example of how you can access these variables:
+
+```sql
+SELECT
+    '{{ interval_start_datetime }}' AS interval_start_datetime
+    , '{{ interval_end_datetime }}' AS interval_end_datetime
+    , '{{ interval_seconds }}' AS interval_seconds
+    , '{{ interval_start_datetime_previous }}' AS interval_start_datetime_previous
+```

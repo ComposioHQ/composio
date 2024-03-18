@@ -1,0 +1,73 @@
+---
+title: "InfluxDB"
+---
+
+## InfluxDB instance
+
+InfluxDB can be [run locally](https://docs.influxdata.com/influxdb/v2.7/install/) or in the cloud.
+
+## Basic config
+
+Basic configuration includes the server connection details:
+
+```yaml
+connector_type: influxdb
+url: "http://localhost:8086"
+token: "my-token"
+org: "my-org"
+bucket: "data"
+```
+
+## Data format
+
+InfluxDB supports [data elements](https://docs.influxdata.com/influxdb/v2.7/reference/key-concepts/data-elements/) for structuring your data. 
+The influxdb data exporter can create these elements if the messages received contain a metadata dictionary: 
+
+```python
+message['metadata'] = {
+    'measurement': str
+    'time': int
+    'tags': Dict
+}
+```
+
+The following message shows the configuration of all possible elements data and metadata:
+
+```python
+message = {
+    "data": {'bees': 23},
+    "metadata": {
+        'measurement': 'census',
+        'time': 1693472675783,  # timestamp with ms precision
+        'tags': {'location': 'klamath', 'scientist': 'anderson'}
+    }
+}
+```
+
+## Advanced config
+
+The influxdb data reader reads data from InfluxDB server in timed intervals.
+Every `timeout_ms` data with time stamps in the interval `(t-time_delay, t-time_delay+timeout_ms)` will be returned, where `t` is the current time.
+Note that InfluxDB is not a streaming database, so trying to set `time_delay` too small may result in data loss.
+This will occur if data is written to the database after the corresponding interval has been read.
+The time delay is given as [InfluxDB duration](https://docs.influxdata.com/flux/v0.x/data-types/basic/duration/).
+
+The `batch_size` limits the size of batches returned by the data reader. 
+If `print_intervals` is `true` the intervals are printed on every time step.
+The `filter_fn` can be used to further specify the data, e.g. `r._measurement == "cpu" and r._field == "usage_system"` (note the usage of single quotation marks outside and double quotation marks inside the filter_fn string).
+Defaults to `true` for no further filtering. 
+For documentation, see [InfluxDB filter() function](https://docs.influxdata.com/flux/v0.x/stdlib/universe/filter/)
+
+
+```yaml
+connector_type: influxdb
+url: "http://localhost:8086"
+token: "my-token"
+org: "my-org"
+bucket: "data"
+time_delay: "5m"
+timeout_ms: 1000
+batch_size: 100
+print_intervals: false
+filter_fn: 'true'
+```

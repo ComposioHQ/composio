@@ -1,0 +1,13 @@
+Instead of using `breakpoint()`, add the following line to your code where you
+want a debug:
+
+```python
+import pdb; pdb.set_trace()
+```
+
+Attach to running container to use debugger. To get the container ID, run
+`docker ps` and look in the `NAMES` column.
+
+```bash
+docker attach [container_id]
+```

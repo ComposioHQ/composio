@@ -1,0 +1,58 @@
+---
+title: "Monitoring with OpenTelemetry"
+sidebarTitle: "OpenTelemetry"
+---
+
+## Overview
+
+This guide details how to monitor your `mage_ai` application using OpenTelemetry. OpenTelemetry provides a unified approach to collecting telemetry data, such as traces and metrics, which are essential for understanding your application's performance and behavior.
+
+## Prerequisites
+
+Ensure the following prerequisites are in place before proceeding:
+- An OpenTelemetry Collector is set up and configured to receive telemetry data.
+- The `mage_ai` application is ready for instrumentation with OpenTelemetry.
+
+## Configuring OpenTelemetry in `mage_ai`
+
+### Setting Environment Variables
+
+Configure the OpenTelemetry Exporters in your application by setting the following environment variables:
+
+1. **OTLP HTTP Exporter**:
+   Use `OTEL_EXPORTER_OTLP_HTTP_ENDPOINT` to specify the HTTP endpoint of your OpenTelemetry Collector.
+
+   Example:
+   ```bash
+   export OTEL_EXPORTER_OTLP_HTTP_ENDPOINT="http://192.168.1.56:3418/v1/traces"
+   ```
+
+2. **OTLP Exporter**:
+
+The OTEL_EXPORTER_OTLP_ENDPOINT environment variable sets a general collector endpoint, which can be used for both gRPC and HTTP connections.
+
+Example:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT="192.168.1.56:3417"
+```
+
+### Instrumentation in the Application
+
+1. **SQLAlchemy Instrumentation**:
+The application uses the SQLAlchemyInstrumentor from OpenTelemetry to instrument database operations. This generates telemetry data like traces for database interactions.
+
+2. **Tornado Instrumentation**:
+To monitor HTTP server operations, the application integrates OpenTelemetry's Tornado instrumentation. This collects valuable data related to HTTP requests and server performance.
+
+## Telemetry Data Collection and Analysis
+
+With the environment variables set and the application running, OpenTelemetry will start collecting telemetry data based on the defined instrumentation.
+
+1. **Data Collection**:
+The application will send the collected telemetry data, including traces and metrics, to the specified OpenTelemetry Collector endpoint.
+
+2. **Analyzing Telemetry Data**:
+For effective visualization and analysis, you can connect your OpenTelemetry Collector to backend tools that support OpenTelemetry data (like Grafana or Jaeger).
+
+
