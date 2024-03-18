@@ -9,51 +9,35 @@ class ConnectionResponse(BaseModel):
         connectionId: str
         redirectUrl: str
 
-class ComposioClient:
+class ComposioSdk:
 
-    def __init__(self, base_url = "https://backend.composio.dev/api", manage_auth = True):
+    def __init__(self, api_key: str, base_url = "https://backend.composio.dev/api"):
         self.base_url = base_url
-        self.manage_auth = manage_auth
+        self.api_key = api_key
         self.http_client = requests.Session()
         self.http_client.headers.update({
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-api-key': self.api_key
         })
-
-        if manage_auth:
-            api_key = get_api_key()
-            if api_key:
-                self.http_client.headers.update({
-                    'Content-Type': 'application/json',
-                    'x-api-key': api_key
-                })
-
-    def authenticate(self, hash: str):
-        resp = self.http_client.post(f"{self.base_url}/v1/client/auth/identify", json={
-            "hash": hash
-        });
-        if resp.status_code == 202:
-            api_key = resp.json().get('apiKey')
-            self.http_client.headers.update({
-                'Content-Type': 'application/json',
-                'x-api-key': api_key
-            })
-            if self.manage_auth:
-                save_api_key(api_key)
-            return api_key
-
-        raise Exception("Failed to authenticate")
 
     def get_list_of_apps(self):
         resp = self.http_client.get(f"{self.base_url}/v1/apps") 
         return resp.json()
-    
-    def get_connector(self, tool_name: str):
-        connector_id = f"test-{tool_name}-connector"
+
+    def get_connector(self, connector_id):
         resp = self.http_client.get(f"{self.base_url}/v1/connectors/{connector_id}")
         if resp.status_code == 200:
             return resp.json()
 
         raise Exception("Failed to get connector")
+
+    def get_default_connector(self, tool_name: str):
+        connector_id = f"test-{tool_name}-connector"
+        return self.get_connector(connector_id)
+
+    def get_list_of_connectors(self):
+        resp = self.http_client.get(f"{self.base_url}/v1/connectors")
+        return resp.json()
 
     def create_connection(self, tool_name: str) -> ConnectionResponse:
         connector_id = f"test-{tool_name}-connector"
@@ -94,10 +78,9 @@ class ComposioClient:
         while True:
             connection_info = self.get_connection(connection_id)
             if connection_info.get('status') == 'ACTIVE':
-                if self.manage_auth:
-                    app_name = connection_info.get("appName", app_name)
-                    save_user_connection(connection_id, app_name)
-                    return True
+                app_name = connection_info.get("appName", app_name)
+                save_user_connection(connection_id, app_name)
+                return True
             time.sleep(1)  # Wait for a bit before retrying
     
     def get_actions(self, tool_names: list[str]):
