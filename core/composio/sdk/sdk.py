@@ -9,7 +9,6 @@ class ConnectionResponse(BaseModel):
         connectionId: str
         redirectUrl: str
 
-# ComposioSdk(api_key="COMP-asdhjasd")
 class ComposioSdk:
 
     def __init__(self, api_key: str, base_url = "https://backend.composio.dev/api"):
@@ -24,14 +23,21 @@ class ComposioSdk:
     def get_list_of_apps(self):
         resp = self.http_client.get(f"{self.base_url}/v1/apps") 
         return resp.json()
-    
-    def get_connector(self, tool_name: str):
-        connector_id = f"test-{tool_name}-connector"
+
+    def get_connector(self, connector_id):
         resp = self.http_client.get(f"{self.base_url}/v1/connectors/{connector_id}")
         if resp.status_code == 200:
             return resp.json()
 
         raise Exception("Failed to get connector")
+
+    def get_default_connector(self, tool_name: str):
+        connector_id = f"test-{tool_name}-connector"
+        return self.get_connector(connector_id)
+
+    def get_list_of_connectors(self):
+        resp = self.http_client.get(f"{self.base_url}/v1/connectors")
+        return resp.json()
 
     def create_connection(self, tool_name: str) -> ConnectionResponse:
         connector_id = f"test-{tool_name}-connector"
