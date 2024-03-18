@@ -1,1 +1,1 @@
-from .crewai_toolspec import ComposioTool, ComposioToolset
+from composio_langchain import ComposioToolset
