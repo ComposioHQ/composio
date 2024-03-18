@@ -30,6 +30,11 @@ def parse_arguments():
     show_apps_parser = subparsers.add_parser('show-apps', help='Display available apps')
     show_apps_parser.set_defaults(func=show_apps)
 
+    # List connections command
+    list_connections_parser = subparsers.add_parser('list-connections', help='List all connections for a given app')
+    list_connections_parser.add_argument('appName', type=str, help='Name of the app to list connections for')
+    list_connections_parser.set_defaults(func=list_connections)
+
     return parser.parse_args()
 
 def add_integration(args):
@@ -66,6 +71,22 @@ def show_apps(args):
         i = i + 1
 
     print("\n")
+
+def list_connections(args):
+    client = ComposioClient()
+    auth_user(client)
+    appName = args.appName
+    console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
+    try:
+        connections = client.get_connections(appName)
+        if connections:
+            for connection in connections:
+                console.print(f"[yellow]- {connection['connectionId']} ({connection['status']})[/yellow]")
+        else:
+            console.print("[red]No connections found for the specified app.[/red]")
+    except Exception as e:
+        console.print(f"[red]Error occurred during listing connections: {e}[/red]")
+        sys.exit(1)
     
 def print_intro(): 
         text = termcolor.colored('Composio', 'white', attrs=['bold'])  
