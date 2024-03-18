@@ -1,5 +1,7 @@
 from setuptools import setup
-import os 
+import os
+
+from core.composio.sdk.utils import generate_enums 
 
 def get_current_dir():
     return os.path.dirname(os.path.realpath(__file__))
@@ -18,15 +20,8 @@ class InstallCommandMiddleware(install):
     """Customized setuptools install command."""
     def run(self):
         install.run(self)
-        sdk_client = ComposioSdk()
-        apps = sdk_client.get_list_of_apps()
-        with open('composio/sdk/enums.py', 'w') as f:
-            f.write('from enum import Enum\n\n')
-            f.write('class Apps(Enum):\n')
-            for app in apps:
-                app_name = app['name'].upper().replace(' ', '_')
-                f.write(f'    {app_name} = "{app["name"]}"\n')
-
+        generate_enums()
+        
 setup(
     name = 'composio_core',
     version = '0.0.3',

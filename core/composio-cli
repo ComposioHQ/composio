@@ -11,7 +11,7 @@ import termcolor
 import requests
 from uuid import getnode as get_mac
 from composio.sdk.storage import save_user_connection
-from composio.sdk.client import ComposioClient
+from composio.sdk import ComposioCore
 from composio.sdk.utils import generate_enums
 
 import webbrowser
@@ -48,7 +48,7 @@ def handle_update(args):
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
 
 def add_integration(args):
-    client = ComposioClient()
+    client = ComposioCore()
     auth_user(client)
 
     integration_name = args.integration_name
@@ -70,7 +70,7 @@ def add_integration(args):
         sys.exit(1)
 
 def show_apps(args):
-    client = ComposioClient()
+    client = ComposioCore()
     auth_user(client)
     apps_list = client.get_list_of_apps()
     app_names_list = [{"name": app.get('name'), "uniqueId": app.get('key'), "appId": app.get('appId')} for app in apps_list.get('items')]
@@ -83,7 +83,7 @@ def show_apps(args):
     print("\n")
 
 def list_connections(args):
-    client = ComposioClient()
+    client = ComposioCore()
     auth_user(client)
     appName = args.appName
     console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
@@ -116,7 +116,7 @@ def print_intro():
 └───────────────────────────────────────────────────────────────────────────┘
         """)
 
-def auth_user(client: ComposioClient):
+def auth_user(client: ComposioCore):
     user_mac_address = get_mac()
     unique_identifier = f"{user_mac_address}-autogen"
     
@@ -127,7 +127,7 @@ def main():
 
     args = parse_arguments()
 
-    client = ComposioClient()
+    client = ComposioCore()
 
     try:
         user = auth_user(client)
