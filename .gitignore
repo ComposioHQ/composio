@@ -7,3 +7,4 @@ venv*
 **/composio_autogen.egg-info
 **/composio_llamaindex.egg-info
 **/__pycache__
+**/*.egg-info
