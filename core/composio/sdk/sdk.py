@@ -65,25 +65,25 @@ class ConnectedAccount(BaseModel):
         # self.connectionParams = OAuth2ConnectionParams(**self.connectionParams)
         self.sdk_instance = sdk_instance
 
-    def _execute_action(self, action_name: Action, connected_account_id: str, input_data: dict):
+    def _execute_action(self, action_name: Action, connected_account_id: str, params: dict):
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute", json={
             "connectedAccountId": connected_account_id,
-            "input": input_data
+            "input": params
         })
         if resp.status_code == 200:
             return resp.json()
         raise Exception("Failed to execute action")
     
-    def execute_action(self, action_name: Action, input_data: dict):
-        resp = self._execute_action(action_name, self.id, input_data)
+    def execute_action(self, action_name: Action, params: dict):
+        resp = self._execute_action(action_name, self.id, params)
         return resp
     
-    def get_all_actions(self, format: ActionSignatureFormat = ActionSignatureFormat.DEFAULT):
+    def get_all_actions(self, format: SchemaFormat = SchemaFormat.DEFAULT):
         app_unique_id = self.appUniqueId
         resp = self.sdk_instance.http_client.get(f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}")
         if resp.status_code == 200:
             actions = resp.json()
-            if format == ActionSignatureFormat.OPENAI:
+            if format == SchemaFormat.OPENAI:
                 return [
                     {"type": "function", "function": {
                         "name": action["name"],

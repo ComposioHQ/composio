@@ -57,13 +57,13 @@ class ComposioCore:
         
         raise Exception("Failed to create connection")
     
-    def execute_action(self, action: Action, input_data: dict):
+    def execute_action(self, action: Action, params: dict):
         connectionId = get_user_connection(action.value[0])
         if not connectionId:
             raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
 
         app_integration = self.sdk.get_connected_account(connectionId)
-        resp = app_integration.execute_action(action, input_data)
+        resp = app_integration.execute_action(action, params)
         return resp
 
     def get_list_of_connections(self, app_name: list[str] = None) -> list[ConnectedAccount]:
