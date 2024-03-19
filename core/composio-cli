@@ -11,7 +11,7 @@ import termcolor
 import requests
 from uuid import getnode as get_mac
 from composio.sdk.storage import save_user_connection
-from composio.sdk import ComposioCore
+from composio.sdk.core import ComposioCore
 from composio.sdk.utils import generate_enums
 
 import webbrowser
@@ -55,14 +55,14 @@ def add_integration(args):
     console.print(f"\n[green]> Adding integration: {integration_name.capitalize()}...[/green]\n")
     try:
         # @TODO: add logic to wait and ask for API_KEY
-        connection = client.create_connection(integration_name)
+        connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
         webbrowser.open(connection.redirectUrl)
-        print(f"Please authenticate {integration_name} in the browser and come back here.")
+        print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
         spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
         spinner.start()
-        client.wait_for_connection(connection.connectionId, integration_name)
+        connected_account = connection.wait_until_active()
         spinner.stop()
-        save_user_connection(connection.connectionId, integration_name)
+        save_user_connection(connected_account.id, integration_name)
         print("")
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
     except Exception as e:
@@ -72,7 +72,7 @@ def add_integration(args):
 def show_apps(args):
     client = ComposioCore()
     auth_user(client)
-    apps_list = client.get_list_of_apps()
+    apps_list = client.sdk.get_list_of_apps()
     app_names_list = [{"name": app.get('name'), "uniqueId": app.get('key'), "appId": app.get('appId')} for app in apps_list.get('items')]
     console.print("\n[green]> Available apps supported by composio:[/green]\n")
     i = 1
