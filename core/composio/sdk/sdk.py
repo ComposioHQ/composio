@@ -139,7 +139,7 @@ class ComposioSdk:
             if action_names is not None and len(action_names) > 0:
                 return [action for action in actions for item in actions["items"] if item in action_names]
             else:
-                return actions
+                return actions["items"]
         
         raise Exception("Failed to get actions")
 
