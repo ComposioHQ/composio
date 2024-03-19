@@ -64,14 +64,15 @@ class ConnectedAccount(BaseModel):
         # self.connectionParams = OAuth2ConnectionParams(**self.connectionParams)
         self.sdk_instance = sdk_instance
 
-    def _execute_action(self, action_name: Action, connection_id: str, input_data: dict):
+    def _execute_action(self, action_name: Action, connected_account_id: str, input_data: dict):
         print({
-            "connectionId": connection_id,
+            "connectedAccountId": connected_account_id,
             "input": input_data
         })
-
+        print(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute")
+        
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute", json={
-            "connectionId": connection_id,
+            "connectedAccountId": connected_account_id,
             "input": input_data
         })
         if resp.status_code == 200:
