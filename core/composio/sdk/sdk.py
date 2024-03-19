@@ -11,7 +11,7 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from openai.types.chat.chat_completion import ChatCompletion
 import json
 
-class ActionSignatureFormat(Enum):
+class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
 
@@ -165,17 +165,17 @@ class ComposioSdk:
         resp = self.http_client.get(f"{self.base_url}/v1/apps") 
         return resp.json()
 
-    def get_list_of_actions(self, app_unique_id: list[App] = None, action_names: list[Action] = None) -> list:
-        if app_unique_id is None or len(app_unique_id) == 0:
+    def get_list_of_actions(self, apps: list[App] = None, actions: list[Action] = None) -> list:
+        if apps is None or len(apps) == 0:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
-            app_unique_ids = [app.value for app in app_unique_id]
+            app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_ids)}")
         if resp.status_code == 200:
             actions = resp.json()
-            if action_names is not None and len(action_names) > 0:
+            if actions is not None and len(actions) > 0:
                 filtered_actions = []
-                action_names_list = [action.value[1] for action in action_names]
+                action_names_list = [action.value[1] for action in actions]
                 for item in actions["items"]:
                     if item["name"] in action_names_list:
                         filtered_actions.append(item)
