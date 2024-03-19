@@ -28,7 +28,7 @@ def generate_enums():
     enum_content += '        self.action = action\n\n'
     for app in apps["items"]:
         app_key = app['key']
-        app_actions = [action for action in actions["items"] if action["appKey"] == app_key]
+        app_actions = [action for action in actions if action["appKey"] == app_key]
         for action in app_actions:
             enum_name = f'{app_key.upper()}_{_get_enum_key(action["display_name"])}'
             enum_value = f'("{app_key}", "{action["name"]}")'
