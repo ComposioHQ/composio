@@ -1,18 +1,27 @@
-from composio.sdk.sdk import ComposioSdk
+from composio.sdk.sdk import ComposioSdk, ActionSignatureFormat
 from composio.sdk.enums import TestIntegration, Action
+from openai import OpenAI
 
-sdk_client = ComposioSdk("hrhdegyxh44twa8zhtpkg")
-apps = sdk_client.get_list_of_apps()
-app_integration = sdk_client.get_app_integration(TestIntegration.GITHUB)
-print("GOT APP INTEGRATION")
-connection_request = app_integration.initiate_connection()
-print("INITIATED CONNECTION")
-print(f"Connection reuqest: {connection_request.redirectUrl} ")
-connected_account = connection_request.wait_until_active()
-print("CONNECTED ACCOUNT")
-connected_account.execute_action(Action.GITHUB_CREATE_ISSUE, {
-    "title": "Test issue",
-    "body": "This is a test issue",
-    "owner": "utkarsh-dixit",
-    "repo": "speedy"
-})
+sdk_client = ComposioSdk("yw1qb4ls4340z696zh7sa")
+connection = sdk_client.get_connected_account("9c8e6e42-3837-4014-bd80-12696bd758f1")
+
+print("Connection is", connection)
+client = OpenAI(api_key="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")
+response = client.chat.completions.create(
+    model="gpt-4-turbo-preview",
+    tools=connection.get_all_actions(format = ActionSignatureFormat.OPENAI),
+    messages=[
+        {
+            "role": "system",
+            "content": "You are a good assistant."
+        },
+        {
+            "role": "user",
+            "content": "Create a new issue in a repository and title it 'This is so cool!', \
+and the body of the issue is 'Does it work? Lets try.'. \
+The owner of the repository is utkarsh-dixit and name of the repository is speedy",
+        }
+    ]
+)
+
+print(response)

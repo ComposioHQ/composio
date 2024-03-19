@@ -83,7 +83,7 @@ class ConnectedAccount(BaseModel):
         resp = self._execute_action(action_name, self.id, input_data)
         return resp
     
-    def get_all_actions(self, format: ActionSignatureFormat):
+    def get_all_actions(self, format: ActionSignatureFormat = ActionSignatureFormat.DEFAULT):
         app_unique_id = self.appUniqueId
         print(app_unique_id)
         resp = self.sdk_instance.http_client.get(f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}")
@@ -98,7 +98,8 @@ class ConnectedAccount(BaseModel):
                         "parameters": action.get("parameters", {})
                     }} for action in actions["items"]
                 ]
-            return actions["items"]
+            else: 
+                return actions["items"]
         
         raise Exception("Failed to get actions")
 
