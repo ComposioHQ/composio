@@ -66,12 +66,6 @@ class ConnectedAccount(BaseModel):
         self.sdk_instance = sdk_instance
 
     def _execute_action(self, action_name: Action, connected_account_id: str, input_data: dict):
-        print({
-            "connectedAccountId": connected_account_id,
-            "input": input_data
-        })
-        print(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute")
-
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute", json={
             "connectedAccountId": connected_account_id,
             "input": input_data
@@ -86,11 +80,9 @@ class ConnectedAccount(BaseModel):
     
     def get_all_actions(self, format: ActionSignatureFormat = ActionSignatureFormat.DEFAULT):
         app_unique_id = self.appUniqueId
-        print(app_unique_id)
         resp = self.sdk_instance.http_client.get(f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}")
         if resp.status_code == 200:
             actions = resp.json()
-            print(actions)
             if format == ActionSignatureFormat.OPENAI:
                 return [
                     {"type": "function", "function": {
