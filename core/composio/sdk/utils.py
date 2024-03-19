@@ -7,7 +7,7 @@ def _get_enum_key(name):
 def generate_enums():
     sdk_client = ComposioSdk("hrhdegyxh44twa8zhtpkg")
     apps = sdk_client.get_list_of_apps()
-    actions = sdk_client.get_actions()
+    actions = sdk_client.get_list_of_actions()
 
     enum_content = 'from enum import Enum\n\n'
     enum_content += 'class App(Enum):\n'
@@ -23,17 +23,16 @@ def generate_enums():
 
     enum_content += '\n'
     enum_content += 'class Action(Enum):\n'
+    enum_content += '    def __init__(self, service, action):\n'
+    enum_content += '        self.service = service\n'
+    enum_content += '        self.action = action\n\n'
     for app in apps["items"]:
-        app_name = app['key'].capitalize().replace(' ', '_').replace('-', '_')
-
-        app_actions = [action for action in actions["items"] if action["appKey"] == app["key"]]
-        if len(app_actions) > 0:
-            enum_content += f'  class {app_name}(Enum):\n'
-            for action in app_actions:
-                action_name_parts = action['name'].split('_')
-                action_name = '_'.join([part.capitalize() for part in action_name_parts])
-                enum_content += f'    {_get_enum_key(action["display_name"])} = "{action["name"]}"\n'
-            enum_content += '\n'
+        app_key = app['key']
+        app_actions = [action for action in actions["items"] if action["appKey"] == app_key]
+        for action in app_actions:
+            enum_name = f'{app_key.upper()}_{_get_enum_key(action["display_name"])}'
+            enum_value = f'("{app_key}", "{action["name"]}")'
+            enum_content += f'    {enum_name} = {enum_value}\n'
         # enum_content += f'Actions.{app_name} = {app_name}\n\n'
     with open(os.path.join(os.path.dirname(__file__), 'enums.py'), 'w') as f:
         f.write(enum_content)
