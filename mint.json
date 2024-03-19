@@ -73,8 +73,7 @@
       "group": "Get Started",
       "pages": [
         "introduction/overview",
-        "getting-started/setup",
-        "design/core-design-principles"
+        "getting-started/setup"
       ]
     },
 
