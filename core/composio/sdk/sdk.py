@@ -19,14 +19,16 @@ class ConnectionRequest(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
-    def wait_until_active(self) -> 'ConnectedAccount':
+    def wait_until_active(self, timeout=60) -> 'ConnectedAccount':  # Timeout adjusted to seconds
         if not self.sdk_instance:
             raise ValueError("SDK instance not set.")
-        while True:
+        start_time = time.time()
+        while time.time() - start_time < timeout:
             connection_info = self.sdk_instance.get_connected_account(self.connectionId)
             if connection_info.status == 'ACTIVE':
                 return connection_info
             time.sleep(1)
+        raise TimeoutError("Connection did not become active within the timeout period.")
 
 class OAuth2ConnectionParams(BaseModel):
     scope: Optional[str] = None
