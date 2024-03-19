@@ -1,0 +1,98 @@
+---
+title: "🧰 Integrations!"
+sidebarTitle: "Integrations"
+icon: "hat-wizard"
+description: "Performing an action on Github using Natural Language.✨"
+---
+
+# Using Integrations
+
+### **Integrations**
+
+An Integration allows your users to connect with various external applications and authorise your agents to act on behalf of them.
+
+### **Decide on what kind of Integrations you want**
+
+1. **Default Integrations**: We support many applications and you can easily create integrations for them. You can also add your client ID and Secret. [List of available integrations.](https://www.notion.so/Introduction-27b3883644704d55812a8da65b405f32?pvs=21)
+2. **Custom Integrations**: We also allow you to define custom integrations through code. This is done by adding a YAML file.
+3. **Premium Integrations:** We can also prioritise specialised integrations for your use case.
+
+### **Connecting your customer’s account**
+
+### Step 1: Get all required parameters for an integration
+
+Ex API Key , Sub Domain URL, User Name
+
+```python
+from composio.sdk import ComposioSdk
+
+composio = Composio("api-key")
+
+integration = composio.get_integration(integration_id) # User Selected Id
+
+print(integration.get_required_variables()) # list of params req from user
+```
+
+Printed for `Zendesk`
+
+```python
+[
+    {
+        'name': 'api_key',
+        'expected_from_customer': True,
+        'displayName': 'API Key',
+        'description': 'Your Linear API key for authentication. Obtain it from your Linear settings.',
+        'type': 'string',
+        'required': True
+    }
+]
+```
+
+### Step 2: Initiate a Connection Request by using collecting params via user
+
+```python
+params = {"api_key":"linearApiKey"}
+
+connection_request = integration.initiate_connection(user_uuid = nil, params=params)
+print(connection_request)
+if connection_request.redirectUrl != "":
+	print(f"Please complete the auth flow by opening this link: {}", connection_request.redirectUrl)
+else:
+	print("The account status is :{}",connection_request.status)
+```
+
+### Step 3: Complete the redirectUrl Flow allowing user to authorise the request
+
+In case of **OAuth Flow**, the _redirectUrl_ will be returned which will be used to redirect User to OAuth Authorisation Completion page.
+
+```python
+{
+    "connectionStatus": "INITIATED",
+    "connectedAccountId": "1f32dbf-f7cfec95e567",
+    "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
+}
+```
+
+Once user approves, OAuth process will be completed and the user will be redirected back to configured URL in the connector.
+
+### **Step 4: Get Status of Connection Request**
+
+Check if the status has been updated. You can do it via two different ways
+
+1. Get Connected Account using ID & Verify value of status
+
+   OR
+
+2. Use `wait_until_active` method.
+
+```python
+account = composio.get_connected_account(connection_request.id)
+print(account.status)
+
+# OR
+
+account = connection_request.wait_until_active(timeout=60)
+print(account)
+```
+
+Read Next: [Using Actions](https://www.notion.so/Using-Actions-d3b937454db04bb1848d301f3a1f4c99?pvs=21)
