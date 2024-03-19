@@ -126,7 +126,7 @@ class AppIntegration(BaseModel):
     enabled: bool
     deleted: bool
     appId: str
-    defaultConnectorId: str
+    defaultConnectorId: str = None
     expectedInputFields: list = []
     logo: str
     appName: str
