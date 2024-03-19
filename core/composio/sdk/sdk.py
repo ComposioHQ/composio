@@ -9,6 +9,7 @@ from .storage import get_user_connection, get_api_key, save_api_key, save_user_c
 from uuid import getnode as get_mac
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 from openai.types.chat.chat_completion import ChatCompletion
+import json
 
 class ActionSignatureFormat(Enum):
     OPENAI = "openai"
@@ -106,9 +107,13 @@ class ConnectedAccount(BaseModel):
     def handle_tools_calls(self, tool_calls: ChatCompletion):
         if tool_calls.choices:
             for choice in tool_calls.choices:
-                if choice.tool_call:
-                    tool_call = choice.tool_call
-                    action_name = tool_call.action_name
+                if choice.message.tool_calls:
+                    for tool_call in choice.message.tool_calls:
+                        function = tool_call.function
+                        action = self.sdk_instance.get_action_enum(function.name, self.appUniqueId)
+                        arguments = json.loads(function.arguments)
+                        self.execute_action(action, arguments)
+
         
 
 class AppIntegration(BaseModel):
@@ -212,3 +217,9 @@ class ComposioSdk:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
         
         raise Exception("Failed to get connected accounts")
+    
+    def get_action_enum(self, action_name: str, tool_name: str) -> Action:
+        for action in Action:
+            if action.action == action_name and action.service == tool_name.lower():
+                return action
+        raise ValueError(f"No matching action found for action: {action_name} and tool: {tool_name}")

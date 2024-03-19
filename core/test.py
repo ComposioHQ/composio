@@ -24,4 +24,8 @@ The owner of the repository is utkarsh-dixit and name of the repository is speed
     ]
 )
 
-print(response)
+print("RECIEVED RESPONSE: ", response)
+
+connection.handle_tools_calls(response)
+
+print("DONE")
