@@ -70,7 +70,7 @@ class ConnectedAccount(BaseModel):
             "input": input_data
         })
         print(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute")
-        
+
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute", json={
             "connectedAccountId": connected_account_id,
             "input": input_data
@@ -168,9 +168,9 @@ class ComposioSdk:
             resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_ids)}")
         if resp.status_code == 200:
             actions = resp.json()
-            action_names_list = [action.value[1] for action in action_names]
             if action_names is not None and len(action_names) > 0:
                 filtered_actions = []
+                action_names_list = [action.value[1] for action in action_names]
                 for item in actions["items"]:
                     if item["name"] in action_names_list:
                         filtered_actions.append(item)
