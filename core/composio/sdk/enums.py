@@ -20,7 +20,7 @@ class Apps(Enum):
     GOOGLE_SHEETS = "google-sheets"
     DISCORD = "discord"
 
-class TestConnctors(Enum):
+class TestConnectors(Enum):
     ASANA = "test-asana-connector"
     CALENDLY = "test-calendly-connector"
     GITHUB = "test-github-connector"

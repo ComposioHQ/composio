@@ -16,7 +16,7 @@ def generate_enums():
         enum_content += f'    {app_name} = "{app["key"]}"\n'
     
     enum_content += "\n"
-    enum_content += 'class TestConnctors(Enum):\n'
+    enum_content += 'class TestConnectors(Enum):\n'
     for app in apps["items"]:
         app_name = app['key'].upper().replace(' ', '_').replace('-', '_')
         enum_content += f'    {app_name} = "test-{app["key"]}-connector"\n'
