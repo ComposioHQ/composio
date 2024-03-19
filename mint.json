@@ -5,6 +5,7 @@
     "dark": "/logo/dark.svg"
   },
   "favicon": "/favicon.png",
+  "openapi": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
   "colors": {
     "primary": "#7E53F8",
     "light": "#BFA8FF",
@@ -12,7 +13,7 @@
     "ultraLight": "#E4DAFF",
     "ultraDark": "#270A7A",
     "background": {
-      "dark": "#121212"
+      "dark": "#0F0F0F"
     }
   },
   "feedback": {
@@ -62,30 +63,17 @@
       "url": "platform"
     },
     {
-      "name": "Contribute",
-      "url": "contributing"
-    },
-    {
-      "name": "Slack",
+      "name": "Discord",
       "url": "https://www.mage.ai/chat"
     }
   ],
   "anchors": [
     {
-      "name": "Releases",
+      "name": "Website",
       "icon": "megaphone",
-      "url": "https://docs.mage.ai/about/releases"
-    },
-    {
-      "name": "Roadmap",
-      "icon": "map",
-      "url": "https://docs.mage.ai/about/roadmap"
-    },
-    {
-      "name": "Troubleshooting",
-      "icon": "question",
-      "url": "https://docs.mage.ai/development/troubleshooting"
+      "url": "https://app.composio.dev"
     }
+
   ],
   "navigation": [
     {
@@ -374,8 +362,7 @@
                 "integrations/databases/Redshift",
                 "integrations/databases/S3",
                 "integrations/databases/Snowflake",
-                "integrations/databases/trino",
-                "integrations/databases/weaviate"
+                "integrations/databases/trino"
               ]
             },
             "getting-started/kernels"
