@@ -96,15 +96,22 @@ class ConnectedAccount(BaseModel):
         
         raise Exception("Failed to get actions")
 
-    def handle_tools_calls(self, tool_calls: ChatCompletion):
-        if tool_calls.choices:
-            for choice in tool_calls.choices:
-                if choice.message.tool_calls:
-                    for tool_call in choice.message.tool_calls:
-                        function = tool_call.function
-                        action = self.sdk_instance.get_action_enum(function.name, self.appUniqueId)
-                        arguments = json.loads(function.arguments)
-                        self.execute_action(action, arguments)
+    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
+        output = []
+        try: 
+            if tool_calls.choices:
+                for choice in tool_calls.choices:
+                    if choice.message.tool_calls:
+                        for tool_call in choice.message.tool_calls:
+                            function = tool_call.function
+                            action = self.sdk_instance.get_action_enum(function.name, self.appUniqueId)
+                            arguments = json.loads(function.arguments)
+                            output.append(self.execute_action(action, arguments))
+        except Exception as e:
+            print(e)
+            return output
+        
+        return output
 
         
 
