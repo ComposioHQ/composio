@@ -5,7 +5,6 @@
     "dark": "/logo/dark.svg"
   },
   "favicon": "/favicon.png",
-  "openapi": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
   "colors": {
 
 
