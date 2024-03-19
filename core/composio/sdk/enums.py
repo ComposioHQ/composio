@@ -1,6 +1,6 @@
 from enum import Enum
 
-class Apps(Enum):
+class App(Enum):
     ASANA = "asana"
     CALENDLY = "calendly"
     GITHUB = "github"
@@ -20,7 +20,7 @@ class Apps(Enum):
     GOOGLE_SHEETS = "google-sheets"
     DISCORD = "discord"
 
-class TestConnectors(Enum):
+class TestConnector(Enum):
     ASANA = "test-asana-connector"
     CALENDLY = "test-calendly-connector"
     GITHUB = "test-github-connector"
@@ -40,7 +40,7 @@ class TestConnectors(Enum):
     GOOGLE_SHEETS = "test-google-sheets-connector"
     DISCORD = "test-discord-connector"
 
-class Actions(Enum):
+class Action(Enum):
   class Asana(Enum):
     CREATE_SUBTASK = "asana_create_subtask"
     GET_SUBTASKS = "asana_get_subtasks"

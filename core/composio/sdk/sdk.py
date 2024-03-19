@@ -1,4 +1,5 @@
 import time
+from typing import Optional
 import requests
 from pydantic import BaseModel, ConfigDict
 
@@ -7,6 +8,7 @@ from .storage import get_user_connection, get_api_key, save_api_key, save_user_c
 from uuid import getnode as get_mac
 
 class ConnectionRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     connectionStatus: str
     connectionId: str
     redirectUrl: str
@@ -29,16 +31,17 @@ class ConnectionRequest(BaseModel):
             time.sleep(1)
 
 class OAuth2ConnectionParams(BaseModel):
-    scope: str
-    base_url: str
+    scope: Optional[str]
+    base_url: Optional[str]
     client_id: str
-    token_type: str
-    access_token: str
+    token_type: Optional[str]
+    access_token: Optional[str]
     client_secret: str
-    headers: dict
-    queryParams: dict
+    headers: Optional[dict]
+    queryParams: Optional[dict]
 
 class ConnectedAccount(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     connectorId: str
     connectionParams: OAuth2ConnectionParams
     appUniqueId: str
@@ -102,6 +105,16 @@ class AppIntegration(BaseModel):
     def __init__(self, sdk_instance: 'ComposioSdk', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
+    
+    def initiate_connection(self) -> ConnectionRequest:
+        connector_id = f"test-{self.appName}-connector"
+        resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connections", json={
+            "connectorId": connector_id,
+        })
+        if resp.status_code == 200:
+            return ConnectionRequest(self.sdk_instance, **resp.json())
+        
+        raise Exception("Failed to create connection")
 
 class ComposioSdk:
     def __init__(self, api_key: str = None, base_url = "https://backend.composio.dev/api"):
@@ -134,15 +147,6 @@ class ComposioSdk:
 
         raise Exception("Failed to get connector")
 
-    def initiate_connection(self, tool_name: str) -> ConnectionRequest:
-        connector_id = f"test-{tool_name}-connector"
-        resp = self.http_client.post(f"{self.base_url}/v1/connections", json={
-            "connectorId": connector_id,
-        })
-        if resp.status_code == 200:
-            return ConnectionRequest(self, **resp.json())
-        
-        raise Exception("Failed to create connection")
 
     def get_connected_account(self, connection_id: str) -> ConnectedAccount:
         resp = self.http_client.get(f"{self.base_url}/v1/connections/{connection_id}")

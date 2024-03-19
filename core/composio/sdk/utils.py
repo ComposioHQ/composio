@@ -10,19 +10,19 @@ def generate_enums():
     actions = sdk_client.get_actions()
 
     enum_content = 'from enum import Enum\n\n'
-    enum_content += 'class Apps(Enum):\n'
+    enum_content += 'class App(Enum):\n'
     for app in apps["items"]:
         app_name = app['key'].upper().replace(' ', '_').replace('-', '_')
         enum_content += f'    {app_name} = "{app["key"]}"\n'
     
     enum_content += "\n"
-    enum_content += 'class TestConnectors(Enum):\n'
+    enum_content += 'class TestConnector(Enum):\n'
     for app in apps["items"]:
         app_name = app['key'].upper().replace(' ', '_').replace('-', '_')
         enum_content += f'    {app_name} = "test-{app["key"]}-connector"\n'
 
     enum_content += '\n'
-    enum_content += 'class Actions(Enum):\n'
+    enum_content += 'class Action(Enum):\n'
     for app in apps["items"]:
         app_name = app['key'].capitalize().replace(' ', '_').replace('-', '_')
 
