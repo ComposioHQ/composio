@@ -6,12 +6,9 @@
   },
   "favicon": "/favicon.png",
   "colors": {
-
-
     "primary": "#355cff",
-    "light": "#4579FF",
+    "light": "#93B1FF",
     "dark": "#355cff",
-
     "ultraLight": "#E4DAFF",
     "ultraDark": "#270A7A",
     "background": {
@@ -494,7 +491,7 @@
   },
   "api": {
     "playground": {
-      "mode": "hide"
+      "mode": "show"
     }
   },
   "redirects": [
