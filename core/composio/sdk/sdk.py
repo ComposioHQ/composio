@@ -3,7 +3,7 @@ from typing import Optional
 import requests
 from pydantic import BaseModel, ConfigDict
 
-from .enums import Action, App, TestConnector
+from .enums import Action, App, TestIntegration
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
 
@@ -113,6 +113,9 @@ class AppIntegration(BaseModel):
             return ConnectionRequest(self.sdk_instance, **resp.json())
         
         raise Exception("Failed to create connection")
+    
+    def get_required_variables(self):
+        return self.expectedInputFields
 
 class ComposioSdk:
     def __init__(self, api_key: str = None, base_url = "https://backend.composio.dev/api"):
@@ -156,8 +159,8 @@ class ComposioSdk:
         resp = resp.json()
         return [AppIntegration(self, **app) for app in resp["items"]]
 
-    def get_app_integration(self, connector_id: str | TestConnector) -> AppIntegration:
-        if isinstance(connector_id, TestConnector):
+    def get_app_integration(self, connector_id: str | TestIntegration) -> AppIntegration:
+        if isinstance(connector_id, TestIntegration):
             connector_id = connector_id.value
         resp = self.http_client.get(f"{self.base_url}/v1/connectors/{connector_id}")
         if resp.status_code == 200:

@@ -6,7 +6,7 @@ from .sdk import ConnectionRequest, ConnectedAccount
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
 from .sdk import ComposioSdk
-from .enums import TestConnector, Action
+from .enums import TestIntegration, Action
 
 class ComposioCore:
     sdk: ComposioSdk = None
@@ -45,8 +45,8 @@ class ComposioCore:
 
         raise Exception("Failed to authenticate")
     
-    def initiate_connection(self, connectorId: str | TestConnector) -> ConnectionRequest:
-        if isinstance(connectorId, TestConnector):
+    def initiate_connection(self, connectorId: str | TestIntegration) -> ConnectionRequest:
+        if isinstance(connectorId, TestIntegration):
             connectorId = connectorId.value
 
         resp = self.http_client.post(f"{self.base_url}/v1/connections", json={
