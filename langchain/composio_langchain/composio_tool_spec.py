@@ -17,10 +17,10 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
         func = lambda **kwargs: client.execute_action(client.get_action_enum(name, appName), kwargs)
     )
 
-def ComposioToolset(tools: List[App] = [], actions: List[Action] = []) -> List[StructuredTool]:
-    if len(tools) >0 and len(actions) > 0:
+def ComposioToolset(apps: List[App] = [], actions: List[Action] = []) -> List[StructuredTool]:
+    if len(apps) >0 and len(actions) > 0:
         raise ValueError("You must provide either a list of tools or a list of actions, not both")
     client = ComposioCore()
-    actions_list = client.sdk.get_list_of_actions(tools, actions)
+    actions_list = client.sdk.get_list_of_actions(apps, actions)
     return [ComposioTool(client, action) for action in actions_list]
 
