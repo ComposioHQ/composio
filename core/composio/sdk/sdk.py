@@ -104,7 +104,7 @@ class AppIntegration(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
     
-    def initiate_connection(self) -> ConnectionRequest:
+    def initiate_connection(self, user_uuid: str = None) -> ConnectionRequest:
         connector_id = f"test-{self.appName}-connector"
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connections", json={
             "connectorId": connector_id,
