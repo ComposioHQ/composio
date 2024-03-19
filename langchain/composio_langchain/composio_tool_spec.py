@@ -8,7 +8,6 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
     description = action_schema["description"]
     parameters = json_schema_to_model(action_schema["parameters"])
     appName = action_schema["appName"]
-    print(parameters.schema())
     return StructuredTool.from_function(
         name=name,
         description=description,
@@ -19,6 +18,8 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
     )
 
 def ComposioToolset(tools: List[App] = [], actions: List[Action] = []) -> List[StructuredTool]:
+    if len(tools) >0 and len(actions) > 0:
+        raise ValueError("You must provide either a list of tools or a list of actions, not both")
     client = ComposioCore()
     actions_list = client.sdk.get_list_of_actions(tools, actions)
     return [ComposioTool(client, action) for action in actions_list]
