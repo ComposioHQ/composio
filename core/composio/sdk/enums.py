@@ -20,6 +20,26 @@ class Apps(Enum):
     GOOGLE_SHEETS = "google-sheets"
     DISCORD = "discord"
 
+class TestConnctors(Enum):
+    ASANA = "test-asana-connector"
+    CALENDLY = "test-calendly-connector"
+    GITHUB = "test-github-connector"
+    EVENTBRITE = "test-eventbrite-connector"
+    TODOIST = "test-todoist-connector"
+    CLICKUP = "test-clickup-connector"
+    DROPBOX = "test-dropbox-connector"
+    LINEAR = "test-linear-connector"
+    GOOGLE_DOCS = "test-google-docs-connector"
+    NOTION = "test-notion-connector"
+    SLACK = "test-slack-connector"
+    GOOGLE_DRIVE = "test-google-drive-connector"
+    ZENDESK = "test-zendesk-connector"
+    TRELLO = "test-trello-connector"
+    MIRO = "test-miro-connector"
+    GOOGLE_CALENDAR = "test-google-calendar-connector"
+    GOOGLE_SHEETS = "test-google-sheets-connector"
+    DISCORD = "test-discord-connector"
+
 class Actions(Enum):
   class Asana(Enum):
     CREATE_SUBTASK = "asana_create_subtask"
