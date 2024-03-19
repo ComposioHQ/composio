@@ -93,9 +93,9 @@ def list_connections(args):
             for connection in connections:
                 console.print(f"[yellow]- {connection['integrationId']} ({connection['status']})[/yellow]")
         else:
-            console.print("[red]No connections found for the specified app.[/red]")
+            console.print("[red] No connections found for the specified app.[/red]")
     except Exception as e:
-        console.print(f"[red]Error occurred during listing connections: {e}[/red]")
+        console.print(f"[red] Error occurred during listing connections: {e}[/red]")
         sys.exit(1)
     
 def print_intro(): 
