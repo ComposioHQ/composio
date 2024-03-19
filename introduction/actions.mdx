@@ -1,0 +1,139 @@
+---
+title: "🧰 Actions!"
+sidebarTitle: "Actions"
+icon: "hat-wizard"
+description: "Performing an action on Github using Natural Language. ✨"
+---
+
+# Using Actions
+
+User was able to connect his account to Composio using integration and `connectedAccountId` was generated. Let’s use it to now execute an action.
+
+### **Accounts**
+
+Connected Accounts represent links created when an Integration is used to authenticate a user. It stores the access token, refresh token and other parameters necessary to authenticate the user.
+
+### **Available Action Types**
+
+1. **Default Actions**
+
+   For each Default App, we support many default actions.
+
+2. **Custom Actions**
+
+   We provide an extensible interface which allows you to define a custom action either for a custom or default app through code. [Read here.](http://Google.com)
+
+3. **Local Code - Action**
+
+   We also provide you an interface to fetch the auth parameters for any connection and execute the code remotely to call the API endpoints.
+
+   Ex - Call Github Create a new issue on your server and fetch access token by using `getConnection` endpoint. [Read here](http://google.com)
+
+### **List Default Actions**
+
+Call `/actions` to get list of all Actions on Composio Platform. (Default + Custom)
+
+```python
+from composio.sdk import ComposioSdk
+
+composio = Composio("api-key")
+
+print(composio.get_list_of_actions())
+```
+
+- The response will include the action's input/output schema in JSON compatible manner. It will also contain metadata like action name, ID.
+
+### **Executing Action**
+
+### **Step 1: Fetching the Custom or Default Action Input Schema**
+
+```python
+from composio.sdk.enums import Action
+
+composio.get_list_of_actions(action_names = [Action.GITHUB_CREATE_ISSUE])
+```
+
+```python
+[{'name': 'github_create_issue',
+  'display_name': 'Create Issue',
+  'description': 'Create a new issue in a repository.',
+  'parameters': {'properties': {'owner': {'description': 'Owner of the repository',
+     'examples': ['openai', 'facebook'],
+     'title': 'Owner',
+     'type': 'string'},
+    'repo': {'description': 'Name of the repository',
+     'examples': ['gpt-3', 'react'],
+     'title': 'Repo',
+     'type': 'string'},
+    'title': {'description': 'Title of the issue',
+     'examples': ['Bug in the code', 'Feature request'],
+     'title': 'Title',
+     'type': 'string'},
+    'body': {'default': '',
+     'description': 'Body of the issue',
+     'examples': ['The code is not working',
+      'I would like to request a new feature'],
+     'title': 'Body',
+     'type': 'string'}},
+   'required': ['owner', 'repo', 'title'],
+   'title': 'CreateIssueRequest',
+   'type': 'object'},
+  'response': {'properties': {'issue_url': {'description': 'URL of the created issue',
+     'examples': [''],
+     'title': 'Issue Url',
+     'type': 'string'}},
+   'required': ['issue_url'],
+   'title': 'CreateIssueResponse',
+   'type': 'object'},
+  'appId': '46f40473-cc29-4b52-98e0-a812ff2b44e3',
+  'appKey': 'github',
+  'logo': 'https://i.imgur.com/FAXkSDq.png',
+  'appName': 'Github',
+  'enabled': True}]
+```
+
+After a user connects an account using an integration, a `connectedAccountId` is obtained. An action can be executed on the app for which connected account was created.
+
+### **Step 2: We need Input Parameters to execute action**
+
+```python
+account = composio.get_connected_account(connection_id="9c8e6e42-3837-4014-bd80-12696bd758f1")
+params = {"repo":"speedy","owner":"utkarsh-dixit","title":"Too much light","body":"Show my dark night"}
+execution_details = account.execute_action(action_name=Action.GITHUB_CREATE_ISSUE, input_data=params)
+```
+
+When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
+
+### **Custom Code Execution**
+
+You can execute your local code to call external API endpoints by injecting auth head.
+
+```python
+print(account)
+```
+
+Print Account (connected_account) object, which will contain details of all the authentication parameters.
+
+```python
+{
+  "integrationId": "5e8584e4-723c-44ae-907d-20db982b1797",
+  "connectionParams": {
+    "scope": "admin:org,gist,repo,user",
+    "base_url": "https://api.github.com",
+    "token_type": "bearer",
+    "access_token": "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",
+    "headers": {
+      "Authorization": "Bearer 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"
+    },
+    "queryParams": {}
+  },
+  "appUniqueId": "github",
+  "id": "1f090d08-3741-4e20-ae47-431be119a664",
+  "status": "ACTIVE",
+  "createdAt": "2024-03-19T17:26:21.463Z",
+  "updatedAt": "2024-03-19T17:26:24.134Z"
+}
+
+```
+
+Use the base URL, auth headers to call any API endpoint on your server.

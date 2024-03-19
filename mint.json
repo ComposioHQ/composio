@@ -34,8 +34,8 @@
     "twitter:site": "@mage_ai"
   },
   "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "https://app."
+    "name": "Open App",
+    "url": "https://app.composio.dev"
   },
   "topAnchor": {
     "name": "Documentation",
@@ -45,11 +45,6 @@
     "name": "Docs"
   },
   "tabs": [
-    {
-      "name": "Guides",
-      "url": "guides"
-    },
-
     {
       "name": "API",
       "url": "api-reference"
@@ -73,30 +68,8 @@
       "group": "Get Started",
       "pages": [
         "introduction/overview",
-        "getting-started/setup"
-      ]
-    },
-
-    {
-      "group": "Quickstarts",
-      "pages": [
-        "guides/load-api-data"
-      ]
-    },
-    {
-      "group": "Tutorials",
-      "pages": [
-        {
-          "group": "Blocks",
-          "icon": "block-brick",
-          "pages": [
-            "guides/blocks/transformer-blocks"
-          ]
-        },
-
-        "guides/docker/connecting-a-database",
-        "guides/community-examples",
-        "guides/tips-and-tricks"
+        "introduction/integrations",
+        "introduction/actions"
       ]
     },
     {
