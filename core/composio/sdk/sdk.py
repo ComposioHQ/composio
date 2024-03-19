@@ -1,18 +1,19 @@
 import time
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from core.composio.sdk.enums import TestConnectors
+from .enums import TestConnectors
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
-from .sdk import ComposioSdk
 
 class ConnectionRequest(BaseModel):
     connectionStatus: str
     connectionId: str
     redirectUrl: str
 
-    def __init__(self, sdk_instance: ComposioSdk, **data):
+    sdk_instance: 'ComposioSdk' = None
+
+    def __init__(self, sdk_instance: 'ComposioSdk', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
@@ -46,7 +47,9 @@ class ConnectedAccount(BaseModel):
     createdAt: str
     updatedAt: str
 
-    def __init__(self, sdk_instance: ComposioSdk, **data):
+    sdk_instance: 'ComposioSdk' = None
+
+    def __init__(self, sdk_instance: 'ComposioSdk', **data):
         super().__init__(**data)
         self.connectionParams = OAuth2ConnectionParams(**self.connectionParams)
         self.sdk_instance = sdk_instance
@@ -77,8 +80,8 @@ class ConnectedAccount(BaseModel):
         
         raise Exception("Failed to get actions")
 
-
 class AppIntegration(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     id: str
     name: str
     authScheme: str
@@ -94,7 +97,9 @@ class AppIntegration(BaseModel):
     appName: str
     useComposioAuth: bool
 
-    def __init__(self, sdk_instance: ComposioSdk, **data):
+    sdk_instance: 'ComposioSdk' = None  # type: ignore
+
+    def __init__(self, sdk_instance: 'ComposioSdk', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
@@ -121,6 +126,8 @@ class ComposioSdk:
         return [AppIntegration(self, **app) for app in resp["items"]]
 
     def get_app_integration(self, connector_id: str | TestConnectors) -> AppIntegration:
+        if isinstance(connector_id, TestConnectors):
+            connector_id = connector_id.value
         resp = self.http_client.get(f"{self.base_url}/v1/connectors/{connector_id}")
         if resp.status_code == 200:
             return AppIntegration(self, **resp.json())
