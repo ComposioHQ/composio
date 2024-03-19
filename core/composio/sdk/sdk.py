@@ -3,7 +3,7 @@ from typing import Optional
 import requests
 from pydantic import BaseModel, ConfigDict
 
-from .enums import Action, TestConnector
+from .enums import Action, App, TestConnector
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
 
@@ -128,14 +128,18 @@ class ComposioSdk:
         resp = self.http_client.get(f"{self.base_url}/v1/apps") 
         return resp.json()
 
-    def get_list_of_actions(self, app_unique_id: list[str] = []):
-        if len(app_unique_id) == 0:
+    def get_list_of_actions(self, app_unique_id: list[App] = None, action_names: list[Action] = None) -> list:
+        if app_unique_id is None or len(app_unique_id) == 0:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
-            resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_id)}")
-
+            app_unique_ids = [app.value for app in app_unique_id]
+            resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_ids)}")
         if resp.status_code == 200:
-            return resp.json()
+            actions = resp.json()
+            if action_names is not None and len(action_names) > 0:
+                return [action for action in actions for item in action["items"] if item in action_names]
+            else:
+                return actions
         
         raise Exception("Failed to get actions")
 
