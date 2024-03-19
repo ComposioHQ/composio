@@ -66,6 +66,16 @@ class ComposioCore:
         resp = app_integration.execute_action(action, input_data)
         return resp
 
+    def get_list_of_connections(self):
+        resp = self.sdk.get_list_of_connections()
+        return [{
+            "id": item.id,
+            "connectorId": item.connectorId,
+            "status": item.status,
+            "createdAt": item.createdAt,
+            "updatedAt": item.updatedAt
+        } for item in resp]
+
     def get_action_enum(self, action_name: str, tool_name: str) -> Action:
         for action in Action:
             if action.action == action_name and action.service == tool_name.lower():

@@ -33,7 +33,7 @@ def parse_arguments():
     show_apps_parser.set_defaults(func=show_apps)
 
     # List connections command
-    list_connections_parser = subparsers.add_parser('list-connections', help='List all connections for a given app')
+    list_connections_parser = subparsers.add_parser('show-connections', help='List all connections for a given app')
     list_connections_parser.add_argument('appName', type=str, help='Name of the app to list connections for')
     list_connections_parser.set_defaults(func=list_connections)
 
@@ -88,7 +88,7 @@ def list_connections(args):
     appName = args.appName
     console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
     try:
-        connections = client.get_connections(appName)
+        connections = client.get_list_of_connections(appName)
         if connections:
             for connection in connections:
                 console.print(f"[yellow]- {connection['connectionId']} ({connection['status']})[/yellow]")

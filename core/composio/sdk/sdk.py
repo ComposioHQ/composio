@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict
 from .enums import Action, App, TestIntegration
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
+from openai.types.chat.chat_completion import ChatCompletion
 
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -44,7 +46,7 @@ class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     connectorId: str
     connectionParams: OAuth2ConnectionParams
-    appUniqueId: str
+    appUniqueId: str = None
     id: str
     status: str
     createdAt: str
@@ -82,6 +84,14 @@ class ConnectedAccount(BaseModel):
             return resp.json()
         
         raise Exception("Failed to get actions")
+
+    def handle_tools_calls(self, tool_calls: ChatCompletion):
+        if tool_calls.choices:
+            for choice in tool_calls.choices:
+                if choice.tool_call:
+                    tool_call = choice.tool_call
+                    action_name = tool_call.action_name
+        
 
 class AppIntegration(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -177,3 +187,10 @@ class ComposioSdk:
             return ConnectedAccount(self, **resp.json())
         
         raise Exception("Failed to get connection")
+
+    def get_list_of_connections(self) -> list[ConnectedAccount]:
+        resp = self.http_client.get(f"{self.base_url}/v1/connections")
+        if resp.status_code == 200:
+            return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
+        
+        raise Exception("Failed to get connections")
