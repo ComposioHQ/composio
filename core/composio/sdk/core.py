@@ -45,12 +45,12 @@ class ComposioCore:
 
         raise Exception("Failed to authenticate")
     
-    def initiate_connection(self, connectorId: str | TestIntegration) -> ConnectionRequest:
-        if isinstance(connectorId, TestIntegration):
+    def initiate_connection(self, integrationId: str | TestIntegration) -> ConnectionRequest:
+        if isinstance(integrationId, TestIntegration):
             connectorId = connectorId.value
 
-        resp = self.http_client.post(f"{self.base_url}/v1/connections", json={
-            "connectorId": connectorId,
+        resp = self.http_client.post(f"{self.base_url}/v1/connectedAccounts", json={
+            "integrationId": integrationId,
         })
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk, **resp.json())
@@ -66,11 +66,14 @@ class ComposioCore:
         resp = app_integration.execute_action(action, input_data)
         return resp
 
-    def get_list_of_connections(self):
-        resp = self.sdk.get_list_of_connections()
+    def get_list_of_connections(self, app_name: list[str] = None) -> list[ConnectedAccount]:
+        resp = self.sdk.get_list_of_connected_accounts()
+        if app_name is not None:
+            resp = [item for item in resp if item.appUniqueId in app_name]
+
         return [{
             "id": item.id,
-            "connectorId": item.connectorId,
+            "integrationId": item.integrationId,
             "status": item.status,
             "createdAt": item.createdAt,
             "updatedAt": item.updatedAt

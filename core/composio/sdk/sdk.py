@@ -1,3 +1,4 @@
+from enum import Enum
 import time
 from typing import Optional
 import requests
@@ -9,10 +10,14 @@ from uuid import getnode as get_mac
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 from openai.types.chat.chat_completion import ChatCompletion
 
+class ActionSignatureFormat(Enum):
+    OPENAI = "openai"
+    DEFAULT = "default"
+
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     connectionStatus: str
-    connectionId: str
+    connectedAccountId: str
     redirectUrl: str
 
     sdk_instance: 'ComposioSdk' = None
@@ -26,7 +31,7 @@ class ConnectionRequest(BaseModel):
             raise ValueError("SDK instance not set.")
         start_time = time.time()
         while time.time() - start_time < timeout:
-            connection_info = self.sdk_instance.get_connected_account(self.connectionId)
+            connection_info = self.sdk_instance.get_connected_account(self.connectedAccountId)
             if connection_info.status == 'ACTIVE':
                 return connection_info
             time.sleep(1)
@@ -44,9 +49,9 @@ class OAuth2ConnectionParams(BaseModel):
 
 class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    connectorId: str
+    integrationId: str
     connectionParams: OAuth2ConnectionParams
-    appUniqueId: str = None
+    appUniqueId: str
     id: str
     status: str
     createdAt: str
@@ -77,11 +82,22 @@ class ConnectedAccount(BaseModel):
         resp = self._execute_action(action_name, self.id, input_data)
         return resp
     
-    def get_all_actions(self, format: str):
+    def get_all_actions(self, format: ActionSignatureFormat):
         app_unique_id = self.appUniqueId
+        print(app_unique_id)
         resp = self.sdk_instance.http_client.get(f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}")
         if resp.status_code == 200:
-            return resp.json()
+            actions = resp.json()
+            print(actions)
+            if format == ActionSignatureFormat.OPENAI:
+                return [
+                    {"type": "function", "function": {
+                        "name": action["name"],
+                        "description": action.get("description", ""),
+                        "parameters": action.get("parameters", {})
+                    }} for action in actions["items"]
+                ]
+            return actions["items"]
         
         raise Exception("Failed to get actions")
 
@@ -98,17 +114,17 @@ class AppIntegration(BaseModel):
     id: str
     name: str
     authScheme: str
-    authConfig: dict
+    authConfig: dict = {}
     createdAt: str
     updatedAt: str
     enabled: bool
     deleted: bool
     appId: str
     defaultConnectorId: str
-    expectedInputFields: list
+    expectedInputFields: list = []
     logo: str
     appName: str
-    useComposioAuth: bool
+    useComposioAuth: bool = False
 
     sdk_instance: 'ComposioSdk' = None  # type: ignore
 
@@ -118,8 +134,8 @@ class AppIntegration(BaseModel):
     
     def initiate_connection(self, user_uuid: str = None) -> ConnectionRequest:
         connector_id = f"test-{self.appName}-connector"
-        resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connections", json={
-            "connectorId": connector_id,
+        resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
+            "integrationId": connector_id,
         })
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
@@ -164,9 +180,9 @@ class ComposioSdk:
         raise Exception("Failed to get actions")
 
     def get_list_of_app_integrations(self) -> list[AppIntegration]:
-        resp = self.http_client.get(f"{self.base_url}/v1/connectors")
+        resp = self.http_client.get(f"{self.base_url}/v1/integrations")
         if resp.status_code != 200:
-            raise Exception("Failed to get connectors")
+            raise Exception("Failed to get integrations")
 
         resp = resp.json()
         return [AppIntegration(self, **app) for app in resp["items"]]
@@ -174,7 +190,7 @@ class ComposioSdk:
     def get_app_integration(self, connector_id: str | TestIntegration) -> AppIntegration:
         if isinstance(connector_id, TestIntegration):
             connector_id = connector_id.value
-        resp = self.http_client.get(f"{self.base_url}/v1/connectors/{connector_id}")
+        resp = self.http_client.get(f"{self.base_url}/v1/integrations/{connector_id}")
         if resp.status_code == 200:
             return AppIntegration(self, **resp.json())
 
@@ -182,15 +198,15 @@ class ComposioSdk:
 
 
     def get_connected_account(self, connection_id: str) -> ConnectedAccount:
-        resp = self.http_client.get(f"{self.base_url}/v1/connections/{connection_id}")
+        resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts/{connection_id}")
         if resp.status_code == 200:
             return ConnectedAccount(self, **resp.json())
         
         raise Exception("Failed to get connection")
 
-    def get_list_of_connections(self) -> list[ConnectedAccount]:
-        resp = self.http_client.get(f"{self.base_url}/v1/connections")
+    def get_list_of_connected_accounts(self) -> list[ConnectedAccount]:
+        resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts")
         if resp.status_code == 200:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
         
-        raise Exception("Failed to get connections")
+        raise Exception("Failed to get connected accounts")

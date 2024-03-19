@@ -91,7 +91,7 @@ def list_connections(args):
         connections = client.get_list_of_connections(appName)
         if connections:
             for connection in connections:
-                console.print(f"[yellow]- {connection['connectionId']} ({connection['status']})[/yellow]")
+                console.print(f"[yellow]- {connection['integrationId']} ({connection['status']})[/yellow]")
         else:
             console.print("[red]No connections found for the specified app.[/red]")
     except Exception as e:
