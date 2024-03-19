@@ -46,21 +46,10 @@
       "url": "guides"
     },
     {
-      "name": "Dev UX",
-      "url": "developer-ux"
-    },
-    {
       "name": "API",
       "url": "api-reference"
     },
-    {
-      "name": "Deploy",
-      "url": "production"
-    },
-    {
-      "name": "Platform",
-      "url": "platform"
-    },
+
     {
       "name": "Discord",
       "url": "https://www.mage.ai/chat"
