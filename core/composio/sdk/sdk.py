@@ -132,7 +132,7 @@ class ComposioSdk:
         if len(app_unique_id) == 0:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
-            resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={app_unique_id.join(',')}")
+            resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_id)}")
 
         if resp.status_code == 200:
             return resp.json()

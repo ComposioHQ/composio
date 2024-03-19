@@ -6,7 +6,7 @@ from .sdk import ConnectionRequest, ConnectedAccount
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
 from .sdk import ComposioSdk
-from .enums import TestConnector
+from .enums import TestConnector, Action
 
 class ComposioCore:
     sdk: ComposioSdk = None
@@ -57,11 +57,17 @@ class ComposioCore:
         
         raise Exception("Failed to create connection")
     
-    def execute_action(self, action_name: str, tool_name: str, input_data: dict):
-        connectionId = get_user_connection(tool_name)
+    def execute_action(self, action: Action, input_data: dict):
+        connectionId = get_user_connection(action.value[0])
         if not connectionId:
             raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
 
         app_integration = self.sdk.get_connected_account(connectionId)
-        resp = app_integration.execute_action(action_name, input_data)
+        resp = app_integration.execute_action(action, input_data)
         return resp
+
+    def get_action_enum(self, action_name: str, tool_name: str) -> Action:
+        for action in Action:
+            if action.action == action_name and action.service == tool_name.lower():
+                return action
+        raise ValueError(f"No matching action found for action: {action_name} and tool: {tool_name}")
