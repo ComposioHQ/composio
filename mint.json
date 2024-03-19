@@ -4,6 +4,7 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
+  "openapi": ["/composio.yaml"],
   "favicon": "/favicon.png",
   "colors": {
 
@@ -104,14 +105,40 @@
       "icon": "robot",
       "pages": [
         {
-          "group": "Backfills",
-          "icon": "database",
+          "icon": "code",
+
+          "group": "apps",
           "pages": [
-            "api-reference/backfills/overview",
-            "api-reference/backfills/read-backfills",
-            "api-reference/backfills/create-backfills",
-            "api-reference/backfills/update-backfill",
-            "api-reference/backfills/delete-backfill"
+            "api-reference/apps/list-all-apps"
+          ]
+        },
+        {
+          "icon": "rectangles-mixed",
+          "group": "connections",
+          "pages": [
+            "api-reference/connections/list-all-connections",
+            "api-reference/connections/create-a-connection",
+            "api-reference/connections/get-a-connection",
+            "api-reference/connections/delete-a-connection"
+          ]
+        },
+        {
+          "icon": "database",
+          "group": "connectors",
+          "pages": [
+            "api-reference/connectors/get-a-connector",
+            "api-reference/connectors/update-a-connector",
+            "api-reference/connectors/list-all-connectors",
+            "api-reference/connectors/create-a-new-connector"
+          ]
+        },
+        {
+          "icon": "user",
+          "group": "actions",
+          "pages": [
+            "api-reference/actions/get-a-specific-action",
+            "api-reference/actions/get-list-of-actions",
+            "api-reference/actions/execute-action"
           ]
         }
       ]
