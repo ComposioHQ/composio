@@ -1,7 +1,8 @@
 from setuptools import setup
 import os
 
-from core.composio.sdk.utils import generate_enums 
+from setuptools import setup
+from setuptools.command.install import install
 
 def get_current_dir():
     return os.path.dirname(os.path.realpath(__file__))
@@ -12,15 +13,10 @@ def resolve_paths(*paths):
 readme_path = resolve_paths(get_current_dir(), 'README.md')
 
 
-from setuptools import setup
-from setuptools.command.install import install
-from .composio.sdk import ComposioSdk
-
 class InstallCommandMiddleware(install):
     """Customized setuptools install command."""
     def run(self):
         install.run(self)
-        generate_enums()
         
 setup(
     name = 'composio_core',
