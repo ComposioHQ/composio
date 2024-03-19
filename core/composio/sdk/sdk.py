@@ -21,9 +21,9 @@ class ConnectionRequest(BaseModel):
     connectedAccountId: str
     redirectUrl: str
 
-    sdk_instance: 'ComposioSdk' = None
+    sdk_instance: 'Composio' = None
 
-    def __init__(self, sdk_instance: 'ComposioSdk', **data):
+    def __init__(self, sdk_instance: 'Composio', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
@@ -58,9 +58,9 @@ class ConnectedAccount(BaseModel):
     createdAt: str
     updatedAt: str
 
-    sdk_instance: 'ComposioSdk' = None
+    sdk_instance: 'Composio' = None
 
-    def __init__(self, sdk_instance: 'ComposioSdk', **data):
+    def __init__(self, sdk_instance: 'Composio', **data):
         super().__init__(**data)
         # self.connectionParams = OAuth2ConnectionParams(**self.connectionParams)
         self.sdk_instance = sdk_instance
@@ -132,9 +132,9 @@ class AppIntegration(BaseModel):
     appName: str
     useComposioAuth: bool = False
 
-    sdk_instance: 'ComposioSdk' = None  # type: ignore
+    sdk_instance: 'Composio' = None  # type: ignore
 
-    def __init__(self, sdk_instance: 'ComposioSdk', **data):
+    def __init__(self, sdk_instance: 'Composio', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
     
@@ -151,7 +151,7 @@ class AppIntegration(BaseModel):
     def get_required_variables(self):
         return self.expectedInputFields
 
-class ComposioSdk:
+class Composio:
     def __init__(self, api_key: str = None, base_url = "https://backend.composio.dev/api"):
         self.base_url = base_url
         self.api_key = api_key

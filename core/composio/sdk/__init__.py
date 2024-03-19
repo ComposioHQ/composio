@@ -1,3 +1,2 @@
-from .sdk import ComposioSdk, SchemaFormat
+from .sdk import Composio, SchemaFormat
 from .core import ComposioCore
-from .enums import Action, App, TestIntegration

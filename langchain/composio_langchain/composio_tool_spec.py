@@ -1,6 +1,6 @@
 from .pydantic_utils import json_schema_to_model
 from langchain_core.tools import StructuredTool 
-from composio.sdk import ComposioCore, App, Action
+from composio import ComposioCore, App, Action
 from typing import List
     
 def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  StructuredTool:

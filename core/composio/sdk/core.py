@@ -5,11 +5,11 @@ from pydantic import BaseModel
 from .sdk import ConnectionRequest, ConnectedAccount
 from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
 from uuid import getnode as get_mac
-from .sdk import ComposioSdk
+from .sdk import Composio
 from .enums import TestIntegration, Action
 
 class ComposioCore:
-    sdk: ComposioSdk = None
+    sdk: Composio = None
 
     def __init__(self, base_url = "https://backend.composio.dev/api", manage_auth = True):
         self.base_url = base_url
@@ -26,7 +26,7 @@ class ComposioCore:
                     'Content-Type': 'application/json',
                     'x-api-key': api_key
                 })
-                self.sdk = ComposioSdk(api_key, base_url)
+                self.sdk = Composio(api_key, base_url)
 
     def authenticate(self, hash: str):
         resp = self.http_client.post(f"{self.base_url}/v1/client/auth/identify", json={
