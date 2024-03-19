@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -10,9 +10,9 @@ from rich.console import Console
 import termcolor
 import requests
 from uuid import getnode as get_mac
-from composio.sdk.storage import save_user_connection
-from composio.sdk.core import ComposioCore
-from composio.sdk.utils import generate_enums
+from .sdk.storage import save_user_connection
+from .sdk.core import ComposioCore
+from .sdk.utils import generate_enums
 
 import webbrowser
 
@@ -139,6 +139,3 @@ def main():
         args.func(args)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
-
-if __name__ == '__main__':
-    main()
