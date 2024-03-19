@@ -137,7 +137,7 @@ class ComposioSdk:
         if resp.status_code == 200:
             actions = resp.json()
             if action_names is not None and len(action_names) > 0:
-                return [action for action in actions for item in action["items"] if item in action_names]
+                return [action for action in actions for item in actions["items"] if item in action_names]
             else:
                 return actions
         

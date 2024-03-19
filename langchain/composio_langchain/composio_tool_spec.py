@@ -18,7 +18,7 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
         func = lambda **kwargs: client.execute_action(client.get_action_enum(name, appName), kwargs)
     )
 
-def ComposioToolset(tool_names: List[App] = [], action_names: List[Action] = []) -> List[StructuredTool]:
+def ComposioToolset(tools: List[App] = [], actions: List[Action] = []) -> List[StructuredTool]:
     client = ComposioCore()
-    actions = client.sdk.get_list_of_actions(tool_names, action_names)
+    actions = client.sdk.get_list_of_actions(tools, actions)
     return [ComposioTool(client, action) for action in actions["items"]]
