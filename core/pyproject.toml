@@ -5,7 +5,8 @@ dependencies = [
     "jsonschema",
     "argparse",
     "beaupy===3.7.2",
-    "termcolor==2.4.0"
+    "termcolor==2.4.0",
+    "pydantic==2.6.4"
 ]
 name = "composio_core"
 
