@@ -35,13 +35,13 @@ jobs:
       - name: Build core package and install locally
         run: |
           cd core 
-          python setup.py sdist bdist_wheel 
-          echo "Installing package locally"
-          pip install -e .
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
             echo "Updated version in setup.py (core)"
           fi
+          python setup.py sdist bdist_wheel 
+          echo "Installing package locally"
+          pip install -e .
           cd ..
       
       - name: Publish package (Core)
@@ -55,8 +55,6 @@ jobs:
       - name: Build langchain package and install locally
         run: |
           cd langchain 
-          python setup.py sdist bdist_wheel 
-          echo "Installing package locally"
           pip install -e .
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
@@ -64,6 +62,8 @@ jobs:
             sed -i "s/composio_core===.*/composio_core==='${{ env.PACKAGE_VERSION }}'/" requirements.txt
             echo "Updated version in pyproject.toml and requirements.txt"
           fi
+          python setup.py sdist bdist_wheel 
+          echo "Installing package locally"
           cd ..
 
       - name: Publish package (Langchain)
@@ -77,15 +77,15 @@ jobs:
       - name: Build crew package and install locally
         run: |
           cd crew_ai 
-          python setup.py sdist bdist_wheel 
-          echo "Installing package locally"
-          pip install -e .
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
             sed -i "s/composio_core===.*/composio_langchain==='${{ env.PACKAGE_VERSION }}',/" pyproject.toml
             sed -i "s/composio_core===.*/composio_langchain==='${{ env.PACKAGE_VERSION }}'/" requirements.txt
             echo "Updated version in pyproject.toml and requirements.txt"
           fi
+          python setup.py sdist bdist_wheel 
+          echo "Installing package locally"
+          pip install -e .
           cd ..
 
       - name: Publish package (Crew AI)
