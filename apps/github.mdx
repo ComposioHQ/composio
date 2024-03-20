@@ -1,0 +1,41 @@
+---
+title: "Github"
+slug: "github"
+excerpt: ""
+hidden: false
+createdAt: "Wed Mar 13 2024 13:45:41 GMT+0000 (Coordinated Universal Time)"
+updatedAt: "Thu Mar 14 2024 10:28:41 GMT+0000 (Coordinated Universal Time)"
+---
+> Github uses OAuth2 for authentication.
+
+## 📔 Documentation
+
+- [GitHub OAuth Documentation](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app)
+- [GitHub API Documentation](https://docs.github.com/en/rest?apiVersion=2022-11-28)
+
+## ⚙️ Configuration
+
+<Tip>
+New App can be created at [GitHub Developer Settings](https://github.com/settings/developers).
+</Tip>
+
+Once you create the App, find the _Authorization callback URL_ field and configure the below Redirect URL:
+
+```
+https://backend.composio.dev/api/v1/auth-apps/github/connection/oauth2/add
+```
+
+After registering the app, copy the Client ID from the app page and generate/copy the Client Secret. On Composio's [supported apps](https://app.composio.dev/apps) page, find GitHub and click "Enable". Paste your Client ID and Secret, then Save to connect GitHub.
+
+## ⚒️ Actions
+
+_⚠️ All the actions are disabled by default, Please go to the Github connector page to enable the actions._
+
+| Action Name    | Description                                       |
+| :------------- | :------------------------------------------------ |
+| Create Issue   | Create a new issue in a repository.               |
+| Get Repository | Get the list of repositories in a GitHub account. |
+
+## 🪝 Triggers (Coming Soon)
+
+Github triggers are not supported yet. If you're looking for Github Triggers, please write to us at [tech@composio.dev](mailto:tech@composio.dev).

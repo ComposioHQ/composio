@@ -84,7 +84,31 @@
     {
       "group": "Supported Integrations",
       "pages": [
-        "apps/github"
+        "apps/asana",
+        "apps/github",
+        "apps/hubspot",
+        "apps/notion",
+        "apps/slack",
+        "apps/zendesk",
+        "apps/attio",
+        "apps/calendly",
+        "apps/clickup",
+        "apps/discord",
+        "apps/dropbox",
+        "apps/gmail",
+        "apps/google-calendar",
+        "apps/google-docs",
+        "apps/google-drive",
+        "apps/google-sheets",
+        "apps/jira",
+        "apps/linear",
+        "apps/mailchimp",
+        "apps/miro",
+        "apps/pipedrive",
+        "apps/shopify",
+        "apps/spotify",
+        "apps/todoist",
+        "apps/trello"
       ]
     },
     {
