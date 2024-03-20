@@ -1,14 +1,9 @@
 ---
-title: "🚀 Introduction to Composio"
+title: "🚀 Quick Start"
 sidebarTitle: "Quick Start"
 icon: "rocket"
-description: "Learn how to perform actions on GitHub using natural language. ✨"
+description: "Learn how to perform actions on GitHub using natural language. (5 mins)"
 ---
-
-<Tip>
-  Composio streamlines your workflow by managing your user's authentication with
-  multitude of tools, enabling your agents to perform actions across tools.
-</Tip>
 
 ## Try Composio in under 5 mins.
 
@@ -19,11 +14,11 @@ Your one-stop platform for agent-tool interactions. Composio handles Authenticat
 <Steps> 
 <Step title="Setting Up GitHub Integration">
 <AccordionGroup title="Select the option that suits you best.">
-<Accordion title="Use your Github registered Developer App">
-[Register your own Integration](https://docs.composio.dev/apps/github) _Copy your integration ID._
-</Accordion>
-<Accordion title="Use Pre-configured App (Preferred)">
+<Accordion title="Use Test Integration (Default) - Easy Start">
 Please use `TestIntegration.GITHUB` for quick Setup 
+</Accordion>
+<Accordion title="Create your Integration - By Registering Github Developer App">
+[Create Integration](https://docs.composio.dev/apps/github) _Copy your integration ID._
 </Accordion>
 </AccordionGroup>
 
@@ -35,14 +30,17 @@ Please use `TestIntegration.GITHUB` for quick Setup
 pip install composio-core
 ```
 </CodeGroup>
-Use Github Integration. 
-Modify `api-key` before executing. 
+Use `Github Integration` to Connect `Github Account`
+
+Modify *Composio* `api-key` 
+<Tip> TestIntegration.*App* uses Composio built-in Integrations </Tip>
 <CodeGroup>
 ```python Auth via OAuth 
 from composio import Composio, TestIntegration, SchemaFormat
 
 client = Composio("api-key") # init
 
+#client.get_integration(****YourIntegrationID*****)
 integration = client.get_integration(TestIntegration.GITHUB) # Modify
 
 #Trying to initiate a new connection
@@ -50,7 +48,8 @@ connection_request = integration.initiate_connection(user_uuid = None)
 
 print("Complete the auth flow, link: ", connection_request.redirectUrl)
 
-````
+```
+
 </CodeGroup>
 </Step>
 <Step title="Wait for Connection">
@@ -66,12 +65,12 @@ print("Complete the auth flow, link: ", connection_request.redirectUrl)
 <Step title="Supported Actions">
   <CodeGroup>
     ```python Fetch Actions
-    #Get based on Connected Account, Format
-    actions = connected_account.get_all_actions(format=SchemaFormat.OPENAI)
 
-    print(actions)
+    actions = connected_account.get_all_actions(format=SchemaFormat.OPENAI)
+    # SchemaFormat converts to right function calling format.
     ```
   </CodeGroup>
+
 </Step>
 
 <Step title="Using Function Call">
@@ -94,7 +93,7 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-````
+```
 
 </CodeGroup>
 </Step>
@@ -116,4 +115,3 @@ print("Completed Task")
 </Steps>
 
 ### Putting it all together - [Python Notebook](https://github.com)
-```
