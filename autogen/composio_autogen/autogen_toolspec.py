@@ -85,7 +85,7 @@ def get_signature_format_from_schema_params(
     return parameters
 
 
-class ComposioAutogenToolset:
+class ComposioToolset:
     def __init__(self, caller = None, executor = None):
         self.caller = caller
         self.executor = executor
