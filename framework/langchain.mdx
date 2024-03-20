@@ -20,7 +20,7 @@ These commands prepare your environment for seamless interaction between Langcha
 <Steps>
 <Step title="Import Base Packages">
 <CodeGroup>
-```python
+```python Default Imports
 # Initialise imports
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain import hub
@@ -35,7 +35,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 </Step>
 <Step title="Fetch all Github Langchain Tools via Composio">
 <CodeGroup>
-```python Langchain Tools For Github
+```python Tools For Github
 # Import from composio_langchain
 from composio_langchain import ComposioToolset, Action, App
 
@@ -59,7 +59,7 @@ agent_executor.invoke({"input": task})
 ```
 </CodeGroup>
 </Step>
-<Step title="Confirm it's working!">
+<Step title="Check Response">
 ```bash Executing Agents
 > Entering new AgentExecutor chain...
 
@@ -70,11 +70,9 @@ Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'custom-auth-i
 ```
 </Step>
 </Steps>
-
 ### Use Specific Actions
 <CodeGroup>
 ```bash Filter Specific Action
-
 # To restrict agents from executing any actions, filter specific actions
 toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
@@ -83,7 +81,6 @@ toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ### Use Specific Apps
 <CodeGroup>
 ```bash Filter Specific App
-
 # To restrict agents from using all tools, filter specific tools
 toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB])
 ```
