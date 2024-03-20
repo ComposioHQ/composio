@@ -57,7 +57,7 @@
   ],
   "anchors": [
     {
-      "name": "Website",
+      "name": "Console",
       "icon": "megaphone",
       "url": "https://app.composio.dev"
     }
@@ -77,7 +77,8 @@
       "group": "With Frameworks",
       "pages": [
         "framework/langchain",
-        "framework/autogen"
+        "framework/autogen",
+        "framework/crewai"
       ]
     },
 
