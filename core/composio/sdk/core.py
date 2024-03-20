@@ -62,8 +62,8 @@ class ComposioCore:
         if not connectionId:
             raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
 
-        app_integration = self.sdk.get_connected_account(connectionId)
-        resp = app_integration.execute_action(action, params)
+        account = self.sdk.get_connected_account(connectionId)
+        resp = account.execute_action(action, params)
         return resp
 
     def get_list_of_connections(self, app_name: list[str] = None) -> list[ConnectedAccount]:

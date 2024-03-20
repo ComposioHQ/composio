@@ -115,7 +115,7 @@ class ConnectedAccount(BaseModel):
 
         
 
-class AppIntegration(BaseModel):
+class Integration(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     id: str
     name: str
@@ -185,20 +185,20 @@ class Composio:
         
         raise Exception("Failed to get actions")
 
-    def get_list_of_app_integrations(self) -> list[AppIntegration]:
+    def get_list_of_integrations(self) -> list[Integration]:
         resp = self.http_client.get(f"{self.base_url}/v1/integrations")
         if resp.status_code != 200:
             raise Exception("Failed to get integrations")
 
         resp = resp.json()
-        return [AppIntegration(self, **app) for app in resp["items"]]
+        return [Integration(self, **app) for app in resp["items"]]
 
-    def get_app_integration(self, connector_id: str | TestIntegration) -> AppIntegration:
+    def get_integration(self, connector_id: str | TestIntegration) -> Integration:
         if isinstance(connector_id, TestIntegration):
             connector_id = connector_id.value
         resp = self.http_client.get(f"{self.base_url}/v1/integrations/{connector_id}")
         if resp.status_code == 200:
-            return AppIntegration(self, **resp.json())
+            return Integration(self, **resp.json())
 
         raise Exception("Failed to get connector")
 
