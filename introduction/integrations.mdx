@@ -17,10 +17,12 @@ Integrations enable your users to seamlessly connect their accounts across vario
 
 ## **Connecting User Accounts**
 
-### Step 1: Gather Integration Parameters
+<Steps>
+<Step title="Gather Integration Parameters">
 
 Ex API Key , Sub Domain URL, User Name
 
+<CodeGroup>
 ```python
 from composio.sdk import ComposioSdk
 
@@ -29,10 +31,12 @@ composio = Composio("api-key")
 integration = composio.get_integration(integration_id) # User Selected Id
 
 print(integration.get_required_variables()) # list of params req from user
-```
+
+````
+</CodeGroup>
 
 Printed for `Zendesk`
-
+<CodeGroup>
 ```python
 [
     {
@@ -44,36 +48,44 @@ Printed for `Zendesk`
         'required': True
     }
 ]
-```
+````
 
-### Step 2: Initiate a Connection Request by using collecting params via user
+</CodeGroup>
+</Step>
 
+<Step title="Initiate a Connection Request by using collecting params via user">
+
+<CodeGroup>
 ```python
 params = {"api_key":"linearApiKey"}
 
 connection_request = integration.initiate_connection(user_uuid = nil, params=params)
 print(connection_request)
 if connection_request.redirectUrl != "":
-	print(f"Please complete the auth flow by opening this link: {}", connection_request.redirectUrl)
+print(f"Please complete the auth flow by opening this link: {}", connection_request.redirectUrl)
 else:
-	print("The account status is :{}",connection_request.status)
-```
+print("The account status is :{}",connection_request.status)
 
-### Step 3: Complete the redirectUrl Flow allowing user to authorise the request
+````
+</CodeGroup>
+</Step>
+<Step title="Complete the redirectUrl Flow allowing user to authorise the request">
 
 In case of **OAuth Flow**, the _redirectUrl_ will be returned which will be used to redirect User to OAuth Authorisation Completion page.
-
+<CodeGroup>
 ```python
 {
     "connectionStatus": "INITIATED",
     "connectedAccountId": "1f32dbf-f7cfec95e567",
     "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
 }
-```
+````
 
+</CodeGroup>
 Once user approves, OAuth process will be completed and the user will be redirected back to configured URL in the connector.
 
-### **Step 4: Get Status of Connection Request**
+</Step>
+<Step title="Get Status of Connection Request">
 
 Check if the status has been updated. You can do it via two different ways
 
@@ -83,12 +95,20 @@ Check if the status has been updated. You can do it via two different ways
 
 2. Use `wait_until_active` method.
 
+<CodeGroup>
 ```python
-account = composio.get_connected_account(connection_request.id)
+connected_account = composio.get_connected_account(connection_request.id)
 print(account.status)
 
 # OR
 
-account = connection_request.wait_until_active(timeout=60)
-print(account)
+connected_account = connection_request.wait_until_active(timeout=60)
+print(connected_account)
+
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+We are done with creating a new connection. You should be able to use `connected_account` to execute actions or recieve triggers.
 ```
