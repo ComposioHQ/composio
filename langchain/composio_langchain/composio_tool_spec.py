@@ -90,8 +90,8 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
     description = action_schema["description"]
     parameters = json_schema_to_model(action_schema["parameters"])
     appName = action_schema["appName"]
-    func_params = parameters = get_signature_format_from_schema_params(action_schema["parameters"])
-    action_signature = Signature(parameters=parameters)
+    func_params = get_signature_format_from_schema_params(action_schema["parameters"])
+    action_signature = Signature(parameters=func_params)
     placeholder_function = lambda **kwargs: client.execute_action(client.get_action_enum(name, appName), kwargs)
     action_func = types.FunctionType(
                                     placeholder_function.__code__, 
