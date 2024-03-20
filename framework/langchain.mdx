@@ -49,7 +49,7 @@ Create an agent, set up an executor, and invoke tasks to perform GitHub API call
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Star a repo SamparkAI/custom-auth-integrations on GitHub"
+task = "Star a repo SamparkAI/docs on GitHub"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -63,10 +63,10 @@ agent_executor.invoke({"input": task})
 ```bash Executing Agents
 > Entering new AgentExecutor chain...
 
-Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'custom-auth-integrations'}`
+Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'docs'}`
 
-{'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'SamparkAI', 'repo': 'custom-auth-integrations'}}
-{'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository SamparkAI/custom-auth-integrations on GitHub.
+{'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'SamparkAI', 'repo': 'docs'}}
+{'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository SamparkAI/docs on GitHub.
 ```
 </Step>
 </Steps>
