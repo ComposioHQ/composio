@@ -2,20 +2,27 @@
 title: "🔗 Integrations"
 sidebarTitle: "Integrations Guide"
 icon: "plug"
-description: "Seamlessly connect an application accounts with Integrations 🌐"
+description: "Authorise Users Seamlessly 🌐"
 ---
 
 ## **Overview**
 
-Integrations enable your users to seamlessly connect their accounts across various external applications, granting your platform the ability to perform actions on their behalf.
+Integrations enable your **users** to **connect accounts** across tools/apps, allowing **your platform** to **perform actions** on their behalf.
 
-## **Choosing Your Integrations**
 
-1. **Standard Integrations**: Our platform supports a wide array of applications for straightforward integration. Simply add your client ID and Secret to get started. [Explore our integrations.](https://www.notion.so/Introduction-27b3883644704d55812a8da65b405f32?pvs=21)
-2. **Custom Integrations**: For more tailored solutions, you can create custom integrations using a YAML configuration file.
-3. **Premium Integrations**: For businesses requiring advanced integration solutions, we offer priority support and development.
+<AccordionGroup title="Choosing Your Integrations">
+<Accordion title="Standard: Available by Default">
+Our platform supports a wide array of applications for straightforward integration. Simply add your client ID and Secret to get started. [Explore our integrations.](https://www.notion.so/Introduction-27b3883644704d55812a8da65b405f32?pvs=21)
+</Accordion>
+<Accordion title=" Custom: Create via YAML config">
+For more tailored solutions, you can create custom integrations using a YAML configuration file.
+</Accordion>
+<Accordion title="Premium: Let us Create & Manage">
+For businesses requiring advanced integration solutions, we offer priority support and development.
+</Accordion>
+</AccordionGroup>
 
-## **Connecting User Accounts**
+## User Account Integration Process (< 5 Mins)
 
 <Steps>
 <Step title="Gather Integration Parameters">
@@ -23,21 +30,23 @@ Integrations enable your users to seamlessly connect their accounts across vario
 Ex API Key , Sub Domain URL, User Name
 
 <CodeGroup>
-```python
+```python Printing Required Params
 from composio.sdk import ComposioSdk
 
 composio = Composio("api-key")
 
-integration = composio.get_integration(integration_id) # User Selected Id
+# Integration Choosen by User to Connect with
+integration = composio.get_integration(integration_id) 
 
-print(integration.get_required_variables()) # list of params req from user
+# list of params req from user
+print(integration.get_required_variables()) 
 
-````
+```
 </CodeGroup>
 
-Printed for `Zendesk`
+Response if `Linear` Integration was choosen.   
 <CodeGroup>
-```python
+```python Example Response
 [
     {
         'name': 'api_key',
@@ -48,67 +57,81 @@ Printed for `Zendesk`
         'required': True
     }
 ]
-````
+```
 
 </CodeGroup>
 </Step>
 
-<Step title="Initiate a Connection Request by using collecting params via user">
+<Step title="Initiate Connection Request">
 
 <CodeGroup>
-```python
+```python Send Requested Params
+# Collect the API Key from your user via your platform frontend 
 params = {"api_key":"linearApiKey"}
 
-connection_request = integration.initiate_connection(user_uuid = nil, params=params)
-print(connection_request)
-if connection_request.redirectUrl != "":
-print(f"Please complete the auth flow by opening this link: {}", connection_request.redirectUrl)
-else:
-print("The account status is :{}",connection_request.status)
 
-````
+connection_request = integration.initiate_connection(params=params, user_uuid = nil)
+
+if connection_request.redirectUrl != "":
+  print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
+else:
+  print("The account status is: ",connection_request)
+```
 </CodeGroup>
 </Step>
-<Step title="Complete the redirectUrl Flow allowing user to authorise the request">
+<Step title="Authorisation Flow Redirect (Optional)">
 
-In case of **OAuth Flow**, the _redirectUrl_ will be returned which will be used to redirect User to OAuth Authorisation Completion page.
+In case of **OAuth Flow**, _redirectUrl_ will be returned. 
+
+<Tip>
+Redirect User for OAuth Authorisation Completion page.
+</Tip>
+
+On approval, User will be redirected back to configured URL.
+
 <CodeGroup>
-```python
+```python Example Connection Request
 {
     "connectionStatus": "INITIATED",
     "connectedAccountId": "1f32dbf-f7cfec95e567",
     "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
 }
-````
+```
 
 </CodeGroup>
-Once user approves, OAuth process will be completed and the user will be redirected back to configured URL in the connector.
+
 
 </Step>
-<Step title="Get Status of Connection Request">
 
-Check if the status has been updated. You can do it via two different ways
+<Step title="Validate Connection Request">
 
-1. Get Connected Account using ID & Verify value of status
+Check if the status has been updated.
 
-   OR
-
-2. Use `wait_until_active` method.
-
+<AccordionGroup title="Get Status of Connection Request">
+<Accordion title="Fetch ConnectedAccount">
+Get Connected Account using ID & Verify value of status
 <CodeGroup>
-```python
+```python Get Connected Account Object
 connected_account = composio.get_connected_account(connection_request.id)
-print(account.status)
+```
+</CodeGroup>
+</Accordion>
 
-# OR
-
+<Accordion title="Poll using `Wait` Method">
+<CodeGroup>
+```python Polling until Expiry
 connected_account = connection_request.wait_until_active(timeout=60)
-print(connected_account)
-
+```
+</CodeGroup>
+</Accordion>
+</AccordionGroup>
+Print Status 
+<CodeGroup>
+```python Print ConnectedAccount Status
+print(connected_account.status)
 ```
 </CodeGroup>
 </Step>
 </Steps>
 
 We are done with creating a new connection. You should be able to use `connected_account` to execute actions or recieve triggers.
-```
