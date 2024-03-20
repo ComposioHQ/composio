@@ -1,59 +1,62 @@
 ---
 title: "🛠️ How to Use Actions"
-sidebarTitle: "Using Actions"
-icon: "wand-magic"
-description: "Learn how to perform actions on applications with a connected account."
+sidebarTitle: "Actions Guide"
+icon: "wand-magic-sparkles"
+description: "Learn how to perform actions with a connected account."
 ---
 
 ## Using Actions
 
-After successfully connecting an account to Composio through integration, a unique `connectedAccountId` is generated. We will execute actions using this ID.
+**Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
 ## **Understanding Connected Accounts**
 
-Connected Accounts are established links between Composio and an external application, created during the user authentication process. These accounts store essential authentication details such as access tokens and refresh tokens.
+Connected Accounts are established **links** between **Composio** and an **external application**, created during the **user authentication process**.
+
+They **store authentication details** such as **access tokens** and **refresh tokens**.
 
 ## **Types of Actions**
 
-1. **Default Actions**
+<AccordionGroup>
+  <Accordion title="1️⃣ Default Actions">
+    Composio supports a variety of default actions for each supported
+    application.
+  </Accordion>
+  <Accordion title="2️⃣ Custom Actions">
+    Our platform offers an extensible interface for defining custom actions for
+    both custom and default applications. [Learn more.](http://Google.com)
+  </Accordion>
+  <Accordion title="3️⃣ Local Code/Local Actions">
+    Composio enables fetching authentication parameters for any connection,
+    allowing you to execute code remotely and interact with API endpoints.
+    Example: Use the `getConnection` endpoint to call GitHub, create an issue on
+    your server, and fetch the access token. [Learn more](http://google.com)
+  </Accordion>
+</AccordionGroup>
 
-   Composio supports a variety of default actions for each supported application.
+## Working with Actions
 
-2. **Custom Actions**
+<Steps>
+<Step title="Fetch Actions">
 
-   Our platform offers an extensible interface for defining custom actions for both custom and default applications. [Learn more.](http://Google.com)
+<CodeGroup>
+```python Get Action/s Input Schema
 
-3. **Local Code Execution**
-
-   Composio enables fetching authentication parameters for any connection, allowing you to execute code remotely and interact with API endpoints.
-
-   Example: Use the `getConnection` endpoint to call GitHub, create an issue on your server, and fetch the access token. [Learn more](http://google.com)
-
-### **Retrieving Actions**
-
-Call `/actions` to get list of all Actions on Composio Platform. (Default + Custom)
-
-```python
 from composio.sdk import ComposioSdk
 
 composio = Composio("api-key")
 
+print(composio.get_list_of_actions(action_names = [Action.GITHUB_CREATE_ISSUE]))
+
 print(composio.get_list_of_actions())
+
 ```
+</CodeGroup>
 
-The response will include the action's input/output schema in JSON compatible manner. It will also contain metadata like action name, ID.
+The response will include the action's Id, Name and input/output schema in JSON def.
 
-### **Executing Action**
-
-### **Step 1: Fetching the Custom or Default Action Input Schema**
-
-```python
-from composio.sdk.enums import Action
-
-composio.get_list_of_actions(action_names = [Action.GITHUB_CREATE_ISSUE])
-```
-
-```python
+<CodeGroup>
+```python Sample Response
 [{'name': 'github_create_issue',
   'display_name': 'Create Issue',
   'description': 'Create a new issue in a repository.',
@@ -92,57 +95,41 @@ composio.get_list_of_actions(action_names = [Action.GITHUB_CREATE_ISSUE])
   'enabled': True}]
 ```
 
-After a user connects an account using an integration, a `connectedAccountId` is obtained. An action can be executed on the app for which connected account was created.
+</CodeGroup>
+</Step>
 
-### **Step 2: We need Input Parameters to execute action**
+<Step title="Execute the action">
+<CodeGroup>
+```python Execute Action
 
-```python
-connected_account = composio.get_connected_account(connection_id="9c8e6e42-3837-4014-bd80-12696bd758f1")
-params = {"repo":"speedy","owner":"utkarsh-dixit","title":"Too much light","body":"Show my dark night"}
+# Get connected Account
+
+connected_account = composio.get_connected_account(connection_id="Account_ID")
+
+# Ideally this will be decided by LLM using something like function calling
+
+params = {
+"repo":"speedy",
+"owner":"utkarsh-dixit",
+"title":"Too much light",
+"body":"Show my dark night"}
+
+# Execute the Action
+
 execution_details = connected_account.execute_action(action_name=Action.GITHUB_CREATE_ISSUE, input_data=params)
-```
 
+```
+</CodeGroup>
 When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
-
-### **Custom Code Execution**
-
-You can execute your local code to call external API endpoints by injecting auth head.
-
-```python
-print(connected_account)
-```
-
-Connected Account will contain details of all the authentication parameters.
-
-```python
-{
-  "integrationId": "5e8584e4-723c-44ae-907d-20db982b1797",
-  "connectionParams": {
-    "scope": "admin:org,gist,repo,user",
-    "base_url": "https://api.github.com",
-    "token_type": "bearer",
-    "access_token": "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",
-    "headers": {
-      "Authorization": "Bearer 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"
-    },
-    "queryParams": {}
-  },
-  "appUniqueId": "github",
-  "id": "1f090d08-3741-4e20-ae47-431be119a664",
-  "status": "ACTIVE",
-  "createdAt": "2024-03-19T17:26:21.463Z",
-  "updatedAt": "2024-03-19T17:26:24.134Z"
-}
-
-```
-
-Base URL, auth headers can be used to call any API endpoint on your server.
+</Step>
+</Steps>
 
 ### Retrieving All Supported Actions with Composio
 
-```pythone
+<CodeGroup>
+```python Different Methods to Get All Actions
 composio.getAllTools(uuid) # pick all Tools that are relevant for user.
 connected_account.get_all_actions() # Get all tools from connection
 ```
-
+</CodeGroup>
 This approach ensures that users can easily discover and utilize the full range of actions available to them, enhancing their integration and automation capabilities.

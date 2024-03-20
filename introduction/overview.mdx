@@ -1,6 +1,6 @@
 ---
 title: "🚀 Introduction to Composio"
-sidebarTitle: "Quick Start Guide"
+sidebarTitle: "Quick Start"
 icon: "rocket"
 description: "Learn how to perform actions on GitHub using natural language. ✨"
 ---
@@ -33,47 +33,49 @@ Your one-stop platform for agent-tool interactions. Composio handles Authenticat
 
 <Steps> 
 <Step title="Setting Up GitHub Integration">
-
-- Option 1: [Register your own GitHub Developer App](https://www.notion.so/Quick-Start-56eb47b13a04429f85a3f2195ac4f2de?pvs=21)
-- Option 2: Use our pre-configured integration (Recommended for quick setup)
-
-Select the option that suits you best. Remember to note down your integration ID from the dashboard if you opt for creating your own.
+<AccordionGroup title="Select the option that suits you best.">
+<Accordion title="Use your Developer App">
+[Register your own Integration](https://docs.composio.dev/apps/github) _Copy your integration ID._
+</Accordion>
+<Accordion title="Use Pre-configured App">
+Please use `TestIntegration.GITHUB` for quick Setup 
+</Accordion>
+</AccordionGroup>
 
 </Step>
 
 <Step title="Authenticating Github">
 
 <CodeGroup>
-```python Use OAuth To Authenticate Github
+```python Auth via OAuth - Github
 from composio import Composio, TestIntegration, SchemaFormat
 
 client = Composio("api-key") # init
 
-integration = client.get_app_integration(TestIntegration.GITHUB) # OAUTH 2
+integration = client.get_app_integration(TestIntegration.GITHUB) # Modify
 
 #Trying to initiate a new connection
 connection_request = integration.initiate_connection(user_id = None)
 
 print("Complete the auth flow, link: ", connection_request.redirectUrl)
 
-````
-
+```
 </CodeGroup>
 </Step>
-<Step title="Wait until Account is Connected">
+<Step title="Wait for Connection">
   If you haven’t, please click on redirectUrl above and complete the flow.
   <CodeGroup>
-    ```python Waiting For Auth Flow Completion
+    ```python Connection Request Polling
     #Keep Polling and wait until timeout
     connected_account = connection_request.wait_until_active(timeout=60)
     ```
   </CodeGroup>
 </Step>
 
-<Step title="Get Supported Actions">
+<Step title="Supported Actions">
   <CodeGroup>
-    ```python Fetch Available Actions
-    #Get all actions based on scope, integration for connected account
+    ```python Fetch Actions
+    #Get based on Connected Account, Format
     actions = connected_account.get_all_actions(format=SchemaFormat.OPENAI)
 
     print(actions)
@@ -81,9 +83,9 @@ print("Complete the auth flow, link: ", connection_request.redirectUrl)
   </CodeGroup>
 </Step>
 
-<Step title="Use Function Call">
+<Step title="Using Function Call">
 <CodeGroup>
-```python Use Function Calling
+```python Task to Action Selection
 from openai import OpenAI
 
 my_task = "Star a repo SamparkAI/custom-auth-integrations on GitHub"
@@ -100,14 +102,14 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-````
+```
 
 </CodeGroup>
 </Step>
 
 <Step title="Handle Tool Calls - Execute Actions">
 <CodeGroup>
-```python Executing Function Call Action!
+```python Executing Selected Actions!
 # Execute Function calls
 execution_details = connected_account.handle_tools_calls(response)
 
@@ -122,6 +124,5 @@ print("Completed Task")
 </Steps>
 
 ## Putting it all together
-
 [Link to Notebook](https://github.com)
-```
+
