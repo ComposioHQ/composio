@@ -67,21 +67,31 @@
     {
       "group": "Get Started",
       "pages": [
-        "introduction/overview",
+        "introduction/overview"
+      ]
+    },
+    {
+      "group":"Work with Integrations",
+      "pages":[
         "introduction/integrations",
-        "introduction/actions",
         "introduction/custom-integrations"
       ]
     },
     {
-      "group": "With Frameworks",
+      "group":"Work with Actions",
+      "pages":[
+        "introduction/actions",
+        "introduction/custom-code"
+      ]
+    },
+    {
+      "group": "Use with Frameworks",
       "pages": [
         "framework/langchain",
         "framework/autogen",
         "framework/crewai"
       ]
     },
-
     {
       "group": "Supported Integrations",
       "pages": [
