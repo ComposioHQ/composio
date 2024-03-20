@@ -1,5 +1,6 @@
 *pycache*
 user_data.json
+.venv
 venv*
 **/dist
 .DS_Store
