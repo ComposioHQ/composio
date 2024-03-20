@@ -178,6 +178,9 @@
     "github": "https://github.com/SamparkAI"
   },
   "analytics": {
+      "ga4": {
+          "measurementId": "G-3DBLETRPXH"
+      }
   },
   "api": {
     "playground": {
