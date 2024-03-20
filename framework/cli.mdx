@@ -1,0 +1,56 @@
+---
+title: "💻 Setup Composio CLI"
+sidebarTitle: "CLI Installation"
+icon: "terminal"
+description: "Effortlessly set up the Composio CLI with a single command."
+---
+
+<Steps>
+<Step title="Installing Composio">
+  <CodeGroup>
+  ```bash Installing via pip
+  pip install composio
+  ```
+  </CodeGroup>
+  Install Package For Selected Framework
+  <AccordionGroup>
+  <Accordion title="Langchain">
+    <CodeGroup>
+      ```bash Installion for Langchain
+      pip install composio_langchain
+      ```
+    </CodeGroup>
+  </Accordion>
+  <Accordion title="Autogen">
+    <CodeGroup>
+      ```bash Installation for Autogen
+      pip install composio_autogen
+      ```
+    </CodeGroup>
+  </Accordion>
+  <Accordion title="CrewAI">
+    <CodeGroup>
+      ```bash Installation for CrewAI
+      pip install composio_crew
+      ```
+    </CodeGroup>
+  </Accordion>
+  </AccordionGroup>
+  </Step>
+
+
+<Step title="Check Supported Apps">
+<CodeGroup>
+```bash Print Supported Apps
+composio-cli show-apps
+```
+</CodeGroup>
+</Step>
+<Step title="Connect Selected App">
+<CodeGroup>
+```bash Connect Github App
+composio-cli add github
+```
+</CodeGroup>
+</Step>
+</Steps>
