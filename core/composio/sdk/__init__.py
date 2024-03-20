@@ -1,1 +1,2 @@
-from .client import ComposioClient
+from .sdk import Composio, SchemaFormat
+from .core import ComposioCore

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -10,8 +10,10 @@ from rich.console import Console
 import termcolor
 import requests
 from uuid import getnode as get_mac
-from composio.sdk.storage import save_user_connection
-from composio.sdk.client import ComposioClient
+from sdk.storage import save_user_connection
+from sdk.core import ComposioCore
+from sdk.utils import generate_enums
+
 import webbrowser
 
 console = Console()
@@ -30,24 +32,37 @@ def parse_arguments():
     show_apps_parser = subparsers.add_parser('show-apps', help='Display available apps')
     show_apps_parser.set_defaults(func=show_apps)
 
+    # List connections command
+    list_connections_parser = subparsers.add_parser('show-connections', help='List all connections for a given app')
+    list_connections_parser.add_argument('appName', type=str, help='Name of the app to list connections for')
+    list_connections_parser.set_defaults(func=list_connections)
+
+    # Generate enums command
+    generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
+    generate_enums_parser.set_defaults(func=handle_update)
+
     return parser.parse_args()
 
+def handle_update(args):
+    generate_enums()
+    console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
+
 def add_integration(args):
-    client = ComposioClient()
+    client = ComposioCore()
     auth_user(client)
 
     integration_name = args.integration_name
     console.print(f"\n[green]> Adding integration: {integration_name.capitalize()}...[/green]\n")
     try:
         # @TODO: add logic to wait and ask for API_KEY
-        connection = client.create_connection(integration_name)
+        connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
         webbrowser.open(connection.redirectUrl)
-        print(f"Please authenticate {integration_name} in the browser and come back here.")
+        print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
         spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
         spinner.start()
-        client.wait_for_connection(connection.connectionId, integration_name)
+        connected_account = connection.wait_until_active()
         spinner.stop()
-        save_user_connection(connection.connectionId, integration_name)
+        save_user_connection(connected_account.id, integration_name)
         print("")
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
     except Exception as e:
@@ -55,9 +70,9 @@ def add_integration(args):
         sys.exit(1)
 
 def show_apps(args):
-    client = ComposioClient()
+    client = ComposioCore()
     auth_user(client)
-    apps_list = client.get_list_of_apps()
+    apps_list = client.sdk.get_list_of_apps()
     app_names_list = [{"name": app.get('name'), "uniqueId": app.get('key'), "appId": app.get('appId')} for app in apps_list.get('items')]
     console.print("\n[green]> Available apps supported by composio:[/green]\n")
     i = 1
@@ -66,6 +81,22 @@ def show_apps(args):
         i = i + 1
 
     print("\n")
+
+def list_connections(args):
+    client = ComposioCore()
+    auth_user(client)
+    appName = args.appName
+    console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
+    try:
+        connections = client.get_list_of_connections(appName)
+        if connections:
+            for connection in connections:
+                console.print(f"[yellow]- {connection['integrationId']} ({connection['status']})[/yellow]")
+        else:
+            console.print("[red] No connections found for the specified app.[/red]")
+    except Exception as e:
+        console.print(f"[red] Error occurred during listing connections: {e}[/red]")
+        sys.exit(1)
     
 def print_intro(): 
         text = termcolor.colored('Composio', 'white', attrs=['bold'])  
@@ -85,7 +116,7 @@ def print_intro():
 └───────────────────────────────────────────────────────────────────────────┘
         """)
 
-def auth_user(client: ComposioClient):
+def auth_user(client: ComposioCore):
     user_mac_address = get_mac()
     unique_identifier = f"{user_mac_address}-autogen"
     
@@ -96,7 +127,7 @@ def main():
 
     args = parse_arguments()
 
-    client = ComposioClient()
+    client = ComposioCore()
 
     try:
         user = auth_user(client)
@@ -108,6 +139,3 @@ def main():
         args.func(args)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
-
-if __name__ == '__main__':
-    main()

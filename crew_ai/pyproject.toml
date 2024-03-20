@@ -1,16 +1,7 @@
 [project]
 dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
 dependencies = [
-    "crewai",
-    "requests",
-    "jsonschema",
-    "argparse",
-    "nest_asyncio",
-    "langchain===0.1.0",
-    "langchain-openai===0.0.2.post1",
-    "langchainhub==0.1.15",
-    "pydantic===2.6.4",
-    "composio_core===0.0.3"
+    "composio_langchain===0.1.11",
 ]
 name = "composio_crewai"
 

@@ -4,13 +4,18 @@ dependencies = [
     "requests",
     "jsonschema",
     "argparse",
-    "llama_index",
-    "nest_asyncio",
     "beaupy===3.7.2",
-    "termcolor==2.4.0"
+    "termcolor==2.4.0",
+    "pydantic==2.6.4"
 ]
 name = "composio_core"
 
 [build-system]
 requires = [ "setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.poetry.scripts]
+composio-cli = 'composio.composio_cli:main'
+
+[project.scripts]
+composio-cli = 'composio.composio_cli:main'

@@ -43,7 +43,7 @@ def json_schema_to_pydantic_field(name: str, json_schema: Dict[str, Any], requir
     description = json_schema.get('description')
 
     # Get the field examples.
-    examples = json_schema.get('examples')
+    examples = json_schema.get('examples', [])
 
     # Create a Field object with the type, description, and examples.
     # The 'required' flag will be set later when creating the model.
