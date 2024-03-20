@@ -5,21 +5,20 @@ icon: "plug"
 description: "Authorise Users Seamlessly 🌐"
 ---
 
-## **Overview**
-
-Integrations enable your **users** to **connect accounts** across tools/apps, allowing **your platform** to **perform actions** on their behalf.
-
+**Integrations** enable your **users** to **connect accounts** across tools/apps, allowing **your platform** to **perform actions** on **their behalf**.
 
 <AccordionGroup title="Choosing Your Integrations">
-<Accordion title="Standard: Available by Default">
-Our platform supports a wide array of applications for straightforward integration. Simply add your client ID and Secret to get started. [Explore our integrations.](https://www.notion.so/Introduction-27b3883644704d55812a8da65b405f32?pvs=21)
-</Accordion>
-<Accordion title=" Custom: Create via YAML config">
-For more tailored solutions, you can create custom integrations using a YAML configuration file.
-</Accordion>
-<Accordion title="Premium: Let us Create & Manage">
-For businesses requiring advanced integration solutions, we offer priority support and development.
-</Accordion>
+  <Accordion title="Default Integrations">
+    Simply add your client ID and Secret to get started. [Explore our
+    integrations.](https://app.composio.dev/apps)
+  </Accordion>
+  <Accordion title="Custom Integrations: Create via YAML config">
+    Add custom integrations using a simple YAML configuration file.
+  </Accordion>
+  <Accordion title="Premium Integrations: Let us Create & Manage">
+    For businesses requiring integrations with complex apps, we offer priority
+    support and development.
+  </Accordion>
 </AccordionGroup>
 
 ## User Account Integration Process (< 5 Mins)
@@ -31,31 +30,33 @@ Ex API Key , Sub Domain URL, User Name
 
 <CodeGroup>
 ```python Printing Required Params
-from composio.sdk import ComposioSdk
+from composio import Composio
 
-composio = Composio("api-key")
+client = Composio("api-key")
 
-# Integration Choosen by User to Connect with
-integration = composio.get_integration(integration_id) 
+# Integration Chosen by User to Connect with
+
+integration = client.get_integration(integration_id)
 
 # list of params req from user
-print(integration.get_required_variables()) 
+
+print(integration.get_required_variables())
 
 ```
 </CodeGroup>
 
-Response if `Linear` Integration was choosen.   
+Response if `Zendesk` Integration was choosen.
 <CodeGroup>
-```python Example Response
+```json Example Response
 [
-    {
-        'name': 'api_key',
-        'expected_from_customer': True,
-        'displayName': 'API Key',
-        'description': 'Your Linear API key for authentication. Obtain it from your Linear settings.',
-        'type': 'string',
-        'required': True
-    }
+  {
+    "name": "subdomain",
+    "expected_from_customer": true,
+    "displayName": "Zendesk Subdomain",
+    "description": "Your Zendesk subdomain (e.g., your-company-name in your-company-name.zendesk.com)",
+    "type": "string",
+    "required": true
+  }
 ]
 ```
 
@@ -66,22 +67,22 @@ Response if `Linear` Integration was choosen.
 
 <CodeGroup>
 ```python Send Requested Params
-# Collect the API Key from your user via your platform frontend 
-params = {"api_key":"linearApiKey"}
+# Collect the subdomain from your user via your platform's frontend
+params = {"subdomain":"***zendesk_sub_domain****"}
 
-
-connection_request = integration.initiate_connection(params=params, user_uuid = nil)
+connection_request = integration.initiate_connection(params=params, user_uuid = "")
 
 if connection_request.redirectUrl != "":
   print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
 else:
   print("The account status is: ",connection_request)
+
 ```
 </CodeGroup>
 </Step>
 <Step title="Authorisation Flow Redirect (Optional)">
 
-In case of **OAuth Flow**, _redirectUrl_ will be returned. 
+In case of **OAuth Flow**, _redirectUrl_ will be returned.
 
 <Tip>
 Redirect User for OAuth Authorisation Completion page.
@@ -99,7 +100,6 @@ On approval, User will be redirected back to configured URL.
 ```
 
 </CodeGroup>
-
 
 </Step>
 
@@ -134,6 +134,6 @@ print(connected_account.status)
 </Step>
 </Steps>
 
-We created a new Connected Account. 
+We created a new Connected Account.
 
-You should be able to use `connected_account.id` to execute actions or recieve triggers.
+You should be able to use `connected_account.id` to execute actions or receive triggers.
