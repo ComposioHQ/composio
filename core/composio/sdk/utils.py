@@ -1,11 +1,11 @@
-from .sdk import ComposioSdk
+from .sdk import Composio
 import os
 
 def _get_enum_key(name):
     return name.upper().replace(' ', '_').replace('-', '_')
 
 def generate_enums():
-    sdk_client = ComposioSdk("yw1qb4ls4340z696zh7sa")
+    sdk_client = Composio("yw1qb4ls4340z696zh7sa")
     apps = sdk_client.get_list_of_apps()
     actions = sdk_client.get_list_of_actions()
 
