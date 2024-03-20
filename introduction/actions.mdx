@@ -1,35 +1,35 @@
 ---
-title: "🧰 Actions!"
-sidebarTitle: "Actions"
-icon: "hat-wizard"
-description: "Performing an action on Github using Natural Language. ✨"
+title: "🛠️ How to Use Actions"
+sidebarTitle: "Using Actions"
+icon: "wand-magic"
+description: "Learn how to perform actions on applications with a connected account."
 ---
 
-# Using Actions
+## Using Actions
 
-User was able to connect his account to Composio using integration and `connectedAccountId` was generated. Let’s use it to now execute an action.
+After successfully connecting an account to Composio through integration, a unique `connectedAccountId` is generated. We will execute actions using this ID.
 
-### **Accounts**
+## **Understanding Connected Accounts**
 
-Connected Accounts represent links created when an Integration is used to authenticate a user. It stores the access token, refresh token and other parameters necessary to authenticate the user.
+Connected Accounts are established links between Composio and an external application, created during the user authentication process. These accounts store essential authentication details such as access tokens and refresh tokens.
 
-### **Available Action Types**
+## **Types of Actions**
 
 1. **Default Actions**
 
-   For each Default App, we support many default actions.
+   Composio supports a variety of default actions for each supported application.
 
 2. **Custom Actions**
 
-   We provide an extensible interface which allows you to define a custom action either for a custom or default app through code. [Read here.](http://Google.com)
+   Our platform offers an extensible interface for defining custom actions for both custom and default applications. [Learn more.](http://Google.com)
 
-3. **Local Code - Action**
+3. **Local Code Execution**
 
-   We also provide you an interface to fetch the auth parameters for any connection and execute the code remotely to call the API endpoints.
+   Composio enables fetching authentication parameters for any connection, allowing you to execute code remotely and interact with API endpoints.
 
-   Ex - Call Github Create a new issue on your server and fetch access token by using `getConnection` endpoint. [Read here](http://google.com)
+   Example: Use the `getConnection` endpoint to call GitHub, create an issue on your server, and fetch the access token. [Learn more](http://google.com)
 
-### **List Default Actions**
+### **Retrieving Actions**
 
 Call `/actions` to get list of all Actions on Composio Platform. (Default + Custom)
 
@@ -41,7 +41,7 @@ composio = Composio("api-key")
 print(composio.get_list_of_actions())
 ```
 
-- The response will include the action's input/output schema in JSON compatible manner. It will also contain metadata like action name, ID.
+The response will include the action's input/output schema in JSON compatible manner. It will also contain metadata like action name, ID.
 
 ### **Executing Action**
 
@@ -97,9 +97,9 @@ After a user connects an account using an integration, a `connectedAccountId` is
 ### **Step 2: We need Input Parameters to execute action**
 
 ```python
-account = composio.get_connected_account(connection_id="9c8e6e42-3837-4014-bd80-12696bd758f1")
+connected_account = composio.get_connected_account(connection_id="9c8e6e42-3837-4014-bd80-12696bd758f1")
 params = {"repo":"speedy","owner":"utkarsh-dixit","title":"Too much light","body":"Show my dark night"}
-execution_details = account.execute_action(action_name=Action.GITHUB_CREATE_ISSUE, input_data=params)
+execution_details = connected_account.execute_action(action_name=Action.GITHUB_CREATE_ISSUE, input_data=params)
 ```
 
 When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
@@ -109,10 +109,10 @@ When executed successfully, action's response will be output. Output schema as r
 You can execute your local code to call external API endpoints by injecting auth head.
 
 ```python
-print(account)
+print(connected_account)
 ```
 
-Print Account (connected_account) object, which will contain details of all the authentication parameters.
+Connected Account will contain details of all the authentication parameters.
 
 ```python
 {
@@ -136,4 +136,13 @@ Print Account (connected_account) object, which will contain details of all the 
 
 ```
 
-Use the base URL, auth headers to call any API endpoint on your server.
+Base URL, auth headers can be used to call any API endpoint on your server.
+
+### Retrieving All Supported Actions with Composio
+
+```pythone
+composio.getAllTools(uuid) # pick all Tools that are relevant for user.
+connected_account.get_all_actions() # Get all tools from connection
+```
+
+This approach ensures that users can easily discover and utilize the full range of actions available to them, enhancing their integration and automation capabilities.
