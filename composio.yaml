@@ -1,40 +1,32 @@
 openapi: 3.1.0
 info:
-  description: Composio API OpenAPI Spec.
-  title: Composio API Collection
   version: 1.0.0
+  title: Composio API Collection
+  summary: ''
+  description: Composio API OpenAPI Spec.
   contact:
     name: soham
     url: composio.dev
     email: hello@composio.dev
-  summary: ''
   license:
-    name: Proprietary
     url: 'https://composio.dev/terms-of-service'
+    name: Proprietary
 servers:
   - url: 'https://backend.composio.dev/api'
     description: baseurl
-components:
-  securitySchemes:
-    authToken:
-      name: X-API-Key
-      type: apiKey
-      in: header
-tags:
-  - name: actions
-    description: The "actions" tag represents a collection of endpoints related to managing and executing actions within the Composio platform. Actions are specific operations or tasks that can be performed using the integrated apps.
-  - name: apps
-    description: The "apps" tag represents a collection of endpoints related to managing and interacting with apps within the Composio platform. Apps refer to the external applications or services that can be integrated with Composio.
-  - name: connections
-    description: he "connections" tag represents a collection of endpoints related to managing connections between the Composio platform and external apps. Connections represent the authenticated and configured links that allow data flow and interaction between Composio and the integrated apps.
-  - name: connectors
-    description: The "connectors" tag represents a collection of endpoints related to managing app connectors within the Composio platform. App connectors define the configuration and authentication details required to establish connections with external apps or services.
 paths:
   /v1/apps:
     get:
       tags:
         - apps
       summary: List All Apps
+      description: |-
+        Retrieves a list of all available apps in the Composio platform.
+
+        This endpoint allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
+
+        Use this endpoint to build a catalog of available apps and provide your users with an overview of the apps they can integrate with.
+      operationId: list-all-apps
       responses:
         '200':
           description: OK
@@ -88,46 +80,55 @@ paths:
                         categories:
                           - productivity
                         appId: fb9b4a59-8eda-4032-84d7-638e1df4ffef
-      operationId: list-all-apps
-      description: |-
-        Retrieves a list of all available apps in the Composio platform.
-
-        This endpoint allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
-
-        Use this endpoint to build a catalog of available apps and provide your users with an overview of the apps they can integrate with.
-    servers: []
-  /v1/connections:
+      security:
+        - authToken: []
+  /v1/connectedAccounts:
     get:
       tags:
-        - connections
-      summary: List All Connections
+        - connectedAccounts
+      summary: List All Connected Accounts
+      description: |-
+        Retrieves a list of all connected accounts in the Composio platform. 
+
+        It supports pagination and filtering based on various parameters such as app ID, integration ID, and connected  ID. The response includes an array of connection objects, each containing details like the connector ID, connection parameters, status, creation/update timestamps, and associated app information.
+
+        Use this endpoint to manage and monitor all active connections.  
+      operationId: list-all-connections
       parameters:
         - name: page
           in: query
+          description: Page number to fetch
           schema:
             type: integer
-            example: 1
-          example: 1
-          description: Page number to fetch
+            examples:
+              - 1
+          examples:
+            default:
+              value: 1
         - name: pageSize
           in: query
+          description: Page size to assume
           schema:
             type: integer
-            example: 10
-          example: 10
-          description: Page size to assume
-        - schema:
-            type: string
-            example: github
+            examples:
+              - 10
+          examples:
+            default:
+              value: 10
+        - name: appId
           in: query
-          name: appId
           description: Application ID "github"
-        - schema:
+          schema:
             type: string
-            example: 065bcbcf-e25b-4808-b4ad-13c16ad14824
+            examples:
+              - github
+        - name: connectorId
           in: query
-          name: connectorId
           description: 'Connector ID '
+          schema:
+            type: string
+            examples:
+              - 065bcbcf-e25b-4808-b4ad-13c16ad14824
       responses:
         '200':
           description: OK
@@ -158,34 +159,34 @@ paths:
                               type: string
                               description: The client secret used for authentication with the connected app.
                             owner:
-                              type:
-                                - object
-                                - string
                               description: 'The owner of the connection, which can be an object or a string.'
-                              properties:
-                                type:
-                                  type: string
-                                  description: 'The type of the owner (e.g., "user").'
-                                user:
-                                  type: object
-                                  description: An object representing the user owner of the connection.
+                              oneOf:
+                                - type: object
                                   properties:
-                                    id:
-                                      type: string
-                                    name:
-                                      type: string
                                     type:
                                       type: string
-                                    object:
-                                      type: string
-                                      description: 'The object type of the user (e.g., "user").'
-                                    person:
+                                      description: 'The type of the owner (e.g., "user").'
+                                    user:
                                       type: object
+                                      description: An object representing the user owner of the connection.
                                       properties:
-                                        email:
+                                        id:
                                           type: string
-                                    avatar_url:
-                                      type: string
+                                        name:
+                                          type: string
+                                        type:
+                                          type: string
+                                        object:
+                                          type: string
+                                          description: 'The object type of the user (e.g., "user").'
+                                        person:
+                                          type: object
+                                          properties:
+                                            email:
+                                              type: string
+                                        avatar_url:
+                                          type: string
+                                - type: string
                             bot_id:
                               type: string
                               description: The ID of the bot associated with the connection.
@@ -230,11 +231,12 @@ paths:
                           type: string
                           description: The unique identifier of the connection.
                         status:
-                          description: 'The status of the connection (e.g., "INITIATED", "SUCCESS").'
+                          type: string
                           enum:
                             - FAILED
                             - INITIATED
                             - ACTIVE
+                          description: 'The status of the connection (e.g., "INITIATED", "SUCCESS").'
                         createdAt:
                           type: string
                           description: The timestamp indicating when the connection was created.
@@ -348,35 +350,39 @@ paths:
                         logo: 'https://i.imgur.com/98qPYXd.png'
                     totalPages: 4
                     page: 1
-      operationId: list-all-connections
-      description: |-
-        Retrieves a list of all connections in the Composio platform. 
-
-        This endpoint allows you to fetch a list of all the available connections. It supports pagination and filtering based on various parameters such as app ID, connector ID, and connection ID. The response includes an array of connection objects, each containing details like the connector ID, connection parameters, status, creation/update timestamps, and associated app information.
-
-        Use this endpoint to manage and monitor all active connections.  
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
     post:
       tags:
-        - connections
-      summary: Create a Connection
+        - connectedAccounts
+      summary: Connect an Account
+      description: |-
+        Connect an account
+
+        This endpoint allows you to connect an external app account with Composio. It requires the integration ID in the request body and returns the connection status, connection ID, and a redirect URL (if applicable) for completing the connection flow.
+
+        Use this endpoint to initiate the process of connecting an external app for your end user.
+      operationId: create-connection
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              x-examples:
-                Example 1:
-                  connectorId: 065bcbcf-e25b-4808-b4ad-13c16ad14824
-              required:
-                - connectorId
               properties:
                 connectorId:
                   type: string
                 redirectUri:
                   type: string
-                  x-stoplight:
-                    id: 7s484h6uojs4t
-                  example: 'https://google.com'
+                  examples:
+                    - 'https://google.com'
+              required:
+                - connectorId
+              x-examples:
+                Example 1:
+                  connectorId: 065bcbcf-e25b-4808-b4ad-13c16ad14824
       responses:
         '200':
           description: OK
@@ -386,6 +392,7 @@ paths:
                 type: object
                 properties:
                   connectionStatus:
+                    type: string
                     enum:
                       - SUCCESS
                       - INITIATED
@@ -405,26 +412,38 @@ paths:
             {
                 "message": "Connector not found"
             }
-      operationId: create-connection
-      description: |-
-        Creates a new connection. 
-
-        This endpoint allows you to establish a new connection using Composio with an external app. It requires the connector ID in the request body and returns the connection status, connection ID, and a redirect URL (if applicable) for completing the connection flow.
-
-        Use this endpoint to initiate the process of connecting an external app for your end user.
-  '/v1/connections/{connectionId}':
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
+  '/v1/connectedAccounts/{connectedAccountId}':
     get:
       tags:
-        - connections
-      summary: Get a Connection
+        - connectedAccounts
+      summary: Get a Connected Account
+      description: |-
+        Retrieves details of a specific account connected to the Composio platform by providing its connected account ID. 
+        The response includes the integration ID, connection parameters (such as scope, base URL, client ID, token type, access token, etc.), connection ID, status, and creation/update timestamps.
+      operationId: get-connected-account
       parameters:
         - name: connectionId
-          description: The unique identifier of the connection.
           in: path
+          description: The unique identifier of the connection.
+          required: true
           schema:
             type: string
+            examples:
+              - 4d3e5e98-2fd0-4e7b-841a-a208c031b731
+          examples:
+            default:
+              value: 4d3e5e98-2fd0-4e7b-841a-a208c031b731
+        - name: connectedAccountId
+          in: path
+          description: The unique identifier of a connected account.
           required: true
-          example: 4d3e5e98-2fd0-4e7b-841a-a208c031b731
+          schema:
+            type: string
       responses:
         '200':
           description: OK
@@ -433,7 +452,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  connectorId:
+                  integrationId:
                     type: string
                     description: |
                       The unique identifier of the connector associated with the connection.
@@ -463,11 +482,12 @@ paths:
                     type: string
                     description: The unique identifier of the connection.
                   status:
-                    description: ' The status of the connection (e.g., "SUCCESS").'
+                    type: string
                     enum:
                       - ACTIVE
                       - INITIATED
                       - FAILED
+                    description: ' The status of the connection (e.g., "SUCCESS").'
                   createdAt:
                     type: string
                     description: The timestamp indicating when the connection was created.
@@ -494,25 +514,37 @@ paths:
             {
                 "message": "Connection not found or already deleted"
             }
-      operationId: get-connection
-      description: |-
-        Retrieves details of a specific connection in the Composio platform.
-
-        This endpoint allows you to fetch comprehensive information about a particular connection by providing its connection ID. The response includes the connector ID, connection parameters (such as scope, base URL, client ID, token type, access token, etc.), connection ID, status, and creation/update timestamps.
-
-        Use this endpoint to obtain detailed information about a specific connection and its associated parameters. 
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
     delete:
       tags:
-        - connections
-      summary: Delete a Connection
+        - connectedAccounts
+      summary: Delete a Connected Account
+      description: |-
+        Remove a specific account from the Composio platform by providing its connection ID. Upon successful deletion, the response includes a status indicating the success of the operation.
+        Use this endpoint to clean up unwanted connections for your end user and manage the connection lifecycle.
+      operationId: delete-connection
       parameters:
         - name: connectionId
-          description: The unique identifier of the connection.
           in: path
+          description: The unique identifier of the connection.
+          required: true
           schema:
             type: string
+            examples:
+              - 4d3e5e98-2fd0-4e7b-841a-a208c031b731
+          examples:
+            default:
+              value: 4d3e5e98-2fd0-4e7b-841a-a208c031b731
+        - name: connectedAccountId
+          in: path
+          description: The unique identifier of a connected account.
           required: true
-          example: 4d3e5e98-2fd0-4e7b-841a-a208c031b731
+          schema:
+            type: string
       responses:
         '200':
           description: |-
@@ -533,33 +565,44 @@ paths:
                     status: success
         '404':
           description: Not Found
-      operationId: delete-connection
-      description: |-
-        Deletes a specific connection from the Composio platform.
-
-        This endpoint allows you to remove a connection by providing its connection ID. Upon successful deletion, the response includes a status indicating the success of the operation.
-
-        Use this endpoint to clean up unwanted connections for your end user and manage the connection lifecycle.
-    parameters:
-      - schema:
-          type: string
-        name: connectionId
-        in: path
-        required: true
-        description: The unique identifier of the connection.
-  '/v1/connectors/{connectorId}':
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
+  '/v1/integrations/{integrationId}':
     get:
       tags:
-        - connectors
-      summary: Get a Connector
+        - integrations
+      summary: Get an Integration
+      description: |-
+        Retrieves details of a specific integration in the Composio platform by providing its unique identifier. The response includes the connector's name, authentication scheme, authentication configuration, creation and update timestamps, enabled status, associated app information, expected input fields, and logo.
+
+        Use this endpoint to obtain detailed information about a integration and its configuration. It can be shown to end user for selection. 
+
+        You will also get parameters that are required to be captured from end user to connect an account using this connector. 
+        ex. API Key or subdomain URL. 
+
+        If the end-user selects this flow, collect the parameters and connect an account using it. 
+      operationId: get-integration
       parameters:
         - name: connectorId
-          description: The unique identifier of the connector.
           in: path
+          description: The unique identifier of the connector.
+          required: true
           schema:
             type: string
+            examples:
+              - 065bcbcf-e25b-4808-b4ad-13c16ad14824
+          examples:
+            default:
+              value: 065bcbcf-e25b-4808-b4ad-13c16ad14824
+        - name: integrationId
+          in: path
+          description: The unique identifier of the integration.
           required: true
-          example: 065bcbcf-e25b-4808-b4ad-13c16ad14824
+          schema:
+            type: string
       responses:
         '200':
           description: OK
@@ -632,22 +675,40 @@ paths:
                     appName: github
         '404':
           description: Not Found
-      description: |-
-        Retrieves details of a specific connector in the Composio platform.
-
-        This endpoint allows you to fetch comprehensive information about a particular connector by providing its unique identifier. The response includes the connector's name, authentication scheme, authentication configuration, creation and update timestamps, enabled status, associated app information, expected input fields, and logo.
-
-        Use this endpoint to obtain detailed information about a connector and its configuration. It can be shown to end user for selection. 
-
-        You will also get parameters that are required to be captured from end user to make a connection using this connector. 
-        ex. API Key or subdomain URL. 
-
-        If the end-user selects this flow, collect the parameters and create a connection using it. 
-      operationId: Get-connector
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
     patch:
       tags:
-        - connectors
-      summary: Update a connector
+        - integrations
+      summary: Update an Integration
+      description: |-
+        Updates the settings of a specific integration in the Composio platform.
+
+        This endpoint allows you to modify the settings of a integration, such as enabling or disabling it, by providing its unique identifier. The request body should include the updated settings, and the response indicates the success of the update operation.
+
+        Use this endpoint to manage the configuration and behavior of integrations in the Composio platform.
+      operationId: update-integration
+      parameters:
+        - name: connectorId
+          in: path
+          description: The unique identifier of the connector.
+          required: true
+          schema:
+            type: string
+            examples:
+              - 31a23bf7-8df4-4e76-9860-143a7e3834a2
+          examples:
+            default:
+              value: 31a23bf7-8df4-4e76-9860-143a7e3834a2
+        - name: integrationId
+          in: path
+          description: The unique identifier of the integration.
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -661,14 +722,6 @@ paths:
               Example:
                 value:
                   enabled: false
-      parameters:
-        - name: connectorId
-          description: The unique identifier of the connector.
-          in: path
-          schema:
-            type: string
-          required: true
-          example: 31a23bf7-8df4-4e76-9860-143a7e3834a2
       responses:
         '200':
           description: OK
@@ -685,38 +738,42 @@ paths:
                     status: success
         '404':
           description: Not Found
-      operationId: update-connector
-      description: |-
-        Updates the settings of a specific connector in the Composio platform.
-
-        This endpoint allows you to modify the settings of a connector, such as enabling or disabling it, by providing its unique identifier. The request body should include the updated settings, and the response indicates the success of the update operation.
-
-        Use this endpoint to manage the configuration and behavior of connectors in the Composio platform.
-    parameters:
-      - schema:
-          type: string
-        name: connectorId
-        in: path
-        required: true
-        description: The unique identifier of the connector.
-  /v1/connectors:
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
+  /v1/integrations:
     get:
       tags:
-        - connectors
-      summary: List All Connectors
+        - integrations
+      summary: List All Integrations
+      description: |-
+        Retrieves a list of all integrations in the Composio platform. It supports pagination to handle large numbers of connectors. The response includes an array of connector objects, each containing information such as the connector's ID, name, authentication scheme, creation/update timestamps, enabled status, associated app information, and logo.
+
+        This are the integration you can showcase to end user, and let them select which integration they want to connect an account with. 
+      operationId: list-connectors
       parameters:
         - name: page
           in: query
+          description: Page number to fetch
           schema:
             type: integer
-          example: 1
-          description: Page number to fetch
+            examples:
+              - 1
+          examples:
+            default:
+              value: 1
         - name: pageSize
           in: query
+          description: Page Size to assume
           schema:
             type: integer
-          example: 10
-          description: Page Size to assume
+            examples:
+              - 10
+          examples:
+            default:
+              value: 10
       responses:
         '200':
           description: OK
@@ -794,19 +851,17 @@ paths:
                         logo: 'https://i.imgur.com/98qPYXd.png'
                     totalPages: 2
                     page: 1
-      operationId: list-connectors
-      description: |-
-        Retrieves a list of all connectors in the Composio platform.
-
-        This endpoint allows you to fetch a list of all the available connectors. It supports pagination to handle large numbers of connectors. The response includes an array of connector objects, each containing information such as the connector's ID, name, authentication scheme, creation/update timestamps, enabled status, associated app information, and logo.
-
-        Use this endpoint to explore and manage the connectors available in the Composio platform.
-
-        This are the connectors you can showcase to end user, and let them select which connector they want to connect with. 
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
     post:
       tags:
-        - connectors
-      summary: Create a new connector
+        - integrations
+      summary: Create a new integration
+      description: 'This endpoint allows you to add a new integration by providing the necessary details such as the integration name, authentication scheme, associated app ID, and authentication configuration. Upon successful creation, the response includes the newly created connector object.'
+      operationId: create-integration
       requestBody:
         content:
           application/json:
@@ -917,26 +972,36 @@ paths:
                     appName: notion
         '400':
           description: Bad Request
-      operationId: create-connector
-      description: |-
-        Creates a new connector in the Composio platform.
-
-        This endpoint allows you to add a new connector by providing the necessary details such as the connector name, authentication scheme, associated app ID, and authentication configuration. Upon successful creation, the response includes the newly created connector object.
-
-        Use this endpoint to expand the capabilities of the Composio platform by adding new connectors for external apps and services.
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
   '/v1/actions/{actionName}':
     get:
       tags:
         - actions
       summary: Get a Specific Action
+      description: |-
+        Retrieves details of a specific action in the Composio platform.
+
+        This endpoint allows you to fetch comprehensive information about a particular action by providing its unique identifier.
+        The response includes the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
+        Use this endpoint to obtain detailed information about an action, including its configuration and usage requirements. 
+        You can then pass this to function calling or use LLM to fill in the parameters. 
+      operationId: Get-action
       parameters:
         - name: actionName
-          description: The unique identifier of the action.
           in: path
+          description: The unique identifier of the action.
+          required: true
           schema:
             type: string
-          required: true
-          example: CreateSubtask
+            examples:
+              - CreateSubtask
+          examples:
+            default:
+              value: CreateSubtask
       responses:
         '200':
           description: OK
@@ -1075,28 +1140,23 @@ paths:
                     enabled: true
         '404':
           description: Not Found
-      operationId: Get-action
-      description: |-
-        Retrieves details of a specific action in the Composio platform.
-
-        This endpoint allows you to fetch comprehensive information about a particular action by providing its unique identifier.
-        The response includes the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
-        Use this endpoint to obtain detailed information about an action, including its configuration and usage requirements. 
-        You can then pass this to function calling or use LLM to fill in the parameters. 
-      x-stoplight:
-        id: godhq9z2vu4ua
-    parameters:
-      - schema:
-          type: string
-        name: actionName
-        in: path
-        required: true
-        description: Action Name
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
   /v1/actions:
     get:
       tags:
         - actions
       summary: Get List of Actions
+      description: |-
+        Retrieves a list of all actions in the Composio platform.
+
+        This endpoint allows you to fetch a list of all the available actions. It supports pagination to handle large numbers of actions. The response includes an array of action objects, each containing information such as the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
+
+        Use this endpoint to explore and discover the actions supported by the Composio platform and showcase them to end user. 
+      operationId: Get-List-Actions
       responses:
         '200':
           description: OK
@@ -1176,25 +1236,44 @@ paths:
                   totalPages:
                     type: integer
                     description: The total number of pages available for the action list.
-      operationId: Get-List-Actions
-      description: |-
-        Retrieves a list of all actions in the Composio platform.
-
-        This endpoint allows you to fetch a list of all the available actions. It supports pagination to handle large numbers of actions. The response includes an array of action objects, each containing information such as the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
-
-        Use this endpoint to explore and discover the actions supported by the Composio platform and showcase them to end user. 
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
   '/v1/actions/{actionName}/execute':
     post:
       tags:
         - actions
       summary: Execute action
+      description: |-
+        Executes a specific action in the Composio platform.
+
+        This endpoint allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
+
+        Use this endpoint to execute actions available in the Composio platform for your end customer. 
+
+        Executed will indicate whether the action was successfully executed. 
+      operationId: Execute-Action
+      parameters:
+        - name: actionName
+          in: path
+          description: The name of the action to execute.
+          required: true
+          schema:
+            type: string
+            examples:
+              - CreateIssue
+          examples:
+            default:
+              value: CreateIssue
       requestBody:
         content:
           '*/*':
             schema:
               type: object
               properties:
-                connectionId:
+                connectedAccountId:
                   type: string
                   description: The unique identifier of the connection to use for executing the action.
                 input:
@@ -1209,14 +1288,6 @@ paths:
                     repo: speedy
                     title: testing E2E new 6
                     body: testing E2E new 6
-      parameters:
-        - name: actionName
-          description: The name of the action to execute.
-          in: path
-          schema:
-            type: string
-          required: true
-          example: CreateIssue
       responses:
         '200':
           description: OK
@@ -1301,21 +1372,21 @@ paths:
                       state_reason: null
         '404':
           description: Not Found
-      operationId: Execute-Action
-      description: |-
-        Executes a specific action in the Composio platform.
-
-        This endpoint allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connection ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
-
-        Use this endpoint to execute actions available in the Composio platform for your end customer. 
-
-        Executed will indicate whether the action was successfully executed. 
-    parameters:
-      - schema:
-          type: string
-        name: actionName
-        in: path
-        required: true
-        description: The name of the action to execute.
+      security:
+        - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
+tags:
+  - name: actions
+  - name: apps
+  - name: connectedAccounts
+  - name: integrations
+components:
+  securitySchemes:
+    authToken:
+      type: apiKey
+      name: X-API-Key
+      in: header
 security:
   - authToken: []
