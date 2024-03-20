@@ -1,25 +1,23 @@
 ---
-title: "🧰 Integrations!"
-sidebarTitle: "Integrations"
-icon: "hat-wizard"
-description: "Performing an action on Github using Natural Language.✨"
+title: "🔗 Integrations"
+sidebarTitle: "Integrations Guide"
+icon: "plug"
+description: "Seamlessly connect an application accounts with Integrations 🌐"
 ---
 
-# Using Integrations
+## **Overview**
 
-### **Integrations**
+Integrations enable your users to seamlessly connect their accounts across various external applications, granting your platform the ability to perform actions on their behalf.
 
-An Integration allows your users to connect with various external applications and authorise your agents to act on behalf of them.
+## **Choosing Your Integrations**
 
-### **Decide on what kind of Integrations you want**
+1. **Standard Integrations**: Our platform supports a wide array of applications for straightforward integration. Simply add your client ID and Secret to get started. [Explore our integrations.](https://www.notion.so/Introduction-27b3883644704d55812a8da65b405f32?pvs=21)
+2. **Custom Integrations**: For more tailored solutions, you can create custom integrations using a YAML configuration file.
+3. **Premium Integrations**: For businesses requiring advanced integration solutions, we offer priority support and development.
 
-1. **Default Integrations**: We support many applications and you can easily create integrations for them. You can also add your client ID and Secret. [List of available integrations.](https://www.notion.so/Introduction-27b3883644704d55812a8da65b405f32?pvs=21)
-2. **Custom Integrations**: We also allow you to define custom integrations through code. This is done by adding a YAML file.
-3. **Premium Integrations:** We can also prioritise specialised integrations for your use case.
+## **Connecting User Accounts**
 
-### **Connecting your customer’s account**
-
-### Step 1: Get all required parameters for an integration
+### Step 1: Gather Integration Parameters
 
 Ex API Key , Sub Domain URL, User Name
 
@@ -94,5 +92,3 @@ print(account.status)
 account = connection_request.wait_until_active(timeout=60)
 print(account)
 ```
-
-Read Next: [Using Actions](https://www.notion.so/Using-Actions-d3b937454db04bb1848d301f3a1f4c99?pvs=21)

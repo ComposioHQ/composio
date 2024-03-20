@@ -69,7 +69,14 @@
       "pages": [
         "introduction/overview",
         "introduction/integrations",
-        "introduction/actions"
+        "introduction/actions",
+        "introduction/custom-integrations"
+      ]
+    },
+    {
+      "group": "Get Started",
+      "pages": [
+        "guides/load-api-data"
       ]
     },
     {
