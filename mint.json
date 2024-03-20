@@ -73,15 +73,15 @@
     {
       "group":"Work with Integrations",
       "pages":[
-        "introduction/integrations",
-        "introduction/custom-integrations"
+        "integrations/integration-guide",
+        "integrations/custom-integration"
       ]
     },
     {
       "group":"Work with Actions",
       "pages":[
-        "introduction/actions",
-        "introduction/custom-code"
+        "actions/action-guide",
+        "actions/local-code"
       ]
     },
     {
