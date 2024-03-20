@@ -56,7 +56,7 @@ jobs:
 
       - name: Build crew package and install locally
         run: |
-          cd crew 
+          cd crew_ai 
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
           fi
