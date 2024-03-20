@@ -74,6 +74,20 @@
       ]
     },
     {
+      "group": "With Frameworks",
+      "pages": [
+        "framework/langchain",
+        "framework/autogen"
+      ]
+    },
+
+    {
+      "group": "Supported Integrations",
+      "pages": [
+        "apps/github"
+      ]
+    },
+    {
       "group": "Get Started",
       "pages": [
         "guides/load-api-data"
