@@ -82,10 +82,20 @@
       ]
     },
     {
-      "group": "Supported Frameworks",
+      "group": "Installing CLI",
       "pages": [
-        "framework/cli",
-        "framework/langchain",
+        "framework/cli"
+      ]
+    },
+    {
+      "group": "Using Langchain",
+      "pages": [
+        "framework/langchain"
+      ]
+    },
+    {
+      "group": "Using Autogen",
+      "pages": [
         "framework/autogen"
       ]
     },
@@ -125,7 +135,6 @@
       "pages": [
         {
           "icon": "code",
-
           "group": "apps",
           "pages": [
             "api-reference/apps/list-all-apps"
@@ -135,24 +144,23 @@
           "icon": "rectangles-mixed",
           "group": "connections",
           "pages": [
-            "api-reference/connections/list-all-connections",
-            "api-reference/connections/create-a-connection",
-            "api-reference/connections/get-a-connection",
-            "api-reference/connections/delete-a-connection"
+            "api-reference/connectedaccounts/list-all-connected-accounts",
+            "api-reference/connectedaccounts/connect-an-account",
+            "api-reference/connectedaccounts/get-a-connected-account",
+            "api-reference/connectedaccounts/delete-a-connected-account"
           ]
         },
         {
           "icon": "database",
-          "group": "connectors",
+          "group": "integrations",
           "pages": [
-            "api-reference/connectors/get-a-connector",
-            "api-reference/connectors/update-a-connector",
-            "api-reference/connectors/list-all-connectors",
-            "api-reference/connectors/create-a-new-connector"
+            "api-reference/integrations/get-an-integration",
+            "api-reference/integrations/update-an-integration",
+            "api-reference/integrations/list-all-integrations",
+            "api-reference/integrations/create-a-new-integration"
           ]
         },
         {
-          "icon": "user",
           "group": "actions",
           "pages": [
             "api-reference/actions/get-a-specific-action",
