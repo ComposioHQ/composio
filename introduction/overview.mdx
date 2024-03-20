@@ -30,17 +30,22 @@ Please use `TestIntegration.GITHUB` for quick Setup
 </Step>
 
 <Step title="Authenticating Github">
-
 <CodeGroup>
-```python Auth via OAuth - Github
+```bash Install Composio SDK 
+pip install composio-core
+```
+</CodeGroup>
+Use Github Integration 
+<CodeGroup>
+```python Auth via OAuth 
 from composio import Composio, TestIntegration, SchemaFormat
 
 client = Composio("api-key") # init
 
-integration = client.get_app_integration(TestIntegration.GITHUB) # Modify
+integration = client.get_integration(TestIntegration.GITHUB) # Modify
 
 #Trying to initiate a new connection
-connection_request = integration.initiate_connection(user_id = None)
+connection_request = integration.initiate_connection(user_uuid = None)
 
 print("Complete the auth flow, link: ", connection_request.redirectUrl)
 
@@ -76,7 +81,7 @@ from openai import OpenAI
 my_task = "Star a repo SamparkAI/custom-auth-integrations on GitHub"
 
 # Initialize the OpenAI client with your API key
-openai_client = OpenAI(api_key="\***\*\*\*\***OPENAIKEY\***\*\*\*\*\***")
+openai_client = OpenAI(api_key="******OPENAIKEY******")
 
 # Create a chat completion request to decide on the action
 response = openai_client.chat.completions.create(
