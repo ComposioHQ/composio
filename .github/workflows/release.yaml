@@ -35,7 +35,9 @@ jobs:
       - name: Build core package and install locally
         run: |
           cd core 
-          sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          fi
           python setup.py sdist bdist_wheel 
           echo "Installing package locally"
           pip install -e .
@@ -44,7 +46,9 @@ jobs:
       - name: Build langchain package and install locally
         run: |
           cd langchain 
-          sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          fi
           python setup.py sdist bdist_wheel 
           echo "Installing package locally"
           pip install -e .
@@ -53,7 +57,9 @@ jobs:
       - name: Build crew package and install locally
         run: |
           cd crew 
-          sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          fi
           python setup.py sdist bdist_wheel 
           echo "Installing package locally"
           pip install -e .
