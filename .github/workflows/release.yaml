@@ -28,7 +28,9 @@ jobs:
           
       - name: Extract version from tag
         id: tag_version
-        run: echo "PACKAGE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          echo "PACKAGE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          echo $PACKAGE_VERSION
       
       - name: Build core package and install locally
         run: |
