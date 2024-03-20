@@ -39,7 +39,7 @@ jobs:
             sed -i "s/version = '.*'/version = '${{ env.PACKAGE_VERSION }}'/" setup.py
             echo "Updated version in setup.py (core)"
           fi
-          python setup.py sdist bdist_wheel 
+          python -m build
           echo "Installing package locally"
           pip install -e .
           cd ..
@@ -62,7 +62,7 @@ jobs:
             sed -i "s/composio_core===.*/composio_core===${{ env.PACKAGE_VERSION }}/" requirements.txt
             echo "Updated version in pyproject.toml and requirements.txt"
           fi
-          python setup.py sdist bdist_wheel 
+          python -m build
           echo "Installing package locally"
           cd ..
 
@@ -85,7 +85,7 @@ jobs:
             sed -i "s/composio_langchain===.*/composio_langchain===${{ env.PACKAGE_VERSION }}/" requirements.txt
             echo "Updated version in pyproject.toml and requirements.txt"
           fi
-          python setup.py sdist bdist_wheel 
+          python -m build
           cd ..
 
       - name: Publish package (Crew AI)
