@@ -77,7 +77,6 @@ jobs:
       - name: Build crew package and install locally
         run: |
           cd crew_ai 
-          python setup.py sdist bdist_wheel 
           echo "Installing package locally"
           pip install -e .
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
@@ -86,6 +85,7 @@ jobs:
             sed -i "s/composio_langchain===.*/composio_langchain===${{ env.PACKAGE_VERSION }}/" requirements.txt
             echo "Updated version in pyproject.toml and requirements.txt"
           fi
+          python setup.py sdist bdist_wheel 
           cd ..
 
       - name: Publish package (Crew AI)
