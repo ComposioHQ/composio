@@ -19,7 +19,7 @@ class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     connectionStatus: str
     connectedAccountId: str
-    redirectUrl: str
+    redirectUrl: Optional[str] = None
 
     sdk_instance: 'Composio' = None
 
@@ -138,10 +138,10 @@ class Integration(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
     
-    def initiate_connection(self, user_uuid: str = None) -> ConnectionRequest:
-        connector_id = f"test-{self.appName}-connector"
+    def initiate_connection(self, user_uuid: str = None, params: dict = {}) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
-            "integrationId": connector_id,
+            "integrationId": self.id,
+            "data": params
         })
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
@@ -172,16 +172,16 @@ class Composio:
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_ids)}")
         if resp.status_code == 200:
-            actions = resp.json()
+            actions_response = resp.json()
             if actions is not None and len(actions) > 0:
                 filtered_actions = []
                 action_names_list = [action.value[1] for action in actions]
-                for item in actions["items"]:
+                for item in actions_response["items"]:
                     if item["name"] in action_names_list:
                         filtered_actions.append(item)
                 return filtered_actions
             else:
-                return actions["items"]
+                return actions_response["items"]
         
         raise Exception("Failed to get actions")
 

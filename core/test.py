@@ -1,29 +1,18 @@
 from composio import Composio, SchemaFormat
-from composio import TestIntegration, Action
+from composio import TestIntegration, Action, App
 from openai import OpenAI
 
 sdk_client = Composio("yw1qb4ls4340z696zh7sa")
-connection = sdk_client.get_connected_account("9c8e6e42-3837-4014-bd80-12696bd758f1")
+integration = sdk_client.get_app_integration("d4550b15-dc09-498b-9863-0424905f7fb0") # User Selected Id
 
-print("Connection is", connection)
-client = OpenAI(api_key="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")
-response = client.chat.completions.create(
-    model="gpt-4-turbo-preview",
-    tools=connection.get_all_actions(format = SchemaFormat.OPENAI),
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a good assistant."
-        },
-        {
-            "role": "user",
-            "content": "Create a new issue in a repository and title it 'This is so cool!', \
-and the body of the issue is 'Does it work? Lets try.'. \
-The owner of the repository is utkarsh-dixit and name of the repository is speedy",
-        }
-    ]
-)
+print(integration.get_required_variables()) # list of params req from user
 
-print("RECIEVED RESPONSE: ", response)
+params = {"api_key":"lin_api_VcPcZ71RunTiWRRBQDUuGwY0cUFSG1EukWAElS6M"}
 
-print(connection.handle_tools_calls(response))
+connection_request = integration.initiate_connection(params=params)
+print(connection_request)
+if connection_request.redirectUrl is not None:
+	print(f"Please complete the auth flow by opening this link: {connection_request.redirectUrl}")
+else:
+	print("The account status is :{}",connection_request.connectionStatus)
+	print(sdk_client.get_list_of_actions([App.LINEAR], [Action.LINEAR_GET_PROJECTS]))
