@@ -1,13 +1,10 @@
 from enum import Enum
 import time
-from typing import Optional
+from typing import Optional, Union
 import requests
 from pydantic import BaseModel, ConfigDict
 
 from .enums import Action, App, TestIntegration
-from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
-from uuid import getnode as get_mac
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 from openai.types.chat.chat_completion import ChatCompletion
 import json
 
@@ -193,7 +190,7 @@ class Composio:
         resp = resp.json()
         return [Integration(self, **app) for app in resp["items"]]
 
-    def get_integration(self, connector_id: str | TestIntegration) -> Integration:
+    def get_integration(self, connector_id: Union[str, TestIntegration]) -> Integration:
         if isinstance(connector_id, TestIntegration):
             connector_id = connector_id.value
         resp = self.http_client.get(f"{self.base_url}/v1/integrations/{connector_id}")

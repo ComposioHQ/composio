@@ -1,4 +1,5 @@
 import time
+from typing import Union
 import requests
 from pydantic import BaseModel
 
@@ -45,7 +46,7 @@ class ComposioCore:
 
         raise Exception("Failed to authenticate")
     
-    def initiate_connection(self, integrationId: str | TestIntegration) -> ConnectionRequest:
+    def initiate_connection(self, integrationId: Union[str, TestIntegration]) -> ConnectionRequest:
         if isinstance(integrationId, TestIntegration):
             connectorId = connectorId.value
 
