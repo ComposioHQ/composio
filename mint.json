@@ -54,8 +54,8 @@
   ],
   "anchors": [
     {
-      "name": "Console",
-      "icon": "megaphone",
+      "name": "App",
+      "icon": "laptop",
       "url": "https://app.composio.dev"
     }
 
