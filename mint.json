@@ -1,5 +1,5 @@
 {
-  "name": "Mage",
+  "name": "Composio",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
@@ -7,12 +7,9 @@
   "openapi": ["/composio.yaml"],
   "favicon": "/favicon.png",
   "colors": {
-
-
     "primary": "#355cff",
     "light": "#4579FF",
     "dark": "#355cff",
-
     "ultraLight": "#E4DAFF",
     "ultraDark": "#270A7A",
     "background": {
@@ -25,13 +22,13 @@
     "thumbsRating": true
   },
   "search": {
-    "prompt": "✨ Make magic..."
+    "prompt": "Let there be Light!"
   },
   "metadata": {
-    "og:image": "https://github.com/mage-ai/mage-ai/blob/master/docs/og.png?raw=True",
-    "og:description": "Mage is an open-source, hybrid framework for transforming and integrating data. Our docs are the best place to learn about making magical data pipelines.",
-    "og:site_name": "Mage Docs",
-    "twitter:site": "@mage_ai"
+    "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
+    "og:description": "Composio enables your agents to connect with Various Tools and work with them",
+    "og:site_name": "Composio Docs",
+    "twitter:site": "https://twitter.com/KaranVaidya6"
   },
   "topbarCtaButton": {
     "name": "Open App",
@@ -52,7 +49,7 @@
 
     {
       "name": "Discord",
-      "url": "https://www.mage.ai/chat"
+      "url": "https://discord.gg/XMa3eWKkH8"
     }
   ],
   "anchors": [
@@ -168,11 +165,9 @@
   ],
   "backgroundImage": "/background.png",
   "footerSocials": {
-    "linkedin": "https://www.linkedin.com/company/magetech/",
-    "twitter": "https://twitter.com/mage_ai",
-    "facebook": "https://www.facebook.com/mageai",
-    "instagram": "https://www.instagram.com/mage_ai/",
-    "github": "https://www.github.com/mage-ai"
+    "linkedin": "https://www.linkedin.com/in/soham-ganatra/",
+    "twitter": "https://twitter.com/KaranVaidya6",
+    "github": "https://github.com/SamparkAI"
   },
   "analytics": {
   },
