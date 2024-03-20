@@ -1,0 +1,66 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine build
+          pip install -r core/requirements.txt
+          pip install -r langchain/requirements.txt
+          pip install -r crew/requirements.txt
+          
+      - name: Extract version from tag
+        id: tag_version
+        run: echo "PACKAGE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      
+      - name: Build core package and install locally
+        run: |
+          cd core 
+          sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          python setup.py sdist bdist_wheel 
+          echo "Installing package locally"
+          pip install -e .
+          cd ..
+      
+      - name: Build langchain package and install locally
+        run: |
+          cd langchain 
+          sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          python setup.py sdist bdist_wheel 
+          echo "Installing package locally"
+          pip install -e .
+          cd ..
+
+      - name: Build crew package and install locally
+        run: |
+          cd crew 
+          sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+          python setup.py sdist bdist_wheel 
+          echo "Installing package locally"
+          pip install -e .
+          cd ..
+          
+      - name: Publish package
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          twine upload dist/*
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
