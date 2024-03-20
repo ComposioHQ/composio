@@ -42,7 +42,7 @@ They **store authentication details** such as **access tokens** and **refresh to
 <CodeGroup>
 ```python Get Action/s Input Schema
 
-from composio.sdk import ComposioSdk
+from composio import Composio
 
 composio = Composio("api-key")
 
@@ -53,46 +53,87 @@ print(composio.get_list_of_actions())
 ```
 </CodeGroup>
 
-The response will include the action's Id, Name and input/output schema in JSON def.
+The response will include the **Action's ID, Name and Input/Output schema** in **JSON Def**
 
 <CodeGroup>
-```python Sample Response
-[{'name': 'github_create_issue',
-  'display_name': 'Create Issue',
-  'description': 'Create a new issue in a repository.',
-  'parameters': {'properties': {'owner': {'description': 'Owner of the repository',
-     'examples': ['openai', 'facebook'],
-     'title': 'Owner',
-     'type': 'string'},
-    'repo': {'description': 'Name of the repository',
-     'examples': ['gpt-3', 'react'],
-     'title': 'Repo',
-     'type': 'string'},
-    'title': {'description': 'Title of the issue',
-     'examples': ['Bug in the code', 'Feature request'],
-     'title': 'Title',
-     'type': 'string'},
-    'body': {'default': '',
-     'description': 'Body of the issue',
-     'examples': ['The code is not working',
-      'I would like to request a new feature'],
-     'title': 'Body',
-     'type': 'string'}},
-   'required': ['owner', 'repo', 'title'],
-   'title': 'CreateIssueRequest',
-   'type': 'object'},
-  'response': {'properties': {'issue_url': {'description': 'URL of the created issue',
-     'examples': [''],
-     'title': 'Issue Url',
-     'type': 'string'}},
-   'required': ['issue_url'],
-   'title': 'CreateIssueResponse',
-   'type': 'object'},
-  'appId': '46f40473-cc29-4b52-98e0-a812ff2b44e3',
-  'appKey': 'github',
-  'logo': 'https://i.imgur.com/FAXkSDq.png',
-  'appName': 'Github',
-  'enabled': True}]
+```JSON Sample Response
+[
+  {
+    "name": "github_create_issue",
+    "display_name": "Create Issue",
+    "description": "Create a new issue in a repository.",
+    "parameters": {
+      "properties": {
+        "owner": {
+          "description": "Owner of the repository",
+          "examples": [
+            "openai",
+            "facebook"
+          ],
+          "title": "Owner",
+          "type": "string"
+        },
+        "repo": {
+          "description": "Name of the repository",
+          "examples": [
+            "gpt-3",
+            "react"
+          ],
+          "title": "Repo",
+          "type": "string"
+        },
+        "title": {
+          "description": "Title of the issue",
+          "examples": [
+            "Bug in the code",
+            "Feature request"
+          ],
+          "title": "Title",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "description": "Body of the issue",
+          "examples": [
+            "The code is not working",
+            "I would like to request a new feature"
+          ],
+          "title": "Body",
+          "type": "string"
+        }
+      },
+      "required": [
+        "owner",
+        "repo",
+        "title"
+      ],
+      "title": "CreateIssueRequest",
+      "type": "object"
+    },
+    "response": {
+      "properties": {
+        "issue_url": {
+          "description": "URL of the created issue",
+          "examples": [
+            ""
+          ],
+          "title": "Issue Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue_url"
+      ],
+      "title": "CreateIssueResponse",
+      "type": "object"
+    },
+    "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
+    "appKey": "github",
+    "logo": "https://i.imgur.com/FAXkSDq.png",
+    "appName": "Github",
+    "enabled": true
+  }
+]
 ```
 
 </CodeGroup>
@@ -108,11 +149,8 @@ connected_account = composio.get_connected_account(connection_id="Account_ID")
 
 # Ideally this will be decided by LLM using something like function calling
 
-params = {
-"repo":"speedy",
-"owner":"utkarsh-dixit",
-"title":"Too much light",
-"body":"Show my dark night"}
+params = { "repo":"speedy", "owner":"utkarsh-dixit", 
+"title":"Too much light","body":"Show my dark night"}
 
 # Execute the Action
 
@@ -131,5 +169,6 @@ When executed successfully, action's response will be output. Output schema as r
 composio.getAllTools(uuid) # pick all Tools that are relevant for user.
 connected_account.get_all_actions() # Get all tools from connection
 ```
+
 </CodeGroup>
 This approach ensures that users can easily discover and utilize the full range of actions available to them, enhancing their integration and automation capabilities.
