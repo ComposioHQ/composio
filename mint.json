@@ -85,11 +85,10 @@
       ]
     },
     {
-      "group": "Use with Frameworks",
+      "group": "Supported Frameworks",
       "pages": [
-        "framework/langchain",
-        "framework/autogen",
-        "framework/crewai"
+        "framework/cli",
+        "framework/langchain"
       ]
     },
     {
@@ -120,12 +119,6 @@
         "apps/spotify",
         "apps/todoist",
         "apps/trello"
-      ]
-    },
-    {
-      "group": "Get Started",
-      "pages": [
-        "guides/load-api-data"
       ]
     },
     {
