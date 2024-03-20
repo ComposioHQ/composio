@@ -30,7 +30,7 @@ Please use `TestIntegration.GITHUB` for quick Setup
 pip install composio-core
 ```
 </CodeGroup>
-Use `Github Integration` to Connect `Github Account`
+Use `Github Integration` to Connect your `Github Account`
 
 Modify *Composio* `api-key` 
 <Tip> TestIntegration.*App* uses Composio built-in Integrations </Tip>
@@ -65,7 +65,6 @@ print("Complete the auth flow, link: ", connection_request.redirectUrl)
 <Step title="Supported Actions">
   <CodeGroup>
     ```python Fetch Actions
-
     actions = connected_account.get_all_actions(format=SchemaFormat.OPENAI)
     # SchemaFormat converts to right function calling format.
     ```
