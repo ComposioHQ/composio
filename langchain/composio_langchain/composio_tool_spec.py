@@ -11,9 +11,7 @@ from pydantic import create_model, Field
 schema_type_python_type_dict = {
     'string': str,
     'number': float,
-    'boolean': bool,
-    # 'array': list,
-    # 'object': dict
+    'boolean': bool
 }
 
 fallback_values = {
@@ -68,8 +66,6 @@ def get_signature_format_from_schema_params(
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
 
-        # param_type = schema_type_python_type_dict[param_schema['type']]
-        # param_name = param_schema['name']
         param_default = param_schema.get('default', fallback_values[param_type])
         param_annotation = Annotated[signature_param_type, param_schema.get('description', 
                                                                             param_schema.get('desc',
@@ -81,7 +77,6 @@ def get_signature_format_from_schema_params(
             default=Parameter.empty if param_name in required_params else param_default 
         )
         parameters.append(param)
-        print(param_name)
     return parameters
 
     

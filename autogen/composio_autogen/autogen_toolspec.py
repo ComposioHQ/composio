@@ -82,7 +82,6 @@ def get_signature_format_from_schema_params(
             default=Parameter.empty if param_name in required_params else param_default 
         )
         parameters.append(param)
-        print(param_name)
     return parameters
 
 
@@ -113,8 +112,6 @@ class ComposioAutogenToolset:
                                             executor = executor if executor else self.executor)
 
             
-        print("Tools registered successfully!")
-
     def register_actions(
             self,
             actions: Union[Action, List[Action]],
@@ -135,8 +132,6 @@ class ComposioAutogenToolset:
                                             caller = caller if caller else self.caller,
                                             executor = executor if executor else self.executor)
 
-            
-        print("Actions registered successfully!")
 
     def _register_schema_to_autogen(self, 
                                     action_schema, 
