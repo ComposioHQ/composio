@@ -24,7 +24,7 @@ jobs:
           pip install setuptools wheel twine build
           pip install -r core/requirements.txt
           pip install -r langchain/requirements.txt
-          pip install -r crew/requirements.txt
+          pip install -r crew_ai/requirements.txt
           
       - name: Extract version from tag
         id: tag_version
