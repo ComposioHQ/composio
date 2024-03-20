@@ -11,7 +11,7 @@ readme_path = resolve_paths(get_current_dir(), 'README.md')
 
 setup(
     name = 'composio_autogen',
-    version = '0.1.26',
+    version = '0.1.27',
     author = 'Sawradip',
     author_email = 'sawradip@composio.dev',
     description = 'Use Composio to get an array of tools with your Autogen agent.',
