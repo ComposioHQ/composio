@@ -216,6 +216,6 @@ class Composio:
     
     def get_action_enum(self, action_name: str, tool_name: str) -> Action:
         for action in Action:
-            if action.action == action_name and action.service == tool_name.lower():
+            if action.action == action_name.lower() and action.service == tool_name.lower():
                 return action
-        raise ValueError(f"No matching action found for action: {action_name} and tool: {tool_name}")
+        raise ValueError(f"No matching action found for action: {action_name.lower()} and tool: {tool_name.lower()}")

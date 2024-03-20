@@ -10,9 +10,9 @@ from rich.console import Console
 import termcolor
 import requests
 from uuid import getnode as get_mac
-from sdk.storage import save_user_connection
-from sdk.core import ComposioCore
-from sdk.utils import generate_enums
+from .sdk.storage import save_user_connection
+from .sdk.core import ComposioCore
+from .sdk.utils import generate_enums
 
 import webbrowser
 

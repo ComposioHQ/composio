@@ -39,7 +39,7 @@ class ComposioCore:
                 'Content-Type': 'application/json',
                 'x-api-key': api_key
             })
-            self.sdk = ComposioSdk(api_key, self.base_url)
+            self.sdk = Composio(api_key, self.base_url)
             if self.manage_auth:
                 save_api_key(api_key)
             return api_key
