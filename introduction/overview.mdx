@@ -35,7 +35,8 @@ Please use `TestIntegration.GITHUB` for quick Setup
 pip install composio-core
 ```
 </CodeGroup>
-Use Github Integration 
+Use Github Integration. 
+Modify `api-key` before executing. 
 <CodeGroup>
 ```python Auth via OAuth 
 from composio import Composio, TestIntegration, SchemaFormat
@@ -49,7 +50,7 @@ connection_request = integration.initiate_connection(user_uuid = None)
 
 print("Complete the auth flow, link: ", connection_request.redirectUrl)
 
-```
+````
 </CodeGroup>
 </Step>
 <Step title="Wait for Connection">
@@ -74,6 +75,7 @@ print("Complete the auth flow, link: ", connection_request.redirectUrl)
 </Step>
 
 <Step title="Using Function Call">
+Modify `OPENAIKEY` before executing it.
 <CodeGroup>
 ```python Task to Action Selection
 from openai import OpenAI
@@ -92,7 +94,7 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-```
+````
 
 </CodeGroup>
 </Step>
@@ -114,3 +116,4 @@ print("Completed Task")
 </Steps>
 
 ### Putting it all together - [Python Notebook](https://github.com)
+```
