@@ -14,7 +14,7 @@ setup(
     version = '0.1.26',
     author = 'Sawradip',
     author_email = 'sawradip@composio.dev',
-    description = 'Use Composio to get an array of tools with your LangChain agent.',
+    description = 'Use Composio to get an array of tools with your Autogen agent.',
     long_description = open(readme_path).read(),
     long_description_content_type = 'text/markdown',
     url = 'https://github.com/SamparkAI/composio_sdk',

@@ -1,25 +1,19 @@
-import json
 import types
 import logging
-import requests
 from inspect import Parameter, Signature
-from typing import Union, List, Dict, Any, Type, Annotated
+from typing import Union, List, Annotated
 
 import autogen
 from composio import ComposioCore, App, Action
-from pydantic import BaseModel, create_model, Field
+from pydantic import create_model, Field
 from autogen.agentchat.conversable_agent import ConversableAgent
 
-
 logger = logging.getLogger(__name__)
-
 
 schema_type_python_type_dict = {
     'string': str,
     'number': float,
-    'boolean': bool,
-    # 'array': list,
-    # 'object': dict
+    'boolean': bool
 }
 
 fallback_values = {
@@ -77,8 +71,6 @@ def get_signature_format_from_schema_params(
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
 
-        # param_type = schema_type_python_type_dict[param_schema['type']]
-        # param_name = param_schema['name']
         param_default = param_schema.get('default', fallback_values[param_type])
         param_annotation = Annotated[signature_param_type, param_schema.get('description', 
                                                                             param_schema.get('desc',
@@ -178,78 +170,3 @@ class ComposioAutogenToolset:
             name=name,
             description=description
         )
-
-if __name__ == "__main__":
-
-
-    import os
-
-    os.environ['OAI_CONFIG_LIST'] ='''[{"model": "gpt-4-1106-preview","api_key": "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"}]'''
-    # {"model": "accounts/fireworks/models/fw-function-call-34b-v0","api_key": "FIREWORKS_API_KEY", "base_url":"https://api.fireworks.ai/inference/v1"},
-    # {"model": "accounts/fireworks/models/mixtral-8x7b-instruct","api_key": "FIREWORKS_API_KEY", "base_url":"https://api.fireworks.ai/inference/v1"},
-
-
-    import autogen
-
-    llm_config={
-        "timeout": 600,
-        "cache_seed": 57,  # change the seed for different trials
-        "config_list": autogen.config_list_from_json(
-            "OAI_CONFIG_LIST",
-            filter_dict={"model": [
-                "gpt-4-1106-preview",
-                # "accounts/fireworks/models/fw-function-call-34b-v0"
-                ]},
-            ),
-        "temperature": 0.5,
-    }
-
-    chatbot = autogen.AssistantAgent(
-        name="chatbot",
-        system_message="""For github analysis task,
-        only use the functions you have been provided with.
-        Reply TERMINATE when the task is done.
-        Reply TERMINATE when user's content is empty.""",
-        llm_config=llm_config,
-    )
-
-    # create a UserProxyAgent instance named "user_proxy"
-    user_proxy = autogen.UserProxyAgent(
-        name="user_proxy",
-        is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().find("TERMINATE") >= 0,
-        human_input_mode="NEVER",
-        max_consecutive_auto_reply=10,
-        code_execution_config = {
-            "use_docker": False
-        }
-    )
-    from pprint import pprint
-    mycomposio = ComposioAutogenToolset(caller=chatbot,
-                                        executor=user_proxy)
-    
-    # mycomposio.register_actions(actions=[Action.GITHUB_GET_REPOSITORY])
-    mycomposio.register_tools(tools=[
-                                App.GITHUB                
-                                ])
-    pprint(chatbot.llm_config["tools"])
-
-    response = user_proxy.initiate_chat(
-        chatbot,
-        message="Write a short but informative summary about my github profile",
-    )
-
-    print(response)
-
-
-    # client = ComposioCore()
-    # actions = client.sdk.get_list_of_actions([
-    #                                         App.GITHUB, 
-    #                                         # App.ZENDESK, 
-    #                                         # App.TRELLO
-    #                                         ], [])
-    # from pprint import pprint
-
-    # for action in actions:
-    #     pprint(action)
-    
-
