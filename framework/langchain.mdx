@@ -2,22 +2,21 @@
 title: "🦜🔗 Using Composio With Langchain"
 sidebarTitle: "Langchain Integration"
 icon: "dove"
-description: "Integrate Composio with Langchain agents to let them seamless interact with external Apps"
+description: "Integrate Composio with Langchain agents to let them seamless interact with external apps"
 ---
 
 **Composio enables** your **Langchain agents** to **connect** with many **tools**!
 
-<Tip> Goal: Use Langchain Agent to Star a Repository </Tip>
-
-### Connect your Github account. 
-
+### Install Packages & Connect a Tool
+These commands prepare your environment for seamless interaction between Langchain and Github.
 <CodeGroup> 
-  ```bash CLI Terminal Command
+  ```bash Run Command
   pip install composio-langchain
   composio-cli add github
   ```
 </CodeGroup>
 
+### Goal: Use Langchain Agent to Interact with Github using Composio
 <Steps>
 <Step title="Import Base Packages">
 <CodeGroup>
@@ -41,11 +40,12 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 from composio_langchain import ComposioToolset, Action, App
 
 # Get All the tools 
-tools = ComposioToolset(tools=[App.GITHUB])
+tools = ComposioToolset(apps=[App.GITHUB])
 ```
 </CodeGroup>
 </Step>
 <Step title="Execute the Agent">
+Create an agent, set up an executor, and invoke tasks to perform GitHub API calls using Composio. 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
@@ -59,7 +59,7 @@ agent_executor.invoke({"input": task})
 ```
 </CodeGroup>
 </Step>
-<Step title="Marvel at Response">
+<Step title="Confirm it's working!">
 ```bash Executing Agents
 > Entering new AgentExecutor chain...
 
@@ -69,17 +69,22 @@ Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'custom-auth-i
 {'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository SamparkAI/custom-auth-integrations on GitHub.
 ```
 </Step>
+</Steps>
 
-<Step title="Filter Apps and Actions">
+### Use Specific Actions
 <CodeGroup>
-```bash 
+```bash Filter Specific Action
 
 # To restrict agents from executing any actions, filter specific actions
 toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
+```
+</CodeGroup>
+
+### Use Specific Apps
+<CodeGroup>
+```bash Filter Specific App
 
 # To restrict agents from using all tools, filter specific tools
 toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB])
 ```
 </CodeGroup>
-</Step>
-</Steps>
