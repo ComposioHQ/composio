@@ -1,8 +1,8 @@
 ---
-title: "🦜🔗 Using Composio With Langchain"
-sidebarTitle: "Langchain Integration"
-icon: "dove"
-description: "Integrate Composio with Langchain agents to let them seamless interact with external apps"
+title: "🦜🔗 Using Composio With CrewAU"
+sidebarTitle: "CrewAI Integration"
+icon: "crew"
+description: "Integrate Composio with Langchain agents to let them seamlessly interact with external apps"
 ---
 
 **Composio enables** your **Langchain agents** to **connect** with many **tools**!
@@ -12,10 +12,13 @@ description: "Integrate Composio with Langchain agents to let them seamless inte
 These commands prepare your environment for seamless interaction between Langchain and Github.
 
 <CodeGroup>
-  ```bash Run Command pip install composio-langchain composio-cli add github ```
+  ```bash Run Command
+  pip install composio-crewai
+  composio-cli add github 
+  ```
 </CodeGroup>
 
-### Goal: Use Langchain Agent to Interact with Github using Composio
+### Goal: Use Crew Agent to Interact with Github using Composio
 
 <Steps>
 <Step title="Import Base Packages">
@@ -30,7 +33,7 @@ llm = ChatOpenAI()
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Fetch all Github Langchain Tools via Composio">
@@ -41,12 +44,12 @@ from composio_langchain import ComposioToolset, Action, App
 
 # Get All the tools
 tools = ComposioToolset(apps=[App.GITHUB])
-````
-
+```
 </CodeGroup>
 </Step>
 <Step title="Execute the Agent">
 Create an agent, set up an executor, and invoke tasks to perform GitHub API calls using Composio. 
+
 <CodeGroup>
 ```python Langchain Agent executes the task
 
@@ -59,10 +62,11 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 agent_executor.invoke({"input": task})
 
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Check Response">
+<CodeGroup>
 ```bash Executing Agents
 > Entering new AgentExecutor chain...
 
@@ -70,7 +74,8 @@ Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'custom-auth-i
 
 {'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'SamparkAI', 'repo': 'custom-auth-integrations'}}
 {'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository SamparkAI/custom-auth-integrations on GitHub.
-````
+```
+</CodeGroup>
 
 </Step>
 </Steps>
@@ -85,6 +90,8 @@ toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ### Use Specific Apps
 
 <CodeGroup>
-  ```bash Filter Specific App # To restrict agents from using all tools, filter
-  specific tools toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB]) ```
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter
+  specific tools toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB]) 
+  ```
 </CodeGroup>
