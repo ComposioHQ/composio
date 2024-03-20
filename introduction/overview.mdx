@@ -6,9 +6,10 @@ description: "Learn how to perform actions on GitHub using natural language. ✨
 ---
 
 <Tip>
-  Composio streamlines your workflow by connecting your agents with a multitude
-  of tools, enabling seamless actions across platforms.
+  Composio streamlines your workflow by managing your user's authentication with
+  multitude of tools, enabling your agents to perform actions across tools.
 </Tip>
+
 <CardGroup>
   <Card
     title="Quick Product Tour"
@@ -26,83 +27,101 @@ description: "Learn how to perform actions on GitHub using natural language. ✨
 
 Your one-stop platform for agent-tool interactions. Composio handles Authentication, Action Execution, Trigger Management, and Function Calling seamlessly.
 
-## Experience Composio in Action
+## Experience Composio in under 5 mins.
 
 <Tip>💡 Goal: Perform actions on GitHub with Composio + Function Calling</Tip>
 
-### Step 1: Setting Up GitHub Integration
+<Steps> 
+<Step title="Setting Up GitHub Integration">
 
 - Option 1: [Register your own GitHub Developer App](https://www.notion.so/Quick-Start-56eb47b13a04429f85a3f2195ac4f2de?pvs=21)
 - Option 2: Use our pre-configured integration (Recommended for quick setup)
 
 Select the option that suits you best. Remember to note down your integration ID from the dashboard if you opt for creating your own.
 
-### **Step 2: Authenticating Github**
+</Step>
 
-```python
+<Step title="Authenticating Github">
+
+<CodeGroup>
+```python Use OAuth To Authenticate Github
 from composio import Composio, TestIntegration, SchemaFormat
 
-composio_client = Composio("api-key")
+client = Composio("api-key") # init
 
-integration = composio_client.get_app_integration(TestIntegration.GITHUB)
+integration = client.get_app_integration(TestIntegration.GITHUB) # OAUTH 2
 
-#print(integration.get_required_variables())
-
-# OAUTH 2 flow
+#Trying to initiate a new connection
 connection_request = integration.initiate_connection(user_id = None)
-print(f"Please complete the auth flow by opening this link: {connection_request.redirectUrl}")
-```
 
-### **Step 2.5: Wait until Account is Connected**
+print("Complete the auth flow, link: ", connection_request.redirectUrl)
 
-If you haven’t, please click on redirectUrl above and complete the flow.
+````
 
-```python
-connected_account = connection_request.wait_until_active(timeout=60)
-```
+</CodeGroup>
+</Step>
+<Step title="Wait until Account is Connected">
+  If you haven’t, please click on redirectUrl above and complete the flow.
+  <CodeGroup>
+    ```python Waiting For Auth Flow Completion
+    #Keep Polling and wait until timeout
+    connected_account = connection_request.wait_until_active(timeout=60)
+    ```
+  </CodeGroup>
+</Step>
 
-### Step 3: Get All Actions
+<Step title="Get Supported Actions">
+  <CodeGroup>
+    ```python Fetch Available Actions
+    #Get all actions based on scope, integration for connected account
+    actions = connected_account.get_all_actions(format=SchemaFormat.OPENAI)
 
-```python
-actions = connected_account.get_all_actions(format=SchemaFormat.OPENAI)
-```
+    print(actions)
+    ```
+  </CodeGroup>
+</Step>
 
-### **Step 4: Using OpenAI Function Call -** Creating an Issue on Github
-
-```python
+<Step title="Use Function Call">
+<CodeGroup>
+```python Use Function Calling
 from openai import OpenAI
 
-client = OpenAI(api_key="*********OPENAIKEY**********")
+my_task = "Star a repo SamparkAI/custom-auth-integrations on GitHub"
 
-response = client.chat.completions.create(
+# Initialize the OpenAI client with your API key
+openai_client = OpenAI(api_key="\***\*\*\*\***OPENAIKEY\***\*\*\*\*\***")
+
+# Create a chat completion request to decide on the action
+response = openai_client.chat.completions.create(
 model="gpt-4-turbo-preview",
-tools=actions,
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a good assistant."
-        },
-        {
-            "role": "user",
-            "content": "Create a new issue in a repository and title it 'This is so cool!', \
-and the body of the issue is 'Does it work? Lets try.'. \
-The owner of the repository is utkarsh-dixit and name of the repository is speedy",
-        }
-    ]
+tools=actions, # Passing actions we fetched earlier.
+messages=[
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": my_task}
+  ]
 )
-```
+````
 
-### Step 5: Handle Tool Calls - Execute Actions
+</CodeGroup>
+</Step>
 
-```python
-# All function calls can be executed together.
+<Step title="Handle Tool Calls - Execute Actions">
+<CodeGroup>
+```python Executing Function Call Action!
+# Execute Function calls
 execution_details = connected_account.handle_tools_calls(response)
 
-if execution_details[0]['execution_details']['executed'] {
-	print("created issue")
-}
+print(execution_details)
+
+print("Completed Task")
+
 ```
+
+</CodeGroup>
+</Step>
+</Steps>
 
 ## Putting it all together
 
 [Link to Notebook](https://github.com)
+```
