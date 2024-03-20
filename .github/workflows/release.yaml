@@ -36,7 +36,7 @@ jobs:
         run: |
           cd core 
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            sed -i "s/version=.*/version='${{ env.PACKAGE_VERSION }}',/" setup.py
+            sed -i "s/version = '.*'/version = '${{ env.PACKAGE_VERSION }}'/" setup.py
             echo "Updated version in setup.py (core)"
           fi
           python setup.py sdist bdist_wheel 
