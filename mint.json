@@ -74,6 +74,12 @@
       ]
     },
     {
+      "group": "Using CrewAI",
+      "pages": [
+        "framework/crewai"
+      ]
+    },
+    {
       "group": "Using Autogen",
       "pages": [
         "framework/autogen"

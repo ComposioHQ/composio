@@ -1,20 +1,27 @@
 ---
-title: "🦜🔗 Using Composio With CrewAU"
-sidebarTitle: "CrewAI Integration"
-icon: "crew"
-description: "Integrate Composio with Langchain agents to let them seamlessly interact with external apps"
+title: "🦜🔗 Using Composio With crewAI"
+sidebarTitle: "crewAI Integration"
+icon: "people-group"
+description: "Integrate Composio with Crewai agents to let them seamlessly interact with external apps"
 ---
 
-**Composio enables** your **Langchain agents** to **connect** with many **tools**!
+**Composio enables** your **CrewAI agents** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with natural language & CrewAI Agent</Tip>
 
 ### Install Packages & Connect a Tool
 
-These commands prepare your environment for seamless interaction between Langchain and Github.
+These commands prepare your environment for seamless interaction between CrewAI and Github.
 
 <CodeGroup>
   ```bash Run Command
-  pip install composio-crewai
-  composio-cli add github 
+  pip install composio_crewai
+  
+  #Connect your Github so agents can use it. 
+  composio-cli add github
+
+  #Check all different apps which you can connect with 
+  composio-cli show-apps
   ```
 </CodeGroup>
 
@@ -22,58 +29,83 @@ These commands prepare your environment for seamless interaction between Langcha
 
 <Steps>
 <Step title="Import Base Packages">
+
 <CodeGroup>
 ```python Default Imports
-# Initialise imports
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain import hub
+
+from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI()
-
-prompt = hub.pull("hwchase17/openai-functions-agent")
+llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 
 ```
 </CodeGroup>
+
 </Step>
-<Step title="Fetch all Github Langchain Tools via Composio">
+
+<Step title="Fetch all Tools via Composio">
+
 <CodeGroup>
 ```python Tools For Github
-# Import from composio_langchain
-from composio_langchain import ComposioToolset, Action, App
+
+from composio_crewai import ComposioToolset, Action, App
 
 # Get All the tools
 tools = ComposioToolset(apps=[App.GITHUB])
 ```
+
 </CodeGroup>
+
 </Step>
+
 <Step title="Execute the Agent">
-Create an agent, set up an executor, and invoke tasks to perform GitHub API calls using Composio. 
+
 
 <CodeGroup>
-```python Langchain Agent executes the task
+```python CrewAI Agent Executes Task
 
-task = "Star a repo SamparkAI/docs on GitHub"
+crewai_agent = Agent(
+    role='Github Agent',
+    goal="""You take action on Github using Github APIs""",
+    backstory="""You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs""",
+    verbose=True,
+    tools=tools,
+    llm=llm
+)
+task = Task(
+    description="Star a repo SamparkAI/custom-auth-integrations on GitHub",
+    agent=crewai_agent,
+    expected_output="if the star happened"
+)
 
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-# Execute using agent_executor
-
-agent_executor.invoke({"input": task})
-
+task.execute()
 ```
+
 </CodeGroup>
+
 </Step>
+
 <Step title="Check Response">
+
 <CodeGroup>
 ```bash Executing Agents
-> Entering new AgentExecutor chain...
+> Entering new CrewAgentExecutor chain...[0m
+I need to star a repository on GitHub, specifically the repo "SamparkAI/custom-auth-integrations".
 
-Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'docs'}`
+Action: 
+github_star_repo
 
-{'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'SamparkAI', 'repo': 'docs'}}
-{'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository SamparkAI/docs on GitHub.
+Action Input: 
+{
+  "owner": "SamparkAI",
+  "repo": "custom-auth-integrations"
+}
+
+{'execution_details': {'executed': True}, 'response_data': ''}
+Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
+
+> Finished chain.[0m
+{'execution_details': {'executed': True}, 'response_data': ''}
 ```
 </CodeGroup>
 
