@@ -75,7 +75,7 @@ class ConnectedAccount(BaseModel):
         resp = self._execute_action(action_name, self.id, params)
         return resp
     
-    def get_all_actions(self, format: SchemaFormat = SchemaFormat.DEFAULT):
+    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI):
         app_unique_id = self.appUniqueId
         resp = self.sdk_instance.http_client.get(f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}")
         if resp.status_code == 200:
