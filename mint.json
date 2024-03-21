@@ -7,13 +7,13 @@
   "openapi": ["/composio.yaml"],
   "favicon": "/favicon.png",
   "colors": {
-    "primary": "#355cff",
-    "light": "#4579FF",
+    "primary": "#343434",
+    "light": "#34AAFF",
     "dark": "#355cff",
     "ultraLight": "#E4DAFF",
     "ultraDark": "#270A7A",
     "background": {
-      "dark": "#0F0F0F"
+      "dark": "#0b0b0d"
     }
   },
   "feedback": {
@@ -171,7 +171,7 @@
       ]
     }
   ],
-  "backgroundImage": "/background.png",
+
   "footerSocials": {
     "linkedin": "https://www.linkedin.com/in/soham-ganatra/",
     "twitter": "https://twitter.com/KaranVaidya6",
