@@ -22,7 +22,7 @@
     "thumbsRating": true
   },
   "search": {
-    "prompt": "Let there be Light!"
+    "prompt": "Help my agents to work"
   },
   "metadata": {
     "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
@@ -68,6 +68,18 @@
       ]
     },
     {
+      "group": "Using Langchain",
+      "pages": [
+        "framework/langchain"
+      ]
+    },
+    {
+      "group": "Using Autogen",
+      "pages": [
+        "framework/autogen"
+      ]
+    },
+    {
       "group":"Work with Integrations",
       "pages":[
         "integrations/integration-guide",
@@ -85,18 +97,6 @@
       "group": "Installing CLI",
       "pages": [
         "framework/cli"
-      ]
-    },
-    {
-      "group": "Using Langchain",
-      "pages": [
-        "framework/langchain"
-      ]
-    },
-    {
-      "group": "Using Autogen",
-      "pages": [
-        "framework/autogen"
       ]
     },
     {
