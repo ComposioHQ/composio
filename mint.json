@@ -108,6 +108,7 @@
     {
       "group": "Supported Integrations",
       "pages": [
+        "apps/list",
         "apps/asana",
         "apps/github",
         "apps/hubspot",
