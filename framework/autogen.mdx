@@ -32,6 +32,7 @@ These commands prepare your environment for seamless interaction between Autogen
 ```python Default Imports & Configuration
 from autogen import AssistantAgent, UserProxyAgent
 from composio_autogen import ComposioToolset, App, Action
+import os
 
 llm_config = {"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]}
 
