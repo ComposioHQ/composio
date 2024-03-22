@@ -73,7 +73,7 @@ crewai_agent = Agent(
     llm=llm
 )
 task = Task(
-    description="Star a repo SamparkAI/custom-auth-integrations on GitHub",
+    description="Star a repo SamparkAI/docs on GitHub",
     agent=crewai_agent,
     expected_output="if the star happened"
 )
@@ -90,7 +90,7 @@ task.execute()
 <CodeGroup>
 ```bash Executing Agents
 > Entering new CrewAgentExecutor chain...[0m
-I need to star a repository on GitHub, specifically the repo "SamparkAI/custom-auth-integrations".
+I need to star a repository on GitHub, specifically the repo "SamparkAI/docs".
 
 Action: 
 github_star_repo
@@ -98,7 +98,7 @@ github_star_repo
 Action Input: 
 {
   "owner": "SamparkAI",
-  "repo": "custom-auth-integrations"
+  "repo": "docs"
 }
 
 {'execution_details': {'executed': True}, 'response_data': ''}
