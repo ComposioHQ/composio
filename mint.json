@@ -187,6 +187,9 @@
   "analytics": {
       "ga4": {
           "measurementId": "G-3DBLETRPXH"
+      },
+      "posthog":{
+        "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
       }
   },
   "api": {
