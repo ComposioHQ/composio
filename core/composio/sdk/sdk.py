@@ -138,7 +138,7 @@ class Integration(BaseModel):
     def initiate_connection(self, user_uuid: str = None, params: dict = {}) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
             "integrationId": self.id,
-            "user_uuid": user_uuid,
+            "userUuid": user_uuid,
             "data": params
         })
         if resp.status_code == 200:
