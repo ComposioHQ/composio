@@ -1,16 +1,9 @@
-from langchain.agents import create_openai_functions_agent
-from langchain.agents import AgentExecutor
-from langchain import hub
-from composio_langchain import ComposioToolset
-from langchain_openai import ChatOpenAI
-from composio.sdk import Action, App
+from composio import Composio, TestIntegration
 
-llm = ChatOpenAI(openai_api_key="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", model="gpt-4-turbo-preview")
+sdk_instance = Composio("7gvfr8u5jqp8v5h1v9dpg4")
+github_integration = sdk_instance.get_integration(TestIntegration.GITHUB)
+connection_request = github_integration.initiate_connection(user_uuid="karan")
+print("Connection request", connection_request.redirectUrl)
+connected_account = connection_request.wait_until_active(timeout=60)
 
-prompt = hub.pull("hwchase17/openai-functions-agent")
-
-tools = ComposioToolset([App.GITHUB])
-
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-agent_executor.invoke({"input": "Create a github issue on the utkarsh-dixit/speedy repository with the title 'Test Issue' and the body 'This is a test issue created by the openai functions agent.'"})
+print(sdk_instance.get_connected_accounts(user_uuid=["karan"]))
