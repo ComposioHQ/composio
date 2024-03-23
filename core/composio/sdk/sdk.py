@@ -207,6 +207,14 @@ class Composio:
             return ConnectedAccount(self, **resp.json())
         
         raise Exception("Failed to get connection")
+    
+    def get_connected_accounts(self, user_uuid: list[str]) -> list[ConnectedAccount]:
+        user_uuid_str = ",".join(user_uuid)
+        resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}")
+        if resp.status_code == 200:
+            return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
+        
+        raise Exception("Failed to get connected accounts")
 
     def get_list_of_connected_accounts(self) -> list[ConnectedAccount]:
         resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts")
