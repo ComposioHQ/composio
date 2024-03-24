@@ -1,16 +1,21 @@
 from enum import Enum
 import time
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
+from numpy import append
 import requests
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func
+from sympy import false
 
 from .enums import Action, App, TestIntegration
 from openai.types.chat.chat_completion import ChatCompletion
 import json
 
+
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
+
 
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -18,22 +23,29 @@ class ConnectionRequest(BaseModel):
     connectedAccountId: str
     redirectUrl: Optional[str] = None
 
-    sdk_instance: 'Composio' = None
+    sdk_instance: "Composio" = None
 
-    def __init__(self, sdk_instance: 'Composio', **data):
+    def __init__(self, sdk_instance: "Composio", **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
-    def wait_until_active(self, timeout=60) -> 'ConnectedAccount':  # Timeout adjusted to seconds
+    def wait_until_active(
+        self, timeout=60
+    ) -> "ConnectedAccount":  # Timeout adjusted to seconds
         if not self.sdk_instance:
             raise ValueError("SDK instance not set.")
         start_time = time.time()
         while time.time() - start_time < timeout:
-            connection_info = self.sdk_instance.get_connected_account(self.connectedAccountId)
-            if connection_info.status == 'ACTIVE':
+            connection_info = self.sdk_instance.get_connected_account(
+                self.connectedAccountId
+            )
+            if connection_info.status == "ACTIVE":
                 return connection_info
             time.sleep(1)
-        raise TimeoutError("Connection did not become active within the timeout period.")
+        raise TimeoutError(
+            "Connection did not become active within the timeout period."
+        )
+
 
 class OAuth2ConnectionParams(BaseModel):
     scope: Optional[str] = None
@@ -45,6 +57,7 @@ class OAuth2ConnectionParams(BaseModel):
     headers: Optional[dict] = None
     queryParams: Optional[dict] = None
 
+
 class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     integrationId: str
@@ -55,62 +68,71 @@ class ConnectedAccount(BaseModel):
     createdAt: str
     updatedAt: str
 
-    sdk_instance: 'Composio' = None
+    sdk_instance: "Composio" = None
 
-    def __init__(self, sdk_instance: 'Composio', **data):
+    def __init__(self, sdk_instance: "Composio", **data):
         super().__init__(**data)
         # self.connectionParams = OAuth2ConnectionParams(**self.connectionParams)
         self.sdk_instance = sdk_instance
 
-    def _execute_action(self, action_name: Action, connected_account_id: str, params: dict):
-        resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute", json={
-            "connectedAccountId": connected_account_id,
-            "input": params
-        })
+    def _execute_action(
+        self, action_name: Action, connected_account_id: str, params: dict
+    ):
+        resp = self.sdk_instance.http_client.post(
+            f"{self.sdk_instance.base_url}/v1/actions/{action_name.value[1]}/execute",
+            json={"connectedAccountId": connected_account_id, "input": params},
+        )
         if resp.status_code == 200:
             return resp.json()
         raise Exception("Failed to execute action")
-    
+
     def execute_action(self, action_name: Action, params: dict):
         resp = self._execute_action(action_name, self.id, params)
         return resp
-    
+
     def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI):
         app_unique_id = self.appUniqueId
-        resp = self.sdk_instance.http_client.get(f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}")
+        resp = self.sdk_instance.http_client.get(
+            f"{self.sdk_instance.base_url}/v1/actions?appNames={app_unique_id}"
+        )
         if resp.status_code == 200:
             actions = resp.json()
             if format == SchemaFormat.OPENAI:
                 return [
-                    {"type": "function", "function": {
-                        "name": action["name"],
-                        "description": action.get("description", ""),
-                        "parameters": action.get("parameters", {})
-                    }} for action in actions["items"]
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": action["name"],
+                            "description": action.get("description", ""),
+                            "parameters": action.get("parameters", {}),
+                        },
+                    }
+                    for action in actions["items"]
                 ]
-            else: 
+            else:
                 return actions["items"]
-        
+
         raise Exception("Failed to get actions")
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
-        try: 
+        try:
             if tool_calls.choices:
                 for choice in tool_calls.choices:
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
                             function = tool_call.function
-                            action = self.sdk_instance.get_action_enum(function.name, self.appUniqueId)
+                            action = self.sdk_instance.get_action_enum(
+                                function.name, self.appUniqueId
+                            )
                             arguments = json.loads(function.arguments)
                             output.append(self.execute_action(action, arguments))
         except Exception as e:
             print(e)
             return output
-        
+
         return output
 
-        
 
 class Integration(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -129,46 +151,53 @@ class Integration(BaseModel):
     appName: str
     useComposioAuth: bool = False
 
-    sdk_instance: 'Composio' = None  # type: ignore
+    sdk_instance: "Composio" = None  # type: ignore
 
-    def __init__(self, sdk_instance: 'Composio', **data):
+    def __init__(self, sdk_instance: "Composio", **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
-    
-    def initiate_connection(self, user_uuid: str = None, params: dict = {}) -> ConnectionRequest:
-        resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
-            "integrationId": self.id,
-            "userUuid": user_uuid,
-            "data": params
-        })
+
+    def initiate_connection(
+        self, ref_uuid: str = None, params: dict = {}
+    ) -> ConnectionRequest:
+        resp = self.sdk_instance.http_client.post(
+            f"{self.sdk_instance.base_url}/v1/connectedAccounts",
+            json={"integrationId": self.id, "userUuid": ref_uuid, "data": params},
+        )
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
-        
+
         raise Exception("Failed to create connection")
-    
+
     def get_required_variables(self):
         return self.expectedInputFields
 
+
 class Composio:
-    def __init__(self, api_key: str = None, base_url = "https://backend.composio.dev/api"):
+    def __init__(
+        self, api_key: str = None, base_url="https://backend.composio.dev/api"
+    ):
         self.base_url = base_url
         self.api_key = api_key
         self.http_client = requests.Session()
-        self.http_client.headers.update({
-            'Content-Type': 'application/json',
-            'x-api-key': self.api_key
-        })
+        self.http_client.headers.update(
+            {"Content-Type": "application/json", "x-api-key": self.api_key}
+        )
 
     def get_list_of_apps(self):
-        resp = self.http_client.get(f"{self.base_url}/v1/apps") 
+        resp = self.http_client.get(f"{self.base_url}/v1/apps")
         return resp.json()
 
-    def get_list_of_actions(self, apps: list[App] = None, actions: list[Action] = None) -> list:
+    def get_list_of_actions(
+        self, apps: list[App] = None, actions: list[Action] = None
+    ) -> list:
         if apps is None or len(apps) == 0:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
             app_unique_ids = [app.value for app in apps]
-            resp = self.http_client.get(f"{self.base_url}/v1/actions?appNames={','.join(app_unique_ids)}")
+            resp = self.http_client.get(
+                f"{self.base_url}/v1/actions?appNames={','.join(app_unique_ids)}"
+            )
         if resp.status_code == 200:
             actions_response = resp.json()
             if actions is not None and len(actions) > 0:
@@ -180,7 +209,7 @@ class Composio:
                 return filtered_actions
             else:
                 return actions_response["items"]
-        
+
         raise Exception("Failed to get actions")
 
     def get_list_of_integrations(self) -> list[Integration]:
@@ -200,31 +229,101 @@ class Composio:
 
         raise Exception("Failed to get connector")
 
-
     def get_connected_account(self, connection_id: str) -> ConnectedAccount:
-        resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts/{connection_id}")
+        resp = self.http_client.get(
+            f"{self.base_url}/v1/connectedAccounts/{connection_id}"
+        )
         if resp.status_code == 200:
             return ConnectedAccount(self, **resp.json())
-        
+
         raise Exception("Failed to get connection")
-    
-    def get_connected_accounts(self, user_uuid: list[str]) -> list[ConnectedAccount]:
-        user_uuid_str = ",".join(user_uuid)
-        resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}")
+
+    def get_connected_accounts(
+        self, entity_id: Union[list[str], str]
+    ) -> list[ConnectedAccount]:
+        user_uuid_str = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
+        resp = self.http_client.get(
+            f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}"
+        )
         if resp.status_code == 200:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
-        
+
         raise Exception("Failed to get connected accounts")
 
     def get_list_of_connected_accounts(self) -> list[ConnectedAccount]:
         resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts")
         if resp.status_code == 200:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
-        
+
         raise Exception("Failed to get connected accounts")
-    
+
     def get_action_enum(self, action_name: str, tool_name: str) -> Action:
         for action in Action:
-            if action.action == action_name.lower() and action.service == tool_name.lower():
+            if (
+                action.action == action_name.lower()
+                and action.service == tool_name.lower()
+            ):
                 return action
-        raise ValueError(f"No matching action found for action: {action_name.lower()} and tool: {tool_name.lower()}")
+        raise ValueError(
+            f"No matching action found for action: {action_name.lower()} and tool: {tool_name.lower()}"
+        )
+
+        # handles multiple tool calls
+        connected_accounts = self.get_connected_accounts(entity_id=entity_id)
+
+
+class Entity:
+    def __init__(self, composio: Composio, entity_id: Union[list[str], str]) -> None:
+        self.client = composio
+        entity_id = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
+        self.entity_id = entity_id
+
+    def get_all_actions(self) -> list[Action]:
+        actions = []
+        connected_accounts = self.client.get_connected_accounts(
+            entity_id=self.entity_id
+        )
+
+        for account in connected_accounts:
+            account_actions = account.get_all_actions()
+            actions.extend(account_actions)
+        return actions
+
+    def get_all_action_connections(self) -> list[Tuple[Action, ConnectedAccount]]:
+        action_connections = []
+        connected_accounts = self.client.get_connected_accounts(
+            entity_id=self.entity_id
+        )
+        for account in connected_accounts:
+            account_actions = account.get_all_actions()
+            for action in account_actions:
+                action_connections.append(Tuple[action, account])
+        return action_connections
+
+    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
+        output = []
+        action_connections = self.get_all_action_connections()
+        try:
+            if tool_calls.choices:
+                for choice in tool_calls.choices:
+                    if choice.message.tool_calls:
+                        for tool_call in choice.message.tool_calls:
+                            tool_is_executed = false
+                            function = tool_call.function
+                            # find action_connection with function.name
+                            for action_connection in action_connections:
+                                if tool_is_executed:
+                                    break
+                                action = action_connection[0]
+                                connection = action_connection[1]
+                                if action.action == function.name:
+                                    arguments = json.loads(function.arguments)
+                                    output.append(
+                                        connection.execute_action(action, arguments)
+                                    )
+                                    tool_is_executed = True
+        except Exception as e:
+            print(e)
+            return output
+
+        return output
