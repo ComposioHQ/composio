@@ -56,8 +56,8 @@ def get_signature_format_from_schema_params(
 ):
     parameters = []
     required_params = schema_params.get('required', [])
-
-    for param_name, param_schema in schema_params['properties'].items():
+    schema_parms_object = schema_params.get('items', {})
+    for param_name, param_schema in schema_parms_object.items():
         param_type = param_schema['type']
         param_title = param_schema['title'].replace(" ", "")
 
@@ -105,9 +105,10 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
         func = action_func
     )
 
+client = ComposioCore()
+
 def ComposioToolset(apps: List[App] = [], actions: List[Action] = []) -> List[StructuredTool]:
     if len(apps) >0 and len(actions) > 0:
         raise ValueError("You must provide either a list of tools or a list of actions, not both")
-    client = ComposioCore()
     actions_list = client.sdk.get_list_of_actions(apps, actions)
     return [ComposioTool(client, action) for action in actions_list]
