@@ -70,7 +70,7 @@ Response if `Zendesk` Integration was chosen.
 # Collect the subdomain from your user via your platform's frontend
 params = {"subdomain":"***zendesk_sub_domain****"}
 
-connection_request = integration.initiate_connection(params=params, user_uuid = "")
+connection_request = integration.initiate_connection(params=params, entity_id = "")
 
 if connection_request.redirectUrl != "":
   print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
