@@ -26,7 +26,8 @@ def pydantic_model_from_param_schema(param_schema):
     fields = {}
     param_title = param_schema['title'].replace(" ", "")
     required_props = param_schema.get('required', [])
-    for prop_name, prop_info in param_schema['properties'].items():
+    schema_params_object = param_schema.get('properties', {})
+    for prop_name, prop_info in schema_params_object.items():
         prop_type = prop_info["type"]
         prop_title = prop_info['title'].replace(" ", "")
         prop_default = prop_info.get('default', fallback_values[prop_type])
@@ -56,8 +57,8 @@ def get_signature_format_from_schema_params(
 ):
     parameters = []
     required_params = schema_params.get('required', [])
-    schema_parms_object = schema_params.get('properties', {})
-    for param_name, param_schema in schema_parms_object.items():
+    schema_params_object = schema_params.get('properties', {})
+    for param_name, param_schema in schema_params_object.items():
         param_type = param_schema['type']
         param_title = param_schema['title'].replace(" ", "")
 
