@@ -47,7 +47,7 @@ client = Composio("api-key")
 integration = client.get_integration(TestIntegration.GITHUB)
 
 #Trying to initiate a new connection
-connected_account = integration.initiate_connection(user_uuid = None)
+connected_account = integration.initiate_connection(entity_id = None)
 
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
 
@@ -134,7 +134,7 @@ client = Composio("api-key")
 integration = client.get_integration(TestIntegration.GITHUB)
 
 #Trying to initiate a new connection
-connected_account = integration.initiate_connection(user_uuid = None)
+connected_account = integration.initiate_connection(entity_id = None)
 
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
 
