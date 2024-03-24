@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 schema_type_python_type_dict = {
     'string': str,
     'number': float,
-    'boolean': bool
+    'boolean': bool,
+    'integer': int
 }
 
 fallback_values = {
     'string': "",
     'number': 0.0,
+    'integer': 0.0,
     'boolean': False,
     'object': {},
     'array': []
