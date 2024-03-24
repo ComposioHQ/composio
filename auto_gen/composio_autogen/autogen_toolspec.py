@@ -18,7 +18,7 @@ schema_type_python_type_dict = {
     'string': str,
     'number': float,
     'boolean': bool,
-    # 'array': list,
+    'array': List,
     # 'object': dict
 }
 
