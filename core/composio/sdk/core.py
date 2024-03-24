@@ -59,7 +59,8 @@ class ComposioCore:
         raise Exception("Failed to create connection")
     
     def execute_action(self, action: Action, params: dict):
-        connectionId = get_user_connection(action.value[0])
+        tool_name  = action.value[0]
+        connectionId = get_user_connection(tool_name)
         if not connectionId:
             raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
 
