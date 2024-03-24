@@ -56,7 +56,7 @@ def get_signature_format_from_schema_params(
 ):
     parameters = []
     required_params = schema_params.get('required', [])
-    schema_parms_object = schema_params.get('items', {})
+    schema_parms_object = schema_params.get('properties', {})
     for param_name, param_schema in schema_parms_object.items():
         param_type = param_schema['type']
         param_title = param_schema['title'].replace(" ", "")
