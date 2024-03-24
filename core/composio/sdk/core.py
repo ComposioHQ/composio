@@ -48,7 +48,7 @@ class ComposioCore:
     
     def initiate_connection(self, integrationId: Union[str, TestIntegration]) -> ConnectionRequest:
         if isinstance(integrationId, TestIntegration):
-            connectorId = connectorId.value
+            integrationId = integrationId.value
 
         resp = self.http_client.post(f"{self.base_url}/v1/connectedAccounts", json={
             "integrationId": integrationId,
