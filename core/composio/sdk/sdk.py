@@ -271,6 +271,10 @@ class Composio:
         # handles multiple tool calls
         connected_accounts = self.get_connected_accounts(entity_id=entity_id)
 
+    def get_entity(self, entity_id: Union[list[str], str]):
+        entity = Entity(self, entity_id)
+        return entity
+
 
 class Entity:
     def __init__(self, composio: Composio, entity_id: Union[list[str], str]) -> None:
