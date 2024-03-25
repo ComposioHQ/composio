@@ -1,4 +1,5 @@
 from enum import Enum
+from json import tool
 import time
 from typing import Optional, Union, Tuple
 from numpy import append
@@ -9,6 +10,7 @@ from sympy import false
 
 from .enums import Action, App, TestIntegration
 from openai.types.chat.chat_completion import ChatCompletion
+from openai.types.beta.threads import run
 import json
 
 
@@ -304,7 +306,9 @@ class Entity:
             if tool_name == account.appUniqueId:
                 return account
 
-    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
+    def handle_tools_calls(
+        self, tool_calls: ChatCompletion, verbose: bool = false
+    ) -> list[any]:
         output = []
         try:
             if tool_calls.choices:
@@ -324,3 +328,31 @@ class Entity:
             return output
 
         return output
+
+    def handle_run_tool_calls(self, run_object: run, verbose: bool = false):
+        outputs = []
+        require_action = run_object.required_action.submit_tool_outputs
+        try:
+            for tool_call in require_action.tool_calls:
+                if tool_call.type == "function":
+                    action_name_to_execute = tool_call.function.name
+                    action = self.client.get_action_enum_without_tool(
+                        action_name=action_name_to_execute
+                    )
+                    arguments = json.loads(tool_call.function.arguments)
+                    account = self.get_connection(tool_name=action.service)
+                    if verbose:
+                        print("Executing Function: ", action)
+                        print("Arguments: ", arguments)
+                    response = account.execute_action(action, arguments)
+                    if verbose:
+                        print("Output", response)
+                    output = {
+                        "tool_call_id": tool_call.id,
+                        "output": json.dumps(response.get("response_data", {})),
+                    }
+                    outputs.append(output)
+        except Exception as e:
+            print(e)
+
+        return outputs
