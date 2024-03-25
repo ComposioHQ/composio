@@ -1,11 +1,8 @@
-import time
 from typing import Union
 import requests
-from pydantic import BaseModel
 
 from .sdk import ConnectionRequest, ConnectedAccount
-from .storage import get_user_connection, get_api_key, save_api_key, save_user_connection
-from uuid import getnode as get_mac
+from .storage import get_user_connection, get_api_key, save_api_key
 from .sdk import Composio
 from .enums import TestIntegration, Action
 
