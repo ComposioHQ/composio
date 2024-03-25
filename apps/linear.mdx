@@ -3,7 +3,39 @@ title: "Linear"
 slug: "linear"
 excerpt: ""
 hidden: false
-createdAt: "Wed Mar 13 2024 15:35:12 GMT+0000 (Coordinated Universal Time)"
-updatedAt: "Wed Mar 13 2024 15:35:34 GMT+0000 (Coordinated Universal Time)"
+createdAt: "Wed Mar 13 2024 11:29:45 GMT+0000 (Coordinated Universal Time)"
+updatedAt: "Thu Mar 14 2024 09:24:24 GMT+0000 (Coordinated Universal Time)"
 ---
-Heads up! Our integration with Linear is currently in beta. This means it's available for you to try on our platform, but we're still putting the finishing touches on the documentation. Stay tuned, it's coming soon!
+> Linear uses OAuth2 for authentication.
+
+## 📔 Documentation
+
+1. [Linear API Documentation](https://developers.linear.app/docs/api/linear-api)
+2. [Linear OAuth Documentation](https://developers.linear.app/docs/oauth/overview)
+
+## ⚙️ Configuration
+
+<Tip>
+To use OAuth2 with Linear, you'll need to create an OAuth application in your Linear settings.
+</Tip>
+
+Once you have created your OAuth application in Linear, go to the "OAuth & Permissions" section to configure your Redirect URL:
+
+```
+https://backend.composio.dev/api/v1/auth-apps/github/connection/oauth2/add
+```
+After configuring the Redirect URL, you will be given a Client ID and Client Secret. Keep these credentials secure, as you will use them to authenticate with Linear. On Composio's [supported apps](https://app.composio.dev/apps) page, find Linear and click "Enable". Enter your Client ID and Client Secret, then Save to connect Linear.
+
+## ⚒️ Actions
+
+_⚠️ All the actions are disabled by default. Please go to the Linear connector page to enable the actions._
+
+| Action Name             | Action ID                     | Description                                     |
+| :---------------------- | :---------------------------- | :---------------------------------------------- |
+| Create Linear Issue     | linear_create_linear_issue    | Create a new issue in Linear.                   |
+| List Linear Projects    | linear_list_linear_projects   | Get the list of projects in Linear.             |
+| List Teams by Project   | linear_list_linear_teams      | Get the list of teams by project in Linear.     |
+
+## 🪝 Triggers (Coming Soon)
+
+Linear triggers are not supported yet. If you're looking for Linear Triggers, please write to us at [tech@composio.dev](mailto:tech@composio.dev).
