@@ -110,11 +110,13 @@
       "pages": [
         "apps/list",
         "apps/asana",
+        "apps/linear",
         "apps/github",
-        "apps/hubspot",
+        "apps/trello",
         "apps/notion",
-        "apps/slack",
         "apps/zendesk",
+        "apps/slack",
+        "apps/hubspot",
         "apps/attio",
         "apps/calendly",
         "apps/clickup",
@@ -126,14 +128,12 @@
         "apps/google-drive",
         "apps/google-sheets",
         "apps/jira",
-        "apps/linear",
         "apps/mailchimp",
         "apps/miro",
         "apps/pipedrive",
         "apps/shopify",
         "apps/spotify",
-        "apps/todoist",
-        "apps/trello"
+        "apps/todoist"
       ]
     },
     {
