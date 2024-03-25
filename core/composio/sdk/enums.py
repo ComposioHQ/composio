@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 class App(Enum):
     CLICKUP = "clickup"
     GOOGLE_DRIVE = "google-drive"
@@ -22,7 +21,7 @@ class App(Enum):
     NOTION = "notion"
     DROPBOX = "dropbox"
     EVENTBRITE = "eventbrite"
-
+    MIXPANEL = "mixpanel"
 
 class TestIntegration(Enum):
     CLICKUP = "test-clickup-connector"
@@ -45,34 +44,19 @@ class TestIntegration(Enum):
     NOTION = "test-notion-connector"
     DROPBOX = "test-dropbox-connector"
     EVENTBRITE = "test-eventbrite-connector"
-
+    MIXPANEL = "test-mixpanel-connector"
 
 class Action(Enum):
     def __init__(self, service, action):
         self.service = service
         self.action = action
 
-    ZENDESK_CREATE_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_create_zendesk_organization",
-    )
-    ZENDESK_DELETE_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_delete_zendesk_organization",
-    )
-    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = (
-        "zendesk",
-        "zendesk_count_zendesk_organizations",
-    )
+    ZENDESK_CREATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_create_zendesk_organization")
+    ZENDESK_DELETE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_delete_zendesk_organization")
+    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_count_zendesk_organizations")
     ZENDESK_GET_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_get_zendesk_organization")
-    ZENDESK_GET_ZENDESK_ORGANIZATIONS = (
-        "zendesk",
-        "zendesk_get_all_zendesk_organizations",
-    )
-    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_update_zendesk_organization",
-    )
+    ZENDESK_GET_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_get_all_zendesk_organizations")
+    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_update_zendesk_organization")
     ZENDESK_CREATE_ZENDESK_TICKET = ("zendesk", "zendesk_create_zendesk_ticket")
     ZENDESK_DELETE_ZENDESK_TICKET = ("zendesk", "zendesk_delete_zendesk_ticket")
     ZENDESK_GET_ZENDESK_ABOUT_ME = ("zendesk", "zendesk_get_about_me")
@@ -82,6 +66,10 @@ class Action(Enum):
     GITHUB_GET_REPOSITORY = ("github", "github_list_github_repos")
     GITHUB_STAR_REPO = ("github", "github_star_repo")
     GITHUB_GET_ABOUT_ME = ("github", "github_get_about_me")
+    GITHUB_CREATE_REPO_WEBHOOK = ("github", "github_create_repo_webhook")
+    GITHUB_FETCH_README = ("github", "github_fetch_readme")
+    GITHUB_GET_COMMITS = ("github", "github_get_commits")
+    GITHUB_GET_COMMITS_WITH_PATCH_FILE_FOR_THAT_COMMIT = ("github", "github_get_commits_with_code")
     TYPEFORM_GET_ABOUT_ME = ("typeform", "typeform_get_about_me")
     TRELLO_CREATE_TRELLO_LIST = ("trello", "trello_create_trello_list")
     TRELLO_CREATE_TRELLO_CARD = ("trello", "trello_create_trello_card")
