@@ -11,6 +11,8 @@ from sympy import false
 from .enums import Action, App, TestIntegration
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.beta.threads import run
+from openai import Client
+from openai.types.beta import thread
 import json
 
 
@@ -160,11 +162,11 @@ class Integration(BaseModel):
         self.sdk_instance = sdk_instance
 
     def initiate_connection(
-        self, ref_uuid: str = None, params: dict = {}
+        self, entity_id: str = None, params: dict = {}
     ) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(
             f"{self.sdk_instance.base_url}/v1/connectedAccounts",
-            json={"integrationId": self.id, "userUuid": ref_uuid, "data": params},
+            json={"integrationId": self.id, "userUuid": entity_id, "data": params},
         )
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
@@ -356,3 +358,38 @@ class Entity:
             print(e)
 
         return outputs
+
+    def wait_and_handle_tool_calls(
+        self,
+        client: Client,
+        run: run,
+        thread: thread,
+        verbose: bool = false,
+    ):
+        run_object = run
+        thread_object = thread
+        while (
+            run_object.status == "queued"
+            or run_object.status == "in_progress"
+            or run_object.status == "requires_action"
+        ):
+            ## Look here
+            if run_object.status == "requires_action":
+                run_object = client.beta.threads.runs.submit_tool_outputs(
+                    thread_id=thread_object.id,
+                    run_id=run_object.id,
+                    tool_outputs=self.handle_run_tool_calls(
+                        run_object, verbose=verbose
+                    ),  ## all tool calls executed
+                )
+            else:
+                run_object = client.beta.threads.runs.retrieve(
+                    thread_id=thread_object.id,
+                    run_id=run_object.id,
+                )
+                time.sleep(0.5)
+        return run_object
+
+    def initiate_connection(self, integration_id: str):
+        integration = self.client.get_integration(integration_id)
+        return integration.initiate_connection(entity_id=self.entity_id)
