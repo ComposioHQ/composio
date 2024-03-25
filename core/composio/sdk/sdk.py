@@ -360,7 +360,7 @@ class Entity:
         client: Client,
         run: run,
         thread: thread,
-        verbose: bool = false,
+        verbose: bool = False,
     ):
         run_object = run
         thread_object = thread
