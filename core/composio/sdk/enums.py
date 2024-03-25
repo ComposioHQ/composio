@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class App(Enum):
     CLICKUP = "clickup"
     GOOGLE_DRIVE = "google-drive"
@@ -21,6 +22,7 @@ class App(Enum):
     NOTION = "notion"
     DROPBOX = "dropbox"
     EVENTBRITE = "eventbrite"
+
 
 class TestIntegration(Enum):
     CLICKUP = "test-clickup-connector"
@@ -44,17 +46,33 @@ class TestIntegration(Enum):
     DROPBOX = "test-dropbox-connector"
     EVENTBRITE = "test-eventbrite-connector"
 
+
 class Action(Enum):
     def __init__(self, service, action):
         self.service = service
         self.action = action
 
-    ZENDESK_CREATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_create_zendesk_organization")
-    ZENDESK_DELETE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_delete_zendesk_organization")
-    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_count_zendesk_organizations")
+    ZENDESK_CREATE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_create_zendesk_organization",
+    )
+    ZENDESK_DELETE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_delete_zendesk_organization",
+    )
+    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = (
+        "zendesk",
+        "zendesk_count_zendesk_organizations",
+    )
     ZENDESK_GET_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_get_zendesk_organization")
-    ZENDESK_GET_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_get_all_zendesk_organizations")
-    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_update_zendesk_organization")
+    ZENDESK_GET_ZENDESK_ORGANIZATIONS = (
+        "zendesk",
+        "zendesk_get_all_zendesk_organizations",
+    )
+    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_update_zendesk_organization",
+    )
     ZENDESK_CREATE_ZENDESK_TICKET = ("zendesk", "zendesk_create_zendesk_ticket")
     ZENDESK_DELETE_ZENDESK_TICKET = ("zendesk", "zendesk_delete_zendesk_ticket")
     ZENDESK_GET_ZENDESK_ABOUT_ME = ("zendesk", "zendesk_get_about_me")

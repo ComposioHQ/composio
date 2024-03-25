@@ -268,8 +268,11 @@ class Composio:
             f"No matching action found for action: {action_name.lower()} and tool: {tool_name.lower()}"
         )
 
-        # handles multiple tool calls
-        connected_accounts = self.get_connected_accounts(entity_id=entity_id)
+    def get_action_enum_without_tool(self, action_name: str) -> Action:
+        for action in Action:
+            if action.action == action_name.lower():
+                return action
+        raise ValueError(f"No matching action found for action: {action_name.lower()}")
 
     def get_entity(self, entity_id: Union[list[str], str]):
         entity = Entity(self, entity_id)
@@ -293,39 +296,29 @@ class Entity:
             actions.extend(account_actions)
         return actions
 
-    def get_all_action_connections(self) -> list[Tuple[Action, ConnectedAccount]]:
-        action_connections = []
+    def get_connection(self, tool_name: str) -> ConnectedAccount:
         connected_accounts = self.client.get_connected_accounts(
             entity_id=self.entity_id
         )
         for account in connected_accounts:
-            account_actions = account.get_all_actions()
-            for action in account_actions:
-                action_connections.append(action, account)
-        return action_connections
+            if tool_name == account.appUniqueId:
+                return account
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
-        action_connections = self.get_all_action_connections()
         try:
             if tool_calls.choices:
                 for choice in tool_calls.choices:
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
-                            tool_is_executed = false
-                            function = tool_call.function
-                            # find action_connection with function.name
-                            for action_connection in action_connections:
-                                if tool_is_executed:
-                                    break
-                                action = action_connection[0]
-                                connection = action_connection[1]
-                                if action.action == function.name:
-                                    arguments = json.loads(function.arguments)
-                                    output.append(
-                                        connection.execute_action(action, arguments)
-                                    )
-                                    tool_is_executed = True
+                            action_name_to_execute = tool_call.function.name
+                            action = self.client.get_action_enum_without_tool(
+                                action_name=action_name_to_execute
+                            )
+                            arguments = json.loads(tool_call.function.arguments)
+                            account = self.get_connection(tool_name=action.service)
+                            output.append(account.execute_action(action, arguments))
+
         except Exception as e:
             print(e)
             return output
