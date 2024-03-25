@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
-import os
 import sys
-import time
-from beaupy.spinners import Spinner, BARS, DOTS
+from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
 import termcolor
-import requests
 from uuid import getnode as get_mac
 from .sdk.storage import save_user_connection
 from .sdk.core import ComposioCore

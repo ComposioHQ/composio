@@ -1,12 +1,8 @@
 from enum import Enum
-from json import tool
 import time
 from typing import Optional, Union, Tuple
-from numpy import append
 import requests
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func
-from sympy import false
 
 from .enums import Action, App, TestIntegration
 from openai.types.chat.chat_completion import ChatCompletion
@@ -309,7 +305,7 @@ class Entity:
                 return account
 
     def handle_tools_calls(
-        self, tool_calls: ChatCompletion, verbose: bool = false
+        self, tool_calls: ChatCompletion, verbose: bool = False
     ) -> list[any]:
         output = []
         try:
@@ -331,7 +327,7 @@ class Entity:
 
         return output
 
-    def handle_run_tool_calls(self, run_object: run, verbose: bool = false):
+    def handle_run_tool_calls(self, run_object: run, verbose: bool = False):
         outputs = []
         require_action = run_object.required_action.submit_tool_outputs
         try:
