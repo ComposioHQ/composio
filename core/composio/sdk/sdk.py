@@ -301,7 +301,7 @@ class Entity:
         for account in connected_accounts:
             account_actions = account.get_all_actions()
             for action in account_actions:
-                action_connections.append(Tuple[action, account])
+                action_connections.append(action, account)
         return action_connections
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
