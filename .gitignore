@@ -5,6 +5,7 @@ venv*
 **/dist
 .DS_Store
 *egg-info*
+**/.env
 **/composio_autogen.egg-info
 **/composio_llamaindex.egg-info
 **/__pycache__

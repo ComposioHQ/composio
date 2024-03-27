@@ -14,7 +14,8 @@ schema_type_python_type_dict = {
     'string': str,
     'number': float,
     'boolean': bool,
-    'integer': int
+    'integer': int,
+    'array': List,
 }
 
 fallback_values = {
@@ -146,7 +147,7 @@ class ComposioToolset:
 
         parameters = get_signature_format_from_schema_params(
                                             action_schema["parameters"])
-        action_signature = Signature(parameters=parameters)
+        action_signature = Signature(parameters=parameters, return_annotation=dict)
         
         placeholder_function = lambda **kwargs: self.client.execute_action(
                                                     self.client.get_action_enum(name, appName), 
