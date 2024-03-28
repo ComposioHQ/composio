@@ -1,0 +1,166 @@
+---
+title: "🛠️ How to Use Triggers"
+sidebarTitle: "Triggers Guide"
+icon: "webhook"
+description: "Learn, how to use triggers in Connected Apps"
+---
+
+## Using Triggers
+
+**Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
+
+## **Understanding Connected Accounts**
+
+Connected Accounts are established **links** between **Composio** and an **external application**, created during the **user authentication process**.
+
+They **store authentication details** such as **access tokens** and **refresh tokens**. [Read more](https://docs.composio.dev/integrations/integration-guide)
+
+## **Types of Triggers**
+
+<AccordionGroup>
+  <Accordion title="Option 1️⃣ Default Triggers (Preferred)">
+    Composio supports a variety of default triggers for each supported
+    application. Check them out by going to the app page. 
+  </Accordion>
+  <Accordion title="Option 2️⃣ Custom Triggers (Build your Own)">
+    Our platform offers an extensible interface for defining custom triggers for
+    both custom and default applications. [Learn more.](https://docs.composio.dev)
+  </Accordion>
+</AccordionGroup>
+
+## Listing Default Triggers
+
+<CodeGroup>
+``` python Code for Get List of Triggers
+from composio import Composio
+
+composio_client = Composio("api-key")
+
+print(composio_client.get_list_of_triggers())
+
+```
+</CodeGroup>
+
+The response will include the trigger’s config/payload schema in a JSON compatible manner. It will also contain metadata like trigger name, ID. 
+
+<CodeGroup>
+```JSON Response for Get Triggers 
+[
+    {
+        "name": "github_pull_request_event",
+        "display_name": "Pull Request Event",
+        "description": "Triggered when a pull request is opened, closed, or synchronized.",
+        "payload": {
+            "properties": {
+                "action": {
+                    "description": "The action that was performed on the pull request",
+                    "examples": [
+                        "opened",
+                        "closed",
+                        "synchronize"
+                    ],
+                    "title": "Action",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "The title of the pull request",
+                    "examples": [
+                        "Fix typo in README"
+                    ],
+                    "title": "Title",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "The GitHub URL of the pull request",
+                    "examples": [
+                        "https://github.com/octocat/Hello-World/pull/42"
+                    ],
+                    "title": "Url",
+                    "type": "string"
+                }...
+            },
+            "required": [
+                "action",
+                "title",
+                "url"
+            ],
+            "title": "PullRequestPayloadSchema",
+            "type": "object"
+        },
+        "config": {
+            "properties": {
+                "owner": {
+                    "description": "Owner of the repository",
+                    "title": "Owner",
+                    "type": "string"
+                },
+                "repo": {
+                    "description": "Repository name",
+                    "title": "Repo",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "owner",
+                "repo"
+            ],
+            "title": "WebhookConfigSchema",
+            "type": "object"
+        },
+        "instructions": "This trigger fires every time a pull request is opened, closed, or synchronized on the repository.",
+        "appId": "69b4cfd1-fd02-4176-a91c-b4319773a0b3",
+        "appKey": "github",
+        "logo": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
+        "appName": "Github",
+        "enabled": true
+    }...
+]
+```
+</CodeGroup>
+
+## Setting Up Triggers
+
+To set up triggers, follow these steps:
+
+1. **Set Universal Callback URL**: Define a universal callback URL to receive payloads for all your triggers. You can set this URL through the settings on [app.composio.dev](http://app.composio.dev) or by using the API endpoint `api/v1/triggers/setCallbackURL`.
+
+2. **Review Trigger Instructions**: Each trigger may have specific instructions. For example, in Slack, you need to configure our webhook URL in the OAuth app settings.
+
+3. **Enable Trigger for Connected Account**: Use the trigger's configuration schema to enable the webhook URL for a specific connected account. This is done via the API endpoint `api/v1/triggers/enable/{connected_account_id}/{trigger_id}`. The request body should include `{"triggerConfig": {} }`, with all the necessary values as per the trigger's configuration schema. For example, for a GitHub repository webhook, the configuration might look like this:
+
+<CodeGroup>
+``` JSON API to get required trigger parameters
+"triggerConfig": {
+	  "owner": "kaavee315",
+	  "repo": "ML_assignment"
+}
+```
+</CodeGroup>
+
+## Handling Triggers 
+
+After completing the setup, the specified webhook URL will begin to receive data. 
+
+This data includes the `connected_account_id` for account identification, `trigger_id` for trigger identification, and the `payload`, which adheres to the trigger's specified payload schema.
+<CodeGroup>
+``` JSON Sample Trigger Webhook, Received on Callback URL
+{
+	"trigger_id":"github_commit_event",
+	"connected_account_id":"64184e1a-76bf-404b-bf8e-e9ce04fd7c9c",
+	"payload":{
+		"id":"ae4926ca23488ef488e76c8b39e2ad3ae9e58786",
+		"message":"Update README.md",
+		"timestamp":"2024-03-26T19:36:58+05:30",
+		"author":"kaavee315",
+		"url":"https://github.com/kaavee315/ML_assignment/commit/ae4926ca23488ef488e76c8b39e2ad3ae9e58786"
+	}
+}
+
+```
+</CodeGroup>
+
+
+
+
+
+

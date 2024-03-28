@@ -68,21 +68,12 @@
       ]
     },
     {
-      "group": "Using Langchain",
+      "group": "Supported Frameworks",
       "pages": [
-        "framework/langchain"
-      ]
-    },
-    {
-      "group": "Using CrewAI",
-      "pages": [
-        "framework/crewai"
-      ]
-    },
-    {
-      "group": "Using Autogen",
-      "pages": [
-        "framework/autogen"
+        "framework/langchain",
+        "framework/autogen",
+        "framework/crewai",
+        "framework/cli"
       ]
     },
     {
@@ -93,16 +84,11 @@
       ]
     },
     {
-      "group":"Work with Actions",
+      "group":"Work with Actions/Triggers",
       "pages":[
         "actions/action-guide",
-        "actions/local-code"
-      ]
-    },
-    {
-      "group": "Installing CLI",
-      "pages": [
-        "framework/cli"
+        "actions/local-code",
+        "triggers/trigger-guide"
       ]
     },
     {
