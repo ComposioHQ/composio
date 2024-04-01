@@ -16,6 +16,10 @@
       "dark": "#0b0b0d"
     }
   },
+  "modeToggle":{
+    "default": "dark",
+    "isHidden": true
+  },
   "feedback": {
     "suggestEdit": true,
     "raiseIssue": true,
