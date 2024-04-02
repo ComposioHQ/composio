@@ -16,10 +16,16 @@ updatedAt: "Thu Mar 14 2024 09:24:24 GMT+0000 (Coordinated Universal Time)"
 ## ⚙️ Configuration
 
 <Tip>
-You can generate your API key by visiting the [Trello Developers page](https://trello.com/app-key).
+You can generate your API key & Secret by visiting the [Trello Developers page](https://trello.com/power-ups/admin/).
 </Tip>
 
-Once you have your API key, you will need to generate a token by following the instructions on the page. With your API key and token, you're ready to make authenticated requests to Trello's API. On Composio's [supported apps](https://app.composio.dev/apps) page, find Trello and click "Enable". Enter your API key and token, then Save to connect Trello.
+Find the _Allowed Origins_ field in the API Key section and configure the below Redirect URL:
+
+```
+https://backend.composio.dev/api/v1/auth-apps/trello/connection/oauth2/add
+```
+
+Once you have your API key & Secret, you're ready to make authenticated requests to Trello's API. On Composio's [supported apps](https://app.composio.dev/apps) page, find Trello and click "Enable". Enter your API key and Secret, then Save to connect Trello.
 
 ## ⚒️ Actions
 
