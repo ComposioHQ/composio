@@ -68,7 +68,8 @@
     {
       "group": "Get Started",
       "pages": [
-        "introduction/overview"
+        "introduction/overview",
+        "introduction/pricing"
       ]
     },
     {
