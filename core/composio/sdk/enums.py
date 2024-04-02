@@ -47,6 +47,7 @@ class App(Enum):
     SHOPIFY = "shopify"
     MIRO = "miro"
     SPLITWISE = "splitwise"
+    APIFY = "apify"
 
 class TestIntegration(Enum):
     CLICKUP = "test-clickup-connector"
@@ -95,6 +96,7 @@ class TestIntegration(Enum):
     SHOPIFY = "test-shopify-connector"
     MIRO = "test-miro-connector"
     SPLITWISE = "test-splitwise-connector"
+    APIFY = "test-apify-connector"
 
 class Action(Enum):
     def __init__(self, service, action):
@@ -150,6 +152,12 @@ class Action(Enum):
     NOTION_GET_ABOUT_ME = ("notion", "notion_get_about_me")
     DROPBOX_GET_ABOUT_ME = ("dropbox", "dropbox_get_about_me")
     TYPEFORM_GET_ABOUT_ME = ("typeform", "typeform_get_about_me")
+    APIFY_GET_APIFY_ACTORS = ("apify", "apify_list_apify_actors")
+    APIFY_CREATE_APIFY_ACTOR = ("apify", "apify_create_apify_actor")
+    APIFY_GET_ACTOR_ID = ("apify", "apify_get_actor_id")
+    APIFY_SEARCH_APIFY_STORE = ("apify", "apify_search_store")
+    APIFY_GET_LAST_RUN_DATA = ("apify", "apify_get_last_run_data")
+    APIFY_GET_APIFY_TASKS = ("apify", "apify_list_apify_tasks")
 
 class Trigger(Enum):
     def __init__(self, service, trigger):
