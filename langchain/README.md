@@ -2,4 +2,96 @@ Composio <> LangChain
 Use Composio to get an array of tools with your LangChain agent.
 
 # Usage
-Inside your LangChain codebase:
+---
+title: "🦜🔗 Using Composio With Langchain"
+sidebarTitle: "Langchain Integration"
+icon: "dove"
+description: "Integrate Composio with Langchain agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **Langchain agents** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with natural language & Langchain Agent</Tip>
+
+### Install Packages & Connect a Tool
+These commands prepare your environment for seamless interaction between Langchain and Github.
+<CodeGroup> 
+  ```bash Run Command
+  pip install composio-langchain
+
+  #Connect your Github so agents can use it 
+  composio-cli add github
+
+  #Check all different apps which you can connect with 
+  composio-cli show-apps
+  ```
+</CodeGroup>
+
+<Steps>
+<Step title="Import Base Packages">
+<CodeGroup>
+```python Default Imports
+# Initialise imports
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+
+
+llm = ChatOpenAI()
+
+prompt = hub.pull("hwchase17/openai-functions-agent")
+```
+</CodeGroup>
+</Step>
+<Step title="Fetch all Github Langchain Tools via Composio">
+<CodeGroup>
+```python Tools For Github
+# Import from composio_langchain
+from composio_langchain import ComposioToolset, Action, App
+
+# Get All the tools 
+tools = ComposioToolset(apps=[App.GITHUB])
+```
+</CodeGroup>
+</Step>
+<Step title="Execute the Agent">
+Create an agent, set up an executor, and invoke tasks to perform GitHub API calls using Composio. 
+<CodeGroup>
+```python Langchain Agent executes the task
+
+task = "Star a repo SamparkAI/docs on GitHub"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+# Execute using agent_executor
+agent_executor.invoke({"input": task})
+```
+</CodeGroup>
+</Step>
+<Step title="Check Response">
+```bash Executing Agents
+> Entering new AgentExecutor chain...
+
+Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'docs'}`
+
+{'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'SamparkAI', 'repo': 'docs'}}
+{'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository SamparkAI/docs on GitHub.
+```
+</Step>
+</Steps>
+### Use Specific Actions
+<CodeGroup>
+```bash Filter Specific Action
+# To restrict agents from executing any actions, filter specific actions
+toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
+```
+</CodeGroup>
+
+### Use Specific Apps
+<CodeGroup>
+```bash Filter Specific App
+# To restrict agents from using all tools, filter specific tools
+toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB])
+```
+</CodeGroup>
