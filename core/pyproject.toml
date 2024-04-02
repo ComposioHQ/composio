@@ -1,0 +1,22 @@
+[project]
+dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
+dependencies = [
+    "requests",
+    "jsonschema",
+    "argparse",
+    "beaupy===3.7.2",
+    "termcolor==2.4.0",
+    "pydantic==2.6.4",
+    "openai==1.14.1"
+]
+name = "composio_core"
+
+[build-system]
+requires = [ "setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.poetry.scripts]
+composio-cli = 'composio.composio_cli:main'
+
+[project.scripts]
+composio-cli = 'composio.composio_cli:main'
