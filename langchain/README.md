@@ -1,7 +1,3 @@
-#Composio <> Autogen
-
-Use Composio to enhance your Autogen workflows with a suite of tools.
-
 ## 🦜🔗 Using Composio With LangChain
 
 Integrate Composio with LangChain agents to allow them to interact seamlessly with external apps, enhancing their functionality and reach.
