@@ -1,0 +1,7 @@
+requests
+jsonschema
+argparse
+beaupy==3.7.2
+termcolor==2.4.0
+pydantic==2.6.4
+openai==1.14.1
