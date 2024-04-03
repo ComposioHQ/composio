@@ -27,10 +27,11 @@ fallback_values = {
 }
 
 def pydantic_model_from_param_schema(param_schema):
-    fields = {}
+    required_fields = {}
+    optional_fields = {}
     param_title = param_schema['title'].replace(" ", "")
     required_props = param_schema.get('required', [])
-    for prop_name, prop_info in param_schema['properties'].items():
+    for prop_name, prop_info in param_schema.get('properties', {}).items():
         prop_type = prop_info["type"]
         prop_title = prop_info['title'].replace(" ", "")
         prop_default = prop_info.get('default', fallback_values[prop_type])
@@ -40,7 +41,7 @@ def pydantic_model_from_param_schema(param_schema):
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 
         if prop_name in required_props:
-            fields[prop_name] = (signature_prop_type, 
+            required_fields[prop_name] = (signature_prop_type, 
                                 Field(..., 
                                     title=prop_title, 
                                     description=prop_info.get('description', 
@@ -48,43 +49,50 @@ def pydantic_model_from_param_schema(param_schema):
                                                                              prop_title))
                                     ))
         else:
-            fields[prop_name] = (signature_prop_type, 
+            optional_fields[prop_name] = (signature_prop_type, 
                                 Field(title=prop_title, 
                                     default=prop_default
                                     ))
-    fieldModel = create_model(param_title, **fields)
+    
+    fieldModel = create_model(param_title, **required_fields, **optional_fields)
     return fieldModel
-        
-
     
 
-def get_signature_format_from_schema_params(
-        schema_params
-):
-    parameters = []
+def get_signature_format_from_schema_params(schema_params):
+    required_parameters = []
+    optional_parameters = []
+
     required_params = schema_params.get('required', [])
+    for param_name, param_schema in schema_params.get('properties', {}).items():
+        try:
+            param_type = param_schema['type']
 
-    for param_name, param_schema in schema_params['properties'].items():
-        param_type = param_schema['type']
-        param_title = param_schema['title'].replace(" ", "")
+            param_title = param_schema['title'].replace(" ", "")
 
-        if param_type in schema_type_python_type_dict:
-            signature_param_type = schema_type_python_type_dict[param_type]
-        else:
-            signature_param_type = pydantic_model_from_param_schema(param_schema)
+            if param_type in schema_type_python_type_dict:
+                signature_param_type = schema_type_python_type_dict[param_type]
+            else:
+                signature_param_type = pydantic_model_from_param_schema(param_schema)
 
-        param_default = param_schema.get('default', fallback_values[param_type])
-        param_annotation = Annotated[signature_param_type, param_schema.get('description', 
-                                                                            param_schema.get('desc',
-                                                                                             param_title))]
-        param = Parameter(
-            name=param_name,
-            kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=param_annotation,
-            default=Parameter.empty if param_name in required_params else param_default 
-        )
-        parameters.append(param)
-    return parameters
+            param_default = param_schema.get('default', fallback_values[param_type])
+            param_annotation = Annotated[signature_param_type, param_schema.get('description', 
+                                                                                param_schema.get('desc',
+                                                                                                param_title))]
+            is_required = param_name in required_params
+            param = Parameter(
+                name=param_name,
+                kind=Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=param_annotation,
+                default=Parameter.empty if param_name in required_params else param_default 
+            )
+            if is_required:
+                required_parameters.append(param)
+            else :
+                optional_parameters.append(param)
+        except Exception as e:
+            logger.error(f"Error while processing param {param_name} with schema {param_schema}")
+            pass
+    return required_parameters + optional_parameters
 
 
 class ComposioToolset:
@@ -158,12 +166,12 @@ class ComposioToolset:
                                     closure=placeholder_function.__closure__
                           )
         action_func.__signature__ = action_signature
-        action_func.__doc__ = description
+        action_func.__doc__ = description if description else f"Action {name} from {appName}"
 
         autogen.agentchat.register_function(
             action_func,
             caller=caller,
             executor=executor,
             name=name,
-            description=description
+            description=description if description else f"Action {name} from {appName}"
         )
