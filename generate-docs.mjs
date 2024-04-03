@@ -84,19 +84,35 @@ function getAuthenticationInfo(app, authInfo) {
   return `> ${app.name} uses ${authInfo.auth_schemes.map(scheme => scheme.auth_mode).join(separatorToUse)} for authentication. Please refer to the [authentication page](/docs/authentication) for more details.`;
 }
 
+function getConfigurationBlock(app,configuration_docs_text){
+  if(configuration_docs_text){
+    return `## ⚙️ Configuration\n\n${configuration_docs_text}`;
+  }
+  return ``;
+}
+
+function getDocumentationBlock(app,documentation_doc_text){
+  if(documentation_doc_text){
+    return `## 📚 Documentation\n\n${documentation_doc_text}`;
+  }
+  return ``;
+}
+
 async function generateDocsLink(app, pathLinks) {
   console.log(`Creating page for ${app.name}`);
   const { items: actions } = await getActionsForApp(app.name);
   const triggers = await getTriggersForApp(app.name);
   const authInfo = await getAuthInfo(app.key);
 
+  const {status,documentation_doc_text,configuration_docs_text} = app.meta;
+
   let generatedTemplate = TEMPLATE_FOR_APP.replace('{{APP_NAME}}', app.name)
     .replace('{{CREATED_AT}}', CREATED_AT)
     .replace('{{UPDATED_AT}}', UPDATED_AT)
     .replace('{{APP_KEY}}', app.key)
     .replace('{{AUTHENTICATION_BLOCK}}', getAuthenticationInfo(app, authInfo))
-    .replace('{{CONFIGURATION_BLOCK}}', `[comment]: # (This is a placeholder for the configuration block)`)
-    .replace('{{DOCUMENTATION_BLOCK}}', `[comment]: # (This is a placeholder for the documentation block)`)
+    .replace('{{CONFIGURATION_BLOCK}}', getConfigurationBlock(app,configuration_docs_text))
+    .replace('{{DOCUMENTATION_BLOCK}}', getDocumentationBlock(app,documentation_doc_text))
     .replace('{{ACTIONS_BLOCK}}', getActionsBlock(app, actions))
     .replace('{{TRIGGERS_BLOCK}}', getTriggersBlock(app, triggers));
 
