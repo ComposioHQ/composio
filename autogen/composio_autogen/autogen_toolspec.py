@@ -99,7 +99,7 @@ class ComposioToolset:
     def __init__(self, caller = None, executor = None):
         self.caller = caller
         self.executor = executor
-        self.client =  ComposioCore(framework=FrameworkEnum.AUTOGEN)
+        self.client =  ComposioCore(framework=FrameworkEnum.AUTOGEN, base_url="http://localhost:9900/api")
 
 
     def register_tools(
