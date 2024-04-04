@@ -50,7 +50,6 @@
       "name": "API",
       "url": "api-reference"
     },
-
     {
       "name": "Discord",
       "url": "https://discord.gg/XMa3eWKkH8"
@@ -169,7 +168,9 @@
       ]
     }
   ],
-
+  "integrations": {
+      "intercom": "dvp1uc7s"
+  },
   "footerSocials": {
     "linkedin": "https://www.linkedin.com/in/soham-ganatra/",
     "twitter": "https://twitter.com/KaranVaidya6",
