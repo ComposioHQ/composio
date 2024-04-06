@@ -49,11 +49,11 @@ def delete_user_connections():
 def set_base_url(base_url: str, force_reset: bool = False):
     user_data = {} if force_reset else load_user_data()
     user_data['base_url'] = base_url
+    delete_user_connections()
     save_user_data(user_data)
 
 def get_base_url():
     user_data = load_user_data()
-    delete_user_connections()
     if 'base_url' in user_data:
         return user_data['base_url']
     return 'https://backend.composio.dev/api'
