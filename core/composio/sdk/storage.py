@@ -57,3 +57,10 @@ def get_base_url():
     if 'base_url' in user_data:
         return user_data['base_url']
     return 'https://backend.composio.dev/api'
+
+def get_base_account_api_key():
+    base_url = get_base_url()
+    if base_url == 'https://backend.composio.dev/api':
+        return "yw1qb4ls4340z696zh7sa"
+    else:
+        return "pbmms5jl3z1pi9mv0bbi"
