@@ -5,6 +5,7 @@ import requests
 from pydantic import BaseModel, ConfigDict
 
 from .enums import Action, App, TestIntegration
+from .storage import get_base_url
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.beta.threads import run
 from openai import Client
@@ -175,7 +176,7 @@ class Integration(BaseModel):
 
 class Composio:
     def __init__(
-        self, api_key: str = None, base_url="https://backend.composio.dev/api"
+        self, api_key: str = None, base_url=get_base_url()
     ):
         self.base_url = base_url
         self.api_key = api_key
