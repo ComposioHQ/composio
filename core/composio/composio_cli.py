@@ -54,11 +54,33 @@ def parse_arguments():
     list_triggers_parser.add_argument('app_name', type=str, help='Name of the app to list triggers for')
     list_triggers_parser.set_defaults(func=list_triggers)
 
+    # Beta command group
+    beta_parser = subparsers.add_parser('beta', help='Beta features commands')
+    beta_subparsers = beta_parser.add_subparsers(help='beta commands', dest='beta_command')
+    beta_subparsers.required = True
+
+    # Update base_url command under beta
+    update_base_url_parser = beta_subparsers.add_parser('update-base-url', help='Update the base URL for API calls')
+    update_base_url_parser.add_argument('base_url', type=str, help='The new base URL to use for API calls')
+    update_base_url_parser.set_defaults(func=update_base_url)
+
     # Generate enums command
     generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
     generate_enums_parser.set_defaults(func=handle_update)
 
     return parser.parse_args()
+
+def update_base_url(args):
+    client = ComposioCore()
+    auth_user(client)
+    base_url = args.base_url
+    console.print(f"\n[green]> Updating base URL to: {base_url}...[/green]\n")
+    try:
+        client.set_base_url(base_url)
+        console.print(f"\n[green]✔ Base URL updated successfully![/green]\n")
+    except Exception as e:
+        console.print(f"[red] Error occurred during updating base URL: {e}[/red]")
+        sys.exit(1)
 
 def list_triggers(args):
     client = ComposioCore()

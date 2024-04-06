@@ -3,7 +3,7 @@ import requests
 
 from .utils import get_git_user_info
 from .sdk import ConnectionRequest, ConnectedAccount
-from .storage import get_user_connection, get_api_key, save_api_key
+from .storage import delete_user_connections, get_base_url, get_user_connection, get_api_key, load_user_data, save_api_key, save_user_data, set_base_url
 from .sdk import Composio
 from .enums import TestIntegration, Action
 from enum import Enum
@@ -18,7 +18,7 @@ class ComposioCore:
     sdk: Composio = None
     framework: FrameworkEnum = None
 
-    def __init__(self, base_url = "https://backend.composio.dev/api", manage_auth = True, framework: FrameworkEnum = None):
+    def __init__(self, base_url = get_base_url(), manage_auth = True, framework: FrameworkEnum = None):
         global __IS_FIRST_TIME__
 
         self.base_url = base_url
@@ -50,6 +50,20 @@ class ComposioCore:
                         __IS_FIRST_TIME__ = False
                     except:
                         pass
+
+    def set_base_url(self, base_url: str):
+        self.base_url = base_url
+        set_base_url(base_url, force_reset=True)
+        self.http_client.headers.update({
+            'Content-Type': 'application/json'
+        })
+    
+    def logout(self):
+        self.http_client.headers.pop('x-api-key')
+        user_data = load_user_data()
+        user_data.pop('api_key')
+        delete_user_connections()
+        save_user_data(user_data)
 
     def authenticate(self, hash: str):
         resp = self.http_client.post(f"{self.base_url}/v1/client/auth/identify", json={
