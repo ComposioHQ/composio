@@ -64,11 +64,25 @@ def parse_arguments():
     update_base_url_parser.add_argument('base_url', type=str, help='The new base URL to use for API calls')
     update_base_url_parser.set_defaults(func=update_base_url)
 
+    # Logout command
+    logout_parser = subparsers.add_parser('logout', help='Logout from the current session')
+    logout_parser.set_defaults(func=logout)
+
     # Generate enums command
     generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
     generate_enums_parser.set_defaults(func=handle_update)
 
     return parser.parse_args()
+
+def logout(args):
+    client = ComposioCore()
+    console.print(f"\n[green]> Logging out...[/green]\n")
+    try:
+        client.logout()
+        console.print(f"\n[green]✔ Logged out successfully![/green]\n")
+    except Exception as e:
+        console.print(f"[red] Error occurred during logging out: {e}[/red]")
+        sys.exit(1)
 
 def update_base_url(args):
     client = ComposioCore()
@@ -243,3 +257,5 @@ def main():
         args.func(args)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
+
+main()
