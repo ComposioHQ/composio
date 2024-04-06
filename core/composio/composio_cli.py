@@ -257,5 +257,3 @@ def main():
         args.func(args)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
-
-main()
