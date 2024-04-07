@@ -122,6 +122,6 @@ def ComposioToolset(apps: List[App] = [], actions: List[Action] = []) -> List[St
     if len(apps) >0 and len(actions) > 0:
         raise ValueError("You must provide either a list of tools or a list of actions, not both")
     if client.is_authenticated() == False:
-        raise Exception("User not authenticated. Please authenticate using composio-cli add <tool_name>")
+        raise Exception("User not authenticated. Please authenticate using composio-cli add <app_name>")
     actions_list = client.sdk.get_list_of_actions(apps, actions)
     return [ComposioTool(client, action) for action in actions_list]
