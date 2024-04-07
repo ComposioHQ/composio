@@ -1,5 +1,6 @@
 import types
 import logging
+import hashlib
 from inspect import Parameter, Signature
 from typing import Union, List, Annotated
 
@@ -142,13 +143,24 @@ class ComposioToolset:
                                             caller = caller if caller else self.caller,
                                             executor = executor if executor else self.executor)
 
-
+    def process_function_name_for_registration(self, input_string, max_allowed_length = 64, num_hash_char = 10):
+        hash_obj = hashlib.sha256(input_string.encode())
+        hash_hex = hash_obj.hexdigest()
+        
+        num_input_str_char = max_allowed_length - (num_hash_char + 1)
+        hash_chars_to_attach = hash_hex[:10]
+        input_str_to_attach = input_string[-num_input_str_char:]
+        processed_name = input_str_to_attach + "_" + hash_chars_to_attach
+        
+        return processed_name
+    
     def _register_schema_to_autogen(self, 
                                     action_schema, 
                                     caller: ConversableAgent,
                                     executor: ConversableAgent):
 
         name = action_schema["name"]
+        processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]
         description = action_schema["description"]
 
@@ -156,13 +168,14 @@ class ComposioToolset:
                                             action_schema["parameters"])
         action_signature = Signature(parameters=parameters)
         
-        placeholder_function = lambda **kwargs: self.client.execute_action(
-                                                    self.client.get_action_enum(name, appName), 
-                                                    kwargs)
+        def placeholder_function(**kwargs):
+            return self.client.execute_action(
+                        self.client.get_action_enum(name, appName), 
+                        kwargs)
         action_func = types.FunctionType(
                                     placeholder_function.__code__, 
                                     globals=globals(), 
-                                    name=name, 
+                                    name=processed_name, 
                                     closure=placeholder_function.__closure__
                           )
         action_func.__signature__ = action_signature
@@ -172,6 +185,6 @@ class ComposioToolset:
             action_func,
             caller=caller,
             executor=executor,
-            name=name,
+            name=processed_name,
             description=description if description else f"Action {name} from {appName}"
         )
