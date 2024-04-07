@@ -114,8 +114,8 @@ class ConnectedAccount(BaseModel):
                 ]
             else:
                 return actions["items"]
-
-        raise Exception("Failed to get actions")
+            
+        raise Exception("Failed to get actions. You might want to run composio-cli update and restart the python notebook to reload the updated library.")
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -248,7 +248,7 @@ class Composio:
             else:
                 return actions_response["items"]
 
-        raise Exception("Failed to get actions")
+        raise Exception("Failed to get actions. You might want to run composio-cli update and restart the python notebook to reload the updated library.")
     
     def get_list_of_triggers(
         self, apps: list[App] = None

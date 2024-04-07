@@ -144,8 +144,10 @@ def enable_trigger(args):
         
         connected_account_id = get_user_connection(app_key)
         # Assuming there's a function to enable the trigger with user inputs
-        client.enable_trigger(trigger_name, connected_account_id, user_inputs)
+        resp = client.enable_trigger(trigger_name, connected_account_id, user_inputs)
         console.print(f"\n[green]✔ Trigger enabled successfully![/green]\n")
+        if 'triggerId' in resp:
+            console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
     except Exception as e:
         console.print(f"[red] Error occurred during enabling trigger: {e}[/red]")
         sys.exit(1)
