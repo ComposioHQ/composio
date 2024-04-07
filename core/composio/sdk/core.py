@@ -117,7 +117,11 @@ class ComposioCore:
             return self.sdk.enable_trigger(trigger_id, connected_account_id, user_inputs)
         except Exception as e:
             raise Exception(e)
-    
+
+    def get_saved_connections(self, app_name: str = None):
+        connectionId = get_user_connection(app_name)
+        return connectionId
+
     def execute_action(self, action: Action, params: dict):
         tool_name  = action.value[0]
         connectionId = get_user_connection(tool_name)
