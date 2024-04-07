@@ -162,6 +162,8 @@ def set_global_trigger_callback(args):
         sys.exit(1)
 
 def handle_update(args):
+    client = ComposioCore()
+    auth_user(client)
     generate_enums()
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
 
