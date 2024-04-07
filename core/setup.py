@@ -25,7 +25,7 @@ class InstallCommandMiddleware(install):
 
 setup(
     name="composio_core",
-    version="0.1.82",
+    version="0.1.83",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
