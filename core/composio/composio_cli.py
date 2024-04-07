@@ -125,6 +125,9 @@ def enable_trigger(args):
         if not trigger_requirements or len(trigger_requirements) == 0:
             console.print(f"[red] Trigger not found for the specified app.[/red]")
             sys.exit(1)
+        if not isinstance(trigger_requirements, list):
+            console.print(f"[red]Unexpected format for trigger requirements. Expected a list but got {trigger_requirements}.[/red]")
+            sys.exit(1)
         app_key = trigger_requirements[0]["appKey"]
         trigger_requirements = trigger_requirements[0]["config"]
         required_fields = trigger_requirements.get('required', [])
