@@ -12,11 +12,9 @@ from openai import Client
 from openai.types.beta import thread
 import json
 
-
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
-
 
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)

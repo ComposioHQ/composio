@@ -112,6 +112,9 @@ class ComposioToolset:
         assert caller or self.caller, "If caller hasn't been specified during initialization, has to be specified during registration"
         assert executor or self.executor, "If executor hasn't been specified during initialization, has to be specified during registration"
 
+        if self.client.is_authenticated() == False:
+            raise Exception("User not authenticated. Please authenticate using composio-cli add <tool_name>")
+    
         action_schemas = self.client.sdk.get_list_of_actions(
                                                 apps=tools)
         

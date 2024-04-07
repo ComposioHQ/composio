@@ -51,6 +51,11 @@ class ComposioCore:
                     except:
                         pass
 
+    def is_authenticated(self):
+        if self.sdk is None:
+            return False
+        return True
+
     def set_base_url(self, base_url: str):
         self.base_url = base_url
         set_base_url(base_url, force_reset=True)
