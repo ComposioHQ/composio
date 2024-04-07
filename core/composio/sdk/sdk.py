@@ -48,13 +48,15 @@ class ConnectionRequest(BaseModel):
         )
 
 
-class OAuth2ConnectionParams(BaseModel):
+class AuthConnectionParams(BaseModel):
     scope: Optional[str] = None
     base_url: Optional[str] = None
-    client_id: str
+    client_id: Optional[str] = None
     token_type: Optional[str] = None
     access_token: Optional[str] = None
-    client_secret: str
+    client_secret: Optional[str] = None
+    consumer_id: Optional[str] = None
+    consumer_secret: Optional[str] = None
     headers: Optional[dict] = None
     queryParams: Optional[dict] = None
 
@@ -62,7 +64,7 @@ class OAuth2ConnectionParams(BaseModel):
 class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     integrationId: str
-    connectionParams: OAuth2ConnectionParams
+    connectionParams: AuthConnectionParams
     appUniqueId: str
     id: str
     status: str
