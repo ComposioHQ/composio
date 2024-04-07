@@ -168,8 +168,16 @@ def handle_update(args):
 def add_integration(args):
     client = ComposioCore()
     auth_user(client)
-
     integration_name = args.integration_name
+
+    existing_connection = get_user_connection(integration_name)
+    if existing_connection is not None:
+        console.print(f"[yellow]Warning: An existing connection for {integration_name} was found.[/yellow]\n")
+        replace_connection = input("> Do you want to replace the existing connection? (yes/no): ").lower()
+        if replace_connection not in ['yes', 'y']:
+            console.print("\n[green]Existing connection retained. No new connection added.[/green]\n")
+            return
+
     console.print(f"\n[green]> Adding integration: {integration_name.capitalize()}...[/green]\n")
     try:
         # @TODO: add logic to wait and ask for API_KEY
