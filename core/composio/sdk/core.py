@@ -5,7 +5,7 @@ from .utils import get_git_user_info
 from .sdk import ConnectionRequest, ConnectedAccount
 from .storage import delete_user_connections, get_base_url, get_user_connection, get_api_key, load_user_data, save_api_key, save_user_data, set_base_url
 from .sdk import Composio
-from .enums import TestIntegration, Action
+from .enums import TestIntegration, Action, App
 from enum import Enum
 
 class FrameworkEnum(Enum):
@@ -132,8 +132,11 @@ class ComposioCore:
         resp = account.execute_action(action, params)
         return resp
 
-    def get_list_of_connections(self, app_name: list[str] = None) -> list[ConnectedAccount]:
-        resp = self.sdk.get_list_of_connected_accounts()
+    def get_list_of_connections(self, app_name: list[App | str] = None) -> list[ConnectedAccount]:
+        for i, item in enumerate(app_name):
+            if isinstance(item, App):
+                app_name[i] = item.value
+
         if app_name is not None:
             resp = [item for item in resp if item.appUniqueId in app_name]
 
