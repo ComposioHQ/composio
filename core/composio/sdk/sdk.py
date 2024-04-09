@@ -58,6 +58,14 @@ class AuthConnectionParams(BaseModel):
     headers: Optional[dict] = None
     queryParams: Optional[dict] = None
 
+class ActiveTrigger(BaseModel):
+    id: str
+    connectionId: str
+    triggerName: str
+    triggerConfig: dict
+
+    def __init__(self, sdk_instance: "Composio", **data):
+        super().__init__(**data)
 
 class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -190,6 +198,23 @@ class Composio:
             "appNames": ",".join(app_names) if app_names else None
         })
         return resp.json()
+    
+    def list_active_triggers(self, trigger_ids: list[str] = None) -> list[ActiveTrigger]:
+        url = f"{self.base_url}/v1/triggers/active_triggers"
+        if trigger_ids:
+            url = f"{url}?triggerIds={','.join(trigger_ids)}"
+        resp = self.http_client.get(url)
+        if resp.status_code == 200:
+            return [ActiveTrigger(self, **item) for item in resp.json()["triggers"]]
+        
+        raise Exception("Bad request")
+    
+    def disable_trigger(self, trigger_id: str):
+        resp = self.http_client.post(f"{self.base_url}/v1/triggers/disable/{trigger_id}")
+        if resp.status_code == 200:
+            return resp.json()
+        
+        raise Exception("Bad request")
     
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
         resp = self.http_client.get(f"{self.base_url}/v1/triggers", params={

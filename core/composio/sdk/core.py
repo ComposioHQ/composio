@@ -50,6 +50,12 @@ class ComposioCore:
                         __IS_FIRST_TIME__ = False
                     except:
                         pass
+    
+    def get_authenticated_user(self):
+        api_key = get_api_key()
+        return {
+            "api_key": api_key,
+        }
 
     def is_authenticated(self):
         if self.sdk is None:
@@ -85,7 +91,7 @@ class ComposioCore:
                 save_api_key(api_key)
             return api_key
 
-        raise Exception("Failed to authenticate")
+        raise Exception("Failed to authenticate: Please use composio-cli login to authenticate")
     
     def initiate_connection(self, integrationId: Union[str, TestIntegration]) -> ConnectionRequest:
         if isinstance(integrationId, TestIntegration):
@@ -104,6 +110,16 @@ class ComposioCore:
             self.sdk.set_global_trigger(callback_url)
         except Exception as e:
             raise Exception(f"Failed to set global trigger: {e}")
+
+    def disable_trigger(self, trigger_id: str):
+        return self.sdk.disable_trigger(trigger_id)
+ 
+    def list_active_triggers(self, trigger_ids: list[str] = None):
+        try:
+            resp = self.sdk.list_active_triggers(trigger_ids)
+            return resp
+        except Exception as e:
+            raise e
 
     def list_triggers(self, app_name: str):
         try:
