@@ -1,27 +1,21 @@
 from setuptools import setup
 import os
-
 from setuptools import setup
 from setuptools.command.install import install
-
 
 def get_current_dir():
     return os.path.dirname(os.path.realpath(__file__))
 
-
 def resolve_paths(*paths):
     return os.path.join(*paths)
 
-
 readme_path = resolve_paths(get_current_dir(), "README.md")
-
 
 class InstallCommandMiddleware(install):
     """Customized setuptools install command."""
 
     def run(self):
         install.run(self)
-
 
 setup(
     name="composio_core",

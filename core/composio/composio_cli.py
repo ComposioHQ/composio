@@ -7,8 +7,8 @@ from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
 import termcolor
 from uuid import getnode as get_mac
-from .sdk.storage import get_user_connection, save_user_connection
-from .sdk.core import ComposioCore
+from .sdk.storage import get_user_connection, save_api_key, save_user_connection
+from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.utils import generate_enums
 from rich.table import Table
 
@@ -25,6 +25,10 @@ def parse_arguments():
     add_parser = subparsers.add_parser('add', help='Add an integration')
     add_parser.add_argument('integration_name', type=str, help='Name of the integration to add')
     add_parser.set_defaults(func=add_integration)
+
+    # Login command
+    login_parser = subparsers.add_parser('login', help='Login to Composio')
+    login_parser.set_defaults(func=login)
 
     # Show active triggers command
     show_triggers_parser = subparsers.add_parser('list-active-triggers', help='List all triggers for a given app')
@@ -94,9 +98,42 @@ def parse_arguments():
 
     return parser.parse_args()
 
+def login(args):
+    client = ComposioCore()
+    if client.is_authenticated():
+        console.print("Already authenticated. Use [green]composio-cli logout[/green] to log out.\n")
+        return
+    
+    console.print(f"\n[green]> Authenticating...[/green]\n")
+    try:
+        cli_key = client.generate_cli_auth_session()
+        console.print(f"> Redirecting you to the login page. Please login using the following link:\n")
+        console.print(f"[green]https://app.composio.dev/?cliKey={cli_key}[/green]\n")
+        webbrowser.open(f"https://app.composio.dev/?cliKey={cli_key}")
+
+        for attempt in range(3):
+            try:
+                session_data = client.verify_cli_auth_session(cli_key, input("> Enter the code: "))
+                api_key = session_data.get('apiKey')
+                if api_key:
+                    save_api_key(api_key)
+                    console.print(f"\n[green]✔ Authenticated successfully![/green]\n")
+                    break
+            except UnauthorizedAccessException as e:
+                if attempt == 2:  # Last attempt
+                    console.print("[red]\nAuthentication failed after 3 attempts.[/red]")
+                else:
+                    console.print(f"[red] Invalid code. Please try again.[/red]")
+                continue  # Exit the loop on unauthorized access
+            except Exception as e:
+                console.print(f"[red]Error occurred during authentication: {e}[/red]")
+                if attempt == 2:  # Last attempt
+                    console.print("[red]Authentication failed after 3 attempts.[/red]")
+    except Exception as e:
+        console.print(f"[red] Error occurred during authentication: {e}[/red]")
+
 def whoami(args):
     client = ComposioCore()
-    auth_user(client)
     user_info = client.get_authenticated_user()
     console.print(f"- API Key: [green]{user_info['api_key']}[/green]\n")
     return
@@ -113,7 +150,6 @@ def logout(args):
 
 def update_base_url(args):
     client = ComposioCore()
-    auth_user(client)
     base_url = args.base_url
     console.print(f"\n[green]> Updating base URL to: {base_url}...[/green]\n")
     try:
@@ -125,7 +161,6 @@ def update_base_url(args):
 
 def list_active_triggers(args):
     client = ComposioCore()
-    auth_user(client)
     console.print(f"\n[green]Listing all your active triggers...[/green]\n")
     try:
         triggers = client.list_active_triggers()
@@ -151,7 +186,6 @@ def list_active_triggers(args):
 
 def get_trigger(args):
     client = ComposioCore()
-    auth_user(client)
     trigger_id = args.trigger_id
     console.print(f"\n[green]> Getting more details about trigger: {trigger_id}...[/green]\n")
     try:
@@ -174,7 +208,6 @@ def get_trigger(args):
 
 def disable_trigger(args):
     client = ComposioCore()
-    auth_user(client)
     trigger_id = args.trigger_id
     console.print(f"\n[green]> Disabling trigger: {trigger_id}...[/green]\n")
     try:
@@ -186,7 +219,6 @@ def disable_trigger(args):
 
 def list_triggers(args):
     client = ComposioCore()
-    auth_user(client)
     app_name = args.app_name
     console.print(f"\n[green]> Listing triggers for app: {app_name}...[/green]\n")
     try:
@@ -205,7 +237,6 @@ def list_triggers(args):
 
 def enable_trigger(args):
     client = ComposioCore()
-    auth_user(client)
     trigger_name = args.trigger_name
     console.print(f"\n[green]> Enabling trigger: {trigger_name}...[/green]\n")
     try:
@@ -250,7 +281,6 @@ def enable_trigger(args):
 
 def set_global_trigger_callback(args): 
     client = ComposioCore()
-    auth_user(client)
     console.print(f"\n[green]> Setting global trigger callback to: {args.callback_url}...[/green]\n")
     try:
         client.set_global_trigger(args.callback_url)
@@ -261,13 +291,11 @@ def set_global_trigger_callback(args):
 
 def handle_update(args):
     client = ComposioCore()
-    auth_user(client)
     generate_enums()
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
 
 def add_integration(args):
     client = ComposioCore()
-    auth_user(client)
     integration_name = args.integration_name
 
     existing_connection = get_user_connection(integration_name)
@@ -297,7 +325,6 @@ def add_integration(args):
 
 def show_apps(args):
     client = ComposioCore()
-    auth_user(client)
     apps_list = client.sdk.get_list_of_apps()
     app_names_list = [{"name": app.get('name'), "uniqueId": app.get('key'), "appId": app.get('appId')} for app in apps_list.get('items')]
     console.print("\n[green]> Available apps supported by composio:[/green]\n")
@@ -310,7 +337,6 @@ def show_apps(args):
 
 def list_connections(args):
     client = ComposioCore()
-    auth_user(client)
     appName = args.appName
     console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
     try:
@@ -342,24 +368,12 @@ def print_intro():
 └───────────────────────────────────────────────────────────────────────────┘
         """)
 
-def auth_user(client: ComposioCore):
-    user_mac_address = get_mac()
-    unique_identifier = f"{user_mac_address}"
-    
-    return client.authenticate(unique_identifier)
-
 def main():
     print_intro()
 
     args = parse_arguments()
 
     client = ComposioCore()
-
-    try:
-        user = auth_user(client)
-    except Exception as e:
-        console.print(f"> Error occurred during user identification:\n\n[red]{e}[/red]")
-        sys.exit(1)
 
     if hasattr(args, 'func'):
         try:

@@ -14,6 +14,9 @@ class FrameworkEnum(Enum):
 
 __IS_FIRST_TIME__ = True
 
+class UnauthorizedAccessException(Exception):
+    pass
+
 class ComposioCore:
     sdk: Composio = None
     framework: FrameworkEnum = None
@@ -76,22 +79,23 @@ class ComposioCore:
         delete_user_connections()
         save_user_data(user_data)
 
-    def authenticate(self, hash: str):
-        resp = self.http_client.post(f"{self.base_url}/v1/client/auth/identify", json={
-            "hash": hash,
-        });
-        if resp.status_code == 202:
-            api_key = resp.json().get('apiKey')
-            self.http_client.headers.update({
-                'Content-Type': 'application/json',
-                'x-api-key': api_key
-            })
-            self.sdk = Composio(api_key, self.base_url)
-            if self.manage_auth:
-                save_api_key(api_key)
-            return api_key
+    def generate_cli_auth_session(self):
+        resp = self.http_client.get(f"{self.base_url}/v1/cli/generate-cli-session");
+        if resp.status_code == 200:
+            resp = resp.json()
+            if resp.get('key'):
+                return resp['key']
 
-        raise Exception("Failed to authenticate: Please use composio-cli login to authenticate")
+        raise Exception("Bad request to cli/generate-cli-session")
+    
+    def verify_cli_auth_session(self, key: str, code: str):
+        resp = self.http_client.get(f"{self.base_url}/v1/cli/verify-cli-code?key={key}&code={code}");
+        if resp.status_code == 200:
+            return resp.json()
+        elif resp.status_code == 401:
+            raise UnauthorizedAccessException("UnauthorizedError: Unauthorized access to cli/verify-cli-session")
+        
+        raise Exception("Bad request to cli/verify-cli-session")
     
     def initiate_connection(self, integrationId: Union[str, TestIntegration]) -> ConnectionRequest:
         if isinstance(integrationId, TestIntegration):
