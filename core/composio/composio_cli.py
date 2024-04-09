@@ -240,8 +240,13 @@ def enable_trigger(args):
         if 'triggerId' in resp:
             console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
     except Exception as e:
-        console.print(f"[red] Error occurred during enabling trigger: {e}[/red]")
-        sys.exit(1)
+       try:
+         error_json = json.loads(str(e))
+         error_message = error_json.get("message", "Error message not found")
+         console.print(f"[red]Error: {error_message}[/red]")
+       except json.JSONDecodeError:
+         console.print(f"[red]Error occurred during enabling trigger: {str(e)}[/red]")
+       sys.exit(1)
 
 def set_global_trigger_callback(args): 
     client = ComposioCore()
@@ -364,3 +369,4 @@ def main():
             sys.exit(1)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
+
