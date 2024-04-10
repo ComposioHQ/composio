@@ -41,9 +41,9 @@ async function runPythonCli(){
   console.log(data.stdout);
 
 
-  // console.log("Running ", chalk.green(`show-connections github`));
-  // data = await $`python3 core/start_cli.py show-connections github`;
-  // console.log(data.stdout);
+  console.log("Running ", chalk.green(`show-connections github`));
+  data = await $`python3 core/start_cli.py show-connections github`;
+  console.log(data.stdout);
 
   console.log("Running ", chalk.green(`list-triggers github`));
   data = await $`python3 core/start_cli.py list-triggers github`;
