@@ -27,7 +27,7 @@ jobs:
       run: cd core && pip install -r requirements.txt
 
     - name: Install dependencies
-      run: pnpm install
+      run: npm install
 
     - name: Run tests
-      run: pnpm test
+      run: npm test
