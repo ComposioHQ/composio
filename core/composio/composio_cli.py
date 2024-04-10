@@ -371,5 +371,4 @@ def main():
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
 
 if __name__ == "__main__":
-    print("d")
     main()
