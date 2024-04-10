@@ -129,8 +129,10 @@ def login(args):
                 console.print(f"[red]Error occurred during authentication: {e}[/red]")
                 if attempt == 2:  # Last attempt
                     console.print("[red]Authentication failed after 3 attempts.[/red]")
+                    sys.exit(1)
     except Exception as e:
         console.print(f"[red] Error occurred during authentication: {e}[/red]")
+        sys.exit(1)
 
 def whoami(args):
     client = ComposioCore()
@@ -374,6 +376,10 @@ def main():
     args = parse_arguments()
 
     client = ComposioCore()
+
+    if client.is_authenticated() == False:
+        login(args)
+        print("\n")
 
     if hasattr(args, 'func'):
         try:
