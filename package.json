@@ -1,0 +1,14 @@
+{
+  "name": "composio_sdk",
+  "version": "1.0.0",
+  "description": "1. Core - To access base APIs 2. Autogen - Use Composio tools with Autogen 3. CrewAI - Use Composio tools with CrewAI 4. Langchain - Use Composio tools with Langchain",
+  "main": "index.js",
+  "scripts": {
+    "test": "zx test/test.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "zx": "^8.0.1"
+  }
+}
