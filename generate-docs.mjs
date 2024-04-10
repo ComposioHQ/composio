@@ -52,7 +52,7 @@ async function getTriggersForApp(appId) {
 }
 
 function getActionsBlock(app, actions) {
-  let actionsBlock = `## ⚒️ Actions\n\n${app.name} has ${actions.length} actions which you can start using immediately\n\n _⚠️ All the actions are disabled by default, Please go to the Github connector page to enable the actions._\n\n`;
+  let actionsBlock = `## ⚒️ Actions\n\n`;
   if (actions.length === 0) {
     actionsBlock += `${app.name} actions are not supported yet. In case, you’re looking for Asana actions, please write to us at tech@composio.dev.`;
   } else {
@@ -81,7 +81,7 @@ function getTriggersBlock(app, triggers) {
 
 function getAuthenticationInfo(app, authInfo) {
   const separatorToUse = authInfo.auth_schemes.length === 2 ? ' and ' : ', ';
-  return `> ${app.name} uses ${authInfo.auth_schemes.map(scheme => scheme.auth_mode).join(separatorToUse)} for authentication. Please refer to the [authentication page](/docs/authentication) for more details.`;
+  return `> ${app.name} uses ${authInfo.auth_schemes.map(scheme => scheme.auth_mode).join(separatorToUse)} for authentication.`;
 }
 
 function getConfigurationBlock(app,configuration_docs_text){
