@@ -5,11 +5,11 @@ dependencies = [
     "jsonschema",
     "argparse",
     "nest_asyncio",
-    "langchain===0.1.0",
-    "langchain-openai===0.0.2.post1",
-    "langchainhub==0.1.15",
-    "pydantic===2.6.4",
-    "composio_core===0.1.67"
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.2.post1",
+    "langchainhub>=0.1.15",
+    "pydantic>=2.6.4",
+    "composio_core===0.1.83"
 ]
 name = "composio_langchain"
 

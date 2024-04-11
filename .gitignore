@@ -10,3 +10,6 @@ venv*
 **/composio_llamaindex.egg-info
 **/__pycache__
 **/*.egg-info
+
+node_modules
+~
