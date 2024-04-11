@@ -5,17 +5,16 @@ import requests
 from pydantic import BaseModel, ConfigDict
 
 from .enums import Action, App, TestIntegration
+from .storage import get_base_url
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.beta.threads import run
 from openai import Client
 from openai.types.beta import thread
 import json
 
-
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
-
 
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -47,21 +46,31 @@ class ConnectionRequest(BaseModel):
         )
 
 
-class OAuth2ConnectionParams(BaseModel):
+class AuthConnectionParams(BaseModel):
     scope: Optional[str] = None
     base_url: Optional[str] = None
-    client_id: str
+    client_id: Optional[str] = None
     token_type: Optional[str] = None
     access_token: Optional[str] = None
-    client_secret: str
+    client_secret: Optional[str] = None
+    consumer_id: Optional[str] = None
+    consumer_secret: Optional[str] = None
     headers: Optional[dict] = None
     queryParams: Optional[dict] = None
 
+class ActiveTrigger(BaseModel):
+    id: str
+    connectionId: str
+    triggerName: str
+    triggerConfig: dict
+
+    def __init__(self, sdk_instance: "Composio", **data):
+        super().__init__(**data)
 
 class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     integrationId: str
-    connectionParams: OAuth2ConnectionParams
+    connectionParams: AuthConnectionParams
     appUniqueId: str
     id: str
     status: str
@@ -111,8 +120,8 @@ class ConnectedAccount(BaseModel):
                 ]
             else:
                 return actions["items"]
-
-        raise Exception("Failed to get actions")
+            
+        raise Exception("Failed to get actions. You might want to run composio-cli update and restart the python notebook to reload the updated library.")
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -175,7 +184,7 @@ class Integration(BaseModel):
 
 class Composio:
     def __init__(
-        self, api_key: str = None, base_url="https://backend.composio.dev/api"
+        self, api_key: str = None, base_url=get_base_url()
     ):
         self.base_url = base_url
         self.api_key = api_key
@@ -189,6 +198,23 @@ class Composio:
             "appNames": ",".join(app_names) if app_names else None
         })
         return resp.json()
+    
+    def list_active_triggers(self, trigger_ids: list[str] = None) -> list[ActiveTrigger]:
+        url = f"{self.base_url}/v1/triggers/active_triggers"
+        if trigger_ids:
+            url = f"{url}?triggerIds={','.join(trigger_ids)}"
+        resp = self.http_client.get(url)
+        if resp.status_code == 200:
+            return [ActiveTrigger(self, **item) for item in resp.json()["triggers"]]
+        
+        raise Exception("Bad request")
+    
+    def disable_trigger(self, trigger_id: str):
+        resp = self.http_client.post(f"{self.base_url}/v1/triggers/disable/{trigger_id}")
+        if resp.status_code == 200:
+            return resp.json()
+        
+        raise Exception("Bad request")
     
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
         resp = self.http_client.get(f"{self.base_url}/v1/triggers", params={
@@ -245,7 +271,7 @@ class Composio:
             else:
                 return actions_response["items"]
 
-        raise Exception("Failed to get actions")
+        raise Exception("Failed to get actions. You might want to run composio-cli update and restart the python notebook to reload the updated library.")
     
     def get_list_of_triggers(
         self, apps: list[App] = None
