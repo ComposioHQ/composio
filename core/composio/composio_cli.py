@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
@@ -15,6 +16,8 @@ from rich.table import Table
 import webbrowser
 
 console = Console()
+
+should_disable_webbrowser_open = os.getenv("DISABLE_COMPOSIO_WEBBROWSER_OPEN", "false") == "true"
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Composio CLI for adding integrations, managing skills, and showing apps.')
@@ -99,6 +102,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def login(args):
+    global should_disable_webbrowser_open
     client = ComposioCore()
     if client.is_authenticated():
         console.print("Already authenticated. Use [green]composio-cli logout[/green] to log out.\n")
@@ -109,7 +113,8 @@ def login(args):
         cli_key = client.generate_cli_auth_session()
         console.print(f"> Redirecting you to the login page. Please login using the following link:\n")
         console.print(f"[green]https://app.composio.dev/?cliKey={cli_key}[/green]\n")
-        webbrowser.open(f"https://app.composio.dev/?cliKey={cli_key}")
+        if not should_disable_webbrowser_open:
+            webbrowser.open(f"https://app.composio.dev/?cliKey={cli_key}")
 
         for attempt in range(3):
             try:
@@ -297,6 +302,8 @@ def handle_update(args):
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
 
 def add_integration(args):
+    global should_disable_webbrowser_open
+
     client = ComposioCore()
     integration_name = args.integration_name
 
@@ -334,7 +341,8 @@ def add_integration(args):
         else: 
             # @TODO: add logic to wait and ask for API_KEY
             connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
-            webbrowser.open(connection.redirectUrl)
+            if not should_disable_webbrowser_open:
+                webbrowser.open(connection.redirectUrl)
             print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
             spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
             spinner.start()

@@ -15,6 +15,17 @@ export default defineConfig({
 
   // Opt out of parallel tests on CI.
   workers: process.env.CI ? 1 : undefined,
+  use: {
+    baseURL: 'https://hermes-development.up.railway.app/',
+    launchOptions: {
+      args: ['--disable-web-security']
+    },
+    headless: false,
+    extraHTTPHeaders: {
+      // We set this header per GitHub guidelines.
+      'Accept': 'application/vnd.github.v3+json',
+    }
+  },
   projects: [
     {
       name: 'user session management',
