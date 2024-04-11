@@ -4,6 +4,8 @@ import os
 from pydantic import BaseModel
 import subprocess
 
+from typing import Union
+
 def _get_enum_key(name):
     characters_to_replace = [' ', '-', '/', '(', ')', '\\', ':', '"', '\'', '.']
     for char in characters_to_replace:
@@ -58,8 +60,8 @@ def generate_enums():
         f.write(enum_content)
 
 class GitUserInfo(BaseModel):
-    name: str | None
-    email: str | None
+    name: Union[None, str] 
+    email: Union[None, str] 
 
 def get_git_user_info() -> GitUserInfo:
     try:
