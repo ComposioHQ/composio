@@ -28,6 +28,14 @@ class ConnectionRequest(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
+    def save_user_access_data(self, field_inputs: dict):
+        connected_account_id = self.sdk_instance.get_connected_account(self.connectedAccountId)
+        resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
+            "integrationId": connected_account_id.integrationId,
+            "data": field_inputs,
+        })
+        return resp.json()
+
     def wait_until_active(
         self, timeout=60
     ) -> "ConnectedAccount":  # Timeout adjusted to seconds
@@ -247,6 +255,10 @@ class Composio:
 
     def get_list_of_apps(self):
         resp = self.http_client.get(f"{self.base_url}/v1/apps")
+        return resp.json()
+    
+    def get_app(self, app_name: str):
+        resp = self.http_client.get(f"{self.base_url}/v1/apps/{app_name}")
         return resp.json()
 
     def get_list_of_actions(
