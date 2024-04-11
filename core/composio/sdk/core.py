@@ -161,7 +161,8 @@ class ComposioCore:
         for i, item in enumerate(app_name):
             if isinstance(item, App):
                 app_name[i] = item.value
-
+        
+        resp = []
         if app_name is not None:
             resp = [item for item in resp if item.appUniqueId in app_name]
 

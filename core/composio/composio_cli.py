@@ -364,7 +364,7 @@ def list_connections(args):
     appName = args.appName
     console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
     try:
-        connections = client.get_list_of_connections(appName)
+        connections = client.get_list_of_connections([appName])
         if connections:
             for connection in connections:
                 console.print(f"[yellow]- {connection['integrationId']} ({connection['status']})[/yellow]")
