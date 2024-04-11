@@ -1,7 +1,7 @@
 [project]
 dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
 dependencies = [
-    "composio_core===0.1.86", 
+    "composio_core===0.1.87", 
     "pyautogen>=0.2.19"
 ]
 name = "composio_autogen"

@@ -1,5 +1,6 @@
 import types
 import logging
+import hashlib
 from inspect import Parameter, Signature
 from typing import Union, List, Annotated
 
@@ -54,45 +55,47 @@ def pydantic_model_from_param_schema(param_schema):
                                 Field(title=prop_title, 
                                     default=prop_default
                                     ))
+
     fieldModel = create_model(param_title, **required_fields, **optional_fields)
     return fieldModel
-        
-
     
 
-def get_signature_format_from_schema_params(
-        schema_params
-):
+def get_signature_format_from_schema_params(schema_params):
     required_parameters = []
     optional_parameters = []
+
     required_params = schema_params.get('required', [])
-
     for param_name, param_schema in schema_params.get('properties', {}).items():
-        param_type = param_schema['type']
-        param_title = param_schema['title'].replace(" ", "")
+        try:
+            param_type = param_schema['type']
 
-        if param_type in schema_type_python_type_dict:
-            signature_param_type = schema_type_python_type_dict[param_type]
-        else:
-            signature_param_type = pydantic_model_from_param_schema(param_schema)
+            param_title = param_schema['title'].replace(" ", "")
 
-        param_default = param_schema.get('default', fallback_values[param_type])
-        param_annotation = Annotated[signature_param_type, param_schema.get('description', 
-                                                                            param_schema.get('desc',
-                                                                                             param_title))]
-        param = Parameter(
-            name=param_name,
-            kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=param_annotation,
-            default=Parameter.empty if param_name in required_params else param_default 
-        )
+            if param_type in schema_type_python_type_dict:
+                signature_param_type = schema_type_python_type_dict[param_type]
+            else:
+                signature_param_type = pydantic_model_from_param_schema(param_schema)
 
-        is_required = param_name in required_params
-        if is_required:
-            required_parameters.append(param)
-        else:
-            optional_parameters.append(param)
+            param_default = param_schema.get('default', fallback_values[param_type])
+            param_annotation = Annotated[signature_param_type, param_schema.get('description', 
+                                                                                param_schema.get('desc',
+                                                                                                param_title))]
+            is_required = param_name in required_params
+            param = Parameter(
+                name=param_name,
+                kind=Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=param_annotation,
+                default=Parameter.empty if param_name in required_params else param_default 
+            )
+            if is_required:
+                required_parameters.append(param)
+            else :
+                optional_parameters.append(param)
+        except Exception as e:
+            logger.error(f"Error while processing param {param_name} with schema {param_schema}")
+            pass
     return required_parameters + optional_parameters
+
 
 class ComposioToolset:
     def __init__(self, caller = None, executor = None):
@@ -144,13 +147,24 @@ class ComposioToolset:
                                             caller = caller if caller else self.caller,
                                             executor = executor if executor else self.executor)
 
-
+    def process_function_name_for_registration(self, input_string, max_allowed_length = 64, num_hash_char = 10):
+        hash_obj = hashlib.sha256(input_string.encode())
+        hash_hex = hash_obj.hexdigest()
+        
+        num_input_str_char = max_allowed_length - (num_hash_char + 1)
+        hash_chars_to_attach = hash_hex[:10]
+        input_str_to_attach = input_string[-num_input_str_char:]
+        processed_name = input_str_to_attach + "_" + hash_chars_to_attach
+        
+        return processed_name
+    
     def _register_schema_to_autogen(self, 
                                     action_schema, 
                                     caller: ConversableAgent,
                                     executor: ConversableAgent):
 
         name = action_schema["name"]
+        processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]
         description = action_schema["description"]
 
@@ -158,22 +172,23 @@ class ComposioToolset:
                                             action_schema["parameters"])
         action_signature = Signature(parameters=parameters)
         
-        placeholder_function = lambda **kwargs: self.client.execute_action(
-                                                    self.client.get_action_enum(name, appName), 
-                                                    kwargs)
+        def placeholder_function(**kwargs):
+            return self.client.execute_action(
+                        self.client.get_action_enum(name, appName), 
+                        kwargs)
         action_func = types.FunctionType(
                                     placeholder_function.__code__, 
                                     globals=globals(), 
-                                    name=name, 
+                                    name=processed_name, 
                                     closure=placeholder_function.__closure__
                           )
         action_func.__signature__ = action_signature
-        action_func.__doc__ = description
+        action_func.__doc__ = description if description else f"Action {name} from {appName}"
 
         autogen.agentchat.register_function(
             action_func,
             caller=caller,
             executor=executor,
-            name=name,
-            description=description
+            name=processed_name,
+            description=description if description else f"Action {name} from {appName}"
         )
