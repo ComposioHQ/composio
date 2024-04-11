@@ -10,7 +10,7 @@ import termcolor
 from uuid import getnode as get_mac
 from .sdk.storage import get_user_connection, save_api_key, save_user_connection
 from .sdk.core import ComposioCore, UnauthorizedAccessException
-from .sdk.utils import generate_enums
+from .sdk.utils import generate_enums, generate_enums_beta
 from rich.table import Table
 
 import webbrowser
@@ -98,6 +98,10 @@ def parse_arguments():
     # Generate enums command
     generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
     generate_enums_parser.set_defaults(func=handle_update)
+
+    # Generate beta enums command
+    generate_enums_beta_parser = subparsers.add_parser('update-beta', help='Update enums including beta for apps and actions')
+    generate_enums_beta_parser.set_defaults(func=handle_update_beta)
 
     return parser.parse_args()
 
@@ -300,6 +304,11 @@ def handle_update(args):
     client = ComposioCore()
     generate_enums()
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
+    
+def handle_update_beta(args):
+    client = ComposioCore()
+    generate_enums_beta()
+    console.print(f"\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
 
 def add_integration(args):
     global should_disable_webbrowser_open
