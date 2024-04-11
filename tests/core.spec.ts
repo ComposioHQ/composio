@@ -11,7 +11,7 @@ test.describe.serial('Python CLI Core Operations', () => {
         const process = exec(command);
 
         process.stdout.on('data', async (data) => {
-            // console.log('stdout:', data);
+            console.log('stdout:', data);
             const match = data.trim().match(/Please authenticate github in the browser and come back here. URL: (.+)/);
             if (match && match[1]) {
                 const redirectURL = match[1];
@@ -22,7 +22,7 @@ test.describe.serial('Python CLI Core Operations', () => {
         });
 
         process.stderr.on('data', (data) => {
-            // console.error('stderr:', data);
+            console.error('stderr:', data);
         });
 
         await new Promise((resolve, reject) => {
