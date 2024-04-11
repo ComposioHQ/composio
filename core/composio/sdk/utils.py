@@ -5,7 +5,10 @@ from pydantic import BaseModel
 import subprocess
 
 def _get_enum_key(name):
-    return name.upper().replace(' ', '_').replace('-', '_')
+    characters_to_replace = [' ', '-', '/', '(', ')', '\\', ':', '"', '\'', '.']
+    for char in characters_to_replace:
+        name = name.replace(char, '_')
+    return name.upper()
 
 def generate_enums():
     sdk_client = Composio(get_base_account_api_key())
@@ -34,7 +37,7 @@ def generate_enums():
         app_key = app['key']
         app_actions = [action for action in actions if action["appKey"] == app_key]
         for action in app_actions:
-            enum_name = f'{app_key.upper()}_{_get_enum_key(action["display_name"])}'
+            enum_name = f'{_get_enum_key(action["name"])}'
             enum_value = f'("{app_key}", "{action["name"]}")'
             enum_content += f'    {enum_name} = {enum_value}\n'
 
