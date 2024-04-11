@@ -96,18 +96,12 @@ def get_signature_format_from_schema_params(schema_params):
             pass
     return required_parameters + optional_parameters
 
-        is_required = param_name in required_params
-        if is_required:
-            required_parameters.append(param)
-        else:
-            optional_parameters.append(param)
-    return required_parameters + optional_parameters
 
 class ComposioToolset:
     def __init__(self, caller = None, executor = None):
         self.caller = caller
         self.executor = executor
-        self.client =  ComposioCore(framework=FrameworkEnum.AUTOGEN, base_url="http://localhost:9900/api")
+        self.client =  ComposioCore(framework=FrameworkEnum.AUTOGEN)
 
 
     def register_tools(
