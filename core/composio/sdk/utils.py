@@ -1,3 +1,4 @@
+from .storage import get_base_account_api_key
 from .sdk import Composio
 import os
 from pydantic import BaseModel
@@ -10,7 +11,7 @@ def _get_enum_key(name):
     return name.upper()
 
 def generate_enums():
-    sdk_client = Composio("u0yroztnqjjy8q8jlias7f")
+    sdk_client = Composio(get_base_account_api_key())
     apps = sdk_client.get_list_of_apps()
     actions = sdk_client.get_list_of_actions()
     triggers = sdk_client.get_list_of_triggers()

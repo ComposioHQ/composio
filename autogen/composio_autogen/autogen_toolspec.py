@@ -30,6 +30,7 @@ fallback_values = {
 def pydantic_model_from_param_schema(param_schema):
     required_fields = {}
     optional_fields = {}
+
     param_title = param_schema['title'].replace(" ", "")
     required_props = param_schema.get('required', [])
     for prop_name, prop_info in param_schema.get('properties', {}).items():
@@ -54,7 +55,7 @@ def pydantic_model_from_param_schema(param_schema):
                                 Field(title=prop_title, 
                                     default=prop_default
                                     ))
-    
+
     fieldModel = create_model(param_title, **required_fields, **optional_fields)
     return fieldModel
     
@@ -95,6 +96,12 @@ def get_signature_format_from_schema_params(schema_params):
             pass
     return required_parameters + optional_parameters
 
+        is_required = param_name in required_params
+        if is_required:
+            required_parameters.append(param)
+        else:
+            optional_parameters.append(param)
+    return required_parameters + optional_parameters
 
 class ComposioToolset:
     def __init__(self, caller = None, executor = None):
@@ -114,6 +121,9 @@ class ComposioToolset:
         assert caller or self.caller, "If caller hasn't been specified during initialization, has to be specified during registration"
         assert executor or self.executor, "If executor hasn't been specified during initialization, has to be specified during registration"
 
+        if self.client.is_authenticated() == False:
+            raise Exception("User not authenticated. Please authenticate using composio-cli add <app_name>")
+    
         action_schemas = self.client.sdk.get_list_of_actions(
                                                 apps=tools)
         
