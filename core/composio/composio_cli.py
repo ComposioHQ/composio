@@ -301,12 +301,10 @@ def set_global_trigger_callback(args):
         sys.exit(1)
 
 def handle_update(args):
-    client = ComposioCore()
     generate_enums()
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
     
 def handle_update_beta(args):
-    client = ComposioCore()
     generate_enums_beta()
     console.print(f"\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
 
@@ -428,6 +426,3 @@ def main():
             sys.exit(1)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
-
-if __name__ == "__main__":
-    main()
