@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import sys
 from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
 import termcolor
 from uuid import getnode as get_mac
-from .sdk.storage import get_user_connection, save_user_connection
-from .sdk.core import ComposioCore
+from .sdk.storage import get_user_connection, save_api_key, save_user_connection
+from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.utils import generate_enums
+from rich.table import Table
 
 import webbrowser
 
@@ -23,6 +25,28 @@ def parse_arguments():
     add_parser = subparsers.add_parser('add', help='Add an integration')
     add_parser.add_argument('integration_name', type=str, help='Name of the integration to add')
     add_parser.set_defaults(func=add_integration)
+
+    # Login command
+    login_parser = subparsers.add_parser('login', help='Login to Composio')
+    login_parser.set_defaults(func=login)
+
+    # Show active triggers command
+    show_triggers_parser = subparsers.add_parser('list-active-triggers', help='List all triggers for a given app')
+    show_triggers_parser.set_defaults(func=list_active_triggers)
+
+    # Get trigger command
+    get_trigger_parser = subparsers.add_parser('get-trigger', help='Get more details about a trigger')
+    get_trigger_parser.add_argument('trigger_id', type=str, help='Name of the trigger to get')
+    get_trigger_parser.set_defaults(func=get_trigger)
+
+    # Who am I command
+    whoami_parser = subparsers.add_parser('whoami', help='Displays your current user information')
+    whoami_parser.set_defaults(func=whoami)
+
+    # Disable trigger command 
+    disable_trigger_parser = subparsers.add_parser('disable-trigger', help='Disable a trigger')
+    disable_trigger_parser.add_argument('trigger_id', type=str, help='Name of the trigger to disable')
+    disable_trigger_parser.set_defaults(func=disable_trigger)
 
     # Show apps command
     show_apps_parser = subparsers.add_parser('show-apps', help='Display available apps')
@@ -54,15 +78,147 @@ def parse_arguments():
     list_triggers_parser.add_argument('app_name', type=str, help='Name of the app to list triggers for')
     list_triggers_parser.set_defaults(func=list_triggers)
 
+    # Beta command group
+    beta_parser = subparsers.add_parser('beta', help='Beta features commands')
+    beta_subparsers = beta_parser.add_subparsers(help='beta commands', dest='beta_command')
+    beta_subparsers.required = True
+
+    # Update base_url command under beta
+    update_base_url_parser = beta_subparsers.add_parser('update-base-url', help='Update the base URL for API calls')
+    update_base_url_parser.add_argument('base_url', type=str, help='The new base URL to use for API calls')
+    update_base_url_parser.set_defaults(func=update_base_url)
+
+    # Logout command
+    logout_parser = subparsers.add_parser('logout', help='Logout from the current session')
+    logout_parser.set_defaults(func=logout)
+
     # Generate enums command
     generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
     generate_enums_parser.set_defaults(func=handle_update)
 
     return parser.parse_args()
 
+def login(args):
+    client = ComposioCore()
+    if client.is_authenticated():
+        console.print("Already authenticated. Use [green]composio-cli logout[/green] to log out.\n")
+        return
+    
+    console.print(f"\n[green]> Authenticating...[/green]\n")
+    try:
+        cli_key = client.generate_cli_auth_session()
+        console.print(f"> Redirecting you to the login page. Please login using the following link:\n")
+        console.print(f"[green]https://app.composio.dev/?cliKey={cli_key}[/green]\n")
+        webbrowser.open(f"https://app.composio.dev/?cliKey={cli_key}")
+
+        for attempt in range(3):
+            try:
+                session_data = client.verify_cli_auth_session(cli_key, input("> Enter the code: "))
+                api_key = session_data.get('apiKey')
+                if api_key:
+                    save_api_key(api_key)
+                    console.print(f"\n[green]✔ Authenticated successfully![/green]\n")
+                    break
+            except UnauthorizedAccessException as e:
+                if attempt == 2:  # Last attempt
+                    console.print("[red]\nAuthentication failed after 3 attempts.[/red]")
+                else:
+                    console.print(f"[red] Invalid code. Please try again.[/red]")
+                continue  # Exit the loop on unauthorized access
+            except Exception as e:
+                console.print(f"[red]Error occurred during authentication: {e}[/red]")
+                if attempt == 2:  # Last attempt
+                    console.print("[red]Authentication failed after 3 attempts.[/red]")
+    except Exception as e:
+        console.print(f"[red] Error occurred during authentication: {e}[/red]")
+
+def whoami(args):
+    client = ComposioCore()
+    user_info = client.get_authenticated_user()
+    console.print(f"- API Key: [green]{user_info['api_key']}[/green]\n")
+    return
+
+def logout(args):
+    client = ComposioCore()
+    console.print(f"\n[green]> Logging out...[/green]\n")
+    try:
+        client.logout()
+        console.print(f"\n[green]✔ Logged out successfully![/green]\n")
+    except Exception as e:
+        console.print(f"[red] Error occurred during logging out: {e}[/red]")
+        sys.exit(1)
+
+def update_base_url(args):
+    client = ComposioCore()
+    base_url = args.base_url
+    console.print(f"\n[green]> Updating base URL to: {base_url}...[/green]\n")
+    try:
+        client.set_base_url(base_url)
+        console.print(f"\n[green]✔ Base URL updated successfully![/green]\n")
+    except Exception as e:
+        console.print(f"[red] Error occurred during updating base URL: {e}[/red]")
+        sys.exit(1)
+
+def list_active_triggers(args):
+    client = ComposioCore()
+    console.print(f"\n[green]Listing all your active triggers...[/green]\n")
+    try:
+        triggers = client.list_active_triggers()
+        if triggers:
+            console.print("[bold]Active Triggers:[/bold]")
+            table = Table(show_header=True, header_style="bold magenta")
+            table.add_column("Trigger Name", style="dim", width=32)
+            table.add_column("Trigger ID", style="dim", width=36)
+            table.add_column("Connection ID",  style="dim", width=36)
+            table.add_column("Connection config", style="dim", width=32)
+            for trigger in triggers:
+                trigger_config_str = json.dumps(trigger.triggerConfig)
+                table.add_row(trigger.triggerName, trigger.id, trigger.connectionId, trigger_config_str)
+            console.print(table)
+        else:
+            console.print("[red]No active triggers found for the specified app.[/red]\n")
+
+        console.print("\n")
+        console.print(f"To get more detailed info about trigger, use the command: [green]composio-cli get-trigger <trigger_name>[/green]\n")
+    except Exception as e:
+        console.print(f"[red]Error occurred during listing active triggers: {e}[/red]")
+        sys.exit(1)
+
+def get_trigger(args):
+    client = ComposioCore()
+    trigger_id = args.trigger_id
+    console.print(f"\n[green]> Getting more details about trigger: {trigger_id}...[/green]\n")
+    try:
+        trigger = client.list_active_triggers([trigger_id])
+        if len(trigger) > 0:
+            console.print(f"[bold]Trigger Name:[/bold] {trigger[0].triggerName}")
+            console.print(f"[bold]Trigger ID:[/bold] {trigger[0].id}")
+            console.print(f"[bold]Connection ID:[/bold] {trigger[0].connectionId}")
+            console.print(f"[bold]Connection Config:[/bold]\n")
+            console.print(json.dumps(trigger[0].triggerConfig, indent=4))
+            console.print("\n")
+            console.print(f"To disable this trigger, use this command: [red]composio-cli disable-trigger {trigger_id}[/red]\n")
+        else:
+            console.print("[red]No trigger found with the specified ID or it's not active.[/red]\n")
+            console.print(f"To list all active triggers, use the command: [green]composio-cli list-active-triggers[/green]\n")
+
+    except Exception as e:
+        console.print(f"[red]Error occurred during getting trigger: {e}[/red]")
+        sys.exit(1)
+
+def disable_trigger(args):
+    client = ComposioCore()
+    trigger_id = args.trigger_id
+    console.print(f"\n[green]> Disabling trigger: {trigger_id}...[/green]\n")
+    try:
+        client.disable_trigger(trigger_id)
+        console.print(f"\n[green]✔ Trigger disabled successfully![/green]\n")
+    except Exception as e:
+        console.print(f"[red] Error occurred during disabling trigger: {e}[/red]")
+        sys.exit(1)
+
 def list_triggers(args):
     client = ComposioCore()
-    auth_user(client)
     app_name = args.app_name
     console.print(f"\n[green]> Listing triggers for app: {app_name}...[/green]\n")
     try:
@@ -81,13 +237,15 @@ def list_triggers(args):
 
 def enable_trigger(args):
     client = ComposioCore()
-    auth_user(client)
     trigger_name = args.trigger_name
     console.print(f"\n[green]> Enabling trigger: {trigger_name}...[/green]\n")
     try:
         trigger_requirements = client.get_trigger_requirements(trigger_ids=[trigger_name])
         if not trigger_requirements or len(trigger_requirements) == 0:
             console.print(f"[red] Trigger not found for the specified app.[/red]")
+            sys.exit(1)
+        if not isinstance(trigger_requirements, list):
+            console.print(f"[red]Unexpected format for trigger requirements. Expected a list but got {trigger_requirements}.[/red]")
             sys.exit(1)
         app_key = trigger_requirements[0]["appKey"]
         trigger_requirements = trigger_requirements[0]["config"]
@@ -108,15 +266,21 @@ def enable_trigger(args):
         
         connected_account_id = get_user_connection(app_key)
         # Assuming there's a function to enable the trigger with user inputs
-        client.enable_trigger(trigger_name, connected_account_id, user_inputs)
+        resp = client.enable_trigger(trigger_name, connected_account_id, user_inputs)
         console.print(f"\n[green]✔ Trigger enabled successfully![/green]\n")
+        if 'triggerId' in resp:
+            console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
     except Exception as e:
-        console.print(f"[red] Error occurred during enabling trigger: {e}[/red]")
-        sys.exit(1)
+       try:
+         error_json = json.loads(str(e))
+         error_message = error_json.get("message", "Error message not found")
+         console.print(f"[red]Error: {error_message}[/red]")
+       except json.JSONDecodeError:
+         console.print(f"[red]Error occurred during enabling trigger: {str(e)}[/red]")
+       sys.exit(1)
 
 def set_global_trigger_callback(args): 
     client = ComposioCore()
-    auth_user(client)
     console.print(f"\n[green]> Setting global trigger callback to: {args.callback_url}...[/green]\n")
     try:
         client.set_global_trigger(args.callback_url)
@@ -126,14 +290,22 @@ def set_global_trigger_callback(args):
         sys.exit(1)
 
 def handle_update(args):
+    client = ComposioCore()
     generate_enums()
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
 
 def add_integration(args):
     client = ComposioCore()
-    auth_user(client)
-
     integration_name = args.integration_name
+
+    existing_connection = get_user_connection(integration_name)
+    if existing_connection is not None:
+        console.print(f"[yellow]Warning: An existing connection for {integration_name} was found.[/yellow]\n")
+        replace_connection = input("> Do you want to replace the existing connection? (yes/no): ").lower()
+        if replace_connection not in ['yes', 'y']:
+            console.print("\n[green]Existing connection retained. No new connection added.[/green]\n")
+            return
+
     console.print(f"\n[green]> Adding integration: {integration_name.capitalize()}...[/green]\n")
     try:
         # @TODO: add logic to wait and ask for API_KEY
@@ -153,7 +325,6 @@ def add_integration(args):
 
 def show_apps(args):
     client = ComposioCore()
-    auth_user(client)
     apps_list = client.sdk.get_list_of_apps()
     app_names_list = [{"name": app.get('name'), "uniqueId": app.get('key'), "appId": app.get('appId')} for app in apps_list.get('items')]
     console.print("\n[green]> Available apps supported by composio:[/green]\n")
@@ -166,7 +337,6 @@ def show_apps(args):
 
 def list_connections(args):
     client = ComposioCore()
-    auth_user(client)
     appName = args.appName
     console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
     try:
@@ -198,12 +368,6 @@ def print_intro():
 └───────────────────────────────────────────────────────────────────────────┘
         """)
 
-def auth_user(client: ComposioCore):
-    user_mac_address = get_mac()
-    unique_identifier = f"{user_mac_address}"
-    
-    return client.authenticate(unique_identifier)
-
 def main():
     print_intro()
 
@@ -211,13 +375,14 @@ def main():
 
     client = ComposioCore()
 
-    try:
-        user = auth_user(client)
-    except Exception as e:
-        console.print(f"[red]Error occurred during user identification: {e}[/red]")
-        sys.exit(1)
-
     if hasattr(args, 'func'):
-        args.func(args)
+        try:
+            args.func(args)
+        except Exception as e:
+            console.print(f"[red]> Error occurred during command execution: \n{e}[/red]")
+            sys.exit(1)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
+
+if __name__ == "__main__":
+    main()
