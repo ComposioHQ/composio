@@ -157,7 +157,7 @@ class ComposioCore:
         resp = account.execute_action(action, params)
         return resp
 
-    def get_list_of_connections(self, app_name: list[App | str] = None) -> list[ConnectedAccount]:
+    def get_list_of_connections(self, app_name: list[Union[App, str]] = None) -> list[ConnectedAccount]:
         for i, item in enumerate(app_name):
             if isinstance(item, App):
                 app_name[i] = item.value
