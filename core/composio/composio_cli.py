@@ -310,14 +310,36 @@ def add_integration(args):
 
     console.print(f"\n[green]> Adding integration: {integration_name.capitalize()}...[/green]\n")
     try:
-        # @TODO: add logic to wait and ask for API_KEY
-        connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
-        webbrowser.open(connection.redirectUrl)
-        print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
-        spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
-        spinner.start()
-        connected_account = connection.wait_until_active()
-        spinner.stop()
+        app = client.sdk.get_app(args.integration_name)
+        auth_schemes = app.get('auth_schemes')
+        auth_schemes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
+        if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] == 'API_KEY':
+            connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
+            fields = auth_schemes[0].get('fields')
+            fields_input = {}
+            for field in fields:
+                if field.get('expected_from_customer', True):
+                    if field.get('required', False):
+                        console.print(f"[green]> Enter {field.get('displayName', field.get('name'))}: [/green]", end="")
+                        value = input() or field.get('default')
+                        if not value:  # If a required field is not provided and no default is available
+                            console.print(f"[red]Error: {field.get('displayName', field.get('name'))} is required[/red]")
+                            sys.exit(1)
+                    else:
+                        console.print(f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]", end="")
+                        value = input() or field.get('default')
+                    fields_input[field.get('name')] = value
+
+            connection.save_user_access_data(fields_input)
+        else: 
+            # @TODO: add logic to wait and ask for API_KEY
+            connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
+            webbrowser.open(connection.redirectUrl)
+            print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
+            spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
+            spinner.start()
+            connected_account = connection.wait_until_active()
+            spinner.stop()
         save_user_connection(connected_account.id, integration_name)
         print("")
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
@@ -342,7 +364,7 @@ def list_connections(args):
     appName = args.appName
     console.print(f"\n[green]> Listing connections for: {appName}...[/green]\n")
     try:
-        connections = client.get_list_of_connections(appName)
+        connections = client.get_list_of_connections([appName])
         if connections:
             for connection in connections:
                 console.print(f"[yellow]- {connection['integrationId']} ({connection['status']})[/yellow]")
