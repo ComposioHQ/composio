@@ -26,8 +26,14 @@ export default defineConfig({
       testMatch: /global\.teardown\.ts/,
     },
     {
-      name: 'cli',
+      name: 'initial',
       dependencies: ['user session management'],
+      testMatch: /initial\.spec\.ts/,
     },
+    {
+      name: 'core',
+      dependencies: ['initial'],
+      testMatch: /core\.spec\.ts/,
+    }
   ]
 });
