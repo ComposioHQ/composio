@@ -12,12 +12,7 @@ def _get_enum_key(name):
         name = name.replace(char, '_')
     return name.upper()
 
-def generate_enums():
-    sdk_client = Composio(get_base_account_api_key())
-    apps = sdk_client.get_list_of_apps()
-    actions = sdk_client.get_list_of_actions()
-    triggers = sdk_client.get_list_of_triggers()
-
+def generate_enums_given_apps(apps, actions, triggers):
     enum_content = 'from enum import Enum\n\n'
     enum_content += 'class App(Enum):\n'
     for app in apps["items"]:
@@ -58,6 +53,25 @@ def generate_enums():
         # enum_content += f'Actions.{app_name} = {app_name}\n\n'
     with open(os.path.join(os.path.dirname(__file__), 'enums.py'), 'w') as f:
         f.write(enum_content)
+
+def generate_enums():
+    sdk_client = Composio(get_base_account_api_key())
+    apps = sdk_client.get_list_of_apps()
+    actions = sdk_client.get_list_of_actions()
+    triggers = sdk_client.get_list_of_triggers()
+    apps["items"] = [appitem for appitem in apps["items"] if not appitem["name"].lower().endswith("beta")]
+    actions = [action for action in actions if not action["appName"].lower().endswith("beta")]
+    generate_enums_given_apps(apps, actions, triggers)
+
+
+def generate_enums_beta():
+    sdk_client = Composio(get_base_account_api_key())
+    apps = sdk_client.get_list_of_apps()
+    actions = sdk_client.get_list_of_actions()
+    triggers = sdk_client.get_list_of_triggers()
+    generate_enums_given_apps(apps, actions, triggers)
+    
+
 
 class GitUserInfo(BaseModel):
     name: Union[None, str] 
