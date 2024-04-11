@@ -28,7 +28,7 @@ jobs:
       run: cd core && pip install -r requirements.txt
 
     - name: Install dependencies
-      run: npm install -g pnpm && pnpm install
+      run: npm install -g pnpm && pnpm install && pnpm exec playwright install
 
     - name: Run tests
       run: pnpm test
