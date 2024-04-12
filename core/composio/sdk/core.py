@@ -5,7 +5,7 @@ from .utils import get_git_user_info
 from .sdk import ConnectionRequest, ConnectedAccount
 from .storage import delete_user_connections, get_base_url, get_user_connection, get_api_key, load_user_data, save_api_key, save_user_data, set_base_url
 from .sdk import Composio
-from .enums import TestIntegration, Action, App
+from .enums import Action, App
 from enum import Enum
 
 class FrameworkEnum(Enum):
@@ -97,9 +97,10 @@ class ComposioCore:
         
         raise Exception("Bad request to cli/verify-cli-session")
     
-    def initiate_connection(self, integrationId: Union[str, TestIntegration]) -> ConnectionRequest:
-        if isinstance(integrationId, TestIntegration):
-            integrationId = integrationId.value
+    def initiate_connection(self, appName: Union[str, App], integrationId: str = None) -> ConnectionRequest:
+        if isinstance(appName, App) and integrationId is None:
+            integration = self.sdk.get_integration(appName, use_default=True)
+            integrationId = integration.id
 
         resp = self.http_client.post(f"{self.base_url}/v1/connectedAccounts", json={
             "integrationId": integrationId,

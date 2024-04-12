@@ -1,2 +1,2 @@
 from .autogen_toolspec import ComposioToolset, client, ComposioSDK
-from composio import Action, App, TestIntegration
+from composio import Action, App

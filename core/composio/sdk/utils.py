@@ -18,12 +18,6 @@ def generate_enums_given_apps(apps, actions, triggers):
     for app in apps["items"]:
         app_name = app['key'].upper().replace(' ', '_').replace('-', '_')
         enum_content += f'    {app_name} = "{app["key"]}"\n'
-    
-    enum_content += "\n"
-    enum_content += 'class TestIntegration(Enum):\n'
-    for app in apps["items"]:
-        app_name = app['key'].upper().replace(' ', '_').replace('-', '_')
-        enum_content += f'    {app_name} = "test-{app["key"]}-connector"\n'
 
     enum_content += '\n'
     enum_content += 'class Action(Enum):\n'
