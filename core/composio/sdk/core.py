@@ -147,11 +147,18 @@ class ComposioCore:
         connectionId = get_user_connection(app_name)
         return connectionId
 
-    def execute_action(self, action: Action, params: dict):
+    def execute_action(self, action: Action, params: dict, entity_id: str = None):
         tool_name  = action.value[0]
-        connectionId = get_user_connection(tool_name)
-        if not connectionId:
-            raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
+        if entity_id is not None:
+            entity = self.sdk.get_entity(entity_id)
+            account = entity.get_connection(tool_name)
+            if not account:
+                raise Exception(f"Entity {entity_id} does not have a connection to {tool_name}")
+        else:
+            connectionId = get_user_connection(tool_name)
+            if not connectionId:
+                raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
+            account = self.sdk.get_connected_account(connectionId)
 
         account = self.sdk.get_connected_account(connectionId)
         resp = account.execute_action(action, params)

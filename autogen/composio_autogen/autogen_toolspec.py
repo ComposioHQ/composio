@@ -100,9 +100,10 @@ client = ComposioCore(framework=FrameworkEnum.AUTOGEN)
 ComposioSDK = client.sdk
 
 class ComposioToolset:
-    def __init__(self, caller = None, executor = None):
+    def __init__(self, caller = None, executor = None, entity_id: str = None):
         self.caller = caller
         self.executor = executor
+        self.entity_id = entity_id
 
     def register_tools(
             self,
@@ -175,7 +176,7 @@ class ComposioToolset:
         def placeholder_function(**kwargs):
             return client.execute_action(
                         client.get_action_enum(name, appName), 
-                        kwargs)
+                        kwargs, entity_id=self.entity_id)
         action_func = types.FunctionType(
                                     placeholder_function.__code__, 
                                     globals=globals(), 
