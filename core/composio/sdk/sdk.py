@@ -401,6 +401,8 @@ class Entity:
         return actions
 
     def get_connection(self, app_name: Union[str, App]) -> ConnectedAccount:
+        if isinstance(app_name, App):
+            app_name = app_name.value
         connected_accounts = self.client.get_connected_accounts(
             entity_id=self.entity_id,
             status="ACTIVE"
