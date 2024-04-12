@@ -1,0 +1,3 @@
+lyzr-automata>=0.1.3
+pydantic>=2.6.4
+composio_core===0.1.87
