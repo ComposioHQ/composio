@@ -320,8 +320,12 @@ class Composio:
     def create_integration(self, app: Union[App, str], use_default = False) -> Integration:
         if isinstance(app, App):
             app = app.value
+        app_details = self.get_app(app)
+        app_id = app_details.get("appId")
+        if app_id is None:
+            raise Exception(f"App {app} does not exist for the account")
         resp = self.http_client.post(f"{self.base_url}/v1/integrations", json={
-            "appName": app,
+            "appId": app_id,
             "useComposioAuth": use_default
         })
         if resp.status_code == 200:
@@ -491,6 +495,6 @@ class Entity:
                 time.sleep(0.5)
         return run_object
 
-    def initiate_connection(self, integration_id: str):
-        integration = self.client.get_integration(integration_id)
+    def initiate_connection(self, app_name: Union[str, App]):
+        integration = self.client.get_integration(app_name)
         return integration.initiate_connection(entity_id=self.entity_id)
