@@ -404,7 +404,7 @@ def check_for_updates():
     console.print(f"\n Version: {installed_version} \n")
 
     if(latest_pypi_version > installed_version):
-        console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade to using pip.[/yellow]")
+        console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade.[/yellow]")
         console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.")
 
 def print_intro():
