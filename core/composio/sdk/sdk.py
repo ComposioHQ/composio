@@ -28,11 +28,12 @@ class ConnectionRequest(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
-    def save_user_access_data(self, field_inputs: dict):
+    def save_user_access_data(self, field_inputs: dict, redirect_url: str = None):
         connected_account_id = self.sdk_instance.get_connected_account(self.connectedAccountId)
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
             "integrationId": connected_account_id.integrationId,
             "data": field_inputs,
+            "redirectUrl": redirect_url,
         })
         return resp.json()
 
@@ -176,11 +177,18 @@ class Integration(BaseModel):
         self.sdk_instance = sdk_instance
 
     def initiate_connection(
-        self, entity_id: str = None, params: dict = {}
+        self, entity_id: str = None,
+        params: dict = {},
+        redirect_url: str = None
     ) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(
             f"{self.sdk_instance.base_url}/v1/connectedAccounts",
-            json={"integrationId": self.id, "userUuid": entity_id, "data": params},
+            json={
+                "integrationId": self.id,
+                "userUuid": entity_id,
+                "data": params,
+                redirect_url: redirect_url
+            },
         )
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
