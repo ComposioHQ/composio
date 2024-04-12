@@ -1,3 +1,4 @@
+.env
 try.ipynb
 *pycache*
 user_data.json
@@ -10,6 +11,8 @@ venv*
 **/composio_llamaindex.egg-info
 **/__pycache__
 **/*.egg-info
+
+core/build/lib/*
 
 node_modules
 ~
