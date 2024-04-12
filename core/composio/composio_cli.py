@@ -7,6 +7,8 @@ import sys
 from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
 from uuid import getnode as get_mac
+
+import termcolor
 from .sdk.storage import get_user_connection, save_api_key, save_user_connection
 from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.utils import generate_enums, generate_enums_beta
@@ -408,6 +410,22 @@ def check_for_updates():
         console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.")
 
 def print_intro():
+        text = termcolor.colored('Composio', 'white', attrs=['bold'])  
+        aiPlatformText = termcolor.colored('100+', 'green', attrs=['bold'])
+        pinkEmojiText = termcolor.colored('hello@composio.dev', 'magenta', attrs=['bold'])
+        boldNoteText = termcolor.colored('Note*', 'white', attrs=['bold'])
+        print(f"""
+┌───────────────────────────────────────────────────────────────────────────┐
+│                                                                           │
+│                                       {text}                            │
+│                                                                           │
+│                     Plug {aiPlatformText} platforms in your agent                     │
+│                                                                           │
+│ {boldNoteText}: This package is in closed beta, please contact {pinkEmojiText}  │
+│        to get early access.                                               │
+│                                                                           │
+└───────────────────────────────────────────────────────────────────────────┘
+        """)
         check_for_updates()
 
 def main():
