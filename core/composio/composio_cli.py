@@ -6,14 +6,18 @@ import os
 import sys
 from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
-import termcolor
 from uuid import getnode as get_mac
-from .sdk.storage import get_user_connection, save_api_key, save_user_connection
+
+import termcolor
+from .sdk.storage import get_base_url, get_user_connection, save_api_key, save_user_connection
 from .sdk.core import ComposioCore, UnauthorizedAccessException
-from .sdk.utils import generate_enums
+from .sdk.utils import generate_enums, generate_enums_beta
 from rich.table import Table
 
 import webbrowser
+
+from importlib.metadata import version
+import requests
 
 console = Console()
 
@@ -99,6 +103,10 @@ def parse_arguments():
     generate_enums_parser = subparsers.add_parser('update', help='Update enums for apps and actions')
     generate_enums_parser.set_defaults(func=handle_update)
 
+    # Generate beta enums command
+    generate_enums_beta_parser = subparsers.add_parser('update-beta', help='Update enums including beta for apps and actions')
+    generate_enums_beta_parser.set_defaults(func=handle_update_beta)
+
     return parser.parse_args()
 
 def login(args):
@@ -111,10 +119,12 @@ def login(args):
     console.print(f"\n[green]> Authenticating...[/green]\n")
     try:
         cli_key = client.generate_cli_auth_session()
+        base_url = get_base_url()
+        frontend_url = f"https://app.composio.dev/?cliKey={cli_key}" if base_url == 'https://backend.composio.dev/api' else f"https://hermes-frontend-git-master-composio.vercel.app/?cliKey={cli_key}"
         console.print(f"> Redirecting you to the login page. Please login using the following link:\n")
-        console.print(f"[green]https://app.composio.dev/?cliKey={cli_key}[/green]\n")
+        console.print(f"[green]{frontend_url}[/green]\n")
         if not should_disable_webbrowser_open:
-            webbrowser.open(f"https://app.composio.dev/?cliKey={cli_key}")
+            webbrowser.open(f"{frontend_url}")
 
         for attempt in range(3):
             try:
@@ -297,9 +307,12 @@ def set_global_trigger_callback(args):
         sys.exit(1)
 
 def handle_update(args):
-    client = ComposioCore()
     generate_enums()
     console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
+    
+def handle_update_beta(args):
+    generate_enums_beta()
+    console.print(f"\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
 
 def add_integration(args):
     global should_disable_webbrowser_open
@@ -321,7 +334,7 @@ def add_integration(args):
         auth_schemes = app.get('auth_schemes')
         auth_schemes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
         if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] == 'API_KEY':
-            connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
+            connection = client.initiate_connection(integration_name.lower())
             fields = auth_schemes[0].get('fields')
             fields_input = {}
             for field in fields:
@@ -340,7 +353,7 @@ def add_integration(args):
             connection.save_user_access_data(fields_input)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
-            connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
+            connection = client.initiate_connection(integration_name.lower())
             if not should_disable_webbrowser_open:
                 webbrowser.open(connection.redirectUrl)
             print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
@@ -381,8 +394,24 @@ def list_connections(args):
     except Exception as e:
         console.print(f"[red] Error occurred during listing connections: {e}[/red]")
         sys.exit(1)
-    
-def print_intro(): 
+
+def check_for_updates():
+    try:
+        installed_version = version('composio_core')
+    except Exception as e:
+        installed_version = "dev"
+        console.print(f"[red]Error fetching Composio Core version: {e}[/red]")
+
+    response = requests.get("https://pypi.org/pypi/composio_core/json")
+    latest_pypi_version = response.json()['info']['version']
+
+    console.print(f"\n Version: {installed_version} \n")
+
+    if(latest_pypi_version > installed_version):
+        console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade.[/yellow]")
+        console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.\n")
+
+def print_intro():
         text = termcolor.colored('Composio', 'white', attrs=['bold'])  
         aiPlatformText = termcolor.colored('100+', 'green', attrs=['bold'])
         pinkEmojiText = termcolor.colored('hello@composio.dev', 'magenta', attrs=['bold'])
@@ -399,6 +428,7 @@ def print_intro():
 │                                                                           │
 └───────────────────────────────────────────────────────────────────────────┘
         """)
+        check_for_updates()
 
 def main():
     print_intro()
@@ -407,7 +437,7 @@ def main():
 
     client = ComposioCore()
 
-    if client.is_authenticated() == False:
+    if not client.is_authenticated() and args.func.__name__ not in ['logout', 'whoami', 'login', 'update_base_url']:
         login(args)
         print("\n")
 
@@ -419,6 +449,3 @@ def main():
             sys.exit(1)
     else:
         console.print("[red]Error: No valid command provided. Use --help for more information.[/red]")
-
-if __name__ == "__main__":
-    main()
