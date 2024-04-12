@@ -101,7 +101,7 @@ class ComposioCore:
         if integrationId is None:
             if isinstance(appName, App):
                 appName = appName.value
-            integration = self.sdk.get_default_integration(appName, use_default=True)
+            integration = self.sdk.get_default_integration(appName)
             integrationId = integration.id
 
         resp = self.http_client.post(f"{self.base_url}/v1/connectedAccounts", json={
