@@ -400,17 +400,17 @@ class Entity:
             actions.extend(account_actions)
         return actions
 
-    def get_connection(self, tool_name: str) -> ConnectedAccount:
+    def get_connection(self, app_name: Union[str, App]) -> ConnectedAccount:
         connected_accounts = self.client.get_connected_accounts(
             entity_id=self.entity_id,
             status="ACTIVE"
         )
         for account in connected_accounts:
-            if tool_name == account.appUniqueId:
+            if app_name == account.appUniqueId:
                 return account
             
-    def is_app_authenticated(self, tool_name: str) -> bool:
-        connected_account = self.get_connection(tool_name)
+    def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
+        connected_account = self.get_connection(app_name)
         return connected_account is not None
 
     def handle_tools_calls(
@@ -427,7 +427,7 @@ class Entity:
                                 action_name=action_name_to_execute
                             )
                             arguments = json.loads(tool_call.function.arguments)
-                            account = self.get_connection(tool_name=action.service)
+                            account = self.get_connection(app_name=action.service)
                             output.append(account.execute_action(action, arguments))
 
         except Exception as e:
@@ -447,7 +447,7 @@ class Entity:
                         action_name=action_name_to_execute
                     )
                     arguments = json.loads(tool_call.function.arguments)
-                    account = self.get_connection(tool_name=action.service)
+                    account = self.get_connection(app_name=action.service)
                     if verbose:
                         print("Executing Function: ", action)
                         print("Arguments: ", arguments)

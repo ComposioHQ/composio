@@ -2,7 +2,7 @@
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain import hub
 from langchain_openai import ChatOpenAI
-from composio_langchain import ComposioToolset, Action, App, TestIntegration, ComposioSDK
+from composio_langchain import ComposioToolset, Action, App, ComposioSDK
 llm = ChatOpenAI()
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
@@ -11,9 +11,12 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 
 entity_id = "soham"
 entity = ComposioSDK.get_entity(entity_id)
-request = entity.initiate_connection(TestIntegration.GITHUB)
-print(request.redirectUrl)
-request.wait_until_active()
+if(entity.is_app_authenticated(App.GITHUB) == False):
+    request = entity.initiate_connection(App.GITHUB)
+    print(f"Please authenticate {App.GITHUB} in the browser and come back here. URL: {request.redirectUrl}")
+    request.wait_until_active()
+else:
+    print(f"Entity {entity_id} is already authenticated with GitHub")
 # Get All the tools 
 tools = ComposioToolset(apps=[App.GITHUB], entity_id=entity_id)
 
