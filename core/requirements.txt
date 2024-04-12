@@ -6,4 +6,5 @@ termcolor>=2.4.0
 pydantic>=2.6.4
 openai>=1.14.1
 rich>=13.7.1
+importlib-metadata>=4.8.1
 

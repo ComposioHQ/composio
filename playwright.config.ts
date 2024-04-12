@@ -20,12 +20,14 @@ export default defineConfig({
     launchOptions: {
       args: ['--disable-web-security']
     },
-    headless: false,
+    headless: process.env.CI ? true : false,
+    actionTimeout: 5 * 60 * 1000,
     extraHTTPHeaders: {
       // We set this header per GitHub guidelines.
       'Accept': 'application/vnd.github.v3+json',
     }
   },
+  
   projects: [
     {
       name: 'user session management',

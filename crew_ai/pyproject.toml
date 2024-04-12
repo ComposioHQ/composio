@@ -1,7 +1,7 @@
 [project]
 dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "description"]
 dependencies = [
-    "composio_langchain===0.1.87",
+    "composio_langchain===0.1.95",
 ]
 name = "composio_crewai"
 

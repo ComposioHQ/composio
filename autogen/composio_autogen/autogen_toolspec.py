@@ -96,13 +96,14 @@ def get_signature_format_from_schema_params(schema_params):
             pass
     return required_parameters + optional_parameters
 
+client = ComposioCore(framework=FrameworkEnum.AUTOGEN)
+ComposioSDK = client.sdk
 
 class ComposioToolset:
-    def __init__(self, caller = None, executor = None):
+    def __init__(self, caller = None, executor = None, entity_id: str = None):
         self.caller = caller
         self.executor = executor
-        self.client =  ComposioCore(framework=FrameworkEnum.AUTOGEN)
-
+        self.entity_id = entity_id
 
     def register_tools(
             self,
@@ -115,10 +116,10 @@ class ComposioToolset:
         assert caller or self.caller, "If caller hasn't been specified during initialization, has to be specified during registration"
         assert executor or self.executor, "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if self.client.is_authenticated() == False:
+        if client.is_authenticated() == False:
             raise Exception("User not authenticated. Please authenticate using composio-cli add <app_name>")
     
-        action_schemas = self.client.sdk.get_list_of_actions(
+        action_schemas = client.sdk.get_list_of_actions(
                                                 apps=tools)
         
         for schema in action_schemas:
@@ -139,7 +140,7 @@ class ComposioToolset:
         assert caller or self.caller, "If caller hasn't been specified during initialization, has to be specified during registration"
         assert executor or self.executor, "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        action_schemas = self.client.sdk.get_list_of_actions(
+        action_schemas = client.sdk.get_list_of_actions(
                                                 actions=actions)
         
         for schema in action_schemas:
@@ -173,9 +174,9 @@ class ComposioToolset:
         action_signature = Signature(parameters=parameters)
         
         def placeholder_function(**kwargs):
-            return self.client.execute_action(
-                        self.client.get_action_enum(name, appName), 
-                        kwargs)
+            return client.execute_action(
+                        client.get_action_enum(name, appName), 
+                        kwargs, entity_id=self.entity_id)
         action_func = types.FunctionType(
                                     placeholder_function.__code__, 
                                     globals=globals(), 

@@ -4,7 +4,7 @@ from typing import Optional, Union, Tuple
 import requests
 from pydantic import BaseModel, ConfigDict
 
-from .enums import Action, App, TestIntegration
+from .enums import Action, App
 from .storage import get_base_url
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.beta.threads import run
@@ -48,6 +48,7 @@ class ConnectionRequest(BaseModel):
             )
             if connection_info.status == "ACTIVE":
                 return connection_info
+                
             time.sleep(1)
         raise TimeoutError(
             "Connection did not become active within the timeout period."
@@ -308,10 +309,28 @@ class Composio:
         resp = resp.json()
         return [Integration(self, **app) for app in resp["items"]]
 
-    def get_integration(self, connector_id: Union[str, TestIntegration]) -> Integration:
-        if isinstance(connector_id, TestIntegration):
-            connector_id = connector_id.value
+    def get_default_integration(self, appName: Union[str, App]) -> Integration:
+        if isinstance(appName, App):
+            appName = appName.value
+        
+        return self.create_integration(appName, use_default=True)
+        
+    def get_integration(self, connector_id: str) -> Integration:
         resp = self.http_client.get(f"{self.base_url}/v1/integrations/{connector_id}")
+        if resp.status_code == 200:
+            return Integration(self, **resp.json())
+        
+    def create_integration(self, app: Union[App, str], use_default = False) -> Integration:
+        if isinstance(app, App):
+            app = app.value
+        app_details = self.get_app(app)
+        app_id = app_details.get("appId")
+        if app_id is None:
+            raise Exception(f"App {app} does not exist for the account")
+        resp = self.http_client.post(f"{self.base_url}/v1/integrations", json={
+            "appId": app_id,
+            "useComposioAuth": use_default
+        })
         if resp.status_code == 200:
             return Integration(self, **resp.json())
 
@@ -327,11 +346,11 @@ class Composio:
         raise Exception("Failed to get connection")
 
     def get_connected_accounts(
-        self, entity_id: Union[list[str], str]
+        self, entity_id: Union[list[str], str], status: str = None
     ) -> list[ConnectedAccount]:
         user_uuid_str = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
         resp = self.http_client.get(
-            f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}"
+            f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}{'&status=' + status if status else ''}"
         )
         if resp.status_code == 200:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
@@ -384,13 +403,20 @@ class Entity:
             actions.extend(account_actions)
         return actions
 
-    def get_connection(self, tool_name: str) -> ConnectedAccount:
+    def get_connection(self, app_name: Union[str, App]) -> ConnectedAccount:
+        if isinstance(app_name, App):
+            app_name = app_name.value
         connected_accounts = self.client.get_connected_accounts(
-            entity_id=self.entity_id
+            entity_id=self.entity_id,
+            status="ACTIVE"
         )
         for account in connected_accounts:
-            if tool_name == account.appUniqueId:
+            if app_name == account.appUniqueId:
                 return account
+            
+    def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
+        connected_account = self.get_connection(app_name)
+        return connected_account is not None
 
     def handle_tools_calls(
         self, tool_calls: ChatCompletion, verbose: bool = False
@@ -406,7 +432,7 @@ class Entity:
                                 action_name=action_name_to_execute
                             )
                             arguments = json.loads(tool_call.function.arguments)
-                            account = self.get_connection(tool_name=action.service)
+                            account = self.get_connection(app_name=action.service)
                             output.append(account.execute_action(action, arguments))
 
         except Exception as e:
@@ -426,7 +452,7 @@ class Entity:
                         action_name=action_name_to_execute
                     )
                     arguments = json.loads(tool_call.function.arguments)
-                    account = self.get_connection(tool_name=action.service)
+                    account = self.get_connection(app_name=action.service)
                     if verbose:
                         print("Executing Function: ", action)
                         print("Arguments: ", arguments)
@@ -474,6 +500,6 @@ class Entity:
                 time.sleep(0.5)
         return run_object
 
-    def initiate_connection(self, integration_id: str):
-        integration = self.client.get_integration(integration_id)
+    def initiate_connection(self, app_name: Union[str, App]):
+        integration = self.client.get_default_integration(app_name)
         return integration.initiate_connection(entity_id=self.entity_id)

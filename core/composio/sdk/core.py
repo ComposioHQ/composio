@@ -5,7 +5,7 @@ from .utils import get_git_user_info
 from .sdk import ConnectionRequest, ConnectedAccount
 from .storage import delete_user_connections, get_base_url, get_user_connection, get_api_key, load_user_data, save_api_key, save_user_data, set_base_url
 from .sdk import Composio
-from .enums import TestIntegration, Action, App
+from .enums import Action, App
 from enum import Enum
 
 class FrameworkEnum(Enum):
@@ -98,9 +98,12 @@ class ComposioCore:
         
         raise Exception("Bad request to cli/verify-cli-session")
     
-    def initiate_connection(self, integrationId: Union[str, TestIntegration]) -> ConnectionRequest:
-        if isinstance(integrationId, TestIntegration):
-            integrationId = integrationId.value
+    def initiate_connection(self, appName: Union[str, App], integrationId: str = None) -> ConnectionRequest:
+        if integrationId is None:
+            if isinstance(appName, App):
+                appName = appName.value
+            integration = self.sdk.get_default_integration(appName)
+            integrationId = integration.id
 
         resp = self.http_client.post(f"{self.base_url}/v1/connectedAccounts", json={
             "integrationId": integrationId,
@@ -148,13 +151,19 @@ class ComposioCore:
         connectionId = get_user_connection(app_name)
         return connectionId
 
-    def execute_action(self, action: Action, params: dict):
+    def execute_action(self, action: Action, params: dict, entity_id: str = None):
         tool_name  = action.value[0]
-        connectionId = get_user_connection(tool_name)
-        if not connectionId:
-            raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
+        if entity_id is not None:
+            entity = self.sdk.get_entity(entity_id)
+            account = entity.get_connection(tool_name)
+            if not account:
+                raise Exception(f"Entity {entity_id} does not have a connection to {tool_name}")
+        else:
+            connectionId = get_user_connection(tool_name)
+            if not connectionId:
+                raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
+            account = self.sdk.get_connected_account(connectionId)
 
-        account = self.sdk.get_connected_account(connectionId)
         resp = account.execute_action(action, params)
         return resp
 
