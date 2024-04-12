@@ -9,7 +9,7 @@ from rich.console import Console
 from uuid import getnode as get_mac
 
 import termcolor
-from .sdk.storage import get_user_connection, save_api_key, save_user_connection
+from .sdk.storage import get_base_url, get_user_connection, save_api_key, save_user_connection
 from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.utils import generate_enums, generate_enums_beta
 from rich.table import Table
@@ -119,10 +119,12 @@ def login(args):
     console.print(f"\n[green]> Authenticating...[/green]\n")
     try:
         cli_key = client.generate_cli_auth_session()
+        base_url = get_base_url()
+        frontend_url = f"https://app.composio.dev/?cliKey={cli_key}" if base_url == 'https://backend.composio.dev/api' else f"https://hermes-frontend-git-master-composio.vercel.app/?cliKey={cli_key}"
         console.print(f"> Redirecting you to the login page. Please login using the following link:\n")
-        console.print(f"[green]https://app.composio.dev/?cliKey={cli_key}[/green]\n")
+        console.print(f"[green]{frontend_url}[/green]\n")
         if not should_disable_webbrowser_open:
-            webbrowser.open(f"https://app.composio.dev/?cliKey={cli_key}")
+            webbrowser.open(f"{frontend_url}")
 
         for attempt in range(3):
             try:
