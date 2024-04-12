@@ -33,7 +33,7 @@ class ConnectionRequest(BaseModel):
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
             "integrationId": connected_account_id.integrationId,
             "data": field_inputs,
-            "redirectUrl": redirect_url,
+            "redirectUri": redirect_url,
         })
         return resp.json()
 
@@ -187,7 +187,7 @@ class Integration(BaseModel):
                 "integrationId": self.id,
                 "userUuid": entity_id,
                 "data": params,
-                redirect_url: redirect_url
+                "redirectUri": redirect_url
             },
         )
         if resp.status_code == 200:
@@ -508,6 +508,6 @@ class Entity:
                 time.sleep(0.5)
         return run_object
 
-    def initiate_connection(self, app_name: Union[str, App]):
+    def initiate_connection(self, app_name: Union[str, App], redirect_url: str = None):
         integration = self.client.get_default_integration(app_name)
-        return integration.initiate_connection(entity_id=self.entity_id)
+        return integration.initiate_connection(entity_id=self.entity_id, redirect_url=redirect_url)
