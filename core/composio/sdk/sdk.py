@@ -309,10 +309,13 @@ class Composio:
         resp = resp.json()
         return [Integration(self, **app) for app in resp["items"]]
 
-    def get_integration(self, connector_id: Union[str, App]) -> Integration:
-        if isinstance(connector_id, App):
-            return self.create_integration(connector_id, use_default=True)
-
+    def get_default_integration(self, appName: Union[str, App]) -> Integration:
+        if isinstance(appName, App):
+            appName = appName.value
+        
+        return self.create_integration(appName, use_default=True)
+        
+    def get_integration(self, connector_id: str) -> Integration:
         resp = self.http_client.get(f"{self.base_url}/v1/integrations/{connector_id}")
         if resp.status_code == 200:
             return Integration(self, **resp.json())
@@ -498,5 +501,5 @@ class Entity:
         return run_object
 
     def initiate_connection(self, app_name: Union[str, App]):
-        integration = self.client.get_integration(app_name)
+        integration = self.client.get_default_integration(app_name)
         return integration.initiate_connection(entity_id=self.entity_id)

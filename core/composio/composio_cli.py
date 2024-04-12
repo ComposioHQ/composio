@@ -334,7 +334,7 @@ def add_integration(args):
         auth_schemes = app.get('auth_schemes')
         auth_schemes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
         if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] == 'API_KEY':
-            connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
+            connection = client.initiate_connection(integration_name.lower())
             fields = auth_schemes[0].get('fields')
             fields_input = {}
             for field in fields:
@@ -353,7 +353,7 @@ def add_integration(args):
             connection.save_user_access_data(fields_input)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
-            connection = client.initiate_connection("test-" + integration_name.lower() + "-connector")
+            connection = client.initiate_connection(integration_name.lower())
             if not should_disable_webbrowser_open:
                 webbrowser.open(connection.redirectUrl)
             print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
