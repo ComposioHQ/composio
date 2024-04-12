@@ -160,7 +160,6 @@ class ComposioCore:
                 raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
             account = self.sdk.get_connected_account(connectionId)
 
-        account = self.sdk.get_connected_account(connectionId)
         resp = account.execute_action(action, params)
         return resp
 
