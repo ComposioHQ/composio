@@ -6,7 +6,6 @@ import os
 import sys
 from beaupy.spinners import Spinner, DOTS
 from rich.console import Console
-import termcolor
 from uuid import getnode as get_mac
 from .sdk.storage import get_user_connection, save_api_key, save_user_connection
 from .sdk.core import ComposioCore, UnauthorizedAccessException
@@ -14,6 +13,9 @@ from .sdk.utils import generate_enums, generate_enums_beta
 from rich.table import Table
 
 import webbrowser
+
+from importlib.metadata import version
+import requests
 
 console = Console()
 
@@ -388,24 +390,25 @@ def list_connections(args):
     except Exception as e:
         console.print(f"[red] Error occurred during listing connections: {e}[/red]")
         sys.exit(1)
-    
-def print_intro(): 
-        text = termcolor.colored('Composio', 'white', attrs=['bold'])  
-        aiPlatformText = termcolor.colored('100+', 'green', attrs=['bold'])
-        pinkEmojiText = termcolor.colored('hello@composio.dev', 'magenta', attrs=['bold'])
-        boldNoteText = termcolor.colored('Note*', 'white', attrs=['bold'])
-        print(f"""
-┌───────────────────────────────────────────────────────────────────────────┐
-│                                                                           │
-│                                       {text}                            │
-│                                                                           │
-│                     Plug {aiPlatformText} platforms in your agent                     │
-│                                                                           │
-│ {boldNoteText}: This package is in closed beta, please contact {pinkEmojiText}  │
-│        to get early access.                                               │
-│                                                                           │
-└───────────────────────────────────────────────────────────────────────────┘
-        """)
+
+def check_for_updates():
+    try:
+        installed_version = version('composio_core')
+    except Exception as e:
+        installed_version = "dev"
+        console.print(f"[red]Error fetching Composio Core version: {e}[/red]")
+
+    response = requests.get("https://pypi.org/pypi/composio_core/json")
+    latest_pypi_version = response.json()['info']['version']
+
+    console.print(f"\n Version: {installed_version} \n")
+
+    if(latest_pypi_version > installed_version):
+        console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade to using pip.[/yellow]")
+        console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.")
+
+def print_intro():
+        check_for_updates()
 
 def main():
     print_intro()
