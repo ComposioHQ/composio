@@ -90,10 +90,12 @@ def get_signature_format_from_schema_params(
             optional_parameters.append(param)
     return required_parameters + optional_parameters
 
+client = ComposioCore(framework=FrameworkEnum.LYZR)
+ComposioSDK = client.sdk
 
 class ComposioToolset:
     def __init__(self):
-        self.client =  ComposioCore(framework=FrameworkEnum.LYZR)
+        self.client - client
 
     def get_lyzr_tool(self, action: Action):
         action_schema = self.client.sdk.get_list_of_actions(
@@ -107,7 +109,7 @@ class ComposioToolset:
         func_params = get_signature_format_from_schema_params(action_schema["parameters"])
         action_signature = Signature(parameters=func_params)
         placeholder_function = lambda **kwargs: self.client.execute_action(
-                                                    action, kwargs)
+                                                    action, kwargs, entity_id=self.entity_id)
         action_func = types.FunctionType(
                                     placeholder_function.__code__, 
                                     globals=globals(), 
