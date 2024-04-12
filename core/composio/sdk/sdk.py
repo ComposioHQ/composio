@@ -327,11 +327,11 @@ class Composio:
         raise Exception("Failed to get connection")
 
     def get_connected_accounts(
-        self, entity_id: Union[list[str], str]
+        self, entity_id: Union[list[str], str], status: str = None
     ) -> list[ConnectedAccount]:
         user_uuid_str = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
         resp = self.http_client.get(
-            f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}"
+            f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}{'&status=' + status if status else ''}"
         )
         if resp.status_code == 200:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
@@ -386,11 +386,16 @@ class Entity:
 
     def get_connection(self, tool_name: str) -> ConnectedAccount:
         connected_accounts = self.client.get_connected_accounts(
-            entity_id=self.entity_id
+            entity_id=self.entity_id,
+            status="ACTIVE"
         )
         for account in connected_accounts:
             if tool_name == account.appUniqueId:
                 return account
+            
+    def is_app_authenticated(self, tool_name: str) -> bool:
+        connected_account = self.get_connection(tool_name)
+        return connected_account is not None
 
     def handle_tools_calls(
         self, tool_calls: ChatCompletion, verbose: bool = False
