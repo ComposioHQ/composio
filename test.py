@@ -12,7 +12,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 entity_id = "soham"
 entity = ComposioSDK.get_entity(entity_id)
 if(entity.is_app_authenticated(App.GITHUB) == False):
-    request = entity.initiate_connection(App.GITHUB)
+    request = entity.initiate_connection(App.GITHUB, redirect_url="https://google.com")
     print(f"Please authenticate {App.GITHUB} in the browser and come back here. URL: {request.redirectUrl}")
     request.wait_until_active()
 else:
