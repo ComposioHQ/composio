@@ -117,6 +117,7 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any]) ->  Struc
     )
 
 client = ComposioCore(framework=FrameworkEnum.LANGCHAIN)
+ComposioSDK = client.sdk
 
 def ComposioToolset(apps: List[App] = [], actions: List[Action] = []) -> List[StructuredTool]:
     if len(apps) >0 and len(actions) > 0:
