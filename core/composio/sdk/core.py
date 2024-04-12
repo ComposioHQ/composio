@@ -11,6 +11,7 @@ from enum import Enum
 class FrameworkEnum(Enum):
     AUTOGEN = "autogen"
     LANGCHAIN = "langchain"
+    LYZR = "lyzr"
 
 __IS_FIRST_TIME__ = True
 
