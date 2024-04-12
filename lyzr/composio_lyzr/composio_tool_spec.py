@@ -94,8 +94,10 @@ client = ComposioCore(framework=FrameworkEnum.LYZR)
 ComposioSDK = client.sdk
 
 class ComposioToolset:
-    def __init__(self):
-        self.client - client
+    def __init__(self, entity_id: str = None):
+        global client
+        self.client = client
+        self.entity_id = entity_id
 
     def get_lyzr_tool(self, action: Action):
         action_schema = self.client.sdk.get_list_of_actions(
