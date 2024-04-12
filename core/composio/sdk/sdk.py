@@ -4,7 +4,7 @@ from typing import Optional, Union, Tuple
 import requests
 from pydantic import BaseModel, ConfigDict
 
-from .enums import Action, App, TestIntegration
+from .enums import Action, App
 from .storage import get_base_url
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.beta.threads import run
@@ -48,6 +48,7 @@ class ConnectionRequest(BaseModel):
             )
             if connection_info.status == "ACTIVE":
                 return connection_info
+                
             time.sleep(1)
         raise TimeoutError(
             "Connection did not become active within the timeout period."
@@ -308,10 +309,21 @@ class Composio:
         resp = resp.json()
         return [Integration(self, **app) for app in resp["items"]]
 
-    def get_integration(self, connector_id: Union[str, TestIntegration]) -> Integration:
-        if isinstance(connector_id, TestIntegration):
-            connector_id = connector_id.value
+    def get_integration(self, connector_id: Union[str, App]) -> Integration:
+        if isinstance(connector_id, App):
+            return self.create_integration(connector_id, use_default=True)
+
         resp = self.http_client.get(f"{self.base_url}/v1/integrations/{connector_id}")
+        if resp.status_code == 200:
+            return Integration(self, **resp.json())
+        
+    def create_integration(self, app: Union[App, str], use_default = False) -> Integration:
+        if isinstance(app, App):
+            app = app.value
+        resp = self.http_client.post(f"{self.base_url}/v1/integrations", json={
+            "appName": app,
+            "useComposioAuth": use_default
+        })
         if resp.status_code == 200:
             return Integration(self, **resp.json())
 
