@@ -417,7 +417,7 @@ def main():
 
     client = ComposioCore()
 
-    if not client.is_authenticated() and args.func.__name__ not in ['logout', 'whoami', 'login']:
+    if not client.is_authenticated() and args.func.__name__ not in ['logout', 'whoami', 'login', 'update_base_url']:
         login(args)
         print("\n")
 
