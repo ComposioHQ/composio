@@ -407,7 +407,7 @@ def check_for_updates():
 
     if(latest_pypi_version > installed_version):
         console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade.[/yellow]")
-        console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.")
+        console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.\n")
 
 def print_intro():
         text = termcolor.colored('Composio', 'white', attrs=['bold'])  
