@@ -13,3 +13,4 @@ upload_package core
 upload_package langchain
 upload_package crew_ai
 upload_package autogen
+upload_package lyzr
