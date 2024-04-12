@@ -1,2 +1,2 @@
-from .composio_tool_spec import ComposioToolset
+from .lyzr_toolspec import ComposioToolset
 from composio import Action, App

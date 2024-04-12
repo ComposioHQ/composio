@@ -1,2 +1,2 @@
-from .composio_tool_spec import ComposioToolset, client, ComposioSDK
+from .langchain_toolspec import ComposioToolset, client, ComposioSDK
 from composio import Action, App
