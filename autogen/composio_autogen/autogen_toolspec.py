@@ -8,6 +8,7 @@ import autogen
 from composio import ComposioCore, App, Action, FrameworkEnum
 from pydantic import create_model, Field
 from autogen.agentchat.conversable_agent import ConversableAgent
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ def get_signature_format_from_schema_params(schema_params):
             pass
     return required_parameters + optional_parameters
 
-client = ComposioCore(framework=FrameworkEnum.AUTOGEN)
+client = ComposioCore(framework=FrameworkEnum.AUTOGEN, api_key = os.environ.get("COMPOSIO_API_KEY", None))
 ComposioSDK = client.sdk
 
 class ComposioToolset:
