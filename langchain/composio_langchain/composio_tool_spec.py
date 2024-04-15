@@ -74,9 +74,7 @@ def get_signature_format_from_schema_params(
             signature_param_type = pydantic_model_from_param_schema(param_schema)
 
         param_default = param_schema.get('default', fallback_values[param_type])
-        param_annotation = Annotated[signature_param_type, param_schema.get('description', 
-                                                                            param_schema.get('desc',
-                                                                                             param_title))]
+        param_annotation = signature_param_type
         param = Parameter(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
