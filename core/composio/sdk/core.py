@@ -3,7 +3,7 @@ import requests
 
 from .utils import get_git_user_info
 from .sdk import ConnectionRequest, ConnectedAccount
-from .storage import delete_user_connections, get_base_url, get_user_connection, get_api_key, load_user_data, save_api_key, save_user_data, set_base_url
+from .storage import get_base_url, get_api_key, load_user_data, save_user_data, set_base_url
 from .sdk import Composio
 from .enums import Action, App
 from enum import Enum
@@ -79,7 +79,6 @@ class ComposioCore:
         self.http_client.headers.pop('x-api-key')
         user_data = load_user_data()
         user_data.pop('api_key')
-        delete_user_connections()
         save_user_data(user_data)
 
     def generate_cli_auth_session(self):
@@ -148,23 +147,17 @@ class ComposioCore:
             return self.sdk.enable_trigger(trigger_id, connected_account_id, user_inputs)
         except Exception as e:
             raise Exception(e)
+        
+    def get_connection(self, app_name: str, entity_id: str = "default"):
+        entity = self.sdk.get_entity(entity_id)
+        return entity.get_connection(app_name)
 
-    def get_saved_connections(self, app_name: str = None):
-        connectionId = get_user_connection(app_name)
-        return connectionId
-
-    def execute_action(self, action: Action, params: dict, entity_id: str = None):
+    def execute_action(self, action: Action, params: dict, entity_id: str = "default"):
         tool_name  = action.value[0]
-        if entity_id is not None:
-            entity = self.sdk.get_entity(entity_id)
-            account = entity.get_connection(tool_name)
-            if not account:
-                raise Exception(f"Entity {entity_id} does not have a connection to {tool_name}")
-        else:
-            connectionId = get_user_connection(tool_name)
-            if not connectionId:
-                raise Exception(f"User not authenticated or connection not found. Please authenticate using: composio-cli add {tool_name}")
-            account = self.sdk.get_connected_account(connectionId)
+        entity = self.sdk.get_entity(entity_id)
+        account = entity.get_connection(tool_name)
+        if not account:
+            raise Exception(f"Entity {entity_id} does not have a connection to {tool_name}")
 
         resp = account.execute_action(action, params)
         return resp
