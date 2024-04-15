@@ -7,6 +7,7 @@ from .storage import delete_user_connections, get_base_url, get_user_connection,
 from .sdk import Composio
 from .enums import Action, App
 from enum import Enum
+import os
 
 class FrameworkEnum(Enum):
     AUTOGEN = "autogen"
@@ -22,7 +23,7 @@ class ComposioCore:
     sdk: Composio = None
     framework: FrameworkEnum = None
 
-    def __init__(self, base_url = get_base_url(), manage_auth = True, framework: FrameworkEnum = None):
+    def __init__(self, base_url = get_base_url(), manage_auth = True, framework: FrameworkEnum = None, api_key: str = None):
         global __IS_FIRST_TIME__
 
         self.base_url = base_url
@@ -34,13 +35,13 @@ class ComposioCore:
         })
 
         if manage_auth:
-            api_key = get_api_key()
-            if api_key:
+            api_key_to_use = api_key if api_key else get_api_key()
+            if api_key_to_use:
                 self.http_client.headers.update({
                     'Content-Type': 'application/json',
-                    'x-api-key': api_key
+                    'x-api-key': api_key_to_use
                 });
-                self.sdk = Composio(api_key, base_url)
+                self.sdk = Composio(api_key=api_key_to_use, base_url=base_url)
                 if framework is not None and __IS_FIRST_TIME__ == True:
                     try: 
                         git_info = get_git_user_info()
@@ -56,7 +57,8 @@ class ComposioCore:
                         pass
     
     def get_authenticated_user(self):
-        api_key = get_api_key()
+        composio_api_key = os.environ.get("COMPOSIO_API_KEY", None)
+        api_key = composio_api_key if composio_api_key else get_api_key()
         return {
             "api_key": api_key,
         }

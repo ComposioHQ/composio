@@ -7,7 +7,7 @@ from composio import ComposioCore, App, Action, FrameworkEnum
 from typing import List
 from inspect import Parameter, Signature
 from pydantic import create_model, Field
-
+import os
 
 schema_type_python_type_dict = {
     'string': str,
@@ -90,7 +90,7 @@ def get_signature_format_from_schema_params(
             optional_parameters.append(param)
     return required_parameters + optional_parameters
 
-client = ComposioCore(framework=FrameworkEnum.LYZR)
+client = ComposioCore(framework=FrameworkEnum.LYZR, api_key = os.environ.get("COMPOSIO_API_KEY", None))
 ComposioSDK = client.sdk
 
 class ComposioToolset:
