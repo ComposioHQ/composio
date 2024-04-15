@@ -1,2 +1,2 @@
-composio_core===0.2.0
+composio_core===0.2.1
 pyautogen>=0.2.19

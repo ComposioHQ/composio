@@ -354,19 +354,20 @@ class Composio:
         raise Exception("Failed to get connection")
 
     def get_connected_accounts(
-        self, entity_id: Union[list[str], str], status: str = None
+        self, entity_id: Union[list[str], str] = None, status: str = None
     ) -> list[ConnectedAccount]:
-        user_uuid_str = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
-        resp = self.http_client.get(
-            f"{self.base_url}/v1/connectedAccounts?user_uuid={user_uuid_str}{'&status=' + status if status else ''}"
-        )
-        if resp.status_code == 200:
-            return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
+        query_params = {}
+        if entity_id is not None:
+            query_params['user_uuid'] = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
+        if status:
+            query_params['status'] = status
 
-        raise Exception("Failed to get connected accounts")
+        query_string = "&".join([f"{key}={value}" for key, value in query_params.items()])
+        url = f"{self.base_url}/v1/connectedAccounts"
+        if query_string:
+            url += f"?{query_string}"
 
-    def get_list_of_connected_accounts(self) -> list[ConnectedAccount]:
-        resp = self.http_client.get(f"{self.base_url}/v1/connectedAccounts")
+        resp = self.http_client.get(url)
         if resp.status_code == 200:
             return [ConnectedAccount(self, **item) for item in resp.json()["items"]]
 
