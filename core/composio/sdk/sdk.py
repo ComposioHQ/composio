@@ -354,13 +354,13 @@ class Composio:
         raise Exception("Failed to get connection")
 
     def get_connected_accounts(
-        self, entity_id: Union[list[str], str] = None, status: str = None
+        self, entity_id: Union[list[str], str] = None, showActiveOnly: bool = None
     ) -> list[ConnectedAccount]:
         query_params = {}
         if entity_id is not None:
             query_params['user_uuid'] = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
-        if status:
-            query_params['status'] = status
+        if showActiveOnly:
+            query_params['showActiveOnly'] = str("true" if showActiveOnly else "false")
 
         query_string = "&".join([f"{key}={value}" for key, value in query_params.items()])
         url = f"{self.base_url}/v1/connectedAccounts"
@@ -417,7 +417,7 @@ class Entity:
             app_name = app_name.value
         connected_accounts = self.client.get_connected_accounts(
             entity_id=self.entity_id,
-            status="ACTIVE"
+            showActiveOnly=True
         )
         for account in connected_accounts:
             if app_name == account.appUniqueId:
