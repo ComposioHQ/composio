@@ -101,7 +101,7 @@ client = ComposioCore(framework=FrameworkEnum.AUTOGEN, api_key = os.environ.get(
 ComposioSDK = client.sdk
 
 class ComposioToolset:
-    def __init__(self, caller = None, executor = None, entity_id: str = None):
+    def __init__(self, caller = None, executor = None, entity_id: str = "default"):
         self.caller = caller
         self.executor = executor
         self.entity_id = entity_id

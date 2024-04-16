@@ -94,7 +94,7 @@ client = ComposioCore(framework=FrameworkEnum.LYZR, api_key = os.environ.get("CO
 ComposioSDK = client.sdk
 
 class ComposioToolset:
-    def __init__(self, entity_id: str = None):
+    def __init__(self, entity_id: str = "default"):
         global client
         self.client = client
         self.entity_id = entity_id
