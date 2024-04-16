@@ -21,15 +21,17 @@ def generate_enums_given_apps(apps, actions, triggers):
 
     enum_content += '\n'
     enum_content += 'class Action(Enum):\n'
-    enum_content += '    def __init__(self, service, action):\n'
+    enum_content += '    def __init__(self, service, action, no_auth):\n'
     enum_content += '        self.service = service\n'
-    enum_content += '        self.action = action\n\n'
+    enum_content += '        self.action = action\n'
+    enum_content += '        self.no_auth = no_auth\n\n'
     for app in apps["items"]:
         app_key = app['key']
+        app_no_auth = app.get('no_auth', False)
         app_actions = [action for action in actions if action["appKey"] == app_key]
         for action in app_actions:
             enum_name = f'{_get_enum_key(action["name"])}'
-            enum_value = f'("{app_key}", "{action["name"]}")'
+            enum_value = f'("{app_key}", "{action["name"]}", {app_no_auth})'
             enum_content += f'    {enum_name} = {enum_value}\n'
 
     enum_content += '\n'

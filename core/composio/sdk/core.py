@@ -154,6 +154,10 @@ class ComposioCore:
 
     def execute_action(self, action: Action, params: dict, entity_id: str = "default"):
         tool_name  = action.value[0]
+        no_auth = action.value[2] if len(action.value) > 2 else False
+        if no_auth:
+            resp = self.sdk.no_auth_execute_action(action, params)
+            return resp
         entity = self.sdk.get_entity(entity_id)
         account = entity.get_connection(tool_name)
         if not account:
