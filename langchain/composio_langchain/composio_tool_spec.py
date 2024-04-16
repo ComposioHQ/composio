@@ -118,7 +118,7 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any], entity_id
 client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key = os.environ.get("COMPOSIO_API_KEY", None))
 ComposioSDK = client.sdk
 
-def ComposioToolset(apps: List[App] = [], actions: List[Action] = [], entity_id: str = None) -> List[StructuredTool]:
+def ComposioToolset(apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default") -> List[StructuredTool]:
     if len(apps) >0 and len(actions) > 0:
         raise ValueError("You must provide either a list of tools or a list of actions, not both")
     if client.is_authenticated() == False:
