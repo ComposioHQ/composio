@@ -1,1 +1,1 @@
-composio_langchain===0.2.1
+composio_langchain===0.2.6
