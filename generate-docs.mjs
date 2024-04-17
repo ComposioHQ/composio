@@ -88,7 +88,7 @@ async function readSheetsData() {
   const oAuth2Client = new OAuth2Client();
   oAuth2Client.setCredentials({
     // Use your existing access token or refresh token here
-    access_token: 'ya29.a0Ad52N3_0B23KBzEYKawj6Y0nIGfhbQO9LuxcPGit65ins8LRu-C8FX_4r-jWhE6dxVIgL35C5fcSfCqxeRSCy_4UEiEdv3e2UE1GbJdHMKifubzBqdswrzpXWEQdiZ48eO1RTV1JiTCDgCvY8nGBHQ6XQFocd9cv_F1gaCgYKARgSARISFQHGX2MiQgi6EXrEH27Tq6Vl4ZX0Xw0171', 
+    access_token: '', 
     // or
     // refresh_token: 'YOUR_REFRESH_TOKEN',
   });
