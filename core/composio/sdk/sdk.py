@@ -227,7 +227,7 @@ class Composio:
             raise Exception(f"Failed to get active triggers, status code: {resp.status_code}, response: {resp.text}")
         if resp.json().get("triggers"):
             return [ActiveTrigger(self, **item) for item in resp.json()["triggers"]]
-        return []
+        raise Exception(f"Failed to get active triggers, response: {resp.text}")
     
     def disable_trigger(self, trigger_id: str):
         resp = self.http_client.post(f"{self.base_url}/v1/triggers/disable/{trigger_id}")
@@ -319,7 +319,7 @@ class Composio:
         resp = resp.json()
         if resp.get("items"):
             return [Integration(self, **app) for app in resp["items"]]
-        return []
+        raise Exception(f"Failed to get integrations, response: {resp.text}")
 
     def get_default_integration(self, appName: Union[str, App]) -> Integration:
         if isinstance(appName, App):
