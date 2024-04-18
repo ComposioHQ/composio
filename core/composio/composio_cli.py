@@ -337,7 +337,7 @@ def add_integration(args):
         app = client.sdk.get_app(args.integration_name)
         auth_schemes = app.get('auth_schemes')
         auth_schemes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
-        if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] == 'API_KEY':
+        if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] in ['API_KEY', 'BASIC', 'SNOWFLAKE']:
             connection = entity.initiate_connection(integration_name.lower())
             fields = auth_schemes[0].get('fields')
             fields_input = {}
@@ -353,7 +353,6 @@ def add_integration(args):
                         console.print(f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]", end="")
                         value = input() or field.get('default')
                     fields_input[field.get('name')] = value
-
             connection.save_user_access_data(fields_input)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
