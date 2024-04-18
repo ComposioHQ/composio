@@ -1,41 +1,40 @@
 ---
-title: "Linear"
-slug: "linear"
+title: Linear
+slug: linear
 excerpt: ""
 hidden: false
-createdAt: "Wed Mar 13 2024 11:29:45 GMT+0000 (Coordinated Universal Time)"
-updatedAt: "Thu Mar 14 2024 09:24:24 GMT+0000 (Coordinated Universal Time)"
----
-> Linear uses OAuth2 for authentication.
-
+createdAt: Thu, 18 Apr 2024 07:16:42 GMT
+updatedAt: Thu, 18 Apr 2024 07:16:42 GMT
+--- 
+> Linear uses OAUTH2 and API_KEY for authentication.
 ## 📔 Documentation
 
-1. [Linear API Documentation](https://developers.linear.app/docs/api/linear-api)
-2. [Linear OAuth Documentation](https://developers.linear.app/docs/oauth/overview)
+- [OAuth Documentation](https://developers.linear.app/docs/oauth)
+- [API Documentation](https://developers.linear.app/docs/graphql/working-with-the-graphql-api)
 
 ## ⚙️ Configuration
 
-<Tip>
-To use OAuth2 with Linear, you'll need to create an OAuth application in your Linear settings.
-</Tip>
+<Tip>New OAuth App can be created on [Linear API page](https://linear.app/witcher/settings/api/applications/new).</Tip>
 
-Once you have created your OAuth application in Linear, go to the "OAuth & Permissions" section to configure your Redirect URL:
+Once you create the App, please configure the below Redirect URL:
+
 
 ```
-https://backend.composio.dev/api/v1/auth-apps/github/connection/oauth2/add
+https://backend.composio.dev/api/v1/auth-apps/add
 ```
-After configuring the Redirect URL, you will be given a Client ID and Client Secret. Keep these credentials secure, as you will use them to authenticate with Linear. On Composio's [supported apps](https://app.composio.dev/apps) page, find Linear and click "Enable". Enter your Client ID and Client Secret, then Save to connect Linear.
+
+After creating the app, copy the Client ID from the app page and generate/copy the Client Secret. On Composio's [Integrations](https://app.composio.dev/apps) page, find Linearsandbox and add a new integration. Paste your Client ID and Secret, then Save to connect Linearsandbox.
+
 
 ## ⚒️ Actions
 
-_⚠️ All the actions are disabled by default. Please go to the Linear connector page to enable the actions._
 
-| Action Name             | Action ID                     | Description                                     |
-| :---------------------- | :---------------------------- | :---------------------------------------------- |
-| Create Linear Issue     | linear_create_linear_issue    | Create a new issue in Linear.                   |
-| List Linear Projects    | linear_list_linear_projects   | Get the list of projects in Linear.             |
-| List Teams by Project   | linear_list_linear_teams      | Get the list of teams by project in Linear.     |
+| Action Name            | Action ID                   | Description                                       |
+| :--------------------- | :-------------------------- | :------------------------------------------------ |
+| Create Issue | linear_create_linear_issue | Create a new issue in a Linear account |
+| Get Projects | linear_list_linear_projects | Get the list of projects in a Linear account |
+| Get Teams by Project | linear_list_linear_teams | Get the list of teams in a Linear account filtered by project ID |
 
-## 🪝 Triggers (Coming Soon)
+## 🪝 Triggers
 
-Linear triggers are not supported yet. If you're looking for Linear Triggers, please write to us at [tech@composio.dev](mailto:tech@composio.dev).
+Linear triggers are not supported yet. In case, you’re looking for Linear Triggers, please write to us at tech@composio.dev.
