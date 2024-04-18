@@ -1,0 +1,38 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+        files: '\.(yaml|yml)$'
+        exclude: 'test/|\b__init__\.py$'  # Exclude test directory and __init__.py files
+      - id: end-of-file-fixer
+        files: '\.(yaml|yml|py)$'
+        exclude: 'test/|\b__init__\.py$'  # Exclude test directory and __init__.py files
+      - id: trailing-whitespace
+        files: '\.(yaml|yml|py)$'
+        exclude: 'test/|\b__init__\.py$'  # Exclude test directory and __init__.py files
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile=black"]
+        exclude: 'test/|\b__init__\.py$'
+
+  - repo: https://github.com/psf/black
+    rev: 22.12.0
+    hooks:
+      - id: black
+        files: '\.py$'
+        exclude: 'test/|\b__init__\.py$'  # Exclude test directory and __init__.py files
+        args: # arguments to configure
+          - "--line-length=120"
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        files: '\.py$'
+        exclude: 'test/|\b__init__\.py$'  # Exclude test directory and __init__.py files
+        args: # arguments to configure flake8
+          - "--max-line-length=120"

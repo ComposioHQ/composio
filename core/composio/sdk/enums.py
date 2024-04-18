@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class App(Enum):
     INTERCOM = "intercom"
     MIRO = "miro"
@@ -106,17 +107,33 @@ class App(Enum):
     ATLASSIAN = "atlassian"
     MIXPANEL = "mixpanel"
 
+
 class Action(Enum):
     def __init__(self, service, action):
         self.service = service
         self.action = action
 
-    ZENDESK_CREATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_create_zendesk_organization")
-    ZENDESK_DELETE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_delete_zendesk_organization")
-    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_count_zendesk_organizations")
+    ZENDESK_CREATE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_create_zendesk_organization",
+    )
+    ZENDESK_DELETE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_delete_zendesk_organization",
+    )
+    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = (
+        "zendesk",
+        "zendesk_count_zendesk_organizations",
+    )
     ZENDESK_GET_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_get_zendesk_organization")
-    ZENDESK_GET_ALL_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_get_all_zendesk_organizations")
-    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_update_zendesk_organization")
+    ZENDESK_GET_ALL_ZENDESK_ORGANIZATIONS = (
+        "zendesk",
+        "zendesk_get_all_zendesk_organizations",
+    )
+    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_update_zendesk_organization",
+    )
     ZENDESK_CREATE_ZENDESK_TICKET = ("zendesk", "zendesk_create_zendesk_ticket")
     ZENDESK_DELETE_ZENDESK_TICKET = ("zendesk", "zendesk_delete_zendesk_ticket")
     ZENDESK_GET_ABOUT_ME = ("zendesk", "zendesk_get_about_me")
@@ -187,7 +204,10 @@ class Action(Enum):
     NOTION_CREATE_NOTION_DATABASE = ("notion", "notion_create_notion_database")
     NOTION_CREATE_PAGE_COMMENT = ("notion", "notion_create_page_comment")
     NOTION_CREATE_NOTION_PAGE = ("notion", "notion_create_notion_page")
-    NOTION_DELETE_NOTION_PAGE_CHILDREN = ("notion", "notion_delete_notion_page_children")
+    NOTION_DELETE_NOTION_PAGE_CHILDREN = (
+        "notion",
+        "notion_delete_notion_page_children",
+    )
     NOTION_FETCH_NOTION_COMMENT = ("notion", "notion_fetch_notion_comment")
     NOTION_FETCH_NOTION_DATABASE = ("notion", "notion_fetch_notion_database")
     NOTION_FETCH_NOTION_PAGE = ("notion", "notion_fetch_notion_page")
@@ -196,16 +216,44 @@ class Action(Enum):
     NOTION_FETCH_NOTION_BLOCK = ("notion", "notion_fetch_notion_block")
     NOTION_FETCH_NOTION_CHILD_BLOCK = ("notion", "notion_fetch_notion_child_block")
     SERPAPI_SEARCH = ("serpapi", "serpapi_search")
-    GOOGLECALENDAR_CREATE_GOOGLE_EVENT = ("googlecalendar", "googlecalendar_create_google_event")
-    GOOGLECALENDAR_REMOVE_ATTENDEE = ("googlecalendar", "googlecalendar_remove_attendee")
+    GOOGLECALENDAR_CREATE_GOOGLE_EVENT = (
+        "googlecalendar",
+        "googlecalendar_create_google_event",
+    )
+    GOOGLECALENDAR_REMOVE_ATTENDEE = (
+        "googlecalendar",
+        "googlecalendar_remove_attendee",
+    )
     GOOGLECALENDAR_FIND_EVENT = ("googlecalendar", "googlecalendar_find_event")
-    GOOGLECALENDAR_DELETE_GOOGLE_EVENT = ("googlecalendar", "googlecalendar_delete_google_event")
-    GOOGLECALENDAR_UPDATE_GOOGLE_EVENT = ("googlecalendar", "googlecalendar_update_google_event")
-    GOOGLECALENDAR_FIND_FREE_SLOTS = ("googlecalendar", "googlecalendar_find_free_slots")
-    GOOGLECALENDAR_DUPLICATE_GOOGLE_CALENDAR = ("googlecalendar", "googlecalendar_duplicate_google_calendar")
-    GOOGLECALENDAR_LIST_GOOGLE_CALENDARS = ("googlecalendar", "googlecalendar_list_google_calendars")
-    GOOGLECALENDAR_PATCH_GOOGLE_CALENDAR = ("googlecalendar", "googlecalendar_patch_google_calendar")
-    GOOGLECALENDAR_QUICK_ADD_GOOGLE_CALENDAR = ("googlecalendar", "googlecalendar_quick_add_google_calendar")
+    GOOGLECALENDAR_DELETE_GOOGLE_EVENT = (
+        "googlecalendar",
+        "googlecalendar_delete_google_event",
+    )
+    GOOGLECALENDAR_UPDATE_GOOGLE_EVENT = (
+        "googlecalendar",
+        "googlecalendar_update_google_event",
+    )
+    GOOGLECALENDAR_FIND_FREE_SLOTS = (
+        "googlecalendar",
+        "googlecalendar_find_free_slots",
+    )
+    GOOGLECALENDAR_DUPLICATE_GOOGLE_CALENDAR = (
+        "googlecalendar",
+        "googlecalendar_duplicate_google_calendar",
+    )
+    GOOGLECALENDAR_LIST_GOOGLE_CALENDARS = (
+        "googlecalendar",
+        "googlecalendar_list_google_calendars",
+    )
+    GOOGLECALENDAR_PATCH_GOOGLE_CALENDAR = (
+        "googlecalendar",
+        "googlecalendar_patch_google_calendar",
+    )
+    GOOGLECALENDAR_QUICK_ADD_GOOGLE_CALENDAR = (
+        "googlecalendar",
+        "googlecalendar_quick_add_google_calendar",
+    )
+
 
 class Trigger(Enum):
     def __init__(self, service, trigger):

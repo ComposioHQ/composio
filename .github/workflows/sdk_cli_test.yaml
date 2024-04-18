@@ -23,7 +23,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Go core and run pip install
       run: cd core && pip install -r requirements.txt
 

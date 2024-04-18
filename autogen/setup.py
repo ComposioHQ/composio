@@ -1,5 +1,6 @@
-from setuptools import setup
 import os
+
+from setuptools import setup
 
 
 def get_current_dir():
