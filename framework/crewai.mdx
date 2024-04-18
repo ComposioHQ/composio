@@ -5,12 +5,13 @@ icon: "people-group"
 description: "Integrate Composio with Crewai agents to let them seamlessly interact with external apps"
 ---
 
-
-<img src="https://i.imgur.com/jXeNUda.png" alt="CrewAI Logo"/>
+<img src="https://i.imgur.com/jXeNUda.png" alt="CrewAI Logo" />
 
 **Composio enables** your **CrewAI agents** to **connect** with many **tools**!
 
-<Tip>Goal: Star a repository on GitHub with natural language & CrewAI Agent</Tip>
+<Tip>
+  Goal: Star a repository on GitHub with natural language & CrewAI Agent
+</Tip>
 
 ### Install Packages & Connect a Tool
 
@@ -23,9 +24,10 @@ These commands prepare your environment for seamless interaction between CrewAI 
   #Connect your Github so agents can use it. 
   composio-cli add github
 
-  #Check all different apps which you can connect with 
-  composio-cli show-apps
-  ```
+#Check all different apps which you can connect with
+composio-cli show-apps
+
+````
 </CodeGroup>
 
 ### Goal: Use Crew Agent to Interact with Github using Composio
@@ -41,7 +43,8 @@ from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 
-```
+````
+
 </CodeGroup>
 
 </Step>
@@ -54,8 +57,10 @@ llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 from composio_crewai import ComposioToolset, Action, App
 
 # Get All the tools
+
 tools = ComposioToolset(apps=[App.GITHUB])
-```
+
+````
 
 </CodeGroup>
 
@@ -82,7 +87,7 @@ task = Task(
 )
 
 task.execute()
-```
+````
 
 </CodeGroup>
 
@@ -95,21 +100,22 @@ task.execute()
 > Entering new CrewAgentExecutor chain...[0m
 I need to star a repository on GitHub, specifically the repo "SamparkAI/docs".
 
-Action: 
+Action:
 github_star_repo
 
-Action Input: 
+Action Input:
 {
-  "owner": "SamparkAI",
-  "repo": "docs"
+"owner": "SamparkAI",
+"repo": "docs"
 }
 
 {'execution_details': {'executed': True}, 'response_data': ''}
 Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 
 > Finished chain.[0m
-{'execution_details': {'executed': True}, 'response_data': ''}
-```
+> {'execution_details': {'executed': True}, 'response_data': ''}
+
+````
 </CodeGroup>
 
 </Step>
@@ -120,13 +126,14 @@ Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 # To restrict agents from executing any actions, filter specific actions
 toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
+
 </CodeGroup>
 
 ### Use Specific Apps
 
 <CodeGroup>
-  ```bash Filter Specific App 
-  # To restrict agents from using all tools, filter
-  specific tools toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB]) 
-  ```
+```bash Filter Specific App # To restrict agents from using all tools, filter
+  specific tools toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB])
+```
 </CodeGroup>
+````
