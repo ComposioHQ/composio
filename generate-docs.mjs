@@ -53,7 +53,7 @@ async function getTriggersForApp(appId) {
 function getActionsBlock(app, actions) {  
   let actionsBlock = `## ⚒️ Actions\n\n`;  
   if (actions.length === 0) {    
-    actionsBlock += `${app.name.charAt(0).toUpperCase() + app.name.slice(1)} actions are not supported yet. In case, you’re looking for Asana actions, please write to us at tech@composio.dev.`;  
+    actionsBlock += `${app.name.charAt(0).toUpperCase() + app.name.slice(1)} actions are not supported yet. In case, you’re looking for ${app.name.charAt(0).toUpperCase() + app.name.slice(1)} actions, please write to us at tech@composio.dev.`;  
   } else {    
     actionsBlock += `\n| Action Name            | Action ID                   | Description                                       |`;    
     actionsBlock += `\n| :--------------------- | :-------------------------- | :------------------------------------------------ |`;    
@@ -67,7 +67,7 @@ function getActionsBlock(app, actions) {
 function getTriggersBlock(app, triggers) {  
   let triggerBlock = `\n## 🪝 Triggers\n\n`;  
   if (triggers.length === 0) {    
-    triggerBlock += `${app.name.charAt(0).toUpperCase() + app.name.slice(1)} triggers are not supported yet. In case, you’re looking for Asana Triggers, please write to us at tech@composio.dev.`;  
+    triggerBlock += `${app.name.charAt(0).toUpperCase() + app.name.slice(1)} triggers are not supported yet. In case, you’re looking for ${app.name.charAt(0).toUpperCase() + app.name.slice(1)} Triggers, please write to us at tech@composio.dev.`;  
   } else {    
     triggerBlock += `\n| Trigger Name            | Trigger ID                   | Description                                       |`;    
     triggerBlock += `\n| :--------------------- | :-------------------------- | :------------------------------------------------ |`;    
@@ -88,7 +88,7 @@ async function readSheetsData() {
   const oAuth2Client = new OAuth2Client();
   oAuth2Client.setCredentials({
     // Use your existing access token or refresh token here
-    access_token: '', 
+    access_token: 'ya29.a0Ad52N3_gP-tMnytE735o8344yMtBUpg-iZbscfLz1rGwyyjBWUPberA4O6aWlBZXLmvLVXGgm5F6--hRMPqd0793mu0GlFaixBgxTP9OIO3OsT1rRX9gdziKTv8cNZmdNBNDKt11TxLCX2xoomjOrRIO8nQmDrO34rFZaCgYKAaISARISFQHGX2MiOWJt4TiFIQ2ebi0aKxDt7Q0171', 
     // or
     // refresh_token: 'YOUR_REFRESH_TOKEN',
   });
