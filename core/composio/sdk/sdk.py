@@ -34,6 +34,7 @@ class ConnectionRequest(BaseModel):
             "integrationId": connected_account_id.integrationId,
             "data": field_inputs,
             "redirectUri": redirect_url,
+            "userUuid": self.entity_id,
         })
         return resp.json()
 
