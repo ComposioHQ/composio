@@ -333,17 +333,27 @@ class Composio:
             return Integration(self, **resp.json())
         raise Exception(f"Failed to get integration, status code: {resp.status_code}, response: {resp.text}")
         
-    def create_integration(self, app: Union[App, str], use_default = False) -> Integration:
+    def create_integration(self, app: Union[App, str], use_default = False, name: str = None, auth_mode: str = None) -> Integration:
         if isinstance(app, App):
             app = app.value
         app_details = self.get_app(app)
         app_id = app_details.get("appId")
         if app_id is None:
             raise Exception(f"App {app} does not exist for the account")
-        resp = self.http_client.post(f"{self.base_url}/v1/integrations", json={
+        req = {
             "appId": app_id,
             "useComposioAuth": use_default
-        })
+        }
+        if name:
+            req["name"] = name
+        if auth_mode:
+            req["authScheme"] = auth_mode
+            auth_schemes = app_details.get('auth_schemes')
+            for auth_scheme_iter in auth_schemes:
+                if auth_scheme_iter.get('auth_mode') == auth_mode:
+                    fields = auth_scheme_iter.get('fields')
+                    req["authConfig"] = {field.get('name'): "" for field in fields}
+        resp = self.http_client.post(f"{self.base_url}/v1/integrations", json=req)
         if resp.status_code == 200:
             return Integration(self, **resp.json())
 
@@ -525,4 +535,10 @@ class Entity:
 
     def initiate_connection(self, app_name: Union[str, App], redirect_url: str = None):
         integration = self.client.get_default_integration(app_name)
+        return integration.initiate_connection(entity_id=self.entity_id, redirect_url=redirect_url)
+
+    def initiate_connection_not_oauth(self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None):
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        integration = self.client.create_integration(app_name, name=f"integration_{timestamp}", auth_mode=auth_mode)
         return integration.initiate_connection(entity_id=self.entity_id, redirect_url=redirect_url)
