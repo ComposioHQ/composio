@@ -353,7 +353,7 @@ def add_integration(args):
                         console.print(f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]", end="")
                         value = input() or field.get('default')
                     fields_input[field.get('name')] = value
-            connection.save_user_access_data(fields_input)
+            connection.save_user_access_data(fields_input, entity_id=entity.entity_id)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
             connection = entity.initiate_connection(integration_name.lower())

@@ -28,13 +28,13 @@ class ConnectionRequest(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
-    def save_user_access_data(self, field_inputs: dict, redirect_url: str = None):
+    def save_user_access_data(self, field_inputs: dict, redirect_url: str = None, entity_id: str = None):
         connected_account_id = self.sdk_instance.get_connected_account(self.connectedAccountId)
         resp = self.sdk_instance.http_client.post(f"{self.sdk_instance.base_url}/v1/connectedAccounts", json={
             "integrationId": connected_account_id.integrationId,
             "data": field_inputs,
             "redirectUri": redirect_url,
-            "userUuid": self.entity_id,
+            "userUuid": entity_id,
         })
         return resp.json()
 
