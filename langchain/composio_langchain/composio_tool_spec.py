@@ -98,6 +98,7 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any], entity_id
     func_params = get_signature_format_from_schema_params(action_schema["parameters"])
     action_signature = Signature(parameters=func_params)
     placeholder_function = lambda **kwargs: client.execute_action(client.get_action_enum(name, appName), kwargs, entity_id=entity_id)
+    
     action_func = types.FunctionType(
                                     placeholder_function.__code__, 
                                     globals=globals(), 
