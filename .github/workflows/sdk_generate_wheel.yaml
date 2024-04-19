@@ -2,8 +2,7 @@ name: Generate Composio SDK Wheels
 
 on:
   pull_request:
-    types: [synchronize]
-
+    types: [opened, synchronize]
 jobs:
   build-wheels:
     runs-on: ubuntu-latest
