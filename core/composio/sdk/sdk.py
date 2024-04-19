@@ -3,6 +3,7 @@ import time
 from typing import Optional, Union, Tuple
 import requests
 from pydantic import BaseModel, ConfigDict
+from datetime import datetime
 
 from .enums import Action, App
 from .storage import get_base_url
@@ -444,10 +445,16 @@ class Entity:
             entity_id=self.entity_id,
             showActiveOnly=True
         )
+        latest_account = None
+        latest_creation_date = None
         for account in connected_accounts:
             if app_name == account.appUniqueId:
-                return account
-            
+                creation_date = datetime.fromisoformat(account.createdAt.replace('Z', '+00:00'))
+                if latest_account is None or creation_date > latest_creation_date:
+                    latest_account = account
+                    latest_creation_date = creation_date
+        if latest_account:
+            return latest_account
     def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
         connected_account = self.get_connection(app_name)
         return connected_account is not None
