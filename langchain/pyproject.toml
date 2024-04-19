@@ -9,7 +9,7 @@ dependencies = [
     "langchain-openai>=0.0.2.post1",
     "langchainhub>=0.1.15",
     "pydantic>=2.6.4",
-    "composio_core===0.2.11"
+    "composio_core===0.2.12"
 ]
 name = "composio_langchain"
 
