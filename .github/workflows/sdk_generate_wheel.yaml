@@ -1,0 +1,31 @@
+name: Generate Composio SDK Wheels
+
+on:
+  pull_request:
+    types: [synchronize]
+
+jobs:
+  build-wheels:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        folder: ['autogen', 'core', 'crew_ai', 'langchain', 'lyzr']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install build
+        run: python -m pip install build
+      - name: Build wheel
+        run: |
+          cd ${{ matrix.folder }}
+          python -m build
+          cd ..
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-${{ matrix.folder }}
+          path: ${{ matrix.folder }}/dist/*.whl
+
