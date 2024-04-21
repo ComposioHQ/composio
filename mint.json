@@ -86,10 +86,10 @@
       "group":"Patterns",
       "pages":[
         "guides/patterns/integrations/integration-guide",
-        "guides/patterns/integrations/custom-integration",
         "guides/patterns/actions/action-guide",
         "guides/patterns/actions/local-code",
-        "guides/patterns/triggers/trigger-guide"
+        "guides/patterns/triggers/trigger-guide",
+        "guides/patterns/integrations/custom-integration"
       ]
     },
     {
