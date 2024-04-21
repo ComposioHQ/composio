@@ -35,7 +35,7 @@
     "twitter:site": "https://twitter.com/KaranVaidya6"
   },
   "topbarCtaButton": {
-    "name": "Open App",
+    "name": "Open Dashboard",
     "url": "https://app.composio.dev"
   },
   "topAnchor": {
@@ -63,13 +63,6 @@
       "url": "https://discord.gg/XMa3eWKkH8"
     }
   ],
-  "anchors": [
-    {
-      "name": "Dashboard",
-      "icon": "laptop",
-      "url": "https://app.composio.dev"
-    }
-  ],
   "navigation": [
     {
       "group": "Get Started",
@@ -90,23 +83,17 @@
       ]
     },
     {
-      "group":"Work with Integrations",
+      "group":"Patterns",
       "pages":[
         "guides/patterns/integrations/integration-guide",
-        "guides/patterns/integrations/custom-integration"
-      ]
-    },
-    {
-      "group":"Work with Actions/Triggers",
-      "pages":[
+        "guides/patterns/integrations/custom-integration",
         "guides/patterns/actions/action-guide",
         "guides/patterns/actions/local-code",
         "guides/patterns/triggers/trigger-guide"
       ]
     },
     {
-      "group": "Supported Integrations",
-      
+      "group": "Supported Tools",
       "pages": [
           "apps/list",
           "apps/accelo",
