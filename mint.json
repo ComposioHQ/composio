@@ -18,7 +18,7 @@
   },
   "modeToggle":{
     "default": "dark",
-    "isHidden": true
+    "isHidden": false
   },
   "feedback": {
     "suggestEdit": true,
@@ -26,7 +26,7 @@
     "thumbsRating": true
   },
   "search": {
-    "prompt": "Help my agents to work"
+    "prompt": "Search..."
   },
   "metadata": {
     "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
@@ -46,6 +46,10 @@
     "name": "Docs"
   },
   "tabs": [
+    {
+      "name": "Guides",
+      "url": "guides"
+    },
     {
       "name": "API",
       "url": "api-reference"
@@ -68,6 +72,7 @@
       "group": "Get Started",
       "pages": [
         "introduction/overview",
+        "introduction/quickstart",
         "introduction/pricing"
       ]
     },
