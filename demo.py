@@ -1,13 +1,10 @@
-import os
-import dotenv
 from lyzr_automata  import  Task, Agent
 from lyzr_automata.ai_models.openai import OpenAIModel
 from lyzr_automata.tasks.task_literals import InputType, OutputType
 from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
-from composio_lyzr import ComposioToolset, App, Action
 
-# Loading the variables from .env file
-dotenv.load_dotenv()
+import os
+from composio_lyzr import ComposioToolset, App, Action
 
 open_ai_text_completion_model = OpenAIModel(
     api_key=os.environ["OPENAI_API_KEY"],
@@ -41,8 +38,10 @@ task = Task(
 
 lyzr_output = LinearSyncPipeline(
     name="Composio Lyzr",
+		# completion message after pipeline completes
     completion_message="Task completed",
     tasks=[
+				# tasks are instance of Task class
         task, 
     ],
 ).run()

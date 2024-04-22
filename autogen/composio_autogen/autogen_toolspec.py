@@ -7,16 +7,17 @@ from typing import Union, List
 import autogen
 from composio import ComposioCore, App, Action, FrameworkEnum
 from autogen.agentchat.conversable_agent import ConversableAgent
+import os
 
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
 
 logger = logging.getLogger(__name__)
 
-client = ComposioCore(framework=FrameworkEnum.AUTOGEN)
+client = ComposioCore(framework=FrameworkEnum.AUTOGEN, api_key = os.environ.get("COMPOSIO_API_KEY", None))
 ComposioSDK = client.sdk
 
 class ComposioToolset:
-    def __init__(self, caller = None, executor = None, entity_id: str = None):
+    def __init__(self, caller = None, executor = None, entity_id: str = "default"):
         self.caller = caller
         self.executor = executor
         self.entity_id = entity_id

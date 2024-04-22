@@ -9,7 +9,7 @@ from rich.console import Console
 from uuid import getnode as get_mac
 
 import termcolor
-from .sdk.storage import get_base_url, get_user_connection, save_api_key, save_user_connection
+from .sdk.storage import get_base_url, save_api_key
 from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.utils import generate_enums, generate_enums_beta
 from rich.table import Table
@@ -276,14 +276,17 @@ def enable_trigger(args):
             user_input = input(f"{field_title} ({field_description}): ")
             user_inputs[field] = user_input
         
-        user_connection = get_user_connection(app_key)
-        if not user_connection:
-            console.print(f"[red]No connection found for {app_key}.\nUse the following command to add a connection: [green]composio-cli add {app_key}[/green][/red]")
+        app_enum = client.get_action_enum(app_key)
+        if not app_enum:
+            console.print(f"[red]No such app found for {app_key}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]")
             sys.exit(1)
         
-        connected_account_id = get_user_connection(app_key)
+        connected_account = client.get_connection(app_key)
+        if not connected_account:
+            console.print(f"[red]No connection found for {app_key}.\nUse the following command to add a connection: [green]composio-cli add {app_key}[/green][/red]")
+            sys.exit(1)
         # Assuming there's a function to enable the trigger with user inputs
-        resp = client.enable_trigger(trigger_name, connected_account_id, user_inputs)
+        resp = client.enable_trigger(trigger_name, connected_account.id, user_inputs)
         console.print(f"\n[green]✔ Trigger enabled successfully![/green]\n")
         if 'triggerId' in resp:
             console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
@@ -320,7 +323,8 @@ def add_integration(args):
     client = ComposioCore()
     integration_name = args.integration_name
 
-    existing_connection = get_user_connection(integration_name)
+    entity = client.sdk.get_entity("default")
+    existing_connection = client.get_connection(integration_name, entity_id="default")
     if existing_connection is not None:
         console.print(f"[yellow]Warning: An existing connection for {integration_name} was found.[/yellow]\n")
         replace_connection = input("> Do you want to replace the existing connection? (yes/no): ").lower()
@@ -332,9 +336,9 @@ def add_integration(args):
     try:
         app = client.sdk.get_app(args.integration_name)
         auth_schemes = app.get('auth_schemes')
-        auth_schemes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
-        if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] == 'API_KEY':
-            connection = client.initiate_connection(integration_name.lower())
+        auth_modes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
+        if len(auth_modes_arr) > 0 and auth_modes_arr[0] in ['API_KEY', 'BASIC', 'SNOWFLAKE']:
+            connection = entity.initiate_connection_not_oauth(integration_name.lower(), auth_mode=auth_modes_arr[0])
             fields = auth_schemes[0].get('fields')
             fields_input = {}
             for field in fields:
@@ -349,11 +353,10 @@ def add_integration(args):
                         console.print(f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]", end="")
                         value = input() or field.get('default')
                     fields_input[field.get('name')] = value
-
-            connection.save_user_access_data(fields_input)
+            connection.save_user_access_data(fields_input, entity_id=entity.entity_id)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
-            connection = client.initiate_connection(integration_name.lower())
+            connection = entity.initiate_connection(integration_name.lower())
             if not should_disable_webbrowser_open:
                 webbrowser.open(connection.redirectUrl)
             print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
@@ -361,7 +364,6 @@ def add_integration(args):
             spinner.start()
             connected_account = connection.wait_until_active()
             spinner.stop()
-        save_user_connection(connected_account.id, integration_name)
         print("")
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
     except Exception as e:

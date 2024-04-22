@@ -11,12 +11,13 @@ def resolve_paths(*paths):
 
 
 readme_path = resolve_paths(get_current_dir(), "README.md")
+
 setup(
     name="composio_lyzr",
-    version="0.1.95",
+    version="0.2.12",
     author="Sawradip",
     author_email="sawradip@composio.dev",
-    description="Use Composio to get an array of tools with your Autogen agent.",
+    description="Use Composio to get an array of tools with your Lyzr workflow.",
     long_description=open(readme_path).read(),
     long_description_content_type="text/markdown",
     url="https://github.com/SamparkAI/composio_sdk",
