@@ -1,3 +1,4 @@
+import os
 import types
 from typing import List
 from inspect import Signature
@@ -32,7 +33,7 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any], entity_id
         func = action_func
     )
 
-client = ComposioCore(framework=FrameworkEnum.LANGCHAIN)
+client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key = os.environ.get("COMPOSIO_API_KEY", None))
 ComposioSDK = client.sdk
 
 def ComposioToolset(apps: List[App] = [], actions: List[Action] = [], entity_id: str = None) -> List[StructuredTool]:
