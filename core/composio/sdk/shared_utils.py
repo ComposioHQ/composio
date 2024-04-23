@@ -161,18 +161,52 @@ def pydantic_model_from_param_schema(param_schema):
     return fieldModel
         
         
+# def get_signature_format_from_schema_params(
+#         schema_params
+# ):
+#     """
+#     Converts schema parameters into a list of `Parameter` objects for function signatures.
+
+#     Parameters:
+#     - schema_params (dict): Contains 'required' (list of names) and 'properties' (name-schema pairs).
+
+#     Returns:
+#     - List[Parameter]: Signature parameters, with required ones first.
+#     """
+#     required_parameters = []
+#     optional_parameters = []
+
+#     required_params = schema_params.get('required', [])
+#     schema_params_object = schema_params.get('properties', {})
+#     for param_name, param_schema in schema_params_object.items():
+#         param_type = param_schema['type']
+#         param_title = param_schema['title'].replace(" ", "")
+
+#         if param_type in schema_type_python_type_dict:
+#             signature_param_type = schema_type_python_type_dict[param_type]
+#         else:
+#             signature_param_type = pydantic_model_from_param_schema(param_schema)
+
+#         param_default = param_schema.get('default', fallback_values[param_type])
+#         param_annotation = Annotated[signature_param_type, param_schema.get('description', 
+#                                                                             param_schema.get('desc',
+#                                                                                              param_title))]
+#         param = Parameter(
+#             name=param_name,
+#             kind=Parameter.POSITIONAL_OR_KEYWORD,
+#             annotation=param_annotation,
+#             default=Parameter.empty if param_name in required_params else param_default 
+#         )
+#         is_required = param_name in required_params
+#         if is_required:
+#             required_parameters.append(param)
+#         else :
+#             optional_parameters.append(param)
+#     return required_parameters + optional_parameters
+
 def get_signature_format_from_schema_params(
         schema_params
 ):
-    """
-    Converts schema parameters into a list of `Parameter` objects for function signatures.
-
-    Parameters:
-    - schema_params (dict): Contains 'required' (list of names) and 'properties' (name-schema pairs).
-
-    Returns:
-    - List[Parameter]: Signature parameters, with required ones first.
-    """
     required_parameters = []
     optional_parameters = []
 
@@ -188,9 +222,7 @@ def get_signature_format_from_schema_params(
             signature_param_type = pydantic_model_from_param_schema(param_schema)
 
         param_default = param_schema.get('default', fallback_values[param_type])
-        param_annotation = Annotated[signature_param_type, param_schema.get('description', 
-                                                                            param_schema.get('desc',
-                                                                                             param_title))]
+        param_annotation = signature_param_type
         param = Parameter(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
