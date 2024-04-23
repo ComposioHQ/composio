@@ -4,7 +4,7 @@ Lyzr plugin demo.
 
 import os
 
-from composio_lyzr import Action, App, ComposioToolset
+from composio_lyzr import Action, ComposioToolset
 from lyzr_automata import Agent, Task
 from lyzr_automata.ai_models.openai import OpenAIModel
 from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline

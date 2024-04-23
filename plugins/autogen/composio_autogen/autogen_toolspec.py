@@ -93,15 +93,15 @@ def get_signature_format_from_schema_params(schema_params):
                 name=param_name,
                 kind=Parameter.POSITIONAL_OR_KEYWORD,
                 annotation=param_annotation,
-                default=Parameter.empty
-                if param_name in required_params
-                else param_default,
+                default=(
+                    Parameter.empty if param_name in required_params else param_default
+                ),
             )
             if is_required:
                 required_parameters.append(param)
             else:
                 optional_parameters.append(param)
-        except Exception as e:
+        except Exception:
             logger.error(
                 f"Error while processing param {param_name} with schema {param_schema}"
             )
@@ -136,7 +136,7 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if client.is_authenticated() == False:
+        if not client.is_authenticated():
             raise Exception(
                 "User not authenticated. Please authenticate using composio-cli add <app_name>"
             )

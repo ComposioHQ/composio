@@ -1,12 +1,12 @@
 import os
 import types
 from inspect import Parameter, Signature
-from typing import Annotated, List
+from typing import Annotated
 
 from lyzr_automata import Tool
 from pydantic import Field, create_model
 
-from composio import Action, App, ComposioCore, FrameworkEnum
+from composio import Action, ComposioCore, FrameworkEnum
 
 from .pydantic_utils import json_schema_to_model
 
@@ -33,7 +33,7 @@ def pydantic_model_from_param_schema(param_schema):
     optional_fields = {}
     param_title = param_schema["title"].replace(" ", "")
     required_props = param_schema.get("required", [])
-    schema_params_object = param_schema.get("properties", {})
+    schema_params_object = param_schema.get("properties", {})  # noqa: F841
     for prop_name, prop_info in param_schema.get("properties", {}).items():
         prop_type = prop_info["type"]
         prop_title = prop_info["title"].replace(" ", "")
@@ -121,8 +121,10 @@ class ComposioToolset:
             action_schema["parameters"]
         )
         action_signature = Signature(parameters=func_params)
-        placeholder_function = lambda **kwargs: self.client.execute_action(
-            action, kwargs, entity_id=self.entity_id
+        placeholder_function = (
+            lambda **kwargs: self.client.execute_action(  # noqa: E731
+                action, kwargs, entity_id=self.entity_id
+            )
         )
         action_func = types.FunctionType(
             placeholder_function.__code__,
