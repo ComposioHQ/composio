@@ -12,7 +12,12 @@ venv*
 **/__pycache__
 **/*.egg-info
 
+.tox/
+.mypy_cache/
+
 core/build/lib/*
 
 node_modules
 ~
+
+Pipfile.lock
