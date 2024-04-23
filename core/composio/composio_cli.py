@@ -283,11 +283,6 @@ def enable_trigger(args):
             user_input = input(f"{field_title} ({field_description}): ")
             user_inputs[field] = user_input
         
-        app_enum = client.get_action_enum(app_key)
-        if not app_enum:
-            console.print(f"[red]No such app found for {app_key}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]")
-            sys.exit(1)
-        
         connected_account = client.get_connection(app_key)
         if not connected_account:
             console.print(f"[red]No connection found for {app_key}.\nUse the following command to add a connection: [green]composio-cli add {app_key}[/green][/red]")
