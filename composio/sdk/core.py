@@ -55,23 +55,25 @@ class ComposioCore:
                     {"Content-Type": "application/json", "x-api-key": api_key_to_use}
                 )
                 self.sdk = Composio(api_key=api_key_to_use, base_url=base_url)
-                if framework is not None and __IS_FIRST_TIME__ == True:
+                if framework is not None and __IS_FIRST_TIME__:
                     try:
                         git_info = get_git_user_info()
                         self.http_client.post(
                             f"{self.base_url}/v1/client/auth/track",
                             json={
                                 "framework": self.framework.value,
-                                "user_git_user_info": {
-                                    "name": git_info.name,
-                                    "email": git_info.email,
-                                }
-                                if git_info.name and git_info.email
-                                else None,
+                                "user_git_user_info": (
+                                    {
+                                        "name": git_info.name,
+                                        "email": git_info.email,
+                                    }
+                                    if git_info.name and git_info.email
+                                    else None
+                                ),
                             },
                         )
                         __IS_FIRST_TIME__ = False
-                    except:
+                    except Exception:  # TODO: Explicit error handling
                         pass
 
     def get_authenticated_user(self):
