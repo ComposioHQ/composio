@@ -277,9 +277,15 @@ class Composio:
         return resp.json()
 
     def get_list_of_actions(
-        self, apps: list[App] = None, actions: list[Action] = None
+        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None
     ) -> list:
-        if apps is None or len(apps) == 0:
+        if use_case is not None:
+            if len(apps)!=1:
+                raise ValueError("Use case should be provided with exactly one app")
+            app_unique_ids = [app.value for app in apps]
+            print(f"Base URL: {self.base_url}")
+            resp = self.http_client.get(f"{self.base_url}/v1/actions", params={"appNames": app_unique_ids, "useCase": use_case})
+        elif apps is None or len(apps) == 0:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
             app_unique_ids = [app.value for app in apps]
