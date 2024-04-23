@@ -6,7 +6,7 @@ import subprocess
 
 from typing import Union
 
-def _get_enum_key(name):
+def get_enum_key(name):
     characters_to_replace = [' ', '-', '/', '(', ')', '\\', ':', '"', '\'', '.']
     for char in characters_to_replace:
         name = name.replace(char, '_')
@@ -30,7 +30,7 @@ def generate_enums_given_apps(apps, actions, triggers):
         app_no_auth = app.get('no_auth', False)
         app_actions = [action for action in actions if action["appKey"] == app_key]
         for action in app_actions:
-            enum_name = f'{_get_enum_key(action["name"])}'
+            enum_name = f'{get_enum_key(action["name"])}'
             enum_value = f'("{app_key}", "{action["name"]}", {app_no_auth})'
             enum_content += f'    {enum_name} = {enum_value}\n'
 
@@ -43,7 +43,7 @@ def generate_enums_given_apps(apps, actions, triggers):
         app_key = app['key']
         app_triggers = [trigger for trigger in triggers if trigger["appKey"] == app_key]
         for trigger in app_triggers:
-            enum_name = f'{app_key.upper()}_{_get_enum_key(trigger["display_name"])}'
+            enum_name = f'{app_key.upper()}_{get_enum_key(trigger["display_name"])}'
             enum_value = f'("{app_key}", "{trigger["name"]}")'
             enum_content += f'    {enum_name} = {enum_value}\n'
         # enum_content += f'Actions.{app_name} = {app_name}\n\n'
