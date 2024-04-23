@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 test.describe.serial('Python CLI Core Operations', () => {
     test.skip('add integration for github', async ({browser}) => {
         const { exec } = require('child_process');
-        const command = `DISABLE_COMPOSIO_WEBBROWSER_OPEN=true python3 core/start_cli.py add github`;
+        const command = `DISABLE_COMPOSIO_WEBBROWSER_OPEN=true python3 ./start_cli.py add github`;
         const context = await browser.newContext({ storageState: 'session.json' });
 
         const process = exec(command);
