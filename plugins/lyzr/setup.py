@@ -1,16 +1,9 @@
+"""
+Setup configuration for Composio Lyzr plugin.
+"""
+
+from pathlib import Path
 from setuptools import setup
-import os
-
-
-def get_current_dir():
-    return os.path.dirname(os.path.realpath(__file__))
-
-
-def resolve_paths(*paths):
-    return os.path.join(*paths)
-
-
-readme_path = resolve_paths(get_current_dir(), "README.md")
 
 setup(
     name="composio_lyzr",
@@ -18,7 +11,7 @@ setup(
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Lyzr workflow.",
-    long_description=open(readme_path).read(),
+    long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/SamparkAI/composio_sdk",
     classifiers=[
@@ -26,6 +19,12 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.9,<4",
+    install_requires=[
+        "lyzr-automata>=0.1.3",
+        "pydantic>=2.6.4",
+        "composio_core===0.2.12",
+        "langchain>=0.1.0",
+    ],
     include_package_data=True,
 )
