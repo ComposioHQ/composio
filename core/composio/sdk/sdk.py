@@ -541,8 +541,11 @@ class Entity:
                 time.sleep(0.5)
         return run_object
 
-    def initiate_connection(self, app_name: Union[str, App], redirect_url: str = None):
-        integration = self.client.get_default_integration(app_name)
+    def initiate_connection(self, integration: Integration = None, app_name: Union[str, App] = None, redirect_url: str = None):
+        if not integration and not app_name:
+            raise ValueError("Either 'integration' or 'app_name' must be provided")
+        if not integration:
+            integration = self.client.get_default_integration(app_name)
         return integration.initiate_connection(entity_id=self.entity_id, redirect_url=redirect_url)
 
     def initiate_connection_not_oauth(self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None):
