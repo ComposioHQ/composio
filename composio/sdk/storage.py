@@ -9,7 +9,7 @@ composio_path = os.path.join(Path.home(), ".composio")
 if not os.path.exists(composio_path):
     # If it doesn't exist, create it
     os.makedirs(composio_path)
-    print(f"Saving auth data")
+    print("Saving auth data")
 
 
 def load_user_data():

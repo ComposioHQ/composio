@@ -6,7 +6,6 @@ import os
 import sys
 import webbrowser
 from importlib.metadata import version
-from uuid import getnode as get_mac
 
 import requests
 import termcolor
@@ -168,7 +167,7 @@ def login(args):
         )
         return
 
-    console.print(f"\n[green]> Authenticating...[/green]\n")
+    console.print("\n[green]> Authenticating...[/green]\n")
     try:
         cli_key = client.generate_cli_auth_session()
         base_url = get_base_url()
@@ -178,7 +177,7 @@ def login(args):
             else f"https://hermes-frontend-git-master-composio.vercel.app/?cliKey={cli_key}"
         )
         console.print(
-            f"> Redirecting you to the login page. Please login using the following link:\n"
+            "> Redirecting you to the login page. Please login using the following link:\n"
         )
         console.print(f"[green]{frontend_url}[/green]\n")
         if not should_disable_webbrowser_open:
@@ -192,15 +191,15 @@ def login(args):
                 api_key = session_data.get("apiKey")
                 if api_key:
                     save_api_key(api_key)
-                    console.print(f"\n[green]✔ Authenticated successfully![/green]\n")
+                    console.print("\n[green]✔ Authenticated successfully![/green]\n")
                     break
-            except UnauthorizedAccessException as e:
+            except UnauthorizedAccessException:
                 if attempt == 2:  # Last attempt
                     console.print(
                         "[red]\nAuthentication failed after 3 attempts.[/red]"
                     )
                 else:
-                    console.print(f"[red] Invalid code. Please try again.[/red]")
+                    console.print("[red] Invalid code. Please try again.[/red]")
                 continue  # Exit the loop on unauthorized access
             except Exception as e:
                 console.print(f"[red]Error occurred during authentication: {e}[/red]")
@@ -221,10 +220,10 @@ def whoami(args):
 
 def logout(args):
     client = ComposioCore()
-    console.print(f"\n[green]> Logging out...[/green]\n")
+    console.print("\n[green]> Logging out...[/green]\n")
     try:
         client.logout()
-        console.print(f"\n[green]✔ Logged out successfully![/green]\n")
+        console.print("\n[green]✔ Logged out successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during logging out: {e}[/red]")
         sys.exit(1)
@@ -236,7 +235,7 @@ def update_base_url(args):
     console.print(f"\n[green]> Updating base URL to: {base_url}...[/green]\n")
     try:
         client.set_base_url(base_url)
-        console.print(f"\n[green]✔ Base URL updated successfully![/green]\n")
+        console.print("\n[green]✔ Base URL updated successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during updating base URL: {e}[/red]")
         sys.exit(1)
@@ -244,7 +243,7 @@ def update_base_url(args):
 
 def list_active_triggers(args):
     client = ComposioCore()
-    console.print(f"\n[green]Listing all your active triggers...[/green]\n")
+    console.print("\n[green]Listing all your active triggers...[/green]\n")
     try:
         triggers = client.list_active_triggers()
         if triggers:
@@ -270,7 +269,7 @@ def list_active_triggers(args):
 
         console.print("\n")
         console.print(
-            f"To get more detailed info about trigger, use the command: [green]composio-cli get-trigger <trigger_name>[/green]\n"
+            "To get more detailed info about trigger, use the command: [green]composio-cli get-trigger <trigger_name>[/green]\n"
         )
     except Exception as e:
         console.print(f"[red]Error occurred during listing active triggers: {e}[/red]")
@@ -289,7 +288,7 @@ def get_trigger(args):
             console.print(f"[bold]Trigger Name:[/bold] {trigger[0].triggerName}")
             console.print(f"[bold]Trigger ID:[/bold] {trigger[0].id}")
             console.print(f"[bold]Connection ID:[/bold] {trigger[0].connectionId}")
-            console.print(f"[bold]Connection Config:[/bold]\n")
+            console.print("[bold]Connection Config:[/bold]\n")
             console.print(json.dumps(trigger[0].triggerConfig, indent=4))
             console.print("\n")
             console.print(
@@ -300,7 +299,7 @@ def get_trigger(args):
                 "[red]No trigger found with the specified ID or it's not active.[/red]\n"
             )
             console.print(
-                f"To list all active triggers, use the command: [green]composio-cli list-active-triggers[/green]\n"
+                "To list all active triggers, use the command: [green]composio-cli list-active-triggers[/green]\n"
             )
 
     except Exception as e:
@@ -314,7 +313,7 @@ def disable_trigger(args):
     console.print(f"\n[green]> Disabling trigger: {trigger_id}...[/green]\n")
     try:
         client.disable_trigger(trigger_id)
-        console.print(f"\n[green]✔ Trigger disabled successfully![/green]\n")
+        console.print("\n[green]✔ Trigger disabled successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during disabling trigger: {e}[/red]")
         sys.exit(1)
@@ -336,7 +335,7 @@ def list_triggers(args):
 
         console.print("\n")
         console.print(
-            f"To enable a trigger, use the command: [green] composio-cli enable-trigger <trigger_name>[/green]\n"
+            "To enable a trigger, use the command: [green] composio-cli enable-trigger <trigger_name>[/green]\n"
         )
     except Exception as e:
         console.print(f"[red] Error occurred during listing triggers: {e}[/red]")
@@ -352,7 +351,7 @@ def enable_trigger(args):
             trigger_ids=[trigger_name]
         )
         if not trigger_requirements or len(trigger_requirements) == 0:
-            console.print(f"[red] Trigger not found for the specified app.[/red]")
+            console.print("[red] Trigger not found for the specified app.[/red]")
             sys.exit(1)
         if not isinstance(trigger_requirements, list):
             console.print(
@@ -386,7 +385,7 @@ def enable_trigger(args):
             sys.exit(1)
         # Assuming there's a function to enable the trigger with user inputs
         resp = client.enable_trigger(trigger_name, connected_account.id, user_inputs)
-        console.print(f"\n[green]✔ Trigger enabled successfully![/green]\n")
+        console.print("\n[green]✔ Trigger enabled successfully![/green]\n")
         if "triggerId" in resp:
             console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
     except Exception as e:
@@ -408,7 +407,7 @@ def set_global_trigger_callback(args):
     )
     try:
         client.set_global_trigger(args.callback_url)
-        console.print(f"\n[green]✔ Global trigger callback set successfully![/green]\n")
+        console.print("\n[green]✔ Global trigger callback set successfully![/green]\n")
     except Exception as e:
         console.print(
             f"[red] Error occurred during setting global trigger callback: {e}[/red]"
@@ -418,12 +417,12 @@ def set_global_trigger_callback(args):
 
 def handle_update(args):
     generate_enums()
-    console.print(f"\n[green]✔ Enums updated successfully![/green]\n")
+    console.print("\n[green]✔ Enums updated successfully![/green]\n")
 
 
 def handle_update_beta(args):
     generate_enums_beta()
-    console.print(f"\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
+    console.print("\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
 
 
 def add_integration(args):
@@ -500,7 +499,7 @@ def add_integration(args):
                 f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...",
             )
             spinner.start()
-            connected_account = connection.wait_until_active()
+            connection.wait_until_active()
             spinner.stop()
         print("")
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
