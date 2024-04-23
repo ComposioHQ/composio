@@ -3,7 +3,7 @@ dynamic = ["classifiers", "version", "readme", "authors", "requires-python", "de
 dependencies = [
     "lyzr-automata>=0.1.3",
     "pydantic>=2.6.4",
-    "composio_core===0.2.12",
+    "composio_core===0.2.15",
     "langchain>=0.1.0"
 ]
 name = "composio_lyzr"
