@@ -18,7 +18,3 @@ black = ">=24.1.1"
 isort = ">=5.13.2"
 pytest = "==7.4.2"
 tox = "==4.6.3"
-
-[requires]
-python_version = "3.10"
-python_full_version = "3.10.0"
