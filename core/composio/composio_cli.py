@@ -11,8 +11,9 @@ from uuid import getnode as get_mac
 import termcolor
 from .sdk.storage import get_base_url, save_api_key
 from .sdk.core import ComposioCore, UnauthorizedAccessException
-from .sdk.utils import generate_enums, generate_enums_beta
+from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key
 from rich.table import Table
+from .sdk.enums import App
 
 import webbrowser
 
@@ -106,6 +107,12 @@ def parse_arguments():
     # Generate beta enums command
     generate_enums_beta_parser = subparsers.add_parser('update-beta', help='Update enums including beta for apps and actions')
     generate_enums_beta_parser.set_defaults(func=handle_update_beta)
+
+    # Get actions for use case command
+    get_actions_parser = subparsers.add_parser('get-actions', help='Get actions for a given use case')
+    get_actions_parser.add_argument('app_name', type=str, help='Name of the app to get actions for')
+    get_actions_parser.add_argument('use_case', type=str, help='Name of the use case to get actions for')
+    get_actions_parser.set_defaults(func=get_actions)
 
     return parser.parse_args()
 
@@ -316,6 +323,26 @@ def handle_update(args):
 def handle_update_beta(args):
     generate_enums_beta()
     console.print(f"\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
+
+def get_actions(args):
+    client = ComposioCore()
+    app_name = args.app_name
+    use_case = args.use_case
+    try:
+        for app_enum in App:
+            if app_enum.value == app_name:
+                app = app_enum
+                break 
+        if not app:
+            console.print(f"[red]No such app found for {app_name}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]")
+            sys.exit(1)
+        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case)
+        action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
+        console.print(f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n")
+        console.print(", ".join(action_enums))
+    except Exception as e:
+        console.print(f"[red] Error occurred during getting actions: {e}[/red]")
+        sys.exit(1)
 
 def add_integration(args):
     global should_disable_webbrowser_open
