@@ -2,13 +2,14 @@
 Lyzr plugin demo.
 """
 
-from lyzr_automata import Task, Agent
-from lyzr_automata.ai_models.openai import OpenAIModel
-from lyzr_automata.tasks.task_literals import InputType, OutputType
-from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
-
 import os
-from composio_lyzr import ComposioToolset, App, Action
+
+from composio_lyzr import Action, App, ComposioToolset
+from lyzr_automata import Agent, Task
+from lyzr_automata.ai_models.openai import OpenAIModel
+from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
+from lyzr_automata.tasks.task_literals import InputType, OutputType
+
 
 open_ai_text_completion_model = OpenAIModel(
     api_key=os.environ["OPENAI_API_KEY"],
