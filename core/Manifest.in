@@ -1,2 +1,0 @@
-include requirements.txt
-recursive-include lib *
