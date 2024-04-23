@@ -3,7 +3,9 @@ Setup configuration for Composio Lyzr plugin.
 """
 
 from pathlib import Path
+
 from setuptools import setup
+
 
 setup(
     name="composio_lyzr",

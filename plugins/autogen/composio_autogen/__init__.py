@@ -1,2 +1,3 @@
-from .autogen_toolspec import ComposioToolset, client, ComposioSDK
 from composio import Action, App
+
+from .autogen_toolspec import ComposioSDK, ComposioToolset, client
