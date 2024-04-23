@@ -1,9 +1,11 @@
+import os
+import dotenv
 from lyzr_automata  import  Task, Agent
 from lyzr_automata.ai_models.openai import OpenAIModel
 from lyzr_automata.tasks.task_literals import InputType, OutputType
 from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
 
-import os
+dotenv.load_dotenv()
 from composio_lyzr import ComposioToolset, App, Action
 
 open_ai_text_completion_model = OpenAIModel(
