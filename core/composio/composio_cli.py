@@ -14,8 +14,9 @@ from rich.console import Console
 from rich.table import Table
 
 from .sdk.core import ComposioCore, UnauthorizedAccessException
+from .sdk.enums import App
 from .sdk.storage import get_base_url, save_api_key
-from .sdk.utils import generate_enums, generate_enums_beta
+from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key
 
 console = Console()
 
@@ -76,9 +77,7 @@ def parse_arguments():
         "global-trigger-callback", help="Set a global trigger callback URL"
     )
     global_trigger_callback_parser.add_argument(
-        "callback_url",
-        type=str,
-        help="The URL to be called when a global trigger is activated",
+        "callback_url", type=str, help="The URL to be called when a global trigger is activated"
     )
     global_trigger_callback_parser.set_defaults(func=set_global_trigger_callback)
 
@@ -116,6 +115,12 @@ def parse_arguments():
     )
     generate_enums_beta_parser.set_defaults(func=handle_update_beta)
 
+    # Get actions for use case command
+    get_actions_parser = subparsers.add_parser("get-actions", help="Get actions for a given use case")
+    get_actions_parser.add_argument("app_name", type=str, help="Name of the app to get actions for")
+    get_actions_parser.add_argument("use_case", type=str, help="Name of the use case to get actions for")
+    get_actions_parser.set_defaults(func=get_actions)
+
     return parser.parse_args()
 
 
@@ -136,7 +141,7 @@ def login(args):
             else f"https://hermes-frontend-git-master-composio.vercel.app/?cliKey={cli_key}"
         )
         console.print("> Redirecting you to the login page. Please login using the following link:\n")
-        console.print(f"[green]{frontend_url}[/green]\n")
+        console.print("[green]{frontend_url}[/green]\n")
         if not should_disable_webbrowser_open:
             webbrowser.open(f"{frontend_url}")
 
@@ -208,20 +213,15 @@ def list_active_triggers(args):
             table.add_column("Connection config", style="dim", width=32)
             for trigger in triggers:
                 trigger_config_str = json.dumps(trigger.triggerConfig)
-                table.add_row(
-                    trigger.triggerName,
-                    trigger.id,
-                    trigger.connectionId,
-                    trigger_config_str,
-                )
+                table.add_row(trigger.triggerName, trigger.id, trigger.connectionId, trigger_config_str)
             console.print(table)
         else:
             console.print("[red]No active triggers found for the specified app.[/red]\n")
 
         console.print("\n")
         console.print(
-            "To get more detailed info about trigger, use the command: "
-            "[green]composio-cli get-trigger <trigger_name>[/green]\n"
+            "To get more detailed info about trigger,"
+            "use the command: [green]composio-cli get-trigger <trigger_name>[/green]\n"
         )
     except Exception as e:
         console.print(f"[red]Error occurred during listing active triggers: {e}[/red]")
@@ -300,7 +300,7 @@ def enable_trigger(args):
         if not isinstance(trigger_requirements, list):
             console.print(
                 "[red]Unexpected format for trigger requirements."
-                "Expected a list but got {trigger_requirements}.[/red]"
+                f"Expected a list but got {trigger_requirements}.[/red]"
             )
             sys.exit(1)
         app_key = trigger_requirements[0]["appKey"]
@@ -315,21 +315,11 @@ def enable_trigger(args):
             user_input = input(f"{field_title} ({field_description}): ")
             user_inputs[field] = user_input
 
-        app_enum = client.get_action_enum(app_key)
-        if not app_enum:
-            console.print(
-                f"[red]No such app found for {app_key}."
-                "\nUse the following command to get list of available apps: "
-                "[green]composio-cli add show-apps[/green][/red]"
-            )
-            sys.exit(1)
-
         connected_account = client.get_connection(app_key)
         if not connected_account:
             console.print(
                 f"[red]No connection found for {app_key}."
-                "\nUse the following command to add a connection: "
-                "[green]composio-cli add {app_key}[/green][/red]"
+                f"\nUse the following command to add a connection: [green]composio-cli add {app_key}[/green][/red]"
             )
             sys.exit(1)
         # Assuming there's a function to enable the trigger with user inputs
@@ -368,6 +358,31 @@ def handle_update_beta(args):
     console.print("\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
 
 
+def get_actions(args):
+    client = ComposioCore()
+    app_name = args.app_name
+    use_case = args.use_case
+    try:
+        for app_enum in App:
+            if app_enum.value == app_name:
+                app = app_enum
+                break
+        if not app:
+            console.print(
+                f"[red]No such app found for {app_name}."
+                f"\nUse the following command to get list of available apps:"
+                "[green]composio-cli add show-apps[/green][/red]"
+            )
+            sys.exit(1)
+        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case)
+        action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
+        console.print(f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n")
+        console.print(", ".join(action_enums))
+    except Exception as e:
+        console.print(f"[red] Error occurred during getting actions: {e}[/red]")
+        sys.exit(1)
+
+
 def add_integration(args):
     global should_disable_webbrowser_open
 
@@ -387,18 +402,17 @@ def add_integration(args):
     try:
         app = client.sdk.get_app(args.integration_name)
         auth_schemes = app.get("auth_schemes")
-        auth_schemes_arr = [auth_scheme.get("auth_mode") for auth_scheme in auth_schemes]
-        if len(auth_schemes_arr) > 1 and auth_schemes_arr[0] == "API_KEY":
-            connection = entity.initiate_connection(integration_name.lower())
+        auth_modes_arr = [auth_scheme.get("auth_mode") for auth_scheme in auth_schemes]
+        if len(auth_modes_arr) > 0 and auth_modes_arr[0] in ["API_KEY", "BASIC", "SNOWFLAKE"]:
+            connection = entity.initiate_connection_not_oauth(
+                app_name=integration_name.lower(), auth_mode=auth_modes_arr[0]
+            )
             fields = auth_schemes[0].get("fields")
             fields_input = {}
             for field in fields:
                 if field.get("expected_from_customer", True):
                     if field.get("required", False):
-                        console.print(
-                            f"[green]> Enter {field.get('displayName', field.get('name'))}: [/green]",
-                            end="",
-                        )
+                        console.print(f"[green]> Enter {field.get('displayName', field.get('name'))}: [/green]", end="")
                         value = input() or field.get("default")
                         if not value:  # If a required field is not provided and no default is available
                             console.print(
@@ -407,26 +421,21 @@ def add_integration(args):
                             sys.exit(1)
                     else:
                         console.print(
-                            f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]",
-                            end="",
+                            f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]", end=""
                         )
                         value = input() or field.get("default")
                     fields_input[field.get("name")] = value
-
-            connection.save_user_access_data(fields_input)
+            connection.save_user_access_data(fields_input, entity_id=entity.entity_id)
         else:
             # @TODO: add logic to wait and ask for API_KEY
-            connection = entity.initiate_connection(integration_name.lower())
+            connection = entity.initiate_connection(app_name=integration_name.lower())
             if not should_disable_webbrowser_open:
                 webbrowser.open(connection.redirectUrl)
             print(
                 f"Please authenticate {integration_name} in the browser and come back here."
-                "URL: {connection.redirectUrl}"
+                f"URL: {connection.redirectUrl}"
             )
-            spinner = Spinner(
-                DOTS,
-                f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...",
-            )
+            spinner = Spinner(DOTS, f"[yellow]⚠[/yellow] Waiting for {integration_name} authentication...")
             spinner.start()
             _ = connection.wait_until_active()
             spinner.stop()
@@ -484,7 +493,7 @@ def check_for_updates():
     if latest_pypi_version > installed_version:
         console.print(
             f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available."
-            " Please upgrade.[/yellow]"
+            "Please upgrade.[/yellow]"
         )
         console.print(
             f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.\n"
@@ -520,12 +529,7 @@ def main():
 
     client = ComposioCore()
 
-    if not client.is_authenticated() and args.func.__name__ not in [
-        "logout",
-        "whoami",
-        "login",
-        "update_base_url",
-    ]:
+    if not client.is_authenticated() and args.func.__name__ not in ["logout", "whoami", "login", "update_base_url"]:
         login(args)
         print("\n")
 

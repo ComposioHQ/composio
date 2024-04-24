@@ -104,7 +104,9 @@ class ComposioCore:
             if resp.get("key"):
                 return resp["key"]
 
-        raise Exception("Bad request to cli/generate-cli-session")
+        raise Exception(
+            f"Bad request to cli/generate-cli-session. Status code: {resp.status_code}, response: {resp.text}"
+        )
 
     def verify_cli_auth_session(self, key: str, code: str):
         resp = self.http_client.get(f"{self.base_url}/v1/cli/verify-cli-code?key={key}&code={code}")
@@ -113,7 +115,9 @@ class ComposioCore:
         elif resp.status_code == 401:
             raise UnauthorizedAccessException("UnauthorizedError: Unauthorized access to cli/verify-cli-session")
 
-        raise Exception("Bad request to cli/verify-cli-session")
+        raise Exception(
+            f"Bad request to cli/verify-cli-session. Status code: {resp.status_code}, response: {resp.text}"
+        )
 
     def initiate_connection(self, appName: Union[str, App], integrationId: str = None) -> ConnectionRequest:
         if integrationId is None:
@@ -131,7 +135,7 @@ class ComposioCore:
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk, **resp.json())
 
-        raise Exception("Failed to create connection")
+        raise Exception(f"Failed to create connection. Status code: {resp.status_code}, response: {resp.text}")
 
     def set_global_trigger(self, callback_url: str):
         try:

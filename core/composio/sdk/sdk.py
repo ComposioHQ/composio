@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime
 from enum import Enum
 from typing import Optional, Union
 
@@ -31,7 +32,7 @@ class ConnectionRequest(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
-    def save_user_access_data(self, field_inputs: dict, redirect_url: str = None):
+    def save_user_access_data(self, field_inputs: dict, redirect_url: str = None, entity_id: str = None):
         connected_account_id = self.sdk_instance.get_connected_account(self.connectedAccountId)
         resp = self.sdk_instance.http_client.post(
             f"{self.sdk_instance.base_url}/v1/connectedAccounts",
@@ -39,6 +40,7 @@ class ConnectionRequest(BaseModel):
                 "integrationId": connected_account_id.integrationId,
                 "data": field_inputs,
                 "redirectUri": redirect_url,
+                "userUuid": entity_id,
             },
         )
         return resp.json()
@@ -103,7 +105,7 @@ class ConnectedAccount(BaseModel):
         )
         if resp.status_code == 200:
             return resp.json()
-        raise Exception("Failed to execute action, response: ", resp.text)
+        raise Exception(f"Failed to execute action, status code: {resp.status_code}, response: {resp.text}")
 
     def execute_action(self, action_name: Action, params: dict):
         resp = self._execute_action(action_name, self.id, params)
@@ -129,10 +131,7 @@ class ConnectedAccount(BaseModel):
             else:
                 return actions["items"]
 
-        raise Exception(
-            "Failed to get actions. You might want to run composio-cli update and restart the python notebook"
-            " to reload the updated library."
-        )
+        raise Exception(f"Failed to get actions. Status code: {resp.status_code}, response: {resp.text}")
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -190,7 +189,7 @@ class Integration(BaseModel):
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
 
-        raise Exception("Failed to create connection")
+        raise Exception(f"Failed to create connection. Status code: {resp.status_code}, response: {resp.text}")
 
     def get_required_variables(self):
         return self.expectedInputFields
@@ -221,7 +220,7 @@ class Composio:
             raise Exception(f"Failed to get active triggers, status code: {resp.status_code}, response: {resp.text}")
         if resp.json().get("triggers"):
             return [ActiveTrigger(self, **item) for item in resp.json()["triggers"]]
-        raise Exception(f"Failed to get active triggers, response: {resp.text}")
+        raise Exception(f"Failed to get active triggers, status code: {resp.status_code}, response: {resp.text}")
 
     def disable_trigger(self, trigger_id: str):
         resp = self.http_client.post(f"{self.base_url}/v1/triggers/disable/{trigger_id}")
@@ -279,8 +278,16 @@ class Composio:
             raise Exception(f"Failed to get app {app_name}. Status code: {resp.status_code}, Response: {resp.text}")
         return resp.json()
 
-    def get_list_of_actions(self, apps: list[App] = None, actions: list[Action] = None) -> list:
-        if apps is None or len(apps) == 0:
+    def get_list_of_actions(self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None) -> list:
+        if use_case is not None:
+            if len(apps) != 1:
+                raise ValueError("Use case should be provided with exactly one app")
+            app_unique_ids = [app.value for app in apps]
+            print(f"Base URL: {self.base_url}")
+            resp = self.http_client.get(
+                f"{self.base_url}/v1/actions", params={"appNames": app_unique_ids, "useCase": use_case}
+            )
+        elif apps is None or len(apps) == 0:
             resp = self.http_client.get(f"{self.base_url}/v1/actions")
         else:
             app_unique_ids = [app.value for app in apps]
@@ -330,17 +337,26 @@ class Composio:
             return Integration(self, **resp.json())
         raise Exception(f"Failed to get integration, status code: {resp.status_code}, response: {resp.text}")
 
-    def create_integration(self, app: Union[App, str], use_default=False) -> Integration:
+    def create_integration(
+        self, app: Union[App, str], use_default=False, name: str = None, auth_mode: str = None
+    ) -> Integration:
         if isinstance(app, App):
             app = app.value
         app_details = self.get_app(app)
         app_id = app_details.get("appId")
         if app_id is None:
             raise Exception(f"App {app} does not exist for the account")
-        resp = self.http_client.post(
-            f"{self.base_url}/v1/integrations",
-            json={"appId": app_id, "useComposioAuth": use_default},
-        )
+        req = {"appId": app_id, "useComposioAuth": use_default}
+        if name:
+            req["name"] = name
+        if auth_mode:
+            req["authScheme"] = auth_mode
+            auth_schemes = app_details.get("auth_schemes")
+            for auth_scheme_iter in auth_schemes:
+                if auth_scheme_iter.get("auth_mode") == auth_mode:
+                    fields = auth_scheme_iter.get("fields")
+                    req["authConfig"] = {field.get("name"): "" for field in fields}
+        resp = self.http_client.post(f"{self.base_url}/v1/integrations", json=req)
         if resp.status_code == 200:
             return Integration(self, **resp.json())
 
@@ -419,9 +435,16 @@ class Entity:
         if isinstance(app_name, App):
             app_name = app_name.value
         connected_accounts = self.client.get_connected_accounts(entity_id=self.entity_id, showActiveOnly=True)
+        latest_account = None
+        latest_creation_date = None
         for account in connected_accounts:
             if app_name == account.appUniqueId:
-                return account
+                creation_date = datetime.fromisoformat(account.createdAt.replace("Z", "+00:00"))
+                if latest_account is None or creation_date > latest_creation_date:
+                    latest_account = account
+                    latest_creation_date = creation_date
+        if latest_account:
+            return latest_account
 
     def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
         connected_account = self.get_connection(app_name)
@@ -501,6 +524,18 @@ class Entity:
                 time.sleep(0.5)
         return run_object
 
-    def initiate_connection(self, app_name: Union[str, App], redirect_url: str = None):
-        integration = self.client.get_default_integration(app_name)
+    def initiate_connection(
+        self, integration: Integration = None, app_name: Union[str, App] = None, redirect_url: str = None
+    ):
+        if not integration and not app_name:
+            raise ValueError("Either 'integration' or 'app_name' must be provided")
+        if not integration:
+            integration = self.client.get_default_integration(app_name)
+        return integration.initiate_connection(entity_id=self.entity_id, redirect_url=redirect_url)
+
+    def initiate_connection_not_oauth(self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None):
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        integration = self.client.create_integration(app_name, name=f"integration_{timestamp}", auth_mode=auth_mode)
         return integration.initiate_connection(entity_id=self.entity_id, redirect_url=redirect_url)
