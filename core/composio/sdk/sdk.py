@@ -105,7 +105,7 @@ class ConnectedAccount(BaseModel):
         )
         if resp.status_code == 200:
             return resp.json()
-        raise Exception("Failed to execute action, response: ", resp.text)
+        raise Exception(f"Failed to execute action, status code: {resp.status_code}, response: {resp.text}")
 
     def execute_action(self, action_name: Action, params: dict):
         resp = self._execute_action(action_name, self.id, params)
@@ -133,7 +133,7 @@ class ConnectedAccount(BaseModel):
             else:
                 return actions["items"]
             
-        raise Exception("Failed to get actions. You might want to run composio-cli update and restart the python notebook to reload the updated library.")
+        raise Exception(f"Failed to get actions. Status code: {resp.status_code}, response: {resp.text}")
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -195,7 +195,7 @@ class Integration(BaseModel):
         if resp.status_code == 200:
             return ConnectionRequest(self.sdk_instance, **resp.json())
 
-        raise Exception("Failed to create connection")
+        raise Exception(f"Failed to create connection. Status code: {resp.status_code}, response: {resp.text}")
 
     def get_required_variables(self):
         return self.expectedInputFields
@@ -229,7 +229,7 @@ class Composio:
             raise Exception(f"Failed to get active triggers, status code: {resp.status_code}, response: {resp.text}")
         if resp.json().get("triggers"):
             return [ActiveTrigger(self, **item) for item in resp.json()["triggers"]]
-        raise Exception(f"Failed to get active triggers, response: {resp.text}")
+        raise Exception(f"Failed to get active triggers, status code: {resp.status_code}, response: {resp.text}")
     
     def disable_trigger(self, trigger_id: str):
         resp = self.http_client.post(f"{self.base_url}/v1/triggers/disable/{trigger_id}")
