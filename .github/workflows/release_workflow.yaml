@@ -31,7 +31,7 @@ jobs:
           
       - name: Extract version from tag
         id: extract_version
-        run: echo "::set-output name=package_version::${GITHUB_REF#refs/tags/v}"
+        run: echo "::set-output name=package_version::0.2.16"
 
   build-and-publish:
     needs: setup
@@ -59,6 +59,10 @@ jobs:
           sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}/" pyproject.toml
           sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}/" requirements.txt
           echo "Updated version in setup.py, pyproject.toml, and requirements.txt"
+          echo "<----- Pyproject.toml ----->"
+          cat pyproject.toml
+          echo "<----- Requirements.txt ----->"
+          cat requirements.txt
           cd ..
       
       - name: Build and install package locally
