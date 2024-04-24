@@ -11,10 +11,11 @@ def resolve_paths(*paths):
 
 
 readme_path = resolve_paths(get_current_dir(), "README.md")
+version = os.environ.get("RELEASE_VERSION", "0.2.15")
 
 setup(
     name="composio_langchain",
-    version="0.2.16",
+    version=version,
     author="Karan",
     author_email="karan@composio.dev",
     description="Use Composio to get an array of tools with your LangChain agent.",
