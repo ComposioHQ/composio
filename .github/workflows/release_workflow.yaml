@@ -56,9 +56,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           cd ${{ matrix.package }}
-          sed -i "s/composio_core===.*/composio_core===${{ needs.setup.outputs.package_version }}\"/" pyproject.toml
+          sed -i "s/composio_core===.*/composio_core===${{ needs.setup.outputs.package_version }}\",/" pyproject.toml
           sed -i "s/composio_core===.*/composio_core===${{ needs.setup.outputs.package_version }}\"/" requirements.txt
-          sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}\"/" pyproject.toml
+          sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}\",/" pyproject.toml
           sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}\"/" requirements.txt
           echo "Updated version in setup.py, pyproject.toml, and requirements.txt"
           echo "<----- Pyproject.toml ----->"
