@@ -80,6 +80,7 @@ jobs:
       - name: Publish package
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
+          pip install twine
           cd ${{ matrix.package }} && twine upload dist/* && cd ../
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
