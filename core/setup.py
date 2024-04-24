@@ -17,9 +17,11 @@ class InstallCommandMiddleware(install):
     def run(self):
         install.run(self)
 
+version = os.environ.get("RELEASE_VERSION", "0.2.15")
+
 setup(
     name="composio_core",
-    version="0.2.16",
+    version=version,
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

@@ -1,0 +1,79 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.extract_version.outputs.package_version }}
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine build
+          pip install -r core/requirements.txt
+          pip install -r langchain/requirements.txt
+          pip install -r crew_ai/requirements.txt
+          pip install -r lyzr/requirements.txt
+          
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "::set-output name=package_version::${GITHUB_REF#refs/tags/v}"
+
+  build-and-publish:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [core, langchain, crew_ai, lyzr]
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: pip install -r ${{ matrix.package }}/requirements.txt
+      
+      - name: Update version and dependencies
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd ${{ matrix.package }}
+          sed -i "s/composio_core===.*/composio_core===${{ needs.setup.outputs.package_version }}/" pyproject.toml
+          sed -i "s/composio_core===.*/composio_core===${{ needs.setup.outputs.package_version }}/" requirements.txt
+          sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}/" pyproject.toml
+          sed -i "s/composio_langchain===.*/composio_langchain===${{ needs.setup.outputs.package_version }}/" requirements.txt
+          echo "Updated version in setup.py, pyproject.toml, and requirements.txt"
+          cd ..
+      
+      - name: Build and install package locally
+        run: |
+          cd ${{ matrix.package }}
+          python -m build
+          pip install -e .
+          cd ..
+        env:
+          RELEASE_VERSION: ${{ needs.setup.outputs.package_version }}
+      
+      - name: Publish package
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd ${{ matrix.package }} && twine upload dist/* && cd ../
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
