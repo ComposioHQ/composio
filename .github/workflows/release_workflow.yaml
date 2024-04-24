@@ -68,6 +68,7 @@ jobs:
       - name: Build and install package locally
         run: |
           cd ${{ matrix.package }}
+          pip install build
           python -m build
           pip install -e .
           cd ..
