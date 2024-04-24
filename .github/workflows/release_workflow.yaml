@@ -37,9 +37,10 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
+      fail-fast: true
       matrix:
         package: [core, langchain, autogen, crew_ai, lyzr]
-        max-parallel: 1
 
     steps:
       - uses: actions/checkout@v2
