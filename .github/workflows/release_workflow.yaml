@@ -51,7 +51,7 @@ jobs:
         run: pip install -r ${{ matrix.package }}/requirements.txt
       
       - name: Update version and dependencies
-        if: startsWith(github.ref, 'refs/tags/v')
+        # if: startsWith(github.ref, 'refs/tags/v')
         run: |
           cd ${{ matrix.package }}
           sed -i "s/composio_core===.*/composio_core===${{ needs.setup.outputs.package_version }}/" pyproject.toml
