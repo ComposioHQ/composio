@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
-      fail-fast: true
+      # fail-fast: true
       matrix:
         package: [core, langchain, autogen, crew_ai, lyzr]
 
