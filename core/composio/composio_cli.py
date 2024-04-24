@@ -378,7 +378,7 @@ def add_integration(args):
             connection.save_user_access_data(fields_input, entity_id=entity.entity_id)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
-            connection = entity.initiate_connection(integration_name.lower())
+            connection = entity.initiate_connection(app_name=integration_name.lower())
             if not should_disable_webbrowser_open:
                 webbrowser.open(connection.redirectUrl)
             print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
