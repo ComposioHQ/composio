@@ -360,7 +360,7 @@ def add_integration(args):
         auth_schemes = app.get('auth_schemes')
         auth_modes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
         if len(auth_modes_arr) > 0 and auth_modes_arr[0] in ['API_KEY', 'BASIC', 'SNOWFLAKE']:
-            connection = entity.initiate_connection_not_oauth(integration_name.lower(), auth_mode=auth_modes_arr[0])
+            connection = entity.initiate_connection_not_oauth(app_name=integration_name.lower(), auth_mode=auth_modes_arr[0])
             fields = auth_schemes[0].get('fields')
             fields_input = {}
             for field in fields:
