@@ -12,7 +12,7 @@ test.describe('Python CLI Operations', () => {
 
     commands.forEach(({ command, description }) => {
       test(description, async () => {
-        const output = execSync(`python3 core/start_cli.py ${command}`).toString();
+        const output = execSync(`python3 ./start_cli.py ${command}`).toString();
         await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log(description + ':', output);
         expect(output).not.toBeNull();
