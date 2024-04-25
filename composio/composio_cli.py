@@ -11,8 +11,9 @@ from uuid import getnode as get_mac
 import termcolor
 from .sdk.storage import get_base_url, save_api_key
 from .sdk.core import ComposioCore, UnauthorizedAccessException
-from .sdk.utils import generate_enums, generate_enums_beta
+from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key
 from rich.table import Table
+from .sdk.enums import App
 
 import webbrowser
 
@@ -106,6 +107,12 @@ def parse_arguments():
     # Generate beta enums command
     generate_enums_beta_parser = subparsers.add_parser('update-beta', help='Update enums including beta for apps and actions')
     generate_enums_beta_parser.set_defaults(func=handle_update_beta)
+
+    # Get actions for use case command
+    get_actions_parser = subparsers.add_parser('get-actions', help='Get actions for a given use case')
+    get_actions_parser.add_argument('app_name', type=str, help='Name of the app to get actions for')
+    get_actions_parser.add_argument('use_case', type=str, help='Name of the use case to get actions for')
+    get_actions_parser.set_defaults(func=get_actions)
 
     return parser.parse_args()
 
@@ -276,11 +283,6 @@ def enable_trigger(args):
             user_input = input(f"{field_title} ({field_description}): ")
             user_inputs[field] = user_input
         
-        app_enum = client.get_action_enum(app_key)
-        if not app_enum:
-            console.print(f"[red]No such app found for {app_key}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]")
-            sys.exit(1)
-        
         connected_account = client.get_connection(app_key)
         if not connected_account:
             console.print(f"[red]No connection found for {app_key}.\nUse the following command to add a connection: [green]composio-cli add {app_key}[/green][/red]")
@@ -317,6 +319,26 @@ def handle_update_beta(args):
     generate_enums_beta()
     console.print(f"\n[green]✔ Enums(including Beta) updated successfully![/green]\n")
 
+def get_actions(args):
+    client = ComposioCore()
+    app_name = args.app_name
+    use_case = args.use_case
+    try:
+        for app_enum in App:
+            if app_enum.value == app_name:
+                app = app_enum
+                break 
+        if not app:
+            console.print(f"[red]No such app found for {app_name}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]")
+            sys.exit(1)
+        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case)
+        action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
+        console.print(f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n")
+        console.print(", ".join(action_enums))
+    except Exception as e:
+        console.print(f"[red] Error occurred during getting actions: {e}[/red]")
+        sys.exit(1)
+
 def add_integration(args):
     global should_disable_webbrowser_open
 
@@ -338,7 +360,7 @@ def add_integration(args):
         auth_schemes = app.get('auth_schemes')
         auth_modes_arr = [auth_scheme.get('auth_mode') for auth_scheme in auth_schemes]
         if len(auth_modes_arr) > 0 and auth_modes_arr[0] in ['API_KEY', 'BASIC', 'SNOWFLAKE']:
-            connection = entity.initiate_connection_not_oauth(integration_name.lower(), auth_mode=auth_modes_arr[0])
+            connection = entity.initiate_connection_not_oauth(app_name=integration_name.lower(), auth_mode=auth_modes_arr[0])
             fields = auth_schemes[0].get('fields')
             fields_input = {}
             for field in fields:
@@ -356,7 +378,7 @@ def add_integration(args):
             connection.save_user_access_data(fields_input, entity_id=entity.entity_id)
         else: 
             # @TODO: add logic to wait and ask for API_KEY
-            connection = entity.initiate_connection(integration_name.lower())
+            connection = entity.initiate_connection(app_name=integration_name.lower())
             if not should_disable_webbrowser_open:
                 webbrowser.open(connection.redirectUrl)
             print(f"Please authenticate {integration_name} in the browser and come back here. URL: {connection.redirectUrl}")
