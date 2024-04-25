@@ -436,6 +436,8 @@ def check_for_updates():
         console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.\n")
 
 def print_intro():
+        path = os.path.dirname(os.path.realpath(__file__))
+        console.print(f"> Path: {path}")
         text = termcolor.colored('Composio', 'white', attrs=['bold'])  
         aiPlatformText = termcolor.colored('100+', 'green', attrs=['bold'])
         pinkEmojiText = termcolor.colored('hello@composio.dev', 'magenta', attrs=['bold'])
