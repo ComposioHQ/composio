@@ -1,5 +1,5 @@
-from inspect import Parameter, Signature
-from typing import Annotated, Any, Dict, List, Optional, Type
+from inspect import Parameter
+from typing import Any, Dict, List, Optional, Type
 
 from pydantic.v1 import BaseModel, Field, create_model
 
@@ -225,7 +225,7 @@ def get_signature_format_from_schema_params(schema_params):
     schema_params_object = schema_params.get("properties", {})
     for param_name, param_schema in schema_params_object.items():
         param_type = param_schema["type"]
-        param_title = param_schema["title"].replace(" ", "")
+        param_title = param_schema["title"].replace(" ", "")  # noqa: F841
 
         if param_type in schema_type_python_type_dict:
             signature_param_type = schema_type_python_type_dict[param_type]

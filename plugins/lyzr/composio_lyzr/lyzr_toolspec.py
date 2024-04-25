@@ -35,8 +35,10 @@ class ComposioToolset:
             action_schema["parameters"]
         )
         action_signature = Signature(parameters=func_params)
-        placeholder_function = lambda **kwargs: self.client.execute_action(
-            action, kwargs, entity_id=self.entity_id
+        placeholder_function = (
+            lambda **kwargs: self.client.execute_action(  # noqa: E731
+                action, kwargs, entity_id=self.entity_id
+            )
         )
         action_func = types.FunctionType(
             placeholder_function.__code__,

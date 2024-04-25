@@ -12,7 +12,7 @@ from lyzr_automata.tasks.task_literals import InputType, OutputType
 
 
 dotenv.load_dotenv()
-from composio_lyzr import Action, App, ComposioToolset
+from composio_lyzr import Action, ComposioToolset  # noqa: E402
 
 
 open_ai_text_completion_model = OpenAIModel(

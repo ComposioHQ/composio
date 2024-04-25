@@ -2,7 +2,7 @@ import json
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import requests
 from openai import Client
@@ -603,14 +603,14 @@ class Entity:
             or run_object.status == "in_progress"
             or run_object.status == "requires_action"
         ):
-            ## Look here
+            # Look here
             if run_object.status == "requires_action":
                 run_object = client.beta.threads.runs.submit_tool_outputs(
                     thread_id=thread_object.id,
                     run_id=run_object.id,
                     tool_outputs=self.handle_run_tool_calls(
                         run_object, verbose=verbose
-                    ),  ## all tool calls executed
+                    ),  # all tool calls executed
                 )
             else:
                 run_object = client.beta.threads.runs.retrieve(
