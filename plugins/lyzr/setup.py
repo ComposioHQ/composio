@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 from setuptools import setup
-import os
 
 
 version = os.environ.get("RELEASE_VERSION", "0.2.15")

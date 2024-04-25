@@ -3,8 +3,9 @@ Setup configuration for Composio CrewAI plugin
 """
 
 import os
-from setuptools import setup
 from pathlib import Path
+
+from setuptools import setup
 
 
 version = os.environ.get("RELEASE_VERSION", "0.2.15")
