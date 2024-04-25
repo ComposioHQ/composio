@@ -1,0 +1,14 @@
+[MASTER]
+ignore-patterns=
+ignore=
+
+[MESSAGES CONTROL]
+disable=C0114,C0115,C0116,W0719
+
+# Discuss what messages to disable
+# C0114: missing-module-docstring
+# C0115: missing-class-docstring
+# C0116: missing-function-docstring
+
+[IMPORTS]
+ignored-modules=
