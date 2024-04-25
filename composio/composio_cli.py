@@ -19,6 +19,8 @@ from .sdk.storage import get_base_url, save_api_key
 from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key
 
 
+# pylint: disable=unused-argument, too-many-locals, too-many-statements
+
 console = Console()
 
 should_disable_webbrowser_open = (
@@ -228,7 +230,6 @@ def whoami(args):
     client = ComposioCore()
     user_info = client.get_authenticated_user()
     console.print(f"- API Key: [green]{user_info['api_key']}[/green]\n")
-    return
 
 
 def logout(args):
@@ -580,7 +581,7 @@ def check_for_updates():
         installed_version = "dev"
         console.print(f"[red]Error fetching Composio Core version: {e}[/red]")
 
-    response = requests.get("https://pypi.org/pypi/composio_core/json")
+    response = requests.get("https://pypi.org/pypi/composio_core/json", timeout=120)
     latest_pypi_version = response.json()["info"]["version"]
 
     console.print(f"\n Version: {installed_version}")

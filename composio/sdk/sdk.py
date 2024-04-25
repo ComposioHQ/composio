@@ -87,7 +87,9 @@ class ActiveTrigger(BaseModel):
     triggerName: str
     triggerConfig: dict
 
-    def __init__(self, sdk_instance: "Composio", **data):
+    def __init__(  # pylint: disable=unused-argument
+        self, sdk_instance: "Composio", **data
+    ):
         super().__init__(**data)
 
 
@@ -144,8 +146,7 @@ class ConnectedAccount(BaseModel):
                     }
                     for action in actions["items"]
                 ]
-            else:
-                return actions["items"]
+            return actions["items"]
 
         raise Exception(
             f"Failed to get actions. Status code: {resp.status_code}, response: {resp.text}"
@@ -195,14 +196,17 @@ class Integration(BaseModel):
         self.sdk_instance = sdk_instance
 
     def initiate_connection(
-        self, entity_id: str = None, params: dict = {}, redirect_url: str = None
+        self,
+        entity_id: str = None,
+        params: Optional[dict] = None,
+        redirect_url: str = None,
     ) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(
             f"{self.sdk_instance.base_url}/v1/connectedAccounts",
             json={
                 "integrationId": self.id,
                 "userUuid": entity_id,
-                "data": params,
+                "data": params or {},
                 "redirectUri": redirect_url,
             },
         )
@@ -350,8 +354,7 @@ class Composio:
                     if item["name"] in action_names_list:
                         filtered_actions.append(item)
                 return filtered_actions
-            else:
-                return actions_response["items"]
+            return actions_response["items"]
 
         raise Exception(
             f"Failed to get actions, status code: {resp.status_code}, response: {resp.text}."
@@ -533,12 +536,13 @@ class Entity:
                     latest_creation_date = creation_date
         if latest_account:
             return latest_account
+        raise ValueError(f"Account not found for app {app_name}")
 
     def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
         connected_account = self.get_connection(app_name)
         return connected_account is not None
 
-    def handle_tools_calls(
+    def handle_tools_calls(  # pylint: disable=unused-argument
         self, tool_calls: ChatCompletion, verbose: bool = False
     ) -> list[any]:
         output = []
@@ -598,11 +602,7 @@ class Entity:
     ):
         run_object = run
         thread_object = thread
-        while (
-            run_object.status == "queued"
-            or run_object.status == "in_progress"
-            or run_object.status == "requires_action"
-        ):
+        while run_object.status in ("queued", "in_progress", "requires_action"):
             # Look here
             if run_object.status == "requires_action":
                 run_object = client.beta.threads.runs.submit_tool_outputs(
@@ -637,8 +637,6 @@ class Entity:
     def initiate_connection_not_oauth(
         self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None
     ):
-        from datetime import datetime
-
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         integration = self.client.create_integration(
             app_name, name=f"integration_{timestamp}", auth_mode=auth_mode
