@@ -1,22 +1,23 @@
-from typing import List, Annotated
-from inspect import Parameter, Signature
-from pydantic.v1 import BaseModel, Field, create_model
+from inspect import Parameter
 from typing import Any, Dict, List, Optional, Type
 
+from pydantic.v1 import BaseModel, Field, create_model
+
+
 schema_type_python_type_dict = {
-    'string': str,
-    'number': float,
-    'boolean': bool,
-    'integer': int,
+    "string": str,
+    "number": float,
+    "boolean": bool,
+    "integer": int,
 }
 
 fallback_values = {
-    'string': "",
-    'number': 0.0,
-    'integer': 0.0,
-    'boolean': False,
-    'object': {},
-    'array': []
+    "string": "",
+    "number": 0.0,
+    "integer": 0.0,
+    "boolean": False,
+    "object": {},
+    "array": [],
 }
 
 
@@ -32,19 +33,21 @@ def json_schema_to_model(json_schema: Dict[str, Any]) -> Type[BaseModel]:
     """
 
     # Extract the model name from the schema title.
-    model_name = json_schema.get('title')
+    model_name = json_schema.get("title")
 
     # Extract the field definitions from the schema properties.
     field_definitions = {
-        name: json_schema_to_pydantic_field(name, prop, json_schema.get('required', []) )
-        for name, prop in json_schema.get('properties', {}).items()
+        name: json_schema_to_pydantic_field(name, prop, json_schema.get("required", []))
+        for name, prop in json_schema.get("properties", {}).items()
     }
 
     # Create the BaseModel class using create_model().
     return create_model(model_name, **field_definitions)
 
 
-def json_schema_to_pydantic_field(name: str, json_schema: Dict[str, Any], required: List[str]) -> Any:
+def json_schema_to_pydantic_field(
+    name: str, json_schema: Dict[str, Any], required: List[str]
+) -> Any:
     """
     Converts a JSON schema property to a Pydantic field definition.
 
@@ -60,17 +63,26 @@ def json_schema_to_pydantic_field(name: str, json_schema: Dict[str, Any], requir
     type_ = json_schema_to_pydantic_type(json_schema)
 
     # Get the field description.
-    description = json_schema.get('description')
+    description = json_schema.get("description")
 
     # Get the field examples.
-    examples = json_schema.get('examples', [])
+    examples = json_schema.get("examples", [])
 
     # Create a Field object with the type, description, and examples.
     # The 'required' flag will be set later when creating the model.
-    return (type_, Field(description=description, examples=examples, default=... if name in required else None))
+    return (
+        type_,
+        Field(
+            description=description,
+            examples=examples,
+            default=... if name in required else None,
+        ),
+    )
 
 
-def json_schema_to_pydantic_type(json_schema: Dict[str, Any]) -> Any:
+def json_schema_to_pydantic_type(  # pylint: disable=too-many-return-statements
+    json_schema: Dict[str, Any]
+) -> Any:
     """
     Converts a JSON schema type to a Pydantic type.
 
@@ -81,37 +93,40 @@ def json_schema_to_pydantic_type(json_schema: Dict[str, Any]) -> Any:
         A Pydantic type.
     """
 
-    type_ = json_schema.get('type')
+    type_ = json_schema.get("type")
 
-    if type_ == 'string':
+    if type_ == "string":
         return str
-    elif type_ == 'integer':
+
+    if type_ == "integer":
         return int
-    elif type_ == 'number':
+
+    if type_ == "number":
         return float
-    elif type_ == 'boolean':
+
+    if type_ == "boolean":
         return bool
-    elif type_ == 'array':
-        items_schema = json_schema.get('items')
+
+    if type_ == "array":
+        items_schema = json_schema.get("items")
         if items_schema:
             item_type = json_schema_to_pydantic_type(items_schema)
             return List[item_type]
-        else:
-            return List
-    elif type_ == 'object':
+        return List
+
+    if type_ == "object":
         # Handle nested models.
-        properties = json_schema.get('properties')
+        properties = json_schema.get("properties")
         if properties:
             nested_model = json_schema_to_model(json_schema)
             return nested_model
-        else:
-            return Dict
-    elif type_ == 'null':
+        return Dict
+
+    if type_ == "null":
         return Optional[Any]  # Use Optional[Any] for nullable fields
-    else:
-        raise ValueError(f'Unsupported JSON schema type: {type_}')
-    
-    
+
+    raise ValueError(f"Unsupported JSON schema type: {type_}")
+
 
 def pydantic_model_from_param_schema(param_schema):
     """
@@ -132,35 +147,38 @@ def pydantic_model_from_param_schema(param_schema):
     """
     required_fields = {}
     optional_fields = {}
-    param_title = param_schema['title'].replace(" ", "")
-    required_props = param_schema.get('required', [])
+    param_title = param_schema["title"].replace(" ", "")
+    required_props = param_schema.get("required", [])
     # schema_params_object = param_schema.get('properties', {})
-    for prop_name, prop_info in param_schema.get('properties', {}).items():
+    for prop_name, prop_info in param_schema.get("properties", {}).items():
         prop_type = prop_info["type"]
-        prop_title = prop_info['title'].replace(" ", "")
-        prop_default = prop_info.get('default', fallback_values[prop_type])
+        prop_title = prop_info["title"].replace(" ", "")
+        prop_default = prop_info.get("default", fallback_values[prop_type])
         if prop_type in schema_type_python_type_dict:
             signature_prop_type = schema_type_python_type_dict[prop_type]
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 
         if prop_name in required_props:
-            required_fields[prop_name] = (signature_prop_type, 
-                                Field(..., 
-                                    title=prop_title, 
-                                    description=prop_info.get('description', 
-                                                              prop_info.get('desc', 
-                                                                             prop_title))
-                                    ))
+            required_fields[prop_name] = (
+                signature_prop_type,
+                Field(
+                    ...,
+                    title=prop_title,
+                    description=prop_info.get(
+                        "description", prop_info.get("desc", prop_title)
+                    ),
+                ),
+            )
         else:
-            optional_fields[prop_name] = (signature_prop_type, 
-                                Field(title=prop_title, 
-                                    default=prop_default
-                                    ))
+            optional_fields[prop_name] = (
+                signature_prop_type,
+                Field(title=prop_title, default=prop_default),
+            )
     fieldModel = create_model(param_title, **required_fields, **optional_fields)
     return fieldModel
-        
-        
+
+
 # def get_signature_format_from_schema_params(
 #         schema_params
 # ):
@@ -188,14 +206,14 @@ def pydantic_model_from_param_schema(param_schema):
 #             signature_param_type = pydantic_model_from_param_schema(param_schema)
 
 #         param_default = param_schema.get('default', fallback_values[param_type])
-#         param_annotation = Annotated[signature_param_type, param_schema.get('description', 
+#         param_annotation = Annotated[signature_param_type, param_schema.get('description',
 #                                                                             param_schema.get('desc',
 #                                                                                              param_title))]
 #         param = Parameter(
 #             name=param_name,
 #             kind=Parameter.POSITIONAL_OR_KEYWORD,
 #             annotation=param_annotation,
-#             default=Parameter.empty if param_name in required_params else param_default 
+#             default=Parameter.empty if param_name in required_params else param_default
 #         )
 #         is_required = param_name in required_params
 #         if is_required:
@@ -204,34 +222,33 @@ def pydantic_model_from_param_schema(param_schema):
 #             optional_parameters.append(param)
 #     return required_parameters + optional_parameters
 
-def get_signature_format_from_schema_params(
-        schema_params
-):
+
+def get_signature_format_from_schema_params(schema_params):
     required_parameters = []
     optional_parameters = []
 
-    required_params = schema_params.get('required', [])
-    schema_params_object = schema_params.get('properties', {})
+    required_params = schema_params.get("required", [])
+    schema_params_object = schema_params.get("properties", {})
     for param_name, param_schema in schema_params_object.items():
-        param_type = param_schema['type']
-        param_title = param_schema['title'].replace(" ", "")
+        param_type = param_schema["type"]
+        param_title = param_schema["title"].replace(" ", "")  # noqa: F841
 
         if param_type in schema_type_python_type_dict:
             signature_param_type = schema_type_python_type_dict[param_type]
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
 
-        param_default = param_schema.get('default', fallback_values[param_type])
+        param_default = param_schema.get("default", fallback_values[param_type])
         param_annotation = signature_param_type
         param = Parameter(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=param_annotation,
-            default=Parameter.empty if param_name in required_params else param_default 
+            default=Parameter.empty if param_name in required_params else param_default,
         )
         is_required = param_name in required_params
         if is_required:
             required_parameters.append(param)
-        else :
+        else:
             optional_parameters.append(param)
     return required_parameters + optional_parameters

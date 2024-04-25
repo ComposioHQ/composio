@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class App(Enum):
     ASANA = "asana"
     LINEAR = "linear"
@@ -162,6 +163,7 @@ class App(Enum):
     ATTIO = "attio"
     EVENTBRITE = "eventbrite"
 
+
 class Action(Enum):
     def __init__(self, service, action, no_auth):
         self.service = service
@@ -176,10 +178,18 @@ class Action(Enum):
     GMAIL_SEND_EMAIL = ("gmail", "gmail_send_email", False)
     GMAIL_CREATE_EMAIL_DRAFT = ("gmail", "gmail_create_email_draft", False)
     GMAIL_FIND_EMAIL_ID = ("gmail", "gmail_find_email_id", False)
-    GMAIL_FETCH_LAST_THREE_MESSAGES = ("gmail", "gmail_fetch_last_three_messages", False)
+    GMAIL_FETCH_LAST_THREE_MESSAGES = (
+        "gmail",
+        "gmail_fetch_last_three_messages",
+        False,
+    )
     GMAIL_ADD_LABEL_TO_EMAIL = ("gmail", "gmail_add_label_to_email", False)
     GMAIL_LIST_LABELS = ("gmail", "gmail_list_labels", False)
-    GMAIL_FETCH_MESSAGE_BY_THREAD_ID = ("gmail", "gmail_fetch_message_by_thread_id", False)
+    GMAIL_FETCH_MESSAGE_BY_THREAD_ID = (
+        "gmail",
+        "gmail_fetch_message_by_thread_id",
+        False,
+    )
     GMAIL_REPLY_TO_THREAD = ("gmail", "gmail_reply_to_thread", False)
     GMAIL_FETCH_EMAILS_WITH_LABEL = ("gmail", "gmail_fetch_emails_with_label", False)
     SLACK_SEND_SLACK_MESSAGE = ("slack", "slack_send_slack_message", False)
@@ -197,31 +207,83 @@ class Action(Enum):
     CLICKUP_CREATE_FOLDER = ("clickup", "clickup_create_folder", False)
     CLICKUP_GET_FOLDERS = ("clickup", "clickup_get_folders", False)
     NOTION_GET_ABOUT_ME = ("notion", "notion_get_about_me", False)
-    NOTION_ADD_NOTION_PAGE_CHILDREN = ("notion", "notion_add_notion_page_children", False)
+    NOTION_ADD_NOTION_PAGE_CHILDREN = (
+        "notion",
+        "notion_add_notion_page_children",
+        False,
+    )
     NOTION_ARCHIVE_NOTION_PAGE = ("notion", "notion_archive_notion_page", False)
     NOTION_CREATE_NOTION_DATABASE = ("notion", "notion_create_notion_database", False)
     NOTION_CREATE_PAGE_COMMENT = ("notion", "notion_create_page_comment", False)
     NOTION_CREATE_NOTION_PAGE = ("notion", "notion_create_notion_page", False)
-    NOTION_DELETE_NOTION_PAGE_CHILDREN = ("notion", "notion_delete_notion_page_children", False)
+    NOTION_DELETE_NOTION_PAGE_CHILDREN = (
+        "notion",
+        "notion_delete_notion_page_children",
+        False,
+    )
     NOTION_FETCH_NOTION_COMMENT = ("notion", "notion_fetch_notion_comment", False)
     NOTION_FETCH_NOTION_DATABASE = ("notion", "notion_fetch_notion_database", False)
     NOTION_FETCH_NOTION_PAGE = ("notion", "notion_fetch_notion_page", False)
     NOTION_SEARCH_NOTION_PAGE = ("notion", "notion_search_notion_page", False)
     NOTION_UPDATE_NOTION_DATABASE = ("notion", "notion_update_notion_database", False)
     NOTION_FETCH_NOTION_BLOCK = ("notion", "notion_fetch_notion_block", False)
-    NOTION_FETCH_NOTION_CHILD_BLOCK = ("notion", "notion_fetch_notion_child_block", False)
+    NOTION_FETCH_NOTION_CHILD_BLOCK = (
+        "notion",
+        "notion_fetch_notion_child_block",
+        False,
+    )
     TYPEFORM_GET_ABOUT_ME = ("typeform", "typeform_get_about_me", False)
-    GOOGLECALENDAR_CREATE_GOOGLE_EVENT = ("gcalendar", "googlecalendar_create_google_event", False)
-    GOOGLECALENDAR_REMOVE_ATTENDEE = ("gcalendar", "googlecalendar_remove_attendee", False)
+    GOOGLECALENDAR_CREATE_GOOGLE_EVENT = (
+        "gcalendar",
+        "googlecalendar_create_google_event",
+        False,
+    )
+    GOOGLECALENDAR_REMOVE_ATTENDEE = (
+        "gcalendar",
+        "googlecalendar_remove_attendee",
+        False,
+    )
     GOOGLECALENDAR_FIND_EVENT = ("gcalendar", "googlecalendar_find_event", False)
-    GOOGLECALENDAR_DELETE_GOOGLE_EVENT = ("gcalendar", "googlecalendar_delete_google_event", False)
-    GOOGLECALENDAR_UPDATE_GOOGLE_EVENT = ("gcalendar", "googlecalendar_update_google_event", False)
-    GOOGLECALENDAR_FIND_FREE_SLOTS = ("gcalendar", "googlecalendar_find_free_slots", False)
-    GOOGLECALENDAR_DUPLICATE_GOOGLE_CALENDAR = ("gcalendar", "googlecalendar_duplicate_google_calendar", False)
-    GOOGLECALENDAR_LIST_GOOGLE_CALENDARS = ("gcalendar", "googlecalendar_list_google_calendars", False)
-    GOOGLECALENDAR_PATCH_GOOGLE_CALENDAR = ("gcalendar", "googlecalendar_patch_google_calendar", False)
-    GOOGLECALENDAR_QUICK_ADD_GOOGLE_CALENDAR = ("gcalendar", "googlecalendar_quick_add_google_calendar", False)
-    GOOGLECALENDAR_GET_CURRENT_DATE_TIME = ("gcalendar", "googlecalendar_get_current_date_time", False)
+    GOOGLECALENDAR_DELETE_GOOGLE_EVENT = (
+        "gcalendar",
+        "googlecalendar_delete_google_event",
+        False,
+    )
+    GOOGLECALENDAR_UPDATE_GOOGLE_EVENT = (
+        "gcalendar",
+        "googlecalendar_update_google_event",
+        False,
+    )
+    GOOGLECALENDAR_FIND_FREE_SLOTS = (
+        "gcalendar",
+        "googlecalendar_find_free_slots",
+        False,
+    )
+    GOOGLECALENDAR_DUPLICATE_GOOGLE_CALENDAR = (
+        "gcalendar",
+        "googlecalendar_duplicate_google_calendar",
+        False,
+    )
+    GOOGLECALENDAR_LIST_GOOGLE_CALENDARS = (
+        "gcalendar",
+        "googlecalendar_list_google_calendars",
+        False,
+    )
+    GOOGLECALENDAR_PATCH_GOOGLE_CALENDAR = (
+        "gcalendar",
+        "googlecalendar_patch_google_calendar",
+        False,
+    )
+    GOOGLECALENDAR_QUICK_ADD_GOOGLE_CALENDAR = (
+        "gcalendar",
+        "googlecalendar_quick_add_google_calendar",
+        False,
+    )
+    GOOGLECALENDAR_GET_CURRENT_DATE_TIME = (
+        "gcalendar",
+        "googlecalendar_get_current_date_time",
+        False,
+    )
     TRELLO_CREATE_TRELLO_LIST = ("trello", "trello_create_trello_list", False)
     TRELLO_CREATE_TRELLO_CARD = ("trello", "trello_create_trello_card", False)
     TRELLO_GET_TRELLO_BOARD_CARDS = ("trello", "trello_get_trello_board_cards", False)
@@ -253,31 +315,96 @@ class Action(Enum):
     APIFY_SEARCH_STORE = ("apify", "apify_search_store", False)
     APIFY_GET_LAST_RUN_DATA = ("apify", "apify_get_last_run_data", False)
     APIFY_LIST_APIFY_TASKS = ("apify", "apify_list_apify_tasks", False)
-    ZENDESK_CREATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_create_zendesk_organization", False)
-    ZENDESK_DELETE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_delete_zendesk_organization", False)
-    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_count_zendesk_organizations", False)
-    ZENDESK_GET_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_get_zendesk_organization", False)
-    ZENDESK_GET_ALL_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_get_all_zendesk_organizations", False)
-    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_update_zendesk_organization", False)
+    ZENDESK_CREATE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_create_zendesk_organization",
+        False,
+    )
+    ZENDESK_DELETE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_delete_zendesk_organization",
+        False,
+    )
+    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = (
+        "zendesk",
+        "zendesk_count_zendesk_organizations",
+        False,
+    )
+    ZENDESK_GET_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_get_zendesk_organization",
+        False,
+    )
+    ZENDESK_GET_ALL_ZENDESK_ORGANIZATIONS = (
+        "zendesk",
+        "zendesk_get_all_zendesk_organizations",
+        False,
+    )
+    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = (
+        "zendesk",
+        "zendesk_update_zendesk_organization",
+        False,
+    )
     ZENDESK_CREATE_ZENDESK_TICKET = ("zendesk", "zendesk_create_zendesk_ticket", False)
     ZENDESK_DELETE_ZENDESK_TICKET = ("zendesk", "zendesk_delete_zendesk_ticket", False)
     ZENDESK_GET_ABOUT_ME = ("zendesk", "zendesk_get_about_me", False)
-    CODEINTERPRETER_EXECUTE_CODE = ("codeinterpreter", "codeinterpreter_execute_code", True)
-    FILEANDSHELLMANAGER_CREATE_SHELL_ACTION = ("filemanager", "fileandshellmanager_create_shell_action", True)
-    FILEANDSHELLMANAGER_CLOSE_SHELL_ACTION = ("filemanager", "fileandshellmanager_close_shell_action", True)
-    FILEANDSHELLMANAGER_RUN_COMMAND_ACTION = ("filemanager", "fileandshellmanager_run_command_action", True)
-    FILEANDSHELLMANAGER_SET_ENV_VAR_ACTION = ("filemanager", "fileandshellmanager_set_env_var_action", True)
-    FILEANDSHELLMANAGER_OPEN_FILE_ACTION = ("filemanager", "fileandshellmanager_open_file_action", True)
-    FILEANDSHELLMANAGER_GOTO_LINE_ACTION = ("filemanager", "fileandshellmanager_goto_line_action", True)
-    FILEANDSHELLMANAGER_SCROLL_ACTION = ("filemanager", "fileandshellmanager_scroll_action", True)
-    FILEANDSHELLMANAGER_CREATE_FILE_ACTION = ("filemanager", "fileandshellmanager_create_file_action", True)
-    FILEANDSHELLMANAGER_EDIT_FILE_ACTION = ("filemanager", "fileandshellmanager_edit_file_action", True)
+    CODEINTERPRETER_EXECUTE_CODE = (
+        "codeinterpreter",
+        "codeinterpreter_execute_code",
+        True,
+    )
+    FILEANDSHELLMANAGER_CREATE_SHELL_ACTION = (
+        "filemanager",
+        "fileandshellmanager_create_shell_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_CLOSE_SHELL_ACTION = (
+        "filemanager",
+        "fileandshellmanager_close_shell_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_RUN_COMMAND_ACTION = (
+        "filemanager",
+        "fileandshellmanager_run_command_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_SET_ENV_VAR_ACTION = (
+        "filemanager",
+        "fileandshellmanager_set_env_var_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_OPEN_FILE_ACTION = (
+        "filemanager",
+        "fileandshellmanager_open_file_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_GOTO_LINE_ACTION = (
+        "filemanager",
+        "fileandshellmanager_goto_line_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_SCROLL_ACTION = (
+        "filemanager",
+        "fileandshellmanager_scroll_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_CREATE_FILE_ACTION = (
+        "filemanager",
+        "fileandshellmanager_create_file_action",
+        True,
+    )
+    FILEANDSHELLMANAGER_EDIT_FILE_ACTION = (
+        "filemanager",
+        "fileandshellmanager_edit_file_action",
+        True,
+    )
     SNOWFLAKE_RUN_QUERY = ("snowflake", "snowflake_run_query", False)
     SNOWFLAKE_SHOW_TABLES = ("snowflake", "snowflake_show_tables", False)
     SNOWFLAKE_DESCRIBE_TABLE = ("snowflake", "snowflake_describe_table", False)
     SNOWFLAKE_EXPLORE_COLUMNS = ("snowflake", "snowflake_explore_columns", False)
     EXA_SEARCH = ("exa", "exa_search", True)
     EXA_SIMILARLINK = ("exa", "exa_similarlink", True)
+
 
 class Trigger(Enum):
     def __init__(self, service, trigger):

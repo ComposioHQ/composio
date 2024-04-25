@@ -1,9 +1,12 @@
 import os
+
 import dotenv
-from langchain import hub
+from composio_langchain import App, ComposioToolset
+from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from composio_langchain import ComposioToolset, Action, App
+
+from langchain import hub
+
 
 # Loading the variables from .env file
 dotenv.load_dotenv()
@@ -14,7 +17,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Import from composio_langchain
 
-# Get All the tools 
+# Get All the tools
 tools = ComposioToolset(apps=[App.GITHUB])
 
 
