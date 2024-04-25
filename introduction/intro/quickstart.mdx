@@ -1,11 +1,11 @@
 ---
 title: "🚀 Quick Start"
 sidebarTitle: "Quick Start"
-icon: "rocket"
-description: "This guide will help you to create a Github agent for your users using OpenAI Assistant and Composio to automate github workflows." 
+icon: "gear"
+description: "Use Composio to connect OpenAI Assistant to Github (via OAUTH2) to perform a task using natural language"
 ---
 
-## Goal: Star a repository on GitHub with natural language 
+## Goal: Star a repository on GitHub with natural language
 
 <Steps> 
 <Step title="Setting Up GitHub Integration">
@@ -28,13 +28,14 @@ pip install composio-core
 </CodeGroup>
 Use `Github Integration` to Connect your `Github Account`
 
-Modify *Composio* `api-key` by [creating your own](https://app.composio.dev/api_keys). 
+Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/api_keys).
+
 <Tip> TestIntegration.*App* uses Composio built-in Integrations </Tip>
 <CodeGroup>
 ```python Auth via OAuth 
 from composio import Composio, TestIntegration
 
-client = Composio("api-key") 
+client = Composio("api-key")
 
 #client.get_integration(**YourIntegrationID**)
 integration = client.get_integration(TestIntegration.GITHUB)
@@ -44,7 +45,7 @@ connected_account = integration.initiate_connection(entity_id = None)
 
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
 
-```
+````
 
 </CodeGroup>
 </Step>
@@ -87,7 +88,7 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-```
+````
 
 </CodeGroup>
 </Step>
@@ -102,7 +103,7 @@ print(execution_details)
 
 print("Completed Task")
 
-```
+````
 
 </CodeGroup>
 </Step>
@@ -111,7 +112,7 @@ print("Completed Task")
 ### Putting it all together
 
 <CodeGroup>
-```python Complete Code 
+```python Complete Code
 ## Step 1
 #!pip install composio-core
 
@@ -121,7 +122,7 @@ from composio import Composio, TestIntegration
 
 # Initialize the OpenAI client with your API key
 openai_client = OpenAI(api_key="******OPENAIKEY******")
-client = Composio("api-key") 
+client = Composio("api-key")
 
 #client.get_integration(**YourIntegrationID**)
 integration = client.get_integration(TestIntegration.GITHUB)
@@ -135,7 +136,7 @@ print("Complete the auth flow, link: ", connected_account.redirectUrl)
 #Keep Polling and wait until timeout
 connected_account = connected_account.wait_until_active(timeout=60)
 
-## Step 4 
+## Step 4
 actions = connected_account.get_all_actions()
 
 ## Step 5
@@ -159,5 +160,6 @@ execution_details = connected_account.handle_tools_calls(response)
 print(execution_details)
 
 print("Completed Task")
-```
+````
+
 </CodeGroup>
