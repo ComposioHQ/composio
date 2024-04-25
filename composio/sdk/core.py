@@ -62,12 +62,14 @@ class ComposioCore:
                             f"{self.base_url}/v1/client/auth/track",
                             json={
                                 "framework": self.framework.value,
-                                "user_git_user_info": {
-                                    "name": git_info.name,
-                                    "email": git_info.email,
-                                }
-                                if git_info.name and git_info.email
-                                else None,
+                                "user_git_user_info": (
+                                    {
+                                        "name": git_info.name,
+                                        "email": git_info.email,
+                                    }
+                                    if git_info.name and git_info.email
+                                    else None
+                                ),
                             },
                         )
                         __IS_FIRST_TIME__ = False
@@ -114,7 +116,8 @@ class ComposioCore:
         )
         if resp.status_code == 200:
             return resp.json()
-        elif resp.status_code == 401:
+
+        if resp.status_code == 401:
             raise UnauthorizedAccessException(
                 "UnauthorizedError: Unauthorized access to cli/verify-cli-session"
             )
@@ -149,7 +152,7 @@ class ComposioCore:
         try:
             self.sdk.set_global_trigger(callback_url)
         except Exception as e:
-            raise Exception(f"Failed to set global trigger: {e}")
+            raise Exception(f"Failed to set global trigger: {e}") from e
 
     def disable_trigger(self, trigger_id: str):
         return self.sdk.disable_trigger(trigger_id)
@@ -165,13 +168,13 @@ class ComposioCore:
         try:
             return self.sdk.list_triggers([app_name])
         except Exception as e:
-            raise Exception(f"Failed to list triggers: {e}")
+            raise Exception(f"Failed to list triggers: {e}") from e
 
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
         try:
             return self.sdk.get_trigger_requirements(trigger_ids)
         except Exception as e:
-            raise Exception(f"Failed to enable trigger: {e}")
+            raise Exception(f"Failed to enable trigger: {e}") from e
 
     def enable_trigger(
         self, trigger_id: str, connected_account_id: str, user_inputs: dict
@@ -181,7 +184,7 @@ class ComposioCore:
                 trigger_id, connected_account_id, user_inputs
             )
         except Exception as e:
-            raise Exception(e)
+            raise Exception(e) from e
 
     def get_connection(self, app_name: str, entity_id: str = "default"):
         entity = self.sdk.get_entity(entity_id)
