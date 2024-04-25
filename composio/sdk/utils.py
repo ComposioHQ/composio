@@ -50,7 +50,9 @@ def generate_enums_given_apps(apps, actions, triggers):
             enum_value = f'("{app_key}", "{trigger["name"]}")'
             enum_content += f"    {enum_name} = {enum_value}\n"
         # enum_content += f'Actions.{app_name} = {app_name}\n\n'
-    with open(os.path.join(os.path.dirname(__file__), "enums.py"), "w") as f:
+    with open(
+        os.path.join(os.path.dirname(__file__), "enums.py"), "w", encoding="utf-8"
+    ) as f:
         f.write(enum_content)
 
 

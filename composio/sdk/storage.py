@@ -15,14 +15,14 @@ if not os.path.exists(composio_path):
 def load_user_data():
     user_data_path = os.path.join(composio_path, "user_data.json")
     if os.path.exists(user_data_path):
-        with open(user_data_path, "r") as infile:
+        with open(user_data_path, "r", encoding="utf-8") as infile:
             return json.load(infile)
     return {}
 
 
 def save_user_data(user_data):
     user_data_path = os.path.join(composio_path, "user_data.json")
-    with open(user_data_path, "w") as outfile:
+    with open(user_data_path, "w", encoding="utf-8") as outfile:
         json.dump(user_data, outfile)
 
 
