@@ -429,15 +429,15 @@ def check_for_updates():
     response = requests.get("https://pypi.org/pypi/composio_core/json")
     latest_pypi_version = response.json()['info']['version']
 
-    console.print(f"\n Version: {installed_version} \n")
+    console.print(f"\n Version: {installed_version}")
+    path = os.path.dirname(os.path.realpath(__file__))
+    console.print(f" Path: {path} \n")
 
     if(latest_pypi_version > installed_version):
         console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade.[/yellow]")
         console.print(f"\n 🔧🔧 Run [cyan]pip install --upgrade composio-core=={latest_pypi_version} [/cyan] to update.\n")
 
 def print_intro():
-        path = os.path.dirname(os.path.realpath(__file__))
-        console.print(f"> Path: {path}")
         text = termcolor.colored('Composio', 'white', attrs=['bold'])  
         aiPlatformText = termcolor.colored('100+', 'green', attrs=['bold'])
         pinkEmojiText = termcolor.colored('hello@composio.dev', 'magenta', attrs=['bold'])
@@ -445,7 +445,7 @@ def print_intro():
         print(f"""
 ┌───────────────────────────────────────────────────────────────────────────┐
 │                                                                           │
-│                                       {text}                            │
+│                                     {text}                              │
 │                                                                           │
 │                     Plug {aiPlatformText} platforms in your agent                     │
 │                                                                           │
