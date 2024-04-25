@@ -171,7 +171,7 @@ class ComposioCore:
             if isinstance(item, App):
                 app_name[i] = item.value
         
-        resp = []
+        resp = self.sdk.get_connected_accounts(showActiveOnly=True)
         if app_name is not None:
             resp = [item for item in resp if item.appUniqueId in app_name]
 
