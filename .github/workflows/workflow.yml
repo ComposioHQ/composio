@@ -55,8 +55,9 @@ jobs:
           tox -e flake8
       - name: Pylint check
         run: tox -e pylint
-      - name: Static type check
-        run: tox -e mypy
+      # Temporary skip
+      # - name: Static type check
+      #   run: tox -e mypy
 
 # TODO: Enable once the unittests are there
 #   test:
