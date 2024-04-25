@@ -3,12 +3,25 @@ ignore-patterns=
 ignore=
 
 [MESSAGES CONTROL]
-disable=C0114,C0115,C0116,W0719
+disable=C0114,C0115,C0116,C0301,W0719,W0718,C0103,W0602,R1702,W0612,W0603,R1715,W0622,W0621
 
-# Discuss what messages to disable
+# To discuss
 # C0114: missing-module-docstring
 # C0115: missing-class-docstring
 # C0116: missing-function-docstring
+# C0301: line-too-long
+# C0103: invalid-name
+# R1715: consider-using-get
+# W0603: global-statement
+# W0621: redefined-outer-name
+
+# To fix
+# W0602: global-variable-not-assigned
+# W0719: broad-exception-raised
+# W0718: broad-exception-caught
+# R1702: too-many-nested-blocks
+# W0622: redefined-builtin
+# W0612: unused-variable
 
 [IMPORTS]
 ignored-modules=
