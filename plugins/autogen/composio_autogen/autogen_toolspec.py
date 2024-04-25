@@ -41,7 +41,7 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if client.is_authenticated() == False:
+        if client.is_authenticated():
             raise Exception(
                 "User not authenticated. Please authenticate using composio-cli add <app_name>"
             )

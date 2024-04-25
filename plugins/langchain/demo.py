@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from composio_langchain import Action, App, ComposioToolset
+from composio_langchain import App, ComposioToolset
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
