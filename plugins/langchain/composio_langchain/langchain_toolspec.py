@@ -21,7 +21,7 @@ def ComposioTool(
     appName = action_schema["appName"]
     func_params = get_signature_format_from_schema_params(action_schema["parameters"])
     action_signature = Signature(parameters=func_params)
-    placeholder_function = lambda **kwargs: client.execute_action(
+    placeholder_function = lambda **kwargs: client.execute_action(  # noqa: E731
         client.get_action_enum(name, appName), kwargs, entity_id=entity_id
     )
     action_func = types.FunctionType(
@@ -55,7 +55,7 @@ def ComposioToolset(
         raise ValueError(
             "You must provide either a list of tools or a list of actions, not both"
         )
-    if client.is_authenticated() == False:
+    if client.is_authenticated():
         raise Exception(
             "User not authenticated. Please authenticate using composio-cli add <app_name>"
         )

@@ -55,7 +55,7 @@ class ComposioCore:
                     {"Content-Type": "application/json", "x-api-key": api_key_to_use}
                 )
                 self.sdk = Composio(api_key=api_key_to_use, base_url=base_url)
-                if framework is not None and __IS_FIRST_TIME__ == True:
+                if framework is not None and __IS_FIRST_TIME__:
                     try:
                         git_info = get_git_user_info()
                         self.http_client.post(
@@ -71,8 +71,8 @@ class ComposioCore:
                             },
                         )
                         __IS_FIRST_TIME__ = False
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
 
     def get_authenticated_user(self):
         composio_api_key = os.environ.get("COMPOSIO_API_KEY", None)

@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from composio_crewai import Action, App, ComposioToolset
+from composio_crewai import App, ComposioToolset
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
