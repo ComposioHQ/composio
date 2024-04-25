@@ -429,7 +429,9 @@ def check_for_updates():
     response = requests.get("https://pypi.org/pypi/composio_core/json")
     latest_pypi_version = response.json()['info']['version']
 
-    console.print(f"\n Version: {installed_version} \n")
+    console.print(f"\n Version: {installed_version}")
+    path = os.path.dirname(os.path.realpath(__file__))
+    console.print(f" Path: {path} \n")
 
     if(latest_pypi_version > installed_version):
         console.print(f"\n[yellow] 🧐🧐 A newer version {latest_pypi_version} of composio-core is available. Please upgrade.[/yellow]")
@@ -443,7 +445,7 @@ def print_intro():
         print(f"""
 ┌───────────────────────────────────────────────────────────────────────────┐
 │                                                                           │
-│                                       {text}                            │
+│                                     {text}                              │
 │                                                                           │
 │                     Plug {aiPlatformText} platforms in your agent                     │
 │                                                                           │
