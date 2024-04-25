@@ -2,14 +2,16 @@
 Setup configuration for Composio CrewAI plugin
 """
 
+import os
+from setuptools import setup
 from pathlib import Path
 
-from setuptools import setup
 
+version = os.environ.get("RELEASE_VERSION", "0.2.15")
 
 setup(
     name="composio_crewai",
-    version="0.2.12",
+    version=version,
     author="Himanshu",
     author_email="himanshu@composio.dev",
     description="Use Composio to get an array of tools with your CrewAI agent.",
@@ -23,7 +25,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_langchain==0.2.12",
+        "composio_langchain==0.2.16",
     ],
     include_package_data=True,
 )
