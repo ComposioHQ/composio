@@ -1,7 +1,6 @@
-from typing import Union, Optional
 import os
 from enum import Enum
-from typing import Union
+from typing import Optional, Union
 
 import requests
 

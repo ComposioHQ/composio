@@ -1,8 +1,7 @@
 import os
 import types
-from typing import List, Optional, Dict
 from inspect import Signature
-from typing import List
+from typing import Dict, List, Optional
 
 from langchain_core.tools import StructuredTool
 
