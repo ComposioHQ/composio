@@ -2,7 +2,7 @@
 Script for bumping the frameworks and plugins.
 
 Usage:
-    python scripts/bump.py --major/--minor/--patch/--release-candidate/--post
+    python scripts/bump.py --major/--minor/--patch/--pre/--post
 """
 
 import re
@@ -19,7 +19,7 @@ class BumpType(Enum):
     MAJOR = "major"
     MINOR = "minor"
     PATCH = "patch"
-    RELEASE_CANDIDATE = "release-candidate"
+    PRE = "pre"
     POST = "post"
 
 
@@ -37,7 +37,7 @@ def _bump(file: Path, bump_type: BumpType) -> None:
         update = version.bump_minor()
     elif bump_type == BumpType.PATCH:
         update = version.bump_patch()
-    elif bump_type == BumpType.RELEASE_CANDIDATE:
+    elif bump_type == BumpType.PRE:
         update = version.bump_prerelease()
     else:
         update = version.bump_build(token="post")
