@@ -2,17 +2,14 @@
 Setup configuration for Composio Autogen plugin
 """
 
-import os
 from pathlib import Path
 
 from setuptools import setup
 
 
-version = os.environ.get("RELEASE_VERSION", "0.2.15")
-
 setup(
     name="composio_autogen",
-    version=version,
+    version="0.2.22",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Autogen agent.",
@@ -26,7 +23,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_core===0.2.16",
+        "composio_core===0.2.22",
         "pyautogen>=0.2.19",
     ],
     include_package_data=True,

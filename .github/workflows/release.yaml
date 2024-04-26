@@ -1,0 +1,69 @@
+name: Build and Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-core:
+    name: Create Framework & Plugin Releases
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          python -m pip install --upgrade pip
+          pip install twine build
+          
+          # Build dist
+          python -m build
+      - name: Publish Core to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          packages-dir: dist/
+
+  publish-plugins:
+    needs: publish-core
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        package: [langchain, autogen, crew_ai, lyzr]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build ${{ matrix.package }}
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          python -m pip install --upgrade pip
+          pip install twine build
+
+          # Build dist
+          cd plugins/${{ matrix.package }}
+          python -m build
+      - name: Publish ${{ matrix.package }} to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          packages-dir: plugins/${{ matrix.package }}/dist/
