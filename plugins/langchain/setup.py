@@ -2,17 +2,14 @@
 Setup configuration for Composio Langchain plugin
 """
 
-import os
 from pathlib import Path
 
 from setuptools import setup
 
 
-version = os.environ.get("RELEASE_VERSION", "0.2.15")
-
 setup(
     name="composio_langchain",
-    version=version,
+    version="0.2.22",
     author="Karan",
     author_email="karan@composio.dev",
     description="Use Composio to get an array of tools with your LangChain agent.",
@@ -30,7 +27,7 @@ setup(
         "langchain-openai>=0.0.2.post1",
         "pydantic>=2.6.4",
         "langchainhub>=0.1.15",
-        "composio_core===0.2.16",
+        "composio_core===0.2.22",
     ],
     include_package_data=True,
 )
