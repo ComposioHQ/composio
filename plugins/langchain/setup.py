@@ -2,7 +2,6 @@
 Setup configuration for Composio Langchain plugin
 """
 
-import os
 from pathlib import Path
 
 from setuptools import setup
