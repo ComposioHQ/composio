@@ -1,11 +1,12 @@
 import os
 import types
 from inspect import Signature
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from lyzr_automata import Tool
 
 from composio import Action, ComposioCore, FrameworkEnum
+from composio.sdk.enums import App
 from composio.sdk.shared_utils import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
@@ -20,7 +21,9 @@ ComposioSDK = client.sdk
 
 class ComposioToolset:
     def __init__(
-        self, entity_id: str = "default", connection_ids: Optional[Dict] = None
+        self,
+        entity_id: str = "default",
+        connection_ids: Optional[Dict[Union[str, App], str]] = None,
     ):
         global client
         self.client = client
@@ -35,7 +38,9 @@ class ComposioToolset:
         name = action_schema["name"]
         description = action_schema["description"]
         appName = action_schema["appName"]
-        connection_id = self.connection_ids.get(appName)
+        connection_id = self.connection_ids.get(
+            appName, self.connection_ids.get(App(appName))
+        )
         func_params = get_signature_format_from_schema_params(
             action_schema["parameters"]
         )
