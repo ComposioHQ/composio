@@ -1,7 +1,7 @@
 import os
 import types
 from inspect import Signature
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from langchain_core.tools import StructuredTool
 
@@ -16,13 +16,14 @@ def ComposioTool(
     client: ComposioCore,
     action_schema: dict[str, any],
     entity_id: str = None,
-    connection_ids: Optional[Dict[str, str]] = None,
+    connection_ids: Optional[Dict[Union[str, App], str]] = None,
 ) -> StructuredTool:
     name = action_schema["name"]
     description = action_schema["description"]
     parameters = json_schema_to_model(action_schema["parameters"])
     appName = action_schema["appName"]
-    connection_id = (connection_ids or {}).get(appName)
+    connection_ids = connection_ids or {}
+    connection_id = connection_ids.get(appName, connection_ids.get(App(appName)))
     func_params = get_signature_format_from_schema_params(action_schema["parameters"])
     action_signature = Signature(parameters=func_params)
     placeholder_function = lambda **kwargs: client.execute_action(
@@ -59,7 +60,7 @@ def ComposioToolset(
     apps: List[App] = [],
     actions: List[Action] = [],
     entity_id: str = "default",
-    connection_ids: Optional[Dict[str, str]] = None,
+    connection_ids: Optional[Dict[Union[str, App], str]] = None,
 ) -> List[StructuredTool]:
     if len(apps) > 0 and len(actions) > 0:
         raise ValueError(
