@@ -6,7 +6,7 @@ from typing import List
 from langchain_core.tools import StructuredTool
 from pydantic import Field, create_model
 
-from composio import Action, App, ComposioCore, FrameworkEnum
+from composio import Action, App, ComposioCore, FrameworkEnum, Tag
 
 from .pydantic_utils import json_schema_to_model
 
@@ -131,7 +131,7 @@ ComposioSDK = client.sdk
 
 
 def ComposioToolset(
-    apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default"
+    apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default", tags: List[Tag] = []
 ) -> List[StructuredTool]:
     if len(apps) > 0 and len(actions) > 0:
         raise ValueError(
@@ -141,7 +141,7 @@ def ComposioToolset(
         raise Exception(
             "User not authenticated. Please authenticate using composio-cli add <app_name>"
         )
-    actions_list = client.sdk.get_list_of_actions(apps, actions)
+    actions_list = client.sdk.get_list_of_actions(apps, actions, tags)
     return [
         ComposioTool(client, action, entity_id=entity_id) for action in actions_list
     ]

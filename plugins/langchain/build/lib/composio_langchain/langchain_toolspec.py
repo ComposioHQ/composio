@@ -5,7 +5,7 @@ from typing import List
 
 from langchain_core.tools import StructuredTool
 
-from composio import Action, App, ComposioCore, FrameworkEnum
+from composio import Action, App, ComposioCore, FrameworkEnum, Tag
 from composio.sdk.shared_utils import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
@@ -40,10 +40,10 @@ def ComposioTool(client : ComposioCore, action_schema: dict[str, any], entity_id
 client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key = os.environ.get("COMPOSIO_API_KEY", None))
 ComposioSDK = client.sdk
 
-def ComposioToolset(apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default") -> List[StructuredTool]:
+def ComposioToolset(apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default", tags: List[Tag] = []) -> List[StructuredTool]:
     if len(apps) >0 and len(actions) > 0:
         raise ValueError("You must provide either a list of tools or a list of actions, not both")
     if client.is_authenticated() == False:
         raise Exception("User not authenticated. Please authenticate using composio-cli add <app_name>")
-    actions_list = client.sdk.get_list_of_actions(apps, actions)
+    actions_list = client.sdk.get_list_of_actions(apps, actions, tags)
     return [ComposioTool(client, action, entity_id=entity_id) for action in actions_list]

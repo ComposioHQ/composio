@@ -17,6 +17,8 @@ def get_enum_key(name):
 
 def generate_enums_given_apps(apps, actions, triggers):
     enum_content = "from enum import Enum\n\n"
+    enum_content += "class Tag(Enum):\n"
+    enum_content += "    IMPORTANT = \"important\"\n\n"
     enum_content += "class App(Enum):\n"
     for app in apps["items"]:
         app_name = app["key"].upper().replace(" ", "_").replace("-", "_")
