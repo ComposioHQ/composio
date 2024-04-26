@@ -88,7 +88,6 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-        "introduction/intro/about",
         "introduction/intro/quickstart",
         "introduction/intro/help"
       ]
@@ -101,23 +100,11 @@
           "group": "Components",
           "pages": [
             "introduction/foundations/components/integrations/integration-guide",
+            "introduction/foundations/components/integrations/connected-account",
             "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/actions/local-code",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/entity/entity-guide"
-          ]
-        },
-        {
-          "group": "How To",
-          "pages": [
-            "introduction/foundations/howtos/install"
-          ]
-        },
-        {
-          "group": "Going to Production",
-          "pages": [
-            "introduction/foundations/production/install"
           ]
         }
       ]
@@ -148,7 +135,13 @@
     {
       "group": "Python SDK",
       "pages": [
-        "sdk/python/install"
+        "sdk/python/introduction",
+        "sdk/python/quickstart",
+        "sdk/python/configuration",
+        "sdk/python/integrations",
+        "sdk/python/connections",
+        "sdk/python/actions",
+        "sdk/python/triggers"
       ]
     },
     {

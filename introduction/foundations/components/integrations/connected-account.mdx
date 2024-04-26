@@ -1,0 +1,130 @@
+---
+title: "Connected Accounts"
+sidebarTitle: "Accounts"
+icon: "plug"
+description: "Authorize Users Seamlessly 🌐"
+---
+
+Everytime a user connects their account using a specific integration, a new `connected_account` object is created which stores data of the connection like access token, refresh token, etc. 
+
+Let's go over a 
+
+## Steps to Connect a Customer's Account
+
+### 1. Gather Integration Parameters
+
+<Steps>
+<Step title="Gather Integration Parameters">
+
+Ex API Key , Sub Domain URL, User Name
+
+<CodeGroup>
+```python Printing Required Params
+from composio import Composio
+
+client = Composio("api-key")
+
+# Integration Chosen by User to Connect with
+
+integration = client.get_integration(integration_id)
+
+# list of params req from user
+
+print(integration.get_required_variables())
+
+````
+</CodeGroup>
+
+Response if `Zendesk` Integration was chosen.
+<CodeGroup>
+```json Example Response
+[
+  {
+    "name": "subdomain",
+    "expected_from_customer": true,
+    "displayName": "Zendesk Subdomain",
+    "description": "Your Zendesk subdomain (e.g., your-company-name in your-company-name.zendesk.com)",
+    "type": "string",
+    "required": true
+  }
+]
+````
+
+</CodeGroup>
+</Step>
+
+<Step title="Initiate Connection Request">
+
+<CodeGroup>
+```python Send Requested Params
+# Collect the subdomain from your user via your platform's frontend
+params = {"subdomain":"***zendesk_sub_domain****"}
+
+connection_request = integration.initiate_connection(params=params, entity_id = "")
+
+if connection_request.redirectUrl != "":
+print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
+else:
+print("The account status is: ",connection_request)
+
+````
+</CodeGroup>
+</Step>
+<Step title="Authorisation Flow Redirect (Optional)">
+
+In case of **OAuth Flow**, _redirectUrl_ will be returned.
+
+<Tip>
+Redirect User for OAuth Authorisation Completion page.
+</Tip>
+
+On approval, User will be redirected back to configured URL.
+
+<CodeGroup>
+```python Example Connection Request
+{
+    "connectionStatus": "INITIATED",
+    "connectedAccountId": "1f32dbf-f7cfec95e567",
+    "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
+}
+````
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Validate Connection Request">
+
+Check if the status has been updated.
+
+<AccordionGroup title="Get Status of Connection Request">
+<Accordion title="Fetch ConnectedAccount">
+Get Connected Account using ID & Verify value of status
+<CodeGroup>
+```python Get Connected Account Object
+connected_account = composio.get_connected_account(connection_request.id)
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="Poll using `Wait` Method">
+<CodeGroup>
+```python Polling until Expiry
+connected_account = connection_request.wait_until_active(timeout=60)
+```
+</CodeGroup>
+</Accordion>
+</AccordionGroup>
+Print Status 
+<CodeGroup>
+```python Print ConnectedAccount Status
+print(connected_account.status)
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+We created a new Connected Account.
+
+You should be able to use `connected_account.id` to execute actions or receive triggers.
+
