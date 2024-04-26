@@ -42,9 +42,14 @@ def _bump(file: Path, bump_type: BumpType) -> None:
     else:
         update = version.bump_build(token="post")
     print(f"Next version {update}")
+
     content = content.replace(
         f'version="{version}",',
         f'version="{update}",',
+    )
+    content = content.replace(
+        f'composio_core==={version}"',
+        f'composio_core==={update}"',
     )
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
