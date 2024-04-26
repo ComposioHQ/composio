@@ -184,7 +184,7 @@ class ComposioCore:
                 trigger_id, connected_account_id, user_inputs
             )
         except Exception as e:
-            raise Exception(e)
+            raise Exception(e) from e
 
     def get_connection(
         self,
