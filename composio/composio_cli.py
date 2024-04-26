@@ -16,7 +16,7 @@ from rich.table import Table
 from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.enums import App
 from .sdk.storage import get_base_url, save_api_key
-from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key
+from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
 
 
 # pylint: disable=unused-argument, too-many-locals, too-many-statements
@@ -185,12 +185,7 @@ def login(args):
     console.print("\n[green]> Authenticating...[/green]\n")
     try:
         cli_key = client.generate_cli_auth_session()
-        base_url = get_base_url()
-        frontend_url = (
-            f"https://app.composio.dev/?cliKey={cli_key}"
-            if base_url == "https://backend.composio.dev/api"
-            else f"https://hermes-frontend-git-master-composio.vercel.app/?cliKey={cli_key}"
-        )
+        frontend_url = get_frontend_url("redirect")
         console.print(
             "> Redirecting you to the login page. Please login using the following link:\n"
         )
@@ -522,7 +517,7 @@ def add_integration(args):
             # @TODO: add logic to wait and ask for API_KEY
             connection = entity.initiate_connection(
                 app_name=integration_name.lower(),
-                redirect_url="https://hermes-frontend-git-master-composio.vercel.app/redirect",
+                redirect_url="http://localhost:3000/redirect",
             )
 
             if not should_disable_webbrowser_open:
