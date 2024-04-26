@@ -11,7 +11,7 @@ from openai.types.beta.threads import run
 from openai.types.chat.chat_completion import ChatCompletion
 from pydantic import BaseModel, ConfigDict
 
-from .enums import Action, App
+from .enums import Action, App, Tag
 from .storage import get_base_url
 
 
@@ -327,7 +327,7 @@ class Composio:
         return resp.json()
 
     def get_list_of_actions(
-        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None
+        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Tag] = None
     ) -> list:
         if use_case is not None:
             if len(apps) != 1:
@@ -347,6 +347,14 @@ class Composio:
             )
         if resp.status_code == 200:
             actions_response = resp.json()
+            if actions is not None and tags is not None:
+                raise ValueError("Both actions and tags cannot be provided together")
+            if tags is not None and len(tags) > 0:
+                filtered_actions = []
+                for item in actions_response["items"]:
+                    if item["tags"] and any(tag in item["tags"] for tag in tags):
+                        filtered_actions.append(item)
+                return filtered_actions
             if actions is not None and len(actions) > 0:
                 filtered_actions = []
                 action_names_list = [action.value[1] for action in actions]
