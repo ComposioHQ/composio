@@ -1,4 +1,4 @@
-from .core import ComposioCore, FrameworkEnum
+from .core import ComposioCore, FrameworkEnum, Tag
 from .sdk import Composio, SchemaFormat
 
 
