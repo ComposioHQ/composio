@@ -1,25 +1,85 @@
 ---
 title: "Overview"
 sidebarTitle: "Overview"
-icon: "rocket"
-description: "Composio connect's tools to your agents, enabling agents to perform actions and receive triggers for your users."
+icon: "bolt"
+description: "Tackling complex agentic tasks demands exceptionally well-crafted tools"
 ---
 
+### Welcome to Composio
+
+Composio equips agents with robust tools, empowering them to execute task's which require interaction of agent with world outside via APIs, RPCs, Browser or any other method.
+
+Composio **enables agents** to **execute code, interact with system, recieve triggers or execute action for an external tool.** 
+
+For instance, to **accomplish** a task like **"Create a new repository on GitHub"**, your agent needs to integrate with GitHub's API. It involves translating API specifications into functions callable schema, managing authentication for multiple users and many other things.  
+
+Composio **seamlessly integrates with over 150 tools out of the box**, enabling you to concentrate on your tasks while we handle the complexities of integrations.
+
 <CardGroup cols={2}>
-<Card title="Want to learn" color="#2A60FE" href="about" icon="graduation-cap" iconType="duotone">
-   Fundamentals of what Composio offers and all components of platform
+<Card title="Introduction Video" color="#2A60FE" href="https://www.youtube.com/watch?v=ujxKzS0b5qg" icon="graduation-cap" iconType="duotone">
+   Dive into our Introduction Video and Learn more about Composio!
 </Card>
 <Card title="Try it out (< 5 Mins)" color="#2A60FE" href="quickstart" icon="terminal" iconType="duotone">
-   Implement Github assistant in under ten lines of code
+   Connect agent to Github in under ten lines of code
 </Card>
 </CardGroup>
 
+
+### Types of Tools supported
+
+<AccordionGroup title="Supported Tool Types" icon="gear">
+  <Accordion title="Software Tools">
+   Triggers & Actions for 100+ widely used softwares
+   <AccordionGroup title="Category of application">
+   <Accordion title="CRM">
+     Manage customer relationships with tools like `Salesforce`, `Zoho`, `HubSpot`, plus many more CRMs.
+   </Accordion>
+   <Accordion title="Devtools">
+     Enhance your development workflow with `GitHub`, `GitLab`, `Bitbucket`, plus many more devtools.
+   </Accordion>
+   <Accordion title="Productivity">
+     Boost productivity using tools like `Slack`, `Trello`, `Asana`, plus many more productivity tools.
+   </Accordion>
+   <Accordion title="Google Apps">
+     Integrate with Google Workspace applications including `Gmail`, `Docs`, `Drive`, plus many more Google apps.
+   </Accordion>
+   <Accordion title="10+ more categories">
+     Explore additional categories such as Marketing, Finance, HR, and more, plus many more categories.
+   </Accordion>
+   </AccordionGroup>
+  </Accordion>
+  <Accordion title="System Tools">
+   `Filemanager`, `Database`, `Redis`, plus many more system tools.
+  </Accordion>
+   <Accordion title="Code Interpreter">
+   `Shell Management`, `Package Management`, `Execution Sandbox`, `Code Testing` and full suite of tools to allow you to power your own SWE agents
+  </Accordion>
+   <Accordion title="RAG Tools">
+    `Add a document`, `delete a document`, `search across all documents`, plus many more RAG operations
+   </Accordion>
+   <Accordion title="Search Tools">
+   `Perplexity`, `Exa`, `Serp-api` and 10+ more, plus many more search tools.
+  </Accordion>
+</AccordionGroup>
+
+&nbsp;
+
+<a href="/apps/list">View the full list of supported tools.</a> 
+&nbsp;
+
+### Authentication Management
+Composio handles the auth for your users, enabling your agents to integrate with various tools and perform actions on behalf of your users. 
+
+We support a wide range of well-known authentication protocols, including `OAuth1.0/OAuth2.0`, `ApiKey`, and `Basic`, among others.
+
+**Begin with our Quickstart guide or check the essentials section for detailed overview.**
+
 ## Dive in further
 <CardGroup cols={2}>
-<Card title="Foundations" color="#2A60FE" href="../foundations/patterns/integrations/integration-guide" icon="sink" iconType="duotone">
+<Card title="Essentials" color="#2A60FE" href="../foundations/basic" icon="sink" iconType="duotone">
    Dive into the core foundations of the Composio platform.
 </Card>
-<Card title="Guides & Examples" color="#2A60FE" href="../guides/install" icon="bookmark" iconType="duotone">
+<Card title="Guides & Examples" color="#2A60FE" href="/guides/tutorials/install" icon="bookmark" iconType="duotone">
    Guides & Examples to get you started with Composio.
 </Card>
 </CardGroup>
