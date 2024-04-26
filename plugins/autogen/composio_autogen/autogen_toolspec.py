@@ -1,16 +1,15 @@
-import hashlib
-import logging
-import os
 import types
+import logging
+import hashlib
 from inspect import Signature
-from typing import List, Union
+from typing import Union, List, Optional, Dict
 
 import autogen
+from composio import ComposioCore, App, Action, FrameworkEnum
 from autogen.agentchat.conversable_agent import ConversableAgent
+import os
 
-from composio import Action, App, ComposioCore, FrameworkEnum
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +20,17 @@ ComposioSDK = client.sdk
 
 
 class ComposioToolset:
-    def __init__(self, caller=None, executor=None, entity_id: str = "default"):
+    def __init__(
+        self,
+        caller=None,
+        executor=None,
+        entity_id: str = "default",
+        connection_ids: Optional[Dict] = None,
+    ):
         self.caller = caller
         self.executor = executor
         self.entity_id = entity_id
+        self.connection_ids = connection_ids or {}
 
     def register_tools(
         self,
@@ -41,7 +47,7 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if client.is_authenticated():
+        if client.is_authenticated() == False:
             raise Exception(
                 "User not authenticated. Please authenticate using composio-cli add <app_name>"
             )
@@ -96,9 +102,11 @@ class ComposioToolset:
     def _register_schema_to_autogen(
         self, action_schema, caller: ConversableAgent, executor: ConversableAgent
     ):
+
         name = action_schema["name"]
         processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]
+        connection_id = self.connection_ids.get(appName)
         description = action_schema["description"]
 
         parameters = get_signature_format_from_schema_params(
@@ -108,7 +116,10 @@ class ComposioToolset:
 
         def placeholder_function(**kwargs):
             return client.execute_action(
-                client.get_action_enum(name, appName), kwargs, entity_id=self.entity_id
+                client.get_action_enum(name, appName),
+                kwargs,
+                entity_id=self.entity_id,
+                connection_id=connection_id,
             )
 
         action_func = types.FunctionType(
