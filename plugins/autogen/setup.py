@@ -24,7 +24,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_core===0.2.16",
+        "composio_core===0.2.22",
         "pyautogen>=0.2.19",
     ],
     include_package_data=True,
