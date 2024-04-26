@@ -518,7 +518,7 @@ class Entity:
             actions.extend(account_actions)
         return actions
 
-    def get_connection(self, app_name: Union[str, App]) -> ConnectedAccount:
+    def get_connection(self, app_name: Union[str, App]) -> Optional[ConnectedAccount]:
         if isinstance(app_name, App):
             app_name = app_name.value
         connected_accounts = self.client.get_connected_accounts(
@@ -536,7 +536,8 @@ class Entity:
                     latest_creation_date = creation_date
         if latest_account:
             return latest_account
-        raise ValueError(f"Account not found for app {app_name}")
+
+        return None
 
     def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
         connected_account = self.get_connection(app_name)
