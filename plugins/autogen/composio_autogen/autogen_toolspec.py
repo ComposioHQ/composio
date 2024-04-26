@@ -1,15 +1,16 @@
-import types
-import logging
 import hashlib
+import logging
+import os
+import types
 from inspect import Signature
-from typing import Union, List, Optional, Dict
+from typing import Dict, List, Optional, Union
 
 import autogen
-from composio import ComposioCore, App, Action, FrameworkEnum
 from autogen.agentchat.conversable_agent import ConversableAgent
-import os
 
+from composio import Action, App, ComposioCore, FrameworkEnum
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if client.is_authenticated() == False:
+        if client.is_authenticated():
             raise Exception(
                 "User not authenticated. Please authenticate using composio-cli add <app_name>"
             )
@@ -102,7 +103,6 @@ class ComposioToolset:
     def _register_schema_to_autogen(
         self, action_schema, caller: ConversableAgent, executor: ConversableAgent
     ):
-
         name = action_schema["name"]
         processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]

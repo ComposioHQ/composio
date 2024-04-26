@@ -1,10 +1,9 @@
 import os
 import types
 from inspect import Signature
+from typing import Dict, Optional
 
 from lyzr_automata import Tool
-from composio import ComposioCore, Action, FrameworkEnum
-from typing import Optional, Dict
 
 from composio import Action, ComposioCore, FrameworkEnum
 from composio.sdk.shared_utils import (
@@ -43,7 +42,10 @@ class ComposioToolset:
         action_signature = Signature(parameters=func_params)
         placeholder_function = (
             lambda **kwargs: self.client.execute_action(  # noqa: E731
-                action, kwargs, entity_id=self.entity_id
+                action,
+                kwargs,
+                entity_id=self.entity_id,
+                connection_id=connection_id,
             )
         )
         action_func = types.FunctionType(
