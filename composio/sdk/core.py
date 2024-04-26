@@ -4,7 +4,7 @@ from typing import Union
 
 import requests
 
-from .enums import Action, App
+from .enums import Action, App, Tag
 from .sdk import Composio, ConnectedAccount, ConnectionRequest
 from .storage import (
     get_api_key,
