@@ -9,14 +9,19 @@ description: "Use Composio to connect OpenAI Assistant to Github (via OAUTH2) to
 
 <Steps> 
 <Step title="Setting Up GitHub Integration">
-<AccordionGroup title="Select the option that suits you best.">
-<Accordion title="Option 1: Use Test Integration (Default) - Easy Start">
-Just use `TestIntegration.AppName` to use default integrations.
-</Accordion>
-<Accordion title="Option 2: Create your Integration - By Registering Github Developer App">
-[Create Integration](https://docs.composio.dev/apps/github) _Copy your integration ID._
-</Accordion>
-</AccordionGroup>
+<Tabs>
+<Tab title="Continue with defauly Integration">
+This is the easiest way to start. Just use `TestIntegration.AppName` to use default integrations.
+</Tab>
+<Tab title="Create your Integration">
+For creating your own integration, you will have to register a developer app on github and use credentials like `client_id` and `client_secret`.
+
+Complete instructions can be found at [Github App Docs](https://docs.composio.dev/apps/github)
+
+After you have created your integration, _Copy your integration ID_
+
+</Tab>
+</Tabs>
 
 </Step>
 
