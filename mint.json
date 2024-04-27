@@ -55,16 +55,17 @@
   },
   "tabs": [
     {
-      "name": "Supported Tools",
-      "url": "apps"
-    },
-    {
       "name": "Using SDK",
       "url": "sdk"
     },
+
     {
       "name": "Using API",
       "url": "api-reference"
+    },
+    {
+      "name": "Supported Tools",
+      "url": "apps"
     }
   ],
   "anchors": [
