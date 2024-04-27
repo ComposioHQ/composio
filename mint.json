@@ -24,8 +24,8 @@
   },
   "feedback": {
     "suggestEdit": false,
-    "raiseIssue": false,
-    "thumbsRating": false
+    "raiseIssue": true,
+    "thumbsRating": true
   },
   "search": {
     "prompt": "Make my agents useful _/\\_ ..."
@@ -100,8 +100,8 @@
             "introduction/foundations/components/integrations/connected-account",
             "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/actions/local-code",
-            "introduction/foundations/components/entity/entity-guide"
+            "introduction/foundations/components/entity/entity-guide",
+            "introduction/foundations/components/actions/local-code"
           ]
         }
       ]
