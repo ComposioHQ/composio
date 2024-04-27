@@ -5,38 +5,53 @@ icon: "gear"
 description: "The Composio SDK allows you to integrate your applications with a variety of tools and services."
 ---
 
-### Streamline your integration and authorization management
-
 <Steps>
-<Step title="Installing Composio SDK">
+<Step title="Requirements">
+  Ensure Python 3.8 or higher is installed on your system.
+  You need pip available to install packages from PyPI.
+</Step>
+<Step title="Installation Steps">
   <CodeGroup>
-  ```bash Installing via pip
+  ```bash Installing Core Package
+  # Install the core Composio SDK
   pip install composio-core
   ```
   </CodeGroup>
-  Install Additional Packages for Specific Frameworks
+  Install additional packages for specific frameworks as needed:
   <AccordionGroup>
   <Accordion title="Langchain">
     <CodeGroup>
-      ```bash Installation for Langchain
+      ```bash Composio-Langchain installation
+      # Installation for Langchain
       pip install composio-langchain
       ```
     </CodeGroup>
   </Accordion>
   <Accordion title="Autogen">
     <CodeGroup>
-      ```bash Installation for Autogen
+      ```bash Composio-Autogen installation
+      # Installation for Autogen
       pip install composio-autogen
       ```
     </CodeGroup>
   </Accordion>
   <Accordion title="CrewAI">
     <CodeGroup>
-      ```bash Installation for CrewAI
+      ```bash Composio-Crewai installation
+      # Installation for CrewAI
       pip install composio-crewai
       ```
     </CodeGroup>
   </Accordion>
   </AccordionGroup>
+</Step>
+<Step title="Verifying Installation">
+  Verify the installation by checking the installed packages:
+  <CodeGroup>
+  ```bash Verify Installation
+  pip list | grep composio-core
+  ```
+  This command should list all installed Composio packages.
+  </CodeGroup>
 </Step>
 </Steps>
