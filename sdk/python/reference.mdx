@@ -7,7 +7,7 @@ description: "Complete SDK Reference"
 
 ### Fetching an Integration
 
-Integrations allow users to link their accounts with external apps, enabling agents to take actions on their behalf. You can view all active integrations and monitor live connections or users by visiting the [Dashboard](https://app.composio.dev/your_apps).
+Integrations enable users to connect their accounts with external applications, allowing agents to perform actions on their behalf. To view and manage all active integrations, visit the [Dashboard](https://app.composio.dev/your_apps).
 
 [Follow this guide to create your own integration](introduction/foundations/components/integrations/integration-guide)
 
@@ -111,3 +111,34 @@ connected_account = composio.get_connected_account(connection_request.id)
 
 - Status `Active` means that connection was successful
 - Status `Initiated` means that connection process is still underway, occurs when user closes the `redirect flow` before authorising. 
+
+### Executing an Action
+To manually execute an action, use the `connected_account.execute_action` method.
+
+<CodeGroup>
+```python Execute an action 
+action_inputs = {}
+action_name = ""
+
+connected_account.execute_action(action_name=action,params=action_inputs)
+```
+</CodeGroup>
+
+### Fetching Supported Actions using ConnectedAccount
+
+<CodeGroup>
+```python List of Supported Actions
+
+actions = connected_account.get_all_actions()
+
+# In case specific schema is needed for input fields of actions array 
+# For example openai compatible actions 
+
+# from composio import SchemaFormat
+# get_all_actions(SchemaFormat.OPENAI)
+
+```
+</CodeGroup>
+
+
+
