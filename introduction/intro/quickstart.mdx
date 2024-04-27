@@ -2,7 +2,7 @@
 title: "🚀 Quick Start"
 sidebarTitle: "Quick Start"
 icon: "play"
-description: "Use Composio to connect OpenAI Assistant to Github (via OAUTH2) to perform a task using natural language"
+description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to perform a task using natural language"
 ---
 
 ## Goal: Star a repository on GitHub with natural language
@@ -10,13 +10,13 @@ description: "Use Composio to connect OpenAI Assistant to Github (via OAUTH2) to
 <Steps> 
 <Step title="Setting Up GitHub Integration">
 <Tabs>
-<Tab title="Continue with defauly Integration">
+<Tab title="Continue with default Integration">
 This is the easiest way to start. Just use `TestIntegration.AppName` to use default integrations.
 </Tab>
 <Tab title="Create your Integration">
 For creating your own integration, you will have to register a developer app on github and use credentials like `client_id` and `client_secret`.
 
-Complete instructions can be found at [Github App Docs](https://docs.composio.dev/apps/github)
+Complete instructions can be found at [GitHub App Docs](https://docs.composio.dev/apps/github)
 
 After you have created your integration, _Copy your integration ID_
 
@@ -25,13 +25,13 @@ After you have created your integration, _Copy your integration ID_
 
 </Step>
 
-<Step title="Authenticating Github">
+<Step title="Authenticating GitHub">
 <CodeGroup>
 ```bash Install Composio SDK 
 pip install composio-core
 ```
 </CodeGroup>
-Use `Github Integration` to Connect your `Github Account`
+Use `GitHub Integration` to Connect your `GitHub Account`
 
 Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/api_keys).
 
@@ -81,7 +81,7 @@ from openai import OpenAI
 
 my_task = "Star a repo SamparkAI/docs on GitHub"
 
-# Initialize the OpenAI client with your API key
+# Initialize the OpenAI client
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 
 # Create a chat completion request to decide on the action
@@ -116,6 +116,8 @@ print("Completed Task")
 
 ### Putting it all together
 
+Replace `OPENAIKEY` and `api-key` below.
+
 <CodeGroup>
 ```python Complete Code
 ## Step 1
@@ -125,7 +127,7 @@ print("Completed Task")
 from openai import OpenAI
 from composio import Composio, TestIntegration
 
-# Initialize the OpenAI client with your API key
+# Initialize the OpenAI client
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 client = Composio("api-key")
 
