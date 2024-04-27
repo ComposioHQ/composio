@@ -27,7 +27,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
 #Check all different apps which you can connect with
 composio-cli show-apps
 
-````
+```
 </CodeGroup>
 
 ### Goal: Use Crew Agent to Interact with Github using Composio
@@ -43,7 +43,7 @@ from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 
-````
+```
 
 </CodeGroup>
 
@@ -60,7 +60,7 @@ from composio_crewai import ComposioToolset, Action, App
 
 tools = ComposioToolset(apps=[App.GITHUB])
 
-````
+```
 
 </CodeGroup>
 
@@ -87,7 +87,7 @@ task = Task(
 )
 
 task.execute()
-````
+```
 
 </CodeGroup>
 
@@ -115,7 +115,7 @@ Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 > Finished chain.[0m
 > {'execution_details': {'executed': True}, 'response_data': ''}
 
-````
+```
 </CodeGroup>
 
 </Step>
@@ -136,4 +136,4 @@ toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
   specific tools toolsAsanaGithub = ComposioToolset([App.ASANA, App.GITHUB])
 ```
 </CodeGroup>
-````
+```

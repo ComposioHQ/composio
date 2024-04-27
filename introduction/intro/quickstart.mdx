@@ -1,59 +1,46 @@
 ---
 title: "🚀 Quick Start"
 sidebarTitle: "Quick Start"
-icon: "rocket"
-description: "Composio manages authentication for your agents, enabling them to perform actions and receive webhooks on behalf of your users."
+icon: "play"
+description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to perform a task using natural language"
 ---
-<CardGroup cols={2}>
-<Card title="Introduction Video" icon="play" color="#2A60FE" href="https://www.youtube.com/watch?v=ujxKzS0b5qg">
-   Dive into our Introduction Video and learn more about our mission!
-</Card>
-<Card title="We Also Write" icon="lightbulb" iconType="duotone" color="#2A60FE" href="https://blog.composio.dev/">
-  Learn about building agents and productionising them. 
-</Card>
-<Card title="Talk to the Founder" icon="phone" iconType="duotone" color="#2A60FE" href="https://cal.com/team/composio/chat-with-soham">
-   Schedule a one-on-one chat with the founder to discuss how we can help. 
-</Card>
-<Card title="Email Us" icon="envelope" iconType="duotone" color="#2A60FE" href="mailto:tech@composio.dev">
-  Get in touch with us directly via email for any inquiries or support
-</Card>
-</CardGroup>
-<Note> Check out guides for **direct integrations** with [*Autogen*](https://docs.composio.dev/framework/autogen), [*Langchain*](https://docs.composio.dev/framework/langchain) </Note>  
 
-## Try Composio 🧑🏻‍💻 🕰️ 3 minutes
-Let's Get you **Setup with Composio** and use **Natural Language + Function Calling**
-
-
-<Tip>Goal: Star a repository on GitHub with natural language</Tip>
+## Goal: Star a repository on GitHub with natural language
 
 <Steps> 
 <Step title="Setting Up GitHub Integration">
-<AccordionGroup title="Select the option that suits you best.">
-<Accordion title="Option 1: Use Test Integration (Default) - Easy Start">
-Just use `TestIntegration.AppName` to use default integrations.
-</Accordion>
-<Accordion title="Option 2: Create your Integration - By Registering Github Developer App">
-[Create Integration](https://docs.composio.dev/apps/github) _Copy your integration ID._
-</Accordion>
-</AccordionGroup>
+<Tabs>
+<Tab title="Continue with default Integration">
+This is the easiest way to start. Just use `TestIntegration.AppName` to use default integrations.
+</Tab>
+<Tab title="Create your Integration">
+For creating your own integration, you will have to register a developer app on github and use credentials like `client_id` and `client_secret`.
+
+Complete instructions can be found at [GitHub App Docs](https://docs.composio.dev/apps/github)
+
+After you have created your integration, _Copy your integration ID_
+
+</Tab>
+</Tabs>
 
 </Step>
 
-<Step title="Authenticating Github">
+<Step title="Authenticating GitHub">
 <CodeGroup>
 ```bash Install Composio SDK 
 pip install composio-core
 ```
 </CodeGroup>
-Use `Github Integration` to Connect your `Github Account`
+Use `GitHub Integration` to Connect your `GitHub Account`
 
-Modify *Composio* `api-key` by [creating your own](https://app.composio.dev/api_keys). 
+Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/api_keys).
+
 <Tip> TestIntegration.*App* uses Composio built-in Integrations </Tip>
 <CodeGroup>
 ```python Auth via OAuth 
 from composio import Composio, TestIntegration
 
-client = Composio("api-key") 
+client = Composio("api-key")
 
 #client.get_integration(**YourIntegrationID**)
 integration = client.get_integration(TestIntegration.GITHUB)
@@ -63,7 +50,7 @@ connected_account = integration.initiate_connection(entity_id = None)
 
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
 
-```
+````
 
 </CodeGroup>
 </Step>
@@ -94,7 +81,7 @@ from openai import OpenAI
 
 my_task = "Star a repo SamparkAI/docs on GitHub"
 
-# Initialize the OpenAI client with your API key
+# Initialize the OpenAI client
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 
 # Create a chat completion request to decide on the action
@@ -106,7 +93,7 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-```
+````
 
 </CodeGroup>
 </Step>
@@ -121,7 +108,7 @@ print(execution_details)
 
 print("Completed Task")
 
-```
+````
 
 </CodeGroup>
 </Step>
@@ -129,8 +116,10 @@ print("Completed Task")
 
 ### Putting it all together
 
+Replace `OPENAIKEY` and `api-key` below.
+
 <CodeGroup>
-```python Complete Code 
+```python Complete Code
 ## Step 1
 #!pip install composio-core
 
@@ -138,9 +127,9 @@ print("Completed Task")
 from openai import OpenAI
 from composio import Composio, TestIntegration
 
-# Initialize the OpenAI client with your API key
+# Initialize the OpenAI client
 openai_client = OpenAI(api_key="******OPENAIKEY******")
-client = Composio("api-key") 
+client = Composio("api-key")
 
 #client.get_integration(**YourIntegrationID**)
 integration = client.get_integration(TestIntegration.GITHUB)
@@ -154,7 +143,7 @@ print("Complete the auth flow, link: ", connected_account.redirectUrl)
 #Keep Polling and wait until timeout
 connected_account = connected_account.wait_until_active(timeout=60)
 
-## Step 4 
+## Step 4
 actions = connected_account.get_all_actions()
 
 ## Step 5
@@ -178,5 +167,6 @@ execution_details = connected_account.handle_tools_calls(response)
 print(execution_details)
 
 print("Completed Task")
-```
+````
+
 </CodeGroup>
