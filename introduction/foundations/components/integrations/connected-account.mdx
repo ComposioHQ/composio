@@ -1,32 +1,37 @@
 ---
-title: "🔗 Integrations"
-sidebarTitle: "Integrations Guide"
+title: "Connected Accounts"
+sidebarTitle: "Accounts"
 icon: "plug"
-description: "Authorise Users Seamlessly 🌐"
+description: "Authorize Users Seamlessly 🌐"
 ---
 
-**Integrations** enable your **users** to **connect accounts** across tools/apps, allowing **your platform** to **perform actions** on **their behalf**.
+When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
 
-<AccordionGroup title="Choosing Your Integrations">
-  <Accordion title="Default Integrations">
-    Simply add your client ID and Secret to get started. [Explore our
-    integrations.](https://app.composio.dev/apps)
-  </Accordion>
-  <Accordion title="Custom Integrations: Create via YAML config">
-    Add custom integrations using a [configuration file](https://docs.composio.dev/integrations/custom-integration).
-  </Accordion>
-  <Accordion title="Premium Integrations: Let us Create & Manage">
-    For businesses requiring integrations with complex apps, we offer priority
-    support and development.
-  </Accordion>
-</AccordionGroup>
-
-## User Account Integration Process (< 5 Mins)
+## Steps to Connect an Account (~ 4️⃣ 🕰️ minutes )
+<Tabs>
+<Tab title="Adding Account via Dashboard">
+The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
+For deploying in a production environment, utilize the SDK or API methods.
 
 <Steps>
+<Step title="Select the Preferred Integration">
+Visit the [Integrations page](https://app.composio.dev/your_apps) and select the integration that best suits your needs.
+</Step>
+<Step title="Connect Your Account">
+To begin the connection process, click the `Add Account` button located in the top right corner of the page.
+</Step>
+<Step title="Complete Auth Flow">
+Complete the authorization process to allow the application to access your account.
+</Step>
+<Step title="Verify Connection Status">
+Check the connection status. If the process was successful, the `connected_account` status will display as 'Active'. If not fully completed, it will show as 'Initiated'.
+</Step>
+</Steps>
+</Tab>
+<Tab title="Add account via SDK">
+<Steps>
 <Step title="Gather Integration Parameters">
-
-Ex API Key , Sub Domain URL, User Name
+Example: API Key, Subdomain URL, Username.
 
 <CodeGroup>
 ```python Printing Required Params
@@ -73,9 +78,9 @@ params = {"subdomain":"***zendesk_sub_domain****"}
 connection_request = integration.initiate_connection(params=params, entity_id = "")
 
 if connection_request.redirectUrl != "":
-  print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
+print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
 else:
-  print("The account status is: ",connection_request)
+print("The account status is: ",connection_request)
 
 ```
 </CodeGroup>
@@ -133,7 +138,10 @@ print(connected_account.status)
 </CodeGroup>
 </Step>
 </Steps>
+</Tab>
+</Tabs>
 
-We created a new Connected Account.
+## Using Connected Accounts 
+By leveraging the `connected_account.id`, you can execute actions or configure triggers. For example, if you need to create a repository on GitHub, you can use the Composio SDK or the Action API. Simply provide the `connection_id` to enable this operation.
 
-You should be able to use `connected_account.id` to execute actions or receive triggers.
+

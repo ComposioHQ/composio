@@ -4,7 +4,9 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "openapi": ["/composio.yaml"],
+  "openapi": [
+    "/composio.yaml"
+  ],
   "favicon": "/favicon.png",
   "colors": {
     "primary": "#343434",
@@ -16,17 +18,17 @@
       "dark": "#0b0b0d"
     }
   },
-  "modeToggle":{
+  "modeToggle": {
     "default": "dark",
-    "isHidden": true
+    "isHidden": false
   },
   "feedback": {
-    "suggestEdit": true,
+    "suggestEdit": false,
     "raiseIssue": true,
     "thumbsRating": true
   },
   "search": {
-    "prompt": "Help my agents to work"
+    "prompt": "Make my agents useful _/\\_ ..."
   },
   "metadata": {
     "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
@@ -34,8 +36,14 @@
     "og:site_name": "Composio Docs",
     "twitter:site": "https://twitter.com/KaranVaidya6"
   },
+  "topbarLinks": [
+    {
+      "name": "Community",
+      "url": "https://discord.gg/XMa3eWKkH8"
+    }
+  ],
   "topbarCtaButton": {
-    "name": "Open App",
+    "name": "Open Dashboard",
     "url": "https://app.composio.dev"
   },
   "topAnchor": {
@@ -43,32 +51,59 @@
     "icon": "book-open"
   },
   "primaryTab": {
-    "name": "Docs"
+    "name": "Get Started"
   },
   "tabs": [
     {
-      "name": "API",
+      "name": "Using SDK",
+      "url": "sdk"
+    },
+
+    {
+      "name": "Using API",
       "url": "api-reference"
     },
     {
-      "name": "Discord",
-      "url": "https://discord.gg/XMa3eWKkH8"
+      "name": "Supported Tools",
+      "url": "apps"
     }
   ],
   "anchors": [
     {
-      "name": "App",
-      "icon": "laptop",
-      "url": "https://app.composio.dev"
+      "name": "Using SDK",
+      "icon": "terminal",
+      "url": "sdk"
+    },
+    {
+      "name": "Using API",
+      "icon": "code",
+      "url": "api-reference"
     }
-
   ],
   "navigation": [
     {
-      "group": "Get Started",
+      "group": "Introduction",
       "pages": [
-        "introduction/overview",
-        "introduction/pricing"
+        "introduction/intro/overview",
+        "introduction/intro/quickstart",
+        "introduction/intro/help"
+      ]
+    },
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction/foundations/basic",
+        {
+          "group": "Components",
+          "pages": [
+            "introduction/foundations/components/integrations/integration-guide",
+            "introduction/foundations/components/integrations/connected-account",
+            "introduction/foundations/components/actions/action-guide",
+            "introduction/foundations/components/triggers/trigger-guide",
+            "introduction/foundations/components/entity/entity-guide",
+            "introduction/foundations/components/actions/local-code"
+          ]
+        }
       ]
     },
     {
@@ -77,127 +112,131 @@
         "framework/langchain",
         "framework/autogen",
         "framework/crewai",
-        "framework/lyzr",
-        "framework/cli"
-
+        "framework/lyzr"
       ]
     },
     {
-      "group":"Work with Integrations",
-      "pages":[
-        "integrations/integration-guide",
-        "integrations/custom-integration"
-      ]
-    },
-    {
-      "group":"Work with Actions/Triggers",
-      "pages":[
-        "actions/action-guide",
-        "actions/local-code",
-        "triggers/trigger-guide"
-      ]
-    },
-    {
-      "group": "Supported Integrations",
-      
+      "group": "Pricing",
       "pages": [
-          "apps/list",
-          "apps/accelo",
-          "apps/adobe",
-          "apps/amazon",
-          "apps/amplitude",
-          "apps/apify",
-          "apps/ashby",
-          "apps/asana",
-          "apps/atlassian",
-          "apps/attio",
-          "apps/auth0",
-          "apps/bamboohr",
-          "apps/battle-net",
-          "apps/bitbucket",
-          "apps/blackbaud",
-          "apps/boldsign",
-          "apps/box",
-          "apps/braintree",
-          "apps/calendly",
-          "apps/clickup",
-          "apps/close",
-          "apps/deel",
-          "apps/discord",
-          "apps/dropbox",
-          "apps/epic-games",
-          "apps/eventbrite",
-          "apps/facebook",
-          "apps/figma",
-          "apps/freshbooks",
-          "apps/freshdesk",
-          "apps/front",
-          "apps/github",
-          "apps/gitlab",
-          "apps/gmail",
-          "apps/google-calendar",
-          "apps/google-docs",
-          "apps/google-drive",
-          "apps/google-sheets",
-          "apps/gorgias",
-          "apps/gumroad",
-          "apps/guru",
-          "apps/hackerrank-work",
-          "apps/harvest",
-          "apps/heroku",
-          "apps/highlevel",
-          "apps/hubspot",
-          "apps/intercom",
-          "apps/jira",
-          "apps/keap",
-          "apps/klaviyo",
-          "apps/linkhut",
-          "apps/linear",
-          "apps/mailchimp",
-          "apps/miro",
-          "apps/mixpanel",
-          "apps/monday",
-          "apps/mural",
-          "apps/notion",
-          "apps/okta",
-          "apps/one-drive",
-          "apps/pagerduty",
-          "apps/pandadoc",
-          "apps/pipedrive",
-          "apps/reddit",
-          "apps/sage",
-          "apps/salesforce",
-          "apps/servicem8",
-          "apps/shopify",
-          "apps/slack",
-          "apps/smugmug",
-          "apps/splitwise",
-          "apps/spotify",
-          "apps/stack-exchange",
-          "apps/strava",
-          "apps/survey-monkey",
-          "apps/taskade",
-          "apps/timely",
-          "apps/todoist",
-          "apps/trello",
-          "apps/twitch",
-          "apps/twitter",
-          "apps/typeform",
-          "apps/wakatime",
-          "apps/wave-accounting",
-          "apps/workable",
-          "apps/xero",
-          "apps/yandex",
-          "apps/youtube",
-          "apps/zendesk",
-          "apps/zoho",
-          "apps/zoho-bigin",
-          "apps/zoho-books",
-          "apps/zoho-desk",
-          "apps/zoho-invoice",
-          "apps/zoho-inventory",
-          "apps/zoho-mail",
-          "apps/zoom"
+        "introduction/pricing/pricing"
+      ]
+    },
+    {
+      "group": "CLI API",
+      "pages": [
+        "sdk/cli/install",
+        "sdk/cli/account",
+        "sdk/cli/trigger"
+      ]
+    },
+    {
+      "group": "Python SDK",
+      "pages": [
+        "sdk/python/introduction",
+        "sdk/python/configuration",
+        "sdk/python/reference"
+      ]
+    },
+    {
+      "group": "Supported Tools",
+      "pages": [
+        "apps/list",
+        "apps/accelo",
+        "apps/adobe",
+        "apps/amazon",
+        "apps/amplitude",
+        "apps/apify",
+        "apps/ashby",
+        "apps/asana",
+        "apps/atlassian",
+        "apps/attio",
+        "apps/auth0",
+        "apps/bamboohr",
+        "apps/battle-net",
+        "apps/bitbucket",
+        "apps/blackbaud",
+        "apps/boldsign",
+        "apps/box",
+        "apps/braintree",
+        "apps/calendly",
+        "apps/clickup",
+        "apps/close",
+        "apps/deel",
+        "apps/discord",
+        "apps/dropbox",
+        "apps/epic-games",
+        "apps/eventbrite",
+        "apps/facebook",
+        "apps/figma",
+        "apps/freshbooks",
+        "apps/freshdesk",
+        "apps/front",
+        "apps/github",
+        "apps/gitlab",
+        "apps/gmail",
+        "apps/google-calendar",
+        "apps/google-docs",
+        "apps/google-drive",
+        "apps/google-sheets",
+        "apps/gorgias",
+        "apps/gumroad",
+        "apps/guru",
+        "apps/hackerrank-work",
+        "apps/harvest",
+        "apps/heroku",
+        "apps/highlevel",
+        "apps/hubspot",
+        "apps/intercom",
+        "apps/jira",
+        "apps/keap",
+        "apps/klaviyo",
+        "apps/linkhut",
+        "apps/linear",
+        "apps/mailchimp",
+        "apps/miro",
+        "apps/mixpanel",
+        "apps/monday",
+        "apps/mural",
+        "apps/notion",
+        "apps/okta",
+        "apps/one-drive",
+        "apps/pagerduty",
+        "apps/pandadoc",
+        "apps/pipedrive",
+        "apps/reddit",
+        "apps/sage",
+        "apps/salesforce",
+        "apps/servicem8",
+        "apps/shopify",
+        "apps/slack",
+        "apps/smugmug",
+        "apps/splitwise",
+        "apps/spotify",
+        "apps/stack-exchange",
+        "apps/strava",
+        "apps/survey-monkey",
+        "apps/taskade",
+        "apps/timely",
+        "apps/todoist",
+        "apps/trello",
+        "apps/twitch",
+        "apps/twitter",
+        "apps/typeform",
+        "apps/wakatime",
+        "apps/wave-accounting",
+        "apps/workable",
+        "apps/xero",
+        "apps/yandex",
+        "apps/youtube",
+        "apps/zendesk",
+        "apps/zoho",
+        "apps/zoho-bigin",
+        "apps/zoho-books",
+        "apps/zoho-desk",
+        "apps/zoho-invoice",
+        "apps/zoho-inventory",
+        "apps/zoho-mail",
+        "apps/zoom"
       ]
     },
     {
@@ -243,20 +282,20 @@
     }
   ],
   "integrations": {
-      "intercom": "dvp1uc7s"
+    "intercom": "dvp1uc7s"
   },
   "footerSocials": {
-    "linkedin": "https://www.linkedin.com/in/soham-ganatra/",
-    "twitter": "https://twitter.com/KaranVaidya6",
+    "linkedin": "https://www.linkedin.com/company/composio-dev/",
+    "x": "https://twitter.com/composiohq",
     "github": "https://github.com/SamparkAI"
   },
   "analytics": {
-      "ga4": {
-          "measurementId": "G-3DBLETRPXH"
-      },
-      "posthog":{
-        "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
-      }
+    "ga4": {
+      "measurementId": "G-3DBLETRPXH"
+    },
+    "posthog": {
+      "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
+    }
   },
   "api": {
     "playground": {
@@ -264,4 +303,3 @@
     }
   }
 }
-
