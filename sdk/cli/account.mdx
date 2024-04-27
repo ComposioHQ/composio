@@ -1,0 +1,36 @@
+---
+title: "🧑🏻‍💻 Manage Connections using CLI"
+sidebarTitle: "Connections"
+icon: "globe"
+description: "Learn how to add, check, and manage connections using the CLI."
+---
+
+### Managing Connections
+
+<Steps>
+<Step title="Show All Supported Apps">
+**View all supported tools/apps** with Composio.
+  <CodeGroup>
+  ```bash Show all Apps
+  composio-cli show-apps
+  ```
+  </CodeGroup>
+</Step>
+<Step title="Connecting your preferred tool to Composio">
+**Authorise your app account** to enable agent interactions.
+  <CodeGroup>
+  ```bash Authorise Slack
+  composio-cli add slack # Replace 'slack' with any supported app
+  ```
+  </CodeGroup>
+  After completing the authorisation, a new `connected_account` will be created and visible in your dashboard.
+</Step>
+<Step title="Show all Active Connections for any App">
+**View all active connections** for a specific app.
+  <CodeGroup>
+  ```bash Show currently active connections
+  composio-cli show-connections slack # Replace 'slack' with any supported app
+  ```
+  </CodeGroup>
+</Step>
+</Steps>
