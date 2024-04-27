@@ -8,8 +8,9 @@ description: "Authorize Users Seamlessly 🌐"
 When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
 
 ## Steps to Connect an Account
-<AccordionGroup title="Select Your Preferred Method">
-<Accordion title="Test Using UI Flow">
+<Tabs>
+<Tab title="Adding Account via Dashboard">
+This method is mainly used to quickly check if your integration works and to set up a new connection easily.
 <Steps>
 <Step title="Select the Preferred Integration">
 Visit the [Integrations page](https://app.composio.dev/your_apps) and select the integration that best suits your needs.
@@ -24,8 +25,8 @@ Complete the authorization process to allow the application to access your accou
 Check the connection status. If the process was successful, the `connected_account` status will display as 'Active'. If not fully completed, it will show as 'Initiated'.
 </Step>
 </Steps>
-</Accordion>
-<Accordion title="Connect Using Code">
+</Tab>
+<Tab title="Add account for your user using Code">
 <Steps>
 <Step title="Gather Integration Parameters">
 Example: API Key, Subdomain URL, Username.
@@ -135,8 +136,8 @@ print(connected_account.status)
 </CodeGroup>
 </Step>
 </Steps>
-</Accordion>
-</AccordionGroup>
+</Tab>
+</Tabs>
 
 ## Using Connected Accounts 
 By leveraging the `connected_account.id`, you can execute actions or configure triggers. For example, if you need to create a repository on GitHub, you can use the Composio SDK or the Action API. Simply provide the `connection_id` to enable this operation.
