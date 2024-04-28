@@ -5,7 +5,7 @@ from typing import Union
 from pydantic import BaseModel
 
 from .sdk import Composio
-from .storage import get_base_account_api_key
+from .storage import get_base_account_api_key, get_base_url
 
 
 def get_enum_key(name):
@@ -17,6 +17,8 @@ def get_enum_key(name):
 
 def generate_enums_given_apps(apps, actions, triggers):
     enum_content = "from enum import Enum\n\n"
+    enum_content += "class Tag(Enum):\n"
+    enum_content += '    IMPORTANT = "important"\n\n'
     enum_content += "class App(Enum):\n"
     for app in apps["items"]:
         app_name = app["key"].upper().replace(" ", "_").replace("-", "_")
@@ -100,3 +102,17 @@ def get_git_user_info() -> GitUserInfo:
         return GitUserInfo(name=name, email=email)
     except subprocess.CalledProcessError:
         return GitUserInfo(name=None, email=None)
+
+
+def get_frontend_url(path: str) -> str:
+    base_url = get_base_url()
+    if base_url == "https://backend.composio.dev/api":
+        return f"https://app.composio.dev/{path}"
+    if base_url == "http://localhost:9900/api":
+        return f"http://localhost:3000/{path}"
+    if base_url == "https://hermes-development.up.railway.app/":
+        return f"https://hermes-frontend-git-master-composio.vercel.app/{path}"
+
+    raise Exception(
+        f"Incorrect format for base_url: {base_url}. Format should be https://backend.composio.dev/api or http://localhost:9900/api"
+    )

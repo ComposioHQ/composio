@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 import autogen
 from autogen.agentchat.conversable_agent import ConversableAgent
 
-from composio import Action, App, ComposioCore, FrameworkEnum
+from composio import Action, App, ComposioCore, FrameworkEnum, Tag
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
 
 
@@ -38,6 +38,7 @@ class ComposioToolset:
         tools: Union[App, List[App]],
         caller: ConversableAgent = None,
         executor: ConversableAgent = None,
+        tags: List[Tag] = None,
     ):
         if isinstance(tools, App):
             tools = [tools]
@@ -53,7 +54,7 @@ class ComposioToolset:
                 "User not authenticated. Please authenticate using composio-cli add <app_name>"
             )
 
-        action_schemas = client.sdk.get_list_of_actions(apps=tools)
+        action_schemas = client.sdk.get_list_of_actions(apps=tools, tags=tags)
 
         for schema in action_schemas:
             self._register_schema_to_autogen(
