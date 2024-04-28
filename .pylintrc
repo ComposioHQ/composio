@@ -24,4 +24,4 @@ disable=C0114,C0115,C0116,C0301,W0719,W0718,C0103,W0602,R1702,W0612,W0603,R1715,
 # W0612: unused-variable
 
 [IMPORTS]
-ignored-modules=
+ignored-modules=semver

@@ -1,14 +1,13 @@
 from enum import Enum
 
 
+class Tag(Enum):
+    IMPORTANT = "important"
+
+
 class App(Enum):
     ASANA = "asana"
     LINEAR = "linear"
-    GMAIL = "gmail"
-    BOX = "box"
-    JIRA = "jira"
-    MONDAY = "monday"
-    SHOPIFY = "shopify"
     SLACK = "slack"
     BITBUCKET = "bitbucket"
     STRAVA = "strava"
@@ -29,6 +28,8 @@ class App(Enum):
     TASKADE = "taskade"
     TYPEFORM = "typeform"
     PIPEDRIVE = "pipedrive"
+    MONDAY = "monday"
+    SHOPIFY = "shopify"
     TWITTER = "twitter"
     BOLDSIGN = "boldsign"
     KEAP = "keap"
@@ -43,7 +44,11 @@ class App(Enum):
     ZOHO_INVOICE = "zoho-invoice"
     ZOHO_MAIL = "zoho-mail"
     TEST_ASANA = "test_asana"
+    BOX = "box"
+    JIRA = "jira"
     AMAZON = "amazon"
+    GMAIL = "gmail"
+    TINYURL = "tinyurl"
     REDDIT = "reddit"
     SERVICEM8 = "servicem8"
     SHORTCUT = "shortcut"
@@ -142,8 +147,15 @@ class App(Enum):
     EXIST = "exist"
     GOOGLE_DRIVE = "google-drive"
     GORGIAS = "gorgias"
-    HACKERRANK_WORK = "hackerrank-work"
     HIGHLEVEL = "highlevel"
+    GOOGLE_DOCS = "google-docs"
+    GOOGLE_SHEETS = "google-sheets"
+    MAILCHIMP = "mailchimp"
+    TIMELY = "timely"
+    ZOOM = "zoom"
+    ATTIO = "attio"
+    EVENTBRITE = "eventbrite"
+    HACKERRANK_WORK = "hackerrank-work"
     KLIPFOLIO = "klipfolio"
     LASTPASS = "lastpass"
     LEXOFFICE = "lexoffice"
@@ -154,14 +166,6 @@ class App(Enum):
     MURAL = "mural"
     SQUARE = "square"
     TAPFORM = "tapform"
-    TINYURL = "tinyurl"
-    GOOGLE_DOCS = "google-docs"
-    GOOGLE_SHEETS = "google-sheets"
-    MAILCHIMP = "mailchimp"
-    TIMELY = "timely"
-    ZOOM = "zoom"
-    ATTIO = "attio"
-    EVENTBRITE = "eventbrite"
 
 
 class Action(Enum):
@@ -175,23 +179,6 @@ class Action(Enum):
     LINEAR_CREATE_LINEAR_ISSUE = ("linear", "linear_create_linear_issue", False)
     LINEAR_LIST_LINEAR_PROJECTS = ("linear", "linear_list_linear_projects", False)
     LINEAR_LIST_LINEAR_TEAMS = ("linear", "linear_list_linear_teams", False)
-    GMAIL_SEND_EMAIL = ("gmail", "gmail_send_email", False)
-    GMAIL_CREATE_EMAIL_DRAFT = ("gmail", "gmail_create_email_draft", False)
-    GMAIL_FIND_EMAIL_ID = ("gmail", "gmail_find_email_id", False)
-    GMAIL_FETCH_LAST_THREE_MESSAGES = (
-        "gmail",
-        "gmail_fetch_last_three_messages",
-        False,
-    )
-    GMAIL_ADD_LABEL_TO_EMAIL = ("gmail", "gmail_add_label_to_email", False)
-    GMAIL_LIST_LABELS = ("gmail", "gmail_list_labels", False)
-    GMAIL_FETCH_MESSAGE_BY_THREAD_ID = (
-        "gmail",
-        "gmail_fetch_message_by_thread_id",
-        False,
-    )
-    GMAIL_REPLY_TO_THREAD = ("gmail", "gmail_reply_to_thread", False)
-    GMAIL_FETCH_EMAILS_WITH_LABEL = ("gmail", "gmail_fetch_emails_with_label", False)
     SLACK_SEND_SLACK_MESSAGE = ("slack", "slack_send_slack_message", False)
     SLACK_LIST_SLACK_CHANNELS = ("slack", "slack_list_slack_channels", False)
     SLACK_LIST_SLACK_MEMBERS = ("slack", "slack_list_slack_members", False)
@@ -296,6 +283,23 @@ class Action(Enum):
     TRELLO_SEARCH_TRELLO_MEMBER = ("trello", "trello_search_trello_member", False)
     TRELLO_UPDATE_TRELLO_CARD = ("trello", "trello_update_trello_card", False)
     TRELLO_GET_TRELLO_MEMBER_BOARD = ("trello", "trello_get_trello_member_board", False)
+    GMAIL_SEND_EMAIL = ("gmail", "gmail_send_email", False)
+    GMAIL_CREATE_EMAIL_DRAFT = ("gmail", "gmail_create_email_draft", False)
+    GMAIL_FIND_EMAIL_ID = ("gmail", "gmail_find_email_id", False)
+    GMAIL_FETCH_LAST_THREE_MESSAGES = (
+        "gmail",
+        "gmail_fetch_last_three_messages",
+        False,
+    )
+    GMAIL_ADD_LABEL_TO_EMAIL = ("gmail", "gmail_add_label_to_email", False)
+    GMAIL_LIST_LABELS = ("gmail", "gmail_list_labels", False)
+    GMAIL_FETCH_MESSAGE_BY_THREAD_ID = (
+        "gmail",
+        "gmail_fetch_message_by_thread_id",
+        False,
+    )
+    GMAIL_REPLY_TO_THREAD = ("gmail", "gmail_reply_to_thread", False)
+    GMAIL_FETCH_EMAILS_WITH_LABEL = ("gmail", "gmail_fetch_emails_with_label", False)
     GITHUB_CREATE_ISSUE = ("github", "github_create_issue", False)
     GITHUB_LIST_GITHUB_REPOS = ("github", "github_list_github_repos", False)
     GITHUB_STAR_REPO = ("github", "github_star_repo", False)
@@ -353,51 +357,35 @@ class Action(Enum):
         "codeinterpreter_execute_code",
         True,
     )
-    FILEANDSHELLMANAGER_CREATE_SHELL_ACTION = (
+    FILEMANAGER_CREATE_SHELL_ACTION = (
         "filemanager",
-        "fileandshellmanager_create_shell_action",
+        "filemanager_create_shell_action",
         True,
     )
-    FILEANDSHELLMANAGER_CLOSE_SHELL_ACTION = (
+    FILEMANAGER_CLOSE_SHELL_ACTION = (
         "filemanager",
-        "fileandshellmanager_close_shell_action",
+        "filemanager_close_shell_action",
         True,
     )
-    FILEANDSHELLMANAGER_RUN_COMMAND_ACTION = (
+    FILEMANAGER_RUN_COMMAND_ACTION = (
         "filemanager",
-        "fileandshellmanager_run_command_action",
+        "filemanager_run_command_action",
         True,
     )
-    FILEANDSHELLMANAGER_SET_ENV_VAR_ACTION = (
+    FILEMANAGER_SET_ENV_VAR_ACTION = (
         "filemanager",
-        "fileandshellmanager_set_env_var_action",
+        "filemanager_set_env_var_action",
         True,
     )
-    FILEANDSHELLMANAGER_OPEN_FILE_ACTION = (
+    FILEMANAGER_OPEN_FILE_ACTION = ("filemanager", "filemanager_open_file_action", True)
+    FILEMANAGER_GOTO_LINE_ACTION = ("filemanager", "filemanager_goto_line_action", True)
+    FILEMANAGER_SCROLL_ACTION = ("filemanager", "filemanager_scroll_action", True)
+    FILEMANAGER_CREATE_FILE_ACTION = (
         "filemanager",
-        "fileandshellmanager_open_file_action",
+        "filemanager_create_file_action",
         True,
     )
-    FILEANDSHELLMANAGER_GOTO_LINE_ACTION = (
-        "filemanager",
-        "fileandshellmanager_goto_line_action",
-        True,
-    )
-    FILEANDSHELLMANAGER_SCROLL_ACTION = (
-        "filemanager",
-        "fileandshellmanager_scroll_action",
-        True,
-    )
-    FILEANDSHELLMANAGER_CREATE_FILE_ACTION = (
-        "filemanager",
-        "fileandshellmanager_create_file_action",
-        True,
-    )
-    FILEANDSHELLMANAGER_EDIT_FILE_ACTION = (
-        "filemanager",
-        "fileandshellmanager_edit_file_action",
-        True,
-    )
+    FILEMANAGER_EDIT_FILE_ACTION = ("filemanager", "filemanager_edit_file_action", True)
     SNOWFLAKE_RUN_QUERY = ("snowflake", "snowflake_run_query", False)
     SNOWFLAKE_SHOW_TABLES = ("snowflake", "snowflake_show_tables", False)
     SNOWFLAKE_DESCRIBE_TABLE = ("snowflake", "snowflake_describe_table", False)

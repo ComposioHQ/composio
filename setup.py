@@ -7,12 +7,12 @@ from pathlib import Path
 from setuptools import setup
 from setuptools import setup, find_packages
 
-version = os.environ.get("RELEASE_VERSION", "0.2.15")
+
 
 
 setup(
     name="composio_core",
-    version=version,
+    version="0.2.22",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
