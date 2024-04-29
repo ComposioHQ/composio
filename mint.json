@@ -58,6 +58,10 @@
       "name": "Using SDK",
       "url": "sdk"
     },
+    {
+      "name": "Gallery & Casestudies",
+      "url": "guides"
+    },
 
     {
       "name": "Using API",
@@ -135,6 +139,18 @@
         "sdk/python/introduction",
         "sdk/python/configuration",
         "sdk/python/reference"
+      ]
+    },
+    {
+      "group": "Gallery",
+      "pages":[
+        "guides/starterprojects/gallery"
+      ]
+    },
+    {
+      "group": "Customers",
+      "pages":[
+        "guides/casestudy/research-assistant"
       ]
     },
     {
