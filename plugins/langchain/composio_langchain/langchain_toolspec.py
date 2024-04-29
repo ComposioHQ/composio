@@ -61,7 +61,7 @@ def ComposioToolset(
         )
     if client.is_authenticated() is False:
         raise UserNotAuthenticatedException(
-            "User not authenticated. Please authenticate using composio-cli add <app_name>"
+            "User not authenticated. Please authenticate using composio-cli login"
         )
     actions_list = client.sdk.get_list_of_actions(apps, actions, tags)
     return [
