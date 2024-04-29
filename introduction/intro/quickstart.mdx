@@ -7,50 +7,37 @@ description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to
 
 ## Goal: Star a repository on GitHub with natural language
 
-<Steps> 
-<Step title="Setting Up GitHub Integration">
-<Tabs>
-<Tab title="Continue with default Integration">
-This is the easiest way to start. Just use `TestIntegration.AppName` to use default integrations.
-</Tab>
-<Tab title="Create your Integration">
-For creating your own integration, you will have to register a developer app on github and use credentials like `client_id` and `client_secret`.
+<Steps>
 
-Complete instructions can be found at [GitHub App Docs](https://docs.composio.dev/apps/github)
-
-After you have created your integration, _Copy your integration ID_
-
-</Tab>
-</Tabs>
-
-</Step>
-
-<Step title="Authenticating GitHub">
+<Step title="Install Composio Package">
 <CodeGroup>
 ```bash Install Composio SDK 
-pip install composio-core
+pip install composio-core -U
 ```
 </CodeGroup>
-Use `GitHub Integration` to Connect your `GitHub Account`
+</Step>
+<Step>
 
 Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/api_keys).
 
-<Tip> TestIntegration.*App* uses Composio built-in Integrations </Tip>
 <CodeGroup>
 ```python Auth via OAuth 
-from composio import Composio, TestIntegration
+from composio import Composio
 
 client = Composio("api-key")
 
-#client.get_integration(**YourIntegrationID**)
-integration = client.get_integration(TestIntegration.GITHUB)
+# Authenticate a particular user
+
+# Feel free to keep user_id anything if you are testing.
+
+my_user = client.get_entity(entity_id="user_id")
 
 #Trying to initiate a new connection
-connected_account = integration.initiate_connection(entity_id = None)
+connected_account = my_user.initiate_connection(app_name=App.GITHUB)
 
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
 
-````
+```
 
 </CodeGroup>
 </Step>
@@ -64,7 +51,7 @@ print("Complete the auth flow, link: ", connected_account.redirectUrl)
   </CodeGroup>
 </Step>
 
-<Step title="Supported Actions">
+<Step title="List all Supported Actions">
   <CodeGroup>
     ```python Fetch Actions
     actions = connected_account.get_all_actions()
@@ -93,7 +80,7 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-````
+```
 
 </CodeGroup>
 </Step>
@@ -108,7 +95,7 @@ print(execution_details)
 
 print("Completed Task")
 
-````
+```
 
 </CodeGroup>
 </Step>
@@ -121,7 +108,7 @@ Replace `OPENAIKEY` and `api-key` below.
 <CodeGroup>
 ```python Complete Code
 ## Step 1
-#!pip install composio-core
+#!pip install composio-core -U
 
 ## Step 2
 from openai import OpenAI
@@ -131,11 +118,10 @@ from composio import Composio, TestIntegration
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 client = Composio("api-key")
 
-#client.get_integration(**YourIntegrationID**)
-integration = client.get_integration(TestIntegration.GITHUB)
 
+my_user = client.get_entity(entity_id="user_id")
 #Trying to initiate a new connection
-connected_account = integration.initiate_connection(entity_id = None)
+connected_account = my_user.initiate_connection(app_name=App.GITHUB)
 
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
 
@@ -167,6 +153,6 @@ execution_details = connected_account.handle_tools_calls(response)
 print(execution_details)
 
 print("Completed Task")
-````
+```
 
 </CodeGroup>
