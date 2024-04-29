@@ -35,7 +35,7 @@ def pytest_sessionstart_autogen():
 def test_autogen_script_not_authorized_error():
     with pytest.raises(UserNotAuthenticatedException) as exc_info:
         run_autogen_script()
-    assert "User not authenticated. Please authenticate using composio-cli add" in str(
+    assert "User not authenticated. Please authenticate using composio-cli login" in str(
         exc_info.value
     )
 
