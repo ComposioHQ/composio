@@ -25,3 +25,4 @@ Pipfile.lock
 .cache
 .pytest_cache
 .test_results
+.trunk
