@@ -6,6 +6,7 @@ from typing import List
 from langchain_core.tools import StructuredTool
 
 from composio import Action, App, ComposioCore, FrameworkEnum, Tag
+from composio.sdk.exceptions import UserNotAuthenticatedException
 from composio.sdk.shared_utils import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
@@ -41,12 +42,15 @@ def ComposioTool(
         func=action_func,
     )
 
+def create_client(api_key=None):
+    try:
+        client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key=api_key)
+        return client, client.sdk
+    except Exception as e:
+        # Handle specific exceptions if possible
+        raise ConnectionError("Failed to initialize ComposioCore client") from e
 
-client = ComposioCore(
-    framework=FrameworkEnum.LANGCHAIN, api_key=os.environ.get("COMPOSIO_API_KEY", None)
-)
-ComposioSDK = client.sdk
-
+client, ComposioSDK = create_client()
 
 def ComposioToolset(
     apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default", tags: List[Tag] = []
@@ -55,8 +59,8 @@ def ComposioToolset(
         raise ValueError(
             "You must provide either a list of tools or a list of actions, not both"
         )
-    if client.is_authenticated():
-        raise Exception(
+    if client.is_authenticated() is False:
+        raise UserNotAuthenticatedException(
             "User not authenticated. Please authenticate using composio-cli add <app_name>"
         )
     actions_list = client.sdk.get_list_of_actions(apps, actions, tags)

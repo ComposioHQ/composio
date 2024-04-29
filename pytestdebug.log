@@ -1,0 +1,193 @@
+versions pytest-7.4.2, python-3.10.0.final.0
+cwd=/Users/utkarsh/Desktop/composio/composio_sdk
+args=('--verbose', '--debug', '-h', '--log-cli-level=DEBUG')
+
+  pytest_cmdline_main [hook]
+      config: <_pytest.config.Config object at 0x103ea6e00>
+    pytest_configure [hook]
+        config: <_pytest.config.Config object at 0x103ea6e00>
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.cacheprovider.LFPlugin object at 0x1043db0a0>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.cacheprovider.NFPlugin object at 0x1043d9150>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+    early skip of rewriting module: faulthandler [assertion]
+      pytest_plugin_registered [hook]
+          plugin: <class '_pytest.legacypath.LegacyTmpdirPlugin'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+    early skip of rewriting module: pdb [assertion]
+    early skip of rewriting module: cmd [assertion]
+    early skip of rewriting module: code [assertion]
+    early skip of rewriting module: codeop [assertion]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.config.Config object at 0x103ea6e00>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.mark' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/mark/__init__.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.main' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/main.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.runner' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/runner.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.fixtures' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/fixtures.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.helpconfig' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/helpconfig.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.python' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/python.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.terminal' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/terminal.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.debugging' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/debugging.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.unittest' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/unittest.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.capture' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/capture.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.skipping' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/skipping.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.legacypath' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/legacypath.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.tmpdir' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/tmpdir.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.monkeypatch' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/monkeypatch.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.recwarn' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/recwarn.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.pastebin' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/pastebin.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.nose' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/nose.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.assertion' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/assertion/__init__.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.junitxml' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/junitxml.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.doctest' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/doctest.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.cacheprovider' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/cacheprovider.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.freeze_support' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/freeze_support.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.setuponly' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/setuponly.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.setupplan' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/setupplan.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.stepwise' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/stepwise.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.warnings' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/warnings.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.logging' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/logging.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.reports' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/reports.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.python_path' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/python_path.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.unraisableexception' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/unraisableexception.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.threadexception' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/threadexception.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module '_pytest.faulthandler' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/_pytest/faulthandler.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <module 'anyio.pytest_plugin' from '/Users/utkarsh/.local/share/virtualenvs/composio_sdk-YnFIAcow/lib/python3.10/site-packages/anyio/pytest_plugin.py'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <CaptureManager _method='fd' _global_capturing=<MultiCapture out=<FDCapture 1 oldfd=5 _state='suspended' tmpfile=<_io.TextIOWrapper name="<_io.FileIO name=6 mode='rb+' closefd=True>" mode='r+' encoding='utf-8'>> err=<FDCapture 2 oldfd=7 _state='suspended' tmpfile=<_io.TextIOWrapper name="<_io.FileIO name=8 mode='rb+' closefd=True>" mode='r+' encoding='utf-8'>> in_=<FDCapture 0 oldfd=3 _state='started' tmpfile=<_io.TextIOWrapper name='/dev/null' mode='r' encoding='utf-8'>> _state='suspended' _in_suspended=False> _capture_fixture=None>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.cacheprovider.LFPlugin object at 0x1043db0a0>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.cacheprovider.NFPlugin object at 0x1043d9150>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <class '_pytest.legacypath.LegacyTmpdirPlugin'>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.terminal.TerminalReporter object at 0x1043db4c0>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+      pytest_plugin_registered [hook]
+          plugin: <_pytest.logging.LoggingPlugin object at 0x1043da200>
+          manager: <_pytest.config.PytestPluginManager object at 0x103d96d10>
+      finish pytest_plugin_registered --> [] [hook]
+    finish pytest_configure --> [] [hook]
+    pytest_unconfigure [hook]
+        config: <_pytest.config.Config object at 0x103ea6e00>
+    finish pytest_unconfigure --> [] [hook]

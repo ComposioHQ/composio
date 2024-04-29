@@ -9,8 +9,8 @@ import autogen
 from autogen.agentchat.conversable_agent import ConversableAgent
 
 from composio import Action, App, ComposioCore, FrameworkEnum, Tag
+from composio.sdk.exceptions import UserNotAuthenticatedException
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class ComposioToolset:
         tools: Union[App, List[App]],
         caller: ConversableAgent = None,
         executor: ConversableAgent = None,
-        tags: List[Tag] = None
+        tags: List[Tag] = None,
     ):
         if isinstance(tools, App):
             tools = [tools]
@@ -42,8 +42,8 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if client.is_authenticated():
-            raise Exception(
+        if client.is_authenticated() is False:
+            raise UserNotAuthenticatedException(
                 "User not authenticated. Please authenticate using composio-cli add <app_name>"
             )
 
@@ -130,3 +130,4 @@ class ComposioToolset:
             name=processed_name,
             description=description if description else f"Action {name} from {appName}",
         )
+
