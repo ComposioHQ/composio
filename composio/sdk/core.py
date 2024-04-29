@@ -76,6 +76,12 @@ class ComposioCore:
                     except Exception as e:
                         print(e)
 
+    def login(self, api_key: str):
+        self.http_client.headers.update(
+            {"Content-Type": "application/json", "x-api-key": api_key}
+        )
+        self.sdk = Composio(api_key=api_key, base_url=self.base_url)
+
     def get_authenticated_user(self):
         composio_api_key = os.environ.get("COMPOSIO_API_KEY", None)
         api_key = composio_api_key if composio_api_key else get_api_key()
