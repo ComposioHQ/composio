@@ -59,7 +59,7 @@ def ComposioToolset(
         raise Exception(
             "User not authenticated. Please authenticate using composio-cli add <app_name>"
         )
-    actions_list = client.sdk.get_list_of_actions(apps, actions, tags)
+    actions_list = client.sdk.get_list_of_actions(apps=apps, actions=actions, tags=tags)
     return [
         ComposioTool(client, action, entity_id=entity_id) for action in actions_list
     ]
