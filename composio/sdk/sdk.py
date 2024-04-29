@@ -333,7 +333,6 @@ class Composio:
             if len(apps) != 1:
                 raise ValueError("Use case should be provided with exactly one app")
             app_unique_ids = [app.value for app in apps]
-            print(f"Base URL: {self.base_url}")
             resp = self.http_client.get(
                 f"{self.base_url}/v1/actions",
                 params={"appNames": app_unique_ids, "useCase": use_case},
