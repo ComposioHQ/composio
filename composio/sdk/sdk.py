@@ -11,6 +11,8 @@ from openai.types.beta.threads import run
 from openai.types.chat.chat_completion import ChatCompletion
 from pydantic import BaseModel, ConfigDict
 
+from composio.sdk.exceptions import BadErrorException, NotFoundException, TimeoutException
+
 from .enums import Action, App, Tag
 from .storage import get_base_url
 
@@ -52,8 +54,6 @@ class ConnectionRequest(BaseModel):
     def wait_until_active(
         self, timeout=60
     ) -> "ConnectedAccount":  # Timeout adjusted to seconds
-        if not self.sdk_instance:
-            raise ValueError("SDK instance not set.")
         start_time = time.time()
         while time.time() - start_time < timeout:
             connection_info = self.sdk_instance.get_connected_account(
@@ -63,7 +63,8 @@ class ConnectionRequest(BaseModel):
                 return connection_info
 
             time.sleep(1)
-        raise TimeoutError(
+
+        raise TimeoutException(
             "Connection did not become active within the timeout period."
         )
 
@@ -147,8 +148,7 @@ class ConnectedAccount(BaseModel):
                     for action in actions["items"]
                 ]
             return actions["items"]
-
-        raise Exception(
+        raise BadErrorException(
             f"Failed to get actions. Status code: {resp.status_code}, response: {resp.text}"
         )
 
@@ -419,7 +419,7 @@ class Composio:
         app_details = self.get_app(app)
         app_id = app_details.get("appId")
         if app_id is None:
-            raise Exception(f"App {app} does not exist for the account")
+            raise NotFoundException(f"App {app} does not exist for the account")
         req = {"appId": app_id, "useComposioAuth": use_default}
         if name:
             req["name"] = name
