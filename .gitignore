@@ -21,3 +21,7 @@ node_modules
 ~
 
 Pipfile.lock
+
+.cache
+.pytest_cache
+.test_results
