@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio Lyzr plugin.
+Setup configuration for Composio Julep plugin.
 """
 
 from pathlib import Path
@@ -8,11 +8,11 @@ from setuptools import setup
 
 
 setup(
-    name="composio_lyzr",
+    name="composio_julep",
     version="0.2.46",
     author="Sawradip",
     author_email="sawradip@composio.dev",
-    description="Use Composio to get an array of tools with your Lyzr workflow.",
+    description="Use Composio to get an array of tools with your Julep wokflow.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/SamparkAI/composio_sdk",
@@ -23,14 +23,8 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "lyzr-automata>=0.1.3",
-        "pydantic>=2.6.4",
-<<<<<<< HEAD
-        "composio_core===0.2.41",
-=======
-        "composio_core===0.2.46",
->>>>>>> 1526b77 (Refactoring and Bug hunting)
-        "langchain>=0.1.0",
+        "composio_openai===0.2.46",
+        "julep>=0.3.2"
     ],
     include_package_data=True,
 )

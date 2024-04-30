@@ -27,4 +27,6 @@ crewai = "^0.28.8"
 pyautogen = "^0.2.26"
 langchain = "^0.1.16"
 lyzr = "^0.1.5"
-
+semver = "^3.0.2"
+build = "^1.2.1"
+setuptools = "^69.5.1"
