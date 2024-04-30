@@ -285,7 +285,7 @@ class Composio:
         return resp.json()
 
     def get_list_of_actions(
-        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Tag] = None
+        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Tag] = None, limit: int = None
     ) -> list:
         if use_case is not None:
             if len(apps) != 1:
@@ -293,7 +293,7 @@ class Composio:
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
                 f"v1/actions",
-                params={"appNames": app_unique_ids, "useCase": use_case},
+                params={"appNames": app_unique_ids, "useCase": use_case, "limit": limit},
             )
             return resp.json()["items"]
         elif apps is None or len(apps) == 0:
