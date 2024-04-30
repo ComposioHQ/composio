@@ -19,6 +19,7 @@ from composio.sdk.core import ComposioCore
 from composio.sdk.enums import App
 from composio.sdk.storage import save_api_key
 from composio.sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
+import pyperclip
 
 
 # pylint: disable=unused-argument, too-many-locals, too-many-statements
@@ -462,7 +463,13 @@ def get_actions(args):
         console.print(
             f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n"
         )
-        console.print(", ".join(action_enums))
+        formatted_action_enums = ", ".join(action_enums)
+        console.print(formatted_action_enums)
+
+        copy_to_clipboard = input("\nDo you want to copy these enums to the clipboard? (yes/no): ").lower()
+        if copy_to_clipboard in ["yes", "y"]:
+            pyperclip.copy(formatted_action_enums)
+            console.print("[green]Enums copied to clipboard successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during getting actions: {e}[/red]")
         sys.exit(1)

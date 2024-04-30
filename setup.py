@@ -37,6 +37,7 @@ setup(
         "openai>=1.3.0",
         "rich>=13.7.1,<14",
         "importlib-metadata>=4.8.1,<5",
+        "pyperclip>=1.8.2,<2",
     ],
     include_package_data=True,
 )
