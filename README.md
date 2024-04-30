@@ -15,3 +15,13 @@
     ```
       make env && pipenv shell
     ```
+
+## Release Process
+```
+make clean-build
+python scripts/bump.py patch
+make build
+
+make test-publish # for publishing to test-pypi
+make publish # for publishing to pypi
+```
