@@ -443,6 +443,7 @@ def get_actions(args):
     client = ComposioCore()
     app_name = args.app_name
     use_case = args.use_case
+    limit = args.limit if args.limit else None
     try:
         for app_enum in App:
             if app_enum.value == app_name:
@@ -453,7 +454,7 @@ def get_actions(args):
                 f"[red]No such app found for {app_name}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]"
             )
             sys.exit(1)
-        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case)
+        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case, limit=limit)
         action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
         console.print(
             f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n"
