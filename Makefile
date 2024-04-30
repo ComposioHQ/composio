@@ -53,9 +53,15 @@ build:
 			python -m build "$$dir" --outdir="$$dir"/dist; \
 		fi \
 	done
+
 .PHONY: publish
 publish: dist
-	twine upload dist/*
+	twine upload dist/* && \
+	for dir in plugins/*; do \
+		if [ -d "$$dir" ]; then \
+			twine upload "$$dir"/dist/*; \
+		fi \
+	done
 
 .PHONY: test-publish
 test-publish: dist
