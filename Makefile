@@ -9,6 +9,12 @@ clean-build:
 	find . -name '*.egg' -exec rm -fr {} +
 	find . -type d -name __pycache__ -exec rm -rv {} +
 
+	for dir in plugins/*; do \
+		if [ -d "$$dir" ]; then \
+			rm -rf "$$dir"/dist; \
+		fi \
+	done
+
 .PHONY: clean-pyc
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -39,6 +45,14 @@ dist:
 	rm -rf dist/
 	python setup.py sdist
 
+.PHONY: build
+build:
+	python -m build && \
+	for dir in plugins/*; do \
+		if [ -d "$$dir" ]; then \
+			python -m build "$$dir" --outdir="$$dir"/dist; \
+		fi \
+	done
 .PHONY: publish
 publish: dist
 	twine upload dist/*

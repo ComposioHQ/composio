@@ -13,7 +13,9 @@ from beaupy.spinners import DOTS, Spinner
 from rich.console import Console
 from rich.table import Table
 
-from .sdk.core import ComposioCore, UnauthorizedAccessException
+from composio.sdk.exceptions import UserNotAuthenticatedException
+
+from .sdk.core import ComposioCore
 from .sdk.enums import App
 from .sdk.storage import save_api_key
 from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
@@ -203,7 +205,7 @@ def login(args):
                     save_api_key(api_key)
                     console.print("\n[green]✔ Authenticated successfully![/green]\n")
                     break
-            except UnauthorizedAccessException:
+            except UserNotAuthenticatedException:
                 if attempt == 2:  # Last attempt
                     console.print(
                         "[red]\nAuthentication failed after 3 attempts.[/red]"
@@ -346,9 +348,14 @@ def list_triggers(args):
         console.print(
             "To enable a trigger, use the command: [green] composio-cli enable-trigger <trigger_name>[/green]\n"
         )
+    except UserNotAuthenticatedException as e:
+        console.print(
+            "[red]You are not authenticated. Please authenticate using composio-cli login"
+        )
+        raise e from e
     except Exception as e:
         console.print(f"[red] Error occurred during listing triggers: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def enable_trigger(args):
@@ -390,6 +397,11 @@ def enable_trigger(args):
         console.print("\n[green]✔ Trigger enabled successfully![/green]\n")
         if "triggerId" in resp:
             console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
+    except UserNotAuthenticatedException as e:
+        console.print(
+            "[red]You are not authenticated. Please authenticate using composio-cli login"
+        )
+        raise e from e
     except Exception as e:
         try:
             error_json = json.loads(str(e))

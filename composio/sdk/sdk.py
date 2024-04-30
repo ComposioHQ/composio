@@ -10,7 +10,7 @@ from openai.types.beta.threads import run
 from openai.types.chat.chat_completion import ChatCompletion
 from pydantic import BaseModel, ConfigDict
 
-from composio.sdk.exceptions import BadErrorException, NotFoundException, TimeoutException
+from composio.sdk.exceptions import BadErrorException, InvalidParameterException, NotFoundException, TimeoutException
 from composio.sdk.http_client import HttpClient
 
 from .enums import Action, App, Tag
@@ -396,7 +396,7 @@ class Composio:
         query_string = "&".join(
             [f"{key}={value}" for key, value in query_params.items()]
         )
-        url = f"v1/connectedAccounts"
+        url = "v1/connectedAccounts"
         if query_string:
             url += f"?{query_string}"
 

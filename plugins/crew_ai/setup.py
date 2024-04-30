@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_crewai",
-    version="0.2.27",
+    version="0.2.28",
     author="Himanshu",
     author_email="himanshu@composio.dev",
     description="Use Composio to get an array of tools with your CrewAI agent.",
@@ -23,7 +23,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_langchain===0.2.27",
+        "composio_langchain===0.2.28",
     ],
     include_package_data=True,
 )
