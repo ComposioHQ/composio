@@ -1,26 +1,33 @@
+from httpcore import TimeoutException
 import requests
+from composio.sdk.exceptions import UnauthorizedAccessException, BadErrorException, InternalServerErrorException, NotFoundException
 
-class HttpClient:
+class HttpClient(requests.Session):
     def __init__(self, base_url: str):
+        super().__init__()
         self.base_url = base_url
 
-    def get(self, url: str):
-        response = requests.get(f"{self.base_url}/{url}")
+    def get(self, url: str, **kwargs):
+        print(f"GET {self.base_url}/{url}")
+        response = super().get(f"{self.base_url}/{url}", **kwargs)
         self._handle_response_errors(response)
         return response
 
-    def post(self, url: str, data: dict):
-        response = requests.post(f"{self.base_url}/{url}", json=data)
+    def post(self, url: str, data=None, json=None, **kwargs):
+        print(f"POST {self.base_url}/{url}")
+        response = super().post(f"{self.base_url}/{url}", data=data, json=json, **kwargs)
         self._handle_response_errors(response)
         return response
 
-    def put(self, url: str, data: dict):
-        response = requests.put(f"{self.base_url}/{url}", json=data)
+    def put(self, url: str, data=None, **kwargs):
+        print(f"PUT {self.base_url}/{url}")
+        response = super().put(f"{self.base_url}/{url}", data=data, **kwargs)
         self._handle_response_errors(response)
         return response
 
-    def delete(self, url: str):
-        response = requests.delete(f"{self.base_url}/{url}")
+    def delete(self, url: str, **kwargs):
+        print(f"DELETE {self.base_url}/{url}")
+        response = super().delete(f"{self.base_url}/{url}", **kwargs)
         self._handle_response_errors(response)
         return response
 

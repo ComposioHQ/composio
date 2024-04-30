@@ -19,3 +19,6 @@ class TimeoutException(Exception):
 
 class UserNotAuthenticatedException(Exception):
     pass
+
+class InvalidParameterException(Exception):
+    pass
