@@ -3,6 +3,9 @@ from enum import Enum
 from typing import Union
 
 import requests
+from composio.sdk.exceptions import BadErrorException, NotFoundException
+
+from composio.sdk.http_client import HttpClient
 
 from .enums import Action, App, Tag
 from .sdk import Composio, ConnectedAccount, ConnectionRequest
@@ -44,7 +47,7 @@ class ComposioCore:
 
         self.base_url = base_url
         self.manage_auth = manage_auth
-        self.http_client = requests.Session()
+        self.http_client = HttpClient(base_url)
         self.framework = framework
         self.http_client.headers.update({"Content-Type": "application/json"})
 
@@ -59,7 +62,7 @@ class ComposioCore:
                     try:
                         git_info = get_git_user_info()
                         self.http_client.post(
-                            f"{self.base_url}/v1/client/auth/track",
+                            f"v1/client/auth/track",
                             json={
                                 "framework": self.framework.value,
                                 "user_git_user_info": (
@@ -75,6 +78,12 @@ class ComposioCore:
                         __IS_FIRST_TIME__ = False
                     except Exception as e:
                         print(e)
+
+    def login(self, api_key: str):
+        self.http_client.headers.update(
+            {"Content-Type": "application/json", "x-api-key": api_key}
+        )
+        self.sdk = Composio(api_key=api_key, base_url=self.base_url)
 
     def get_authenticated_user(self):
         composio_api_key = os.environ.get("COMPOSIO_API_KEY", None)
@@ -100,31 +109,20 @@ class ComposioCore:
         save_user_data(user_data)
 
     def generate_cli_auth_session(self):
-        resp = self.http_client.get(f"{self.base_url}/v1/cli/generate-cli-session")
-        if resp.status_code == 200:
-            resp = resp.json()
-            if resp.get("key"):
-                return resp["key"]
+        resp = self.http_client.get(f"v1/cli/generate-cli-session")
+        resp = resp.json()
+        if resp.get("key"):
+            return resp["key"]
 
-        raise Exception(
+        raise BadErrorException(
             f"Bad request to cli/generate-cli-session. Status code: {resp.status_code}, response: {resp.text}"
         )
 
     def verify_cli_auth_session(self, key: str, code: str):
         resp = self.http_client.get(
-            f"{self.base_url}/v1/cli/verify-cli-code?key={key}&code={code}"
+            f"v1/cli/verify-cli-code?key={key}&code={code}"
         )
-        if resp.status_code == 200:
-            return resp.json()
-
-        if resp.status_code == 401:
-            raise UnauthorizedAccessException(
-                "UnauthorizedError: Unauthorized access to cli/verify-cli-session"
-            )
-
-        raise Exception(
-            f"Bad request to cli/verify-cli-session. Status code: {resp.status_code}, response: {resp.text}"
-        )
+        return resp.json()
 
     def initiate_connection(
         self, appName: Union[str, App], integrationId: str = None
@@ -136,17 +134,12 @@ class ComposioCore:
             integrationId = integration.id
 
         resp = self.http_client.post(
-            f"{self.base_url}/v1/connectedAccounts",
+            f"v1/connectedAccounts",
             json={
                 "integrationId": integrationId,
             },
         )
-        if resp.status_code == 200:
-            return ConnectionRequest(self.sdk, **resp.json())
-
-        raise Exception(
-            f"Failed to create connection. Status code: {resp.status_code}, response: {resp.text}"
-        )
+        return ConnectionRequest(self.sdk, **resp.json())
 
     def set_global_trigger(self, callback_url: str):
         try:
@@ -158,33 +151,21 @@ class ComposioCore:
         return self.sdk.disable_trigger(trigger_id)
 
     def list_active_triggers(self, trigger_ids: list[str] = None):
-        try:
-            resp = self.sdk.list_active_triggers(trigger_ids)
-            return resp
-        except Exception as e:
-            raise e
+        resp = self.sdk.list_active_triggers(trigger_ids)
+        return resp
 
     def list_triggers(self, app_name: str):
-        try:
-            return self.sdk.list_triggers([app_name])
-        except Exception as e:
-            raise Exception(f"Failed to list triggers: {e}") from e
+        return self.sdk.list_triggers([app_name])
 
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
-        try:
-            return self.sdk.get_trigger_requirements(trigger_ids)
-        except Exception as e:
-            raise Exception(f"Failed to enable trigger: {e}") from e
+        return self.sdk.get_trigger_requirements(trigger_ids)
 
     def enable_trigger(
         self, trigger_id: str, connected_account_id: str, user_inputs: dict
     ):
-        try:
-            return self.sdk.enable_trigger(
-                trigger_id, connected_account_id, user_inputs
-            )
-        except Exception as e:
-            raise Exception(e) from e
+        return self.sdk.enable_trigger(
+            trigger_id, connected_account_id, user_inputs
+        )
 
     def get_connection(self, app_name: str, entity_id: str = "default"):
         entity = self.sdk.get_entity(entity_id)
@@ -199,7 +180,7 @@ class ComposioCore:
         entity = self.sdk.get_entity(entity_id)
         account = entity.get_connection(tool_name)
         if not account:
-            raise Exception(
+            raise NotFoundException(
                 f"Entity {entity_id} does not have a connection to {tool_name}"
             )
 
