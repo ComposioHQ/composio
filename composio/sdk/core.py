@@ -2,12 +2,11 @@ import os
 from enum import Enum
 from typing import Union
 
-import requests
 from composio.sdk.exceptions import BadErrorException, NotFoundException
 
 from composio.sdk.http_client import HttpClient
 
-from .enums import Action, App, Tag
+from .enums import Action, App
 from .sdk import Composio, ConnectedAccount, ConnectionRequest
 from .storage import (
     get_api_key,
@@ -27,9 +26,6 @@ class FrameworkEnum(Enum):
 
 __IS_FIRST_TIME__ = True
 
-
-class UnauthorizedAccessException(Exception):
-    pass
 
 
 class ComposioCore:
