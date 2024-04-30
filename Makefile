@@ -45,7 +45,12 @@ publish: dist
 
 .PHONY: test-publish
 test-publish: dist
-	twine upload --repository testpypi dist/*
+	twine upload --repository testpypi dist/* && \
+	for dir in plugins/*; do \
+		if [ -d "$$dir" ]; then \
+			twine upload --repository testpypi "$$dir"/dist/*; \
+		fi \
+	done
 
 .PHONY: format-code
 format-code:
