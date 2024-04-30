@@ -306,6 +306,7 @@ class Composio:
             resp = self.http_client.get(
                 f"v1/actions?appNames={','.join(app_unique_ids)}"
             )
+            actions_response = resp.json()
             filtered_actions = []
             action_names_list = [action.value[1] for action in actions]
             for item in actions_response["items"]:
