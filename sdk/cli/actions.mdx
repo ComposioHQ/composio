@@ -1,0 +1,43 @@
+---
+title: "🧑🏻‍💻 Managing Apps/Actions using CLI"
+sidebarTitle: "Apps/Actions"
+icon: "globe"
+description: "Learn how to get/update enums for apps/actions using the CLI."
+---
+
+### Get actions for a use case
+Get all the actions for a specific use case. You can just copy/paste the actions to your codebase.
+  <CodeGroup>
+  ```bash Show all actions for a use case
+  composio-cli get-actions asana "Do all things related to tasks, spaces, folders etc. in asana" --limit=10
+  ```
+  </CodeGroup>
+  ```bash
+  Version: 0.2.37
+  Path: /Users/karanvaidya/codes/hermes/try_composio_sdk/venv3.12/lib/python3.12/site-packages/composio
+
+  > Actions for asana and use case all actions related to tasks, spaces, folders etc. in asana:
+
+  Action.ASANA_TASKS_GET_MULTIPLE, Action.ASANA_TASKS_GET_TASK_RECORD, Action.ASANA_TASKS_DELETE_TASK, Action.ASANA_TASKS_GET_TASKS_BY_PROJECT, Action.ASANA_TASKS_GET_USER_TASK_LIST_TASKS, 
+  Action.ASANA_TASKS_SET_PARENT_TASK, Action.ASANA_TASKS_SET_DEPENDENCIES_FOR_TASK, Action.ASANA_TASKS_ADD_PROJECT_TO_TASK, Action.ASANA_TASKS_ADD_TAG_TO_TASK, Action.ASANA_TASKS_ADD_FOLLOWERS_TO_TASK
+
+  Do you want to copy these enums to the clipboard? (yes/no): 
+  ```
+
+### Update the enums for apps
+We keep updating the enums for apps in our SDK. But, You can also update the enums for the apps you don't find in the SDK.
+  <CodeGroup>
+  ```bash Update Apps/Actions Enums
+  composio-cli update
+  ```
+  </CodeGroup>
+Now you can use the updated enums for the apps in your codebase.
+
+### Update the enums for apps in Beta
+To use the apps in beta, you need to update the enums for the apps in beta.
+  <CodeGroup>
+  ```bash Update Apps/Actions Enums in Beta
+  composio-cli update-beta
+  ```
+  </CodeGroup>
+Now, you can use the enums for the apps in beta in your codebase like `App.NOTIONBETA` and so on.
