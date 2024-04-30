@@ -15,7 +15,7 @@ from rich.table import Table
 
 from .sdk.core import ComposioCore, UnauthorizedAccessException
 from .sdk.enums import App
-from .sdk.storage import get_base_url, save_api_key
+from .sdk.storage import save_api_key
 from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
 
 
