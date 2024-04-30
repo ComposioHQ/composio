@@ -7,12 +7,9 @@ from pathlib import Path
 from setuptools import setup
 from setuptools import setup, find_packages
 
-
-
-
 setup(
     name="composio_core",
-    version="0.2.28",
+    version="0.2.30",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
@@ -28,7 +25,7 @@ setup(
     packages=find_packages(include=["composio*"]),
     entry_points={
         "console_scripts": [
-            "composio=composio.composio_cli:main",
+            "composio-cli=composio.composio_cli:main",
         ],
     },
     install_requires=[

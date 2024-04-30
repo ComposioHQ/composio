@@ -187,7 +187,7 @@ def login(args):
     console.print("\n[green]> Authenticating...[/green]\n")
     try:
         cli_key = client.generate_cli_auth_session()
-        frontend_url = get_frontend_url("redirect")
+        frontend_url = get_frontend_url("?cliKey={cli_key}")
         console.print(
             "> Redirecting you to the login page. Please login using the following link:\n"
         )
