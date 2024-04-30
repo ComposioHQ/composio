@@ -1,6 +1,6 @@
 from httpcore import TimeoutException
 import requests
-from composio.sdk.exceptions import UnauthorizedAccessException, BadErrorException, InternalServerErrorException, NotFoundException
+from composio.sdk.exceptions import UserNotAuthenticatedException, BadErrorException, InternalServerErrorException, NotFoundException
 
 class HttpClient(requests.Session):
     def __init__(self, base_url: str):
@@ -35,7 +35,7 @@ class HttpClient(requests.Session):
         if response.status_code == 404:
             raise NotFoundException("The requested resource was not found.")
         elif response.status_code == 401:
-            raise UnauthorizedAccessException("You are not authorized to access this resource.")
+            raise UserNotAuthenticatedException("You are not authorized to access this resource.")
         elif response.status_code == 500:
             raise InternalServerErrorException("Internal server error occurred.")
         elif response.status_code == 400:
