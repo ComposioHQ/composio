@@ -42,7 +42,7 @@ def ComposioTool(
         func=action_func,
     )
 
-def create_client(api_key=None):
+def create_client(api_key=os.environ.get("COMPOSIO_API_KEY", None)):
     try:
         client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key=api_key)
         return client, client.sdk
