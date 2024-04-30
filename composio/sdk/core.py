@@ -22,6 +22,7 @@ class FrameworkEnum(Enum):
     AUTOGEN = "autogen"
     LANGCHAIN = "langchain"
     LYZR = "lyzr"
+    JULEP = "julep"
 
 
 __IS_FIRST_TIME__ = True

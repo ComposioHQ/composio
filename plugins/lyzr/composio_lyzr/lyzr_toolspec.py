@@ -14,12 +14,10 @@ from composio.sdk.shared_utils import (
 client = ComposioCore(
     framework=FrameworkEnum.LYZR, api_key=os.environ.get("COMPOSIO_API_KEY", None)
 )
-ComposioSDK = client.sdk
 
 
 class ComposioToolset:
-    def __init__(self, entity_id: str = "default"):
-        global client
+    def __init__(self, client: ComposioCore = client, entity_id: str = "default"):
         self.client = client
         self.entity_id = entity_id
 
