@@ -31,7 +31,7 @@ class ComposioToolset:
         tools: Union[App, List[App]],
         caller: ConversableAgent = None,
         executor: ConversableAgent = None,
-        tags: List[Tag] = None,
+        tags: List[Union[str, Tag]] = None,
     ):
         if isinstance(tools, App):
             tools = [tools]

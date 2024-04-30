@@ -15,10 +15,10 @@ from rich.table import Table
 
 from composio.sdk.exceptions import UserNotAuthenticatedException
 
-from .sdk.core import ComposioCore
-from .sdk.enums import App
-from .sdk.storage import save_api_key
-from .sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
+from composio.sdk.core import ComposioCore
+from composio.sdk.enums import App
+from composio.sdk.storage import save_api_key
+from composio.sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
 
 
 # pylint: disable=unused-argument, too-many-locals, too-many-statements
@@ -169,6 +169,9 @@ def parse_arguments():
     )
     get_actions_parser.add_argument(
         "use_case", type=str, help="Name of the use case to get actions for"
+    )
+    get_actions_parser.add_argument(
+        "--limit", type=int, help="Limit the number of actions to return", default=10
     )
     get_actions_parser.set_defaults(func=get_actions)
 
