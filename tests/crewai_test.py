@@ -48,7 +48,7 @@ def test_add_github():
     ]  # Set argv to simulate command line input
     with mock.patch("webbrowser.open"), mock.patch(
         "composio.sdk.core.ComposioCore.verify_cli_auth_session",
-        return_value={"apiKey": "m5b8bx64tgmem6zzw0hio8"},
+        return_value={"apiKey": "vm2gw01hx7eheano742tb"},
     ), mock.patch(
         "builtins.input", side_effect=["yes", "yes"]
     ), mock.patch(
@@ -72,5 +72,5 @@ def test_add_github():
 
 def test_crewai_script_is_working():
     from plugins.crew_ai.composio_crewai import client
-    client.login("m5b8bx64tgmem6zzw0hio8")
+    client.login("vm2gw01hx7eheano742tb")
     run_crewai_script()

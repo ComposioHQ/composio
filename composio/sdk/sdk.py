@@ -379,7 +379,7 @@ class Composio:
                 if auth_scheme_iter.get("auth_mode") == auth_mode:
                     fields = auth_scheme_iter.get("fields")
                     req["authConfig"] = {field.get("name"): "" for field in fields}
-        resp = self.http_client.post(f"v1/integrations", json=req)
+        resp = self.http_client.post("v1/integrations", json=req)
         return Integration(self, **resp.json())
 
     def get_connected_account(self, connection_id: str) -> ConnectedAccount:
