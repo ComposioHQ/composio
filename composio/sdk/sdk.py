@@ -304,8 +304,7 @@ class Composio:
                 raise ValueError("Both actions and tags cannot be provided together")
             app_unique_ids = list(set(action.value[0] for action in actions))
             resp = self.http_client.get(
-                f"v1/actions",
-                params={"appNames": app_unique_ids},
+                f"v1/actions?appNames={','.join(app_unique_ids)}"
             )
             filtered_actions = []
             action_names_list = [action.value[1] for action in actions]
@@ -315,9 +314,9 @@ class Composio:
             return filtered_actions
         elif apps is not None and len(apps) > 0:
             app_unique_ids = [app.value for app in apps]
+            print(f"app_unique_ids: {app_unique_ids}")
             resp = self.http_client.get(
-                "v1/actions",
-                params={"appNames": ','.join(app_unique_ids)}
+                f"v1/actions?appNames={','.join(app_unique_ids)}"
             )
             actions_response = resp.json()
             if tags is not None and len(tags) > 0:
