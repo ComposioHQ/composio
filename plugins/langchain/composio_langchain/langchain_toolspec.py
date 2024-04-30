@@ -1,7 +1,7 @@
 import os
 import types
 from inspect import Signature
-from typing import List
+from typing import List, Union
 
 from langchain_core.tools import StructuredTool
 
@@ -53,7 +53,7 @@ def create_client(api_key=None):
 client, ComposioSDK = create_client()
 
 def ComposioToolset(
-    apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default", tags: List[Tag] = []
+    apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default", tags: List[Union[str, Tag]] = []
 ) -> List[StructuredTool]:
     if len(apps) > 0 and len(actions) > 0:
         raise ValueError(

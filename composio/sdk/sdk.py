@@ -285,9 +285,9 @@ class Composio:
         return resp.json()
 
     def get_list_of_actions(
-        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Tag] = None, limit: int = None
+        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Union[str, Tag]] = None, limit: int = None
     ) -> list:
-        if use_case is not None:
+        if use_case is not None and use_case != "":
             if len(apps) != 1:
                 raise ValueError("Use case should be provided with exactly one app")
             app_unique_ids = [app.value for app in apps]
@@ -296,32 +296,39 @@ class Composio:
                 params={"appNames": app_unique_ids, "useCase": use_case, "limit": limit},
             )
             return resp.json()["items"]
-        elif apps is None or len(apps) == 0:
+        elif (apps is None or len(apps) == 0) and (actions is None or len(actions) == 0):
             resp = self.http_client.get(f"v1/actions")
-            # @TODO: Review with karan
             return resp.json()["items"]
-        else:
+        elif (apps is None or len(apps) == 0) and (actions is not None and len(actions) > 0):
+            if tags is not None and len(tags) > 0:
+                raise ValueError("Both actions and tags cannot be provided together")
+            app_unique_ids = list(set(action.value[0] for action in actions))
+            resp = self.http_client.get(
+                f"v1/actions",
+                params={"appNames": app_unique_ids},
+            )
+            filtered_actions = []
+            action_names_list = [action.value[1] for action in actions]
+            for item in actions_response["items"]:
+                if item["name"] in action_names_list:
+                    filtered_actions.append(item)
+            return filtered_actions
+        elif apps is not None and len(apps) > 0:
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
-                f"v1/actions?appNames={','.join(app_unique_ids)}"
+                "v1/actions",
+                params={"appNames": ','.join(app_unique_ids)}
             )
             actions_response = resp.json()
-            if actions is not None and tags is not None:
-                raise ValueError("Both actions and tags cannot be provided together")
             if tags is not None and len(tags) > 0:
                 filtered_actions = []
                 for item in actions_response["items"]:
                     if item["tags"] and any(tag in item["tags"] for tag in tags):
                         filtered_actions.append(item)
                 return filtered_actions
-            if actions is not None and len(actions) > 0:
-                filtered_actions = []
-                action_names_list = [action.value[1] for action in actions]
-                for item in actions_response["items"]:
-                    if item["name"] in action_names_list:
-                        filtered_actions.append(item)
-                return filtered_actions
             return actions_response["items"]
+        else:
+            raise ValueError("Either apps or actions must be provided")
 
     def get_list_of_triggers(self, apps: list[App] = None) -> list:
         if apps is None or len(apps) == 0:
