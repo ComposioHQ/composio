@@ -67,6 +67,10 @@ def _bump(file: Path, bump_type: BumpType) -> None:
         f'composio_lyzr==={version}"',
         f'composio_lyzr==={update}"',
     )
+    content = content.replace(
+        f'composio_openai==={version}"',
+        f'composio_openai==={update}"',
+    )
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
 

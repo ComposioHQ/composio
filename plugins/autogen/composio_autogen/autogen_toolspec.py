@@ -17,11 +17,10 @@ logger = logging.getLogger(__name__)
 client = ComposioCore(
     framework=FrameworkEnum.AUTOGEN, api_key=os.environ.get("COMPOSIO_API_KEY", None)
 )
-ComposioSDK = client.sdk
-
 
 class ComposioToolset:
-    def __init__(self, caller=None, executor=None, entity_id: str = "default"):
+    def __init__(self, client: ComposioCore = client, caller=None, executor=None, entity_id: str = "default"):
+        self.client = client
         self.caller = caller
         self.executor = executor
         self.entity_id = entity_id
@@ -42,12 +41,12 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        if client.is_authenticated() is False:
+        if self.client.is_authenticated() is False:
             raise UserNotAuthenticatedException(
                 "User not authenticated. Please authenticate using composio-cli login"
             )
 
-        action_schemas = client.sdk.get_list_of_actions(apps=tools, tags=tags)
+        action_schemas = self.client.sdk.get_list_of_actions(apps=tools, tags=tags)
 
         for schema in action_schemas:
             self._register_schema_to_autogen(
@@ -72,7 +71,7 @@ class ComposioToolset:
             executor or self.executor
         ), "If executor hasn't been specified during initialization, has to be specified during registration"
 
-        action_schemas = client.sdk.get_list_of_actions(actions=actions)
+        action_schemas = self.client.sdk.get_list_of_actions(actions=actions)
 
         for schema in action_schemas:
             self._register_schema_to_autogen(
@@ -108,8 +107,8 @@ class ComposioToolset:
         action_signature = Signature(parameters=parameters)
 
         def placeholder_function(**kwargs):
-            return client.execute_action(
-                client.get_action_enum(name, appName), kwargs, entity_id=self.entity_id
+            return self.client.execute_action(
+                self.client.get_action_enum(name, appName), kwargs, entity_id=self.entity_id
             )
 
         action_func = types.FunctionType(

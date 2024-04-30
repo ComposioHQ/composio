@@ -1,12 +1,10 @@
 from composio import Action, App, Tag
 
-from .autogen_toolspec import ComposioToolset, client
-
+from .julep_toolspec import ComposioToolset
 
 __all__ = (
     "Action",
     "App",
     "Tag",
-    "client",
     "ComposioToolset",
 )
