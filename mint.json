@@ -130,7 +130,8 @@
       "pages": [
         "sdk/cli/install",
         "sdk/cli/account",
-        "sdk/cli/trigger"
+        "sdk/cli/trigger",
+        "sdk/cli/actions"
       ]
     },
     {
