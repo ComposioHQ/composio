@@ -108,6 +108,8 @@ def get_frontend_url(path: str) -> str:
     base_url = get_base_url()
     if base_url == "https://backend.composio.dev/api":
         return f"https://app.composio.dev/{path}"
+    if base_url == "https://hermes-development.up.railway.app/api":
+        return f"https://hermes-frontend-git-master-composio.vercel.app/{path}"
     if base_url == "http://localhost:9900/api":
         return f"http://localhost:3000/{path}"
     if base_url == "https://hermes-development.up.railway.app/":
