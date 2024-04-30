@@ -13,7 +13,6 @@ class HttpClient(requests.Session):
         return response
 
     def post(self, url: str, data=None, json=None, **kwargs):
-        print(f"{self.base_url}/{url}", json, data)
         response = super().post(f"{self.base_url}/{url}", data=data, json=json, **kwargs)
         self._handle_response_errors(response, absolute_url=f"{self.base_url}/{url}")
         return response
