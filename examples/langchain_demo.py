@@ -1,17 +1,30 @@
-from composio_langchain import ComposioToolset
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain_openai import ChatOpenAI
+import os
 
-from composio.sdk.enums import App
+import dotenv
 from langchain import hub
+from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_openai_functions_agent
 
 
-llm = ChatOpenAI()
+from plugins.langchain.composio_langchain import App, ComposioToolset
+
+# Loading the variables from .env file
+dotenv.load_dotenv()
+
+llm = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
+# Import from composio_langchain
+
+# Get All the tools
 tools = ComposioToolset(apps=[App.GITHUB])
+
+
+task = "Star a repo SamparkAI/docs on GitHub"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-agent_executor.invoke({"input": "List repos available to me"})
+
+# Execute using agent_executor
+agent_executor.invoke({"input": task})

@@ -13,15 +13,13 @@ from beaupy.spinners import DOTS, Spinner
 from rich.console import Console
 from rich.table import Table
 
-from .sdk.core import ComposioCore, UnauthorizedAccessException
-from .sdk.enums import App
-from .sdk.storage import save_api_key
-from .sdk.utils import (
-    generate_enums,
-    generate_enums_beta,
-    get_enum_key,
-    get_frontend_url,
-)
+from composio.sdk.exceptions import UserNotAuthenticatedException
+
+from composio.sdk.core import ComposioCore
+from composio.sdk.enums import App
+from composio.sdk.storage import save_api_key
+from composio.sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
+import pyperclip
 
 
 # pylint: disable=unused-argument, too-many-locals, too-many-statements
@@ -173,6 +171,9 @@ def parse_arguments():
     get_actions_parser.add_argument(
         "use_case", type=str, help="Name of the use case to get actions for"
     )
+    get_actions_parser.add_argument(
+        "--limit", type=int, help="Limit the number of actions to return", default=10
+    )
     get_actions_parser.set_defaults(func=get_actions)
 
     return parser.parse_args()
@@ -190,7 +191,7 @@ def login(args):
     console.print("\n[green]> Authenticating...[/green]\n")
     try:
         cli_key = client.generate_cli_auth_session()
-        frontend_url = get_frontend_url("redirect")
+        frontend_url = get_frontend_url(f"?cliKey={cli_key}")
         console.print(
             "> Redirecting you to the login page. Please login using the following link:\n"
         )
@@ -208,7 +209,7 @@ def login(args):
                     save_api_key(api_key)
                     console.print("\n[green]✔ Authenticated successfully![/green]\n")
                     break
-            except UnauthorizedAccessException:
+            except UserNotAuthenticatedException:
                 if attempt == 2:  # Last attempt
                     console.print(
                         "[red]\nAuthentication failed after 3 attempts.[/red]"
@@ -351,9 +352,14 @@ def list_triggers(args):
         console.print(
             "To enable a trigger, use the command: [green] composio-cli enable-trigger <trigger_name>[/green]\n"
         )
+    except UserNotAuthenticatedException as e:
+        console.print(
+            "[red]You are not authenticated. Please authenticate using composio-cli login"
+        )
+        raise e from e
     except Exception as e:
         console.print(f"[red] Error occurred during listing triggers: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def enable_trigger(args):
@@ -395,6 +401,11 @@ def enable_trigger(args):
         console.print("\n[green]✔ Trigger enabled successfully![/green]\n")
         if "triggerId" in resp:
             console.print(f"[green]Trigger ID: {resp['triggerId']}[/green]")
+    except UserNotAuthenticatedException as e:
+        console.print(
+            "[red]You are not authenticated. Please authenticate using composio-cli login"
+        )
+        raise e from e
     except Exception as e:
         try:
             error_json = json.loads(str(e))
@@ -436,6 +447,7 @@ def get_actions(args):
     client = ComposioCore()
     app_name = args.app_name
     use_case = args.use_case
+    limit = args.limit if args.limit else None
     try:
         for app_enum in App:
             if app_enum.value == app_name:
@@ -446,12 +458,18 @@ def get_actions(args):
                 f"[red]No such app found for {app_name}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]"
             )
             sys.exit(1)
-        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case)
+        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case, limit=limit)
         action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
         console.print(
             f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n"
         )
-        console.print(", ".join(action_enums))
+        formatted_action_enums = ", ".join(action_enums)
+        console.print(formatted_action_enums)
+
+        copy_to_clipboard = input("\nDo you want to copy these enums to the clipboard? (yes/no): ").lower()
+        if copy_to_clipboard in ["yes", "y"]:
+            pyperclip.copy(formatted_action_enums)
+            console.print("[green]Enums copied to clipboard successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during getting actions: {e}[/red]")
         sys.exit(1)
