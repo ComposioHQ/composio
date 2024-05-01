@@ -2,7 +2,7 @@ import os
 import dotenv
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
-from composio_crewai import ComposioToolset, Action, App
+from plugins.crew_ai.composio_crewai import ComposioToolset, App
 
 # Loading the variables from .env file
 dotenv.load_dotenv()

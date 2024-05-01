@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 
 
-from composio_langchain import App, ComposioToolset
+from plugins.langchain.composio_langchain import App, ComposioToolset
 
 # Loading the variables from .env file
 dotenv.load_dotenv()
