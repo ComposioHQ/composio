@@ -26,7 +26,7 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                         action_name=action_name_to_execute
                     )
                     arguments = json.loads(function["arguments"])
-                    account = self.client.get_connection(app_name=action.service)
+                    account = entity.get_connection(app_name=action.service)
                     output = account.execute_action(action, arguments)
                     
                 except json.JSONDecodeError:

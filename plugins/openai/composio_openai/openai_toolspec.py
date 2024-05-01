@@ -55,7 +55,7 @@ class OpenaiStyleToolsetBase:
                                 action_name=action_name_to_execute
                             )
                             arguments = json.loads(tool_call.function.arguments)
-                            account = self.client.get_connection(app_name=action.service)
+                            account = entity.get_connection(app_name=action.service)
                             output.append(account.execute_action(action, arguments))
 
         except Exception as e:
