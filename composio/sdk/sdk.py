@@ -16,10 +16,28 @@ from composio.sdk.http_client import HttpClient
 from .enums import Action, App, Tag
 from .storage import get_base_url
 
+from enum import Enum
 
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
+    
+    
+def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
+    if format == SchemaFormat.OPENAI:
+        formatted_schema = {
+                    "type": "function",
+                    "function": {
+                        "name": action_schema["name"],
+                        "description": action_schema.get("description", ""),
+                        "parameters": action_schema.get("parameters", {}),
+                    },
+                }
+    else:
+        formatted_schema = action_schema
+        # print("Only OPENAI formatting is supported now.")
+    
+    return formatted_schema
 
 
 class ConnectionRequest(BaseModel):
@@ -130,19 +148,7 @@ class ConnectedAccount(BaseModel):
             f"v1/actions?appNames={app_unique_id}"
         )
         actions = resp.json()
-        if format == SchemaFormat.OPENAI:
-                return [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": action["name"],
-                            "description": action.get("description", ""),
-                            "parameters": action.get("parameters", {}),
-                        },
-                    }
-                    for action in actions["items"]
-                ]
-        return actions["items"]
+        return [format_schema(action_schema, format = format) for action_schema in actions["items"]]
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
