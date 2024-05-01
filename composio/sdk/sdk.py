@@ -322,8 +322,9 @@ class Composio:
             actions_response = resp.json()
             if tags is not None and len(tags) > 0:
                 filtered_actions = []
+                tag_values = [tag.value[1] if hasattr(tag, 'value') else tag for tag in tags]
                 for item in actions_response["items"]:
-                    if item["tags"] and any(tag in item["tags"] for tag in tags):
+                    if item["tags"] and any(tag in item["tags"] for tag in tag_values):
                         filtered_actions.append(item)
                 return filtered_actions
             return actions_response["items"]
