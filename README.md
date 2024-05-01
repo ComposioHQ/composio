@@ -25,3 +25,8 @@ make build
 make test-publish # for publishing to test-pypi
 make publish # for publishing to pypi
 ```
+
+## Run a single test file
+```
+pytest -v -s --log-level=DEBUG tests/autogen_test.py
+```
