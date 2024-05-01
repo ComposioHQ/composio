@@ -124,12 +124,9 @@ class ConnectedAccount(BaseModel):
         resp = self._execute_action(action_name, self.id, params)
         return resp
 
-    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI):
+    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI, tags: list[Union[str, Tag]] = None):
         app_unique_id = self.appUniqueId
-        resp = self.sdk_instance.http_client.get(
-            f"v1/actions?appNames={app_unique_id}"
-        )
-        actions = resp.json()
+        actions = self.sdk_instance.get_list_of_actions(apps=[App(app_unique_id)], tags=tags) 
         if format == SchemaFormat.OPENAI:
                 return [
                     {
@@ -140,9 +137,9 @@ class ConnectedAccount(BaseModel):
                             "parameters": action.get("parameters", {}),
                         },
                     }
-                    for action in actions["items"]
+                    for action in actions
                 ]
-        return actions["items"]
+        return actions
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -447,14 +444,14 @@ class Entity:
         entity_id = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
         self.entity_id = entity_id
 
-    def get_all_actions(self) -> list[Action]:
+    def get_all_actions(self, tags: list[Union[str, Tag]] = None) -> list[Action]:
         actions = []
         connected_accounts = self.client.get_connected_accounts(
             entity_id=self.entity_id
         )
 
         for account in connected_accounts:
-            account_actions = account.get_all_actions()
+            account_actions = account.get_all_actions(tags=tags)
             actions.extend(account_actions)
         return actions
 

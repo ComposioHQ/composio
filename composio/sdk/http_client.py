@@ -29,13 +29,15 @@ class HttpClient(requests.Session):
 
     def _handle_response_errors(self, response, absolute_url):
         if response.status_code == 404:
-            raise NotFoundException(f"The requested resource was not found at {absolute_url}.")
+            raise NotFoundException(f"The requested resource was not found at {absolute_url}. response: {response.text}")
         elif response.status_code == 401:
-            raise UserNotAuthenticatedException(f"You are not authorized to access the resource at {absolute_url}.")
+            raise UserNotAuthenticatedException(f"You are not authorized to access the resource at {absolute_url}. response: {response.text}")
         elif response.status_code == 500:
-            raise InternalServerErrorException(f"Internal server error occurred on {absolute_url}.")
+            raise InternalServerErrorException(f"Internal server error occurred on {absolute_url}. response: {response.text}")
         elif response.status_code == 400:
-            raise BadErrorException(f"Bad request error at {absolute_url}.")
+            raise BadErrorException(f"Bad request error at {absolute_url}. response: {response.text}")
         elif response.status_code == 408:
-            raise TimeoutException(f"The request timed out at {absolute_url}.")
+            raise TimeoutException(f"The request timed out at {absolute_url}. response: {response.text}")
+        elif response.status_code >= 400:
+            raise Exception(f"An error occurred at {absolute_url}. Status code: {response.status_code}, response: {response.text}")
         response.raise_for_status()  # Raise for other status codes that are not successful
