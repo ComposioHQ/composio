@@ -116,7 +116,9 @@
         "framework/langchain",
         "framework/autogen",
         "framework/crewai",
-        "framework/lyzr"
+        "framework/lyzr",
+        "framework/openai",
+        "framework/julep"
       ]
     },
     {
