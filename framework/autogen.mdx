@@ -101,7 +101,16 @@ composio_tools.register_tools(actions=[Action.GITHUB_CREATE_ISSUE])
 ### Use Specific Apps
 
 <CodeGroup>
-  ```bash Filter Specific App # To restrict agents from using all tools, filter
-  composio_tools.register_tools([App.ASANA, App.GITHUB]) 
+  ```bash Filter Specific App
+  # To restrict agents from using all tools, filter specific tools
+  composio_tools.register_tools(apps=[App.ASANA, App.GITHUB])
+  ```
+</CodeGroup>
+
+### Filter apps actions by tags
+
+<CodeGroup>
+  ```bash Filter Actions by Tags
+  composio_tools.register_tools(apps=[App.NOTIONBETA], tags=[Tag.NOTIONBETA_BLOCK])
   ```
 </CodeGroup>
