@@ -28,26 +28,27 @@ These commands set up your environment to enable smooth interactions between Jul
 <Steps>
 
 <Step title="Import Base Packages & Create Default Julep Agent">
+Replace `julep_api_key` with actual API key. 
 <CodeGroup>
 ```python Default Imports & Configuration
 from julep import Client
 from composio_julep import ComposioToolset, App
 import os
 
-api_key = os.getenv("JULEP_API_KEY")
-base_url = os.getenv("JULEP_API_URL")
-client = Client(api_key=api_key, base_url=base_url)
+julep_api_key = "JULEPAPIKEY"
+client = Client(api_key=julep_api_key)
 
-# Initialise the Composio Tool Set
-composio_tools = ComposioToolset()
 ```
 </CodeGroup>
 </Step>
 <Step title="Configure Julep Agent with Composio Tools">
 <CodeGroup>
 ```python Agent Configuration
+# Initialise the Composio Tool Set
+toolset = ComposioToolset()
+
 # Register the GitHub app with the right settings
-composio_tools.register_tools(tools=[App.GITHUB])
+composio_tools = toolset.get_tools(tools=[App.GITHUB])
 
 # Create and configure the Julep agent
 agent = client.agents.create(
@@ -62,7 +63,7 @@ agent = client.agents.create(
         "length_penalty": 1.0,
         "max_tokens": 150
     },
-    model="gpt-4",
+    model="gpt-4-turbo",
     tools=composio_tools,
 )
 ```
@@ -71,6 +72,14 @@ agent = client.agents.create(
 <Step title="Execute the Task via Julep Agent"> 
 <CodeGroup>
 ```python Julep Agent Executes the Task
+about = """
+Sam, a software developer, is passionate about impactful tech. 
+At the tech fair, he seeks investors and collaborators for his project.
+"""
+user = julep_client.users.create(
+    name="Sam",
+    about=about,
+)
 
 situation_prompt = "You are at a tech fair seeking innovative projects."
 session = client.sessions.create(user_id="user-id", agent_id=agent.id, situation=situation_prompt)
@@ -80,11 +89,18 @@ user_msg = "Could you star the GitHub repository SamparkAI/composio_sdk?"
 response = client.sessions.chat(
     session_id=session.id,
     messages=[
-        {"role": "user", "content": user_msg, "name": "Sawradip"}
+        {"role": "user", "content": user_msg, "name": "Sam"}
     ],
     recall=True,
     remember=True
 )
+```
+</CodeGroup>
+</Step>
+<Step title="Handle all the Tool calls">
+<CodeGroup>
+```
+response = composio_tools.handle_tool_calls(response)
 
 print(response.messages)
 ```
@@ -104,7 +120,7 @@ print(response.messages)
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
-composio_tools.register_tools(actions=[App.GITHUB_CREATE_ISSUE])
+actions = composio_tools.get_tools(actions=[App.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>
 
@@ -113,7 +129,7 @@ composio_tools.register_tools(actions=[App.GITHUB_CREATE_ISSUE])
 <CodeGroup>
   ```bash Filter Specific App
   # To restrict agents from using all tools, filter specific tools
-  composio_tools.register_tools(apps=[App.ASANA, App.GITHUB])
+  actions = composio_tools.get_tools(apps=[App.ASANA, App.GITHUB])
   ```
 </CodeGroup>
 
@@ -121,6 +137,6 @@ composio_tools.register_tools(actions=[App.GITHUB_CREATE_ISSUE])
 
 <CodeGroup>
   ```bash Filter Actions by Tags
-  composio_tools.register_tools(apps=[App.NOTIONBETA], tags=[Tag.NOTIONBETA_BLOCK])
+  actions = composio_tools.get_tools(apps=[App.NOTIONBETA], tags=[Tag.NOTIONBETA_BLOCK])
   ```
 </CodeGroup>
