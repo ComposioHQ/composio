@@ -50,18 +50,10 @@ class OpenaiStyleToolsetBase:
                 for choice in llm_response.choices:
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
-                            print("########")
-                            print(tool_call.function.json())
                             action_name_to_execute = tool_call.function.name
                             action = self.client.sdk.get_action_enum_without_tool(
                                 action_name=action_name_to_execute
                             )
-                            # tool_name = action.service
-                            # account = entity.get_connection(tool_name)
-                            # if not account:
-                            #     raise NotFoundException(
-                            #         f"Entity {entity_id} does not have a connection to {tool_name}"
-                            #     )
                             arguments = json.loads(tool_call.function.arguments)
                             account = self.client.get_connection(app_name=action.service)
                             output.append(account.execute_action(action, arguments))
