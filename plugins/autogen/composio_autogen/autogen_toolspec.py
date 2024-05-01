@@ -18,7 +18,6 @@ client = ComposioCore(
     framework=FrameworkEnum.AUTOGEN, api_key=os.environ.get("COMPOSIO_API_KEY", None)
 )
 
-
 class ComposioToolset:
     def __init__(self, client: ComposioCore = client, caller=None, executor=None, entity_id: str = "default"):
         self.client = client
