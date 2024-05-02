@@ -1,15 +1,16 @@
 
 <p align="center">
   <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg" width="200"/>
-  <h4 align="center">Composio SDK: Composio equips agents with high-quality tools empowering them to tackle real world use-cases</h4>
+  <h4 align="center">Composio SDK: Composio equips agents with high-quality tools<br/> empowering them to tackle real world use-cases</h4>
   <hr/>
+  <br/>
   <p align="center">
     <img alt="Tests" src="https://github.com/SamparkAI/composio_sdk/actions/workflows/common.yml/badge.svg">
   <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
-  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest"><br/>
+  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
+    <img alt="Twitter" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Ftwitter.com%2Fcomposiohq&label=Follow us">
     <img alt="Discord" src="https://img.shields.io/discord/1170785031560646836?label=Discord">
-  <img alt="Twitter" src="https://img.shields.io/twitter/follow/composio_ai?style=social">
-  </p>
+    </p>
 </p>
 
 
