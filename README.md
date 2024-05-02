@@ -1,7 +1,12 @@
 
 <p align="center">
   <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg" width="200"/>
+  <h4 align="center">Composio SDK: Composio equips agents with high-quality tools empowering them to tackle real world use-cases</h4>
+  <hr/>
+  <img src = "https://img.shields.io/discord/1170785031560646836" alt="Discord"/>
 </p>
+
+
 
 Basically 
 # Composio Python SDKs Overview
