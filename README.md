@@ -43,10 +43,16 @@ The below sample repos are provided to help you get started with Composio. Follo
 
 | Framework | Use-Case | GitHub Repo | Features Used |
 | --- | --- | --- | --- |
-| Autogen | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+| Autogen | Sample  | [GitHub Repo](https://github.com/username/repo) | - |
 | CrewAI | Competitor research agent that is triggered with a slack message, starts researching about the said topic and  finally creates a page on notion and reply back to slack. | [GitHub Repo](https://github.com/username/repo) | ![](https://img.shields.io/badge/triggers-8A2BE2) ![](https://img.shields.io/badge/actions-8A2BE2) ![](https://img.shields.io/badge/auth-8A2BE2)
-| Langchain | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+| Langchain | Notion - Product Discussion Agent: An agent that creates linear isseus fronm the production discussions in notion. | [GitHub Repo](https://github.com/username/repo) | ![](https://img.shields.io/badge/actions-8A2BE2) ![](https://img.shields.io/badge/auth-8A2BE2)
 | Lyzr | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
 | OpenAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
 
-Checkout the [Composio Docs](https://docs.composio.dev/introduction/intro/overview) for more information on How to use Composio?
+## Resources
+- Docs: https://docs.composio.dev/
+- Discord: https://discord.gg/composio
+- Twitter: https://twitter.com/composiohq
+
+## Contributing
+Checkout `CONTRIBUTING.md` to get started with contributing to SDK. Feel free to reach out to us on [Discord](https://discord.gg/composio) for any questions or issues. We value your feedback!
