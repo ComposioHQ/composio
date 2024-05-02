@@ -19,7 +19,7 @@ Composio provides a platform that seamlessly integrates over 200+ apps with your
 
 - **Authentication Management**: Composio provides comprehensive management of all authentication types, including `OAuth2`, `OAuth1`, `Basic`, `API_KEY`.
 - **Full Support for Actions & Triggers**: Composio provides full support for Actions & Triggers, to power your agents with a wide range of functionalities.
-- **Extensibility**: To give you more power, Composio is highly extensible, allowing you to add your own custom tools and functionalities.
+- **Extensibility**: Don't find a tool you need? Composio is highly extensible, allowing you to add your own set of custom tools.
 - **Secure Environment**: Every user has a secure compute environment, ensuring data protection and privacy.
 - **Compatibility with Major Agent Frameworks**: Autogen, Langchain, CrewAI, Julep, Lyzr, and OpenAI are all compatible with Composio, giving you a simple experience for your workflows.
 
