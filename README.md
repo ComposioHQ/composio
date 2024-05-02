@@ -31,7 +31,7 @@ Composio provides a platform that seamlessly integrates over 200+ apps with your
 - **Lyzr**: `pip install composio_lyzr`
 - **OpenAI**: `pip install composio_openai`
 
-Login now into your composio account, using the  below CLI command below
+Login now into your composio account, using the  below CLI command:
 ```shell 
 composi-cli login
 ```
