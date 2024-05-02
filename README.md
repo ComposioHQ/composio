@@ -46,7 +46,7 @@ The below sample repos are provided to help you get started with Composio. Follo
 | Autogen | Sample  | [GitHub Repo](https://github.com/username/repo) | - |
 | CrewAI | Competitor research agent that is triggered with a slack message, starts researching about the said topic and  finally creates a page on notion and reply back to slack. | [GitHub Repo](https://github.com/username/repo) | ![](https://img.shields.io/badge/triggers-8A2BE2) ![](https://img.shields.io/badge/actions-8A2BE2) ![](https://img.shields.io/badge/auth-8A2BE2)
 | Langchain | Notion - Product Discussion Agent: An agent that creates linear isseus fronm the production discussions in notion. | [GitHub Repo](https://github.com/username/repo) | ![](https://img.shields.io/badge/actions-8A2BE2) ![](https://img.shields.io/badge/auth-8A2BE2)
-| Lyzr | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+| Lyzr | Repo Recommender - Lyzer agent that analyzes your previous starred repos and notifies you a similar repo that you might be interested in. | [GitHub Repo](https://github.com/username/repo) | ![](https://img.shields.io/badge/actions-8A2BE2) ![](https://img.shields.io/badge/auth-8A2BE2)
 | OpenAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
 
 ## Resources
