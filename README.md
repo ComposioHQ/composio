@@ -13,7 +13,7 @@
 </p>
 
 
-<img alt="Illustraion" src="./illustration.png" style="border-radius: 5px"/>
+<img alt="Illustraion" src="./ill2.png" style="border-radius: 5px"/>
 
 Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
 
