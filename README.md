@@ -17,16 +17,13 @@
 
 Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
 
-- **Authentication Management**: Composio provides comprehensive management of all authentication types, including `OAuth2`, `OAuth1`, `Basic`, `API_KEY`.
+- **Compatibility with Major Agent Frameworks**: Autogen, Langchain, CrewAI, Julep, Lyzr, and OpenAI are all compatible with Composio, giving you a simple experience for your workflows.
 - **Full Support for Actions & Triggers**: Composio provides full support for Actions & Triggers, to power your agents with a wide range of functionalities.
+- **Authentication Management**: Composio provides comprehensive management of all authentication types, including `OAuth2`, `OAuth1`, `Basic`, `API_KEY`.
 - **Extensibility**: Don't find a tool you need? Composio is highly extensible, allowing you to add your own set of custom tools.
 - **Secure Environment**: Every user has a secure compute environment, ensuring data protection and privacy.
-- **Compatibility with Major Agent Frameworks**: Autogen, Langchain, CrewAI, Julep, Lyzr, and OpenAI are all compatible with Composio, giving you a simple experience for your workflows.
 
-## Overview
-Explore the various Python SDKs offered by Composio for enhanced integration and development:
-1. **Core** - Access the foundational APIs necessary for basic operations.
-2. **Autogen** - Integrate Composio's tools seamlessly with Autogen technology.
-3. **CrewAI** - Leverage CrewAI capabilities within your Composio projects.
-4. **Langchain** - Implement Langchain solutions using Composio's robust framework.
-
+## Getting started
+```shell
+pip install composio_core
+```
