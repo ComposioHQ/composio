@@ -6,17 +6,16 @@
   <br/>
   <p align="center">
     <img alt="Tests" src="https://github.com/SamparkAI/composio_sdk/actions/workflows/common.yml/badge.svg">
-  <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
   <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
+    <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
     <img alt="Twitter" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Ftwitter.com%2Fcomposiohq&label=Follow us">
     <img alt="Discord" src="https://img.shields.io/discord/1170785031560646836?label=Discord">
     </p>
 </p>
 
+Composio SDK provides you a way which integrates seamlessly with over 200+ apps, significantly enhancing the functionality and interactivity of your AI agents. The idea behind the . Composio supports all major AI frameworks including Autogen, Langchain, CrewAI, among others, right out of the box.
 
-
-Basically 
-# Composio Python SDKs Overview
+## Overview
 Explore the various Python SDKs offered by Composio for enhanced integration and development:
 1. **Core** - Access the foundational APIs necessary for basic operations.
 2. **Autogen** - Integrate Composio's tools seamlessly with Autogen technology.
