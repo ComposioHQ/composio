@@ -17,6 +17,14 @@
 
 Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It enables developers to create more effective workflows by linking their platforms and user-preferred apps through a robust pipeline. It supports all major agentic frameworks out of the box: Autogen, Langchain, CrewAI, and more.
 
+## Key Features
+- **All major apps supported**: Composio seamlessly integrates with over 200+ tools, empowering your agents with a wide range of capabilities.
+- **Authentication Management**: Composio provides comprehensive management of all authentication types, including `OAuth2`, `OAuth1`, `Basic`, `API_KEY`.
+- **Full Support for Actions & Triggers**: Composio provides full support for Actions & Triggers, ensuring that you have everything you need.
+- **Extensibility**: To give you more power, Composio is highly extensible, allowing you to add your own custom tools and functionalities.
+- **Secure Environment**: Every user has a secure compute environment, ensuring data protection and privacy.
+- **Compatibility with Major Agent Frameworks**: Autogen, Langchain, CrewAI, Julep, Lyzr, and OpenAI are all compatible with Composio, giving you a simple experience for your workflows.
+
 ## Overview
 Explore the various Python SDKs offered by Composio for enhanced integration and development:
 1. **Core** - Access the foundational APIs necessary for basic operations.
@@ -24,17 +32,3 @@ Explore the various Python SDKs offered by Composio for enhanced integration and
 3. **CrewAI** - Leverage CrewAI capabilities within your Composio projects.
 4. **Langchain** - Implement Langchain solutions using Composio's robust framework.
 
-## Setting Up Your Development Environment
-To prepare your development environment, follow these steps:
-- Confirm that your system has Python (version 3.8 or higher, but less than 4) and `pipenv` installed.
-- Clone the SDK repository using the command:
-    ```
-    git clone git@github.com:SamparkAI/composio_sdk
-    ```
-- Set up and activate a virtual environment. This step should be repeated whenever you need to refresh your environment and update dependencies:
-    ```
-    make env && pipenv shell
-    ```
-
-## SDK Release Process
-To release a new version of the SDK, execute the following commands:
