@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
+  <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg" width="200"/>
 </p>
 
 Basically 
