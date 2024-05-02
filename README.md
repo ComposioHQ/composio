@@ -14,7 +14,7 @@
 
 Composio provides an innovative platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It enables developers to create more effective workflows by linking their platforms and user-preferred apps through a robust pipeline. It supports all major agentic frameworks out of the box: Autogen, Langchain, CrewAI, and more.
 
-![Illustraion](Illustration.png)
+![Illustraion](illustration.png)
 
 ## Overview
 Explore the various Python SDKs offered by Composio for enhanced integration and development:
