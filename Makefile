@@ -65,10 +65,10 @@ publish: dist
 
 .PHONY: test-publish
 test-publish: dist
-	twine upload --repository testpypi dist/* && \
+	twine upload --repository testpypi dist/* --username token --password "$$PYPI_PASSWORD" && \
 	for dir in plugins/*; do \
 		if [ -d "$$dir" ]; then \
-			twine upload --repository testpypi "$$dir"/dist/*; \
+			twine upload --repository testpypi "$$dir"/dist/* --username token --password "$$PYPI_PASSWORD"; \
 		fi \
 	done
 
