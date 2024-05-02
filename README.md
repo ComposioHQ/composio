@@ -1,32 +1,23 @@
-# Python SDKs of Composio 
-1. Core - To access base APIs
-2. Autogen - Use Composio tools with Autogen
-3. CrewAI - Use Composio tools with CrewAI
-4. Langchain - Use Composio tools with Langchain
+![Illustration](illustration.png)
 
-## Development Environement Setup
+# Composio Python SDKs Overview
+Explore the various Python SDKs offered by Composio for enhanced integration and development:
+1. **Core** - Access the foundational APIs necessary for basic operations.
+2. **Autogen** - Integrate Composio's tools seamlessly with Autogen technology.
+3. **CrewAI** - Leverage CrewAI capabilities within your Composio projects.
+4. **Langchain** - Implement Langchain solutions using Composio's robust framework.
 
-- Ensure your machine has `Python>=3.8,<4` and `pipenv` installed
-- Clone the repository:
+## Setting Up Your Development Environment
+To prepare your development environment, follow these steps:
+- Confirm that your system has Python (version 3.8 or higher, but less than 4) and `pipenv` installed.
+- Clone the SDK repository using the command:
     ```
     git clone git@github.com:SamparkAI/composio_sdk
     ```
-- Create and launch a virtual environment. Also, run this during development, every time you need to re-create and launch the virtual environment and update the dependencies:
+- Set up and activate a virtual environment. This step should be repeated whenever you need to refresh your environment and update dependencies:
     ```
-      make env && pipenv shell
+    make env && pipenv shell
     ```
 
-## Release Process
-```
-make clean-build
-python scripts/bump.py patch
-make build
-
-make test-publish # for publishing to test-pypi
-make publish # for publishing to pypi
-```
-
-## Run a single test file
-```
-pytest -v -s --log-level=DEBUG tests/autogen_test.py
-```
+## SDK Release Process
+To release a new version of the SDK, execute the following commands:
