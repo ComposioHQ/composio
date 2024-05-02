@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Union
+import warnings
 
 from openai import Client
 from openai.types.beta import thread
@@ -321,7 +322,6 @@ class Composio:
             return filtered_actions
         elif apps is not None and len(apps) > 0:
             app_unique_ids = [app.value for app in apps]
-            print(f"app_unique_ids: {app_unique_ids}")
             resp = self.http_client.get(
                 f"v1/actions?appNames={','.join(app_unique_ids)}"
             )
@@ -333,7 +333,21 @@ class Composio:
                     if item["tags"] and any(tag in item["tags"] for tag in tag_values):
                         filtered_actions.append(item)
                 return filtered_actions
-            return actions_response["items"]
+
+            warnings.warn(
+                "Using all the actions of an app is not recommended. "
+                "Please use tags to filter actions or provide specific actions. "
+                "We just pass the important actions to the agent, but this is not meant "
+                "to be used in production.",
+                UserWarning
+            )
+            actions = actions_response["items"]
+            important_tag = Tag.IMPORTANT.value[1]
+            important_actions = [action for action in actions if important_tag in (action.get("tags", []) or [])] 
+            if len(important_actions) > 5:
+                return important_actions
+            else:
+                return actions
         else:
             raise ValueError("Either apps or actions must be provided")
 
