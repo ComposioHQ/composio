@@ -24,6 +24,15 @@ Composio provides a platform that seamlessly integrates over 200+ apps with your
 - **Secure Environment**: Every user has a secure compute environment, ensuring data protection and privacy.
 
 ## Getting started
-```shell
-pip install composio_core
+ To get started, select the framework you want to use and install the correseponding package:
+- **Autogen**: `pip install composio_autogen`
+- **CrewAI**: `pip install composio_crewai`
+- **Langchain**: `pip install composio_langchain`
+- **Lyzr**: `pip install composio_lyzr`
+- **OpenAI**: `pip install composio_openai`
+
+Login now into your composio account, using the  below CLI command below
+```shell 
+composi-cli login
 ```
+
