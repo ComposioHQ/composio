@@ -1,7 +1,7 @@
 
 <p align="center">
   <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg" width="200"/>
-  <h4 align="center">Composio SDK: Equip your agent with high-quality tools and build your real-world usecase</h4>
+  <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>
   <p align="center">
     <img alt="Tests" src="https://github.com/SamparkAI/composio_sdk/actions/workflows/common.yml/badge.svg">
