@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg" width="200"/>
+  <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg" width="200"/>
   <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>
   <p align="center">
@@ -12,9 +12,10 @@
     </p>
 </p>
 
-Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It enables developers to create more effective workflows by linking their platforms and user-preferred apps through a robust pipeline. It supports all major agentic frameworks out of the box: Autogen, Langchain, CrewAI, and more.
 
 <img alt="Illustraion" src="./illustration.png" style="border-radius: 5px"/>
+
+Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It enables developers to create more effective workflows by linking their platforms and user-preferred apps through a robust pipeline. It supports all major agentic frameworks out of the box: Autogen, Langchain, CrewAI, and more.
 
 ## Overview
 Explore the various Python SDKs offered by Composio for enhanced integration and development:
