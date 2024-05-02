@@ -36,3 +36,16 @@ Login now into your composio account, using the  below CLI command below
 composi-cli login
 ```
 
+<hr/>
+
+### Run a sample use-cases repo for your framework
+The below sample repos are provided to help you get started with Composio. Follow the README.md to start these agents.
+
+| Framework | Use-Case | GitHub Repo |
+| --- | --- | --- |
+| Autogen | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
+| CrewAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
+| Langchain | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
+| Lyzr | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
+| OpenAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
+
