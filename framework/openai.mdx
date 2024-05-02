@@ -2,14 +2,14 @@
 title: "Using Composio With OpenAI"
 sidebarTitle: "OpenAI Integration"
 icon: "robot"
-description: "Enable OpenAI agents to seamlessly interact with external apps via Composio for enhanced functionality"
+description: "Enable OpenAI assistants to seamlessly interact with external apps via Composio for enhanced functionality"
 ---
 
 **Composio and OpenAI** work together to **extend the capabilities** of your agents by interacting with a variety of **external applications**.
 
 ### Install Packages & Connect a Tool
 
-<Tip>Goal: Enable OpenAI agents to perform tasks like starring a repository on GitHub via natural language commands</Tip>
+<Tip>Goal: Enable OpenAI assistants to perform tasks like starring a repository on GitHub via natural language commands</Tip>
 
 These steps prepare your environment to enable interactions between OpenAI and GitHub through Composio.
 
@@ -81,7 +81,7 @@ pprint(result)
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
-composio_tools.register_tools(actions=[App.GITHUB_CREATE_ISSUE])
+composio_tools.register_tools(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>
 
