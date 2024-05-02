@@ -43,7 +43,7 @@
     }
   ],
   "topbarCtaButton": {
-    "name": "Open Dashboard",
+    "name": "Dashboard >",
     "url": "https://app.composio.dev"
   },
   "topAnchor": {
@@ -55,20 +55,20 @@
   },
   "tabs": [
     {
-      "name": "Using SDK",
+      "name": "SDK",
       "url": "sdk"
     },
     {
-      "name": "Project Gallery & Casestudies",
+      "name": "Casestudies",
       "url": "guides"
     },
 
     {
-      "name": "Using API",
+      "name": "API",
       "url": "api-reference"
     },
     {
-      "name": "Supported Tools",
+      "name": "Tools",
       "url": "apps"
     },
     {
