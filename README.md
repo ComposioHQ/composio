@@ -1,5 +1,9 @@
-![Illustration](illustration.png)
 
+<p align="center">
+  <img src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
+</p>
+
+Basically 
 # Composio Python SDKs Overview
 Explore the various Python SDKs offered by Composio for enhanced integration and development:
 1. **Core** - Access the foundational APIs necessary for basic operations.
