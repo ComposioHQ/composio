@@ -56,11 +56,11 @@ build:
 
 .PHONY: publish
 publish: dist
-	twine upload dist/* && \
+	twine upload dist/* --username token --password "$$PYPI_PASSWORD" && \
 	for dir in plugins/*; do \
 		if [ -d "$$dir" ]; then \
-			twine upload "$$dir"/dist/*; \
-		fi \
+			twine upload "$$dir"/dist/* --username token --password "$$PYPI_PASSWORD"; \
+		fi; \
 	done
 
 .PHONY: test-publish
