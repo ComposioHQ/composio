@@ -35,8 +35,8 @@ from julep import Client
 from composio_julep import ComposioToolset, App
 import os
 
-julep_api_key = "JULEPAPIKEY"
-client = Client(api_key=julep_api_key)
+julep_api_key = "{julep_api_key}" # Replace it
+julep_client = Client(api_key=julep_api_key)
 
 ```
 </CodeGroup>
@@ -51,7 +51,7 @@ toolset = ComposioToolset()
 composio_tools = toolset.get_tools(tools=[App.GITHUB])
 
 # Create and configure the Julep agent
-agent = client.agents.create(
+agent = julep_client.agents.create(
     name="Jessica",
     about="Tech entrepreneur with a focus on sustainability and AI.",
     default_settings={
@@ -82,11 +82,11 @@ user = julep_client.users.create(
 )
 
 situation_prompt = "You are at a tech fair seeking innovative projects."
-session = client.sessions.create(user_id="user-id", agent_id=agent.id, situation=situation_prompt)
+session = julep_client.sessions.create(user_id=user.id, agent_id=agent.id, situation=situation_prompt)
 
 user_msg = "Could you star the GitHub repository SamparkAI/composio_sdk?"
 
-response = client.sessions.chat(
+response = julep_client.sessions.chat(
     session_id=session.id,
     messages=[
         {"role": "user", "content": user_msg, "name": "Sam"}
@@ -99,7 +99,7 @@ response = client.sessions.chat(
 </Step>
 <Step title="Handle all the Tool calls">
 <CodeGroup>
-```
+```python Handle Tool Call
 response = composio_tools.handle_tool_calls(response)
 
 print(response.messages)
@@ -118,7 +118,7 @@ print(response.messages)
 
 ### Use Specific Actions
 <CodeGroup>
-```bash Filter Specific Action
+```python Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
 actions = composio_tools.get_tools(actions=[App.GITHUB_CREATE_ISSUE])
 ```
@@ -127,7 +127,7 @@ actions = composio_tools.get_tools(actions=[App.GITHUB_CREATE_ISSUE])
 ### Use Specific Apps
 
 <CodeGroup>
-  ```bash Filter Specific App
+  ```python Filter Specific App
   # To restrict agents from using all tools, filter specific tools
   actions = composio_tools.get_tools(apps=[App.ASANA, App.GITHUB])
   ```
@@ -136,7 +136,7 @@ actions = composio_tools.get_tools(actions=[App.GITHUB_CREATE_ISSUE])
 ### Filter apps actions by tags
 
 <CodeGroup>
-  ```bash Filter Actions by Tags
+  ```python Filter Actions by Tags
   actions = composio_tools.get_tools(apps=[App.NOTIONBETA], tags=[Tag.NOTIONBETA_BLOCK])
   ```
 </CodeGroup>
