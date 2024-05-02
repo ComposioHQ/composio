@@ -41,11 +41,10 @@ composi-cli login
 ### Run a sample use-cases repo for your framework
 The below sample repos are provided to help you get started with Composio. Follow the README.md to start these agents.
 
-| Framework | Use-Case | GitHub Repo |
-| --- | --- | --- |
-| Autogen | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
-| CrewAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
-| Langchain | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
-| Lyzr | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
-| OpenAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) |
-
+| Framework | Use-Case | GitHub Repo | Features Used |
+| --- | --- | --- | --- |
+| Autogen | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+| CrewAI | Competitor research agent that is triggered with a slack message, starts researching about the said topic and  finally creates a page on notion and reply back to slack. | [GitHub Repo](https://github.com/username/repo) | - |
+| Langchain | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+| Lyzr | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+| OpenAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
