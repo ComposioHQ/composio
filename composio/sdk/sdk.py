@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Union
+import warnings
 
 from openai import Client
 from openai.types.beta import thread
@@ -16,10 +17,28 @@ from composio.sdk.http_client import HttpClient
 from .enums import Action, App, Tag
 from .storage import get_base_url
 
+from enum import Enum
 
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
+    
+    
+def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
+    if format == SchemaFormat.OPENAI:
+        formatted_schema = {
+                    "type": "function",
+                    "function": {
+                        "name": action_schema["name"],
+                        "description": action_schema.get("description", ""),
+                        "parameters": action_schema.get("parameters", {}),
+                    },
+                }
+    else:
+        formatted_schema = action_schema
+        # print("Only OPENAI formatting is supported now.")
+    
+    return formatted_schema
 
 
 class ConnectionRequest(BaseModel):
@@ -126,20 +145,11 @@ class ConnectedAccount(BaseModel):
 
     def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI, tags: list[Union[str, Tag]] = None):
         app_unique_id = self.appUniqueId
-        actions = self.sdk_instance.get_list_of_actions(apps=[App(app_unique_id)], tags=tags) 
-        if format == SchemaFormat.OPENAI:
-                return [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": action["name"],
-                            "description": action.get("description", ""),
-                            "parameters": action.get("parameters", {}),
-                        },
-                    }
-                    for action in actions
-                ]
-        return actions
+        resp = self.sdk_instance.http_client.get(
+            f"v1/actions?appNames={app_unique_id}"
+        )
+        actions = resp.json()
+        return [format_schema(action_schema, format = format) for action_schema in actions["items"]]
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -312,7 +322,6 @@ class Composio:
             return filtered_actions
         elif apps is not None and len(apps) > 0:
             app_unique_ids = [app.value for app in apps]
-            print(f"app_unique_ids: {app_unique_ids}")
             resp = self.http_client.get(
                 f"v1/actions?appNames={','.join(app_unique_ids)}"
             )
@@ -324,7 +333,21 @@ class Composio:
                     if item["tags"] and any(tag in item["tags"] for tag in tag_values):
                         filtered_actions.append(item)
                 return filtered_actions
-            return actions_response["items"]
+
+            warnings.warn(
+                "Using all the actions of an app is not recommended. "
+                "Please use tags to filter actions or provide specific actions. "
+                "We just pass the important actions to the agent, but this is not meant "
+                "to be used in production.",
+                UserWarning
+            )
+            actions = actions_response["items"]
+            important_tag = Tag.IMPORTANT.value[1]
+            important_actions = [action for action in actions if important_tag in (action.get("tags", []) or [])] 
+            if len(important_actions) > 5:
+                return important_actions
+            else:
+                return actions
         else:
             raise ValueError("Either apps or actions must be provided")
 
