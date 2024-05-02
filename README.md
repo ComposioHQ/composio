@@ -15,10 +15,8 @@
 
 <img alt="Illustraion" src="./illustration.png" style="border-radius: 5px"/>
 
-Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It enables developers to create more effective workflows by linking their platforms and user-preferred apps through a robust pipeline. It supports all major agentic frameworks out of the box: Autogen, Langchain, CrewAI, and more.
+Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
 
-## Key Features
-- **All major apps supported**: Composio seamlessly integrates with over 200+ tools, empowering your agents with a wide range of capabilities.
 - **Authentication Management**: Composio provides comprehensive management of all authentication types, including `OAuth2`, `OAuth1`, `Basic`, `API_KEY`.
 - **Full Support for Actions & Triggers**: Composio provides full support for Actions & Triggers, ensuring that you have everything you need.
 - **Extensibility**: To give you more power, Composio is highly extensible, allowing you to add your own custom tools and functionalities.
