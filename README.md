@@ -48,3 +48,5 @@ The below sample repos are provided to help you get started with Composio. Follo
 | Langchain | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
 | Lyzr | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
 | OpenAI | Sample Use-Case | [GitHub Repo](https://github.com/username/repo) | - |
+
+Checkout the [Composio Docs](https://docs.composio.dev/introduction/intro/overview) for more information on how to use Composio.
