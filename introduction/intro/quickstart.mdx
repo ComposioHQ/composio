@@ -12,68 +12,54 @@ description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to
 <Step title="Install Composio Package">
 <CodeGroup>
 ```bash Install Composio SDK 
-pip install composio-core -U
+pip install composio-core 
+pip install composio_openai 
 ```
 </CodeGroup>
 </Step>
-<Step>
-
-Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/api_keys).
-
+<Step title="Authenticate your github account using CLI">
 <CodeGroup>
-```python Auth via OAuth 
-from composio import Composio, App
-
-client = Composio("api-key")
-
-# Authenticate a particular user
-
-# Feel free to keep user_id anything if you are testing.
-
-my_user = client.get_entity(entity_id="user_id")
-
-#Trying to initiate a new connection
-connected_account = my_user.initiate_connection(app_name=App.GITHUB)
-
-print("Complete the auth flow, link: ", connected_account.redirectUrl)
-
+```bash Authenticate your Github Account 
+composio-cli add github
 ```
 
 </CodeGroup>
 </Step>
-<Step title="Wait for Connected Account Status to be 'Active'">
-  If you haven’t, please click on redirectUrl above and complete the flow.
-  <CodeGroup>
-    ```python Connected Account Polling
-    #Keep Polling and wait until timeout
-    connected_account = connected_account.wait_until_active(timeout=60)
-    ```
-  </CodeGroup>
+<Step title="Import python packages">
+Modify `OPENAIKEY` before executing it.
+<CodeGroup>
+```python Import Base Packages & Configure OpenAI Client
+from openai import OpenAI
+from composio_openai import ComposioToolset, App
+
+openai_client = OpenAI(api_key="**\*\***OPENAIKEY**\*\***")
+
+# Initialise the Composio Tool Set
+
+composio_tools = ComposioToolset()
+
+```
+</CodeGroup>
 </Step>
 
-<Step title="List all Supported Actions">
+<Step title="Fetch all Github actions via Composio">
   <CodeGroup>
     ```python Fetch Actions
-    actions = connected_account.get_all_actions()
+# Get GitHub tools that are pre-configured
+actions = composio_tools.get_tools(tools=App.GITHUB)
     ```
   </CodeGroup>
-
 </Step>
 
 <Step title="Using Function Call">
-Modify `OPENAIKEY` before executing it.
+
 <CodeGroup>
 ```python Task to Action Selection
-from openai import OpenAI
-
 my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
-
-# Initialize the OpenAI client
-openai_client = OpenAI(api_key="******OPENAIKEY******")
 
 # Create a chat completion request to decide on the action
 response = openai_client.chat.completions.create(
-model="gpt-4-turbo-preview",
+model="gpt-4-turbo",
 tools=actions, # Passing actions we fetched earlier.
 messages=[
     {"role": "system", "content": "You are a helpful assistant."},
@@ -86,59 +72,69 @@ messages=[
 </Step>
 
 <Step title="Handle Tool Calls - Execute Actions">
+<Tabs>
+<Tab title="Default">
 <CodeGroup>
 ```python Executing Selected Actions!
 # Execute Function calls
-execution_details = connected_account.handle_tools_calls(response)
+execution_details = composio_tools.handle_tool_calls(response)
 
 print(execution_details)
-
 print("Completed Task")
-
 ```
-
 </CodeGroup>
+</Tab>
+<Tab title="Execute actions for Specific User">
+You can checkout adding connections for your user [here](/introduction/foundations/components/integrations/connected-account)
+<CodeGroup>
+```python Executing Selected Actions!
+# Execute Function calls
+execution_details = composio_tools.handle_tool_calls(response,entity_id="user_id")
+
+print(execution_details)
+print("Completed Task")
+```
+</CodeGroup>
+</Tab>
+</Tabs>
 </Step>
+
 </Steps>
 
 ### Putting it all together
 
-Replace `OPENAIKEY` and `api-key` below.
+Replace `OPENAIKEY`.
 
 <CodeGroup>
 ```python Complete Code
 ## Step 1
-#!pip install composio-core -U
+#!pip install composio-core
+#!pip install composio_openai
+
 
 ## Step 2
-from openai import OpenAI
-from composio import Composio,App
-
-# Initialize the OpenAI client
-openai_client = OpenAI(api_key="******OPENAIKEY******")
-client = Composio("api-key")
-
-
-my_user = client.get_entity(entity_id="user_id")
-#Trying to initiate a new connection
-connected_account = my_user.initiate_connection(app_name=App.GITHUB)
-
-print("Complete the auth flow, link: ", connected_account.redirectUrl)
+#!composio-cli add github
 
 ## Step 3
-#Keep Polling and wait until timeout
-connected_account = connected_account.wait_until_active(timeout=60)
+from openai import OpenAI
+from composio_openai import ComposioToolset, App
+
+openai_client = OpenAI(api_key="******OPENAIKEY******")
+
+# Initialise the Composio Tool Set
+composio_tools = ComposioToolset()
 
 ## Step 4
-actions = connected_account.get_all_actions()
+# Get GitHub tools that are pre-configured
+actions = composio_tools.get_tools(tools=App.GITHUB)
+
 
 ## Step 5
 my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
 
-
-
 # Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(model="gpt-4-turbo-preview",
+response = openai_client.chat.completions.create(
+model="gpt-4-turbo",
 tools=actions, # Passing actions we fetched earlier.
 messages=[
     {"role": "system", "content": "You are a helpful assistant."},
@@ -146,9 +142,10 @@ messages=[
   ]
 )
 
+
 ## Step 6
 # Execute Function calls
-execution_details = connected_account.handle_tools_calls(response)
+execution_details = composio_tools.handle_tool_calls(response)
 
 print(execution_details)
 

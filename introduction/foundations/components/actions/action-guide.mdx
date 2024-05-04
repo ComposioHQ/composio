@@ -9,12 +9,6 @@ description: "Learn how to perform actions with a connected account."
 
 **Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
-## **Understanding Connected Accounts**
-
-Connected Accounts are established **links** between **Composio** and an **external application**, created during the **user authentication process**.
-
-They **store authentication details** such as **access tokens** and **refresh tokens**.
-
 ## **Types of Actions**
 
 <Tabs>
@@ -74,60 +68,18 @@ The response will include the **Action's ID, Name and Input/Output schema** in *
           ],
           "title": "Owner",
           "type": "string"
-        },
-        "repo": {
-          "description": "Name of the repository",
-          "examples": [
-            "gpt-3",
-            "react"
-          ],
-          "title": "Repo",
-          "type": "string"
-        },
-        "title": {
-          "description": "Title of the issue",
-          "examples": [
-            "Bug in the code",
-            "Feature request"
-          ],
-          "title": "Title",
-          "type": "string"
-        },
-        "body": {
-          "default": "",
-          "description": "Body of the issue",
-          "examples": [
-            "The code is not working",
-            "I would like to request a new feature"
-          ],
-          "title": "Body",
-          "type": "string"
-        }
+        }...
       },
       "required": [
-        "owner",
-        "repo",
-        "title"
+        "owner"...
       ],
       "title": "CreateIssueRequest",
       "type": "object"
     },
     "response": {
       "properties": {
-        "issue_url": {
-          "description": "URL of the created issue",
-          "examples": [
-            ""
-          ],
-          "title": "Issue Url",
-          "type": "string"
-        }
-      },
-      "required": [
-        "issue_url"
-      ],
-      "title": "CreateIssueResponse",
-      "type": "object"
+        ...
+      }
     },
     "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
     "appKey": "github",
