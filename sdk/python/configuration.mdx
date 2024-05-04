@@ -13,38 +13,45 @@ First, retrieve your api key from the [Composio dashboard](https://app.composio.
 </Step>
 <Step title="Configure the Environment Variable">
 Depending on your operating system, use the appropriate command to set the environment variable:
+<Tabs>
+<Tab title="For Unix/Linux/macOS">
+```bash Set API_KEY
+export COMPOSIO_API_KEY='your_api_key_here'
+```
+</Tab>
+<Tab title="For Windows Command Line">
 
-   - **For Unix/Linux/macOS**: 
-     ```bash Set API_KEY
-     export COMPOSIO_API_KEY='your_api_key_here'
-     ```
-   - **For Windows Command Line**: 
-     ```bash Set API_KEY
-     set COMPOSIO_API_KEY=your_api_key_here
-     ```
+```bash Set API_KEY
+set COMPOSIO_API_KEY=your_api_key_here
+```
+</Tab>
+</Tabs>
 </Step>
 <Step title="Verify the Environment Variable">
 Ensure that the `COMPOSIO_API_KEY` is correctly set by executing the following command:
-
-   - **On Unix/Linux/macOS**: 
+<Tabs>
+<Tab title="For Unix/Linux/macOS">
 <CodeGroup>
      ```bash Check if API_KEY is Set
      echo $COMPOSIO_API_KEY
      ```
 </CodeGroup>
-   - **On Windows Command Line**: 
+</Tab>
+<Tab title="For Windows Command Line">
 <CodeGroup>
      ```cmd Check if API_KEY is Set
      echo %COMPOSIO_API_KEY%
      ```
 </CodeGroup>
+</Tab>
+</Tabs>
 </Step>
 <Step title="Initializing the SDK">
 Optionally, you can initialize the SDK directly in your code by specifying the API key
 <CodeGroup>
      ```python Initialise Composio directly with API Key 
-     from composio import Composio
-     client = Composio("asda1231dsadwa0f4") 
+from composio import Composio
+client = Composio("{{Composio-API-Key}}") 
      ```
 </CodeGroup>
 </Step>

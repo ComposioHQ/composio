@@ -9,12 +9,6 @@ description: "Learn, how to use triggers in Connected Apps"
 
 **Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
-## **Understanding Connected Accounts**
-
-Connected Accounts are established **links** between **Composio** and an **external application**, created during the **user authentication process**.
-
-They **store authentication details** such as **access tokens** and **refresh tokens**. [Read more](https://docs.composio.dev/integrations/integration-guide)
-
 ## **Types of Triggers**
 
 <Tabs>
@@ -24,8 +18,7 @@ They **store authentication details** such as **access tokens** and **refresh to
   </Tab>
   <Tab title="Custom Triggers (Build your Own)">
     Our platform offers an extensible interface for defining custom triggers for
-    both custom and default applications. [Learn
-    more.](https://docs.composio.dev)
+    both custom and default applications. [**Coming Soon**](#)
   </Tab>
 </Tabs>
 
@@ -55,64 +48,25 @@ The response will include the trigger’s config/payload schema in a JSON compat
             "properties": {
                 "action": {
                     "description": "The action that was performed on the pull request",
-                    "examples": [
-                        "opened",
-                        "closed",
-                        "synchronize"
-                    ],
-                    "title": "Action",
-                    "type": "string"
-                },
-                "title": {
-                    "description": "The title of the pull request",
-                    "examples": [
-                        "Fix typo in README"
-                    ],
-                    "title": "Title",
-                    "type": "string"
-                },
-                "url": {
-                    "description": "The GitHub URL of the pull request",
-                    "examples": [
-                        "https://github.com/octocat/Hello-World/pull/42"
-                    ],
-                    "title": "Url",
-                    "type": "string"
+                    ...
                 }...
-            },
-            "required": [
-                "action",
-                "title",
-                "url"
-            ],
-            "title": "PullRequestPayloadSchema",
+            }...
             "type": "object"
         },
         "config": {
             "properties": {
                 "owner": {
                     "description": "Owner of the repository",
-                    "title": "Owner",
-                    "type": "string"
-                },
-                "repo": {
-                    "description": "Repository name",
-                    "title": "Repo",
-                    "type": "string"
-                }
+                    ...
+                }...
             },
             "required": [
-                "owner",
-                "repo"
+                "owner"...
             ],
             "title": "WebhookConfigSchema",
             "type": "object"
         },
-        "instructions": "This trigger fires every time a pull request is opened, closed, or synchronized on the repository.",
-        "appId": "69b4cfd1-fd02-4176-a91c-b4319773a0b3",
-        "appKey": "github",
-        "logo": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
-        "appName": "Github",
+        ...
         "enabled": true
     }...
 ]
@@ -123,7 +77,7 @@ The response will include the trigger’s config/payload schema in a JSON compat
 
 To set up triggers, follow these steps:
 
-1. **Set Universal Callback URL**: Define a universal callback URL to receive payloads for all your triggers. You can set this URL through the settings on [app.composio.dev](http://app.composio.dev) or by using the API endpoint `api/v1/triggers/setCallbackURL`.
+1. **Set Universal Callback URL**: Define a universal callback URL to receive payloads for all your triggers. You can set this URL through the [settings](https://app.composio.dev/api_keys) or by using the API endpoint `api/v1/triggers/setCallbackURL`.
 
 2. **Review Trigger Instructions**: Each trigger may have specific instructions. For example, in Slack, you need to configure our webhook URL in the OAuth app settings.
 
@@ -146,7 +100,8 @@ This data includes the `connected_account_id` for account identification, `trigg
 <CodeGroup>
 ``` JSON Sample Trigger Webhook, Received on Callback URL
 {
-	"trigger_id":"github_commit_event",
+	"trigger_name":"github_commit_event",
+    "trigger_id":"12310-sadas-12ad-sa",
 	"connected_account_id":"64184e1a-76bf-404b-bf8e-e9ce04fd7c9c",
 	"payload":{
 		"id":"ae4926ca23488ef488e76c8b39e2ad3ae9e58786",
