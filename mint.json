@@ -78,12 +78,12 @@
   ],
   "anchors": [
     {
-      "name": "Using SDK",
+      "name": "SDK",
       "icon": "terminal",
       "url": "sdk"
     },
     {
-      "name": "Using API",
+      "name": "API",
       "icon": "code",
       "url": "api-reference"
     }
@@ -115,7 +115,7 @@
       ]
     },
     {
-      "group": "Supported Frameworks",
+      "group": "Frameworks",
       "pages": [
         "framework/langchain",
         "framework/autogen",
@@ -131,6 +131,15 @@
         "introduction/pricing/pricing"
       ]
     },
+    
+    {
+      "group": "Python SDK",
+      "pages": [
+        "sdk/python/introduction",
+        "sdk/python/configuration",
+        "sdk/python/reference"
+      ]
+    },
     {
       "group": "CLI API",
       "pages": [
@@ -138,14 +147,6 @@
         "sdk/cli/account",
         "sdk/cli/trigger",
         "sdk/cli/actions"
-      ]
-    },
-    {
-      "group": "Python SDK",
-      "pages": [
-        "sdk/python/introduction",
-        "sdk/python/configuration",
-        "sdk/python/reference"
       ]
     },
     {
@@ -161,7 +162,7 @@
       ]
     },
     {
-      "group": "Supported Tools",
+      "group": "Tools",
       "pages": [
         "apps/list",
         "apps/accelo",
