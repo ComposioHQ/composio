@@ -540,7 +540,7 @@ def add_integration(args):
             # @TODO: add logic to wait and ask for API_KEY
             connection = entity.initiate_connection(
                 app_name=integration_name.lower(),
-                redirect_url="http://localhost:3000/redirect",
+                redirect_url=get_frontend_url("redirect")
             )
 
             if not should_disable_webbrowser_open:
