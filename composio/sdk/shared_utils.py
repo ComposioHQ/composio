@@ -149,6 +149,15 @@ def pydantic_model_from_param_schema(param_schema):
     optional_fields = {}
     param_title = param_schema["title"].replace(" ", "")
     required_props = param_schema.get("required", [])
+
+    if param_schema.get("type") == "array":
+        print("param_schema inside array - ", param_schema)
+        item_schema = param_schema.get("items")
+        if item_schema:
+            item_type = json_schema_to_pydantic_type(item_schema)
+            return List[item_type]
+        return List
+
     # schema_params_object = param_schema.get('properties', {})
     for prop_name, prop_info in param_schema.get("properties", {}).items():
         prop_type = prop_info["type"]
@@ -175,6 +184,8 @@ def pydantic_model_from_param_schema(param_schema):
                 signature_prop_type,
                 Field(title=prop_title, default=prop_default),
             )
+    if not required_fields and not optional_fields:
+        return Dict
     fieldModel = create_model(param_title, **required_fields, **optional_fields)
     return fieldModel
 
