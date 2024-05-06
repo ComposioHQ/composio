@@ -329,6 +329,8 @@ class Composio:
             if tags is not None and len(tags) > 0:
                 filtered_actions = []
                 tag_values = [tag.value[1] if hasattr(tag, 'value') else tag for tag in tags]
+                if tag_values and Tag.ALL.value[1] in tag_values:
+                    return actions_response["items"]
                 for item in actions_response["items"]:
                     if item["tags"] and any(tag in item["tags"] for tag in tag_values):
                         filtered_actions.append(item)
@@ -338,7 +340,7 @@ class Composio:
                 "Using all the actions of an app is not recommended. "
                 "Please use tags to filter actions or provide specific actions. "
                 "We just pass the important actions to the agent, but this is not meant "
-                "to be used in production.",
+                "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
                 UserWarning
             )
             actions = actions_response["items"]

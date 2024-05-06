@@ -32,11 +32,12 @@ def generate_enums_given_apps(apps, actions, triggers):
             tag_map[app_key].update(tags)
 
     enum_content += "class Tag(Enum):\n"
+    enum_content += f'    IMPORTANT = ("default", "important")\n'
+    enum_content += f'    ALL = ("default", "all")\n'
     for app_key, tags in tag_map.items():
         for tag in tags:
             tag_name = get_enum_key(f'{app_key}_{tag}')
             enum_content += f'    {tag_name} = ("{app_key}", "{tag}")\n'
-    enum_content += f'    IMPORTANT = ("default", "important")\n'
     enum_content += "\n"
 
     enum_content += "class App(Enum):\n"
