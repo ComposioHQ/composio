@@ -1,8 +1,8 @@
 
 <p align="center">
   <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="200" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
-    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="200" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
+    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
+    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
   </picture>
   <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>
