@@ -5,16 +5,23 @@ icon: "hammer"
 description: "Strategies for effective action utilization with agents."
 ---
 
-Many Composio tools offer an extensive range of over 100 actions. However, the performance and decision-making accuracy of agents diminish when overwhelmed with too many choices.
-Furthermore, OpenAI imposes a limit, supporting no more than 128 actions per request; exceeding this limit results in errors.
+Composio tools provide a wide array of over 100 actions. However, there are several considerations to keep in mind:
+
+- **Performance Impact**: The performance and decision-making accuracy of agents can diminish when they are overwhelmed with too many choices.
+- **OpenAI Limitations**: OpenAI imposes a limit, supporting no more than 128 actions per request. Exceeding this limit results in errors.
+  
 <Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
-Therefore, it is crucial to streamline the number of actions presented to agents. This can be effectively managed by employing various action filtering techniques.
+
+To address these issues, it is crucial to streamline the number of actions presented to agents. This can be effectively managed by employing various action filtering techniques.
 
 ### Filter Actions by Tags
-To enhance efficiency, rather than assigning all available actions of an application to the agent, actions can be selectively filtered using relevant tags.
-The Composio library provides a convenient enums of tags, facilitating the filtering process.
-There are two universal tags applicable across all applications: `Tag.ALL` and `Tag.IMPORTANT`.
-Additionally, each application may have specific tags, such as `Tag.ASANA_TASKS` for the Asana application.
+
+Efficiency can be significantly enhanced by selectively filtering actions rather than assigning all available actions of an application to the agent. Here’s how this can be achieved:
+
+- **Using Tags**: The Composio library provides convenient enums of tags to facilitate the filtering process.
+- **Universal Tags**: There are two universal tags applicable across all applications: `Tag.ALL` and `Tag.IMPORTANT`.
+- **Application-Specific Tags**: Each application may have specific tags. For example, the Asana application uses `Tag.ASANA_TASKS`.
+
 <CodeGroup>
 ```bash Filter Asana actions by tasks tag to only get tasks related actions
 # Use tags to limit the actions available to agents
