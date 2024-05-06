@@ -1,41 +1,41 @@
 ---
-title: "Using Actions effectively with Agents"
+title: "Optimizing Agent Performance with Action Selection"
 sidebarTitle: "Actions"
 icon: "hammer"
-description: "How to use actions effectively with the agents?"
+description: "Strategies for effective action utilization with agents."
 ---
 
-Some of the Composio tools have more than 100 actions. We know the accuracy of the agents decreases when they have to choose from a large number of actions. 
-Also, OpenAI doesn't support more than 128 actions in a single request and it errors out if we pass more than 128 actions.
-<Info>In practical scenarios, agents perform optimally when limited to a maximum of 10-20 actions. </Info>
-So, we need to reduce the number of actions to be passed to the agents. To encounter this, we can filter actions by various ways.
+Many Composio tools offer an extensive range of over 100 actions. However, the performance and decision-making accuracy of agents diminish when overwhelmed with too many choices.
+Furthermore, OpenAI imposes a limit, supporting no more than 128 actions per request; exceeding this limit results in errors.
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+Therefore, it is crucial to streamline the number of actions presented to agents. This can be effectively managed by employing various action filtering techniques.
 
-### Filter actions by tags
-Instead of passing all the actions of an app to the agent, we can filter the actions by relevant tags. 
-We provide the tags enum in the composio library making it easy to filter actions by tags. 
-2 common enums across apps: `Tag.ALL` and `Tag.IMPORTANT`.
-Other enums are specific to the app. For example, `Tag.ASANA_TASKS` for Asana app.
+### Filter Actions by Tags
+To enhance efficiency, rather than assigning all available actions of an application to the agent, actions can be selectively filtered using relevant tags.
+The Composio library provides a convenient enums of tags, facilitating the filtering process.
+There are two universal tags applicable across all applications: `Tag.ALL` and `Tag.IMPORTANT`.
+Additionally, each application may have specific tags, such as `Tag.ASANA_TASKS` for the Asana application.
 <CodeGroup>
 ```bash Filter Asana actions by tasks tag to only get tasks related actions
-# To restrict agents from using all actions, filter the actions by tags
+# Use tags to limit the actions available to agents
 toolsAsanaGithub = ComposioToolset(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
 ```
 </CodeGroup>
 
 <Warning>
-    If you don't pass the tags, Composio only passes important actions of the app to avoid errors due to more number of actions than supported and below par accuracy. This is not recommended to be used in production. 
+    Omitting the tags parameter causes Composio to default to only important actions of the app. This is to prevent errors from exceeding the supported action limit and to maintain accuracy. However, this default behavior is not advisable for production environments.
 </Warning>
 
 <Note>
-    If you want to get all the actions for an app, you can pass Tag.ALL to the tags parameter. Again, this is not recommended.
+    To retrieve all actions for an application, you can specify `Tag.ALL` in the tags parameter. It is important to note that this approach is generally discouraged.
 </Note>
 
-### Filter actions by specific actions
-If you want to restrict agents from using specific actions, you can filter the actions by specific actions.
-<Note> To get list of actions for a use case/power you want to give to the agent, you can use `composio-cli get-actions` command. Check the [actions](/sdk/cli/actions) section for more details.</Note>
+### Filter Actions by Specific Types
+To limit agents to only certain actions, you can specifically filter out the desired actions.
+<Note> To obtain a list of actions tailored to a specific use case or capability intended for the agent, utilize the `composio-cli get-actions` command. For further details, refer to the [actions](/sdk/cli/actions) documentation.</Note>
 <CodeGroup>
 ```bash Filter Github Create Issue action
-# To restrict agents from using all the actions, filter specific actions
+# To limit the actions available to agents, apply a specific action filter
 toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>
