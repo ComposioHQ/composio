@@ -6,6 +6,7 @@ description: "How to use actions effectively with the agents?"
 ---
 
 Some of the Composio tools have more than 100 actions. We know the accuracy of the agents decreases when they have to choose from a large number of actions. 
+Also, OpenAI doesn't support more than 128 actions.
 <Info>In practical scenarios, agents perform optimally when limited to a maximum of 10-20 actions. </Info>
 So, we need to reduce the number of actions to be passed to the agents. To encounter this, we can filter actions by various ways.
 
@@ -22,11 +23,11 @@ toolsAsanaGithub = ComposioToolset(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
 </CodeGroup>
 
 <Warning>
-    If you don't pass the tags, Composio only passes important actions of the app to avoid agent failing. This is not recommended to be used in production.
+    If you don't pass the tags, Composio only passes important actions of the app to avoid errors due to more number of actions than supported and below par accuracy. This is not recommended to be used in production. 
 </Warning>
 
 <Info>
-    If you want to get all the actions for an app, you can pass Tag.ALL to the tags parameter.
+    If you want to get all the actions for an app, you can pass Tag.ALL to the tags parameter. Again, this is not recommended.
 </Info>
 
 ### Filter actions by specific actions
