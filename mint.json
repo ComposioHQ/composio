@@ -137,7 +137,8 @@
       "pages": [
         "sdk/python/introduction",
         "sdk/python/configuration",
-        "sdk/python/reference"
+        "sdk/python/reference",
+        "sdk/python/actions"
       ]
     },
     {
