@@ -11,7 +11,9 @@ So, we need to reduce the number of actions to be passed to the agents. To encou
 
 ### Filter actions by tags
 Instead of passing all the actions of an app to the agent, we can filter the actions by relevant tags. 
-We provide the tags enum in the composio library making it easy to filter actions by tags.
+We provide the tags enum in the composio library making it easy to filter actions by tags. 
+2 common enums across apps: `Tag.ALL` and `Tag.IMPORTANT`.
+Other enums are specific to the app. For example, `Tag.ASANA_TASKS` for Asana app.
 <CodeGroup>
 ```bash Filter Asana actions by tasks tag to only get tasks related actions
 # To restrict agents from using all actions, filter the actions by tags
