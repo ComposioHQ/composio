@@ -469,7 +469,7 @@
               ]
             },
             {
-              "group":"autogen",
+              "group":"Autogen",
               "pages":[
                 "apps/usecases/autogen_blogs/ably",
                 "apps/usecases/autogen_blogs/active-compaign",
