@@ -123,7 +123,7 @@ Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 ### Use Specific Actions
 <CodeGroup>
 ```bash Filter Specific Action
-# To restrict agents from executing any actions, filter specific actions
+# To restrict agents from using all the actions, filter specific actions
 toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 
@@ -142,8 +142,8 @@ toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 
 <CodeGroup>
 ```bash Filter Actions by Tag
-  # To restrict agents from using all tools, filter by tags
-  specific tools toolsAsanaGithub = ComposioToolset(apps=[App.NOTIONBETA], tags=[Tag.NOTIONBETA_BLOCK])
+  # To restrict agents from using all actions, filter the actions by tags
+  specific tools toolsAsanaGithub = ComposioToolset(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
 ```
 </CodeGroup>
 
