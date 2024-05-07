@@ -18,6 +18,9 @@
       "dark": "#0b0b0d"
     }
   },
+  "seo": {
+    "indexHiddenPages": true
+  },
   "modeToggle": {
     "default": "dark",
     "isHidden": false
@@ -326,8 +329,5 @@
     "playground": {
       "mode": "show"
     }
-  },
-  "seo": {
-    "indexHiddenPages": true
   }
 }
