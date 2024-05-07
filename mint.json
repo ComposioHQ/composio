@@ -118,7 +118,8 @@
         "framework/crewai",
         "framework/lyzr",
         "framework/openai",
-        "framework/julep"
+        "framework/julep",
+        "framework/griptape"
       ]
     },
     {
