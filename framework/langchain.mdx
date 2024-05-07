@@ -79,7 +79,7 @@ Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'docs'}`
 ### Use Specific Actions
 <CodeGroup>
 ```bash Filter Specific Action
-# To restrict agents from executing any actions, filter specific actions
+# To restrict agents from using all the actions, filter specific actions
 toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>
@@ -95,7 +95,7 @@ toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB])
 ### Filter apps actions by tags
 <CodeGroup>
 ```bash Filter actions by tags
-# To restrict agents from using all tools, filter actions by tags
-toolsAsanaGithub = ComposioToolset(apps=[App.NOTION], tags=[Tag.NOTIONBETA_BLOCK])
+# To restrict agents from using all actions, filter the actions by tags
+toolsAsanaGithub = ComposioToolset(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
 ```
 </CodeGroup>
