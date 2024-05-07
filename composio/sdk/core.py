@@ -26,6 +26,7 @@ class FrameworkEnum(Enum):
     JULEP = "julep"
     OPENAI = "openai"
     CLAUDE = "claude"
+    GRIPTAPE = "griptape"
 
 
 __IS_FIRST_TIME__ = True
