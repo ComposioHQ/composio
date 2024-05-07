@@ -7,18 +7,19 @@ from inspect import Signature
 from typing import List, Union
 from openai.types.chat.chat_completion import ChatCompletion
 
-from composio.sdk import format_schema
+from composio.sdk import format_schema, SchemaFormat
 from composio import Action, App, ComposioCore, FrameworkEnum, Tag
 
 logger = logging.getLogger(__name__)
 
 
 class OpenaiStyleToolsetBase:
-    def __init__(self, framework = None, entity_id: str = "default"):
+    def __init__(self, framework = None, entity_id: str = "default", schema_format = SchemaFormat.OPENAI):
         self.entity_id = entity_id
         self.client = ComposioCore(
                             framework=framework, api_key=os.environ.get("COMPOSIO_API_KEY", None)
                             )
+        self.schema_format = schema_format
 
     def get_actions(self, actions: Union[Action, List[Action]]):
         if isinstance(actions, Action):
@@ -26,7 +27,8 @@ class OpenaiStyleToolsetBase:
         
         action_schemas = self.client.sdk.get_list_of_actions(actions=actions)
         
-        formatted_schemas = [format_schema(action_schema) for action_schema in action_schemas]
+        formatted_schemas = [format_schema(action_schema, 
+                                           format=self.schema_format) for action_schema in action_schemas]
         return formatted_schemas
     
     def get_tools(self, 
@@ -37,9 +39,17 @@ class OpenaiStyleToolsetBase:
         
         action_schemas = self.client.sdk.get_list_of_actions(apps=tools, 
                                                              tags=tags)
-        formatted_schemas = [format_schema(action_schema) for action_schema in action_schemas]
+        formatted_schemas = [format_schema(action_schema, 
+                                           format=self.schema_format) for action_schema in action_schemas]
         return formatted_schemas
     
+
+        
+        
+class ComposioToolset(OpenaiStyleToolsetBase):
+    def __init__(self, *args, framework=FrameworkEnum.OPENAI, **kwargs):
+        super().__init__(*args, framework=framework, **kwargs)
+
     def handle_tool_calls(self,
                           llm_response: ChatCompletion, 
                           entity_id: str = "default") -> list[any]:
@@ -62,13 +72,6 @@ class OpenaiStyleToolsetBase:
             raise e from e
 
         return output
-        
-        
-class ComposioToolset(OpenaiStyleToolsetBase):
-    def __init__(self, *args, framework=FrameworkEnum.OPENAI, **kwargs):
-        super().__init__(*args, framework=framework, **kwargs)
-
-
 
 if __name__ == '__main__':
     from pprint import pprint
