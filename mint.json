@@ -169,7 +169,7 @@
     {
       "group": "Tools",
       "pages": [
-        {"group":"apps","pages":[
+        {"group":"Apps","pages":[
                   "apps/list",
         "apps/accelo",
         "apps/adobe",
