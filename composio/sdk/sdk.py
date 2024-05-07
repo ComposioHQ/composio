@@ -22,6 +22,7 @@ from enum import Enum
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
+    CLAUDE = "claude"
     
     
 def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
@@ -33,7 +34,13 @@ def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
                         "description": action_schema.get("description", ""),
                         "parameters": action_schema.get("parameters", {}),
                     },
-                }
+                }    
+    elif format == SchemaFormat.CLAUDE:
+        formatted_schema = {
+                        "name": action_schema["name"],
+                        "description": action_schema.get("description", ""),
+                        "input_schema": action_schema.get("parameters", {}),
+                    }
     else:
         formatted_schema = action_schema
         # print("Only OPENAI formatting is supported now.")

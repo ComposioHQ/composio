@@ -25,6 +25,7 @@ class FrameworkEnum(Enum):
     CREWAI = "crewai"
     JULEP = "julep"
     OPENAI = "openai"
+    CLAUDE = "claude"
 
 
 __IS_FIRST_TIME__ = True
