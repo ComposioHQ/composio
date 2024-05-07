@@ -14,7 +14,7 @@ schema_type_python_type_dict = {
 fallback_values = {
     "string": "",
     "number": 0.0,
-    "integer": 0.0,
+    "integer": 0,
     "boolean": False,
     "object": {},
     "array": [],
