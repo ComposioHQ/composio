@@ -84,7 +84,7 @@ check-code:
 
 .PHONY: env
 env: clean
-	if [[ "$$VIRTUAL_ENV" == "" ]];\
+	if [[ "$$VIRTUAL_ENV" != "" ]];\
 	then\
 		pipenv --rm;\
 		pipenv --clear;\
