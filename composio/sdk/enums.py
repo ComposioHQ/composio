@@ -216,6 +216,7 @@ class App(Enum):
     ROCKET_REACH = "rocket-reach"
     SAGE = "sage"
     SALESFORCE = "salesforce"
+    SCHEDULER = "scheduler"
     SCREENSHOTONE = "screenshotone"
     SERPAPI = "serpapi"
     SERVICEM8 = "servicem8"
@@ -623,6 +624,7 @@ class Action(Enum):
     NOTION_UPDATE_NOTION_DATABASE = ("notion", "notion_update_notion_database", False)
     NOTION_FETCH_NOTION_BLOCK = ("notion", "notion_fetch_notion_block", False)
     NOTION_FETCH_NOTION_CHILD_BLOCK = ("notion", "notion_fetch_notion_child_block", False)
+    SCHEDULER_SCHEDULE_JOB_ACTION = ("scheduler", "scheduler_schedule_job_action", True)
     SERPAPI_SEARCH = ("serpapi", "serpapi_search", True)
     SLACK_SEND_SLACK_MESSAGE = ("slack", "slack_send_slack_message", False)
     SLACK_LIST_SLACK_CHANNELS = ("slack", "slack_list_slack_channels", False)
