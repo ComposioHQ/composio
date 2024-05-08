@@ -471,7 +471,8 @@ class Entity:
         self.entity_id = entity_id
         self.http_client = self.client.http_client
 
-    def execute_action(self, action: Action, params: dict, no_auth=False, connected_account_id: Optional[str] = None, entity_id = "default"):
+    def execute_action(self, action: Action, params: dict, connected_account_id: Optional[str] = None, entity_id = "default"):
+        no_auth = action.value[2] if len(action.value) > 2 else False
         if no_auth is True:
             tool_name = action.value[0]
             resp = self.http_client.post(
