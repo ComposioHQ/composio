@@ -124,6 +124,7 @@ class ConnectedAccount(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     integrationId: str
     connectionParams: AuthConnectionParams
+    clientUniqueUserId: str
     appUniqueId: str
     id: str
     status: str
@@ -142,7 +143,7 @@ class ConnectedAccount(BaseModel):
     ):
         resp = self.sdk_instance.http_client.post(
             f"v1/actions/{action_name.value[1]}/execute",
-            json={"connectedAccountId": connected_account_id, "input": params},
+            json={"connectedAccountId": connected_account_id, "input": params, "entityId": self.clientUniqueUserId},
         )
         return resp.json()
 
@@ -461,13 +462,6 @@ class Composio:
         entity = Entity(self, entity_id)
         return entity
 
-    def no_auth_execute_action(self, action: Action, params: dict):
-        tool_name = action.value[0]
-        resp = self.http_client.post(
-            f"v1/actions/{action.value[1]}/execute",
-            json={"appName": tool_name, "input": params},
-        )
-        return resp.json()
 
 
 class Entity:
@@ -475,6 +469,19 @@ class Entity:
         self.client = composio
         entity_id = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
         self.entity_id = entity_id
+        self.http_client = self.client.http_client
+
+    def execute_action(self, action: Action, params: dict, no_auth=False, connected_account_id: Optional[str] = None, entity_id = "default"):
+        if no_auth is True:
+            tool_name = action.value[0]
+            resp = self.http_client.post(
+                f"v1/actions/{action.value[1]}/execute",
+                json={"appName": tool_name, "input": params, "entityId": entity_id},
+            )
+            return resp.json()
+        else:
+            connected_account = self.client.get_connected_account(connected_account_id)
+            return connected_account.execute_action(action, params)
 
     def get_all_actions(self, tags: list[Union[str, Tag]] = None) -> list[Action]:
         actions = []
