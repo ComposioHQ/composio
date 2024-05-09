@@ -4,8 +4,30 @@ from typing import Union
 
 from pydantic import BaseModel
 
-from .sdk import Composio
+from .sdk import Composio, SchemaFormat
 from .storage import get_base_account_api_key, get_base_url
+
+def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
+    if format == SchemaFormat.OPENAI:
+        formatted_schema = {
+                    "type": "function",
+                    "function": {
+                        "name": action_schema["name"],
+                        "description": action_schema.get("description", ""),
+                        "parameters": action_schema.get("parameters", {}),
+                    },
+                }    
+    elif format == SchemaFormat.CLAUDE:
+        formatted_schema = {
+                        "name": action_schema["name"],
+                        "description": action_schema.get("description", ""),
+                        "input_schema": action_schema.get("parameters", {}),
+                    }
+    else:
+        formatted_schema = action_schema
+        # print("Only OPENAI formatting is supported now.")
+    
+    return formatted_schema
 
        
 def get_enum_key(name):

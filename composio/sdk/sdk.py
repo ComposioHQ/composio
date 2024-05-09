@@ -54,7 +54,7 @@ class ConnectionRequest(BaseModel):
     connectedAccountId: str
     redirectUrl: Optional[str] = None
 
-    sdk_instance: "Composio" = None
+    sdk_instance: Optional["Composio"] = None
 
     def __init__(self, sdk_instance: "Composio", **data):
         super().__init__(**data)
@@ -67,7 +67,7 @@ class ConnectionRequest(BaseModel):
             self.connectedAccountId
         )
         resp = self.sdk_instance.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": connected_account_id.integrationId,
                 "data": field_inputs,
@@ -150,7 +150,7 @@ class ConnectedAccount(BaseModel):
         resp = self._execute_action(action_name, self.id, params)
         return resp
 
-    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI, tags: list[Union[str, Tag]] = None):
+    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI):
         app_unique_id = self.appUniqueId
         resp = self.sdk_instance.http_client.get(
             f"v1/actions?appNames={app_unique_id}"
@@ -158,7 +158,7 @@ class ConnectedAccount(BaseModel):
         actions = resp.json()
         return [format_schema(action_schema, format = format) for action_schema in actions["items"]]
 
-    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
+    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[Unknown]:
         output = []
         try:
             if tool_calls.choices:
@@ -222,7 +222,7 @@ class Integration(BaseModel):
 
 
 class Composio:
-    def __init__(self, api_key: str = None, base_url=get_base_url()):
+    def __init__(self, api_key: str, base_url=get_base_url()):
         self.base_url = base_url
         self.api_key = api_key
         self.http_client = HttpClient(base_url)
@@ -232,15 +232,15 @@ class Composio:
 
     def list_triggers(self, app_names: list[str] = None):
         resp = self.http_client.get(
-            f"v1/triggers",
+            "v1/triggers",
             params={"appNames": ",".join(app_names) if app_names else None},
         )
         return resp.json()
 
     def list_active_triggers(
-        self, trigger_ids: list[str] = None
+        self, trigger_ids: list[str]
     ) -> list[ActiveTrigger]:
-        url = f"v1/triggers/active_triggers"
+        url = "v1/triggers/active_triggers"
         if trigger_ids:
             url = f"{url}?triggerIds={','.join(trigger_ids)}"
         resp = self.http_client.get(url)
@@ -260,9 +260,9 @@ class Composio:
         )
         return resp.json()
 
-    def get_trigger_requirements(self, trigger_ids: list[str] = None):
+    def get_trigger_requirements(self, trigger_ids: list[str]):
         resp = self.http_client.get(
-            f"v1/triggers",
+            "v1/triggers",
             params={"triggerIds": ",".join(trigger_ids) if trigger_ids else None},
         )
         return resp.json()
@@ -283,7 +283,7 @@ class Composio:
             raise ValueError("API Key not set")
 
         resp = self.http_client.post(
-            f"v1/triggers/setCallbackURL",
+            "v1/triggers/setCallbackURL",
             json={
                 "callbackURL": callback_url,
             },
@@ -291,27 +291,36 @@ class Composio:
         return resp.json()
 
     def get_list_of_apps(self):
-        resp = self.http_client.get(f"v1/apps")
+        resp = self.http_client.get("v1/apps")
         return resp.json()
 
     def get_app(self, app_name: str):
         resp = self.http_client.get(f"v1/apps/{app_name}")
         return resp.json()
+    
+    def get_list_of_action_by_usecase(self, app_name: Union[str, App], usecase: str):
+        if isinstance(app_name, App):
+            app_name = app_name.value
+        resp = self.http_client.get(
+            "v1/actions",
+            params={"useCase": ",".join(usecases)},
+        )
+        return resp.json()
 
     def get_list_of_actions(
-        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Union[str, Tag]] = None, limit: int = None
+        self, apps: Optional[list[App]] = None, use_case: Optional[str] = None, actions: Optional[list[Action]] = None, tags: Optional[list[Union[str, Tag]]] = None, limit: Optional[int] = None
     ) -> list:
         if use_case is not None and use_case != "":
-            if len(apps) != 1:
-                raise ValueError("Use case should be provided with exactly one app")
+            if apps is None:
+                raise ValueError("get_list_of_actions: use_case should be provided with 
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
-                f"v1/actions",
+                "v1/actions",
                 params={"appNames": app_unique_ids, "useCase": use_case, "limit": limit},
             )
             return resp.json()["items"]
         elif (apps is None or len(apps) == 0) and (actions is None or len(actions) == 0):
-            resp = self.http_client.get(f"v1/actions")
+            resp = self.http_client.get("v1/actions")
             return resp.json()["items"]
         elif (apps is None or len(apps) == 0) and (actions is not None and len(actions) > 0):
             if tags is not None and len(tags) > 0:
@@ -468,148 +477,3 @@ class Composio:
             json={"appName": tool_name, "input": params},
         )
         return resp.json()
-
-
-class Entity:
-    def __init__(self, composio: Composio, entity_id: Union[list[str], str]) -> None:
-        self.client = composio
-        entity_id = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
-        self.entity_id = entity_id
-
-    def get_all_actions(self, tags: list[Union[str, Tag]] = None) -> list[Action]:
-        actions = []
-        connected_accounts = self.client.get_connected_accounts(
-            entity_id=self.entity_id
-        )
-
-        for account in connected_accounts:
-            account_actions = account.get_all_actions(tags=tags)
-            actions.extend(account_actions)
-        return actions
-
-    def get_connection(self, app_name: Union[str, App]) -> Optional[ConnectedAccount]:
-        if isinstance(app_name, App):
-            app_name = app_name.value
-        connected_accounts = self.client.get_connected_accounts(
-            entity_id=self.entity_id, showActiveOnly=True
-        )
-        latest_account = None
-        latest_creation_date = None
-        for account in connected_accounts:
-            if app_name == account.appUniqueId:
-                creation_date = datetime.fromisoformat(
-                    account.createdAt.replace("Z", "+00:00")
-                )
-                if latest_account is None or creation_date > latest_creation_date:
-                    latest_account = account
-                    latest_creation_date = creation_date
-        if latest_account:
-            return latest_account
-
-        return None
-
-    def is_app_authenticated(self, app_name: Union[str, App]) -> bool:
-        connected_account = self.get_connection(app_name)
-        return connected_account is not None
-
-    def handle_tools_calls(  # pylint: disable=unused-argument
-        self, tool_calls: ChatCompletion, verbose: bool = False
-    ) -> list[any]:
-        output = []
-        try:
-            if tool_calls.choices:
-                for choice in tool_calls.choices:
-                    if choice.message.tool_calls:
-                        for tool_call in choice.message.tool_calls:
-                            action_name_to_execute = tool_call.function.name
-                            action = self.client.get_action_enum_without_tool(
-                                action_name=action_name_to_execute
-                            )
-                            arguments = json.loads(tool_call.function.arguments)
-                            account = self.get_connection(app_name=action.service)
-                            output.append(account.execute_action(action, arguments))
-
-        except Exception as e:
-            raise e from e
-
-        return output
-
-    def handle_run_tool_calls(self, run_object: run, verbose: bool = False):
-        outputs = []
-        require_action = run_object.required_action.submit_tool_outputs
-        try:
-            for tool_call in require_action.tool_calls:
-                if tool_call.type == "function":
-                    action_name_to_execute = tool_call.function.name
-                    action = self.client.get_action_enum_without_tool(
-                        action_name=action_name_to_execute
-                    )
-                    arguments = json.loads(tool_call.function.arguments)
-                    account = self.get_connection(app_name=action.service)
-                    if verbose:
-                        print("Executing Function: ", action)
-                        print("Arguments: ", arguments)
-                    response = account.execute_action(action, arguments)
-                    if verbose:
-                        print("Output", response)
-                    output = {
-                        "tool_call_id": tool_call.id,
-                        "output": json.dumps(response.get("response_data", {})),
-                    }
-                    outputs.append(output)
-        except Exception as e:
-            raise e from e
-
-        return outputs
-
-    def wait_and_handle_tool_calls(
-        self,
-        client: Client,
-        run: run,
-        thread: thread,
-        verbose: bool = False,
-    ):
-        run_object = run
-        thread_object = thread
-        while run_object.status in ("queued", "in_progress", "requires_action"):
-            # Look here
-            if run_object.status == "requires_action":
-                run_object = client.beta.threads.runs.submit_tool_outputs(
-                    thread_id=thread_object.id,
-                    run_id=run_object.id,
-                    tool_outputs=self.handle_run_tool_calls(
-                        run_object, verbose=verbose
-                    ),  # all tool calls executed
-                )
-            else:
-                run_object = client.beta.threads.runs.retrieve(
-                    thread_id=thread_object.id,
-                    run_id=run_object.id,
-                )
-                time.sleep(0.5)
-        return run_object
-
-    def initiate_connection(
-        self,
-        integration: Integration = None,
-        app_name: Union[str, App] = None,
-        redirect_url: str = None,
-    ):
-        if not integration and not app_name:
-            raise InvalidParameterException("Either 'integration' or 'app_name' must be provided")
-        if not integration:
-            integration = self.client.get_default_integration(app_name)
-        return integration.initiate_connection(
-            entity_id=self.entity_id, redirect_url=redirect_url
-        )
-
-    def initiate_connection_not_oauth(
-        self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None
-    ):
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        integration = self.client.create_integration(
-            app_name, name=f"integration_{timestamp}", auth_mode=auth_mode
-        )
-        return integration.initiate_connection(
-            entity_id=self.entity_id, redirect_url=redirect_url
-        )
