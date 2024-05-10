@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="composio_core",
-    version="0.2.51",
+    version="0.2.55",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
