@@ -43,7 +43,7 @@ def generate_enums_given_apps(apps, actions, triggers):
     enum_content += "class App(Enum):\n"
     for app in apps["items"]:
         app_name = app["key"].upper().replace(" ", "_").replace("-", "_")
-        enum_content += f'    {app_name} = "{app["key"]}"\n'
+        enum_content += f'    {get_enum_key(app_name)} = "{app["key"]}"\n'
 
     enum_content += "\n"
     enum_content += "class Action(Enum):\n"
@@ -69,7 +69,7 @@ def generate_enums_given_apps(apps, actions, triggers):
         app_key = app["key"]
         app_triggers = [trigger for trigger in triggers if trigger["appKey"] == app_key]
         for trigger in app_triggers:
-            enum_name = f'{app_key.upper()}_{get_enum_key(trigger["display_name"])}'
+            enum_name = f'{get_enum_key(app_key.upper())}_{get_enum_key(trigger["display_name"])}'
             enum_value = f'("{app_key}", "{trigger["name"]}")'
             enum_content += f"    {enum_name} = {enum_value}\n"
         # enum_content += f'Actions.{app_name} = {app_name}\n\n'
