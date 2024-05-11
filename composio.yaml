@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   version: 1.0.0
   title: Composio API Collection
-  summary: ''
+  summary: Composio API Collection
   description: Composio API OpenAPI Spec.
   contact:
     name: soham
@@ -82,6 +82,9 @@ paths:
                         appId: fb9b4a59-8eda-4032-84d7-638e1df4ffef
       security:
         - authToken: []
+      servers:
+        - url: 'https://backend.composio.dev/api'
+          description: baseurl
   /v1/connectedAccounts:
     get:
       tags:
@@ -115,20 +118,11 @@ paths:
           examples:
             default:
               value: 10
-        - name: appId
+        - name: integrationId
           in: query
-          description: Application ID "github"
+          description: Filter by using specific Integration
           schema:
             type: string
-            examples:
-              - github
-        - name: connectorId
-          in: query
-          description: 'Connector ID '
-          schema:
-            type: string
-            examples:
-              - 065bcbcf-e25b-4808-b4ad-13c16ad14824
       responses:
         '200':
           description: OK
@@ -372,14 +366,14 @@ paths:
             schema:
               type: object
               properties:
-                connectorId:
+                integrationId:
                   type: string
                 redirectUri:
                   type: string
                   examples:
                     - 'https://google.com'
               required:
-                - connectorId
+                - integrationId
               x-examples:
                 Example 1:
                   connectorId: 065bcbcf-e25b-4808-b4ad-13c16ad14824
@@ -427,7 +421,7 @@ paths:
         The response includes the integration ID, connection parameters (such as scope, base URL, client ID, token type, access token, etc.), connection ID, status, and creation/update timestamps.
       operationId: get-connected-account
       parameters:
-        - name: connectionId
+        - name: connectedAccountId
           in: path
           description: The unique identifier of the connection.
           required: true
@@ -438,12 +432,6 @@ paths:
           examples:
             default:
               value: 4d3e5e98-2fd0-4e7b-841a-a208c031b731
-        - name: connectedAccountId
-          in: path
-          description: The unique identifier of a connected account.
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: OK
@@ -528,7 +516,7 @@ paths:
         Use this endpoint to clean up unwanted connections for your end user and manage the connection lifecycle.
       operationId: delete-connection
       parameters:
-        - name: connectionId
+        - name: connectedAccountId
           in: path
           description: The unique identifier of the connection.
           required: true
@@ -539,12 +527,6 @@ paths:
           examples:
             default:
               value: 4d3e5e98-2fd0-4e7b-841a-a208c031b731
-        - name: connectedAccountId
-          in: path
-          description: The unique identifier of a connected account.
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: |-
@@ -586,9 +568,9 @@ paths:
         If the end-user selects this flow, collect the parameters and connect an account using it. 
       operationId: get-integration
       parameters:
-        - name: connectorId
+        - name: integrationId
           in: path
-          description: The unique identifier of the connector.
+          description: The unique identifier of the integration.
           required: true
           schema:
             type: string
@@ -597,12 +579,6 @@ paths:
           examples:
             default:
               value: 065bcbcf-e25b-4808-b4ad-13c16ad14824
-        - name: integrationId
-          in: path
-          description: The unique identifier of the integration.
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: OK
@@ -692,9 +668,9 @@ paths:
         Use this endpoint to manage the configuration and behavior of integrations in the Composio platform.
       operationId: update-integration
       parameters:
-        - name: connectorId
+        - name: integrationId
           in: path
-          description: The unique identifier of the connector.
+          description: The unique identifier of the integration.
           required: true
           schema:
             type: string
@@ -703,12 +679,6 @@ paths:
           examples:
             default:
               value: 31a23bf7-8df4-4e76-9860-143a7e3834a2
-        - name: integrationId
-          in: path
-          description: The unique identifier of the integration.
-          required: true
-          schema:
-            type: string
       requestBody:
         content:
           application/json:
@@ -873,6 +843,9 @@ paths:
                   description: The name of the connector.
                 authScheme:
                   type: string
+                  enum:
+                    - OAUTH2
+                    - API_KEY
                   description: 'The authentication scheme used by the connector (e.g., "OAUTH2", "API_KEY").'
                 appId:
                   type: string
@@ -890,6 +863,9 @@ paths:
                     base_url:
                       type: string
                       description: ' The base URL for making API requests to the app.'
+                useComposioAuth:
+                  type: boolean
+                  description: 'Use default Composio credentials to proceed. The developer app credentials will be of Composio.  '
             examples:
               Creating a connector:
                 value:
