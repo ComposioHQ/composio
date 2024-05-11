@@ -5,4 +5,191 @@ icon: "puzzle-piece"
 description: "Explore the process of creating custom integrations with external Apps"
 ---
 
-<Tip>Stay tuned for guide on building your own integrations, coming soon!</Tip>
+Creating custom tools on Composio is straightforward. This guide will walk you through the process of building GitHub as a custom integration. Although GitHub is already offered as a tool on Composio, this example will help you understand how to create your own integrations.
+
+For enterprise users, we recommend reaching out to us at [tech@composio.dev](mailto:tech@composio.dev) for custom solutions.
+
+<Steps>
+
+<Step title="Create a Github Repository">
+    The repo can be public or private. This repo will house all the files for your custom tools. You can also fork our <a href="https://github.com/SamparkAI/test-custom-repo">starter repo</a> for custom tools.
+</Step>
+
+
+<Step title="Create a Folder in the Repository">
+    Inside the repo, you will need to create a dedicated folder for each of your custom tools. In this case, to create a GitHub integration, you will create a folder named `github`.
+</Step>
+
+
+<Step title="Create the integrations.yaml File">
+    Inside the `github` folder, create an `integrations.yaml` file. Below is the base template for the Integrations.yaml file for any custom tool that you create. However, you will modify the auth schems as each tool supports differnt auth methods.
+
+    <AccordionGroup title="integrations.yaml">
+    <Accordion title="Base Template">
+    ```yaml
+name:
+docs:
+description:
+logo:
+categories: [""]
+get_current_user_endpoint: ""
+
+auth_schemes:
+
+// OAuth1 
+	- scheme_name: 
+		auth_mode: OAuth1
+		request_url:
+		authorization_url: 
+    token_url:
+    signature_method:
+    default_scopes: [""]
+    scope_separator: ','
+    authorization_params:
+        expiration:
+    token_params:
+        grant_type:
+    proxy:
+      base_url: "{{base_url}}"
+    fields:
+      - name: base_url
+        displayName: Base URL
+        description: "desc_here"
+        type: string
+        default: {{add the api endpoint URL of the app}}
+
+// OAuth2 
+	- scheme_name: 
+		auth_mode: OAUTH2
+		authorization_url: 
+    token_url:
+    default_scopes: [""]
+    scope_separator: ','
+    token_access_request_method: 
+    authorization_params:
+        response_type:
+    token_params:
+        grant_type:
+    proxy:
+      base_url: "{{base_url}}"
+    fields:
+      - name: base_url
+        displayName: Base URL
+        description: "desc_here"
+        type: string
+        default: {{api endpoint URL of the app}}
+        
+        
+// API-KEY
+  - scheme_name: app_name_api-key
+	  auth_mode: API_KEY
+	  proxy:
+      base_url: "{{base_url}}"
+      headers:
+        Authorization: "{{api_key}}"
+    fields:
+      - name: api_key
+        expected_from_customer: true 
+        displayName: API Key
+        description: "add_desc_here"
+        type: string
+        required: true
+      - name: base_url
+        expected_from_customer: true 
+        displayName: Base URL
+        description: "add_desc_here"
+        type: string
+        required: false
+        default: {{add the api endpoint URL of the app}}
+   
+        
+ // BASIC
+   - scheme_name: app_name_basic
+    auth_mode: BASIC
+    proxy:
+      base_url: {{add the api_endpoint_url}}
+    fields:
+      - name: api_key
+        displayName: API Key
+        description: "desc_here"
+        type: string
+        expected_from_customer: true
+      - name: username
+        displayName: Username
+        description: "desc_here"
+        type: string
+        expected_from_customer: 
+      - name: password
+        displayName: Password
+        description: "your password here."
+        type: string
+        expected_from_customer: true
+    ```
+    </Accordion>
+    </AccordionGroup>
+
+Let's start with creating the yaml file for GitHub by adding the basic info.
+name: GitHub
+description: Integrate GitHub to manage your repositories directly from Composio.
+logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
+categories: ["developer tools", "version control"]
+
+auth_schemes:
+```
+
+Now you will need to determine the supported auth method by the custom tool that you're trying to add. In the most of the cases, you can figure this out with a sinmple google search "custom_tool_name auth docs", ideally first url that comes up will be the auth docs for the tool.
+
+In this case,GitHub uses OAuth2 for authentication. 
+
+```yaml
+name: GitHub
+description: Integrate GitHub to manage your repositories directly from Composio.
+logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
+categories: ["developer tools", "version control"]
+
+auth_schemes:
+  - scheme_name: github_oauth2
+    auth_mode: OAUTH2
+    authorization_url: "https://github.com/login/oauth/authorize"
+    token_url: "https://github.com/login/oauth/access_token"
+    default_scopes: ["repo", "admin:org"]
+    token_response_metadata: ["access_token", "token_type", "scope"]
+    token_params:
+      grant_type: authorization_code
+    authorization_params:
+      response_type: code
+    proxy:
+      base_url: "{{base_url}}"
+      state: "{{state}}"
+    fields:
+      - name: base_url
+        displayName: Base URL
+        description: "The API base URL for GitHub"
+        type: string
+        default: https://api.github.com
+```
+
+Now that you have the `integrations.yaml` file ready, push the code and copy the URL of the repository.
+
+</Step>
+
+
+<Step title="Add your Custom Tool on Composio">
+
+Go to the <a href="https://app.composio.dev/api_keys">settings</a> page on Composio and paste your repository URL. 
+<Frame>
+  <img src="/media/custom.gif" />
+</Frame>
+If your repo is private, your URL should include your GitHub personal token: `https://ghp_xxxxxxx@github.com/username/repo_name`.
+Click on the "update and sync" button to test.
+
+</Step>
+
+
+<Step title="Testing Your Custom tool on Composio">
+
+Navigate back to the tools catalogue page on Composio. Search for the GitHub tool you just created, click on it, and proceed to connect your account.
+
+</Step>
+
+</Steps>
