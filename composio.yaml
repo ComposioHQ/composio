@@ -1245,7 +1245,7 @@ paths:
               value: CreateIssue
       requestBody:
         content:
-          '*/*':
+          'application/json':
             schema:
               type: object
               properties:
