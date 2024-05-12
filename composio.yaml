@@ -1260,11 +1260,6 @@ paths:
         Executed will indicate whether the action was successfully executed. 
       operationId: Execute-Action
       parameters:
-        - name: Content-Type
-          in: header
-          description: application/json
-          schema:
-            type: string
         - name: actionName
           in: path
           description: The name of the action to execute.
