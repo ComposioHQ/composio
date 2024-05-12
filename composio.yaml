@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   version: 1.0.0
   title: Composio API Collection
-  summary: Composio API Collection
+  summary: ''
   description: Composio API OpenAPI Spec.
   contact:
     name: soham
@@ -1133,6 +1133,34 @@ paths:
 
         Use this endpoint to explore and discover the actions supported by the Composio platform and showcase them to end user. 
       operationId: Get-List-Actions
+      parameters:
+        - name: appNames
+          in: query
+          description: 'Name of the app like "github", "linear"'
+          schema:
+            type: string
+        - name: useCase
+          in: query
+          description: Natural language usecase
+          schema:
+            type: string
+            examples:
+              - 'Star a Github Repo, create a new issue on linear'
+        - name: showEnabledOnly
+          in: query
+          description: Show actions enabled for the API Key
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          description: Limit of apis
+          schema:
+            type: string
+            default: '10'
+            examples:
+              - '5,10,20'
+      requestBody:
+        content: {}
       responses:
         '200':
           description: OK
@@ -1232,6 +1260,11 @@ paths:
         Executed will indicate whether the action was successfully executed. 
       operationId: Execute-Action
       parameters:
+        - name: Content-Type
+          in: header
+          description: application/json
+          schema:
+            type: string
         - name: actionName
           in: path
           description: The name of the action to execute.
@@ -1245,7 +1278,7 @@ paths:
               value: CreateIssue
       requestBody:
         content:
-          'application/json':
+          application/json:
             schema:
               type: object
               properties:
@@ -1255,6 +1288,8 @@ paths:
                 input:
                   type: object
                   description: An object containing the input parameters for the action.
+                appName:
+                  type: string
             examples:
               Execute Action:
                 value:
