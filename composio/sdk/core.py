@@ -187,8 +187,8 @@ class ComposioCore:
         tool_name = action.value[0]
         no_auth = action.value[2] if len(action.value) > 2 else False
         if no_auth:
-            resp = self.sdk.no_auth_execute_action(action, params)
-            return resp
+            resp = self.sdk.get_entity(entity_id)
+            return resp.execute_action(action, params, entity_id=entity_id)
         entity = self.sdk.get_entity(entity_id)
         account = entity.get_connection(tool_name, connection_id=connection_id)
         if not account:

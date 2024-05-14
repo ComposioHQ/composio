@@ -55,6 +55,7 @@ def test_add_github():
         "composio.sdk.sdk.Composio.get_connected_account",
         return_value=ConnectedAccount(
             sdk_instance=mock.Mock(),
+            clientUniqueUserId="default",
             status="ACTIVE",
             integrationId="integ123",
             connectionParams={"scope": "read", "base_url": "https://api.example.com"},
