@@ -177,20 +177,25 @@ class ComposioCore:
         entity = self.sdk.get_entity(entity_id)
         return entity.get_connection(app_name, connection_id=connection_id)
 
-    def execute_action(
-        self,
-        action: Action,
-        params: dict,
-        entity_id: str = "default",
-        connection_id: Optional[str] = None,
-    ):
+    def execute_action(self, action: Action, params: dict, entity_id: str = "default"):
+        """
+        Execute an action on a given entity.
+
+        Args:
+            action (Action): The action to execute.
+            params (dict): The parameters to pass to the action.
+            entity_id (str, optional): The ID of the entity to execute the action on. Defaults to "default".
+
+        Returns:
+            Any: The output of the action execution.
+        """
         tool_name = action.value[0]
         no_auth = action.value[2] if len(action.value) > 2 else False
-        if no_auth:
-            resp = self.sdk.get_entity(entity_id)
-            return resp.execute_action(action, params, entity_id=entity_id)
         entity = self.sdk.get_entity(entity_id)
-        account = entity.get_connection(tool_name, connection_id=connection_id)
+        if no_auth:
+            return entity.execute_action(action, params, entity_id=entity_id)
+
+        account = entity.get_connection(tool_name)
         if not account:
             raise NotFoundException(
                 f"Entity {entity_id} does not have a connection to {tool_name}"
