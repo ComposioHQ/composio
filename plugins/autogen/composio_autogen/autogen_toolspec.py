@@ -3,7 +3,7 @@ import logging
 import os
 import types
 from inspect import Signature
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 import autogen
 from autogen.agentchat.conversable_agent import ConversableAgent
@@ -19,11 +19,19 @@ client = ComposioCore(
 )
 
 class ComposioToolset:
-    def __init__(self, client: ComposioCore = client, caller=None, executor=None, entity_id: str = "default"):
+    def __init__(
+        self,
+        client: ComposioCore = client,
+        caller=None,
+        executor=None,
+        entity_id: str = "default",
+        connection_ids: Optional[Dict[Union[str, App], str]] = None,
+    ):
         self.client = client
         self.caller = caller
         self.executor = executor
         self.entity_id = entity_id
+        self.connection_ids = connection_ids or {}
 
     def register_tools(
         self,
@@ -99,6 +107,12 @@ class ComposioToolset:
         name = action_schema["name"]
         processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]
+        connection_id = self.connection_ids.get(
+            appName,
+            self.connection_ids.get(
+                App(appName),
+            ),
+        )
         description = action_schema["description"]
 
         parameters = get_signature_format_from_schema_params(
@@ -108,7 +122,7 @@ class ComposioToolset:
 
         def placeholder_function(**kwargs):
             return self.client.execute_action(
-                self.client.get_action_enum(name, appName), kwargs, entity_id=self.entity_id
+                self.client.get_action_enum(name, appName), kwargs, entity_id=self.entity_id, connection_id=connection_id,
             )
 
         action_func = types.FunctionType(
