@@ -25,6 +25,13 @@ class OpenaiStyleToolsetBase:
                             )
         self.schema_format = schema_format
 
+    def finalize_entity_id(self, entity_id):
+        if self.entity_id != "default" and entity_id != "default" and self.entity_id != entity_id:
+            raise ValueError("Seperate `entity_id` can not be provided during intialization and handelling tool calls")
+        elif self.entity_id != "default" :
+            entity_id = self.entity_id
+        return entity_id
+
     def get_actions(self, actions: Union[Action, List[Action]]):
         if isinstance(actions, Action):
             actions = [actions]
@@ -53,27 +60,33 @@ class ComposioToolset(OpenaiStyleToolsetBase):
     def __init__(self, *args, framework=FrameworkEnum.OPENAI, **kwargs):
         super().__init__(*args, framework=framework, **kwargs)
 
-    def execute_tool_call(self, tool_call):
+
+    def execute_tool_call(self, tool_call, entity_id):
         action_name_to_execute = tool_call.function.name
         action = self.client.sdk.get_action_enum_without_tool(
             action_name=action_name_to_execute
         )
         arguments = json.loads(tool_call.function.arguments)
-        account = entity.get_connection(app_name=action.service)
-        tool_response = account.execute_action(action, arguments)
+        tool_response = self.client.execute_action(
+            action=action,
+            params=arguments,
+            entity_id=entity_id
+        )
         return tool_response
+
 
     def handle_tool_calls(self,
                           llm_response: ChatCompletion, 
                           entity_id: str = "default") -> list[any]:
-        output = []        
-        entity = self.client.sdk.get_entity(entity_id)
+          
+        entity_id = self.finalize_entity_id(entity_id)
+
         try:
             if llm_response.choices:
                 for choice in llm_response.choices:
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
-                            tool_response = self.execute_tool_call(tool_call)
+                            tool_response = self.execute_tool_call(tool_call, entity_id)
                             output.append(tool_response)
 
         except Exception as e:
@@ -81,12 +94,22 @@ class ComposioToolset(OpenaiStyleToolsetBase):
 
         return output
     
-    def handle_assistant_tool_calls(self, run_object):
+
+    def handle_assistant_tool_calls(self, 
+                                    run_object,
+                                    entity_id: str = "default") -> list[any]:
+
+        if self.entity_id != "default" and entity_id != "default" and self.entity_id != entity_id:
+            raise ValueError("Seperate `entity_id` can not be provided during intialization and handelling tool calls")
+        elif self.entity_id != "default" :
+            entity_id = self.entity_id
+
+
         tool_calls = run_object["required_action"]['submit_tool_outputs']["tool_calls"]
         tool_outputs = []
         for tool_call in tool_calls:
             # tool_call_id = tool_call.pop("id")
-            tool_response = self.execute_tool_call(tool_call)
+            tool_response = self.execute_tool_call(tool_call, entity_id)
             tool_output = {
                 "tool_call_id": tool_call.id,
                 "output": json.dumps(tool_response),
