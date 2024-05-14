@@ -1,7 +1,9 @@
+import dotenv
 from pprint import pprint
 from openai import OpenAI
 from composio_openai import App, ComposioToolset
 
+dotenv.load_dotenv()
 openai_client = OpenAI()
 
 toolset = ComposioToolset()
