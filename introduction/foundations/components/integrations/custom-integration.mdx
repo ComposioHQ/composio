@@ -5,24 +5,27 @@ icon: "puzzle-piece"
 description: "Explore the process of creating custom integrations with external Apps"
 ---
 
-Creating custom tools on Composio is straightforward. This guide will walk you through the process of building GitHub as a custom integration. Although GitHub is already offered as a tool on Composio, this example will help you understand how to create your own integrations.
+This guide will walk you through the process of building GitHub as a custom integration. Although GitHub is already offered as a tool on Composio, this example will help you understand how to create your own custom tool on Composio. 
+<Tip>
+    Before we begin, please check if your tool/app has an OpenAPI spec - you can skip this guide and continue to this <a href="/link">create custom tools using OpenAPI Spec</a> guide.
+</Tip>
 
 For enterprise users, we recommend reaching out to us at [tech@composio.dev](mailto:tech@composio.dev) for custom solutions.
 
 <Steps>
 
 <Step title="Create a Github Repository">
-    The repo can be public or private. This repo will house all the files for your custom tools. You can also fork our <a href="https://github.com/SamparkAI/test-custom-repo">starter repo</a> for custom tools.
+    This repo can be public or private and will house all the files for your custom tools. You can fork our <a href="https://github.com/SamparkAI/test-custom-repo">custom tools starter repo</a> to build your own custom tools.
 </Step>
 
 
 <Step title="Create a Folder in the Repository">
-    Inside the repo, you will need to create a dedicated folder for each of your custom tools. In this case, to create a GitHub integration, you will create a folder named `github`.
+    Inside the repo, you will need to create a folder for each of your custom tools. In this case, to create a GitHub as a custom tool, you will create a folder named `github`.
 </Step>
 
 
 <Step title="Create the integrations.yaml File">
-    Inside the `github` folder, create an `integrations.yaml` file. Below is the base template for the Integrations.yaml file for any custom tool that you create. However, you will modify the auth schems as each tool supports differnt auth methods.
+    Inside the `github` folder, create an `integrations.yaml` file. Below is the base template for the Integrations.yaml file for any custom tool that you create. However, you will modify the auth schems as each tool supports different auth methods.
 
     <AccordionGroup title="integrations.yaml">
     <Accordion title="Base Template">
@@ -129,17 +132,17 @@ auth_schemes:
     </AccordionGroup>
 
 Let's start with creating the yaml file for GitHub by adding the basic info.
+
+```yaml
 name: GitHub
 description: Integrate GitHub to manage your repositories directly from Composio.
 logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
 categories: ["developer tools", "version control"]
-
 auth_schemes:
+
 ```
 
-Now you will need to determine the supported auth method by the custom tool that you're trying to add. In the most of the cases, you can figure this out with a sinmple google search "custom_tool_name auth docs", ideally first url that comes up will be the auth docs for the tool.
-
-In this case,GitHub uses OAuth2 for authentication. 
+Now you will need to determine the supported auth method by the custom tool that you're trying to add. In the most of the cases, you can figure this out with a simple google search "custom_tool_name auth docs", ideally first result that comes up will be the auth docs for the app. In this case, GitHub uses OAuth2 for authentication. 
 
 ```yaml
 name: GitHub
@@ -153,14 +156,12 @@ auth_schemes:
     authorization_url: "https://github.com/login/oauth/authorize"
     token_url: "https://github.com/login/oauth/access_token"
     default_scopes: ["repo", "admin:org"]
-    token_response_metadata: ["access_token", "token_type", "scope"]
     token_params:
       grant_type: authorization_code
     authorization_params:
       response_type: code
     proxy:
       base_url: "{{base_url}}"
-      state: "{{state}}"
     fields:
       - name: base_url
         displayName: Base URL
@@ -169,7 +170,7 @@ auth_schemes:
         default: https://api.github.com
 ```
 
-Now that you have the `integrations.yaml` file ready, push the code and copy the URL of the repository.
+You need to add the relevant scopes as needed. Now that you have the `integrations.yaml` file ready, push the code and copy the URL of the repository.
 
 </Step>
 
@@ -181,7 +182,7 @@ Go to the <a href="https://app.composio.dev/api_keys">settings</a> page on Compo
   <img src="/media/custom.gif" />
 </Frame>
 If your repo is private, your URL should include your GitHub personal token: `https://ghp_xxxxxxx@github.com/username/repo_name`.
-Click on the "update and sync" button to test.
+Click on the "update and sync" button to load your custom tool into your Composio account.
 
 </Step>
 
@@ -193,3 +194,7 @@ Navigate back to the tools catalogue page on Composio. Search for the GitHub too
 </Step>
 
 </Steps>
+
+If you face any issues or found any bugs, join our <a href="https://discord.gg/6H7mcRTAWy">Discord</a> to chat with the team or write to us at tech@composio.dev.
+
+You can also add the actions to your custom tools. Click on the next article to read on how to create actions for your custom tool.
