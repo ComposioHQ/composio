@@ -1,11 +1,10 @@
-
 import os
 import textwrap
-from julep import Client
-from dotenv import load_dotenv
 
 from composio_julep import App, ComposioToolset
-    
+from dotenv import load_dotenv
+from julep import Client
+
 
 load_dotenv()
 toolset = ComposioToolset()
@@ -16,7 +15,6 @@ base_url = os.environ["JULEP_API_URL"]
 # openai_api_key = os.environ["OPENAI_API_KEY"]
 
 client = Client(api_key=api_key, base_url=base_url)
-
 
 
 name = "Jessica"

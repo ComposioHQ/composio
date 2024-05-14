@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from .sdk import Composio
 from .storage import get_base_account_api_key, get_base_url
 
-       
+
 def get_enum_key(name):
     characters_to_replace = [" ", "-", "/", "(", ")", "\\", ":", '"', "'", "."]
     for char in characters_to_replace:
@@ -36,7 +36,7 @@ def generate_enums_given_apps(apps, actions, triggers):
     enum_content += f'    ALL = ("default", "all")\n'
     for app_key, tags in tag_map.items():
         for tag in tags:
-            tag_name = get_enum_key(f'{app_key}_{tag}')
+            tag_name = get_enum_key(f"{app_key}_{tag}")
             enum_content += f'    {tag_name} = ("{app_key}", "{tag}")\n'
     enum_content += "\n"
 
