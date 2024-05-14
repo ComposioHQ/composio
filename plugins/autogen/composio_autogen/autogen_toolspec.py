@@ -107,12 +107,6 @@ class ComposioToolset:
         name = action_schema["name"]
         processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]
-        # connection_id = self.connection_ids.get(
-        #     appName,
-        #     self.connection_ids.get(
-        #         App(appName),
-        #     ),
-        # )
         description = action_schema["description"]
 
         parameters = get_signature_format_from_schema_params(
