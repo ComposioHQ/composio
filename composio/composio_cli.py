@@ -7,19 +7,23 @@ import sys
 import webbrowser
 from importlib.metadata import version
 
+import pyperclip
 import requests
 import termcolor
 from beaupy.spinners import DOTS, Spinner
 from rich.console import Console
 from rich.table import Table
 
-from composio.sdk.exceptions import UserNotAuthenticatedException
-
 from composio.sdk.core import ComposioCore
 from composio.sdk.enums import App
+from composio.sdk.exceptions import UserNotAuthenticatedException
 from composio.sdk.storage import save_api_key
-from composio.sdk.utils import generate_enums, generate_enums_beta, get_enum_key, get_frontend_url
-import pyperclip
+from composio.sdk.utils import (
+    generate_enums,
+    generate_enums_beta,
+    get_enum_key,
+    get_frontend_url,
+)
 
 
 # pylint: disable=unused-argument, too-many-locals, too-many-statements
@@ -458,7 +462,9 @@ def get_actions(args):
                 f"[red]No such app found for {app_name}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]"
             )
             sys.exit(1)
-        actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case, limit=limit)
+        actions = client.sdk.get_list_of_actions(
+            apps=[app], use_case=use_case, limit=limit
+        )
         action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
         console.print(
             f"\n[green]> Actions for {app_name} and use case {use_case}:[/green]\n"
@@ -466,7 +472,9 @@ def get_actions(args):
         formatted_action_enums = ", ".join(action_enums)
         console.print(formatted_action_enums)
 
-        copy_to_clipboard = input("\nDo you want to copy these enums to the clipboard? (yes/no): ").lower()
+        copy_to_clipboard = input(
+            "\nDo you want to copy these enums to the clipboard? (yes/no): "
+        ).lower()
         if copy_to_clipboard in ["yes", "y"]:
             pyperclip.copy(formatted_action_enums)
             console.print("[green]Enums copied to clipboard successfully![/green]\n")
@@ -540,7 +548,7 @@ def add_integration(args):
             # @TODO: add logic to wait and ask for API_KEY
             connection = entity.initiate_connection(
                 app_name=integration_name.lower(),
-                redirect_url=get_frontend_url("redirect")
+                redirect_url=get_frontend_url("redirect"),
             )
 
             if not should_disable_webbrowser_open:

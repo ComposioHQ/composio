@@ -1,9 +1,12 @@
 import os
-import dotenv
-from openai import OpenAI
-from pprint import pprint
 from datetime import datetime
-from composio_openai import App, Action, ComposioToolset
+from pprint import pprint
+
+import dotenv
+from composio_openai import Action, App, ComposioToolset
+from openai import OpenAI
+
+
 dotenv.load_dotenv()
 
 client = OpenAI()
@@ -64,12 +67,7 @@ run = client.beta.threads.runs.create(
 )
 
 run_after_tool_calls = toolset.wait_and_handle_assistant_tool_calls(
-    client=client, 
-    run=run, 
-    thread=thread, 
-    verbose=True
+    client=client, run=run, thread=thread, verbose=True
 )
 
 print(run_after_tool_calls)
-
-

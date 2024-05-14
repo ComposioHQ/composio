@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Optional, Union
 
 from composio.sdk.exceptions import BadErrorException, NotFoundException
-
 from composio.sdk.http_client import HttpClient
 
 from .enums import Action, App
@@ -30,7 +29,6 @@ class FrameworkEnum(Enum):
 
 
 __IS_FIRST_TIME__ = True
-
 
 
 class ComposioCore:
@@ -120,9 +118,7 @@ class ComposioCore:
         )
 
     def verify_cli_auth_session(self, key: str, code: str):
-        resp = self.http_client.get(
-            f"v1/cli/verify-cli-code?key={key}&code={code}"
-        )
+        resp = self.http_client.get(f"v1/cli/verify-cli-code?key={key}&code={code}")
         return resp.json()
 
     def initiate_connection(
@@ -164,9 +160,7 @@ class ComposioCore:
     def enable_trigger(
         self, trigger_id: str, connected_account_id: str, user_inputs: dict
     ):
-        return self.sdk.enable_trigger(
-            trigger_id, connected_account_id, user_inputs
-        )
+        return self.sdk.enable_trigger(trigger_id, connected_account_id, user_inputs)
 
     def get_connection(
         self,
