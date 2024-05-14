@@ -487,7 +487,9 @@ class Entity:
             actions.extend(account_actions)
         return actions
 
-    def get_connection(self, app_name: Union[str, App]) -> Optional[ConnectedAccount]:
+    def get_connection(
+        self, app_name: Union[str, App], connection_id: Optional[str] = None
+    ) -> ConnectedAccount:
         if isinstance(app_name, App):
             app_name = app_name.value
         connected_accounts = self.client.get_connected_accounts(
@@ -496,6 +498,8 @@ class Entity:
         latest_account = None
         latest_creation_date = None
         for account in connected_accounts:
+            if connection_id is not None and account.id == connection_id:
+                return account
             if app_name == account.appUniqueId:
                 creation_date = datetime.fromisoformat(
                     account.createdAt.replace("Z", "+00:00")
