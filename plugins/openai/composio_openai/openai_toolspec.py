@@ -110,7 +110,6 @@ class ComposioToolset(OpenaiStyleToolsetBase):
         tool_calls = run_object["required_action"]['submit_tool_outputs']["tool_calls"]
         tool_outputs = []
         for tool_call in tool_calls:
-            # tool_call_id = tool_call.pop("id")
             tool_response = self.execute_tool_call(tool_call, entity_id)
             tool_output = {
                 "tool_call_id": tool_call.id,
@@ -131,8 +130,6 @@ class ComposioToolset(OpenaiStyleToolsetBase):
         while run_object.status in ("queued", "in_progress", "requires_action"):
             # Look here
             if run_object.status == "requires_action":
-                # print(run_object)
-                # print("***&*&*&*&S")
                 run_object = client.beta.threads.runs.submit_tool_outputs(
                     thread_id=thread_object.id,
                     run_id=run_object.id,

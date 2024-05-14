@@ -22,11 +22,9 @@ class ComposioToolset:
     def __init__(self, 
                 client: ComposioCore = client, 
                 entity_id: str = "default", 
-                # connection_ids: Optional[Dict[Union[str, App], str]] = None
                 ):
         self.client = client
         self.entity_id = entity_id
-        # self.connection_ids = connection_ids or {}
 
     def get_lyzr_tool(self, action: Action):
         action_schema = self.client.sdk.get_list_of_actions(actions=[action])[0]
@@ -36,9 +34,6 @@ class ComposioToolset:
         name = action_schema["name"]
         description = action_schema["description"]
         appName = action_schema["appName"]
-        # connection_id = self.connection_ids.get(
-        #     appName, self.connection_ids.get(App(appName))
-        # )
         func_params = get_signature_format_from_schema_params(
             action_schema["parameters"]
         )
