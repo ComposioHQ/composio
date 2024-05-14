@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Tag(Enum):
     IMPORTANT = ("default", "important")
     ALL = ("default", "all")
@@ -132,6 +133,7 @@ class Tag(Enum):
     OKTA_NETWORKZONE = ("okta", "NetworkZone")
     OKTA_USERSCHEMA = ("okta", "UserSchema")
     OKTA_EVENTHOOK = ("okta", "EventHook")
+
 
 class App(Enum):
     YNAB = "ynab"
@@ -327,6 +329,7 @@ class App(Enum):
     SNOWFLAKE = "snowflake"
     OKTA = "okta"
     TEST_ASANA = "test_asana"
+
 
 class Action(Enum):
     def __init__(self, service, action, no_auth):
@@ -1100,12 +1103,20 @@ class Action(Enum):
     TRELLO_UPDATE_TRELLO_CARD = ("trello", "trello_update_trello_card", False)
     TRELLO_GET_TRELLO_MEMBER_BOARD = ("trello", "trello_get_trello_member_board", False)
     NOTION_GET_ABOUT_ME = ("notion", "notion_get_about_me", False)
-    NOTION_ADD_NOTION_PAGE_CHILDREN = ("notion", "notion_add_notion_page_children", False)
+    NOTION_ADD_NOTION_PAGE_CHILDREN = (
+        "notion",
+        "notion_add_notion_page_children",
+        False,
+    )
     NOTION_ARCHIVE_NOTION_PAGE = ("notion", "notion_archive_notion_page", False)
     NOTION_CREATE_NOTION_DATABASE = ("notion", "notion_create_notion_database", False)
     NOTION_CREATE_PAGE_COMMENT = ("notion", "notion_create_page_comment", False)
     NOTION_CREATE_NOTION_PAGE = ("notion", "notion_create_notion_page", False)
-    NOTION_DELETE_NOTION_PAGE_CHILDREN = ("notion", "notion_delete_notion_page_children", False)
+    NOTION_DELETE_NOTION_PAGE_CHILDREN = (
+        "notion",
+        "notion_delete_notion_page_children",
+        False,
+    )
     NOTION_FETCH_NOTION_COMMENT = ("notion", "notion_fetch_notion_comment", False)
     NOTION_FETCH_NOTION_DATABASE = ("notion", "notion_fetch_notion_database", False)
     NOTION_FETCH_NOTION_PAGE = ("notion", "notion_fetch_notion_page", False)
@@ -1483,6 +1494,7 @@ class Action(Enum):
     OKTA_NETWORK_ZONE_DEACTIVATE_ZONE_LIFECYCLE = ("okta", "okta_network_zone_deactivate_zone_lifecycle", False)
     TEST_ASANA_CREATE_SUBTASK = ("test_asana", "test_asana_create_subtask", False)
     TEST_ASANA_GET_SUBTASKS = ("test_asana", "test_asana_get_subtasks", False)
+
 
 class Trigger(Enum):
     def __init__(self, service, trigger):
