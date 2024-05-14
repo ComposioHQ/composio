@@ -6,6 +6,7 @@ description: "Connect CrewAI to linearsandbox to create agents to perform tasks 
 ---
 
 ## Connecting CrewAI with linearsandbox
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A modern project management tool designed for efficiency and performance.
 
 Integrating linearsandbox & CrewAI can allow for the following:
 
-1. managing tasks efficiently
-2. tracking project progress
+1. Managing tasks efficiently
+2. Tracking project progress
 & so many more
 
 ## Using CrewAI with linearsandbox
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions linearsandbox "managing tasks efficiently" --limit=10
+composio-cli get-actions linearsandbox "Managing tasks efficiently" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform linearsandbox API calls using Compo
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing tasks efficiently"
+task = "Managing tasks efficiently"
 
 crewai_agent = Agent(
     role='linearsandbox Agent',

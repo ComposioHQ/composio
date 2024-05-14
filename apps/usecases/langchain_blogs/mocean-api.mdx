@@ -6,6 +6,7 @@ description: "Connect LangChain to Mocean API to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Mocean API
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Mocean is a cloud communications platform that provides SMS, Voice, and Verifica
 
 Integrating Mocean API & Langchain can allow for the following:
 
-1. Sending SMS messages to users
+1. Sending sms messages to users
 2. Making automated voice calls
 & so many more
 
 ## Using LangChain with Mocean API
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions mocean-api "Sending SMS messages to users" --limit=10
+composio-cli get-actions mocean-api "Sending sms messages to users" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Mocean API API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Sending SMS messages to users"
+task = "Sending sms messages to users"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

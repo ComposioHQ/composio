@@ -6,6 +6,7 @@ description: "Connect CrewAI to Gumroad to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Gumroad
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Gumroad helps creators take control of their creative careers by providing tools
 
 Integrating Gumroad & CrewAI can allow for the following:
 
-1. selling digital products
-2. building a customer mailing list
+1. Selling digital products
+2. Building a customer mailing list
 & so many more
 
 ## Using CrewAI with Gumroad
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gumroad "selling digital products" --limit=10
+composio-cli get-actions gumroad "Selling digital products" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Gumroad API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "selling digital products"
+task = "Selling digital products"
 
 crewai_agent = Agent(
     role='Gumroad Agent',

@@ -6,6 +6,7 @@ description: "Connect LangChain to Calendly to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with Calendly
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ A business communication platform used for teams to schedule, prepare and follow
 
 Integrating Calendly & Langchain can allow for the following:
 
-1. scheduling meetings effortlessly
-2. managing team availability
+1. Scheduling meetings effortlessly
+2. Managing team availability
 & so many more
 
 ## Using LangChain with Calendly
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions calendly "scheduling meetings effortlessly" --limit=10
+composio-cli get-actions calendly "Scheduling meetings effortlessly" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Calendly API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "scheduling meetings effortlessly"
+task = "Scheduling meetings effortlessly"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

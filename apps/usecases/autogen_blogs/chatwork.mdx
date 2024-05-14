@@ -6,6 +6,7 @@ description: "Connect Autogen to ChatWork to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with ChatWork
+![intro](/media/intro.jpg)
 
 ### Overview of ChatWork
 
@@ -15,12 +16,12 @@ ChatWork is all-in-one group chat for global teams. It brings secure messaging, 
 
 Integrating ChatWork & Autogen can allow for the following:
 
-1. sending messages to a ChatWork group
-2. creating a new ChatWork group
+1. Sending messages to a chatwork group
+2. Creating a new chatwork group
 & so many more
 
 ## Using Autogen with ChatWork
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions chatwork "sending messages to a ChatWork group" --limit=10
+composio-cli get-actions chatwork "Sending messages to a chatwork group" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform ChatWork API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending messages to a ChatWork group" # change this as necessary
+task = "Sending messages to a chatwork group" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Zoho Bigin to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Zoho Bigin
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Zoho Bigin is a customer pipeline management software that helps small businesse
 
 Integrating Zoho Bigin & CrewAI can allow for the following:
 
-1. managing customer pipelines
-2. streamlining customer relationship management processes
+1. Managing customer pipelines
+2. Streamlining customer relationship management processes
 & so many more
 
 ## Using CrewAI with Zoho Bigin
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-bigin "managing customer pipelines" --limit=10
+composio-cli get-actions zoho-bigin "Managing customer pipelines" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Zoho Bigin API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing customer pipelines"
+task = "Managing customer pipelines"
 
 crewai_agent = Agent(
     role='Zoho Bigin Agent',

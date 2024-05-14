@@ -6,6 +6,7 @@ description: "Connect CrewAI to more-trees to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with more-trees
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ More Trees provides an API for automating tree planting services and customizing
 
 Integrating more-trees & CrewAI can allow for the following:
 
-1. automating tree planting services
-2. customizing impact statistics
+1. Automating tree planting services
+2. Customizing impact statistics
 & so many more
 
 ## Using CrewAI with more-trees
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions more-trees "automating tree planting services" --limit=10
+composio-cli get-actions more-trees "Automating tree planting services" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform more-trees API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "automating tree planting services"
+task = "Automating tree planting services"
 
 crewai_agent = Agent(
     role='more-trees Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to ClickUp to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with ClickUp
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ ClickUp is a productivity platform that provides a fundamentally new way to work
 
 Integrating ClickUp & CrewAI can allow for the following:
 
-1. managing tasks and projects
-2. creating custom workflows
+1. Managing tasks and projects
+2. Creating custom workflows
 & so many more
 
 ## Using CrewAI with ClickUp
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions clickup "managing tasks and projects" --limit=10
+composio-cli get-actions clickup "Managing tasks and projects" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform ClickUp API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing tasks and projects"
+task = "Managing tasks and projects"
 
 crewai_agent = Agent(
     role='ClickUp Agent',

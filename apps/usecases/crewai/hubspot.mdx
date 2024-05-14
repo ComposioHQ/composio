@@ -6,6 +6,7 @@ description: "Connect CrewAI to HubSpot to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with HubSpot
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ HubSpot is a developer and marketer of software products for inbound marketing, 
 
 Integrating HubSpot & CrewAI can allow for the following:
 
-1. managing customer relationships
-2. creating targeted marketing campaigns
+1. Managing customer relationships
+2. Creating targeted marketing campaigns
 & so many more
 
 ## Using CrewAI with HubSpot
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions hubspot "managing customer relationships" --limit=10
+composio-cli get-actions hubspot "Managing customer relationships" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform HubSpot API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing customer relationships"
+task = "Managing customer relationships"
 
 crewai_agent = Agent(
     role='HubSpot Agent',

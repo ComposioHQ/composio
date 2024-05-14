@@ -6,6 +6,7 @@ description: "Connect CrewAI to Keap to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Keap
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Keap helps you grow your business, improve customer service & increase sales.
 
 Integrating Keap & CrewAI can allow for the following:
 
-1. managing customer relationships effectively
-2. automating marketing campaigns
+1. Managing customer relationships effectively
+2. Automating marketing campaigns
 & so many more
 
 ## Using CrewAI with Keap
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions keap "managing customer relationships effectively" --limit=10
+composio-cli get-actions keap "Managing customer relationships effectively" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Keap API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing customer relationships effectively"
+task = "Managing customer relationships effectively"
 
 crewai_agent = Agent(
     role='Keap Agent',

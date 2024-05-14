@@ -6,6 +6,7 @@ description: "Connect CrewAI to Bitwarden to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Bitwarden
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Bitwarden makes it easy for businesses and individuals to securely generate, sto
 
 Integrating Bitwarden & CrewAI can allow for the following:
 
-1. securely generating and storing passwords
-2. sharing passwords with team members
+1. Securely generating and storing passwords
+2. Sharing passwords with team members
 & so many more
 
 ## Using CrewAI with Bitwarden
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions bitwarden "securely generating and storing passwords" --limit=10
+composio-cli get-actions bitwarden "Securely generating and storing passwords" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Bitwarden API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "securely generating and storing passwords"
+task = "Securely generating and storing passwords"
 
 crewai_agent = Agent(
     role='Bitwarden Agent',

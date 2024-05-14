@@ -6,6 +6,7 @@ description: "Connect Autogen to filemanager to create agents to perform tasks u
 ---
 
 ## Connecting Autogen AI agents with filemanager
+![intro](/media/intro.jpg)
 
 ### Overview of filemanager
 
@@ -15,12 +16,12 @@ Fileandshellmanager allows you to create files, folders, execute programs and co
 
 Integrating filemanager & Autogen can allow for the following:
 
-1. creating files and folders
-2. executing programs and controlling a shell
+1. Creating files and folders
+2. Executing programs and controlling a shell
 & so many more
 
 ## Using Autogen with filemanager
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions filemanager "creating files and folders" --limit=10
+composio-cli get-actions filemanager "Creating files and folders" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform filemanager API
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "creating files and folders" # change this as necessary
+task = "Creating files and folders" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

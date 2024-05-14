@@ -6,6 +6,7 @@ description: "Connect CrewAI to codeinterpreter to create agents to perform task
 ---
 
 ## Connecting CrewAI with codeinterpreter
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Code interpreter can execute any python or js Code depending
 
 Integrating codeinterpreter & CrewAI can allow for the following:
 
-1. Executing Python code
-2. Running JavaScript code
+1. Executing python code
+2. Running javascript code
 & so many more
 
 ## Using CrewAI with codeinterpreter
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions codeinterpreter "Executing Python code" --limit=10
+composio-cli get-actions codeinterpreter "Executing python code" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform codeinterpreter API calls using Com
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Executing Python code"
+task = "Executing python code"
 
 crewai_agent = Agent(
     role='codeinterpreter Agent',

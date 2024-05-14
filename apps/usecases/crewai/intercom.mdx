@@ -6,6 +6,7 @@ description: "Connect CrewAI to Intercom to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with Intercom
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A messaging platform that allows businesses to communicate with prospective and 
 
 Integrating Intercom & CrewAI can allow for the following:
 
-1. sending messages to customers via Intercom
-2. creating targeted customer surveys
+1. Sending messages to customers via intercom
+2. Creating targeted customer surveys
 & so many more
 
 ## Using CrewAI with Intercom
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions intercom "sending messages to customers via Intercom" --limit=10
+composio-cli get-actions intercom "Sending messages to customers via intercom" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Intercom API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending messages to customers via Intercom"
+task = "Sending messages to customers via intercom"
 
 crewai_agent = Agent(
     role='Intercom Agent',

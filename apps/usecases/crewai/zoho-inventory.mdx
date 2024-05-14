@@ -6,6 +6,7 @@ description: "Connect CrewAI to Zoho Inventory to create agents to perform tasks
 ---
 
 ## Connecting CrewAI with Zoho Inventory
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Zoho Inventory is an online inventory management software that helps businesses 
 
 Integrating Zoho Inventory & CrewAI can allow for the following:
 
-1. tracking and managing inventory
-2. generating purchase orders
+1. Tracking and managing inventory
+2. Generating purchase orders
 & so many more
 
 ## Using CrewAI with Zoho Inventory
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-inventory "tracking and managing inventory" --limit=10
+composio-cli get-actions zoho-inventory "Tracking and managing inventory" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Zoho Inventory API calls using Comp
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking and managing inventory"
+task = "Tracking and managing inventory"
 
 crewai_agent = Agent(
     role='Zoho Inventory Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to MaintainX to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with MaintainX
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ MaintainX provides a comprehensive suite of tools for maintenance and operations
 
 Integrating MaintainX & CrewAI can allow for the following:
 
-1. scheduling maintenance tasks
-2. tracking work orders
+1. Scheduling maintenance tasks
+2. Tracking work orders
 & so many more
 
 ## Using CrewAI with MaintainX
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions maintainx "scheduling maintenance tasks" --limit=10
+composio-cli get-actions maintainx "Scheduling maintenance tasks" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform MaintainX API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "scheduling maintenance tasks"
+task = "Scheduling maintenance tasks"
 
 crewai_agent = Agent(
     role='MaintainX Agent',

@@ -6,6 +6,7 @@ description: "Connect Autogen to formcarry to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with formcarry
+![intro](/media/intro.jpg)
 
 ### Overview of formcarry
 
@@ -15,12 +16,12 @@ Formcarry provides APIs for creating and managing forms, retrieving form submiss
 
 Integrating formcarry & Autogen can allow for the following:
 
-1. creating and managing forms
-2. retrieving form submissions and handling notifications
+1. Creating and managing forms
+2. Retrieving form submissions and handling notifications
 & so many more
 
 ## Using Autogen with formcarry
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions formcarry "creating and managing forms" --limit=10
+composio-cli get-actions formcarry "Creating and managing forms" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform formcarry API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "creating and managing forms" # change this as necessary
+task = "Creating and managing forms" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

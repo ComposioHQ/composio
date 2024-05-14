@@ -6,6 +6,7 @@ description: "Connect LangChain to Cloudflare to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Cloudflare
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Cloudflare provides APIs for managing and automating Cloudflare services, includ
 
 Integrating Cloudflare & Langchain can allow for the following:
 
-1. Automating CDN configurations
-2. Managing DNS records
+1. Automating cdn configurations
+2. Managing dns records
 & so many more
 
 ## Using LangChain with Cloudflare
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions cloudflare "Automating CDN configurations" --limit=10
+composio-cli get-actions cloudflare "Automating cdn configurations" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Cloudflare API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Automating CDN configurations"
+task = "Automating cdn configurations"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

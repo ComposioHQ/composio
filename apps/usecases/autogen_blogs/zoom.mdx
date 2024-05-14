@@ -6,6 +6,7 @@ description: "Connect Autogen to Zoom to create agents to perform tasks using na
 ---
 
 ## Connecting Autogen AI agents with Zoom
+![intro](/media/intro.jpg)
 
 ### Overview of Zoom
 
@@ -15,12 +16,12 @@ Zoom is a remote conferencing services company that combines video conferencing,
 
 Integrating Zoom & Autogen can allow for the following:
 
-1. hosting online meetings
-2. organizing webinars
+1. Hosting online meetings
+2. Organizing webinars
 & so many more
 
 ## Using Autogen with Zoom
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions zoom "hosting online meetings" --limit=10
+composio-cli get-actions zoom "Hosting online meetings" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Zoom API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "hosting online meetings" # change this as necessary
+task = "Hosting online meetings" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

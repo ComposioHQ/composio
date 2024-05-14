@@ -6,6 +6,7 @@ description: "Connect LangChain to Figma to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Figma
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ A collaborative interface design tool.
 
 Integrating Figma & Langchain can allow for the following:
 
-1. collaborative interface design
-2. real-time team collaboration and feedback
+1. Collaborative interface design
+2. Real-time team collaboration and feedback
 & so many more
 
 ## Using LangChain with Figma
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions figma "collaborative interface design" --limit=10
+composio-cli get-actions figma "Collaborative interface design" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Figma API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "collaborative interface design"
+task = "Collaborative interface design"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect LangChain to Bannerbear to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Bannerbear
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Bannerbear is an API and integration tool that allows users to auto-generate soc
 
 Integrating Bannerbear & Langchain can allow for the following:
 
-1. auto-generate social media visuals
-2. create e-commerce banners
+1. Auto-generate social media visuals
+2. Create e-commerce banners
 & so many more
 
 ## Using LangChain with Bannerbear
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions bannerbear "auto-generate social media visuals" --limit=10
+composio-cli get-actions bannerbear "Auto-generate social media visuals" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Bannerbear API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "auto-generate social media visuals"
+task = "Auto-generate social media visuals"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

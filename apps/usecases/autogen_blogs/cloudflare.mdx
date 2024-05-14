@@ -6,6 +6,7 @@ description: "Connect Autogen to Cloudflare to create agents to perform tasks us
 ---
 
 ## Connecting Autogen AI agents with Cloudflare
+![intro](/media/intro.jpg)
 
 ### Overview of Cloudflare
 
@@ -15,12 +16,12 @@ Cloudflare provides APIs for managing and automating Cloudflare services, includ
 
 Integrating Cloudflare & Autogen can allow for the following:
 
-1. Automating CDN configurations
-2. Managing DNS records
+1. Automating cdn configurations
+2. Managing dns records
 & so many more
 
 ## Using Autogen with Cloudflare
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions cloudflare "Automating CDN configurations" --limit=10
+composio-cli get-actions cloudflare "Automating cdn configurations" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Cloudflare API 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Automating CDN configurations" # change this as necessary
+task = "Automating cdn configurations" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

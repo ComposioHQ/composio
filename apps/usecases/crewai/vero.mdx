@@ -6,6 +6,7 @@ description: "Connect CrewAI to Vero to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Vero
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Vero is a customer engagement platform for product and product marketing teams a
 
 Integrating Vero & CrewAI can allow for the following:
 
-1. sending personalized email campaigns
-2. creating automated customer journeys
+1. Sending personalized email campaigns
+2. Creating automated customer journeys
 & so many more
 
 ## Using CrewAI with Vero
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions vero "sending personalized email campaigns" --limit=10
+composio-cli get-actions vero "Sending personalized email campaigns" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Vero API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending personalized email campaigns"
+task = "Sending personalized email campaigns"
 
 crewai_agent = Agent(
     role='Vero Agent',

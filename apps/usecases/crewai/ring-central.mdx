@@ -6,6 +6,7 @@ description: "Connect CrewAI to RingCentral to create agents to perform tasks us
 ---
 
 ## Connecting CrewAI with RingCentral
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ RingCentral provides cloud-based communication and collaboration solutions for b
 
 Integrating RingCentral & CrewAI can allow for the following:
 
-1. handling customer support queries
-2. creating new communication channels
+1. Handling customer support queries
+2. Creating new communication channels
 & so many more
 
 ## Using CrewAI with RingCentral
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ring-central "handling customer support queries" --limit=10
+composio-cli get-actions ring-central "Handling customer support queries" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform RingCentral API calls using Composi
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "handling customer support queries"
+task = "Handling customer support queries"
 
 crewai_agent = Agent(
     role='RingCentral Agent',

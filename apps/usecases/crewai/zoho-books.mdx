@@ -6,6 +6,7 @@ description: "Connect CrewAI to Zoho Books to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Zoho Books
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Zoho Books is online accounting software that manages your finances, keeps you G
 
 Integrating Zoho Books & CrewAI can allow for the following:
 
-1. managing finances
-2. automating business workflows
+1. Managing finances
+2. Automating business workflows
 & so many more
 
 ## Using CrewAI with Zoho Books
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-books "managing finances" --limit=10
+composio-cli get-actions zoho-books "Managing finances" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Zoho Books API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing finances"
+task = "Managing finances"
 
 crewai_agent = Agent(
     role='Zoho Books Agent',

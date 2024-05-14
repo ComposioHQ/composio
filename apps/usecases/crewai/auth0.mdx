@@ -6,6 +6,7 @@ description: "Connect CrewAI to Auth0 to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Auth0
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Auth0 is a platform that allows developers and companies to verify a user's iden
 
 Integrating Auth0 & CrewAI can allow for the following:
 
-1. User Authentication
+1. User authentication
 2. Creating secure login flows
 & so many more
 
 ## Using CrewAI with Auth0
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions auth0 "User Authentication" --limit=10
+composio-cli get-actions auth0 "User authentication" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Auth0 API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "User Authentication"
+task = "User authentication"
 
 crewai_agent = Agent(
     role='Auth0 Agent',

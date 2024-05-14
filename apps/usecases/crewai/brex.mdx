@@ -6,6 +6,7 @@ description: "Connect CrewAI to Brex to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Brex
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Integration for Brex banking services using OAuth2 authentication.
 
 Integrating Brex & CrewAI can allow for the following:
 
-1. managing corporate expenses efficiently
-2. automating financial reporting
+1. Managing corporate expenses efficiently
+2. Automating financial reporting
 & so many more
 
 ## Using CrewAI with Brex
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions brex "managing corporate expenses efficiently" --limit=10
+composio-cli get-actions brex "Managing corporate expenses efficiently" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Brex API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing corporate expenses efficiently"
+task = "Managing corporate expenses efficiently"
 
 crewai_agent = Agent(
     role='Brex Agent',

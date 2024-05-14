@@ -6,6 +6,7 @@ description: "Connect LangChain to ToneDen to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with ToneDen
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ ToneDen provides APIs for automated marketing and social media management.
 
 Integrating ToneDen & Langchain can allow for the following:
 
-1. automated marketing campaigns
-2. social media management
+1. Automated marketing campaigns
+2. Social media management
 & so many more
 
 ## Using LangChain with ToneDen
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions toneden "automated marketing campaigns" --limit=10
+composio-cli get-actions toneden "Automated marketing campaigns" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform ToneDen API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "automated marketing campaigns"
+task = "Automated marketing campaigns"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

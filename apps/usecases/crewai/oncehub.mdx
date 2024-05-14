@@ -6,6 +6,7 @@ description: "Connect CrewAI to OnceHub to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with OnceHub
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ OnceHub provides APIs for scheduling, booking management, and customer data inte
 
 Integrating OnceHub & CrewAI can allow for the following:
 
-1. Scheduling APIs for booking management
+1. Scheduling apis for booking management
 2. Customer data integration
 & so many more
 
 ## Using CrewAI with OnceHub
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions oncehub "Scheduling APIs for booking management" --limit=10
+composio-cli get-actions oncehub "Scheduling apis for booking management" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform OnceHub API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Scheduling APIs for booking management"
+task = "Scheduling apis for booking management"
 
 crewai_agent = Agent(
     role='OnceHub Agent',

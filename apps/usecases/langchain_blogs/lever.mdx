@@ -6,6 +6,7 @@ description: "Connect LangChain to Lever to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Lever
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Lever provides APIs for applicant tracking, candidate relationship management, a
 
 Integrating Lever & Langchain can allow for the following:
 
-1. tracking applicants through Lever APIs
-2. managing candidate relationships with Lever
+1. Tracking applicants through lever apis
+2. Managing candidate relationships with lever
 & so many more
 
 ## Using LangChain with Lever
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions lever "tracking applicants through Lever APIs" --limit=10
+composio-cli get-actions lever "Tracking applicants through lever apis" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Lever API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "tracking applicants through Lever APIs"
+task = "Tracking applicants through lever apis"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

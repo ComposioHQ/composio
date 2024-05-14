@@ -6,6 +6,7 @@ description: "Connect CrewAI to Tapform to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Tapform
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Tapform provides a platform for secure data form management and integration, ena
 
 Integrating Tapform & CrewAI can allow for the following:
 
-1. capturing and integrating data
-2. secure data form management
+1. Capturing and integrating data
+2. Secure data form management
 & so many more
 
 ## Using CrewAI with Tapform
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tapform "capturing and integrating data" --limit=10
+composio-cli get-actions tapform "Capturing and integrating data" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Tapform API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "capturing and integrating data"
+task = "Capturing and integrating data"
 
 crewai_agent = Agent(
     role='Tapform Agent',

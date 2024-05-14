@@ -6,6 +6,7 @@ description: "Connect CrewAI to lexoffice to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with lexoffice
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Lexoffice provides a comprehensive suite of accounting and financial management 
 
 Integrating lexoffice & CrewAI can allow for the following:
 
-1. automating invoicing processes
-2. integrating financial data with third-party applications
+1. Automating invoicing processes
+2. Integrating financial data with third-party applications
 & so many more
 
 ## Using CrewAI with lexoffice
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions lexoffice "automating invoicing processes" --limit=10
+composio-cli get-actions lexoffice "Automating invoicing processes" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform lexoffice API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "automating invoicing processes"
+task = "Automating invoicing processes"
 
 crewai_agent = Agent(
     role='lexoffice Agent',

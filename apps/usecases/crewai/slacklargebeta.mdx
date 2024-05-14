@@ -6,6 +6,7 @@ description: "Connect CrewAI to Slack to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Slack
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Slack is a channel-based messaging platform. With Slack, people can work togethe
 
 Integrating Slack & CrewAI can allow for the following:
 
-1. sending messages to a Slack channel
-2. creating a new channel
+1. Sending messages to a slack channel
+2. Creating a new channel
 & so many more
 
 ## Using CrewAI with Slack
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions slacklargebeta "sending messages to a Slack channel" --limit=10
+composio-cli get-actions slacklargebeta "Sending messages to a slack channel" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Slack API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending messages to a Slack channel"
+task = "Sending messages to a slack channel"
 
 crewai_agent = Agent(
     role='Slack Agent',

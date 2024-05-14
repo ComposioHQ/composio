@@ -6,6 +6,7 @@ description: "Connect CrewAI to Brevo to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Brevo
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Brevo, formerly Sendinblue, is a SaaS solution for relationship marketing.
 
 Integrating Brevo & CrewAI can allow for the following:
 
-1. sending marketing emails to a contact list
-2. creating automated email campaigns
+1. Sending marketing emails to a contact list
+2. Creating automated email campaigns
 & so many more
 
 ## Using CrewAI with Brevo
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions brevo "sending marketing emails to a contact list" --limit=10
+composio-cli get-actions brevo "Sending marketing emails to a contact list" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Brevo API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending marketing emails to a contact list"
+task = "Sending marketing emails to a contact list"
 
 crewai_agent = Agent(
     role='Brevo Agent',

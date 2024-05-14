@@ -6,6 +6,7 @@ description: "Connect Autogen to Slackbot to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with Slackbot
+![intro](/media/intro.jpg)
 
 ### Overview of Slackbot
 
@@ -15,12 +16,12 @@ Slack is a channel-based messaging platform. With Slack, people can work togethe
 
 Integrating Slackbot & Autogen can allow for the following:
 
-1. Sending messages to a Slack channel
-2. Creating a new channel in Slack
+1. Sending messages to a slack channel
+2. Creating a new channel in slack
 & so many more
 
 ## Using Autogen with Slackbot
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions slackbot "Sending messages to a Slack channel" --limit=10
+composio-cli get-actions slackbot "Sending messages to a slack channel" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Slackbot API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Sending messages to a Slack channel" # change this as necessary
+task = "Sending messages to a slack channel" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

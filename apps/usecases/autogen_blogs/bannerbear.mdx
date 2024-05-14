@@ -6,6 +6,7 @@ description: "Connect Autogen to Bannerbear to create agents to perform tasks us
 ---
 
 ## Connecting Autogen AI agents with Bannerbear
+![intro](/media/intro.jpg)
 
 ### Overview of Bannerbear
 
@@ -15,12 +16,12 @@ Bannerbear is an API and integration tool that allows users to auto-generate soc
 
 Integrating Bannerbear & Autogen can allow for the following:
 
-1. auto-generate social media visuals
-2. create e-commerce banners
+1. Auto-generate social media visuals
+2. Create e-commerce banners
 & so many more
 
 ## Using Autogen with Bannerbear
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions bannerbear "auto-generate social media visuals" --limit=10
+composio-cli get-actions bannerbear "Auto-generate social media visuals" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Bannerbear API 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "auto-generate social media visuals" # change this as necessary
+task = "Auto-generate social media visuals" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

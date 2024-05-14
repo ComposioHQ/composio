@@ -6,6 +6,7 @@ description: "Connect Autogen to Humanloop to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with Humanloop
+![intro](/media/intro.jpg)
 
 ### Overview of Humanloop
 
@@ -15,12 +16,12 @@ Humanloop provides SDKs and APIs for building AI-powered applications and integr
 
 Integrating Humanloop & Autogen can allow for the following:
 
-1. Building AI-powered applications using Humanloop SDKs
-2. Integrating Humanloop with language models like GPT-3 and GPT-4
+1. Building ai-powered applications using humanloop sdks
+2. Integrating humanloop with language models like gpt-3 and gpt-4
 & so many more
 
 ## Using Autogen with Humanloop
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions humanloop "Building AI-powered applications using Humanloop SDKs" --limit=10
+composio-cli get-actions humanloop "Building ai-powered applications using humanloop sdks" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Humanloop API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Building AI-powered applications using Humanloop SDKs" # change this as necessary
+task = "Building ai-powered applications using humanloop sdks" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

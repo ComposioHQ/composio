@@ -6,6 +6,7 @@ description: "Connect Autogen to Atlassian to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with Atlassian
+![intro](/media/intro.jpg)
 
 ### Overview of Atlassian
 
@@ -15,12 +16,12 @@ Integrate with Atlassian Cloud products to enhance development tools and collabo
 
 Integrating Atlassian & Autogen can allow for the following:
 
-1. Integrating Atlassian with your development environment to enhance tooling and workflows
-2. Collaborating more effectively across teams by utilizing Atlassian's suite of tools
+1. Integrating atlassian with your development environment to enhance tooling and workflows
+2. Collaborating more effectively across teams by utilizing atlassian's suite of tools
 & so many more
 
 ## Using Autogen with Atlassian
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions atlassian "Integrating Atlassian with your development environment to enhance tooling and workflows" --limit=10
+composio-cli get-actions atlassian "Integrating atlassian with your development environment to enhance tooling and workflows" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Atlassian API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Integrating Atlassian with your development environment to enhance tooling and workflows" # change this as necessary
+task = "Integrating atlassian with your development environment to enhance tooling and workflows" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

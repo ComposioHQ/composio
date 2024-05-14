@@ -6,6 +6,7 @@ description: "Connect Autogen to DigiCert to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with DigiCert
+![intro](/media/intro.jpg)
 
 ### Overview of DigiCert
 
@@ -15,12 +16,12 @@ DigiCert provides SSL, IoT and other PKI solutions for securing web applications
 
 Integrating DigiCert & Autogen can allow for the following:
 
-1. Securing web applications with SSL certificates
-2. Managing IoT device identities with PKI solutions
+1. Securing web applications with ssl certificates
+2. Managing iot device identities with pki solutions
 & so many more
 
 ## Using Autogen with DigiCert
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions digicert "Securing web applications with SSL certificates" --limit=10
+composio-cli get-actions digicert "Securing web applications with ssl certificates" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform DigiCert API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Securing web applications with SSL certificates" # change this as necessary
+task = "Securing web applications with ssl certificates" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

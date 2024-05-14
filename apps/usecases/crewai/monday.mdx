@@ -6,6 +6,7 @@ description: "Connect CrewAI to Monday to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Monday
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Monday is a cloud-based work operating system where teams create workflow apps i
 
 Integrating Monday & CrewAI can allow for the following:
 
-1. creating a new project board
-2. automating task assignments
+1. Creating a new project board
+2. Automating task assignments
 & so many more
 
 ## Using CrewAI with Monday
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions monday "creating a new project board" --limit=10
+composio-cli get-actions monday "Creating a new project board" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Monday API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "creating a new project board"
+task = "Creating a new project board"
 
 crewai_agent = Agent(
     role='Monday Agent',

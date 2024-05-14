@@ -6,6 +6,7 @@ description: "Connect CrewAI to Bannerbear to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Bannerbear
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Bannerbear is an API and integration tool that allows users to auto-generate soc
 
 Integrating Bannerbear & CrewAI can allow for the following:
 
-1. auto-generate social media visuals
-2. create e-commerce banners
+1. Auto-generate social media visuals
+2. Create e-commerce banners
 & so many more
 
 ## Using CrewAI with Bannerbear
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions bannerbear "auto-generate social media visuals" --limit=10
+composio-cli get-actions bannerbear "Auto-generate social media visuals" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Bannerbear API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "auto-generate social media visuals"
+task = "Auto-generate social media visuals"
 
 crewai_agent = Agent(
     role='Bannerbear Agent',

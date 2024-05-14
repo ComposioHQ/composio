@@ -6,6 +6,7 @@ description: "Connect LangChain to Ably to create agents to perform tasks using 
 ---
 
 ## Connecting LangChain AI agents with Ably
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Ably provides robust and scalable real-time messaging and data streaming solutio
 
 Integrating Ably & Langchain can allow for the following:
 
-1. sending real-time messages to a channel
-2. streaming data in real-time
+1. Sending real-time messages to a channel
+2. Streaming data in real-time
 & so many more
 
 ## Using LangChain with Ably
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ably "sending real-time messages to a channel" --limit=10
+composio-cli get-actions ably "Sending real-time messages to a channel" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Ably API calls 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending real-time messages to a channel"
+task = "Sending real-time messages to a channel"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

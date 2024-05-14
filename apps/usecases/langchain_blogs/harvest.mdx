@@ -6,6 +6,7 @@ description: "Connect LangChain to Harvest to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with Harvest
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Harvest makes it easy to track time across all your projects and turn that data 
 
 Integrating Harvest & Langchain can allow for the following:
 
-1. tracking time across projects
-2. turning tracked time data into reports or invoices
+1. Tracking time across projects
+2. Turning tracked time data into reports or invoices
 & so many more
 
 ## Using LangChain with Harvest
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions harvest "tracking time across projects" --limit=10
+composio-cli get-actions harvest "Tracking time across projects" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Harvest API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "tracking time across projects"
+task = "Tracking time across projects"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

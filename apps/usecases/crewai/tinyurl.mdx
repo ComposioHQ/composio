@@ -6,6 +6,7 @@ description: "Connect CrewAI to TinyURL to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with TinyURL
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ TinyURL provides APIs for shortening long URLs into compact, branded links and t
 
 Integrating TinyURL & CrewAI can allow for the following:
 
-1. shortening long URLs to create compact links
-2. tracking link analytics
+1. Shortening long urls to create compact links
+2. Tracking link analytics
 & so many more
 
 ## Using CrewAI with TinyURL
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tinyurl "shortening long URLs to create compact links" --limit=10
+composio-cli get-actions tinyurl "Shortening long urls to create compact links" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform TinyURL API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "shortening long URLs to create compact links"
+task = "Shortening long urls to create compact links"
 
 crewai_agent = Agent(
     role='TinyURL Agent',

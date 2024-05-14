@@ -6,6 +6,7 @@ description: "Connect CrewAI to Workspace to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Workspace
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Workspace helps setup a virtual OS environment on which a new project can be cod
 
 Integrating Workspace & CrewAI can allow for the following:
 
-1. setting up a virtual OS environment for coding new projects
-2. integrating file management, GitHub, and networking features
+1. Setting up a virtual os environment for coding new projects
+2. Integrating file management, github, and networking features
 & so many more
 
 ## Using CrewAI with Workspace
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions workspace "setting up a virtual OS environment for coding new projects" --limit=10
+composio-cli get-actions workspace "Setting up a virtual os environment for coding new projects" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Workspace API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "setting up a virtual OS environment for coding new projects"
+task = "Setting up a virtual os environment for coding new projects"
 
 crewai_agent = Agent(
     role='Workspace Agent',

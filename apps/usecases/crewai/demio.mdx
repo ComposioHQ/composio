@@ -6,6 +6,7 @@ description: "Connect CrewAI to Demio to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Demio
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Demio is built so you can host engaging experiences that turn into analytical in
 
 Integrating Demio & CrewAI can allow for the following:
 
-1. hosting webinars to engage audiences
-2. analyzing participant engagement for marketing insights
+1. Hosting webinars to engage audiences
+2. Analyzing participant engagement for marketing insights
 & so many more
 
 ## Using CrewAI with Demio
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions demio "hosting webinars to engage audiences" --limit=10
+composio-cli get-actions demio "Hosting webinars to engage audiences" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Demio API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "hosting webinars to engage audiences"
+task = "Hosting webinars to engage audiences"
 
 crewai_agent = Agent(
     role='Demio Agent',

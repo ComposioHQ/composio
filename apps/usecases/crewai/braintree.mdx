@@ -6,6 +6,7 @@ description: "Connect CrewAI to Braintree to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Braintree
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Braintree is a Chicago-based company that primarily deals in mobile and web paym
 
 Integrating Braintree & CrewAI can allow for the following:
 
-1. processing payments for e-commerce transactions
-2. managing subscriptions and recurring billing
+1. Processing payments for e-commerce transactions
+2. Managing subscriptions and recurring billing
 & so many more
 
 ## Using CrewAI with Braintree
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions braintree "processing payments for e-commerce transactions" --limit=10
+composio-cli get-actions braintree "Processing payments for e-commerce transactions" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Braintree API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "processing payments for e-commerce transactions"
+task = "Processing payments for e-commerce transactions"
 
 crewai_agent = Agent(
     role='Braintree Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Webflow to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Webflow
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Webflow provides APIs for building and managing websites, including CMS and ecom
 
 Integrating Webflow & CrewAI can allow for the following:
 
-1. building and managing websites
-2. ecommerce functionality
+1. Building and managing websites
+2. Ecommerce functionality
 & so many more
 
 ## Using CrewAI with Webflow
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions webflow "building and managing websites" --limit=10
+composio-cli get-actions webflow "Building and managing websites" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Webflow API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "building and managing websites"
+task = "Building and managing websites"
 
 crewai_agent = Agent(
     role='Webflow Agent',

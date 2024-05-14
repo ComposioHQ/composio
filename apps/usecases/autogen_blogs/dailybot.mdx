@@ -6,6 +6,7 @@ description: "Connect Autogen to DailyBot to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with DailyBot
+![intro](/media/intro.jpg)
 
 ### Overview of DailyBot
 
@@ -15,12 +16,12 @@ DailyBot provides APIs for building custom integrations and add-ons for the Dail
 
 Integrating DailyBot & Autogen can allow for the following:
 
-1. creating custom integrations
-2. building add-ons
+1. Creating custom integrations
+2. Building add-ons
 & so many more
 
 ## Using Autogen with DailyBot
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions dailybot "creating custom integrations" --limit=10
+composio-cli get-actions dailybot "Creating custom integrations" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform DailyBot API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "creating custom integrations" # change this as necessary
+task = "Creating custom integrations" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

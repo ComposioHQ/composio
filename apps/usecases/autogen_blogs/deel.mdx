@@ -6,6 +6,7 @@ description: "Connect Autogen to Deel to create agents to perform tasks using na
 ---
 
 ## Connecting Autogen AI agents with Deel
+![intro](/media/intro.jpg)
 
 ### Overview of Deel
 
@@ -15,12 +16,12 @@ Deel is the all-in-one HR platform for global teams. It helps companies simplify
 
 Integrating Deel & Autogen can allow for the following:
 
-1. simplify every aspect of managing an international workforce
-2. onboarding and local compliance
+1. Simplify every aspect of managing an international workforce
+2. Onboarding and local compliance
 & so many more
 
 ## Using Autogen with Deel
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions deel "simplify every aspect of managing an international workforce" --limit=10
+composio-cli get-actions deel "Simplify every aspect of managing an international workforce" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Deel API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "simplify every aspect of managing an international workforce" # change this as necessary
+task = "Simplify every aspect of managing an international workforce" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

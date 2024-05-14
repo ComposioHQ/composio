@@ -6,6 +6,7 @@ description: "Connect LangChain to Linkhut to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with Linkhut
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Linkhut is a platform that allows users to save, organize, and share links.
 
 Integrating Linkhut & Langchain can allow for the following:
 
-1. organize and save links
-2. share links with others
+1. Organize and save links
+2. Share links with others
 & so many more
 
 ## Using LangChain with Linkhut
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions linkhut "organize and save links" --limit=10
+composio-cli get-actions linkhut "Organize and save links" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Linkhut API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "organize and save links"
+task = "Organize and save links"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

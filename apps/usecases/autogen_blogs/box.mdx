@@ -6,6 +6,7 @@ description: "Connect Autogen to Box to create agents to perform tasks using nat
 ---
 
 ## Connecting Autogen AI agents with Box
+![intro](/media/intro.jpg)
 
 ### Overview of Box
 
@@ -15,12 +16,12 @@ Cloud content management and file sharing service for businesses.
 
 Integrating Box & Autogen can allow for the following:
 
-1. sharing files and documents within an organization
-2. organizing content in a structured knowledge base
+1. Sharing files and documents within an organization
+2. Organizing content in a structured knowledge base
 & so many more
 
 ## Using Autogen with Box
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions box "sharing files and documents within an organization" --limit=10
+composio-cli get-actions box "Sharing files and documents within an organization" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Box API calls u
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sharing files and documents within an organization" # change this as necessary
+task = "Sharing files and documents within an organization" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect LangChain to Zoho Bigin to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Zoho Bigin
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Zoho Bigin is a customer pipeline management software that helps small businesse
 
 Integrating Zoho Bigin & Langchain can allow for the following:
 
-1. managing customer interactions and data
-2. generating detailed sales reports
+1. Managing customer interactions and data
+2. Generating detailed sales reports
 & so many more
 
 ## Using LangChain with Zoho Bigin
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-bigin "managing customer interactions and data" --limit=10
+composio-cli get-actions zoho-bigin "Managing customer interactions and data" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Zoho Bigin API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing customer interactions and data"
+task = "Managing customer interactions and data"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

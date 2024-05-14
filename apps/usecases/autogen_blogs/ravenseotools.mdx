@@ -6,6 +6,7 @@ description: "Connect Autogen to Raven SEO Tools to create agents to perform tas
 ---
 
 ## Connecting Autogen AI agents with Raven SEO Tools
+![intro](/media/intro.jpg)
 
 ### Overview of Raven SEO Tools
 
@@ -15,12 +16,12 @@ Raven SEO Tools offers advanced SEO analysis, reporting, and data tracking servi
 
 Integrating Raven SEO Tools & Autogen can allow for the following:
 
-1. Advanced SEO analysis and reporting
+1. Advanced seo analysis and reporting
 2. Data tracking and performance metrics
 & so many more
 
 ## Using Autogen with Raven SEO Tools
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions ravenseotools "Advanced SEO analysis and reporting" --limit=10
+composio-cli get-actions ravenseotools "Advanced seo analysis and reporting" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Raven SEO Tools
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Advanced SEO analysis and reporting" # change this as necessary
+task = "Advanced seo analysis and reporting" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

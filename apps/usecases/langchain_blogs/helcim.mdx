@@ -6,6 +6,7 @@ description: "Connect LangChain to Helcim to create agents to perform tasks usin
 ---
 
 ## Connecting LangChain AI agents with Helcim
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Helcim provides APIs for payment processing, customer management, and building c
 
 Integrating Helcim & Langchain can allow for the following:
 
-1. processing online payments
-2. managing customer payment information
+1. Processing online payments
+2. Managing customer payment information
 & so many more
 
 ## Using LangChain with Helcim
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions helcim "processing online payments" --limit=10
+composio-cli get-actions helcim "Processing online payments" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Helcim API call
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "processing online payments"
+task = "Processing online payments"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Fitbit to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Fitbit
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Fitbit is a line of wireless-enabled wearable technology, physical fitness monit
 
 Integrating Fitbit & CrewAI can allow for the following:
 
-1. tracking physical activity and health metrics
-2. analyzing sleep patterns
+1. Tracking physical activity and health metrics
+2. Analyzing sleep patterns
 & so many more
 
 ## Using CrewAI with Fitbit
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions fitbit "tracking physical activity and health metrics" --limit=10
+composio-cli get-actions fitbit "Tracking physical activity and health metrics" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Fitbit API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking physical activity and health metrics"
+task = "Tracking physical activity and health metrics"
 
 crewai_agent = Agent(
     role='Fitbit Agent',

@@ -6,6 +6,7 @@ description: "Connect Autogen to Fitbit to create agents to perform tasks using 
 ---
 
 ## Connecting Autogen AI agents with Fitbit
+![intro](/media/intro.jpg)
 
 ### Overview of Fitbit
 
@@ -15,12 +16,12 @@ Fitbit is a line of wireless-enabled wearable technology, physical fitness monit
 
 Integrating Fitbit & Autogen can allow for the following:
 
-1. tracking daily step count and physical activities
-2. monitoring heart rate and sleep patterns
+1. Tracking daily step count and physical activities
+2. Monitoring heart rate and sleep patterns
 & so many more
 
 ## Using Autogen with Fitbit
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions fitbit "tracking daily step count and physical activities" --limit=10
+composio-cli get-actions fitbit "Tracking daily step count and physical activities" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Fitbit API call
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "tracking daily step count and physical activities" # change this as necessary
+task = "Tracking daily step count and physical activities" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

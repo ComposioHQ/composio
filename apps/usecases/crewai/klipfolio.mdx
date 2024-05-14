@@ -6,6 +6,7 @@ description: "Connect CrewAI to Klipfolio to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Klipfolio
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Connect Composio with Klipfolio to visualize and analyze your data.
 
 Integrating Klipfolio & CrewAI can allow for the following:
 
-1. visualizing and analyzing data with dashboards
-2. creating dynamic reports based on real-time data
+1. Visualizing and analyzing data with dashboards
+2. Creating dynamic reports based on real-time data
 & so many more
 
 ## Using CrewAI with Klipfolio
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions klipfolio "visualizing and analyzing data with dashboards" --limit=10
+composio-cli get-actions klipfolio "Visualizing and analyzing data with dashboards" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Klipfolio API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "visualizing and analyzing data with dashboards"
+task = "Visualizing and analyzing data with dashboards"
 
 crewai_agent = Agent(
     role='Klipfolio Agent',

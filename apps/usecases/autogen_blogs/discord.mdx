@@ -6,6 +6,7 @@ description: "Connect Autogen to Discord to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with Discord
+![intro](/media/intro.jpg)
 
 ### Overview of Discord
 
@@ -15,12 +16,12 @@ An instant messaging and VoIP social platform.
 
 Integrating Discord & Autogen can allow for the following:
 
-1. sending messages to a Discord channel
-2. creating a new Discord server
+1. Sending messages to a discord channel
+2. Creating a new discord server
 & so many more
 
 ## Using Autogen with Discord
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions discord "sending messages to a Discord channel" --limit=10
+composio-cli get-actions discord "Sending messages to a discord channel" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Discord API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending messages to a Discord channel" # change this as necessary
+task = "Sending messages to a discord channel" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Workable to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with Workable
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Workable Software is a software-as-a-service that provides applicant tracking sy
 
 Integrating Workable & CrewAI can allow for the following:
 
-1. posting job listings to multiple job boards
-2. managing candidate applications and tracking progress
+1. Posting job listings to multiple job boards
+2. Managing candidate applications and tracking progress
 & so many more
 
 ## Using CrewAI with Workable
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions workable "posting job listings to multiple job boards" --limit=10
+composio-cli get-actions workable "Posting job listings to multiple job boards" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Workable API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "posting job listings to multiple job boards"
+task = "Posting job listings to multiple job boards"
 
 crewai_agent = Agent(
     role='Workable Agent',

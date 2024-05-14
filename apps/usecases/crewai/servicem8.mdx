@@ -6,6 +6,7 @@ description: "Connect CrewAI to ServiceM8 to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with ServiceM8
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ ServiceM8 is a cloud-based solution that helps field service businesses manage t
 
 Integrating ServiceM8 & CrewAI can allow for the following:
 
-1. Job Scheduling
+1. Job scheduling
 2. Invoicing
 & so many more
 
 ## Using CrewAI with ServiceM8
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions servicem8 "Job Scheduling" --limit=10
+composio-cli get-actions servicem8 "Job scheduling" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform ServiceM8 API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Job Scheduling"
+task = "Job scheduling"
 
 crewai_agent = Agent(
     role='ServiceM8 Agent',

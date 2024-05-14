@@ -6,6 +6,7 @@ description: "Connect Autogen to Splitwise to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with Splitwise
+![intro](/media/intro.jpg)
 
 ### Overview of Splitwise
 
@@ -15,12 +16,12 @@ Splitwise helps you split bills and expenses with friends and family.
 
 Integrating Splitwise & Autogen can allow for the following:
 
-1. splitting bills and expenses with friends and family
-2. managing group expenses and tracking balances
+1. Splitting bills and expenses with friends and family
+2. Managing group expenses and tracking balances
 & so many more
 
 ## Using Autogen with Splitwise
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions splitwise "splitting bills and expenses with friends and family" --limit=10
+composio-cli get-actions splitwise "Splitting bills and expenses with friends and family" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Splitwise API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "splitting bills and expenses with friends and family" # change this as necessary
+task = "Splitting bills and expenses with friends and family" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

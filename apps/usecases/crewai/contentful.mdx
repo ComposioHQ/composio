@@ -6,6 +6,7 @@ description: "Connect CrewAI to Contentful to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Contentful
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Contentful provides a content platform with APIs for managing and delivering con
 
 Integrating Contentful & CrewAI can allow for the following:
 
-1. managing and delivering content to apps
-2. creating content models and structures
+1. Managing and delivering content to apps
+2. Creating content models and structures
 & so many more
 
 ## Using CrewAI with Contentful
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions contentful "managing and delivering content to apps" --limit=10
+composio-cli get-actions contentful "Managing and delivering content to apps" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Contentful API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing and delivering content to apps"
+task = "Managing and delivering content to apps"
 
 crewai_agent = Agent(
     role='Contentful Agent',

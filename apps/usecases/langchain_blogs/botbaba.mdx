@@ -6,6 +6,7 @@ description: "Connect LangChain to botbaba to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with botbaba
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Botbaba provides APIs for building and managing chatbots, including conversation
 
 Integrating botbaba & Langchain can allow for the following:
 
-1. building and managing chatbots
-2. integrating messaging platforms
+1. Building and managing chatbots
+2. Integrating messaging platforms
 & so many more
 
 ## Using LangChain with botbaba
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions botbaba "building and managing chatbots" --limit=10
+composio-cli get-actions botbaba "Building and managing chatbots" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform botbaba API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "building and managing chatbots"
+task = "Building and managing chatbots"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

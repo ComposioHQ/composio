@@ -6,6 +6,7 @@ description: "Connect Autogen to Brevo to create agents to perform tasks using n
 ---
 
 ## Connecting Autogen AI agents with Brevo
+![intro](/media/intro.jpg)
 
 ### Overview of Brevo
 
@@ -15,12 +16,12 @@ Brevo, formerly Sendinblue, is a SaaS solution for relationship marketing.
 
 Integrating Brevo & Autogen can allow for the following:
 
-1. sending marketing emails to customer lists
-2. analyzing customer engagement through detailed reports
+1. Sending marketing emails to customer lists
+2. Analyzing customer engagement through detailed reports
 & so many more
 
 ## Using Autogen with Brevo
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions brevo "sending marketing emails to customer lists" --limit=10
+composio-cli get-actions brevo "Sending marketing emails to customer lists" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Brevo API calls
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending marketing emails to customer lists" # change this as necessary
+task = "Sending marketing emails to customer lists" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

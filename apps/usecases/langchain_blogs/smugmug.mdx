@@ -6,6 +6,7 @@ description: "Connect LangChain to SmugMug to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with SmugMug
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ SmugMug is a paid image sharing, image hosting service, and online video platfor
 
 Integrating SmugMug & Langchain can allow for the following:
 
-1. uploading photos and videos
-2. creating and managing online galleries
+1. Uploading photos and videos
+2. Creating and managing online galleries
 & so many more
 
 ## Using LangChain with SmugMug
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions smugmug "uploading photos and videos" --limit=10
+composio-cli get-actions smugmug "Uploading photos and videos" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform SmugMug API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "uploading photos and videos"
+task = "Uploading photos and videos"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

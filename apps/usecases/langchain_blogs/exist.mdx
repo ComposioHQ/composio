@@ -6,6 +6,7 @@ description: "Connect LangChain to Exist to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Exist
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ With Exist, you can create your own data points to track anything else you want.
 
 Integrating Exist & Langchain can allow for the following:
 
-1. track subjective measures such as energy and stress levels
-2. create your own data points for tracking personal habits
+1. Track subjective measures such as energy and stress levels
+2. Create your own data points for tracking personal habits
 & so many more
 
 ## Using LangChain with Exist
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions exist "track subjective measures such as energy and stress levels" --limit=10
+composio-cli get-actions exist "Track subjective measures such as energy and stress levels" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Exist API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "track subjective measures such as energy and stress levels"
+task = "Track subjective measures such as energy and stress levels"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

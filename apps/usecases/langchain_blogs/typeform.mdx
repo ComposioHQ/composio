@@ -6,6 +6,7 @@ description: "Connect LangChain to Typeform to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with Typeform
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ A platform for creating beautiful and interactive online forms, surveys, and qui
 
 Integrating Typeform & Langchain can allow for the following:
 
-1. creating beautiful and interactive online forms
-2. conducting engaging surveys and quizzes
+1. Creating beautiful and interactive online forms
+2. Conducting engaging surveys and quizzes
 & so many more
 
 ## Using LangChain with Typeform
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions typeform "creating beautiful and interactive online forms" --limit=10
+composio-cli get-actions typeform "Creating beautiful and interactive online forms" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Typeform API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "creating beautiful and interactive online forms"
+task = "Creating beautiful and interactive online forms"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

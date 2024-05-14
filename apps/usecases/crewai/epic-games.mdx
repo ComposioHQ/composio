@@ -6,6 +6,7 @@ description: "Connect CrewAI to Epic Games to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Epic Games
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Epic Games integration for OAuth2 authentication.
 
 Integrating Epic Games & CrewAI can allow for the following:
 
-1. Authenticating users via OAuth2
+1. Authenticating users via oauth2
 2. Fetching user profile data after authentication
 & so many more
 
 ## Using CrewAI with Epic Games
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions epic-games "Authenticating users via OAuth2" --limit=10
+composio-cli get-actions epic-games "Authenticating users via oauth2" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Epic Games API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Authenticating users via OAuth2"
+task = "Authenticating users via oauth2"
 
 crewai_agent = Agent(
     role='Epic Games Agent',

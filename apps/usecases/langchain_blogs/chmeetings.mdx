@@ -6,6 +6,7 @@ description: "Connect LangChain to chmeetings to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with chmeetings
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ CHMeetings is a comprehensive church management platform offering solutions for 
 
 Integrating chmeetings & Langchain can allow for the following:
 
-1. event planning and member engagement
-2. administrative efficiency
+1. Event planning and member engagement
+2. Administrative efficiency
 & so many more
 
 ## Using LangChain with chmeetings
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions chmeetings "event planning and member engagement" --limit=10
+composio-cli get-actions chmeetings "Event planning and member engagement" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform chmeetings API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "event planning and member engagement"
+task = "Event planning and member engagement"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

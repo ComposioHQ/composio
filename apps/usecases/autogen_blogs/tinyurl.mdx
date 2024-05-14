@@ -6,6 +6,7 @@ description: "Connect Autogen to TinyURL to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with TinyURL
+![intro](/media/intro.jpg)
 
 ### Overview of TinyURL
 
@@ -15,12 +16,12 @@ TinyURL provides APIs for shortening long URLs into compact, branded links and t
 
 Integrating TinyURL & Autogen can allow for the following:
 
-1. Shortening long URLs into compact, branded links
+1. Shortening long urls into compact, branded links
 2. Tracking link analytics
 & so many more
 
 ## Using Autogen with TinyURL
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions tinyurl "Shortening long URLs into compact, branded links" --limit=10
+composio-cli get-actions tinyurl "Shortening long urls into compact, branded links" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform TinyURL API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Shortening long URLs into compact, branded links" # change this as necessary
+task = "Shortening long urls into compact, branded links" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

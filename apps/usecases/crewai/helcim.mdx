@@ -6,6 +6,7 @@ description: "Connect CrewAI to Helcim to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Helcim
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Helcim provides APIs for payment processing, customer management, and building c
 
 Integrating Helcim & CrewAI can allow for the following:
 
-1. processing payments securely
-2. managing customer data and building custom payment solutions
+1. Processing payments securely
+2. Managing customer data and building custom payment solutions
 & so many more
 
 ## Using CrewAI with Helcim
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions helcim "processing payments securely" --limit=10
+composio-cli get-actions helcim "Processing payments securely" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Helcim API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "processing payments securely"
+task = "Processing payments securely"
 
 crewai_agent = Agent(
     role='Helcim Agent',

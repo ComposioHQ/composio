@@ -6,6 +6,7 @@ description: "Connect CrewAI to TinyPNG to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with TinyPNG
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ TinyPNG provides APIs for compressing and optimizing WebP, JPEG and PNG images.
 
 Integrating TinyPNG & CrewAI can allow for the following:
 
-1. compressing and optimizing images
-2. integrating image compression into automated workflows
+1. Compressing and optimizing images
+2. Integrating image compression into automated workflows
 & so many more
 
 ## Using CrewAI with TinyPNG
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tinypng "compressing and optimizing images" --limit=10
+composio-cli get-actions tinypng "Compressing and optimizing images" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform TinyPNG API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "compressing and optimizing images"
+task = "Compressing and optimizing images"
 
 crewai_agent = Agent(
     role='TinyPNG Agent',

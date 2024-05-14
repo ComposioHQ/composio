@@ -6,6 +6,7 @@ description: "Connect CrewAI to Reddit to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Reddit
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Reddit is a network of communities based on people's interests.
 
 Integrating Reddit & CrewAI can allow for the following:
 
-1. engaging with communities based on shared interests
-2. sharing and discussing various types of content
+1. Engaging with communities based on shared interests
+2. Sharing and discussing various types of content
 & so many more
 
 ## Using CrewAI with Reddit
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions reddit "engaging with communities based on shared interests" --limit=10
+composio-cli get-actions reddit "Engaging with communities based on shared interests" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Reddit API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "engaging with communities based on shared interests"
+task = "Engaging with communities based on shared interests"
 
 crewai_agent = Agent(
     role='Reddit Agent',

@@ -6,6 +6,7 @@ description: "Connect LangChain to PagerDuty to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with PagerDuty
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ PagerDuty is an incident management platform that provides reliable incident not
 
 Integrating PagerDuty & Langchain can allow for the following:
 
-1. Receiving incident notifications via multiple channels such as email, push, SMS, and phone
+1. Receiving incident notifications via multiple channels such as email, push, sms, and phone
 2. Automating escalations and managing on-call scheduling to enhance team response times
 & so many more
 
 ## Using LangChain with PagerDuty
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions pagerduty "Receiving incident notifications via multiple channels such as email, push, SMS, and phone" --limit=10
+composio-cli get-actions pagerduty "Receiving incident notifications via multiple channels such as email, push, sms, and phone" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform PagerDuty API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Receiving incident notifications via multiple channels such as email, push, SMS, and phone"
+task = "Receiving incident notifications via multiple channels such as email, push, sms, and phone"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

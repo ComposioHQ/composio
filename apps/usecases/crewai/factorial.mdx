@@ -6,6 +6,7 @@ description: "Connect CrewAI to factorial to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with factorial
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ It is a comprehensive software solution designed to streamline and manage variou
 
 Integrating factorial & CrewAI can allow for the following:
 
-1. managing employee records
-2. automating payroll processing
+1. Managing employee records
+2. Automating payroll processing
 & so many more
 
 ## Using CrewAI with factorial
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions factorial "managing employee records" --limit=10
+composio-cli get-actions factorial "Managing employee records" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform factorial API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing employee records"
+task = "Managing employee records"
 
 crewai_agent = Agent(
     role='factorial Agent',

@@ -6,6 +6,7 @@ description: "Connect Autogen to Calendly to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with Calendly
+![intro](/media/intro.jpg)
 
 ### Overview of Calendly
 
@@ -15,12 +16,12 @@ A business communication platform used for teams to schedule, prepare and follow
 
 Integrating Calendly & Autogen can allow for the following:
 
-1. scheduling meetings effortlessly
-2. managing team availability
+1. Scheduling meetings effortlessly
+2. Managing team availability
 & so many more
 
 ## Using Autogen with Calendly
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions calendly "scheduling meetings effortlessly" --limit=10
+composio-cli get-actions calendly "Scheduling meetings effortlessly" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Calendly API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "scheduling meetings effortlessly" # change this as necessary
+task = "Scheduling meetings effortlessly" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

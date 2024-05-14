@@ -6,6 +6,7 @@ description: "Connect LangChain to Fitbit to create agents to perform tasks usin
 ---
 
 ## Connecting LangChain AI agents with Fitbit
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Fitbit is a line of wireless-enabled wearable technology, physical fitness monit
 
 Integrating Fitbit & Langchain can allow for the following:
 
-1. tracking daily step count and physical activities
-2. monitoring heart rate and sleep patterns
+1. Tracking daily step count and physical activities
+2. Monitoring heart rate and sleep patterns
 & so many more
 
 ## Using LangChain with Fitbit
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions fitbit "tracking daily step count and physical activities" --limit=10
+composio-cli get-actions fitbit "Tracking daily step count and physical activities" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Fitbit API call
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "tracking daily step count and physical activities"
+task = "Tracking daily step count and physical activities"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
