@@ -57,6 +57,7 @@ def test_add_github():
             sdk_instance=mock.Mock(),
             status="ACTIVE",
             integrationId="integ123",
+            clientUniqueUserId="default",
             connectionParams={"scope": "read", "base_url": "https://api.example.com"},
             appUniqueId="app456",
             id="<random_connected_account_id>",

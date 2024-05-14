@@ -23,7 +23,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_core===0.2.59",
+        "composio_core===0.2.59"
     ],
     include_package_data=True,
 )
