@@ -79,6 +79,8 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                           llm_response: ChatCompletion, 
                           entity_id: str = "default") -> list[any]:
           
+
+        outputs = []
         entity_id = self.finalize_entity_id(entity_id)
 
         try:
@@ -87,12 +89,12 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
                             tool_response = self.execute_tool_call(tool_call, entity_id)
-                            output.append(tool_response)
+                            outputs.append(tool_response)
 
         except Exception as e:
             raise e from e
 
-        return output
+        return outputs
     
 
     def handle_assistant_tool_calls(self, 
