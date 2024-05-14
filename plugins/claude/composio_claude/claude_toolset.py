@@ -28,7 +28,6 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                 action = self.client.sdk.get_action_enum_without_tool(
                     action_name=action_name_to_execute
                 )
-                # account = entity.get_connection(app_name=action.service)
                 output = self.client.execute_action(action, arguments, entity_id)
                 outputs.append(output)
         if outputs == []:
