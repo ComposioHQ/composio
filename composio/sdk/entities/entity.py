@@ -1,17 +1,19 @@
 
 from typing import Union, Optional
 from composio import Composio, Tag, App, Action
-from composiol.sdk.models.connectedAccoun
+from datetime import datetime
+from openai.types.chat.chat_completion import ChatCompletion
+from composio.sdk.entities.connectedAccount import ConnectedAccount
 
 class Entity:
-    def __init__(self, composio: Composio, entity_id: str) -> None:
-        self.client = composio
+    def __init__(self, sdk: Composio, entity_id: str) -> None:
+        self.sdk = sdk
         entity_id = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
         self.entity_id = entity_id
 
     def get_all_actions(self, tags: Optional[list[Union[str, Tag]]] = None) -> list[Action]:
         actions = []
-        connected_accounts = self.client.get_connected_accounts(
+        connected_accounts = self.sdk.get_connected_accounts(
             entity_id=self.entity_id
         )
 
@@ -23,7 +25,7 @@ class Entity:
     def get_connection(self, app_name: Union[str, App]) -> Optional[ConnectedAccount]:
         if isinstance(app_name, App):
             app_name = app_name.value
-        connected_accounts = self.client.get_connected_accounts(
+        connected_accounts = self.sdk.get_connected_accounts(
             entity_id=self.entity_id, showActiveOnly=True
         )
         latest_account = None
@@ -33,9 +35,12 @@ class Entity:
                 creation_date = datetime.fromisoformat(
                     account.createdAt.replace("Z", "+00:00")
                 )
+                if latest_creation_date is None:
+                    latest_creation_date = creation_date
                 if latest_account is None or creation_date > latest_creation_date:
                     latest_account = account
                     latest_creation_date = creation_date
+
         if latest_account:
             return latest_account
 
@@ -55,7 +60,7 @@ class Entity:
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
                             action_name_to_execute = tool_call.function.name
-                            action = self.client.get_action_enum_without_tool(
+                            action = self.sdk.get_action_enum_without_tool(
                                 action_name=action_name_to_execute
                             )
                             arguments = json.loads(tool_call.function.arguments)
@@ -74,7 +79,7 @@ class Entity:
             for tool_call in require_action.tool_calls:
                 if tool_call.type == "function":
                     action_name_to_execute = tool_call.function.name
-                    action = self.client.get_action_enum_without_tool(
+                    action = self.sdk.get_action_enum_without_tool(
                         action_name=action_name_to_execute
                     )
                     arguments = json.loads(tool_call.function.arguments)
@@ -131,7 +136,7 @@ class Entity:
         if not integration and not app_name:
             raise InvalidParameterException("Either 'integration' or 'app_name' must be provided")
         if not integration:
-            integration = self.client.get_default_integration(app_name)
+            integration = self.sdk.get_default_integration(app_name)
         return integration.initiate_connection(
             entity_id=self.entity_id, redirect_url=redirect_url
         )
@@ -140,7 +145,7 @@ class Entity:
         self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None
     ):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        integration = self.client.create_integration(
+        integration = self.sdk.create_integration(
             app_name, name=f"integration_{timestamp}", auth_mode=auth_mode
         )
         return integration.initiate_connection(

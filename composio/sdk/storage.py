@@ -44,6 +44,9 @@ def set_base_url(base_url: str, force_reset: bool = False):
 
 
 def get_base_url():
+    """
+        Returns the base URL for the backend server.
+    """
     user_data = load_user_data()
     if "base_url" in user_data:
         return user_data["base_url"]

@@ -1,13 +1,17 @@
 
-from composio.sdk.enums import Action
-from composio.sdk.models.connectedAccount import ConnectedAccountModel
-from openai.types.chat.chat_completion import ChatCompletion
-from composio.sdk import Composio, SchemaFormat
-from composio.sdk.utils import format_schema
 import json
+from typing import TYPE_CHECKING
+from openai.types.chat.chat_completion import ChatCompletion
+from composio.sdk.enums import Action
+from composio.sdk.types.connectedAccount import ConnectedAccountModel
+from composio.sdk.types.schemeFormat import SchemaFormat
+from composio.sdk.utils import format_schema
+
+if TYPE_CHECKING:
+    from composio.sdk import Composio
 
 class ConnectedAccount(ConnectedAccountModel):
-    def __init__(self, sdk_instance: Composio, **data):
+    def __init__(self, sdk_instance: 'Composio', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
