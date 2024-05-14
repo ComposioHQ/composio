@@ -9,4 +9,5 @@ __all__ = (
     "format_schema",
     "FrameworkEnum",
     "SchemaFormat",
+    "Tag",
 )

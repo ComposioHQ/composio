@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import Union
+from typing import Optional, Union
 
 from composio.sdk.exceptions import BadErrorException, NotFoundException
 
@@ -168,18 +168,29 @@ class ComposioCore:
             trigger_id, connected_account_id, user_inputs
         )
 
-    def get_connection(self, app_name: str, entity_id: str = "default"):
+    def get_connection(
+        self,
+        app_name: str,
+        entity_id: str = "default",
+        connection_id: Optional[str] = None,
+    ):
         entity = self.sdk.get_entity(entity_id)
-        return entity.get_connection(app_name)
+        return entity.get_connection(app_name, connection_id=connection_id)
 
-    def execute_action(self, action: Action, params: dict, entity_id: str = "default"):
+    def execute_action(
+        self,
+        action: Action,
+        params: dict,
+        entity_id: str = "default",
+        connection_id: Optional[str] = None,
+    ):
         tool_name = action.value[0]
         no_auth = action.value[2] if len(action.value) > 2 else False
         if no_auth:
             resp = self.sdk.get_entity(entity_id)
             return resp.execute_action(action, params, entity_id=entity_id)
         entity = self.sdk.get_entity(entity_id)
-        account = entity.get_connection(tool_name)
+        account = entity.get_connection(tool_name, connection_id=connection_id)
         if not account:
             raise NotFoundException(
                 f"Entity {entity_id} does not have a connection to {tool_name}"

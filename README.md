@@ -20,6 +20,7 @@
 ```
 make clean-build
 python scripts/bump.py patch
+find . -type f -path '*/dist/*' -delete
 make build
 
 make test-publish # for publishing to test-pypi
