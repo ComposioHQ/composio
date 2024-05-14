@@ -6,6 +6,7 @@ description: "Connect CrewAI to Wave to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Wave
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Wave is a company that provides financial services and software for small busine
 
 Integrating Wave & CrewAI can allow for the following:
 
-1. tracking expenses
-2. generating invoices
+1. Tracking expenses
+2. Generating invoices
 & so many more
 
 ## Using CrewAI with Wave
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions wave-accounting "tracking expenses" --limit=10
+composio-cli get-actions wave-accounting "Tracking expenses" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Wave API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking expenses"
+task = "Tracking expenses"
 
 crewai_agent = Agent(
     role='Wave Agent',

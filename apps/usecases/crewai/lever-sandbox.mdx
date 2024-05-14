@@ -6,6 +6,7 @@ description: "Connect CrewAI to Lever to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Lever
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Lever provides APIs for applicant tracking, candidate relationship management, a
 
 Integrating Lever & CrewAI can allow for the following:
 
-1. applicant tracking
-2. candidate relationship management
+1. Applicant tracking
+2. Candidate relationship management
 & so many more
 
 ## Using CrewAI with Lever
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions lever-sandbox "applicant tracking" --limit=10
+composio-cli get-actions lever-sandbox "Applicant tracking" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Lever API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "applicant tracking"
+task = "Applicant tracking"
 
 crewai_agent = Agent(
     role='Lever Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Botbaba to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Botbaba
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Botbaba provides APIs for building and managing chatbots, including conversation
 
 Integrating Botbaba & CrewAI can allow for the following:
 
-1. building and managing chatbots
-2. integrating conversational AI and messaging
+1. Building and managing chatbots
+2. Integrating conversational ai and messaging
 & so many more
 
 ## Using CrewAI with Botbaba
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions botbaba "building and managing chatbots" --limit=10
+composio-cli get-actions botbaba "Building and managing chatbots" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Botbaba API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "building and managing chatbots"
+task = "Building and managing chatbots"
 
 crewai_agent = Agent(
     role='Botbaba Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to BrowserHub to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with BrowserHub
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ BrowserHub offers powerful web scraping and automation capabilities through its 
 
 Integrating BrowserHub & CrewAI can allow for the following:
 
-1. extracting data from websites
-2. automating browser tasks
+1. Extracting data from websites
+2. Automating browser tasks
 & so many more
 
 ## Using CrewAI with BrowserHub
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions browserhub "extracting data from websites" --limit=10
+composio-cli get-actions browserhub "Extracting data from websites" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform BrowserHub API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "extracting data from websites"
+task = "Extracting data from websites"
 
 crewai_agent = Agent(
     role='BrowserHub Agent',

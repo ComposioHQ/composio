@@ -6,6 +6,7 @@ description: "Connect CrewAI to linkhut to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with linkhut
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Linkhut is a platform that allows users to save, organize, and share links.
 
 Integrating linkhut & CrewAI can allow for the following:
 
-1. organizing and sharing links
-2. collaborating with teams by sharing curated link collections
+1. Organizing and sharing links
+2. Collaborating with teams by sharing curated link collections
 & so many more
 
 ## Using CrewAI with linkhut
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions linkhut "organizing and sharing links" --limit=10
+composio-cli get-actions linkhut "Organizing and sharing links" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform linkhut API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "organizing and sharing links"
+task = "Organizing and sharing links"
 
 crewai_agent = Agent(
     role='linkhut Agent',

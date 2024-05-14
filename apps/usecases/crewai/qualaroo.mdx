@@ -6,6 +6,7 @@ description: "Connect CrewAI to Qualaroo to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with Qualaroo
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Qualaroo is a customer and user feedback software that allows you to gather insi
 
 Integrating Qualaroo & CrewAI can allow for the following:
 
-1. gathering user feedback
-2. creating targeted surveys
+1. Gathering user feedback
+2. Creating targeted surveys
 & so many more
 
 ## Using CrewAI with Qualaroo
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions qualaroo "gathering user feedback" --limit=10
+composio-cli get-actions qualaroo "Gathering user feedback" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Qualaroo API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "gathering user feedback"
+task = "Gathering user feedback"
 
 crewai_agent = Agent(
     role='Qualaroo Agent',

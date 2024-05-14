@@ -6,6 +6,7 @@ description: "Connect LangChain to ServiceM8 to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with ServiceM8
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ ServiceM8 is a cloud-based solution that helps field service businesses manage t
 
 Integrating ServiceM8 & Langchain can allow for the following:
 
-1. managing job scheduling
-2. handling invoicing
+1. Managing job scheduling
+2. Handling invoicing
 & so many more
 
 ## Using LangChain with ServiceM8
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions servicem8 "managing job scheduling" --limit=10
+composio-cli get-actions servicem8 "Managing job scheduling" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform ServiceM8 API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing job scheduling"
+task = "Managing job scheduling"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

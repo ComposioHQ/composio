@@ -6,6 +6,7 @@ description: "Connect CrewAI to Shopify to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Shopify
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A leading global commerce platform that allows anyone to sell online and in pers
 
 Integrating Shopify & CrewAI can allow for the following:
 
-1. setting up an online store
-2. managing inventory
+1. Setting up an online store
+2. Managing inventory
 & so many more
 
 ## Using CrewAI with Shopify
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions shopify "setting up an online store" --limit=10
+composio-cli get-actions shopify "Setting up an online store" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Shopify API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "setting up an online store"
+task = "Setting up an online store"
 
 crewai_agent = Agent(
     role='Shopify Agent',

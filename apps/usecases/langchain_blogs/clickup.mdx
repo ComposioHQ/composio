@@ -6,6 +6,7 @@ description: "Connect LangChain to ClickUp to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with ClickUp
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ ClickUp is a productivity platform that provides a fundamentally new way to work
 
 Integrating ClickUp & Langchain can allow for the following:
 
-1. managing projects and tasks efficiently
-2. creating and tracking tickets for team collaboration
+1. Managing projects and tasks efficiently
+2. Creating and tracking tickets for team collaboration
 & so many more
 
 ## Using LangChain with ClickUp
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions clickup "managing projects and tasks efficiently" --limit=10
+composio-cli get-actions clickup "Managing projects and tasks efficiently" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform ClickUp API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing projects and tasks efficiently"
+task = "Managing projects and tasks efficiently"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

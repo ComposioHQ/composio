@@ -6,6 +6,7 @@ description: "Connect Autogen to Square to create agents to perform tasks using 
 ---
 
 ## Connecting Autogen AI agents with Square
+![intro](/media/intro.jpg)
 
 ### Overview of Square
 
@@ -15,12 +16,12 @@ Square is a comprehensive commerce platform that offers tools for payment proces
 
 Integrating Square & Autogen can allow for the following:
 
-1. processing payments at a physical or online store
-2. managing customer relationships and sales data
+1. Processing payments at a physical or online store
+2. Managing customer relationships and sales data
 & so many more
 
 ## Using Autogen with Square
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions square "processing payments at a physical or online store" --limit=10
+composio-cli get-actions square "Processing payments at a physical or online store" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Square API call
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "processing payments at a physical or online store" # change this as necessary
+task = "Processing payments at a physical or online store" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

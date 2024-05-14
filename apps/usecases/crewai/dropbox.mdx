@@ -6,6 +6,7 @@ description: "Connect CrewAI to Dropbox to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Dropbox
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Dropbox is a file hosting service that offers cloud storage, file synchronizatio
 
 Integrating Dropbox & CrewAI can allow for the following:
 
-1. sharing files and folders with team members
-2. backing up important documents
+1. Sharing files and folders with team members
+2. Backing up important documents
 & so many more
 
 ## Using CrewAI with Dropbox
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions dropbox "sharing files and folders with team members" --limit=10
+composio-cli get-actions dropbox "Sharing files and folders with team members" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Dropbox API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sharing files and folders with team members"
+task = "Sharing files and folders with team members"
 
 crewai_agent = Agent(
     role='Dropbox Agent',

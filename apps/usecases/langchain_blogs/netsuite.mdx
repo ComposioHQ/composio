@@ -6,6 +6,7 @@ description: "Connect LangChain to NetSuite to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with NetSuite
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ NetSuite is a cloud-based suite of business management applications.
 
 Integrating NetSuite & Langchain can allow for the following:
 
-1. managing financial operations
-2. streamlining enterprise resource planning
+1. Managing financial operations
+2. Streamlining enterprise resource planning
 & so many more
 
 ## Using LangChain with NetSuite
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions netsuite "managing financial operations" --limit=10
+composio-cli get-actions netsuite "Managing financial operations" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform NetSuite API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing financial operations"
+task = "Managing financial operations"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

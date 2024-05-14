@@ -6,6 +6,7 @@ description: "Connect LangChain to Epic Games to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Epic Games
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Epic Games integration for OAuth2 authentication.
 
 Integrating Epic Games & Langchain can allow for the following:
 
-1. OAuth2 authentication
+1. Oauth2 authentication
 2. Enhancing user experience with secure login features
 & so many more
 
 ## Using LangChain with Epic Games
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions epic-games "OAuth2 authentication" --limit=10
+composio-cli get-actions epic-games "Oauth2 authentication" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Epic Games API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "OAuth2 authentication"
+task = "Oauth2 authentication"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

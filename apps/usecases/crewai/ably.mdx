@@ -6,6 +6,7 @@ description: "Connect CrewAI to Ably to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Ably
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Ably provides robust and scalable real-time messaging and data streaming solutio
 
 Integrating Ably & CrewAI can allow for the following:
 
-1. sending real-time notifications to users
-2. streaming live data to dashboards
+1. Sending real-time notifications to users
+2. Streaming live data to dashboards
 & so many more
 
 ## Using CrewAI with Ably
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ably "sending real-time notifications to users" --limit=10
+composio-cli get-actions ably "Sending real-time notifications to users" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Ably API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending real-time notifications to users"
+task = "Sending real-time notifications to users"
 
 crewai_agent = Agent(
     role='Ably Agent',

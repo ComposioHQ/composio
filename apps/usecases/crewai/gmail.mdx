@@ -6,6 +6,7 @@ description: "Connect CrewAI to Gmail to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Gmail
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Gmail is a free email service developed by Google.
 
 Integrating Gmail & CrewAI can allow for the following:
 
-1. Sending emails directly from a Gmail account
+1. Sending emails directly from a gmail account
 2. Organizing emails into labels for better management
 & so many more
 
 ## Using CrewAI with Gmail
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gmail "Sending emails directly from a Gmail account" --limit=10
+composio-cli get-actions gmail "Sending emails directly from a gmail account" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Gmail API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Sending emails directly from a Gmail account"
+task = "Sending emails directly from a gmail account"
 
 crewai_agent = Agent(
     role='Gmail Agent',

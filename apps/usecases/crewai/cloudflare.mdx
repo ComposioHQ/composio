@@ -6,6 +6,7 @@ description: "Connect CrewAI to Cloudflare to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Cloudflare
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Cloudflare provides APIs for managing and automating Cloudflare services, includ
 
 Integrating Cloudflare & CrewAI can allow for the following:
 
-1. managing DNS records
-2. enhancing web security
+1. Managing dns records
+2. Enhancing web security
 & so many more
 
 ## Using CrewAI with Cloudflare
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions cloudflare "managing DNS records" --limit=10
+composio-cli get-actions cloudflare "Managing dns records" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Cloudflare API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing DNS records"
+task = "Managing dns records"
 
 crewai_agent = Agent(
     role='Cloudflare Agent',

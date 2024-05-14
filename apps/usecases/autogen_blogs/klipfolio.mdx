@@ -6,6 +6,7 @@ description: "Connect Autogen to Klipfolio to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with Klipfolio
+![intro](/media/intro.jpg)
 
 ### Overview of Klipfolio
 
@@ -15,12 +16,12 @@ Connect Composio with Klipfolio to visualize and analyze your data.
 
 Integrating Klipfolio & Autogen can allow for the following:
 
-1. visualizing data
-2. analyzing data
+1. Visualizing data
+2. Analyzing data
 & so many more
 
 ## Using Autogen with Klipfolio
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions klipfolio "visualizing data" --limit=10
+composio-cli get-actions klipfolio "Visualizing data" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Klipfolio API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "visualizing data" # change this as necessary
+task = "Visualizing data" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

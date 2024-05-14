@@ -6,6 +6,7 @@ description: "Connect LangChain to Tisane to create agents to perform tasks usin
 ---
 
 ## Connecting LangChain AI agents with Tisane
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Tisane.ai provides APIs for natural language processing, text analysis, and cont
 
 Integrating Tisane & Langchain can allow for the following:
 
-1. text analysis and content moderation
-2. natural language processing
+1. Text analysis and content moderation
+2. Natural language processing
 & so many more
 
 ## Using LangChain with Tisane
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tisane "text analysis and content moderation" --limit=10
+composio-cli get-actions tisane "Text analysis and content moderation" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Tisane API call
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "text analysis and content moderation"
+task = "Text analysis and content moderation"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Okta to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Okta
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Okta provides cloud software that helps companies manage and secure user authent
 
 Integrating Okta & CrewAI can allow for the following:
 
-1. managing and securing user authentication into applications
-2. creating and managing user identities
+1. Managing and securing user authentication into applications
+2. Creating and managing user identities
 & so many more
 
 ## Using CrewAI with Okta
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions okta "managing and securing user authentication into applications" --limit=10
+composio-cli get-actions okta "Managing and securing user authentication into applications" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Okta API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing and securing user authentication into applications"
+task = "Managing and securing user authentication into applications"
 
 crewai_agent = Agent(
     role='Okta Agent',

@@ -6,6 +6,7 @@ description: "Connect LangChain to Brevo to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Brevo
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Brevo, formerly Sendinblue, is a SaaS solution for relationship marketing.
 
 Integrating Brevo & Langchain can allow for the following:
 
-1. sending marketing emails to customer lists
-2. analyzing customer engagement through detailed reports
+1. Sending marketing emails to customer lists
+2. Analyzing customer engagement through detailed reports
 & so many more
 
 ## Using LangChain with Brevo
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions brevo "sending marketing emails to customer lists" --limit=10
+composio-cli get-actions brevo "Sending marketing emails to customer lists" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Brevo API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending marketing emails to customer lists"
+task = "Sending marketing emails to customer lists"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

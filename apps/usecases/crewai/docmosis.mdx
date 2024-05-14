@@ -6,6 +6,7 @@ description: "Connect CrewAI to Docmosis to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with Docmosis
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Docmosis provides APIs for document generation, template management, and data me
 
 Integrating Docmosis & CrewAI can allow for the following:
 
-1. generating dynamic documents from templates
-2. managing templates and merging data
+1. Generating dynamic documents from templates
+2. Managing templates and merging data
 & so many more
 
 ## Using CrewAI with Docmosis
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions docmosis "generating dynamic documents from templates" --limit=10
+composio-cli get-actions docmosis "Generating dynamic documents from templates" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Docmosis API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "generating dynamic documents from templates"
+task = "Generating dynamic documents from templates"
 
 crewai_agent = Agent(
     role='Docmosis Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Microsoft Tenant to create agents to perform tas
 ---
 
 ## Connecting CrewAI with Microsoft Tenant
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Microsoft Tenant is a proprietary business communication platform developed by M
 
 Integrating Microsoft Tenant & CrewAI can allow for the following:
 
-1. managing business communication
-2. integrating with other Microsoft 365 products
+1. Managing business communication
+2. Integrating with other microsoft 365 products
 & so many more
 
 ## Using CrewAI with Microsoft Tenant
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions microsoft-tenant "managing business communication" --limit=10
+composio-cli get-actions microsoft-tenant "Managing business communication" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Microsoft Tenant API calls using Co
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing business communication"
+task = "Managing business communication"
 
 crewai_agent = Agent(
     role='Microsoft Tenant Agent',

@@ -6,6 +6,7 @@ description: "Connect LangChain to LastPass to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with LastPass
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ LastPass is a password manager that stores encrypted passwords online.
 
 Integrating LastPass & Langchain can allow for the following:
 
-1. storing encrypted passwords online
-2. managing multiple accounts securely
+1. Storing encrypted passwords online
+2. Managing multiple accounts securely
 & so many more
 
 ## Using LangChain with LastPass
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions lastpass "storing encrypted passwords online" --limit=10
+composio-cli get-actions lastpass "Storing encrypted passwords online" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform LastPass API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "storing encrypted passwords online"
+task = "Storing encrypted passwords online"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

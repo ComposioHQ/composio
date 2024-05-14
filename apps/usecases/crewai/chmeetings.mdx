@@ -6,6 +6,7 @@ description: "Connect CrewAI to CHMeetings to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with CHMeetings
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ CHMeetings is a comprehensive church management platform offering solutions for 
 
 Integrating CHMeetings & CrewAI can allow for the following:
 
-1. event planning
-2. member engagement
+1. Event planning
+2. Member engagement
 & so many more
 
 ## Using CrewAI with CHMeetings
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions chmeetings "event planning" --limit=10
+composio-cli get-actions chmeetings "Event planning" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform CHMeetings API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "event planning"
+task = "Event planning"
 
 crewai_agent = Agent(
     role='CHMeetings Agent',

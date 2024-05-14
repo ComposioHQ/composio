@@ -6,6 +6,7 @@ description: "Connect LangChain to Formsite to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with Formsite
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Formsite provides APIs for programmatically retrieving form results and managing
 
 Integrating Formsite & Langchain can allow for the following:
 
-1. retrieving form results programmatically
-2. managing form data
+1. Retrieving form results programmatically
+2. Managing form data
 & so many more
 
 ## Using LangChain with Formsite
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions formsite "retrieving form results programmatically" --limit=10
+composio-cli get-actions formsite "Retrieving form results programmatically" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Formsite API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "retrieving form results programmatically"
+task = "Retrieving form results programmatically"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

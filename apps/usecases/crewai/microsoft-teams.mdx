@@ -6,6 +6,7 @@ description: "Connect CrewAI to Microsoft Teams to create agents to perform task
 ---
 
 ## Connecting CrewAI with Microsoft Teams
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Microsoft Teams is a proprietary business communication platform developed by Mi
 
 Integrating Microsoft Teams & CrewAI can allow for the following:
 
-1. sending messages to a Teams channel
-2. creating new channels for specific projects
+1. Sending messages to a teams channel
+2. Creating new channels for specific projects
 & so many more
 
 ## Using CrewAI with Microsoft Teams
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions microsoft-teams "sending messages to a Teams channel" --limit=10
+composio-cli get-actions microsoft-teams "Sending messages to a teams channel" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Microsoft Teams API calls using Com
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending messages to a Teams channel"
+task = "Sending messages to a teams channel"
 
 crewai_agent = Agent(
     role='Microsoft Teams Agent',

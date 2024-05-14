@@ -6,6 +6,7 @@ description: "Connect CrewAI to Pipedrive to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Pipedrive
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Pipedrive is a web-based Sales CRM and pipeline management solution that enables
 
 Integrating Pipedrive & CrewAI can allow for the following:
 
-1. tracking sales activities and managing pipelines
-2. automating follow-up emails to potential clients
+1. Tracking sales activities and managing pipelines
+2. Automating follow-up emails to potential clients
 & so many more
 
 ## Using CrewAI with Pipedrive
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions pipedrive "tracking sales activities and managing pipelines" --limit=10
+composio-cli get-actions pipedrive "Tracking sales activities and managing pipelines" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Pipedrive API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking sales activities and managing pipelines"
+task = "Tracking sales activities and managing pipelines"
 
 crewai_agent = Agent(
     role='Pipedrive Agent',

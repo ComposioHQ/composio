@@ -6,6 +6,7 @@ description: "Connect Autogen to Close to create agents to perform tasks using n
 ---
 
 ## Connecting Autogen AI agents with Close
+![intro](/media/intro.jpg)
 
 ### Overview of Close
 
@@ -15,12 +16,12 @@ Close is a sales productivity platform fine-tuned to help SMBs turn more leads i
 
 Integrating Close & Autogen can allow for the following:
 
-1. tracking and managing customer interactions
-2. automating sales processes
+1. Tracking and managing customer interactions
+2. Automating sales processes
 & so many more
 
 ## Using Autogen with Close
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions close "tracking and managing customer interactions" --limit=10
+composio-cli get-actions close "Tracking and managing customer interactions" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Close API calls
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "tracking and managing customer interactions" # change this as necessary
+task = "Tracking and managing customer interactions" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

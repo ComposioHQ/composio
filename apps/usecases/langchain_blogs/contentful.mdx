@@ -6,6 +6,7 @@ description: "Connect LangChain to Contentful to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Contentful
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Contentful provides a content platform with APIs for managing and delivering con
 
 Integrating Contentful & Langchain can allow for the following:
 
-1. managing and delivering content to apps and websites
-2. creating and managing content structures
+1. Managing and delivering content to apps and websites
+2. Creating and managing content structures
 & so many more
 
 ## Using LangChain with Contentful
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions contentful "managing and delivering content to apps and websites" --limit=10
+composio-cli get-actions contentful "Managing and delivering content to apps and websites" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Contentful API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing and delivering content to apps and websites"
+task = "Managing and delivering content to apps and websites"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

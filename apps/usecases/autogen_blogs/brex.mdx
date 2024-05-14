@@ -6,6 +6,7 @@ description: "Connect Autogen to Brex to create agents to perform tasks using na
 ---
 
 ## Connecting Autogen AI agents with Brex
+![intro](/media/intro.jpg)
 
 ### Overview of Brex
 
@@ -15,12 +16,12 @@ Integration for Brex banking services using OAuth2 authentication.
 
 Integrating Brex & Autogen can allow for the following:
 
-1. Integration for Brex banking services using OAuth2 authentication.
+1. Integration for brex banking services using oauth2 authentication.
 2. Automating financial transactions and monitoring account activities
 & so many more
 
 ## Using Autogen with Brex
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions brex "Integration for Brex banking services using OAuth2 authentication." --limit=10
+composio-cli get-actions brex "Integration for brex banking services using oauth2 authentication." --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Brex API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Integration for Brex banking services using OAuth2 authentication." # change this as necessary
+task = "Integration for brex banking services using oauth2 authentication." # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

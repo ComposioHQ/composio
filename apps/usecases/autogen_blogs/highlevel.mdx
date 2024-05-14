@@ -6,6 +6,7 @@ description: "Connect Autogen to Highlevel to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with Highlevel
+![intro](/media/intro.jpg)
 
 ### Overview of Highlevel
 
@@ -15,12 +16,12 @@ Highlevel is a messaging platform that allows businesses to communicate with pro
 
 Integrating Highlevel & Autogen can allow for the following:
 
-1. sending messages to prospective and existing customers
-2. integrating communication across multiple platforms (app, website, social media, email)
+1. Sending messages to prospective and existing customers
+2. Integrating communication across multiple platforms (app, website, social media, email)
 & so many more
 
 ## Using Autogen with Highlevel
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions highlevel "sending messages to prospective and existing customers" --limit=10
+composio-cli get-actions highlevel "Sending messages to prospective and existing customers" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Highlevel API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending messages to prospective and existing customers" # change this as necessary
+task = "Sending messages to prospective and existing customers" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

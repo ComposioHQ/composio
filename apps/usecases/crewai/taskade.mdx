@@ -6,6 +6,7 @@ description: "Connect CrewAI to Taskade to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Taskade
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Taskade is a tool for team collaboration and task management with support for re
 
 Integrating Taskade & CrewAI can allow for the following:
 
-1. creating and managing nested task lists
-2. setting up real-time collaborative sessions
+1. Creating and managing nested task lists
+2. Setting up real-time collaborative sessions
 & so many more
 
 ## Using CrewAI with Taskade
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions taskade "creating and managing nested task lists" --limit=10
+composio-cli get-actions taskade "Creating and managing nested task lists" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Taskade API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "creating and managing nested task lists"
+task = "Creating and managing nested task lists"
 
 crewai_agent = Agent(
     role='Taskade Agent',

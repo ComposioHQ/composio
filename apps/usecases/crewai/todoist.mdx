@@ -6,6 +6,7 @@ description: "Connect CrewAI to Todoist to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Todoist
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Todoist is a productivity app that helps manage tasks and projects.
 
 Integrating Todoist & CrewAI can allow for the following:
 
-1. managing tasks and projects
-2. collaborating with team members
+1. Managing tasks and projects
+2. Collaborating with team members
 & so many more
 
 ## Using CrewAI with Todoist
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions todoist "managing tasks and projects" --limit=10
+composio-cli get-actions todoist "Managing tasks and projects" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Todoist API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing tasks and projects"
+task = "Managing tasks and projects"
 
 crewai_agent = Agent(
     role='Todoist Agent',

@@ -6,6 +6,7 @@ description: "Connect Autogen to Google Calendar to create agents to perform tas
 ---
 
 ## Connecting Autogen AI agents with Google Calendar
+![intro](/media/intro.jpg)
 
 ### Overview of Google Calendar
 
@@ -15,12 +16,12 @@ Google Calendar is a time-management and scheduling calendar service developed b
 
 Integrating Google Calendar & Autogen can allow for the following:
 
-1. scheduling meetings
-2. sharing calendars with team members
+1. Scheduling meetings
+2. Sharing calendars with team members
 & so many more
 
 ## Using Autogen with Google Calendar
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions gcalendar "scheduling meetings" --limit=10
+composio-cli get-actions gcalendar "Scheduling meetings" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Google Calendar
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "scheduling meetings" # change this as necessary
+task = "Scheduling meetings" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

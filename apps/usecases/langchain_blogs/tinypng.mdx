@@ -6,6 +6,7 @@ description: "Connect LangChain to TinyPNG to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with TinyPNG
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ TinyPNG provides APIs for compressing and optimizing WebP, JPEG and PNG images.
 
 Integrating TinyPNG & Langchain can allow for the following:
 
-1. Compressing JPEG images to reduce file size without losing quality
-2. Optimizing WebP images for faster web page loading times
+1. Compressing jpeg images to reduce file size without losing quality
+2. Optimizing webp images for faster web page loading times
 & so many more
 
 ## Using LangChain with TinyPNG
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tinypng "Compressing JPEG images to reduce file size without losing quality" --limit=10
+composio-cli get-actions tinypng "Compressing jpeg images to reduce file size without losing quality" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform TinyPNG API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Compressing JPEG images to reduce file size without losing quality"
+task = "Compressing jpeg images to reduce file size without losing quality"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

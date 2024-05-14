@@ -6,6 +6,7 @@ description: "Connect LangChain to ChatWork to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with ChatWork
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ ChatWork is all-in-one group chat for global teams. It brings secure messaging, 
 
 Integrating ChatWork & Langchain can allow for the following:
 
-1. sending messages to a ChatWork group
-2. creating a new ChatWork group
+1. Sending messages to a chatwork group
+2. Creating a new chatwork group
 & so many more
 
 ## Using LangChain with ChatWork
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions chatwork "sending messages to a ChatWork group" --limit=10
+composio-cli get-actions chatwork "Sending messages to a chatwork group" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform ChatWork API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending messages to a ChatWork group"
+task = "Sending messages to a chatwork group"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

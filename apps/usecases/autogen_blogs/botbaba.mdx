@@ -6,6 +6,7 @@ description: "Connect Autogen to botbaba to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with botbaba
+![intro](/media/intro.jpg)
 
 ### Overview of botbaba
 
@@ -15,12 +16,12 @@ Botbaba provides APIs for building and managing chatbots, including conversation
 
 Integrating botbaba & Autogen can allow for the following:
 
-1. building and managing chatbots
-2. integrating messaging platforms
+1. Building and managing chatbots
+2. Integrating messaging platforms
 & so many more
 
 ## Using Autogen with botbaba
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions botbaba "building and managing chatbots" --limit=10
+composio-cli get-actions botbaba "Building and managing chatbots" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform botbaba API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "building and managing chatbots" # change this as necessary
+task = "Building and managing chatbots" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

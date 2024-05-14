@@ -6,6 +6,7 @@ description: "Connect LangChain to EchtPost to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with EchtPost
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ EchtPost offers secure and encrypted digital communication solutions, ensuring p
 
 Integrating EchtPost & Langchain can allow for the following:
 
-1. sending secure and encrypted emails
-2. managing digital privacy
+1. Sending secure and encrypted emails
+2. Managing digital privacy
 & so many more
 
 ## Using LangChain with EchtPost
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions echtpost "sending secure and encrypted emails" --limit=10
+composio-cli get-actions echtpost "Sending secure and encrypted emails" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform EchtPost API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending secure and encrypted emails"
+task = "Sending secure and encrypted emails"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

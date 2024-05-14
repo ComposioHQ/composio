@@ -6,6 +6,7 @@ description: "Connect Autogen to ZenSERP to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with ZenSERP
+![intro](/media/intro.jpg)
 
 ### Overview of ZenSERP
 
@@ -15,12 +16,12 @@ ZenSERP provides APIs for search engine result pages (SERP) data, including orga
 
 Integrating ZenSERP & Autogen can allow for the following:
 
-1. Retrieving real-time SERP data for specific queries
+1. Retrieving real-time serp data for specific queries
 2. Conducting competitive analysis and keyword research
 & so many more
 
 ## Using Autogen with ZenSERP
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions zenserp "Retrieving real-time SERP data for specific queries" --limit=10
+composio-cli get-actions zenserp "Retrieving real-time serp data for specific queries" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform ZenSERP API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Retrieving real-time SERP data for specific queries" # change this as necessary
+task = "Retrieving real-time serp data for specific queries" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

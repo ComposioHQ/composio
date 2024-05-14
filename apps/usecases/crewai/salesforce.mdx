@@ -6,6 +6,7 @@ description: "Connect CrewAI to Salesforce to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with Salesforce
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Salesforce is a customer relationship management solution that brings companies 
 
 Integrating Salesforce & CrewAI can allow for the following:
 
-1. managing customer relationships
-2. automating sales processes
+1. Managing customer relationships
+2. Automating sales processes
 & so many more
 
 ## Using CrewAI with Salesforce
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions salesforce "managing customer relationships" --limit=10
+composio-cli get-actions salesforce "Managing customer relationships" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Salesforce API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing customer relationships"
+task = "Managing customer relationships"
 
 crewai_agent = Agent(
     role='Salesforce Agent',

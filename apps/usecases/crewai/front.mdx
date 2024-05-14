@@ -6,6 +6,7 @@ description: "Connect CrewAI to Front to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Front
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A customer communication hub that brings emails and messages into a single platf
 
 Integrating Front & CrewAI can allow for the following:
 
-1. managing customer support tickets
-2. creating automated responses for common queries
+1. Managing customer support tickets
+2. Creating automated responses for common queries
 & so many more
 
 ## Using CrewAI with Front
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions front "managing customer support tickets" --limit=10
+composio-cli get-actions front "Managing customer support tickets" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Front API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing customer support tickets"
+task = "Managing customer support tickets"
 
 crewai_agent = Agent(
     role='Front Agent',

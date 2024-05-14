@@ -6,6 +6,7 @@ description: "Connect CrewAI to Axonaut to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Axonaut
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Axonaut, the management software for  VSEs and SMEs
 
 Integrating Axonaut & CrewAI can allow for the following:
 
-1. CRM for tracking customer interactions
+1. Crm for tracking customer interactions
 2. Managing invoices and expenses
 & so many more
 
 ## Using CrewAI with Axonaut
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions axonaut "CRM for tracking customer interactions" --limit=10
+composio-cli get-actions axonaut "Crm for tracking customer interactions" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Axonaut API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "CRM for tracking customer interactions"
+task = "Crm for tracking customer interactions"
 
 crewai_agent = Agent(
     role='Axonaut Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to SurveyMonkey to create agents to perform tasks u
 ---
 
 ## Connecting CrewAI with SurveyMonkey
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ SurveyMonkey is an online survey software that helps with creating and running s
 
 Integrating SurveyMonkey & CrewAI can allow for the following:
 
-1. creating and running surveys online
-2. analyzing survey results
+1. Creating and running surveys online
+2. Analyzing survey results
 & so many more
 
 ## Using CrewAI with SurveyMonkey
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions survey-monkey "creating and running surveys online" --limit=10
+composio-cli get-actions survey-monkey "Creating and running surveys online" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform SurveyMonkey API calls using Compos
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "creating and running surveys online"
+task = "Creating and running surveys online"
 
 crewai_agent = Agent(
     role='SurveyMonkey Agent',

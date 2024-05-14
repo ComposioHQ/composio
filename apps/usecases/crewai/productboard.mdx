@@ -6,6 +6,7 @@ description: "Connect CrewAI to Productboard to create agents to perform tasks u
 ---
 
 ## Connecting CrewAI with Productboard
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Productboard is a customer-centric product management platform that helps organi
 
 Integrating Productboard & CrewAI can allow for the following:
 
-1. prioritizing product features
-2. collecting customer feedback
+1. Prioritizing product features
+2. Collecting customer feedback
 & so many more
 
 ## Using CrewAI with Productboard
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions productboard "prioritizing product features" --limit=10
+composio-cli get-actions productboard "Prioritizing product features" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Productboard API calls using Compos
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "prioritizing product features"
+task = "Prioritizing product features"
 
 crewai_agent = Agent(
     role='Productboard Agent',

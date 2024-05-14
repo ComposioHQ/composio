@@ -6,6 +6,7 @@ description: "Connect LangChain to Adobe to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Adobe
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Adobe provides a range of software and services for digital media and digital ma
 
 Integrating Adobe & Langchain can allow for the following:
 
-1. editing digital media
-2. managing digital marketing campaigns
+1. Editing digital media
+2. Managing digital marketing campaigns
 & so many more
 
 ## Using LangChain with Adobe
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions adobe "editing digital media" --limit=10
+composio-cli get-actions adobe "Editing digital media" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Adobe API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "editing digital media"
+task = "Editing digital media"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

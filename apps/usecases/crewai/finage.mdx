@@ -6,6 +6,7 @@ description: "Connect CrewAI to Finage to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Finage
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Finage provides APIs for real-time and historical data on stocks, forex, crypto,
 
 Integrating Finage & CrewAI can allow for the following:
 
-1. real-time stock data retrieval
-2. historical forex data analysis
+1. Real-time stock data retrieval
+2. Historical forex data analysis
 & so many more
 
 ## Using CrewAI with Finage
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions finage "real-time stock data retrieval" --limit=10
+composio-cli get-actions finage "Real-time stock data retrieval" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Finage API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "real-time stock data retrieval"
+task = "Real-time stock data retrieval"
 
 crewai_agent = Agent(
     role='Finage Agent',

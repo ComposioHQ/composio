@@ -6,6 +6,7 @@ description: "Connect Autogen to Figma to create agents to perform tasks using n
 ---
 
 ## Connecting Autogen AI agents with Figma
+![intro](/media/intro.jpg)
 
 ### Overview of Figma
 
@@ -15,12 +16,12 @@ A collaborative interface design tool.
 
 Integrating Figma & Autogen can allow for the following:
 
-1. collaborative interface design
-2. real-time team collaboration and feedback
+1. Collaborative interface design
+2. Real-time team collaboration and feedback
 & so many more
 
 ## Using Autogen with Figma
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions figma "collaborative interface design" --limit=10
+composio-cli get-actions figma "Collaborative interface design" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Figma API calls
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "collaborative interface design" # change this as necessary
+task = "Collaborative interface design" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

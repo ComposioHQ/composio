@@ -6,6 +6,7 @@ description: "Connect CrewAI to Yandex to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Yandex
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Yandex is a popular search engine that serves as an alternative to Google search
 
 Integrating Yandex & CrewAI can allow for the following:
 
-1. searching the web for information
-2. using Yandex Maps for navigation
+1. Searching the web for information
+2. Using yandex maps for navigation
 & so many more
 
 ## Using CrewAI with Yandex
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions yandex "searching the web for information" --limit=10
+composio-cli get-actions yandex "Searching the web for information" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Yandex API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "searching the web for information"
+task = "Searching the web for information"
 
 crewai_agent = Agent(
     role='Yandex Agent',

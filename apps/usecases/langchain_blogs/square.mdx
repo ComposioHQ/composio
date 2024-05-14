@@ -6,6 +6,7 @@ description: "Connect LangChain to Square to create agents to perform tasks usin
 ---
 
 ## Connecting LangChain AI agents with Square
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Square is a comprehensive commerce platform that offers tools for payment proces
 
 Integrating Square & Langchain can allow for the following:
 
-1. processing payments at a physical or online store
-2. managing customer relationships and sales data
+1. Processing payments at a physical or online store
+2. Managing customer relationships and sales data
 & so many more
 
 ## Using LangChain with Square
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions square "processing payments at a physical or online store" --limit=10
+composio-cli get-actions square "Processing payments at a physical or online store" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Square API call
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "processing payments at a physical or online store"
+task = "Processing payments at a physical or online store"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect LangChain to Klipfolio to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with Klipfolio
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Connect Composio with Klipfolio to visualize and analyze your data.
 
 Integrating Klipfolio & Langchain can allow for the following:
 
-1. visualizing data
-2. analyzing data
+1. Visualizing data
+2. Analyzing data
 & so many more
 
 ## Using LangChain with Klipfolio
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions klipfolio "visualizing data" --limit=10
+composio-cli get-actions klipfolio "Visualizing data" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Klipfolio API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "visualizing data"
+task = "Visualizing data"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

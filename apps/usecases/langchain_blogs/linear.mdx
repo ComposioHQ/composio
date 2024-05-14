@@ -6,6 +6,7 @@ description: "Connect LangChain to Linear to create agents to perform tasks usin
 ---
 
 ## Connecting LangChain AI agents with Linear
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ A modern project management tool designed for efficiency and performance.
 
 Integrating Linear & Langchain can allow for the following:
 
-1. managing software development projects
-2. tracking issues and tasks
+1. Managing software development projects
+2. Tracking issues and tasks
 & so many more
 
 ## Using LangChain with Linear
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions linear "managing software development projects" --limit=10
+composio-cli get-actions linear "Managing software development projects" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Linear API call
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing software development projects"
+task = "Managing software development projects"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

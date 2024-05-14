@@ -6,6 +6,7 @@ description: "Connect LangChain to Tapform to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with Tapform
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Tapform provides a platform for secure data form management and integration, ena
 
 Integrating Tapform & Langchain can allow for the following:
 
-1. capturing user data through secure forms
-2. integrating form data with other applications
+1. Capturing user data through secure forms
+2. Integrating form data with other applications
 & so many more
 
 ## Using LangChain with Tapform
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tapform "capturing user data through secure forms" --limit=10
+composio-cli get-actions tapform "Capturing user data through secure forms" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Tapform API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "capturing user data through secure forms"
+task = "Capturing user data through secure forms"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

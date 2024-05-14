@@ -6,6 +6,7 @@ description: "Connect CrewAI to DailyBot to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with DailyBot
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ DailyBot provides APIs for building custom integrations and add-ons for the Dail
 
 Integrating DailyBot & CrewAI can allow for the following:
 
-1. sending reminders to a Slack channel
-2. creating automated daily stand-ups
+1. Sending reminders to a slack channel
+2. Creating automated daily stand-ups
 & so many more
 
 ## Using CrewAI with DailyBot
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions dailybot "sending reminders to a Slack channel" --limit=10
+composio-cli get-actions dailybot "Sending reminders to a slack channel" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform DailyBot API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending reminders to a Slack channel"
+task = "Sending reminders to a slack channel"
 
 crewai_agent = Agent(
     role='DailyBot Agent',

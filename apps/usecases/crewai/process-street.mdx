@@ -6,6 +6,7 @@ description: "Connect CrewAI to Process Street to create agents to perform tasks
 ---
 
 ## Connecting CrewAI with Process Street
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Process Street is a powerful platform to manage recurring workflows for your tea
 
 Integrating Process Street & CrewAI can allow for the following:
 
-1. managing recurring workflows
-2. automating tasks
+1. Managing recurring workflows
+2. Automating tasks
 & so many more
 
 ## Using CrewAI with Process Street
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions process-street "managing recurring workflows" --limit=10
+composio-cli get-actions process-street "Managing recurring workflows" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Process Street API calls using Comp
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing recurring workflows"
+task = "Managing recurring workflows"
 
 crewai_agent = Agent(
     role='Process Street Agent',

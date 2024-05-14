@@ -6,6 +6,7 @@ description: "Connect Autogen to NetSuite to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with NetSuite
+![intro](/media/intro.jpg)
 
 ### Overview of NetSuite
 
@@ -15,12 +16,12 @@ NetSuite is a cloud-based suite of business management applications.
 
 Integrating NetSuite & Autogen can allow for the following:
 
-1. managing financial operations
-2. streamlining enterprise resource planning
+1. Managing financial operations
+2. Streamlining enterprise resource planning
 & so many more
 
 ## Using Autogen with NetSuite
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions netsuite "managing financial operations" --limit=10
+composio-cli get-actions netsuite "Managing financial operations" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform NetSuite API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "managing financial operations" # change this as necessary
+task = "Managing financial operations" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

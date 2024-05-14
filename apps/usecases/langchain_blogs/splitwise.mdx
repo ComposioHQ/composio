@@ -6,6 +6,7 @@ description: "Connect LangChain to Splitwise to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with Splitwise
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Splitwise helps you split bills and expenses with friends and family.
 
 Integrating Splitwise & Langchain can allow for the following:
 
-1. splitting bills and expenses with friends and family
-2. managing group expenses and tracking balances
+1. Splitting bills and expenses with friends and family
+2. Managing group expenses and tracking balances
 & so many more
 
 ## Using LangChain with Splitwise
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions splitwise "splitting bills and expenses with friends and family" --limit=10
+composio-cli get-actions splitwise "Splitting bills and expenses with friends and family" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Splitwise API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "splitting bills and expenses with friends and family"
+task = "Splitting bills and expenses with friends and family"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

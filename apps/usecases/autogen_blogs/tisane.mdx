@@ -6,6 +6,7 @@ description: "Connect Autogen to Tisane to create agents to perform tasks using 
 ---
 
 ## Connecting Autogen AI agents with Tisane
+![intro](/media/intro.jpg)
 
 ### Overview of Tisane
 
@@ -15,12 +16,12 @@ Tisane.ai provides APIs for natural language processing, text analysis, and cont
 
 Integrating Tisane & Autogen can allow for the following:
 
-1. text analysis and content moderation
-2. natural language processing
+1. Text analysis and content moderation
+2. Natural language processing
 & so many more
 
 ## Using Autogen with Tisane
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions tisane "text analysis and content moderation" --limit=10
+composio-cli get-actions tisane "Text analysis and content moderation" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Tisane API call
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "text analysis and content moderation" # change this as necessary
+task = "Text analysis and content moderation" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

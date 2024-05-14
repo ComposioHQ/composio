@@ -6,6 +6,7 @@ description: "Connect CrewAI to TextRazor to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with TextRazor
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ TextRazor offers state-of-the-art natural language processing tools, enabling ad
 
 Integrating TextRazor & CrewAI can allow for the following:
 
-1. analyzing and extracting entities from text
-2. performing sentiment analysis on textual data
+1. Analyzing and extracting entities from text
+2. Performing sentiment analysis on textual data
 & so many more
 
 ## Using CrewAI with TextRazor
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions textrazor "analyzing and extracting entities from text" --limit=10
+composio-cli get-actions textrazor "Analyzing and extracting entities from text" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform TextRazor API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "analyzing and extracting entities from text"
+task = "Analyzing and extracting entities from text"
 
 crewai_agent = Agent(
     role='TextRazor Agent',

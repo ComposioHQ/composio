@@ -6,6 +6,7 @@ description: "Connect CrewAI to DigiCert to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with DigiCert
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ DigiCert provides SSL, IoT and other PKI solutions for securing web applications
 
 Integrating DigiCert & CrewAI can allow for the following:
 
-1. securing web applications with SSL certificates
-2. securing IoT devices with PKI solutions
+1. Securing web applications with ssl certificates
+2. Securing iot devices with pki solutions
 & so many more
 
 ## Using CrewAI with DigiCert
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions digicert "securing web applications with SSL certificates" --limit=10
+composio-cli get-actions digicert "Securing web applications with ssl certificates" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform DigiCert API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "securing web applications with SSL certificates"
+task = "Securing web applications with ssl certificates"
 
 crewai_agent = Agent(
     role='DigiCert Agent',

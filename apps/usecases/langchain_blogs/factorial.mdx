@@ -6,6 +6,7 @@ description: "Connect LangChain to factorial to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with factorial
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ It is a comprehensive software solution designed to streamline and manage variou
 
 Integrating factorial & Langchain can allow for the following:
 
-1. managing various HR processes
-2. streamlining organizational operations
+1. Managing various hr processes
+2. Streamlining organizational operations
 & so many more
 
 ## Using LangChain with factorial
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions factorial "managing various HR processes" --limit=10
+composio-cli get-actions factorial "Managing various hr processes" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform factorial API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing various HR processes"
+task = "Managing various hr processes"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

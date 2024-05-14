@@ -6,6 +6,7 @@ description: "Connect Autogen to ncScale to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with ncScale
+![intro](/media/intro.jpg)
 
 ### Overview of ncScale
 
@@ -15,12 +16,12 @@ ncScale provides a robust data API for programmatically interacting with and man
 
 Integrating ncScale & Autogen can allow for the following:
 
-1. Interacting with ncScale data via API
-2. Manipulating ncScale data programmatically
+1. Interacting with ncscale data via api
+2. Manipulating ncscale data programmatically
 & so many more
 
 ## Using Autogen with ncScale
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions ncscale "Interacting with ncScale data via API" --limit=10
+composio-cli get-actions ncscale "Interacting with ncscale data via api" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform ncScale API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Interacting with ncScale data via API" # change this as necessary
+task = "Interacting with ncscale data via api" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

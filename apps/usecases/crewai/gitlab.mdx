@@ -6,6 +6,7 @@ description: "Connect CrewAI to GitLab to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with GitLab
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A web-based DevOps lifecycle tool that provides a Git repository manager providi
 
 Integrating GitLab & CrewAI can allow for the following:
 
-1. Managing Git Repositories
-2. Automating CI/CD Pipelines
+1. Managing git repositories
+2. Automating ci/cd pipelines
 & so many more
 
 ## Using CrewAI with GitLab
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gitlab "Managing Git Repositories" --limit=10
+composio-cli get-actions gitlab "Managing git repositories" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform GitLab API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Managing Git Repositories"
+task = "Managing git repositories"
 
 crewai_agent = Agent(
     role='GitLab Agent',

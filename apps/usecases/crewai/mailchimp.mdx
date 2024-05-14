@@ -6,6 +6,7 @@ description: "Connect CrewAI to Mailchimp to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Mailchimp
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Mailchimp is an all-in-one Marketing Platform for small businesses.
 
 Integrating Mailchimp & CrewAI can allow for the following:
 
-1. sending marketing emails
-2. creating automated email campaigns
+1. Sending marketing emails
+2. Creating automated email campaigns
 & so many more
 
 ## Using CrewAI with Mailchimp
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions mailchimp "sending marketing emails" --limit=10
+composio-cli get-actions mailchimp "Sending marketing emails" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Mailchimp API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending marketing emails"
+task = "Sending marketing emails"
 
 crewai_agent = Agent(
     role='Mailchimp Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Zoho Mail to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Zoho Mail
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Zoho Mail is an email hosting service built with the needs of a modern business 
 
 Integrating Zoho Mail & CrewAI can allow for the following:
 
-1. sending and receiving professional emails
-2. managing email tasks and calendars
+1. Sending and receiving professional emails
+2. Managing email tasks and calendars
 & so many more
 
 ## Using CrewAI with Zoho Mail
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-mail "sending and receiving professional emails" --limit=10
+composio-cli get-actions zoho-mail "Sending and receiving professional emails" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Zoho Mail API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending and receiving professional emails"
+task = "Sending and receiving professional emails"
 
 crewai_agent = Agent(
     role='Zoho Mail Agent',

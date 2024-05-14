@@ -6,6 +6,7 @@ description: "Connect LangChain to Gmail to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Gmail
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Gmail is a free email service developed by Google.
 
 Integrating Gmail & Langchain can allow for the following:
 
-1. sending emails to multiple recipients
-2. organizing emails into folders
+1. Sending emails to multiple recipients
+2. Organizing emails into folders
 & so many more
 
 ## Using LangChain with Gmail
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gmail "sending emails to multiple recipients" --limit=10
+composio-cli get-actions gmail "Sending emails to multiple recipients" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Gmail API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending emails to multiple recipients"
+task = "Sending emails to multiple recipients"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

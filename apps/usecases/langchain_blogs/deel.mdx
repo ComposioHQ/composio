@@ -6,6 +6,7 @@ description: "Connect LangChain to Deel to create agents to perform tasks using 
 ---
 
 ## Connecting LangChain AI agents with Deel
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Deel is the all-in-one HR platform for global teams. It helps companies simplify
 
 Integrating Deel & Langchain can allow for the following:
 
-1. simplify every aspect of managing an international workforce
-2. onboarding and local compliance
+1. Simplify every aspect of managing an international workforce
+2. Onboarding and local compliance
 & so many more
 
 ## Using LangChain with Deel
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions deel "simplify every aspect of managing an international workforce" --limit=10
+composio-cli get-actions deel "Simplify every aspect of managing an international workforce" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Deel API calls 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "simplify every aspect of managing an international workforce"
+task = "Simplify every aspect of managing an international workforce"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

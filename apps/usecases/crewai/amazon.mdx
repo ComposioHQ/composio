@@ -6,6 +6,7 @@ description: "Connect CrewAI to Amazon to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Amazon
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Amazon is an American multinational technology company, engaged in e-commerce, c
 
 Integrating Amazon & CrewAI can allow for the following:
 
-1. shopping online
-2. using cloud computing services
+1. Shopping online
+2. Using cloud computing services
 & so many more
 
 ## Using CrewAI with Amazon
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions amazon "shopping online" --limit=10
+composio-cli get-actions amazon "Shopping online" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Amazon API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "shopping online"
+task = "Shopping online"
 
 crewai_agent = Agent(
     role='Amazon Agent',

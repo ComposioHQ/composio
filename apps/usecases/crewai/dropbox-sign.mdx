@@ -6,6 +6,7 @@ description: "Connect CrewAI to Dropbox Sign to create agents to perform tasks u
 ---
 
 ## Connecting CrewAI with Dropbox Sign
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Dropbox Sign provides APIs for electronic signature, document management, and wo
 
 Integrating Dropbox Sign & CrewAI can allow for the following:
 
-1. sending electronic signatures for documents
-2. automating document workflows
+1. Sending electronic signatures for documents
+2. Automating document workflows
 & so many more
 
 ## Using CrewAI with Dropbox Sign
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions dropbox-sign "sending electronic signatures for documents" --limit=10
+composio-cli get-actions dropbox-sign "Sending electronic signatures for documents" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Dropbox Sign API calls using Compos
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending electronic signatures for documents"
+task = "Sending electronic signatures for documents"
 
 crewai_agent = Agent(
     role='Dropbox Sign Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Tisane.ai to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Tisane.ai
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Tisane.ai provides APIs for natural language processing, text analysis, and cont
 
 Integrating Tisane.ai & CrewAI can allow for the following:
 
-1. natural language processing
-2. content moderation
+1. Natural language processing
+2. Content moderation
 & so many more
 
 ## Using CrewAI with Tisane.ai
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tisane "natural language processing" --limit=10
+composio-cli get-actions tisane "Natural language processing" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Tisane.ai API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "natural language processing"
+task = "Natural language processing"
 
 crewai_agent = Agent(
     role='Tisane.ai Agent',

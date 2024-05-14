@@ -6,6 +6,7 @@ description: "Connect CrewAI to CoinMarketCal to create agents to perform tasks 
 ---
 
 ## Connecting CrewAI with CoinMarketCal
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ CoinMarketCal provides a comprehensive calendar of cryptocurrency events, includ
 
 Integrating CoinMarketCal & CrewAI can allow for the following:
 
-1. tracking upcoming cryptocurrency events
-2. keeping up with token sales and exchange listings
+1. Tracking upcoming cryptocurrency events
+2. Keeping up with token sales and exchange listings
 & so many more
 
 ## Using CrewAI with CoinMarketCal
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions coinmarketcal "tracking upcoming cryptocurrency events" --limit=10
+composio-cli get-actions coinmarketcal "Tracking upcoming cryptocurrency events" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform CoinMarketCal API calls using Compo
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking upcoming cryptocurrency events"
+task = "Tracking upcoming cryptocurrency events"
 
 crewai_agent = Agent(
     role='CoinMarketCal Agent',

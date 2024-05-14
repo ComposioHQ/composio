@@ -6,6 +6,7 @@ description: "Connect LangChain to Snowflake to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with Snowflake
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Snowflake is a cloud data warehouse that allows you to run SQL queries on your d
 
 Integrating Snowflake & Langchain can allow for the following:
 
-1. running SQL queries on your data
-2. managing large datasets efficiently
+1. Running sql queries on your data
+2. Managing large datasets efficiently
 & so many more
 
 ## Using LangChain with Snowflake
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions snowflake "running SQL queries on your data" --limit=10
+composio-cli get-actions snowflake "Running sql queries on your data" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Snowflake API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "running SQL queries on your data"
+task = "Running sql queries on your data"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

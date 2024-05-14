@@ -6,6 +6,7 @@ description: "Connect CrewAI to Piggy to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Piggy
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Piggy is a cashback and loyalty platform that helps businesses reward their cust
 
 Integrating Piggy & CrewAI can allow for the following:
 
-1. rewarding customers for purchases
-2. tracking customer engagement
+1. Rewarding customers for purchases
+2. Tracking customer engagement
 & so many more
 
 ## Using CrewAI with Piggy
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions piggy "rewarding customers for purchases" --limit=10
+composio-cli get-actions piggy "Rewarding customers for purchases" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Piggy API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "rewarding customers for purchases"
+task = "Rewarding customers for purchases"
 
 crewai_agent = Agent(
     role='Piggy Agent',

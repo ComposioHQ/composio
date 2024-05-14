@@ -6,6 +6,7 @@ description: "Connect Autogen to factorial to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with factorial
+![intro](/media/intro.jpg)
 
 ### Overview of factorial
 
@@ -15,12 +16,12 @@ It is a comprehensive software solution designed to streamline and manage variou
 
 Integrating factorial & Autogen can allow for the following:
 
-1. managing various HR processes
-2. streamlining organizational operations
+1. Managing various hr processes
+2. Streamlining organizational operations
 & so many more
 
 ## Using Autogen with factorial
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions factorial "managing various HR processes" --limit=10
+composio-cli get-actions factorial "Managing various hr processes" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform factorial API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "managing various HR processes" # change this as necessary
+task = "Managing various hr processes" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 
