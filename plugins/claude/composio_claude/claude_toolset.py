@@ -16,7 +16,8 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                           llm_response: ToolsBetaMessage, 
                           entity_id: str = "default") -> list[any]:
         outputs = []        
-        entity = self.client.sdk.get_entity(entity_id)
+        # entity = self.client.sdk.get_entity(entity_id)
+        entity_id = self.finalize_entity_id(entity_id)
         
         for content in llm_response.content:
             if isinstance(content, ToolUseBlock):
@@ -27,8 +28,7 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                 action = self.client.sdk.get_action_enum_without_tool(
                     action_name=action_name_to_execute
                 )
-                account = entity.get_connection(app_name=action.service)
-                output = account.execute_action(action, arguments)
+                output = self.client.execute_action(action, arguments, entity_id)
                 outputs.append(output)
         if outputs == []:
             print("No tool call present in Claude Response")

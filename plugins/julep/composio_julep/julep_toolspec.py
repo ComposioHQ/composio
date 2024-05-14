@@ -12,11 +12,12 @@ class ComposioToolset(OpenaiStyleToolsetBase):
         
     
     def handle_tool_calls(self,
-                          llm_response: ChatResponse, 
-                          entity_id: str = "default") -> list[any]:
+                        llm_response: ChatResponse,
+                        entity_id: str = "default") -> list[any]:
+
+        entity_id = self.finalize_entity_id(entity_id)
         outputs = []        
-        entity = self.client.sdk.get_entity(entity_id)
-        
+
         for responses in llm_response.response:
             for response in responses:
                 try:
@@ -26,8 +27,7 @@ class ComposioToolset(OpenaiStyleToolsetBase):
                         action_name=action_name_to_execute
                     )
                     arguments = json.loads(function["arguments"])
-                    account = entity.get_connection(app_name=action.service)
-                    output = account.execute_action(action, arguments)
+                    output = self.client.execute_action(action, arguments, entity_id)
                     
                 except json.JSONDecodeError:
                     output = response.content

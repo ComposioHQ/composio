@@ -13,7 +13,6 @@ composio_tools = toolset.get_tools(tools=App.GITHUB)
 
 api_key = os.environ["JULEP_API_KEY"]
 base_url = os.environ["JULEP_API_URL"]
-# openai_api_key = os.environ["OPENAI_API_KEY"]
 
 client = Client(api_key=api_key, base_url=base_url)
 
@@ -63,7 +62,6 @@ session = client.sessions.create(
 
 user_msg = "Hi, I am presenting my project, hosted at github repository SamparkAI/composio_sdk. If you like it, adding a star would be helpful "
 
-# user_msg = "What do you like about tech?"
 
 response = client.sessions.chat(
     session_id=session.id,
