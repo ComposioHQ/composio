@@ -12,11 +12,13 @@ from composio import Action, App, ComposioCore, FrameworkEnum, Tag
 from composio.sdk.exceptions import UserNotAuthenticatedException
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
 
+
 logger = logging.getLogger(__name__)
 
 client = ComposioCore(
     framework=FrameworkEnum.AUTOGEN, api_key=os.environ.get("COMPOSIO_API_KEY", None)
 )
+
 
 class ComposioToolset:
     def __init__(
@@ -122,7 +124,10 @@ class ComposioToolset:
 
         def placeholder_function(**kwargs):
             return self.client.execute_action(
-                self.client.get_action_enum(name, appName), kwargs, entity_id=self.entity_id, connection_id=connection_id,
+                self.client.get_action_enum(name, appName),
+                kwargs,
+                entity_id=self.entity_id,
+                connection_id=connection_id,
             )
 
         action_func = types.FunctionType(
@@ -143,4 +148,3 @@ class ComposioToolset:
             name=processed_name,
             description=description if description else f"Action {name} from {appName}",
         )
-
