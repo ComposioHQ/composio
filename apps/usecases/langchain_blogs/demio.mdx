@@ -6,6 +6,7 @@ description: "Connect LangChain to Demio to create agents to perform tasks using
 ---
 
 ## Connecting LangChain AI agents with Demio
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Demio is built so you can host engaging experiences that turn into analytical in
 
 Integrating Demio & Langchain can allow for the following:
 
-1. hosting engaging webinars
-2. generating analytical insights
+1. Hosting engaging webinars
+2. Generating analytical insights
 & so many more
 
 ## Using LangChain with Demio
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions demio "hosting engaging webinars" --limit=10
+composio-cli get-actions demio "Hosting engaging webinars" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Demio API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "hosting engaging webinars"
+task = "Hosting engaging webinars"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

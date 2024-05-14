@@ -6,6 +6,7 @@ description: "Connect CrewAI to Highlevel to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Highlevel
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Highlevel is a messaging platform that allows businesses to communicate with pro
 
 Integrating Highlevel & CrewAI can allow for the following:
 
-1. communicating with customers via messaging within their app or website
-2. engaging with customers through social media or email
+1. Communicating with customers via messaging within their app or website
+2. Engaging with customers through social media or email
 & so many more
 
 ## Using CrewAI with Highlevel
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions highlevel "communicating with customers via messaging within their app or website" --limit=10
+composio-cli get-actions highlevel "Communicating with customers via messaging within their app or website" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Highlevel API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "communicating with customers via messaging within their app or website"
+task = "Communicating with customers via messaging within their app or website"
 
 crewai_agent = Agent(
     role='Highlevel Agent',

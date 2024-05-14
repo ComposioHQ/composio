@@ -6,6 +6,7 @@ description: "Connect LangChain to Raven SEO Tools to create agents to perform t
 ---
 
 ## Connecting LangChain AI agents with Raven SEO Tools
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Raven SEO Tools offers advanced SEO analysis, reporting, and data tracking servi
 
 Integrating Raven SEO Tools & Langchain can allow for the following:
 
-1. Advanced SEO analysis and reporting
+1. Advanced seo analysis and reporting
 2. Data tracking and performance metrics
 & so many more
 
 ## Using LangChain with Raven SEO Tools
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ravenseotools "Advanced SEO analysis and reporting" --limit=10
+composio-cli get-actions ravenseotools "Advanced seo analysis and reporting" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Raven SEO Tools
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Advanced SEO analysis and reporting"
+task = "Advanced seo analysis and reporting"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

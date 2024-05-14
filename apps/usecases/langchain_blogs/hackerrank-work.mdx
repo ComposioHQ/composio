@@ -6,6 +6,7 @@ description: "Connect LangChain to HackerRank Work to create agents to perform t
 ---
 
 ## Connecting LangChain AI agents with HackerRank Work
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Integration with HackerRank Work for authentication.
 
 Integrating HackerRank Work & Langchain can allow for the following:
 
-1. Integration with HackerRank Work for authentication
+1. Integration with hackerrank work for authentication
 2. Generate and manage coding challenges
 & so many more
 
 ## Using LangChain with HackerRank Work
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions hackerrank-work "Integration with HackerRank Work for authentication" --limit=10
+composio-cli get-actions hackerrank-work "Integration with hackerrank work for authentication" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform HackerRank Work
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Integration with HackerRank Work for authentication"
+task = "Integration with hackerrank work for authentication"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

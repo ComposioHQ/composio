@@ -6,6 +6,7 @@ description: "Connect Autogen to Customer.io to create agents to perform tasks u
 ---
 
 ## Connecting Autogen AI agents with Customer.io
+![intro](/media/intro.jpg)
 
 ### Overview of Customer.io
 
@@ -15,12 +16,12 @@ Customer.io provides APIs for managing customer data and sending personalized me
 
 Integrating Customer.io & Autogen can allow for the following:
 
-1. sending personalized messages to customers
-2. managing customer data
+1. Sending personalized messages to customers
+2. Managing customer data
 & so many more
 
 ## Using Autogen with Customer.io
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions customer_io "sending personalized messages to customers" --limit=10
+composio-cli get-actions customer_io "Sending personalized messages to customers" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Customer.io API
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending personalized messages to customers" # change this as necessary
+task = "Sending personalized messages to customers" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect Autogen to Contentful to create agents to perform tasks us
 ---
 
 ## Connecting Autogen AI agents with Contentful
+![intro](/media/intro.jpg)
 
 ### Overview of Contentful
 
@@ -15,12 +16,12 @@ Contentful provides a content platform with APIs for managing and delivering con
 
 Integrating Contentful & Autogen can allow for the following:
 
-1. managing and delivering content to apps and websites
-2. creating and managing content structures
+1. Managing and delivering content to apps and websites
+2. Creating and managing content structures
 & so many more
 
 ## Using Autogen with Contentful
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions contentful "managing and delivering content to apps and websites" --limit=10
+composio-cli get-actions contentful "Managing and delivering content to apps and websites" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Contentful API 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "managing and delivering content to apps and websites" # change this as necessary
+task = "Managing and delivering content to apps and websites" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

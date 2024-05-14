@@ -6,6 +6,7 @@ description: "Connect Autogen to Twitter to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with Twitter
+![intro](/media/intro.jpg)
 
 ### Overview of Twitter
 
@@ -15,12 +16,12 @@ Twitter, Inc. was an American social media company based in San Francisco, Calif
 
 Integrating Twitter & Autogen can allow for the following:
 
-1. posting tweets
-2. managing direct messages
+1. Posting tweets
+2. Managing direct messages
 & so many more
 
 ## Using Autogen with Twitter
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions twitter "posting tweets" --limit=10
+composio-cli get-actions twitter "Posting tweets" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Twitter API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "posting tweets" # change this as necessary
+task = "Posting tweets" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

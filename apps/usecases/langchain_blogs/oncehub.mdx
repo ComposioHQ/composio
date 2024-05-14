@@ -6,6 +6,7 @@ description: "Connect LangChain to OnceHub to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with OnceHub
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ OnceHub provides APIs for scheduling, booking management, and customer data inte
 
 Integrating OnceHub & Langchain can allow for the following:
 
-1. scheduling appointments
-2. managing customer bookings
+1. Scheduling appointments
+2. Managing customer bookings
 & so many more
 
 ## Using LangChain with OnceHub
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions oncehub "scheduling appointments" --limit=10
+composio-cli get-actions oncehub "Scheduling appointments" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform OnceHub API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "scheduling appointments"
+task = "Scheduling appointments"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect CrewAI to Snowflake to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Snowflake
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Snowflake is a cloud data warehouse that allows you to run SQL queries on your d
 
 Integrating Snowflake & CrewAI can allow for the following:
 
-1. running SQL queries on your data
-2. creating a cloud data warehouse
+1. Running sql queries on your data
+2. Creating a cloud data warehouse
 & so many more
 
 ## Using CrewAI with Snowflake
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions snowflake "running SQL queries on your data" --limit=10
+composio-cli get-actions snowflake "Running sql queries on your data" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Snowflake API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "running SQL queries on your data"
+task = "Running sql queries on your data"
 
 crewai_agent = Agent(
     role='Snowflake Agent',

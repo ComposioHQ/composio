@@ -6,6 +6,7 @@ description: "Connect LangChain to Zoho Mail to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with Zoho Mail
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Zoho Mail is an email hosting service built with the needs of a modern business 
 
 Integrating Zoho Mail & Langchain can allow for the following:
 
-1. sending emails securely within a business environment
-2. organizing emails into folders for better management
+1. Sending emails securely within a business environment
+2. Organizing emails into folders for better management
 & so many more
 
 ## Using LangChain with Zoho Mail
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-mail "sending emails securely within a business environment" --limit=10
+composio-cli get-actions zoho-mail "Sending emails securely within a business environment" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Zoho Mail API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending emails securely within a business environment"
+task = "Sending emails securely within a business environment"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

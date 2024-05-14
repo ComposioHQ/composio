@@ -6,6 +6,7 @@ description: "Connect CrewAI to Asana to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Asana
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Tool to help teams organize, track, and manage their work.
 
 Integrating Asana & CrewAI can allow for the following:
 
-1. managing tasks and projects
-2. creating and assigning tasks
+1. Managing tasks and projects
+2. Creating and assigning tasks
 & so many more
 
 ## Using CrewAI with Asana
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions asana "managing tasks and projects" --limit=10
+composio-cli get-actions asana "Managing tasks and projects" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Asana API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing tasks and projects"
+task = "Managing tasks and projects"
 
 crewai_agent = Agent(
     role='Asana Agent',

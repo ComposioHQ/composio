@@ -6,6 +6,7 @@ description: "Connect Autogen to RocketReach to create agents to perform tasks u
 ---
 
 ## Connecting Autogen AI agents with RocketReach
+![intro](/media/intro.jpg)
 
 ### Overview of RocketReach
 
@@ -15,12 +16,12 @@ RocketReach provides APIs for searching and retrieving contact information for p
 
 Integrating RocketReach & Autogen can allow for the following:
 
-1. retrieving contact information for professionals
-2. searching for company contact details
+1. Retrieving contact information for professionals
+2. Searching for company contact details
 & so many more
 
 ## Using Autogen with RocketReach
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions rocket-reach "retrieving contact information for professionals" --limit=10
+composio-cli get-actions rocket-reach "Retrieving contact information for professionals" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform RocketReach API
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "retrieving contact information for professionals" # change this as necessary
+task = "Retrieving contact information for professionals" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

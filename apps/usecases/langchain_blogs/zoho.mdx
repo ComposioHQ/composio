@@ -6,6 +6,7 @@ description: "Connect LangChain to Zoho to create agents to perform tasks using 
 ---
 
 ## Connecting LangChain AI agents with Zoho
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Zoho CRM's APIs allow you to perform all the operations that you do with our web
 
 Integrating Zoho & Langchain can allow for the following:
 
-1. Managing customer relationships through Zoho CRM's extensive API
-2. Automating accounting tasks using Zoho's versatile toolset
+1. Managing customer relationships through zoho crm's extensive api
+2. Automating accounting tasks using zoho's versatile toolset
 & so many more
 
 ## Using LangChain with Zoho
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho "Managing customer relationships through Zoho CRM's extensive API" --limit=10
+composio-cli get-actions zoho "Managing customer relationships through zoho crm's extensive api" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Zoho API calls 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Managing customer relationships through Zoho CRM's extensive API"
+task = "Managing customer relationships through zoho crm's extensive api"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

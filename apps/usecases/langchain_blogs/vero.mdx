@@ -6,6 +6,7 @@ description: "Connect LangChain to Vero to create agents to perform tasks using 
 ---
 
 ## Connecting LangChain AI agents with Vero
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Vero is a customer engagement platform for product and product marketing teams a
 
 Integrating Vero & Langchain can allow for the following:
 
-1. sending targeted emails to segments of customers
-2. tracking customer behavior to enhance engagement strategies
+1. Sending targeted emails to segments of customers
+2. Tracking customer behavior to enhance engagement strategies
 & so many more
 
 ## Using LangChain with Vero
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions vero "sending targeted emails to segments of customers" --limit=10
+composio-cli get-actions vero "Sending targeted emails to segments of customers" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Vero API calls 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending targeted emails to segments of customers"
+task = "Sending targeted emails to segments of customers"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

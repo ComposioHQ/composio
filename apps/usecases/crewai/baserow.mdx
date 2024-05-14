@@ -6,6 +6,7 @@ description: "Connect CrewAI to Baserow to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Baserow
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Access and manage your Baserow databases programmatically.
 
 Integrating Baserow & CrewAI can allow for the following:
 
-1. Storing and managing data in Baserow tables
-2. Creating custom workflows using Baserow API
+1. Storing and managing data in baserow tables
+2. Creating custom workflows using baserow api
 & so many more
 
 ## Using CrewAI with Baserow
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions baserow "Storing and managing data in Baserow tables" --limit=10
+composio-cli get-actions baserow "Storing and managing data in baserow tables" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Baserow API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Storing and managing data in Baserow tables"
+task = "Storing and managing data in baserow tables"
 
 crewai_agent = Agent(
     role='Baserow Agent',

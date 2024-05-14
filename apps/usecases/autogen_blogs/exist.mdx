@@ -6,6 +6,7 @@ description: "Connect Autogen to Exist to create agents to perform tasks using n
 ---
 
 ## Connecting Autogen AI agents with Exist
+![intro](/media/intro.jpg)
 
 ### Overview of Exist
 
@@ -15,12 +16,12 @@ With Exist, you can create your own data points to track anything else you want.
 
 Integrating Exist & Autogen can allow for the following:
 
-1. track subjective measures such as energy and stress levels
-2. create your own data points for tracking personal habits
+1. Track subjective measures such as energy and stress levels
+2. Create your own data points for tracking personal habits
 & so many more
 
 ## Using Autogen with Exist
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions exist "track subjective measures such as energy and stress levels" --limit=10
+composio-cli get-actions exist "Track subjective measures such as energy and stress levels" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Exist API calls
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "track subjective measures such as energy and stress levels" # change this as necessary
+task = "Track subjective measures such as energy and stress levels" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect Autogen to MetaTextAI to create agents to perform tasks us
 ---
 
 ## Connecting Autogen AI agents with MetaTextAI
+![intro](/media/intro.jpg)
 
 ### Overview of MetaTextAI
 
@@ -15,12 +16,12 @@ MetaTextAI provides APIs for natural language processing, text generation, and A
 
 Integrating MetaTextAI & Autogen can allow for the following:
 
-1. AI-powered content creation
-2. natural language processing
+1. Ai-powered content creation
+2. Natural language processing
 & so many more
 
 ## Using Autogen with MetaTextAI
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions metatextai "AI-powered content creation" --limit=10
+composio-cli get-actions metatextai "Ai-powered content creation" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform MetaTextAI API 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "AI-powered content creation" # change this as necessary
+task = "Ai-powered content creation" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

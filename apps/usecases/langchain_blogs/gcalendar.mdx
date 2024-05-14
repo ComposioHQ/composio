@@ -6,6 +6,7 @@ description: "Connect LangChain to Google Calendar to create agents to perform t
 ---
 
 ## Connecting LangChain AI agents with Google Calendar
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Google Calendar is a time-management and scheduling calendar service developed b
 
 Integrating Google Calendar & Langchain can allow for the following:
 
-1. scheduling meetings
-2. sharing calendars with team members
+1. Scheduling meetings
+2. Sharing calendars with team members
 & so many more
 
 ## Using LangChain with Google Calendar
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gcalendar "scheduling meetings" --limit=10
+composio-cli get-actions gcalendar "Scheduling meetings" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Google Calendar
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "scheduling meetings"
+task = "Scheduling meetings"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

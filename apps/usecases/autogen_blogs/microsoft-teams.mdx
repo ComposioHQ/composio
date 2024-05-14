@@ -6,6 +6,7 @@ description: "Connect Autogen to Microsoft Teams to create agents to perform tas
 ---
 
 ## Connecting Autogen AI agents with Microsoft Teams
+![intro](/media/intro.jpg)
 
 ### Overview of Microsoft Teams
 
@@ -15,12 +16,12 @@ Microsoft Teams is a proprietary business communication platform developed by Mi
 
 Integrating Microsoft Teams & Autogen can allow for the following:
 
-1. sending messages to a Microsoft Teams channel
-2. creating a new team or channel within Microsoft Teams
+1. Sending messages to a microsoft teams channel
+2. Creating a new team or channel within microsoft teams
 & so many more
 
 ## Using Autogen with Microsoft Teams
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions microsoft-teams "sending messages to a Microsoft Teams channel" --limit=10
+composio-cli get-actions microsoft-teams "Sending messages to a microsoft teams channel" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Microsoft Teams
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending messages to a Microsoft Teams channel" # change this as necessary
+task = "Sending messages to a microsoft teams channel" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

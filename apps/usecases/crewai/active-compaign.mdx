@@ -6,6 +6,7 @@ description: "Connect CrewAI to ActiveCampaign to create agents to perform tasks
 ---
 
 ## Connecting CrewAI with ActiveCampaign
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ ActiveCampaign provides APIs for marketing automation, customer relationship man
 
 Integrating ActiveCampaign & CrewAI can allow for the following:
 
-1. automating email marketing campaigns
-2. managing customer relationships effectively
+1. Automating email marketing campaigns
+2. Managing customer relationships effectively
 & so many more
 
 ## Using CrewAI with ActiveCampaign
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions active-compaign "automating email marketing campaigns" --limit=10
+composio-cli get-actions active-compaign "Automating email marketing campaigns" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform ActiveCampaign API calls using Comp
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "automating email marketing campaigns"
+task = "Automating email marketing campaigns"
 
 crewai_agent = Agent(
     role='ActiveCampaign Agent',

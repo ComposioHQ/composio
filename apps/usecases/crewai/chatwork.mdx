@@ -6,6 +6,7 @@ description: "Connect CrewAI to ChatWork to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with ChatWork
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ ChatWork is all-in-one group chat for global teams. It brings secure messaging, 
 
 Integrating ChatWork & CrewAI can allow for the following:
 
-1. Sending messages to a ChatWork group
+1. Sending messages to a chatwork group
 2. Creating tasks directly from chat messages
 & so many more
 
 ## Using CrewAI with ChatWork
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions chatwork "Sending messages to a ChatWork group" --limit=10
+composio-cli get-actions chatwork "Sending messages to a chatwork group" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform ChatWork API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Sending messages to a ChatWork group"
+task = "Sending messages to a chatwork group"
 
 crewai_agent = Agent(
     role='ChatWork Agent',

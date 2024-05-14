@@ -6,6 +6,7 @@ description: "Connect LangChain to Twitter to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with Twitter
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Twitter, Inc. was an American social media company based in San Francisco, Calif
 
 Integrating Twitter & Langchain can allow for the following:
 
-1. posting tweets
-2. managing direct messages
+1. Posting tweets
+2. Managing direct messages
 & so many more
 
 ## Using LangChain with Twitter
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions twitter "posting tweets" --limit=10
+composio-cli get-actions twitter "Posting tweets" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Twitter API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "posting tweets"
+task = "Posting tweets"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

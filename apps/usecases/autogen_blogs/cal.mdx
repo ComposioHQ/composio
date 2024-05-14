@@ -6,6 +6,7 @@ description: "Connect Autogen to Cal.com to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with Cal.com
+![intro](/media/intro.jpg)
 
 ### Overview of Cal.com
 
@@ -15,12 +16,12 @@ Cal.com offers a flexible scheduling platform that integrates with your calendar
 
 Integrating Cal.com & Autogen can allow for the following:
 
-1. scheduling appointments and meetings
-2. calendar integration
+1. Scheduling appointments and meetings
+2. Calendar integration
 & so many more
 
 ## Using Autogen with Cal.com
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions cal "scheduling appointments and meetings" --limit=10
+composio-cli get-actions cal "Scheduling appointments and meetings" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Cal.com API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "scheduling appointments and meetings" # change this as necessary
+task = "Scheduling appointments and meetings" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

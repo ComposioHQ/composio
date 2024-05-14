@@ -6,6 +6,7 @@ description: "Connect LangChain to Slackbot to create agents to perform tasks us
 ---
 
 ## Connecting LangChain AI agents with Slackbot
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Slack is a channel-based messaging platform. With Slack, people can work togethe
 
 Integrating Slackbot & Langchain can allow for the following:
 
-1. Sending messages to a Slack channel
-2. Creating a new channel in Slack
+1. Sending messages to a slack channel
+2. Creating a new channel in slack
 & so many more
 
 ## Using LangChain with Slackbot
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions slackbot "Sending messages to a Slack channel" --limit=10
+composio-cli get-actions slackbot "Sending messages to a slack channel" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Slackbot API ca
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Sending messages to a Slack channel"
+task = "Sending messages to a slack channel"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect LangChain to Beeminder to create agents to perform tasks u
 ---
 
 ## Connecting LangChain AI agents with Beeminder
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Beeminder functions as a self-tracking tool and provides a visual representation
 
 Integrating Beeminder & Langchain can allow for the following:
 
-1. tracking progress towards personal goals
-2. visualizing data and objectives
+1. Tracking progress towards personal goals
+2. Visualizing data and objectives
 & so many more
 
 ## Using LangChain with Beeminder
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions beeminder "tracking progress towards personal goals" --limit=10
+composio-cli get-actions beeminder "Tracking progress towards personal goals" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Beeminder API c
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "tracking progress towards personal goals"
+task = "Tracking progress towards personal goals"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

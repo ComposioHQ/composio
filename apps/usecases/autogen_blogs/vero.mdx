@@ -6,6 +6,7 @@ description: "Connect Autogen to Vero to create agents to perform tasks using na
 ---
 
 ## Connecting Autogen AI agents with Vero
+![intro](/media/intro.jpg)
 
 ### Overview of Vero
 
@@ -15,12 +16,12 @@ Vero is a customer engagement platform for product and product marketing teams a
 
 Integrating Vero & Autogen can allow for the following:
 
-1. sending targeted emails to segments of customers
-2. tracking customer behavior to enhance engagement strategies
+1. Sending targeted emails to segments of customers
+2. Tracking customer behavior to enhance engagement strategies
 & so many more
 
 ## Using Autogen with Vero
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions vero "sending targeted emails to segments of customers" --limit=10
+composio-cli get-actions vero "Sending targeted emails to segments of customers" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Vero API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending targeted emails to segments of customers" # change this as necessary
+task = "Sending targeted emails to segments of customers" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

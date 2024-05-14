@@ -6,6 +6,7 @@ description: "Connect CrewAI to Spotify to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Spotify
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Spotify is a digital music service that gives you access to millions of songs.
 
 Integrating Spotify & CrewAI can allow for the following:
 
-1. creating custom playlists
-2. sharing music with friends
+1. Creating custom playlists
+2. Sharing music with friends
 & so many more
 
 ## Using CrewAI with Spotify
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions spotify "creating custom playlists" --limit=10
+composio-cli get-actions spotify "Creating custom playlists" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Spotify API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "creating custom playlists"
+task = "Creating custom playlists"
 
 crewai_agent = Agent(
     role='Spotify Agent',

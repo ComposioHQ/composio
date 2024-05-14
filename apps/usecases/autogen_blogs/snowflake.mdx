@@ -6,6 +6,7 @@ description: "Connect Autogen to Snowflake to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with Snowflake
+![intro](/media/intro.jpg)
 
 ### Overview of Snowflake
 
@@ -15,12 +16,12 @@ Snowflake is a cloud data warehouse that allows you to run SQL queries on your d
 
 Integrating Snowflake & Autogen can allow for the following:
 
-1. running SQL queries on your data
-2. managing large datasets efficiently
+1. Running sql queries on your data
+2. Managing large datasets efficiently
 & so many more
 
 ## Using Autogen with Snowflake
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions snowflake "running SQL queries on your data" --limit=10
+composio-cli get-actions snowflake "Running sql queries on your data" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Snowflake API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "running SQL queries on your data" # change this as necessary
+task = "Running sql queries on your data" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect LangChain to TinyURL to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with TinyURL
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ TinyURL provides APIs for shortening long URLs into compact, branded links and t
 
 Integrating TinyURL & Langchain can allow for the following:
 
-1. Shortening long URLs into compact, branded links
+1. Shortening long urls into compact, branded links
 2. Tracking link analytics
 & so many more
 
 ## Using LangChain with TinyURL
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions tinyurl "Shortening long URLs into compact, branded links" --limit=10
+composio-cli get-actions tinyurl "Shortening long urls into compact, branded links" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform TinyURL API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Shortening long URLs into compact, branded links"
+task = "Shortening long urls into compact, branded links"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

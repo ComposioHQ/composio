@@ -6,6 +6,7 @@ description: "Connect CrewAI to Splitwise to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Splitwise
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Splitwise helps you split bills and expenses with friends and family.
 
 Integrating Splitwise & CrewAI can allow for the following:
 
-1. splitting bills and expenses
-2. managing group expenses
+1. Splitting bills and expenses
+2. Managing group expenses
 & so many more
 
 ## Using CrewAI with Splitwise
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions splitwise "splitting bills and expenses" --limit=10
+composio-cli get-actions splitwise "Splitting bills and expenses" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Splitwise API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "splitting bills and expenses"
+task = "Splitting bills and expenses"
 
 crewai_agent = Agent(
     role='Splitwise Agent',

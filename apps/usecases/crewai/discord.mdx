@@ -6,6 +6,7 @@ description: "Connect CrewAI to Discord to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Discord
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ An instant messaging and VoIP social platform.
 
 Integrating Discord & CrewAI can allow for the following:
 
-1. sending messages to a Discord channel
-2. creating a new Discord server
+1. Sending messages to a discord channel
+2. Creating a new discord server
 & so many more
 
 ## Using CrewAI with Discord
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions discord "sending messages to a Discord channel" --limit=10
+composio-cli get-actions discord "Sending messages to a discord channel" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Discord API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending messages to a Discord channel"
+task = "Sending messages to a discord channel"
 
 crewai_agent = Agent(
     role='Discord Agent',

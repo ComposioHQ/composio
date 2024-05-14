@@ -6,6 +6,7 @@ description: "Connect Autogen to chmeetings to create agents to perform tasks us
 ---
 
 ## Connecting Autogen AI agents with chmeetings
+![intro](/media/intro.jpg)
 
 ### Overview of chmeetings
 
@@ -15,12 +16,12 @@ CHMeetings is a comprehensive church management platform offering solutions for 
 
 Integrating chmeetings & Autogen can allow for the following:
 
-1. event planning and member engagement
-2. administrative efficiency
+1. Event planning and member engagement
+2. Administrative efficiency
 & so many more
 
 ## Using Autogen with chmeetings
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions chmeetings "event planning and member engagement" --limit=10
+composio-cli get-actions chmeetings "Event planning and member engagement" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform chmeetings API 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "event planning and member engagement" # change this as necessary
+task = "Event planning and member engagement" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

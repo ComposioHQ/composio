@@ -6,6 +6,7 @@ description: "Connect CrewAI to Beeminder to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Beeminder
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Beeminder functions as a self-tracking tool and provides a visual representation
 
 Integrating Beeminder & CrewAI can allow for the following:
 
-1. tracking your progress towards fitness goals
-2. maintaining a visual progress chart for academic achievements
+1. Tracking your progress towards fitness goals
+2. Maintaining a visual progress chart for academic achievements
 & so many more
 
 ## Using CrewAI with Beeminder
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions beeminder "tracking your progress towards fitness goals" --limit=10
+composio-cli get-actions beeminder "Tracking your progress towards fitness goals" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Beeminder API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking your progress towards fitness goals"
+task = "Tracking your progress towards fitness goals"
 
 crewai_agent = Agent(
     role='Beeminder Agent',

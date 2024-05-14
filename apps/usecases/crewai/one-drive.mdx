@@ -6,6 +6,7 @@ description: "Connect CrewAI to OneDrive to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with OneDrive
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ OneDrive is a file hosting service and synchronization service operated by Micro
 
 Integrating OneDrive & CrewAI can allow for the following:
 
-1. storing and sharing files securely
-2. collaborating on documents in real-time
+1. Storing and sharing files securely
+2. Collaborating on documents in real-time
 & so many more
 
 ## Using CrewAI with OneDrive
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions one-drive "storing and sharing files securely" --limit=10
+composio-cli get-actions one-drive "Storing and sharing files securely" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform OneDrive API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "storing and sharing files securely"
+task = "Storing and sharing files securely"
 
 crewai_agent = Agent(
     role='OneDrive Agent',

@@ -6,6 +6,7 @@ description: "Connect Autogen to PagerDuty to create agents to perform tasks usi
 ---
 
 ## Connecting Autogen AI agents with PagerDuty
+![intro](/media/intro.jpg)
 
 ### Overview of PagerDuty
 
@@ -15,12 +16,12 @@ PagerDuty is an incident management platform that provides reliable incident not
 
 Integrating PagerDuty & Autogen can allow for the following:
 
-1. Receiving incident notifications via multiple channels such as email, push, SMS, and phone
+1. Receiving incident notifications via multiple channels such as email, push, sms, and phone
 2. Automating escalations and managing on-call scheduling to enhance team response times
 & so many more
 
 ## Using Autogen with PagerDuty
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions pagerduty "Receiving incident notifications via multiple channels such as email, push, SMS, and phone" --limit=10
+composio-cli get-actions pagerduty "Receiving incident notifications via multiple channels such as email, push, sms, and phone" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform PagerDuty API c
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Receiving incident notifications via multiple channels such as email, push, SMS, and phone" # change this as necessary
+task = "Receiving incident notifications via multiple channels such as email, push, sms, and phone" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

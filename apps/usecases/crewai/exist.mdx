@@ -6,6 +6,7 @@ description: "Connect CrewAI to Exist to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Exist
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ With Exist, you can create your own data points to track anything else you want.
 
 Integrating Exist & CrewAI can allow for the following:
 
-1. tracking habits and routines
-2. monitoring health metrics
+1. Tracking habits and routines
+2. Monitoring health metrics
 & so many more
 
 ## Using CrewAI with Exist
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions exist "tracking habits and routines" --limit=10
+composio-cli get-actions exist "Tracking habits and routines" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Exist API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking habits and routines"
+task = "Tracking habits and routines"
 
 crewai_agent = Agent(
     role='Exist Agent',

@@ -6,6 +6,7 @@ description: "Connect LangChain to Zoho Inventory to create agents to perform ta
 ---
 
 ## Connecting LangChain AI agents with Zoho Inventory
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Zoho Inventory is an online inventory management software that helps businesses 
 
 Integrating Zoho Inventory & Langchain can allow for the following:
 
-1. managing inventory, sales, and purchases
-2. generating detailed reports on inventory status
+1. Managing inventory, sales, and purchases
+2. Generating detailed reports on inventory status
 & so many more
 
 ## Using LangChain with Zoho Inventory
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-inventory "managing inventory, sales, and purchases" --limit=10
+composio-cli get-actions zoho-inventory "Managing inventory, sales, and purchases" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Zoho Inventory 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing inventory, sales, and purchases"
+task = "Managing inventory, sales, and purchases"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

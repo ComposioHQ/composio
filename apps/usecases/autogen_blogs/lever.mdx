@@ -6,6 +6,7 @@ description: "Connect Autogen to Lever to create agents to perform tasks using n
 ---
 
 ## Connecting Autogen AI agents with Lever
+![intro](/media/intro.jpg)
 
 ### Overview of Lever
 
@@ -15,12 +16,12 @@ Lever provides APIs for applicant tracking, candidate relationship management, a
 
 Integrating Lever & Autogen can allow for the following:
 
-1. tracking applicants through Lever APIs
-2. managing candidate relationships with Lever
+1. Tracking applicants through lever apis
+2. Managing candidate relationships with lever
 & so many more
 
 ## Using Autogen with Lever
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions lever "tracking applicants through Lever APIs" --limit=10
+composio-cli get-actions lever "Tracking applicants through lever apis" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Lever API calls
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "tracking applicants through Lever APIs" # change this as necessary
+task = "Tracking applicants through lever apis" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect Autogen to Facebook to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with Facebook
+![intro](/media/intro.jpg)
 
 ### Overview of Facebook
 
@@ -15,12 +16,12 @@ Facebook is a social media and social networking service.
 
 Integrating Facebook & Autogen can allow for the following:
 
-1. sharing updates and photos
-2. marketing businesses
+1. Sharing updates and photos
+2. Marketing businesses
 & so many more
 
 ## Using Autogen with Facebook
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions facebook "sharing updates and photos" --limit=10
+composio-cli get-actions facebook "Sharing updates and photos" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Facebook API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sharing updates and photos" # change this as necessary
+task = "Sharing updates and photos" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -3,11 +3,10 @@ title: "🚀 Connecting Autogen & Ably"
 sidebarTitle: "Ably x Autogen"
 icon: "play"
 description: "Connect Autogen to Ably to create agents to perform tasks using natural language"
-robot: "Index"
-og:title: "Connecting Autogen & Ably"
 ---
 
 ## Connecting Autogen AI agents with Ably
+![intro](/media/intro.jpg)
 
 ### Overview of Ably
 
@@ -17,12 +16,12 @@ Ably provides robust and scalable real-time messaging and data streaming solutio
 
 Integrating Ably & Autogen can allow for the following:
 
-1. sending real-time messages to a channel
-2. streaming data in real-time
-   & so many more
+1. Sending real-time messages to a channel
+2. Streaming data in real-time
+& so many more
 
 ## Using Autogen with Ably
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -30,11 +29,10 @@ Integrating Ably & Autogen can allow for the following:
 
 <CodeGroup>
 ```bash Installing & Authorising Ably
-pip install composio_autogen # Install autogen, Composio
+pip install composio_autogen # Install autogen, Composio 
 
 composio-cli add ably # One line to authenticate, configure and add Ably integration for Autogen
-
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Filter Actions">
@@ -43,9 +41,8 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions ably "sending real-time messages to a channel" --limit=10
-````
-
+composio-cli get-actions ably "Sending real-time messages to a channel" --limit=10
+```
 </CodeGroup>
 
 </Step>
@@ -60,21 +57,19 @@ import os
 llm_config = {"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]}
 
 chatbot = AssistantAgent(
-"chatbot",
-system_message="Reply TERMINATE when the task is done or when user's content is empty",
-llm_config=llm_config,
+    "chatbot",
+    system_message="Reply TERMINATE when the task is done or when user's content is empty",
+    llm_config=llm_config,
 )
 
 # create a UserProxyAgent instance named "user_proxy"
-
 user_proxy = UserProxyAgent(
-"user_proxy",
-is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x.get("content", ""),
-human_input_mode="NEVER", # Don't take input from User
-code_execution_config = {"use_docker": False}
+    "user_proxy",
+    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x.get("content", ""),
+    human_input_mode="NEVER", # Don't take input from User
+    code_execution_config = {"use_docker": False}
 )
-
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Select Ably Autogen Actions via Composio">
@@ -86,13 +81,12 @@ from composio_autogen import ComposioToolset, App, Action
 # Initialise the Composio Tool Set
 composio_tools = ComposioToolset()
 
-# Register the preferred Applications, with right executor.
+# Register the preferred Applications, with right executor. 
 composio_tools.register_actions(actions=[],caller=chatbot, executor=user_proxy)
 
 # Get All the Actions for Ably
-# composio_tools.register_tools(tools=[App.ABLY],caller=chatbot, executor=user_proxy)
-````
-
+# composio_tools.register_tools(tools=[App.ABLY],caller=chatbot, executor=user_proxy) 
+```
 </CodeGroup>
 </Step>
 <Step title="Execute the Agent">
@@ -100,19 +94,17 @@ Create an agent, set up an executor, and invoke tasks to perform Ably API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending real-time messages to a channel" # change this as necessary
+task = "Sending real-time messages to a channel" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 
 print(response.chat_history)
-
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Check Response">
 ```bash Executing Agents
 'content'...
-````
-
+```
 </Step>
 </Steps>

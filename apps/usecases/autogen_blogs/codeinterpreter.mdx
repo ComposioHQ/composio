@@ -6,6 +6,7 @@ description: "Connect Autogen to CodeInterpreter to create agents to perform tas
 ---
 
 ## Connecting Autogen AI agents with CodeInterpreter
+![intro](/media/intro.jpg)
 
 ### Overview of CodeInterpreter
 
@@ -15,12 +16,12 @@ Code interpreter can execute any python or js Code depending
 
 Integrating CodeInterpreter & Autogen can allow for the following:
 
-1. executing Python code
-2. executing JavaScript code
+1. Executing python code
+2. Executing javascript code
 & so many more
 
 ## Using Autogen with CodeInterpreter
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions codeinterpreter "executing Python code" --limit=10
+composio-cli get-actions codeinterpreter "Executing python code" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform CodeInterpreter
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "executing Python code" # change this as necessary
+task = "Executing python code" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

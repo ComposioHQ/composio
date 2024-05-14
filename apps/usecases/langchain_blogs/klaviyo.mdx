@@ -6,6 +6,7 @@ description: "Connect LangChain to Klaviyo to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with Klaviyo
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ A marketing platform for email, SMS, and more.
 
 Integrating Klaviyo & Langchain can allow for the following:
 
-1. sending marketing emails
-2. creating targeted customer segments
+1. Sending marketing emails
+2. Creating targeted customer segments
 & so many more
 
 ## Using LangChain with Klaviyo
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions klaviyo "sending marketing emails" --limit=10
+composio-cli get-actions klaviyo "Sending marketing emails" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Klaviyo API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "sending marketing emails"
+task = "Sending marketing emails"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

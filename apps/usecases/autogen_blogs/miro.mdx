@@ -6,6 +6,7 @@ description: "Connect Autogen to Miro to create agents to perform tasks using na
 ---
 
 ## Connecting Autogen AI agents with Miro
+![intro](/media/intro.jpg)
 
 ### Overview of Miro
 
@@ -15,12 +16,12 @@ Miro is a collaborative online whiteboard platform designed for remote and distr
 
 Integrating Miro & Autogen can allow for the following:
 
-1. creating collaborative whiteboards
-2. conducting remote team meetings
+1. Creating collaborative whiteboards
+2. Conducting remote team meetings
 & so many more
 
 ## Using Autogen with Miro
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions miro "creating collaborative whiteboards" --limit=10
+composio-cli get-actions miro "Creating collaborative whiteboards" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Miro API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "creating collaborative whiteboards" # change this as necessary
+task = "Creating collaborative whiteboards" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

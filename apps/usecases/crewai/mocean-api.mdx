@@ -6,6 +6,7 @@ description: "Connect CrewAI to Mocean to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Mocean
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Mocean is a cloud communications platform that provides SMS, Voice, and Verifica
 
 Integrating Mocean & CrewAI can allow for the following:
 
-1. sending SMS messages using Mocean API
-2. verifying user phone numbers through Mocean API
+1. Sending sms messages using mocean api
+2. Verifying user phone numbers through mocean api
 & so many more
 
 ## Using CrewAI with Mocean
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions mocean-api "sending SMS messages using Mocean API" --limit=10
+composio-cli get-actions mocean-api "Sending sms messages using mocean api" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Mocean API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending SMS messages using Mocean API"
+task = "Sending sms messages using mocean api"
 
 crewai_agent = Agent(
     role='Mocean Agent',

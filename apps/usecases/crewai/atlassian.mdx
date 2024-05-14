@@ -6,6 +6,7 @@ description: "Connect CrewAI to Atlassian to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Atlassian
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Integrate with Atlassian Cloud products to enhance development tools and collabo
 
 Integrating Atlassian & CrewAI can allow for the following:
 
-1. Tracking project progress in Jira
-2. Automating CI/CD workflows with Bitbucket
+1. Tracking project progress in jira
+2. Automating ci/cd workflows with bitbucket
 & so many more
 
 ## Using CrewAI with Atlassian
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions atlassian "Tracking project progress in Jira" --limit=10
+composio-cli get-actions atlassian "Tracking project progress in jira" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Atlassian API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Tracking project progress in Jira"
+task = "Tracking project progress in jira"
 
 crewai_agent = Agent(
     role='Atlassian Agent',

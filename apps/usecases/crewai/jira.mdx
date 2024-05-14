@@ -6,6 +6,7 @@ description: "Connect CrewAI to Jira to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Jira
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A tool for bug tracking, issue tracking and agile project management.
 
 Integrating Jira & CrewAI can allow for the following:
 
-1. tracking issues and bugs
-2. managing agile projects
+1. Tracking issues and bugs
+2. Managing agile projects
 & so many more
 
 ## Using CrewAI with Jira
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions jira "tracking issues and bugs" --limit=10
+composio-cli get-actions jira "Tracking issues and bugs" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Jira API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking issues and bugs"
+task = "Tracking issues and bugs"
 
 crewai_agent = Agent(
     role='Jira Agent',

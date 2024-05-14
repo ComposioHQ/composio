@@ -6,6 +6,7 @@ description: "Connect CrewAI to Zoho Invoice to create agents to perform tasks u
 ---
 
 ## Connecting CrewAI with Zoho Invoice
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Zoho Invoice is online invoicing software that helps you craft beautiful invoice
 
 Integrating Zoho Invoice & CrewAI can allow for the following:
 
-1. sending invoices to clients
-2. tracking payment statuses
+1. Sending invoices to clients
+2. Tracking payment statuses
 & so many more
 
 ## Using CrewAI with Zoho Invoice
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions zoho-invoice "sending invoices to clients" --limit=10
+composio-cli get-actions zoho-invoice "Sending invoices to clients" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Zoho Invoice API calls using Compos
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending invoices to clients"
+task = "Sending invoices to clients"
 
 crewai_agent = Agent(
     role='Zoho Invoice Agent',

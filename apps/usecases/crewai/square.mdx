@@ -6,6 +6,7 @@ description: "Connect CrewAI to Square to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Square
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Square is a comprehensive commerce platform that offers tools for payment proces
 
 Integrating Square & CrewAI can allow for the following:
 
-1. processing payments
-2. managing online stores
+1. Processing payments
+2. Managing online stores
 & so many more
 
 ## Using CrewAI with Square
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions square "processing payments" --limit=10
+composio-cli get-actions square "Processing payments" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Square API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "processing payments"
+task = "Processing payments"
 
 crewai_agent = Agent(
     role='Square Agent',

@@ -6,6 +6,7 @@ description: "Connect CrewAI to ncScale to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with ncScale
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ ncScale provides a robust data API for programmatically interacting with and man
 
 Integrating ncScale & CrewAI can allow for the following:
 
-1. programmatically interacting with ncScale data
-2. manipulating ncScale data
+1. Programmatically interacting with ncscale data
+2. Manipulating ncscale data
 & so many more
 
 ## Using CrewAI with ncScale
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ncscale "programmatically interacting with ncScale data" --limit=10
+composio-cli get-actions ncscale "Programmatically interacting with ncscale data" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform ncScale API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "programmatically interacting with ncScale data"
+task = "Programmatically interacting with ncscale data"
 
 crewai_agent = Agent(
     role='ncScale Agent',

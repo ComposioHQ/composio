@@ -6,6 +6,7 @@ description: "Connect Autogen to Mocean API to create agents to perform tasks us
 ---
 
 ## Connecting Autogen AI agents with Mocean API
+![intro](/media/intro.jpg)
 
 ### Overview of Mocean API
 
@@ -15,12 +16,12 @@ Mocean is a cloud communications platform that provides SMS, Voice, and Verifica
 
 Integrating Mocean API & Autogen can allow for the following:
 
-1. Sending SMS messages to users
+1. Sending sms messages to users
 2. Making automated voice calls
 & so many more
 
 ## Using Autogen with Mocean API
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions mocean-api "Sending SMS messages to users" --limit=10
+composio-cli get-actions mocean-api "Sending sms messages to users" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Mocean API API 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "Sending SMS messages to users" # change this as necessary
+task = "Sending sms messages to users" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

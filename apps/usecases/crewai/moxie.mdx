@@ -6,6 +6,7 @@ description: "Connect CrewAI to Moxie to create agents to perform tasks using na
 ---
 
 ## Connecting CrewAI with Moxie
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Moxie provides APIs for managing clients, contacts, projects, invoices, expenses
 
 Integrating Moxie & CrewAI can allow for the following:
 
-1. managing projects and clients
-2. tracking expenses and generating reports
+1. Managing projects and clients
+2. Tracking expenses and generating reports
 & so many more
 
 ## Using CrewAI with Moxie
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions moxie "managing projects and clients" --limit=10
+composio-cli get-actions moxie "Managing projects and clients" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Moxie API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing projects and clients"
+task = "Managing projects and clients"
 
 crewai_agent = Agent(
     role='Moxie Agent',

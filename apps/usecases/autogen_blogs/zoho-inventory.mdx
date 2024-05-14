@@ -6,6 +6,7 @@ description: "Connect Autogen to Zoho Inventory to create agents to perform task
 ---
 
 ## Connecting Autogen AI agents with Zoho Inventory
+![intro](/media/intro.jpg)
 
 ### Overview of Zoho Inventory
 
@@ -15,12 +16,12 @@ Zoho Inventory is an online inventory management software that helps businesses 
 
 Integrating Zoho Inventory & Autogen can allow for the following:
 
-1. managing inventory, sales, and purchases
-2. generating detailed reports on inventory status
+1. Managing inventory, sales, and purchases
+2. Generating detailed reports on inventory status
 & so many more
 
 ## Using Autogen with Zoho Inventory
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions zoho-inventory "managing inventory, sales, and purchases" --limit=10
+composio-cli get-actions zoho-inventory "Managing inventory, sales, and purchases" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Zoho Inventory 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "managing inventory, sales, and purchases" # change this as necessary
+task = "Managing inventory, sales, and purchases" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

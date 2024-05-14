@@ -6,6 +6,7 @@ description: "Connect CrewAI to Box to create agents to perform tasks using natu
 ---
 
 ## Connecting CrewAI with Box
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Cloud content management and file sharing service for businesses.
 
 Integrating Box & CrewAI can allow for the following:
 
-1. storing and sharing files
-2. collaborating on documents
+1. Storing and sharing files
+2. Collaborating on documents
 & so many more
 
 ## Using CrewAI with Box
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions box "storing and sharing files" --limit=10
+composio-cli get-actions box "Storing and sharing files" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Box API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "storing and sharing files"
+task = "Storing and sharing files"
 
 crewai_agent = Agent(
     role='Box Agent',

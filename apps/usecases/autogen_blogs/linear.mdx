@@ -6,6 +6,7 @@ description: "Connect Autogen to Linear to create agents to perform tasks using 
 ---
 
 ## Connecting Autogen AI agents with Linear
+![intro](/media/intro.jpg)
 
 ### Overview of Linear
 
@@ -15,12 +16,12 @@ A modern project management tool designed for efficiency and performance.
 
 Integrating Linear & Autogen can allow for the following:
 
-1. managing software development projects
-2. tracking issues and tasks
+1. Managing software development projects
+2. Tracking issues and tasks
 & so many more
 
 ## Using Autogen with Linear
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions linear "managing software development projects" --limit=10
+composio-cli get-actions linear "Managing software development projects" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Linear API call
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "managing software development projects" # change this as necessary
+task = "Managing software development projects" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect LangChain to Miro to create agents to perform tasks using 
 ---
 
 ## Connecting LangChain AI agents with Miro
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Miro is a collaborative online whiteboard platform designed for remote and distr
 
 Integrating Miro & Langchain can allow for the following:
 
-1. creating collaborative whiteboards
-2. conducting remote team meetings
+1. Creating collaborative whiteboards
+2. Conducting remote team meetings
 & so many more
 
 ## Using LangChain with Miro
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions miro "creating collaborative whiteboards" --limit=10
+composio-cli get-actions miro "Creating collaborative whiteboards" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Miro API calls 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "creating collaborative whiteboards"
+task = "Creating collaborative whiteboards"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

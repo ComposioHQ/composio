@@ -6,6 +6,7 @@ description: "Connect LangChain to ncScale to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with ncScale
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ ncScale provides a robust data API for programmatically interacting with and man
 
 Integrating ncScale & Langchain can allow for the following:
 
-1. Interacting with ncScale data via API
-2. Manipulating ncScale data programmatically
+1. Interacting with ncscale data via api
+2. Manipulating ncscale data programmatically
 & so many more
 
 ## Using LangChain with ncScale
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ncscale "Interacting with ncScale data via API" --limit=10
+composio-cli get-actions ncscale "Interacting with ncscale data via api" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform ncScale API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Interacting with ncScale data via API"
+task = "Interacting with ncscale data via api"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

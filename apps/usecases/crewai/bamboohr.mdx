@@ -6,6 +6,7 @@ description: "Connect CrewAI to BambooHR to create agents to perform tasks using
 ---
 
 ## Connecting CrewAI with BambooHR
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ BambooHR is an American technology company that provides human resources softwar
 
 Integrating BambooHR & CrewAI can allow for the following:
 
-1. managing employee records
-2. streamlining recruitment processes
+1. Managing employee records
+2. Streamlining recruitment processes
 & so many more
 
 ## Using CrewAI with BambooHR
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions bamboohr "managing employee records" --limit=10
+composio-cli get-actions bamboohr "Managing employee records" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform BambooHR API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing employee records"
+task = "Managing employee records"
 
 crewai_agent = Agent(
     role='BambooHR Agent',

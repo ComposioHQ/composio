@@ -6,6 +6,7 @@ description: "Connect CrewAI to Sage to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with Sage
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Sage provides cloud accounting and financial management solutions for businesses
 
 Integrating Sage & CrewAI can allow for the following:
 
-1. managing accounting tasks
-2. handling financial management
+1. Managing accounting tasks
+2. Handling financial management
 & so many more
 
 ## Using CrewAI with Sage
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions sage "managing accounting tasks" --limit=10
+composio-cli get-actions sage "Managing accounting tasks" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Sage API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "managing accounting tasks"
+task = "Managing accounting tasks"
 
 crewai_agent = Agent(
     role='Sage Agent',

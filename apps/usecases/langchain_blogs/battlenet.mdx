@@ -6,6 +6,7 @@ description: "Connect LangChain to Battle.net to create agents to perform tasks 
 ---
 
 ## Connecting LangChain AI agents with Battle.net
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Battle.net is an Internet-based online game, social networking service, digital 
 
 Integrating Battle.net & Langchain can allow for the following:
 
-1. playing online games
-2. managing game updates and installations
+1. Playing online games
+2. Managing game updates and installations
 & so many more
 
 ## Using LangChain with Battle.net
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions battlenet "playing online games" --limit=10
+composio-cli get-actions battlenet "Playing online games" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Battle.net API 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "playing online games"
+task = "Playing online games"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

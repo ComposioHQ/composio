@@ -6,6 +6,7 @@ description: "Connect Autogen to Intercom to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with Intercom
+![intro](/media/intro.jpg)
 
 ### Overview of Intercom
 
@@ -15,12 +16,12 @@ A messaging platform that allows businesses to communicate with prospective and 
 
 Integrating Intercom & Autogen can allow for the following:
 
-1. sending messages to customers on various platforms
-2. conducting surveys and gathering feedback
+1. Sending messages to customers on various platforms
+2. Conducting surveys and gathering feedback
 & so many more
 
 ## Using Autogen with Intercom
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions intercom "sending messages to customers on various platforms" --limit=10
+composio-cli get-actions intercom "Sending messages to customers on various platforms" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform Intercom API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "sending messages to customers on various platforms" # change this as necessary
+task = "Sending messages to customers on various platforms" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

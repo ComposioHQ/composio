@@ -6,6 +6,7 @@ description: "Connect Autogen to YNAB to create agents to perform tasks using na
 ---
 
 ## Connecting Autogen AI agents with YNAB
+![intro](/media/intro.jpg)
 
 ### Overview of YNAB
 
@@ -15,12 +16,12 @@ YNAB (You Need A Budget) is a personal finance software that helps users manage 
 
 Integrating YNAB & Autogen can allow for the following:
 
-1. tracking expenses and budget management
-2. integrating personal financial data into custom applications
+1. Tracking expenses and budget management
+2. Integrating personal financial data into custom applications
 & so many more
 
 ## Using Autogen with YNAB
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions ynab "tracking expenses and budget management" --limit=10
+composio-cli get-actions ynab "Tracking expenses and budget management" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform YNAB API calls 
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "tracking expenses and budget management" # change this as necessary
+task = "Tracking expenses and budget management" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect CrewAI to SmartRecruiters to create agents to perform task
 ---
 
 ## Connecting CrewAI with SmartRecruiters
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Hiring Without Boundaries™ Move Faster and Hire Smarter with a Modern, All-in-
 
 Integrating SmartRecruiters & CrewAI can allow for the following:
 
-1. posting job openings
-2. managing candidate applications
+1. Posting job openings
+2. Managing candidate applications
 & so many more
 
 ## Using CrewAI with SmartRecruiters
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions smartrecruiters "posting job openings" --limit=10
+composio-cli get-actions smartrecruiters "Posting job openings" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform SmartRecruiters API calls using Com
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "posting job openings"
+task = "Posting job openings"
 
 crewai_agent = Agent(
     role='SmartRecruiters Agent',

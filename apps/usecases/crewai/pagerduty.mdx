@@ -6,6 +6,7 @@ description: "Connect CrewAI to PagerDuty to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with PagerDuty
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ PagerDuty is an incident management platform that provides reliable incident not
 
 Integrating PagerDuty & CrewAI can allow for the following:
 
-1. sending incident notifications via email, push, SMS, and phone
-2. automatic escalations and on-call scheduling
+1. Sending incident notifications via email, push, sms, and phone
+2. Automatic escalations and on-call scheduling
 & so many more
 
 ## Using CrewAI with PagerDuty
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions pagerduty "sending incident notifications via email, push, SMS, and phone" --limit=10
+composio-cli get-actions pagerduty "Sending incident notifications via email, push, sms, and phone" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform PagerDuty API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "sending incident notifications via email, push, SMS, and phone"
+task = "Sending incident notifications via email, push, sms, and phone"
 
 crewai_agent = Agent(
     role='PagerDuty Agent',

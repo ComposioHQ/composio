@@ -6,6 +6,7 @@ description: "Connect LangChain to SurveyMonkey to create agents to perform task
 ---
 
 ## Connecting LangChain AI agents with SurveyMonkey
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ SurveyMonkey is an online survey software that helps with creating and running s
 
 Integrating SurveyMonkey & Langchain can allow for the following:
 
-1. creating and running surveys online
-2. analyzing survey results and generating reports
+1. Creating and running surveys online
+2. Analyzing survey results and generating reports
 & so many more
 
 ## Using LangChain with SurveyMonkey
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions survey-monkey "creating and running surveys online" --limit=10
+composio-cli get-actions survey-monkey "Creating and running surveys online" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform SurveyMonkey AP
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "creating and running surveys online"
+task = "Creating and running surveys online"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

@@ -6,6 +6,7 @@ description: "Connect Autogen to LastPass to create agents to perform tasks usin
 ---
 
 ## Connecting Autogen AI agents with LastPass
+![intro](/media/intro.jpg)
 
 ### Overview of LastPass
 
@@ -15,12 +16,12 @@ LastPass is a password manager that stores encrypted passwords online.
 
 Integrating LastPass & Autogen can allow for the following:
 
-1. storing encrypted passwords online
-2. managing multiple accounts securely
+1. Storing encrypted passwords online
+2. Managing multiple accounts securely
 & so many more
 
 ## Using Autogen with LastPass
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions lastpass "storing encrypted passwords online" --limit=10
+composio-cli get-actions lastpass "Storing encrypted passwords online" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform LastPass API ca
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "storing encrypted passwords online" # change this as necessary
+task = "Storing encrypted passwords online" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

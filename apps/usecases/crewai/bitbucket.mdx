@@ -6,6 +6,7 @@ description: "Connect CrewAI to Bitbucket to create agents to perform tasks usin
 ---
 
 ## Connecting CrewAI with Bitbucket
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Bitbucket is a Git-based source code repository hosting service owned by Atlassi
 
 Integrating Bitbucket & CrewAI can allow for the following:
 
-1. Managing Git repositories
+1. Managing git repositories
 2. Code review and collaboration
 & so many more
 
 ## Using CrewAI with Bitbucket
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions bitbucket "Managing Git repositories" --limit=10
+composio-cli get-actions bitbucket "Managing git repositories" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Bitbucket API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Managing Git repositories"
+task = "Managing git repositories"
 
 crewai_agent = Agent(
     role='Bitbucket Agent',

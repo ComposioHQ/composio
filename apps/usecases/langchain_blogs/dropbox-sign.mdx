@@ -6,6 +6,7 @@ description: "Connect LangChain to Dropbox Sign to create agents to perform task
 ---
 
 ## Connecting LangChain AI agents with Dropbox Sign
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Dropbox Sign provides APIs for electronic signature, document management, and wo
 
 Integrating Dropbox Sign & Langchain can allow for the following:
 
-1. electronically signing documents
-2. automating document workflows
+1. Electronically signing documents
+2. Automating document workflows
 & so many more
 
 ## Using LangChain with Dropbox Sign
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions dropbox-sign "electronically signing documents" --limit=10
+composio-cli get-actions dropbox-sign "Electronically signing documents" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Dropbox Sign AP
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "electronically signing documents"
+task = "Electronically signing documents"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

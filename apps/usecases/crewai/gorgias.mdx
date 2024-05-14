@@ -6,6 +6,7 @@ description: "Connect CrewAI to Gorgias to create agents to perform tasks using 
 ---
 
 ## Connecting CrewAI with Gorgias
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Integration for Gorgias, focusing on e-commerce enhancements.
 
 Integrating Gorgias & CrewAI can allow for the following:
 
-1. Automated Customer Support Responses
-2. Order Tracking and Updates
+1. Automated customer support responses
+2. Order tracking and updates
 & so many more
 
 ## Using CrewAI with Gorgias
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gorgias "Automated Customer Support Responses" --limit=10
+composio-cli get-actions gorgias "Automated customer support responses" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Gorgias API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Automated Customer Support Responses"
+task = "Automated customer support responses"
 
 crewai_agent = Agent(
     role='Gorgias Agent',

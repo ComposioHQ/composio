@@ -6,6 +6,7 @@ description: "Connect CrewAI to Notion to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Notion
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ A modern project management tool designed for efficiency and performance.
 
 Integrating Notion & CrewAI can allow for the following:
 
-1. organizing project tasks
-2. collaborating on documents in real-time
+1. Organizing project tasks
+2. Collaborating on documents in real-time
 & so many more
 
 ## Using CrewAI with Notion
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions notion "organizing project tasks" --limit=10
+composio-cli get-actions notion "Organizing project tasks" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Notion API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "organizing project tasks"
+task = "Organizing project tasks"
 
 crewai_agent = Agent(
     role='Notion Agent',

@@ -6,6 +6,7 @@ description: "Connect Autogen to AppDrag to create agents to perform tasks using
 ---
 
 ## Connecting Autogen AI agents with AppDrag
+![intro](/media/intro.jpg)
 
 ### Overview of AppDrag
 
@@ -15,12 +16,12 @@ AppDrag is a cloud development platform that offers tools for creating professio
 
 Integrating AppDrag & Autogen can allow for the following:
 
-1. building and deploying professional websites
-2. managing cloud backend services
+1. Building and deploying professional websites
+2. Managing cloud backend services
 & so many more
 
 ## Using Autogen with AppDrag
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -40,7 +41,7 @@ Selecting actions relevant to the use case enhances accuracy.
 
 <CodeGroup>
 ```bash Select Specific Actions by Usecase
-composio-cli get-actions appdrag "building and deploying professional websites" --limit=10
+composio-cli get-actions appdrag "Building and deploying professional websites" --limit=10
 ```
 </CodeGroup>
 
@@ -93,7 +94,7 @@ Create an agent, set up an executor, and invoke tasks to perform AppDrag API cal
 <CodeGroup>
 ```python Autogen Agent executes the task
 
-task = "building and deploying professional websites" # change this as necessary
+task = "Building and deploying professional websites" # change this as necessary
 
 response = user_proxy.initiate_chat(chatbot,message=task)
 

@@ -6,6 +6,7 @@ description: "Connect CrewAI to ElevenLabs to create agents to perform tasks usi
 ---
 
 ## Connecting CrewAI with ElevenLabs
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Create natural AI voices instantly in any language - perfect for video creators,
 
 Integrating ElevenLabs & CrewAI can allow for the following:
 
-1. creating natural AI voices for videos
-2. generating multi-language speech for applications
+1. Creating natural ai voices for videos
+2. Generating multi-language speech for applications
 & so many more
 
 ## Using CrewAI with ElevenLabs
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions elevenlabs "creating natural AI voices for videos" --limit=10
+composio-cli get-actions elevenlabs "Creating natural ai voices for videos" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform ElevenLabs API calls using Composio
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "creating natural AI voices for videos"
+task = "Creating natural ai voices for videos"
 
 crewai_agent = Agent(
     role='ElevenLabs Agent',

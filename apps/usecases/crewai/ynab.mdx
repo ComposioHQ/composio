@@ -6,6 +6,7 @@ description: "Connect CrewAI to YNAB to create agents to perform tasks using nat
 ---
 
 ## Connecting CrewAI with YNAB
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ YNAB (You Need A Budget) is a personal finance software that helps users manage 
 
 Integrating YNAB & CrewAI can allow for the following:
 
-1. tracking expenses in real-time
-2. setting budget goals
+1. Tracking expenses in real-time
+2. Setting budget goals
 & so many more
 
 ## Using CrewAI with YNAB
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ynab "tracking expenses in real-time" --limit=10
+composio-cli get-actions ynab "Tracking expenses in real-time" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform YNAB API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "tracking expenses in real-time"
+task = "Tracking expenses in real-time"
 
 crewai_agent = Agent(
     role='YNAB Agent',

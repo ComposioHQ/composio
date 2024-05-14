@@ -6,6 +6,7 @@ description: "Connect LangChain to Axonaut to create agents to perform tasks usi
 ---
 
 ## Connecting LangChain AI agents with Axonaut
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ Axonaut, the management software for  VSEs and SMEs
 
 Integrating Axonaut & Langchain can allow for the following:
 
-1. managing business operations for VSEs and SMEs
-2. integrating with other business applications
+1. Managing business operations for vses and smes
+2. Integrating with other business applications
 & so many more
 
 ## Using LangChain with Axonaut
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions axonaut "managing business operations for VSEs and SMEs" --limit=10
+composio-cli get-actions axonaut "Managing business operations for vses and smes" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform Axonaut API cal
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "managing business operations for VSEs and SMEs"
+task = "Managing business operations for vses and smes"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

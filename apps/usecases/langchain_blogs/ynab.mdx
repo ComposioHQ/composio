@@ -6,6 +6,7 @@ description: "Connect LangChain to YNAB to create agents to perform tasks using 
 ---
 
 ## Connecting LangChain AI agents with YNAB
+![intro](/media/intro.jpg)
 
 ### Overview of LangChain
 
@@ -19,12 +20,12 @@ YNAB (You Need A Budget) is a personal finance software that helps users manage 
 
 Integrating YNAB & Langchain can allow for the following:
 
-1. tracking expenses and budget management
-2. integrating personal financial data into custom applications
+1. Tracking expenses and budget management
+2. Integrating personal financial data into custom applications
 & so many more
 
 ## Using LangChain with YNAB
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions ynab "tracking expenses and budget management" --limit=10
+composio-cli get-actions ynab "Tracking expenses and budget management" --limit=10
 ```
 </CodeGroup>
 
@@ -83,7 +84,7 @@ Create an agent, set up an executor, and invoke tasks to perform YNAB API calls 
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "tracking expenses and budget management"
+task = "Tracking expenses and budget management"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

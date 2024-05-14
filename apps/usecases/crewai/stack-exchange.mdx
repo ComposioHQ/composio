@@ -6,6 +6,7 @@ description: "Connect CrewAI to Stack Exchange to create agents to perform tasks
 ---
 
 ## Connecting CrewAI with Stack Exchange
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Stack Exchange is a network of question-and-answer websites on topics in diverse
 
 Integrating Stack Exchange & CrewAI can allow for the following:
 
-1. asking and answering questions
-2. participating in community discussions
+1. Asking and answering questions
+2. Participating in community discussions
 & so many more
 
 ## Using CrewAI with Stack Exchange
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions stack-exchange "asking and answering questions" --limit=10
+composio-cli get-actions stack-exchange "Asking and answering questions" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Stack Exchange API calls using Comp
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "asking and answering questions"
+task = "Asking and answering questions"
 
 crewai_agent = Agent(
     role='Stack Exchange Agent',

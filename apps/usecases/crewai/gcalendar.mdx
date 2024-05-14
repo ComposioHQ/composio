@@ -6,6 +6,7 @@ description: "Connect CrewAI to Google Calendar to create agents to perform task
 ---
 
 ## Connecting CrewAI with Google Calendar
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Google Calendar is a time-management and scheduling calendar service developed b
 
 Integrating Google Calendar & CrewAI can allow for the following:
 
-1. scheduling meetings
-2. setting reminders
+1. Scheduling meetings
+2. Setting reminders
 & so many more
 
 ## Using CrewAI with Google Calendar
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions gcalendar "scheduling meetings" --limit=10
+composio-cli get-actions gcalendar "Scheduling meetings" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Google Calendar API calls using Com
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "scheduling meetings"
+task = "Scheduling meetings"
 
 crewai_agent = Agent(
     role='Google Calendar Agent',

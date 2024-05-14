@@ -6,6 +6,7 @@ description: "Connect CrewAI to Timely to create agents to perform tasks using n
 ---
 
 ## Connecting CrewAI with Timely
+![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
 
@@ -19,12 +20,12 @@ Timely is a time tracking app that helps with scheduling, hours logging, and pro
 
 Integrating Timely & CrewAI can allow for the following:
 
-1. logging hours for projects
-2. scheduling team meetings
+1. Logging hours for projects
+2. Scheduling team meetings
 & so many more
 
 ## Using CrewAI with Timely
-
+![intro-gif](/media/intro.gif)
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -45,7 +46,7 @@ use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
-composio-cli get-actions timely "logging hours for projects" --limit=10
+composio-cli get-actions timely "Logging hours for projects" --limit=10
 ```
 </CodeGroup>
 
@@ -79,7 +80,7 @@ Create an agent and execute tasks to perform Timely API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "logging hours for projects"
+task = "Logging hours for projects"
 
 crewai_agent = Agent(
     role='Timely Agent',
