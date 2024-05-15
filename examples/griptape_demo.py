@@ -14,4 +14,7 @@ agent = Agent(
     tools=composio_tools
 )
 
+#task = "Star the SamparkAI/composio repo please"
+#print(agent.run(task).output_task.output.value)
+
 Chat(agent).start()
