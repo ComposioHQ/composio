@@ -38,6 +38,7 @@ setup(
         "rich>=13.7.1,<14",
         "importlib-metadata>=4.8.1,<5",
         "pyperclip>=1.8.2,<2",
+        "sentry-sdk>=2.2.0,<3",
     ],
     include_package_data=True,
 )

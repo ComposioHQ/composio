@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://11fa6caf2e5c80f6d3580e2d50b9feb5@o4506274564079616.ingest.us.sentry.io/4507267098345472",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0
+)
 
 import argparse
 import json
@@ -13,7 +25,7 @@ from beaupy.spinners import DOTS, Spinner
 from rich.console import Console
 from rich.table import Table
 
-from composio.sdk.exceptions import UserNotAuthenticatedException
+from composio.sdk.exceptions import NotFoundException, UserNotAuthenticatedException
 
 from composio.sdk.core import ComposioCore
 from composio.sdk.enums import App
@@ -224,7 +236,7 @@ def login(args):
                     sys.exit(1)
     except Exception as e:
         console.print(f"[red] Error occurred during authentication: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def whoami(args):
@@ -241,7 +253,7 @@ def logout(args):
         console.print("\n[green]✔ Logged out successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during logging out: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def update_base_url(args):
@@ -253,7 +265,7 @@ def update_base_url(args):
         console.print("\n[green]✔ Base URL updated successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during updating base URL: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def list_active_triggers(args):
@@ -288,7 +300,7 @@ def list_active_triggers(args):
         )
     except Exception as e:
         console.print(f"[red]Error occurred during listing active triggers: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def get_trigger(args):
@@ -319,7 +331,7 @@ def get_trigger(args):
 
     except Exception as e:
         console.print(f"[red]Error occurred during getting trigger: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def disable_trigger(args):
@@ -331,7 +343,7 @@ def disable_trigger(args):
         console.print("\n[green]✔ Trigger disabled successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during disabling trigger: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def list_triggers(args):
@@ -372,12 +384,12 @@ def enable_trigger(args):
         )
         if not trigger_requirements or len(trigger_requirements) == 0:
             console.print("[red] Trigger not found for the specified app.[/red]")
-            sys.exit(1)
+            raise NotFoundException("Trigger not found for the specified app.")
         if not isinstance(trigger_requirements, list):
             console.print(
                 f"[red]Unexpected format for trigger requirements. Expected a list but got {trigger_requirements}.[/red]"
             )
-            sys.exit(1)
+            raise Exception("Unexpected format for trigger requirements.")
         app_key = trigger_requirements[0]["appKey"]
         trigger_requirements = trigger_requirements[0]["config"]
         required_fields = trigger_requirements.get("required", [])
@@ -395,7 +407,7 @@ def enable_trigger(args):
             console.print(
                 f"[red]No connection found for {app_key}.\nUse the following command to add a connection: [green]composio-cli add {app_key}[/green][/red]"
             )
-            sys.exit(1)
+            raise Exception("No connection found for the specified app.")
         # Assuming there's a function to enable the trigger with user inputs
         resp = client.enable_trigger(trigger_name, connected_account.id, user_inputs)
         console.print("\n[green]✔ Trigger enabled successfully![/green]\n")
@@ -415,7 +427,7 @@ def enable_trigger(args):
             console.print(
                 f"[red]Error occurred during enabling trigger: {str(e)}[/red]"
             )
-        sys.exit(1)
+        raise e from e
 
 
 def set_global_trigger_callback(args):
@@ -430,7 +442,7 @@ def set_global_trigger_callback(args):
         console.print(
             f"[red] Error occurred during setting global trigger callback: {e}[/red]"
         )
-        sys.exit(1)
+        raise e from e
 
 
 def handle_update(args):
@@ -457,7 +469,7 @@ def get_actions(args):
             console.print(
                 f"[red]No such app found for {app_name}.\nUse the following command to get list of available apps: [green]composio-cli add show-apps[/green][/red]"
             )
-            sys.exit(1)
+            raise Exception("No such app found for the specified app.")
         actions = client.sdk.get_list_of_actions(apps=[app], use_case=use_case, limit=limit)
         action_enums = [f"Action.{get_enum_key(action['name'])}" for action in actions]
         console.print(
@@ -472,7 +484,7 @@ def get_actions(args):
             console.print("[green]Enums copied to clipboard successfully![/green]\n")
     except Exception as e:
         console.print(f"[red] Error occurred during getting actions: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def add_integration(args):
@@ -527,7 +539,7 @@ def add_integration(args):
                             console.print(
                                 f"[red]Error: {field.get('displayName', field.get('name'))} is required[/red]"
                             )
-                            sys.exit(1)
+                            raise Exception(f"{field.get('displayName', field.get('name'))} is required")
                     else:
                         console.print(
                             f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]",
@@ -559,7 +571,7 @@ def add_integration(args):
         console.print(f"[green]✔[/green] {integration_name} added successfully!")
     except Exception as e:
         console.print(f"[red] Error occurred during adding integration: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def show_apps(args):
@@ -593,7 +605,7 @@ def list_connections(args):
             console.print("[red] No connections found for the specified app.[/red]")
     except Exception as e:
         console.print(f"[red] Error occurred during listing connections: {e}[/red]")
-        sys.exit(1)
+        raise e from e
 
 
 def check_for_updates():
@@ -661,6 +673,8 @@ def main():
         try:
             args.func(args)
         except Exception as e:
+            sentry_sdk.capture_exception(e)
+            sentry_sdk.flush()
             console.print(
                 f"[red]> Error occurred during command execution: \n{e}[/red]"
             )
