@@ -2,7 +2,7 @@
 title: "🚀 Connecting Langchain & Gmail"
 sidebarTitle: "Gmail x Langchain"
 icon: "play"
-description: "Connect LangChain to Gmail to create agents to perform tasks using natural language"
+description: "Simple walkthrough connecting Langchain Framework to Gmail using function calling. We connect Langchain to Gmail to create AI agents. Let's try sending email using the agents"
 ---
 
 ## Connecting LangChain AI agents with Gmail
@@ -20,9 +20,10 @@ Gmail is a free email service developed by Google.
 
 Integrating Gmail & Langchain can allow for the following:
 
-1. Sending emails to multiple recipients
-2. Organizing emails into folders
-& so many more
+1. Sending emails to folks
+2. Organizing emails with labels
+3. Filtering emails with attachments
+4. Creating drafts emails within Gmail
 
 ## Using LangChain with Gmail
 ![intro-gif](/media/intro.gif)
@@ -40,8 +41,8 @@ composio-cli add gmail # One line to authenticate, configure and add Gmail integ
 </CodeGroup>
 </Step>
 <Step title="Filter Actions">
-Composio ideally supports more than 100 different actions for any given app. If we supply all of them to langchain agents, 
-the accuracy of the agent will be very low. So to get the highest accuracy, we need to filter the actions based on the 
+Composio ideally supports more than 100 different actions for any given app. If we supply all of them to langchain agents,
+the accuracy of the agent will be very low. So to get the highest accuracy, we need to filter the actions based on the
 use case.
 
 <CodeGroup>
@@ -72,7 +73,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 # Import from composio_langchain
 from composio_langchain import ComposioToolset, Action, App
 
-tools = ComposioToolset(actions=[]) # Copy the actions from above. 
+tools = ComposioToolset(actions=[]) # Copy the actions from above.
 
 # Get All the Actions for Gmail
 # tools = ComposioToolset(apps=[App.GMAIL]) # can use this as well
@@ -84,7 +85,7 @@ Create an agent, set up an executor, and invoke tasks to perform Gmail API calls
 <CodeGroup>
 ```python Langchain Agent executes the task
 
-task = "Sending emails to multiple recipients"
+task = "Sending email to barbie@pink.com with subject 'It's my world' and body 'Relax, I am kidding'"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -105,25 +106,26 @@ agent_executor.invoke({"input": task})
 ### Filter Specific Actions from Composio Toolset
 
 <CodeGroup>
-```bash Filter Specific Action
-# To restrict agents from using all the actions, filter specific actions
-toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
-```
+  ```bash Filter Specific Action 
+  # To restrict agents from using all the actions, filter specific actions 
+  toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE]) 
+  ```
 </CodeGroup>
 
 ### Use Specific Apps from Composio Toolset
 <CodeGroup>
-```bash Filter Specific App
-# To restrict agents from using all tools, filter specific tools
-toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB])
-```
+  ```bash Filter Specific App
+  # To restrict agents from using all tools, filter specific tools 
+  toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB]) 
+  ```
 </CodeGroup>
 
-### Filter apps actions by tags 
+### Filter apps actions by tags
+
 <CodeGroup>
-```bash Filter actions by tags
-# To restrict agents from using all actions, filter the actions by tags
-toolsAsanaGithub = ComposioToolset(apps=[App.NOTION], tags=[Tag.NOTION_BLOCK])
-```
+  ```bash Filter actions by tags 
+  # To restrict agents from using all actions, filter the actions by tags 
+  tools_gmail = ComposioToolset(apps=[App.GMAIL], tags=[Tag.GMAIL_IMPORTANT])
+  ```
 </CodeGroup>
 
