@@ -2,10 +2,11 @@
 title: "🚀 Connecting CrewAI & Gmail"
 sidebarTitle: "Gmail x CrewAI"
 icon: "play"
-description: "Connect CrewAI to Gmail to create agents to perform tasks using natural language"
+description: "Simple Coding walkthrough connecting a CrewAI to Gmail API. Connect CrewAI to Gmail to create agents to perform tasks using natural language. Code it in less than 5 mins"
 ---
 
 ## Connecting CrewAI with Gmail
+
 ![intro](/media/intro.jpg)
 
 ### Overview of CrewAI
@@ -14,7 +15,7 @@ CrewAI is an AI framework useful for developing intelligent Agents powered by LL
 
 ### Overview of Gmail
 
-Gmail is a free email service developed by Google.
+Gmail is the most popular email service used by millions of users.
 
 ### Integrating Gmail with CrewAI
 
@@ -22,10 +23,12 @@ Integrating Gmail & CrewAI can allow for the following:
 
 1. Sending emails directly from a gmail account
 2. Organizing emails into labels for better management
-& so many more
+   & so many more
 
 ## Using CrewAI with Gmail
+
 ![intro-gif](/media/intro.gif)
+
 <Steps>
 <Step title="Setting Up the Environment">
 
@@ -33,21 +36,23 @@ Integrating Gmail & CrewAI can allow for the following:
 
 <CodeGroup>
 ```bash Installing & Authorising Gmail
-pip install composio_crewai # Install crewai, Composio 
+pip install composio_crewai # Install crewai, Composio
 
 composio-cli add gmail # One line to authenticate, configure and add Gmail integration for crewai
+
 ```
 </CodeGroup>
 </Step>
 <Step title="Filter Actions">
-Composio ideally supports more than 100 different actions for any given app. If we supply all of them to crewai agents, 
-the accuracy of the agent will be very low. So to get the highest accuracy, we need to filter the actions based on the 
+Composio ideally supports more than 100 different actions for any given app. If we supply all of them to crewai agents,
+the accuracy of the agent will be very low. So to get the highest accuracy, we need to filter the actions based on the
 use case.
 
 <CodeGroup>
 ```bash Filter Specific Actions by Usecase
 composio-cli get-actions gmail "Sending emails directly from a gmail account" --limit=10
 ```
+
 </CodeGroup>
 
 </Step>
@@ -59,6 +64,7 @@ from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
+
 ```
 </CodeGroup>
 </Step>
@@ -68,11 +74,12 @@ llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 # Import from composio_crewai
 from composio_crewai import ComposioToolset, Action, App
 
-tools = ComposioToolset(actions=[]) # Copy the actions from above. 
+tools = ComposioToolset(actions=[]) # Copy the actions from above.
 
 # Get All the Actions for Gmail
 # tools = ComposioToolset(apps=[App.GMAIL]) # can use this as well
 ```
+
 </CodeGroup>
 </Step>
 <Step title="Execute the Agent">
@@ -80,24 +87,25 @@ Create an agent and execute tasks to perform Gmail API calls using Composio.
 <CodeGroup>
 ```python CrewAI Agent executes the task
 
-task = "Sending emails directly from a gmail account"
+task = "Can you send email to sam@gmail.com with subject 'Hello World' and body 'Relax, I am just testing'"
 
 crewai_agent = Agent(
-    role='Gmail Agent',
-    goal="""You take action on Gmail using Gmail APIs""",
-    backstory="""You are AI agent that is responsible for taking actions on Gmail on users behalf. You need to take action on Gmail using Gmail APIs""",
-    verbose=True,
-    tools=tools,
-    llm=llm
+role='Gmail Agent',
+goal="""You take action on Gmail using Gmail APIs""",
+backstory="""You are AI agent that is responsible for taking actions on Gmail on users behalf. You need to take action on Gmail using Gmail APIs""",
+verbose=True,
+tools=tools,
+llm=llm
 )
 
 task = Task(
-    description=task,
-    agent=crewai_agent,
-    expected_output="Check if the task was successfully executed"
+description=task,
+agent=crewai_agent,
+expected_output="Check if the task was successfully executed"
 )
 
 task.execute()
+
 ```
 </CodeGroup>
 </Step>
@@ -105,6 +113,7 @@ task.execute()
 ```bash Executing Agents
 > Entering new CrewAgentExecutor chain...
 ```
+
 </Step>
 </Steps>
 ## Use Specific Actions from Composio Toolset
@@ -112,24 +121,26 @@ task.execute()
 ### Filter Specific Actions from Composio Toolset
 
 <CodeGroup>
-```bash Filter Specific Action
-# To restrict agents from using all the actions, filter specific actions
-tools_gmail = ComposioToolset(actions=[Action.GMAIL_{ACTION_NAME}])
-```
+  ```bash Filter Specific Action 
+  # To restrict agents from using all the actions, filter specific actions 
+  tools_gmail = ComposioToolset(actions=[Action.GMAIL_SEND_EMAIL])
+  ```
 </CodeGroup>
 
 ### Use Specific Apps from Composio Toolset
+
 <CodeGroup>
-```bash Filter Specific App
-# To restrict agents from using all tools, filter specific tools
-tools_gmail = ComposioToolset(apps=[App.GMAIL])
-```
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  tools_gmail = ComposioToolset(apps=[App.GMAIL]) 
+  ```
 </CodeGroup>
 
-### Filter apps actions by tags 
+### Filter apps actions by tags
+
 <CodeGroup>
-```bash Filter actions by tags
-# To restrict agents from using all actions, filter the actions by tags
-tools_gmail = ComposioToolset(apps=[App.GMAIL], tags=[Tag.GMAIL_IMPORTANT])
-```
+  ```bash Filter actions by tags 
+  # To restrict agents from using all actions,filter the actions by tags 
+  tools_gmail = ComposioToolset(apps=[App.GMAIL], tags=[Tag.GMAIL_IMPORTANT]) 
+  ```
 </CodeGroup>
