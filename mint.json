@@ -109,6 +109,7 @@
           "pages": [
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/integrations/connected-account",
+            "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/triggers/trigger-guide",
             "introduction/foundations/components/entity/entity-guide",
@@ -134,8 +135,7 @@
       "pages": [
         "introduction/pricing/pricing"
       ]
-    },
-    
+    },    
     {
       "group": "Python SDK",
       "pages": [
