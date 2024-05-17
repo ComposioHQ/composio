@@ -19,7 +19,7 @@
     }
   },
   "seo": {
-    "indexHiddenPages": true
+    "indexHiddenPages": false
   },
   "modeToggle": {
     "default": "dark",
