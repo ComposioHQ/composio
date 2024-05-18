@@ -19,7 +19,12 @@ client = ComposioCore(
 
 
 class ComposioToolset:
-    def __init__(self, client: ComposioCore = client, entity_id: str = "default", connection_ids: Optional[Dict[Union[str, App], str]] = None):
+    def __init__(
+        self,
+        client: ComposioCore = client,
+        entity_id: str = "default",
+        connection_ids: Optional[Dict[Union[str, App], str]] = None,
+    ):
         self.client = client
         self.entity_id = entity_id
         self.connection_ids = connection_ids or {}

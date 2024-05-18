@@ -1,4 +1,3 @@
-import json
 import sys
 import unittest.mock as mock
 
@@ -10,7 +9,8 @@ from composio.sdk.sdk import ConnectedAccount
 
 
 def run_autogen_script():
-    from examples.autogen_demo import composio_tools
+    from examples.autogen_demo import composio_tools  # noqa: F401
+
 
 @pytest.fixture(scope="session", autouse=True)
 def pytest_sessionstart_autogen():
@@ -32,12 +32,15 @@ def pytest_sessionstart_autogen():
     finally:
         sys.argv = original_argv  # Restore original arguments
 
+
 def test_autogen_script_not_authorized_error():
     with pytest.raises(UserNotAuthenticatedException) as exc_info:
         run_autogen_script()
-    assert "User not authenticated. Please authenticate using composio-cli login" in str(
-        exc_info.value
+    assert (
+        "User not authenticated. Please authenticate using composio-cli login"
+        in str(exc_info.value)
     )
+
 
 def test_add_github():
     original_argv = sys.argv  # Backup the original arguments
@@ -49,9 +52,7 @@ def test_add_github():
     with mock.patch("webbrowser.open"), mock.patch(
         "composio.sdk.core.ComposioCore.verify_cli_auth_session",
         return_value={"apiKey": "vm2gw01hx7eheano742tb"},
-    ), mock.patch(
-        "builtins.input", side_effect=["yes", "yes"]
-    ), mock.patch(
+    ), mock.patch("builtins.input", side_effect=["yes", "yes"]), mock.patch(
         "composio.sdk.sdk.Composio.get_connected_account",
         return_value=ConnectedAccount(
             sdk_instance=mock.Mock(),
@@ -73,5 +74,6 @@ def test_add_github():
 
 def test_autogen_script_is_working():
     from plugins.autogen.composio_autogen import client
+
     client.login("vm2gw01hx7eheano742tb")
     run_autogen_script()
