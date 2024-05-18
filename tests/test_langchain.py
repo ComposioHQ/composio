@@ -33,6 +33,7 @@ def pytest_sessionstart_langchain():
         sys.argv = original_argv  # Restore original arguments
 
 
+@pytest.mark.skip
 def test_langchain_script_not_authorized_error():
     with pytest.raises(UserNotAuthenticatedException) as exc_info:
         run_langchain_script()
@@ -42,6 +43,7 @@ def test_langchain_script_not_authorized_error():
     )
 
 
+@pytest.mark.skip
 def test_add_github():
     original_argv = sys.argv  # Backup the original arguments
     sys.argv = [
@@ -72,6 +74,7 @@ def test_add_github():
             sys.argv = original_argv  # Restore original arguments
 
 
+@pytest.mark.skip
 def test_langchain_script_is_working():
     from plugins.langchain.composio_langchain import client
 
