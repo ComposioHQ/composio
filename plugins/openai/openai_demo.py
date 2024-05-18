@@ -1,6 +1,6 @@
-import dotenv
 from pprint import pprint
 
+import dotenv
 from composio_openai import App, ComposioToolset
 from openai import OpenAI
 
