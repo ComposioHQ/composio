@@ -62,7 +62,7 @@ def _bump(file: Path, bump_type: BumpType) -> None:
     content = content.replace(
         f'composio_autogen==={version}"',
         f'composio_autogen==={update}"',
-    )    
+    )
     content = content.replace(
         f'composio_lyzr==={version}"',
         f'composio_lyzr==={update}"',

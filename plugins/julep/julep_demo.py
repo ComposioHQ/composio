@@ -1,11 +1,9 @@
-
 import os
-import textwrap
-from julep import Client
-from dotenv import load_dotenv
 
 from composio_julep import App, ComposioToolset
-    
+from dotenv import load_dotenv
+from julep import Client
+
 
 load_dotenv()
 toolset = ComposioToolset()
@@ -18,9 +16,13 @@ base_url = os.environ["JULEP_API_URL"]
 client = Client(api_key=api_key, base_url=base_url)
 
 
-
 name = "Jessica"
-about = "Jessica is a forward-thinking tech entrepreneur with a sharp eye for disruptive technologies. She excels in identifying and nurturing innovative tech startups, with a particular interest in sustainability and AI."
+about = (
+    "Jessica is a forward-thinking tech entrepreneur with a sharp "
+    "eye for disruptive technologies. She excels in identifying and "
+    "nurturing innovative tech startups, with a particular interest "
+    "in sustainability and AI."
+)
 default_settings = {
     "temperature": 0.7,
     "top_p": 1,
@@ -40,7 +42,7 @@ agent = client.agents.create(
 )
 
 about = """
-Sawradip, a software developer, is passionate about impactful tech. 
+Sawradip, a software developer, is passionate about impactful tech.
 At the tech fair, he seeks investors and collaborators for his project.
 """
 user = client.users.create(
@@ -48,9 +50,13 @@ user = client.users.create(
     about=about,
 )
 
-situation_prompt = """You are Jessica, a key figure in the tech community, always searching for groundbreaking technologies. At a tech fair filled with innovative projects, your goal is to find and support the next big thing.
+situation_prompt = """You are Jessica, a key figure in the tech community,
+always searching for groundbreaking technologies. At a tech fair filled
+with innovative projects, your goal is to find and support the next big thing.
 
-Your journey through the fair is highlighted by encounters with various projects, from groundbreaking to niche. You believe in the power of unexpected innovation.
+Your journey through the fair is highlighted by encounters with various
+projects, from groundbreaking to niche. You believe in the power of unexpected
+innovation.
 
 Recent Tweets
 1. 'Amazed by the tech fair's creativity. The future is bright. #TechInnovation'
