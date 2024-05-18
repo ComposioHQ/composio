@@ -1,9 +1,9 @@
 import json
 import time
+import warnings
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Union
-import warnings
 
 from openai import Client
 from openai.types.beta import thread
@@ -11,40 +11,44 @@ from openai.types.beta.threads import run
 from openai.types.chat.chat_completion import ChatCompletion
 from pydantic import BaseModel, ConfigDict
 
-from composio.sdk.exceptions import BadErrorException, InvalidParameterException, NotFoundException, TimeoutException
+from composio.sdk.exceptions import (
+    BadErrorException,
+    InvalidParameterException,
+    NotFoundException,
+    TimeoutException,
+)
 from composio.sdk.http_client import HttpClient
 
 from .enums import Action, App, Tag
 from .storage import get_base_url
 
-from enum import Enum
 
 class SchemaFormat(Enum):
     OPENAI = "openai"
     DEFAULT = "default"
     CLAUDE = "claude"
-    
-    
+
+
 def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
     if format == SchemaFormat.OPENAI:
         formatted_schema = {
-                    "type": "function",
-                    "function": {
-                        "name": action_schema["name"],
-                        "description": action_schema.get("description", ""),
-                        "parameters": action_schema.get("parameters", {}),
-                    },
-                }    
+            "type": "function",
+            "function": {
+                "name": action_schema["name"],
+                "description": action_schema.get("description", ""),
+                "parameters": action_schema.get("parameters", {}),
+            },
+        }
     elif format == SchemaFormat.CLAUDE:
         formatted_schema = {
-                        "name": action_schema["name"],
-                        "description": action_schema.get("description", ""),
-                        "input_schema": action_schema.get("parameters", {}),
-                    }
+            "name": action_schema["name"],
+            "description": action_schema.get("description", ""),
+            "input_schema": action_schema.get("parameters", {}),
+        }
     else:
         formatted_schema = action_schema
         # print("Only OPENAI formatting is supported now.")
-    
+
     return formatted_schema
 
 
@@ -67,7 +71,7 @@ class ConnectionRequest(BaseModel):
             self.connectedAccountId
         )
         resp = self.sdk_instance.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": connected_account_id.integrationId,
                 "data": field_inputs,
@@ -143,7 +147,11 @@ class ConnectedAccount(BaseModel):
     ):
         resp = self.sdk_instance.http_client.post(
             f"v1/actions/{action_name.value[1]}/execute",
-            json={"connectedAccountId": connected_account_id, "input": params, "entityId": self.clientUniqueUserId},
+            json={
+                "connectedAccountId": connected_account_id,
+                "input": params,
+                "entityId": self.clientUniqueUserId,
+            },
         )
         return resp.json()
 
@@ -151,13 +159,18 @@ class ConnectedAccount(BaseModel):
         resp = self._execute_action(action_name, self.id, params)
         return resp
 
-    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI, tags: list[Union[str, Tag]] = None):
+    def get_all_actions(
+        self,
+        format: SchemaFormat = SchemaFormat.OPENAI,
+        tags: list[Union[str, Tag]] = None,
+    ):
         app_unique_id = self.appUniqueId
-        resp = self.sdk_instance.http_client.get(
-            f"v1/actions?appNames={app_unique_id}"
-        )
+        resp = self.sdk_instance.http_client.get(f"v1/actions?appNames={app_unique_id}")
         actions = resp.json()
-        return [format_schema(action_schema, format = format) for action_schema in actions["items"]]
+        return [
+            format_schema(action_schema, format=format)
+            for action_schema in actions["items"]
+        ]
 
     def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
         output = []
@@ -208,7 +221,7 @@ class Integration(BaseModel):
         redirect_url: str = None,
     ) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": self.id,
                 "userUuid": entity_id,
@@ -233,7 +246,7 @@ class Composio:
 
     def list_triggers(self, app_names: list[str] = None):
         resp = self.http_client.get(
-            f"v1/triggers",
+            "v1/triggers",
             params={"appNames": ",".join(app_names) if app_names else None},
         )
         return resp.json()
@@ -241,7 +254,7 @@ class Composio:
     def list_active_triggers(
         self, trigger_ids: list[str] = None
     ) -> list[ActiveTrigger]:
-        url = f"v1/triggers/active_triggers"
+        url = "v1/triggers/active_triggers"
         if trigger_ids:
             url = f"{url}?triggerIds={','.join(trigger_ids)}"
         resp = self.http_client.get(url)
@@ -256,14 +269,12 @@ class Composio:
         )
 
     def disable_trigger(self, trigger_id: str):
-        resp = self.http_client.post(
-            f"v1/triggers/disable/{trigger_id}"
-        )
+        resp = self.http_client.post(f"v1/triggers/disable/{trigger_id}")
         return resp.json()
 
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
         resp = self.http_client.get(
-            f"v1/triggers",
+            "v1/triggers",
             params={"triggerIds": ",".join(trigger_ids) if trigger_ids else None},
         )
         return resp.json()
@@ -284,7 +295,7 @@ class Composio:
             raise ValueError("API Key not set")
 
         resp = self.http_client.post(
-            f"v1/triggers/setCallbackURL",
+            "v1/triggers/setCallbackURL",
             json={
                 "callbackURL": callback_url,
             },
@@ -292,7 +303,7 @@ class Composio:
         return resp.json()
 
     def get_list_of_apps(self):
-        resp = self.http_client.get(f"v1/apps")
+        resp = self.http_client.get("v1/apps")
         return resp.json()
 
     def get_app(self, app_name: str):
@@ -300,21 +311,34 @@ class Composio:
         return resp.json()
 
     def get_list_of_actions(
-        self, apps: list[App] = None, use_case: str = None, actions: list[Action] = None, tags: list[Union[str, Tag]] = None, limit: int = None
+        self,
+        apps: list[App] = None,
+        use_case: str = None,
+        actions: list[Action] = None,
+        tags: list[Union[str, Tag]] = None,
+        limit: int = None,
     ) -> list:
         if use_case is not None and use_case != "":
             if len(apps) != 1:
                 raise ValueError("Use case should be provided with exactly one app")
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
-                f"v1/actions",
-                params={"appNames": app_unique_ids, "useCase": use_case, "limit": limit},
+                "v1/actions",
+                params={
+                    "appNames": app_unique_ids,
+                    "useCase": use_case,
+                    "limit": limit,
+                },
             )
             return resp.json()["items"]
-        elif (apps is None or len(apps) == 0) and (actions is None or len(actions) == 0):
-            resp = self.http_client.get(f"v1/actions")
+        elif (apps is None or len(apps) == 0) and (
+            actions is None or len(actions) == 0
+        ):
+            resp = self.http_client.get("v1/actions")
             return resp.json()["items"]
-        elif (apps is None or len(apps) == 0) and (actions is not None and len(actions) > 0):
+        elif (apps is None or len(apps) == 0) and (
+            actions is not None and len(actions) > 0
+        ):
             if tags is not None and len(tags) > 0:
                 raise ValueError("Both actions and tags cannot be provided together")
             app_unique_ids = list(set(action.value[0] for action in actions))
@@ -336,7 +360,9 @@ class Composio:
             actions_response = resp.json()
             if tags is not None and len(tags) > 0:
                 filtered_actions = []
-                tag_values = [tag.value[1] if hasattr(tag, 'value') else tag for tag in tags]
+                tag_values = [
+                    tag.value[1] if hasattr(tag, "value") else tag for tag in tags
+                ]
                 if tag_values and Tag.ALL.value[1] in tag_values:
                     return actions_response["items"]
                 for item in actions_response["items"]:
@@ -349,11 +375,15 @@ class Composio:
                 "Please use tags to filter actions or provide specific actions. "
                 "We just pass the important actions to the agent, but this is not meant "
                 "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
-                UserWarning
+                UserWarning,
             )
             actions = actions_response["items"]
             important_tag = Tag.IMPORTANT.value[1]
-            important_actions = [action for action in actions if important_tag in (action.get("tags", []) or [])] 
+            important_actions = [
+                action
+                for action in actions
+                if important_tag in (action.get("tags", []) or [])
+            ]
             if len(important_actions) > 5:
                 return important_actions
             else:
@@ -363,7 +393,7 @@ class Composio:
 
     def get_list_of_triggers(self, apps: list[App] = None) -> list:
         if apps is None or len(apps) == 0:
-            resp = self.http_client.get(f"v1/triggers")
+            resp = self.http_client.get("v1/triggers")
         else:
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
@@ -372,7 +402,7 @@ class Composio:
         return resp.json()
 
     def get_list_of_integrations(self) -> list[Integration]:
-        resp = self.http_client.get(f"v1/integrations")
+        resp = self.http_client.get("v1/integrations")
         resp = resp.json()
         if resp.get("items"):
             return [Integration(self, **app) for app in resp["items"]]
@@ -415,9 +445,7 @@ class Composio:
         return Integration(self, **resp.json())
 
     def get_connected_account(self, connection_id: str) -> ConnectedAccount:
-        resp = self.http_client.get(
-            f"v1/connectedAccounts/{connection_id}"
-        )
+        resp = self.http_client.get(f"v1/connectedAccounts/{connection_id}")
         return ConnectedAccount(self, **resp.json())
 
     def get_connected_accounts(
@@ -456,12 +484,13 @@ class Composio:
         for action in Action:
             if action.action == action_name.lower():
                 return action
-        raise NotFoundException(f"No matching action found for action: {action_name.lower()}")
+        raise NotFoundException(
+            f"No matching action found for action: {action_name.lower()}"
+        )
 
     def get_entity(self, entity_id: Union[list[str], str]):
         entity = Entity(self, entity_id)
         return entity
-
 
 
 class Entity:
@@ -471,7 +500,13 @@ class Entity:
         self.entity_id = entity_id
         self.http_client = self.client.http_client
 
-    def execute_action(self, action: Action, params: dict, connected_account_id: Optional[str] = None, entity_id = "default"):
+    def execute_action(
+        self,
+        action: Action,
+        params: dict,
+        connected_account_id: Optional[str] = None,
+        entity_id="default",
+    ):
         no_auth = action.value[2] if len(action.value) > 2 else False
         if no_auth is True:
             tool_name = action.value[0]
@@ -608,7 +643,9 @@ class Entity:
         redirect_url: str = None,
     ):
         if not integration and not app_name:
-            raise InvalidParameterException("Either 'integration' or 'app_name' must be provided")
+            raise InvalidParameterException(
+                "Either 'integration' or 'app_name' must be provided"
+            )
         if not integration:
             integration = self.client.get_default_integration(app_name)
         return integration.initiate_connection(
