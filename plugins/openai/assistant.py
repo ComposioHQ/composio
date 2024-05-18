@@ -1,9 +1,7 @@
-import os
 from datetime import datetime
-from pprint import pprint
 
 import dotenv
-from composio_openai import Action, App, ComposioToolset
+from composio_openai import Action, ComposioToolset
 from openai import OpenAI
 
 
