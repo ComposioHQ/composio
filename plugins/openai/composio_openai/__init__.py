@@ -8,4 +8,5 @@ __all__ = (
     "App",
     "Tag",
     "ComposioToolset",
+    "OpenaiStyleToolsetBase",
 )

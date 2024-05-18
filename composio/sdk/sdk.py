@@ -71,7 +71,7 @@ class ConnectionRequest(BaseModel):
             self.connectedAccountId
         )
         resp = self.sdk_instance.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": connected_account_id.integrationId,
                 "data": field_inputs,
@@ -221,7 +221,7 @@ class Integration(BaseModel):
         redirect_url: str = None,
     ) -> ConnectionRequest:
         resp = self.sdk_instance.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": self.id,
                 "userUuid": entity_id,
@@ -246,7 +246,7 @@ class Composio:
 
     def list_triggers(self, app_names: list[str] = None):
         resp = self.http_client.get(
-            f"v1/triggers",
+            "v1/triggers",
             params={"appNames": ",".join(app_names) if app_names else None},
         )
         return resp.json()
@@ -254,7 +254,7 @@ class Composio:
     def list_active_triggers(
         self, trigger_ids: list[str] = None
     ) -> list[ActiveTrigger]:
-        url = f"v1/triggers/active_triggers"
+        url = "v1/triggers/active_triggers"
         if trigger_ids:
             url = f"{url}?triggerIds={','.join(trigger_ids)}"
         resp = self.http_client.get(url)
@@ -274,7 +274,7 @@ class Composio:
 
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
         resp = self.http_client.get(
-            f"v1/triggers",
+            "v1/triggers",
             params={"triggerIds": ",".join(trigger_ids) if trigger_ids else None},
         )
         return resp.json()
@@ -295,7 +295,7 @@ class Composio:
             raise ValueError("API Key not set")
 
         resp = self.http_client.post(
-            f"v1/triggers/setCallbackURL",
+            "v1/triggers/setCallbackURL",
             json={
                 "callbackURL": callback_url,
             },
@@ -303,7 +303,7 @@ class Composio:
         return resp.json()
 
     def get_list_of_apps(self):
-        resp = self.http_client.get(f"v1/apps")
+        resp = self.http_client.get("v1/apps")
         return resp.json()
 
     def get_app(self, app_name: str):
@@ -323,7 +323,7 @@ class Composio:
                 raise ValueError("Use case should be provided with exactly one app")
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
-                f"v1/actions",
+                "v1/actions",
                 params={
                     "appNames": app_unique_ids,
                     "useCase": use_case,
@@ -334,7 +334,7 @@ class Composio:
         elif (apps is None or len(apps) == 0) and (
             actions is None or len(actions) == 0
         ):
-            resp = self.http_client.get(f"v1/actions")
+            resp = self.http_client.get("v1/actions")
             return resp.json()["items"]
         elif (apps is None or len(apps) == 0) and (
             actions is not None and len(actions) > 0
@@ -393,7 +393,7 @@ class Composio:
 
     def get_list_of_triggers(self, apps: list[App] = None) -> list:
         if apps is None or len(apps) == 0:
-            resp = self.http_client.get(f"v1/triggers")
+            resp = self.http_client.get("v1/triggers")
         else:
             app_unique_ids = [app.value for app in apps]
             resp = self.http_client.get(
@@ -402,7 +402,7 @@ class Composio:
         return resp.json()
 
     def get_list_of_integrations(self) -> list[Integration]:
-        resp = self.http_client.get(f"v1/integrations")
+        resp = self.http_client.get("v1/integrations")
         resp = resp.json()
         if resp.get("items"):
             return [Integration(self, **app) for app in resp["items"]]

@@ -1,5 +1,4 @@
 import json
-from json.decoder import JSONDecoder
 
 from composio_openai import OpenaiStyleToolsetBase
 from julep.api.types import ChatResponse

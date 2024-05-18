@@ -17,9 +17,7 @@ def get_enum_key(name):
 
 def generate_enums_given_apps(apps, actions, triggers):
     enum_content = "from enum import Enum\n\n"
-
     tag_map = {}
-    tag_count = 0
     for app in apps["items"]:
         app_key = app["key"]
         app_actions = [action for action in actions if action["appKey"] == app_key]
@@ -32,8 +30,8 @@ def generate_enums_given_apps(apps, actions, triggers):
             tag_map[app_key].update(tags)
 
     enum_content += "class Tag(Enum):\n"
-    enum_content += f'    IMPORTANT = ("default", "important")\n'
-    enum_content += f'    ALL = ("default", "all")\n'
+    enum_content += '    IMPORTANT = ("default", "important")\n'
+    enum_content += '    ALL = ("default", "all")\n'
     for app_key, tags in tag_map.items():
         for tag in tags:
             tag_name = get_enum_key(f"{app_key}_{tag}")

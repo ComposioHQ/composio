@@ -1,4 +1,3 @@
-import json
 import sys
 import unittest.mock as mock
 
@@ -10,7 +9,7 @@ from composio.sdk.sdk import ConnectedAccount
 
 
 def run_crewai_script():
-    from examples.crewai_demo import llm
+    from examples.crewai_demo import llm  # noqa: F401
 
 
 @pytest.fixture(scope="session", autouse=True)

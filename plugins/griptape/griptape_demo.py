@@ -1,5 +1,5 @@
 import dotenv
-from composio_griptape import Action, App, ComposioToolset, Tag
+from composio_griptape import App, ComposioToolset
 from griptape.structures import Agent
 from griptape.utils import Chat
 

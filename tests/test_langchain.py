@@ -1,4 +1,3 @@
-import json
 import sys
 import unittest.mock as mock
 
@@ -10,7 +9,7 @@ from composio.sdk.sdk import ConnectedAccount
 
 
 def run_langchain_script():
-    from examples.langchain_demo import agent_executor
+    from examples.langchain_demo import agent_executor  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)
