@@ -78,7 +78,6 @@ class ComposioToolset:
         class tool_class(BaseTool):
             @activity(config=griptape_activity_config)
             def execute_task(nested_self, params: dict):
-                print(params)
                 params_dict = params["values"]
                 return self.client.execute_action(
                     self.client.get_action_enum(name, appName),
