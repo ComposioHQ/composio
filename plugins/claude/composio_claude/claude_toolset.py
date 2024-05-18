@@ -1,6 +1,3 @@
-import json
-from json.decoder import JSONDecoder
-
 from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
 from composio_openai import OpenaiStyleToolsetBase
 

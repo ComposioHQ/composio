@@ -2,13 +2,11 @@ import logging
 import os
 from typing import List, Union
 
-from griptape.artifacts import BaseArtifact
 from griptape.tools import BaseTool
 from griptape.utils.decorators import activity
 from schema import Literal, Schema
 
 from composio import Action, App, ComposioCore, FrameworkEnum, Tag
-from composio.sdk import SchemaFormat
 from composio.sdk.shared_utils import schema_type_python_type_dict
 
 

@@ -1,4 +1,3 @@
-import json
 import sys
 import unittest.mock as mock
 
@@ -10,7 +9,7 @@ from composio.sdk.sdk import ConnectedAccount
 
 
 def run_autogen_script():
-    from examples.autogen_demo import composio_tools
+    from examples.autogen_demo import composio_tools  # noqa: F401
 
 
 @pytest.fixture(scope="session", autouse=True)

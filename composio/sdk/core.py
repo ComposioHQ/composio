@@ -61,7 +61,7 @@ class ComposioCore:
                     try:
                         git_info = get_git_user_info()
                         self.http_client.post(
-                            f"v1/client/auth/track",
+                            "v1/client/auth/track",
                             json={
                                 "framework": self.framework.value,
                                 "user_git_user_info": (
@@ -108,7 +108,7 @@ class ComposioCore:
         save_user_data(user_data)
 
     def generate_cli_auth_session(self):
-        resp = self.http_client.get(f"v1/cli/generate-cli-session")
+        resp = self.http_client.get("v1/cli/generate-cli-session")
         resp = resp.json()
         if resp.get("key"):
             return resp["key"]
@@ -131,7 +131,7 @@ class ComposioCore:
             integrationId = integration.id
 
         resp = self.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": integrationId,
             },

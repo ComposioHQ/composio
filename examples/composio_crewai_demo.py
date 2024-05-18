@@ -4,7 +4,7 @@ import dotenv
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
-from plugins.crew_ai.composio_crewai import Action, App, ComposioToolset
+from plugins.crew_ai.composio_crewai import Action, ComposioToolset
 
 
 # Loading the variables from .env file
