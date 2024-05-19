@@ -1,6 +1,13 @@
-from httpcore import TimeoutException
 import requests
-from composio.sdk.exceptions import UserNotAuthenticatedException, BadErrorException, InternalServerErrorException, NotFoundException
+from httpcore import TimeoutException
+
+from composio.sdk.exceptions import (
+    BadErrorException,
+    InternalServerErrorException,
+    NotFoundException,
+    UserNotAuthenticatedException,
+)
+
 
 class HttpClient(requests.Session):
     def __init__(self, base_url: str):
@@ -13,7 +20,9 @@ class HttpClient(requests.Session):
         return response
 
     def post(self, url: str, data=None, json=None, **kwargs):
-        response = super().post(f"{self.base_url}/{url}", data=data, json=json, **kwargs)
+        response = super().post(
+            f"{self.base_url}/{url}", data=data, json=json, **kwargs
+        )
         self._handle_response_errors(response, absolute_url=f"{self.base_url}/{url}")
         return response
 
@@ -29,15 +38,27 @@ class HttpClient(requests.Session):
 
     def _handle_response_errors(self, response, absolute_url):
         if response.status_code == 404:
-            raise NotFoundException(f"The requested resource was not found at {absolute_url}. response: {response.text}")
+            raise NotFoundException(
+                f"The requested resource was not found at {absolute_url}. response: {response.text}"
+            )
         elif response.status_code == 401:
-            raise UserNotAuthenticatedException(f"You are not authorized to access the resource at {absolute_url}. response: {response.text}")
+            raise UserNotAuthenticatedException(
+                f"You are not authorized to access the resource at {absolute_url}. response: {response.text}"
+            )
         elif response.status_code == 500:
-            raise InternalServerErrorException(f"Internal server error occurred on {absolute_url}. response: {response.text}")
+            raise InternalServerErrorException(
+                f"Internal server error occurred on {absolute_url}. response: {response.text}"
+            )
         elif response.status_code == 400:
-            raise BadErrorException(f"Bad request error at {absolute_url}. response: {response.text}")
+            raise BadErrorException(
+                f"Bad request error at {absolute_url}. response: {response.text}"
+            )
         elif response.status_code == 408:
-            raise TimeoutException(f"The request timed out at {absolute_url}. response: {response.text}")
+            raise TimeoutException(
+                f"The request timed out at {absolute_url}. response: {response.text}"
+            )
         elif response.status_code >= 400:
-            raise Exception(f"An error occurred at {absolute_url}. Status code: {response.status_code}, response: {response.text}")
+            raise Exception(
+                f"An error occurred at {absolute_url}. Status code: {response.status_code}, response: {response.text}"
+            )
         response.raise_for_status()  # Raise for other status codes that are not successful

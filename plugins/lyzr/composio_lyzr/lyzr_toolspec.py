@@ -1,12 +1,10 @@
 import os
 import types
 from inspect import Signature
-from typing import Dict, Optional, Union
 
 from lyzr_automata import Tool
 
 from composio import Action, ComposioCore, FrameworkEnum
-from composio.sdk.enums import App
 from composio.sdk.shared_utils import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
@@ -19,10 +17,11 @@ client = ComposioCore(
 
 
 class ComposioToolset:
-    def __init__(self, 
-                client: ComposioCore = client, 
-                entity_id: str = "default", 
-                ):
+    def __init__(
+        self,
+        client: ComposioCore = client,
+        entity_id: str = "default",
+    ):
         self.client = client
         self.entity_id = entity_id
 
@@ -33,18 +32,15 @@ class ComposioToolset:
 
         name = action_schema["name"]
         description = action_schema["description"]
-        appName = action_schema["appName"]
         func_params = get_signature_format_from_schema_params(
             action_schema["parameters"]
         )
         action_signature = Signature(parameters=func_params)
-        placeholder_function = (
-            lambda **kwargs: self.client.execute_action(  # noqa: E731
-                action,
-                kwargs,
-                entity_id=self.entity_id,
-                # connection_id=connection_id,
-            )
+        placeholder_function = lambda **kwargs: self.client.execute_action(  # noqa: E731
+            action,
+            kwargs,
+            entity_id=self.entity_id,
+            # connection_id=connection_id,
         )
         action_func = types.FunctionType(
             placeholder_function.__code__,
