@@ -1,4 +1,7 @@
 from typing import Optional
+from composio.sdk.api.repo import get_app
+from composio.sdk.entities.integration import Integration
+from composio.sdk.exceptions import NotFoundException
 from composio.sdk.http_client import HttpClient
 from composio.sdk.storage import get_base_url
 from composio.sdk.utils import build_query_params, build_query_url
@@ -49,5 +52,30 @@ class Composio:
         resp = self.http_client.get(f"v1/connectedAccounts/{connection_id}")
         return ConnectedAccount(self, **resp.json())
     
-    def create_integration(self, app: App,  name: str, use_default_credentials: bool = False) -> Integration:
-        pass
+    def create_integration(self, app: App, name: str, auth_mode: str, use_default_credentials: bool = False) -> Integration:
+        """
+            Create an integration for a given app.
+            Args:
+                app (App): The app for which the integration is being created.
+                name (str): The name of the integration.
+                use_default_credentials (bool, optional): Whether to use default credentials for the integration. Defaults to False.
+            Returns:
+                Integration: An Integration object representing the created integration.
+        """
+        app_details = get_app(self.base_url, self.api_key, app.value)
+        app_id = app_details.get("appId")
+        if app_id is None:
+            raise NotFoundException(f"App {app} does not exist for the account")
+        
+        req = {"appId": app_id, "useComposioAuth": use_default_credentials}
+        if name:
+            req["name"] = name
+        if auth_mode:
+            req["authScheme"] = auth_mode
+            auth_schemes = app_details.get("auth_schemes")
+            for auth_scheme_iter in auth_schemes:
+                if auth_scheme_iter.get("auth_mode") == auth_mode:
+                    fields = auth_scheme_iter.get("fields")
+                    req["authConfig"] = {field.get("name"): "" for field in fields}
+        resp = self.http_client.post("v1/integrations", json=req)
+        return Integration(self, **resp.json())

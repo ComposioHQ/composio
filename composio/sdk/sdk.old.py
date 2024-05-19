@@ -20,30 +20,6 @@ from .storage import get_base_url
 from enum import Enum
 
     
-    
-def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
-    if format == SchemaFormat.OPENAI:
-        formatted_schema = {
-                    "type": "function",
-                    "function": {
-                        "name": action_schema["name"],
-                        "description": action_schema.get("description", ""),
-                        "parameters": action_schema.get("parameters", {}),
-                    },
-                }    
-    elif format == SchemaFormat.CLAUDE:
-        formatted_schema = {
-                        "name": action_schema["name"],
-                        "description": action_schema.get("description", ""),
-                        "input_schema": action_schema.get("parameters", {}),
-                    }
-    else:
-        formatted_schema = action_schema
-        # print("Only OPENAI formatting is supported now.")
-    
-    return formatted_schema
-
-
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     connectionStatus: str
@@ -56,8 +32,11 @@ class ConnectionRequest(BaseModel):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
-    def save_user_access_data(
-        self, field_inputs: dict, redirect_url: str = None, entity_id: str = None
+    def authorize(
+        self,
+        field_inputs: dict,
+        entity_id: str,
+        redirect_url: Optional[str] = None, 
     ):
         connected_account_id = self.sdk_instance.get_connected_account(
             self.connectedAccountId
@@ -89,133 +68,6 @@ class ConnectionRequest(BaseModel):
         raise TimeoutException(
             "Connection did not become active within the timeout period."
         )
-
-
-class AuthConnectionParams(BaseModel):
-    scope: Optional[str] = None
-    base_url: Optional[str] = None
-    client_id: Optional[str] = None
-    token_type: Optional[str] = None
-    access_token: Optional[str] = None
-    client_secret: Optional[str] = None
-    consumer_id: Optional[str] = None
-    consumer_secret: Optional[str] = None
-    headers: Optional[dict] = None
-    queryParams: Optional[dict] = None
-
-
-class ActiveTrigger(BaseModel):
-    id: str
-    connectionId: str
-    triggerName: str
-    triggerConfig: dict
-
-    def __init__(  # pylint: disable=unused-argument
-        self, sdk_instance: "Composio", **data
-    ):
-        super().__init__(**data)
-
-
-class ConnectedAccount(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    integrationId: str
-    connectionParams: AuthConnectionParams
-    appUniqueId: str
-    id: str
-    status: str
-    createdAt: str
-    updatedAt: str
-
-    sdk_instance: "Composio" = None
-
-    def __init__(self, sdk_instance: "Composio", **data):
-        super().__init__(**data)
-        # self.connectionParams = OAuth2ConnectionParams(**self.connectionParams)
-        self.sdk_instance = sdk_instance
-
-    def _execute_action(
-        self, action_name: Action, connected_account_id: str, params: dict
-    ):
-        resp = self.sdk_instance.http_client.post(
-            f"v1/actions/{action_name.value[1]}/execute",
-            json={"connectedAccountId": connected_account_id, "input": params},
-        )
-        return resp.json()
-
-    def execute_action(self, action_name: Action, params: dict):
-        resp = self._execute_action(action_name, self.id, params)
-        return resp
-
-    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI):
-        app_unique_id = self.appUniqueId
-        resp = self.sdk_instance.http_client.get(
-            f"v1/actions?appNames={app_unique_id}"
-        )
-        actions = resp.json()
-        return [format_schema(action_schema, format = format) for action_schema in actions["items"]]
-
-    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[Unknown]:
-        output = []
-        try:
-            if tool_calls.choices:
-                for choice in tool_calls.choices:
-                    if choice.message.tool_calls:
-                        for tool_call in choice.message.tool_calls:
-                            function = tool_call.function
-                            action = self.sdk_instance.get_action_enum(
-                                function.name, self.appUniqueId
-                            )
-                            arguments = json.loads(function.arguments)
-                            output.append(self.execute_action(action, arguments))
-        except Exception as e:
-            raise e from e
-
-        return output
-
-
-class Integration(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    id: str
-    name: str
-    authScheme: str
-    authConfig: dict = {}
-    createdAt: str
-    updatedAt: str
-    enabled: bool
-    deleted: bool
-    appId: str
-    defaultConnectorId: Optional[str] = None
-    expectedInputFields: list = []
-    logo: str
-    appName: str
-    useComposioAuth: bool = False
-
-    sdk_instance: "Composio" = None  # type: ignore
-
-    def __init__(self, sdk_instance: "Composio", **data):
-        super().__init__(**data)
-        self.sdk_instance = sdk_instance
-
-    def initiate_connection(
-        self,
-        entity_id: str = None,
-        params: Optional[dict] = None,
-        redirect_url: str = None,
-    ) -> ConnectionRequest:
-        resp = self.sdk_instance.http_client.post(
-            f"v1/connectedAccounts",
-            json={
-                "integrationId": self.id,
-                "userUuid": entity_id,
-                "data": params or {},
-                "redirectUri": redirect_url,
-            },
-        )
-        return ConnectionRequest(self.sdk_instance, **resp.json())
-
-    def get_required_variables(self):
-        return self.expectedInputFields
-
 
 class Composio:
     def __init__(self, api_key: str, base_url=get_base_url()):

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from openai.types.chat.chat_completion import ChatCompletion
 from composio.sdk.enums import Action
 from composio.sdk.types.connectedAccount import ConnectedAccountModel
-from composio.sdk.types.schemeFormat import SchemaFormat
+from composio.sdk.utils import SchemaFormat
 from composio.sdk.utils import format_schema
 
 if TYPE_CHECKING:

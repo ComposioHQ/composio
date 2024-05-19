@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Tuple
 
 class Tag(Enum):
     IMPORTANT = ("default", "important")
@@ -69,7 +70,7 @@ class Tag(Enum):
     ZOOM_TSP = ("zoom", "TSP")
     ZOOM_ARCHIVING = ("zoom", "Archiving")
 
-class App(Enum):
+class App(str, Enum):
     ABLY = "ably"
     ACCELO = "accelo"
     ACTIVE_COMPAIGN = "active-compaign"
@@ -274,7 +275,7 @@ class App(Enum):
     ZOHO_MAIL = "zoho-mail"
     ZOOM = "zoom"
 
-class Action(Enum):
+class Action(Tuple[str, str, bool], Enum):
     def __init__(self, service, action, no_auth):
         self.service = service
         self.action = action

@@ -2,6 +2,9 @@ import subprocess
 from typing import Union
 from pydantic import BaseModel
 from enum import Enum
+from composio.sdk.enums import Action
+
+from composio.sdk.exceptions import NotFoundException
 
 class SchemaFormat(Enum):
     OPENAI = "openai"
@@ -89,3 +92,20 @@ def build_query_url(base_url: str, query_params: dict):
         [f"{key}={value}" for key, value in query_params.items()]
     )
     return f"{base_url}?{query_string}" if query_string else base_url
+
+def get_action_enum(self, action_name: str, tool_name: str) -> Action:
+    for action in Action:
+        if (
+            action.action == action_name.lower()
+            and action.service == tool_name.lower()
+        ):
+            return action
+    raise NotFoundException(
+        f"No matching action found for action: {action_name.lower()} and tool: {tool_name.lower()}"
+    )
+
+def get_action_enum_without_tool(self, action_name: str) -> Action:
+    for action in Action:
+        if action.action == action_name.lower():
+            return action
+    raise NotFoundException(f"No matching action found for action: {action_name.lower()}")
