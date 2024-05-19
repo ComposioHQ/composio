@@ -15,6 +15,9 @@ venv*
 .tox/
 .mypy_cache/
 
+.coverage
+coverage.xml
+
 core/build/lib/*
 
 node_modules
