@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Optional, Union
 
 from composio.sdk.exceptions import BadErrorException, NotFoundException
-
 from composio.sdk.http_client import HttpClient
 
 from .enums import Action, App
@@ -30,7 +29,6 @@ class FrameworkEnum(Enum):
 
 
 __IS_FIRST_TIME__ = True
-
 
 
 class ComposioCore:
@@ -63,7 +61,7 @@ class ComposioCore:
                     try:
                         git_info = get_git_user_info()
                         self.http_client.post(
-                            f"v1/client/auth/track",
+                            "v1/client/auth/track",
                             json={
                                 "framework": self.framework.value,
                                 "user_git_user_info": (
@@ -110,7 +108,7 @@ class ComposioCore:
         save_user_data(user_data)
 
     def generate_cli_auth_session(self):
-        resp = self.http_client.get(f"v1/cli/generate-cli-session")
+        resp = self.http_client.get("v1/cli/generate-cli-session")
         resp = resp.json()
         if resp.get("key"):
             return resp["key"]
@@ -120,9 +118,7 @@ class ComposioCore:
         )
 
     def verify_cli_auth_session(self, key: str, code: str):
-        resp = self.http_client.get(
-            f"v1/cli/verify-cli-code?key={key}&code={code}"
-        )
+        resp = self.http_client.get(f"v1/cli/verify-cli-code?key={key}&code={code}")
         return resp.json()
 
     def initiate_connection(
@@ -135,7 +131,7 @@ class ComposioCore:
             integrationId = integration.id
 
         resp = self.http_client.post(
-            f"v1/connectedAccounts",
+            "v1/connectedAccounts",
             json={
                 "integrationId": integrationId,
             },
@@ -164,9 +160,7 @@ class ComposioCore:
     def enable_trigger(
         self, trigger_id: str, connected_account_id: str, user_inputs: dict
     ):
-        return self.sdk.enable_trigger(
-            trigger_id, connected_account_id, user_inputs
-        )
+        return self.sdk.enable_trigger(trigger_id, connected_account_id, user_inputs)
 
     def get_connection(
         self,
