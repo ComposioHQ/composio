@@ -1,12 +1,17 @@
 import requests
 from typing import Optional, List, Dict, Any
+from composio.sdk.enums import App
 
-from composio.sdk.types.app import AppModel
+from composio.sdk.types.app import AppInfoModel
+from composio.sdk.types.integrations_list import ListIntegrationItemModel, ListIntegrationsModel
 
-def get_list_triggers(base_url: str, api_key: str, app_names: Optional[List[str]] = None) -> Dict[str, Any]:
+def get_list_triggers(base_url: str, api_key: str, app_names: Optional[List[App]] = None, trigger_ids: Optional[List[str]] = None) -> Dict[str, Any]:
     url = f"{base_url}/v1/triggers"
     headers = {"Content-Type": "application/json", "x-api-key": api_key}
-    params = {"appNames": ",".join(app_names) if app_names else None}
+    params = {
+        "appNames": ",".join(app_names) if app_names else None,
+        "triggerIds": ",".join(trigger_ids) if trigger_ids else None
+    }
     response = requests.get(url, headers=headers, params=params)
     return response.json()
 
@@ -43,7 +48,7 @@ def get_list_of_apps(base_url: str, api_key: str) -> Dict[str, Any]:
     response = requests.get(url, headers=headers)
     return response.json()
 
-def get_app(base_url: str, api_key: str, app_name: str) -> Dict[str, AppModel]:
+def get_app(base_url: str, api_key: str, app_name: str) -> AppInfoModel:
     url = f"{base_url}/v1/apps/{app_name}"
     headers = {"Content-Type": "application/json", "x-api-key": api_key}
     response = requests.get(url, headers=headers)
@@ -63,13 +68,13 @@ def get_list_of_triggers(base_url: str, api_key: str, app_names: Optional[List[s
     response = requests.get(url, headers=headers, params=params)
     return response.json()
 
-def get_list_of_integrations(base_url: str, api_key: str) -> Dict[str, Any]:
+def get_list_of_integrations(base_url: str, api_key: str) -> ListIntegrationsModel:
     url = f"{base_url}/v1/integrations"
     headers = {"Content-Type": "application/json", "x-api-key": api_key}
     response = requests.get(url, headers=headers)
     return response.json()
 
-def get_integration(base_url: str, api_key: str, connector_id: str) -> Dict[str, Any]:
+def get_integration(base_url: str, api_key: str, connector_id: str) -> ListIntegrationItemModel:
     url = f"{base_url}/v1/integrations/{connector_id}"
     headers = {"Content-Type": "application/json", "x-api-key": api_key}
     response = requests.get(url, headers=headers)

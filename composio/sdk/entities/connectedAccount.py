@@ -1,4 +1,5 @@
 
+from enum import Enum, auto
 import json
 from typing import TYPE_CHECKING
 from openai.types.chat.chat_completion import ChatCompletion
@@ -28,15 +29,24 @@ class ConnectedAccount(ConnectedAccountModel):
         resp = self._execute_action(action_name, self.id, params)
         return resp
 
-    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI):
+    def get_all_actions(self, format: SchemaFormat = SchemaFormat.OPENAI) -> list[Action]:
         app_unique_id = self.appUniqueId
         resp = self.sdk_instance.http_client.get(
             f"v1/actions?appNames={app_unique_id}"
         )
         actions = resp.json()
-        return [format_schema(action_schema, format = format) for action_schema in actions["items"]]
+        schema_formatted_actions = [format_schema(action_schema, format=format) for action_schema in actions["items"]]
+        return [
+            Enum(
+                'Action',
+                {
+                    (action_schema.get("service", ""), action_schema.get("action", ""), action_schema.get("no_auth", False)): auto()
+                }
+            )
+            for action_schema in schema_formatted_actions
+        ]
 
-    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[any]:
+    def handle_tools_calls(self, tool_calls: ChatCompletion) -> list[Any]:
         output = []
         try:
             if tool_calls.choices:

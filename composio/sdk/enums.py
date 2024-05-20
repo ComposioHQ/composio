@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Tuple
 
-class Tag(Enum):
+class Tag(str, Enum):
     IMPORTANT = ("default", "important")
     ALL = ("default", "all")
     ASANA_CUSTOM_FIELDS = ("asana", "Custom fields")
@@ -276,7 +276,7 @@ class App(str, Enum):
     ZOOM = "zoom"
 
 class Action(Tuple[str, str, bool], Enum):
-    def __init__(self, service, action, no_auth):
+    def __init__(self, service: str, action: str, no_auth: bool):
         self.service = service
         self.action = action
         self.no_auth = no_auth

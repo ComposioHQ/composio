@@ -1,31 +1,40 @@
 
-from typing import Union, Optional
+from typing import Any, Union, Optional
 from composio import Composio, Tag, App, Action
 from datetime import datetime
 from openai.types.chat.chat_completion import ChatCompletion
 from composio.sdk.entities.connectedAccount import ConnectedAccount
+import json
+from composio.sdk.entities.integration import Integration
+
+from composio.sdk.exceptions import InvalidParameterException, NotFoundException
+from openai.types.beta.threads.run import Run as OpenAIRun
+from openai.types.beta.thread import Thread as OpenAIThread
+from openai import Client
+from time import time
 
 class Entity:
-    def __init__(self, sdk: Composio, entity_id: str) -> None:
-        self.sdk = sdk
+    def __init__(self, sdk_instance: Composio, entity_id: str) -> None:
+        self.sdk_instance = sdk_instance
         entity_id = entity_id if isinstance(entity_id, str) else ",".join(entity_id)
         self.entity_id = entity_id
 
-    def get_all_actions(self, tags: Optional[list[Union[str, Tag]]] = None) -> list[Action]:
+    def get_all_actions(self, tags: Optional[list[Tag]] = None) -> list[Action]:
         actions = []
-        connected_accounts = self.sdk.get_connected_accounts(
+        connected_accounts = self.sdk_instance.list_connected_accounts(
             entity_id=self.entity_id
         )
 
         for account in connected_accounts:
-            account_actions = account.get_all_actions(tags=tags)
+            # @TODO: Add support for tags
+            account_actions = account.get_all_actions()
             actions.extend(account_actions)
         return actions
 
     def get_connection(self, app_name: Union[str, App]) -> Optional[ConnectedAccount]:
         if isinstance(app_name, App):
             app_name = app_name.value
-        connected_accounts = self.sdk.get_connected_accounts(
+        connected_accounts = self.sdk_instance.list_connected_accounts(
             entity_id=self.entity_id, showActiveOnly=True
         )
         latest_account = None
@@ -50,9 +59,10 @@ class Entity:
         connected_account = self.get_connection(app_name)
         return connected_account is not None
 
-    def handle_tools_calls(  # pylint: disable=unused-argument
-        self, tool_calls: ChatCompletion, verbose: bool = False
-    ) -> list[any]:
+    def handle_tools_calls(
+        self,
+        tool_calls: ChatCompletion
+    ) -> list[Any]:
         output = []
         try:
             if tool_calls.choices:
@@ -60,11 +70,15 @@ class Entity:
                     if choice.message.tool_calls:
                         for tool_call in choice.message.tool_calls:
                             action_name_to_execute = tool_call.function.name
-                            action = self.sdk.get_action_enum_without_tool(
+                            action = self.sdk_instance.get_action_enum_without_tool(
                                 action_name=action_name_to_execute
                             )
+                            if action is None:
+                                raise NotFoundException(f"Action {action_name_to_execute} not found.")
                             arguments = json.loads(tool_call.function.arguments)
                             account = self.get_connection(app_name=action.service)
+                            if account is None:
+                                raise NotFoundException("No connected account found for the specified action.")
                             output.append(account.execute_action(action, arguments))
 
         except Exception as e:
@@ -72,14 +86,16 @@ class Entity:
 
         return output
 
-    def handle_run_tool_calls(self, run_object: run, verbose: bool = False):
+    def handle_run_tool_calls(self, run_object: OpenAIRun, verbose: bool = False):
         outputs = []
+        if run_object.required_action is None:
+            raise NotFoundException("No required action found for the run on the OpenAI Run object.")
         require_action = run_object.required_action.submit_tool_outputs
         try:
             for tool_call in require_action.tool_calls:
                 if tool_call.type == "function":
                     action_name_to_execute = tool_call.function.name
-                    action = self.sdk.get_action_enum_without_tool(
+                    action = self.sdk_instance.get_action_enum_without_tool(
                         action_name=action_name_to_execute
                     )
                     arguments = json.loads(tool_call.function.arguments)
@@ -87,6 +103,8 @@ class Entity:
                     if verbose:
                         print("Executing Function: ", action)
                         print("Arguments: ", arguments)
+                    if account is None:
+                        raise NotFoundException(f"No connected account found for the specified action - {action_name_to_execute}.")
                     response = account.execute_action(action, arguments)
                     if verbose:
                         print("Output", response)
@@ -103,8 +121,8 @@ class Entity:
     def wait_and_handle_tool_calls(
         self,
         client: Client,
-        run: run,
-        thread: thread,
+        run: OpenAIRun,
+        thread: OpenAIThread,
         verbose: bool = False,
     ):
         run_object = run
@@ -129,23 +147,31 @@ class Entity:
 
     def initiate_connection(
         self,
-        integration: Integration = None,
-        app_name: Union[str, App] = None,
-        redirect_url: str = None,
+        integration: Integration,
+        app: App,
+        redirect_url: Optional[str] = None,
     ):
-        if not integration and not app_name:
-            raise InvalidParameterException("Either 'integration' or 'app_name' must be provided")
+        if not integration and not app:
+            raise InvalidParameterException("Either 'integration' or 'app' must be provided")
         if not integration:
-            integration = self.sdk.get_default_integration(app_name)
+            integration = self.sdk_instance.create_integration(
+                app=app,
+                name=f"test_integration_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                auth_mode="OAUTH2",
+                use_default_credentials=True
+            )
         return integration.initiate_connection(
             entity_id=self.entity_id, redirect_url=redirect_url
         )
 
     def initiate_connection_not_oauth(
-        self, app_name: Union[str, App], redirect_url: str = None, auth_mode: str = None
+        self,
+        app_name: App,
+        auth_mode: str,
+        redirect_url: Optional[str] = None
     ):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        integration = self.sdk.create_integration(
+        integration = self.sdk_instance.create_integration(
             app_name, name=f"integration_{timestamp}", auth_mode=auth_mode
         )
         return integration.initiate_connection(
