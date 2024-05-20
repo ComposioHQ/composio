@@ -1,5 +1,5 @@
 import subprocess
-from typing import Union
+from typing import Any, Dict, Union
 from pydantic import BaseModel
 from enum import Enum
 from composio.sdk.enums import Action
@@ -11,22 +11,31 @@ class SchemaFormat(Enum):
     DEFAULT = "default"
     CLAUDE = "claude"
 
-def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI):
-    if format == SchemaFormat.OPENAI:
-        formatted_schema = {
-                    "type": "function",
-                    "function": {
-                        "name": action_schema["name"],
-                        "description": action_schema.get("description", ""),
-                        "parameters": action_schema.get("parameters", {}),
-                    },
-                }    
+class OpenAISchema(BaseModel):
+    type: str
+    function: Dict[str, Any]
+
+class ClaudeSchema(BaseModel):
+    name: str
+    description: str
+    input_schema: Dict[str, Any]
+
+def format_schema(action_schema, format: SchemaFormat = SchemaFormat.OPENAI) -> Union[OpenAISchema, ClaudeSchema]:
+    if format == SchemaFormat.OPENAI:   
+        return OpenAISchema(
+            type="function",
+            function={
+                "name": action_schema["name"],
+                "description": action_schema.get("description", ""),
+                "parameters": action_schema.get("parameters", {}),
+            }
+        )
     elif format == SchemaFormat.CLAUDE:
-        formatted_schema = {
-                        "name": action_schema["name"],
-                        "description": action_schema.get("description", ""),
-                        "input_schema": action_schema.get("parameters", {}),
-                    }
+        return ClaudeSchema(
+            name=action_schema["name"],
+            description=action_schema.get("description", ""),
+            input_schema=action_schema.get("parameters", {}),
+        )
     else:
         formatted_schema = action_schema
         # print("Only OPENAI formatting is supported now.")

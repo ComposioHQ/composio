@@ -1,15 +1,22 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from composio.sdk.entities.connectionRequest import OAuthConnectionRequest
-from composio.sdk.sdk import Composio
 from composio.sdk.types.integration import IntegrationModel
 
+if TYPE_CHECKING:
+    from composio.sdk import Composio
+
 class Integration(IntegrationModel):
-    def __init__(self, sdk_instance: Composio, **data):
+    def __init__(self, sdk_instance: 'Composio', **data):
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
     def get_required_variables(self):
+        """Get the required variables for the integration to be successfully created.
+
+        :return: A list of required variables for the integration to be successfully created.
+        :rtype: list[Any]
+        """
         return self.expectedInputFields
     
     def initiate_connection(

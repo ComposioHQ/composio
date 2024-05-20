@@ -4,8 +4,9 @@ from composio.sdk.enums import App
 
 from composio.sdk.types.app import AppInfoModel
 from composio.sdk.types.integrations_list import ListIntegrationItemModel, ListIntegrationsModel
+from composio.sdk.types.trigger import TriggerModel
 
-def get_list_triggers(base_url: str, api_key: str, app_names: Optional[List[App]] = None, trigger_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+def get_list_triggers(base_url: str, api_key: str, app_names: Optional[List[App]] = None, trigger_ids: Optional[List[str]] = None) -> List[TriggerModel]:
     url = f"{base_url}/v1/triggers"
     headers = {"Content-Type": "application/json", "x-api-key": api_key}
     params = {

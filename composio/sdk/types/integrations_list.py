@@ -5,6 +5,9 @@ class IntegrationCount(BaseModel):
     connections: int
 
 class ListIntegrationItemModel(BaseModel):
+    """
+    The ListIntegrationItemModel class represents an item in a list of integrations.
+    """
     id: str
     name: str
     authScheme: str
@@ -20,6 +23,9 @@ class ListIntegrationItemModel(BaseModel):
     logo: HttpUrl
 
 class ListIntegrationsModel(BaseModel):
+    """
+    The ListIntegrationsModel class represents a list of integrations in Composio.
+    """
     items: List[ListIntegrationItemModel]
     totalPages: int
     page: int

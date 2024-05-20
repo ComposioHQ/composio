@@ -13,7 +13,15 @@ class OAuthConnectionRequest(BaseModel):
     connectedAccountId: str
     redirectUrl: Optional[str] = None
 
-    def __init__(self, sdk_instance: Composio, **data):
+    def __init__(self, sdk_instance: 'Composio', **data):
+        """
+        Initializes an OAuthConnectionRequest object. This object represents a connection request for an OAuth flow, which will eventually be used to connect a user's account to a Composio app.
+
+        :param sdk_instance: The Composio instance.
+        :type sdk_instance: Composio
+        :param data: The data to initialize the object with.
+        :type data: dict
+        """
         super().__init__(**data)
         self.sdk_instance = sdk_instance
 
