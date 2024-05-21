@@ -64,14 +64,16 @@ class HttpClient(requests.Session):
         response.raise_for_status()  # Raise for other status codes that are not successful
 
 
-class HttpHandler():
-    def __init__(self, base_url:str, api_key:str):
+class HttpHandler:
+    def __init__(self, base_url: str, api_key: str):
         self.http_client = HttpClient(base_url)
         self.http_client.headers.update(
             {"Content-Type": "application/json", "x-api-key": api_key}
         )
 
-    def get_action_schemas(self, app_unique_ids:list[str]= [],  use_case: str = "", limit: int = 0):
+    def get_action_schemas(
+        self, app_unique_ids: list[str] = [], use_case: str = "", limit: int = 0
+    ):
 
         params = {}
         if use_case:
@@ -84,14 +86,10 @@ class HttpHandler():
         # Cannot apply limit without usecase
         elif limit != 0:
             raise ValueError("Limit can be only mentioned with Use case")
-        
-        if app_unique_ids:
-            params["appNames"]= ",".join(app_unique_ids )
 
-        resp = self.http_client.get(f"v1/actions", params=params)
+        if app_unique_ids:
+            params["appNames"] = ",".join(app_unique_ids)
+
+        resp = self.http_client.get("v1/actions", params=params)
 
         return resp.json()
-
-    
-
-    

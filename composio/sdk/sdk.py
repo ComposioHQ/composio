@@ -313,93 +313,10 @@ class Composio:
 
     def get_list_of_actions(
         self,
-        apps: list[App] = None,
-        use_case: str = None,
-        actions: list[Action] = None,
-        tags: list[Union[str, Tag]] = None,
-        limit: int = None,
-    ) -> list:
-        if use_case is not None and use_case != "":
-            if len(apps) != 1:
-                raise ValueError("Use case should be provided with exactly one app")
-            app_unique_ids = [app.value for app in apps]
-            resp = self.http_client.get(
-                "v1/actions",
-                params={
-                    "appNames": app_unique_ids,
-                    "useCase": use_case,
-                    "limit": limit,
-                },
-            )
-            return resp.json()["items"]
-        elif (apps is None or len(apps) == 0) and (
-            actions is None or len(actions) == 0
-        ):
-            resp = self.http_client.get("v1/actions")
-            return resp.json()["items"]
-        elif (apps is None or len(apps) == 0) and (
-            actions is not None and len(actions) > 0
-        ):
-            if tags is not None and len(tags) > 0:
-                raise ValueError("Both actions and tags cannot be provided together")
-            app_unique_ids = list(set(action.value[0] for action in actions))
-            resp = self.http_client.get(
-                f"v1/actions?appNames={','.join(app_unique_ids)}"
-            )
-            actions_response = resp.json()
-            filtered_actions = []
-            action_names_list = [action.value[1] for action in actions]
-            for item in actions_response["items"]:
-                if item["name"] in action_names_list:
-                    filtered_actions.append(item)
-            return filtered_actions
-        elif apps is not None and len(apps) > 0:
-            app_unique_ids = [app.value for app in apps]
-            resp = self.http_client.get(
-                f"v1/actions?appNames={','.join(app_unique_ids)}"
-            )
-            actions_response = resp.json()
-            if tags is not None and len(tags) > 0:
-                filtered_actions = []
-                tag_values = [
-                    tag.value[1] if hasattr(tag, "value") else tag for tag in tags
-                ]
-                if tag_values and Tag.ALL.value[1] in tag_values:
-                    return actions_response["items"]
-                for item in actions_response["items"]:
-                    if item["tags"] and any(tag in item["tags"] for tag in tag_values):
-                        filtered_actions.append(item)
-                return filtered_actions
-
-            warnings.warn(
-                "Using all the actions of an app is not recommended. "
-                "Please use tags to filter actions or provide specific actions. "
-                "We just pass the important actions to the agent, but this is not meant "
-                "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
-                UserWarning,
-            )
-            actions = actions_response["items"]
-            important_tag = Tag.IMPORTANT.value[1]
-            important_actions = [
-                action
-                for action in actions
-                if important_tag in (action.get("tags", []) or [])
-            ]
-            if len(important_actions) > 5:
-                return important_actions
-            else:
-                return actions
-        else:
-            raise ValueError("Either apps or actions must be provided")
-
-
-
-    def get_list_of_actions(
-        self, 
-        apps: list[App] = [], 
-        actions: list[Action] = [], 
-        use_case: str = "", 
-        tags: list[Union[str, Tag]] = [], 
+        apps: list[App] = [],
+        actions: list[Action] = [],
+        use_case: str = "",
+        tags: list[Union[str, Tag]] = [],
         limit: int = 0,
     ) -> list:
 
@@ -412,12 +329,12 @@ class Composio:
                 "Please use tags to filter actions or provide specific actions. "
                 "We just pass the important actions to the agent, but this is not meant "
                 "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
-                UserWarning
+                UserWarning,
             )
 
-        all_relevent_app_ids =  app_unique_ids + [action.value[0] for action in actions]
+        all_relevent_app_ids = app_unique_ids + [action.value[0] for action in actions]
         all_relevent_app_ids = list(set(all_relevent_app_ids))
-        
+
         if tags:
             if actions:
                 raise ValueError("Both actions and tags cannot be provided together")
@@ -426,103 +343,31 @@ class Composio:
         #     tag_values = [Tag.IMPORTANT.value[1]]
 
         action_response = self.http_handler.get_action_schemas(
-                                    app_unique_ids=all_relevent_app_ids,
-                                    use_case=use_case,
-                                    limit = limit
-                                )
+            app_unique_ids=all_relevent_app_ids, use_case=use_case, limit=limit
+        )
         action_schema_list = action_response["items"]
         filtered_actions = []
         important_actions = []
         important_tag = Tag.IMPORTANT.value[1]
 
         for action_schema in action_schema_list:
-            if action_schema['appName'] in app_unique_ids:
+            if action_schema["appName"] in app_unique_ids:
                 if not tags:
                     filtered_actions.append(action_schema)
-                elif bool(set(tags) & set(action_schema["tags"])):
+                elif bool(set(tag_values) & set(action_schema["tags"])):
                     filtered_actions.append(action_schema)
 
                 if important_tag in action_schema["tags"]:
                     important_actions.append(action_schema)
 
-            elif action_schema['name'] in action_unique_ids:
+            elif action_schema["name"] in action_unique_ids:
                 filtered_actions.append(action_schema)
                 important_actions.append(action_schema)
-                
+
         if len(important_actions) > 5 and Tag.ALL not in tags:
             return important_actions
         else:
             return filtered_actions
-
-
-        
-
-
-
-
-
-        # if use_case is not None and use_case != "":
-            
-        #     if len(apps) != 1:
-        #         raise ValueError("Use case should be provided with exactly one app")
-            
-        #     app_unique_ids = [app.value for app in apps]
-        #     resp = self.http_client.get(
-        #         f"v1/actions",
-        #         params={"appNames": app_unique_ids, "useCase": use_case, "limit": limit},
-        #     )
-        #     return resp.json()["items"]
-        # elif (apps is None or len(apps) == 0) and (actions is None or len(actions) == 0):
-        #     resp = self.http_client.get(f"v1/actions")
-        #     return resp.json()["items"]
-        # elif (apps is None or len(apps) == 0) and (actions is not None and len(actions) > 0):
-        #     if tags is not None and len(tags) > 0:
-        #         raise ValueError("Both actions and tags cannot be provided together")
-        #     app_unique_ids = list(set(action.value[0] for action in actions))
-        #     resp = self.http_client.get(
-        #         f"v1/actions?appNames={','.join(app_unique_ids)}"
-        #     )
-        #     actions_response = resp.json()
-        #     filtered_actions = []
-        #     action_names_list = [action.value[1] for action in actions]
-        #     for item in actions_response["items"]:
-        #         if item["name"] in action_names_list:
-        #             filtered_actions.append(item)
-        #     return filtered_actions
-        # elif apps is not None and len(apps) > 0:
-        #     app_unique_ids = [app.value for app in apps]
-        #     resp = self.http_client.get(
-        #         f"v1/actions?appNames={','.join(app_unique_ids)}"
-        #     )
-        #     actions_response = resp.json()
-        #     if tags is not None and len(tags) > 0:
-        #         filtered_actions = []
-        #         tag_values = [tag.value[1] if hasattr(tag, 'value') else tag for tag in tags]
-        #         if tag_values and Tag.ALL.value[1] in tag_values:
-        #             return actions_response["items"]
-        #         for item in actions_response["items"]:
-        #             if item["tags"] and any(tag in item["tags"] for tag in tag_values):
-        #                 filtered_actions.append(item)
-        #         return filtered_actions
-
-        #     warnings.warn(
-        #         "Using all the actions of an app is not recommended. "
-        #         "Please use tags to filter actions or provide specific actions. "
-        #         "We just pass the important actions to the agent, but this is not meant "
-        #         "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
-        #         UserWarning
-        #     )
-        #     actions = actions_response["items"]
-        #     important_tag = Tag.IMPORTANT.value[1]
-        #     important_actions = [action for action in actions if important_tag in (action.get("tags", []) or [])] 
-        #     if len(important_actions) > 5:
-        #         return important_actions
-        #     else:
-        #         return actions
-        # else:
-        #     raise ValueError("Either apps or actions must be provided")
-
-
 
     def get_list_of_triggers(self, apps: list[App] = None) -> list:
         if apps is None or len(apps) == 0:
