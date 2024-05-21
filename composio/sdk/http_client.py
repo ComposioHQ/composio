@@ -74,7 +74,6 @@ class HttpHandler:
     def get_action_schemas(
         self, app_unique_ids: list[str] = [], use_case: str = "", limit: int = 0
     ):
-
         params = {}
         if use_case:
             params["use_case"] = use_case

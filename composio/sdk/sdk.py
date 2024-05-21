@@ -319,7 +319,6 @@ class Composio:
         tags: list[Union[str, Tag]] = [],
         limit: int = 0,
     ) -> list:
-
         app_unique_ids = [app.value for app in apps]
         action_unique_ids = [action.value[1] for action in actions]
 
