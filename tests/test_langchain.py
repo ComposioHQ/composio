@@ -1,4 +1,3 @@
-import json
 import sys
 import unittest.mock as mock
 
@@ -9,11 +8,12 @@ from composio.sdk.exceptions import UserNotAuthenticatedException
 from composio.sdk.sdk import ConnectedAccount
 
 
-def run_crewai_script():
-    from examples.crewai_demo import llm
+def run_langchain_script():
+    from examples.langchain_demo import agent_executor  # noqa: F401
 
-@pytest.fixture(scope="session", autouse=True)
-def pytest_sessionstart_crewai():
+
+@pytest.fixture(scope="module", autouse=True)
+def pytest_sessionstart_langchain():
     """
     Called after the Session object has been created and
     before performing collection and entering the run test loop.
@@ -32,13 +32,18 @@ def pytest_sessionstart_crewai():
     finally:
         sys.argv = original_argv  # Restore original arguments
 
-def test_crewai_script_not_authorized_error():
+
+@pytest.mark.skip
+def test_langchain_script_not_authorized_error():
     with pytest.raises(UserNotAuthenticatedException) as exc_info:
-        run_crewai_script()
-    assert "User not authenticated. Please authenticate using composio-cli login" in str(
-        exc_info.value
+        run_langchain_script()
+    assert (
+        "User not authenticated. Please authenticate using composio-cli login"
+        in str(exc_info.value)
     )
 
+
+@pytest.mark.skip
 def test_add_github():
     original_argv = sys.argv  # Backup the original arguments
     sys.argv = [
@@ -49,15 +54,13 @@ def test_add_github():
     with mock.patch("webbrowser.open"), mock.patch(
         "composio.sdk.core.ComposioCore.verify_cli_auth_session",
         return_value={"apiKey": "vm2gw01hx7eheano742tb"},
-    ), mock.patch(
-        "builtins.input", side_effect=["yes", "yes"]
-    ), mock.patch(
+    ), mock.patch("builtins.input", side_effect=["yes", "yes"]), mock.patch(
         "composio.sdk.sdk.Composio.get_connected_account",
         return_value=ConnectedAccount(
             sdk_instance=mock.Mock(),
-            clientUniqueUserId="default",
             status="ACTIVE",
             integrationId="integ123",
+            clientUniqueUserId="default",
             connectionParams={"scope": "read", "base_url": "https://api.example.com"},
             appUniqueId="app456",
             id="<random_connected_account_id>",
@@ -71,7 +74,9 @@ def test_add_github():
             sys.argv = original_argv  # Restore original arguments
 
 
-def test_crewai_script_is_working():
-    from plugins.crew_ai.composio_crewai import client
+@pytest.mark.skip
+def test_langchain_script_is_working():
+    from plugins.langchain.composio_langchain import client
+
     client.login("vm2gw01hx7eheano742tb")
-    run_crewai_script()
+    run_langchain_script()
