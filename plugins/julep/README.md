@@ -11,8 +11,8 @@ Streamline the integration of Composio within the Julep agentic framework to enh
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio LangChain package
-pip install composio-openai
+# Install Composio Julep package
+pip install composio-julep
 
 # Connect your GitHub account
 composio-cli add github
