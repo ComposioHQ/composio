@@ -42,6 +42,7 @@ def ComposioTool(
         func=action_func,
     )
 
+
 def create_client(api_key=os.environ.get("COMPOSIO_API_KEY", None)):
     try:
         client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key=api_key)
@@ -50,10 +51,15 @@ def create_client(api_key=os.environ.get("COMPOSIO_API_KEY", None)):
         # Handle specific exceptions if possible
         raise ConnectionError("Failed to initialize ComposioCore client") from e
 
+
 client, ComposioSDK = create_client()
 
+
 def ComposioToolset(
-    apps: List[App] = [], actions: List[Action] = [], entity_id: str = "default", tags: List[Union[str, Tag]] = []
+    apps: List[App] = [],
+    actions: List[Action] = [],
+    entity_id: str = "default",
+    tags: List[Union[str, Tag]] = [],
 ) -> List[StructuredTool]:
     if len(apps) > 0 and len(actions) > 0:
         raise ValueError(

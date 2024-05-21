@@ -79,7 +79,11 @@ format-code:
 
 .PHONY: check-code
 check-code:
-	tox -p -e isort-check -e black-check -e flake8 -e mypy -e pylint
+	tox -e isort-check
+	tox -e black-check
+	tox -e flake8
+	tox -e mypy
+	tox -e pylint
 
 
 .PHONY: env

@@ -26,7 +26,7 @@ setup(
         "lyzr-automata>=0.1.3",
         "pydantic>=2.6.4",
         "composio_core===0.2.60",
-        "langchain>=0.1.0"
+        "langchain>=0.1.0",
     ],
     include_package_data=True,
 )
