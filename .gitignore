@@ -29,3 +29,5 @@ build
 .pytest_cache
 .test_results
 .trunk
+refactor_debug.ipynb
+
