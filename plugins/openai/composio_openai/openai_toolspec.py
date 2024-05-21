@@ -113,8 +113,12 @@ class ComposioToolset(OpenaiStyleToolsetBase):
         elif self.entity_id != "default":
             entity_id = self.entity_id
 
-        tool_calls = run_object["required_action"]["submit_tool_outputs"]["tool_calls"]
+        # run_json = run_object.json()
+        # print(run_object)
+        # print(type(run_json))
+        tool_calls = run_object.required_action.submit_tool_outputs.tool_calls
         tool_outputs = []
+        
         for tool_call in tool_calls:
             tool_response = self.execute_tool_call(tool_call, entity_id)
             tool_output = {
