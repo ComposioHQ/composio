@@ -334,13 +334,6 @@ class Composio:
         all_relevent_app_ids = app_unique_ids + [action.value[0] for action in actions]
         all_relevent_app_ids = list(set(all_relevent_app_ids))
 
-        # if tags:
-        #     if actions:
-        #         raise ValueError("Both actions and tags cannot be provided together")
-        #     tag_values = [tag.value[1] if isinstance(tag, Tag) else tag for tag in tags] if Tag.ALL not in tags else []
-        # else:
-        #     tag_values = [Tag.IMPORTANT.value[1]]
-
         action_response = self.http_handler.get_action_schemas(
             app_unique_ids=all_relevent_app_ids, use_case=use_case, limit=limit
         )
@@ -350,7 +343,7 @@ class Composio:
         important_actions = []
         important_tag = Tag.IMPORTANT.value[1]
 
-        if Tag.ALL in tags or all_relevent_app_ids == []:
+        if Tag.ALL in tags:  # or all_relevent_app_ids == []:
             # Everything should be added when Tag.ALL is specifically mentioned, or All actions actions and apps are called.
             tag_values = []
         elif not tags:
@@ -362,7 +355,7 @@ class Composio:
             tag_values = [tag.value[1] if isinstance(tag, Tag) else tag for tag in tags]
 
         for action_schema in action_schema_list:
-            if action_schema["appName"] in app_unique_ids:
+            if action_schema["appName"] in app_unique_ids or all_relevent_app_ids == []:
                 if tag_values == [] or tag_values == [Tag.IMPORTANT.value[1]]:
                     filtered_actions.append(action_schema)
                 elif bool(set(tag_values) & set(action_schema["tags"])):
@@ -375,9 +368,11 @@ class Composio:
                 filtered_actions.append(action_schema)
                 important_actions.append(action_schema)
 
-        if all_relevent_app_ids == [] and tag_values == []:
-            return action_schema_list
-        elif (tags == [Tag.IMPORTANT]) or (len(important_actions) > 5 and tag_values == [Tag.IMPORTANT.value[1]]):
+        if (tags == [Tag.IMPORTANT]) or (
+            len(important_actions) > 5
+            and tag_values == [Tag.IMPORTANT.value[1]]
+            and all_relevent_app_ids != []
+        ):
             return important_actions
         else:
             return filtered_actions
