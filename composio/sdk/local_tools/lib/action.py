@@ -96,3 +96,21 @@ class Action(ABC):
         }
 
         return action_schema
+
+    def execute_action(self, request_data: dict, metadata: dict):
+        # req = self._request_schema.model_validate_json(json_data=json.dumps(request_data))
+
+        # print(f"Executing {self.__class__.__name__} on Tool: {self.tool_name} with request data {request_data} and meta data {metadata}")
+        try:
+            request_schema = self.request_schema  # type: ignore
+            req = request_schema.model_validate_json(json_data=json.dumps(request_data))
+            return self.execute(req, metadata)  # type: ignore
+        except json.JSONDecodeError as e:
+            # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
+            return {
+                "status": "failure",
+                "details": f"Could not parse response with error: {e}. Please contact the tool developer."
+            }
+        except Exception as e:
+            # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
+            return {"status": "failure", "details": "Error executing action with error: " + str(e)}

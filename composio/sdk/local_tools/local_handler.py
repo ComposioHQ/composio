@@ -49,3 +49,8 @@ class LocalToolHandler:
             all_action_schemas = [action_schema for action_schema in all_action_schemas if bool(set(tag_values) & set(action_schema["tags"]))]
 
         return all_action_schemas
+
+    def execute_local_action(self, action, request_data: dict, metadata: dict = {}):
+        tool_obj = self.tool_map[action.value[0]]
+        action_obj = tool_obj.get_actions_dict()[action.value[1]]
+        return action_obj.execute_action(request_data, metadata)
