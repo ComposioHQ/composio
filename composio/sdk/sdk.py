@@ -18,6 +18,7 @@ from composio.sdk.exceptions import (
     TimeoutException,
 )
 from composio.sdk.http_client import HttpClient
+from composio.utils.decorators import deprecated
 
 from .enums import Action, App, Tag
 from .storage import get_base_url
@@ -236,6 +237,7 @@ class Integration(BaseModel):
 
 
 class Composio:
+    @deprecated(version="0.3.0", replacement="composio.client.Composio")
     def __init__(self, api_key: str = None, base_url=get_base_url()):
         self.base_url = base_url
         self.api_key = api_key
@@ -244,6 +246,7 @@ class Composio:
             {"Content-Type": "application/json", "x-api-key": self.api_key}
         )
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.triggers.get")
     def list_triggers(self, app_names: list[str] = None):
         resp = self.http_client.get(
             "v1/triggers",
@@ -251,6 +254,7 @@ class Composio:
         )
         return resp.json()
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.triggers.get")
     def list_active_triggers(
         self, trigger_ids: list[str] = None
     ) -> list[ActiveTrigger]:
@@ -268,10 +272,12 @@ class Composio:
             f"Failed to get active triggers, status code: {resp.status_code}, response: {resp.text}"
         )
 
+    @deprecated(version="0.3.0", replacement="composio.client.Trigger.disable")
     def disable_trigger(self, trigger_id: str):
         resp = self.http_client.post(f"v1/triggers/disable/{trigger_id}")
         return resp.json()
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.triggers.get")
     def get_trigger_requirements(self, trigger_ids: list[str] = None):
         resp = self.http_client.get(
             "v1/triggers",
@@ -279,6 +285,7 @@ class Composio:
         )
         return resp.json()
 
+    @deprecated(version="0.3.0", replacement="composio.client.Trigger.enable")
     def enable_trigger(
         self, trigger_name: str, connected_account_id: str, user_inputs: dict
     ):
@@ -302,14 +309,17 @@ class Composio:
         )
         return resp.json()
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.apps.get")
     def get_list_of_apps(self):
         resp = self.http_client.get("v1/apps")
         return resp.json()
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.apps.get")
     def get_app(self, app_name: str):
         resp = self.http_client.get(f"v1/apps/{app_name}")
         return resp.json()
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.actions.get")
     def get_list_of_actions(
         self,
         apps: list[App] = None,
@@ -391,6 +401,7 @@ class Composio:
         else:
             raise ValueError("Either apps or actions must be provided")
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.triggers.get")
     def get_list_of_triggers(self, apps: list[App] = None) -> list:
         if apps is None or len(apps) == 0:
             resp = self.http_client.get("v1/triggers")
@@ -401,6 +412,9 @@ class Composio:
             )
         return resp.json()
 
+    @deprecated(
+        version="0.3.0", replacement="composio.client.Composio.integrations.get"
+    )
     def get_list_of_integrations(self) -> list[Integration]:
         resp = self.http_client.get("v1/integrations")
         resp = resp.json()
@@ -444,10 +458,16 @@ class Composio:
         resp = self.http_client.post("v1/integrations", json=req)
         return Integration(self, **resp.json())
 
+    @deprecated(
+        version="0.3.0", replacement="composio.client.Composio.connected_accounts.get"
+    )
     def get_connected_account(self, connection_id: str) -> ConnectedAccount:
         resp = self.http_client.get(f"v1/connectedAccounts/{connection_id}")
         return ConnectedAccount(self, **resp.json())
 
+    @deprecated(
+        version="0.3.0", replacement="composio.client.Composio.connected_accounts.get"
+    )
     def get_connected_accounts(
         self, entity_id: Union[list[str], str] = None, showActiveOnly: bool = None
     ) -> list[ConnectedAccount]:
@@ -488,6 +508,7 @@ class Composio:
             f"No matching action found for action: {action_name.lower()}"
         )
 
+    @deprecated(version="0.3.0", replacement="composio.client.Composio.get_entity")
     def get_entity(self, entity_id: Union[list[str], str]):
         entity = Entity(self, entity_id)
         return entity
