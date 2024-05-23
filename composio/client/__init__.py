@@ -4,15 +4,21 @@ Composio SDK client.
 
 import os
 import typing as t
+import warnings
+from datetime import datetime
 
 import requests
 from pydantic import BaseModel, ConfigDict
 
 from composio.client.endpoints import Endpoint, v1
+from composio.client.enums import (  # TODO: Fix pseudo-circular dependendcy
+    Action,
+    App,
+    Tag,
+)
 from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.client.http import HttpClient
-from composio.constants import ENV_COMPOSIO_API_KEY
-from composio.sdk.enums import Action as ActionEnum
+from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.sdk.storage import get_base_url
 
 
@@ -72,6 +78,468 @@ class Collection(t.Generic[ModelType]):
         )
 
 
+class AuthConnectionParamsModel(BaseModel):
+    """
+    Authentication connection parameters.
+    """
+
+    scope: t.Optional[str] = None
+    base_url: t.Optional[str] = None
+    client_id: t.Optional[str] = None
+    token_type: t.Optional[str] = None
+    access_token: t.Optional[str] = None
+    client_secret: t.Optional[str] = None
+    consumer_id: t.Optional[str] = None
+    consumer_secret: t.Optional[str] = None
+    headers: t.Optional[dict] = None
+    queryParams: t.Optional[dict] = None
+
+
+class ConnectedAccountModel(BaseModel):
+    """
+    Connected account data model.
+    """
+
+    id: str
+    status: str
+    createdAt: str
+    updatedAt: str
+    appUniqueId: str
+    integrationId: str
+    connectionParams: AuthConnectionParamsModel
+    clientUniqueUserId: t.Optional[str] = None
+
+    model_config: ConfigDict = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
+    sdk: t.Optional["Composio"] = None
+
+    # TODO: Add actions
+
+
+class ConnectedAccounts(Collection[ConnectedAccountModel]):
+    """Collection of connected accounts."""
+
+    model = ConnectedAccountModel
+    endpoint = v1 / "connectedAccounts"
+
+    @t.overload
+    def get(self, connection_id: t.Optional[str] = None) -> ConnectedAccountModel:
+        """
+        Get an account by connection ID
+
+        :param connection_id: ID of the connection to filter by
+        :return: Connected account
+        """
+
+    @t.overload
+    def get(
+        self,
+        connection_id: t.Optional[str] = None,
+        entity_ids: t.Optional[t.Sequence[str]] = None,
+        active: bool = False,
+    ) -> t.List[ConnectedAccountModel]:
+        """
+        Get a list of connected accounts by entity IDs
+
+        :param entity_ids: List of entity IDs to filter by
+        :param active: Returns account which are currently active
+        :return: List of connected accounts
+        """
+
+    def get(
+        self,
+        connection_id: t.Optional[str] = None,
+        entity_ids: t.Optional[t.Sequence[str]] = None,
+        active: bool = False,
+    ) -> t.Union[ConnectedAccountModel, t.List[ConnectedAccountModel]]:
+        """
+        Get a list of connected accounts.
+
+        :param entity_ids: List of entity IDs to filter by
+        :param connection_id: Return the connected account by a specific
+                connection ID
+        :param active: Returns account which are currently active
+        :return: List of connected accounts
+        """
+        entity_ids = entity_ids or ()
+        if connection_id is not None and len(entity_ids) > 0:
+            raise ComposioClientError(
+                message="Cannot use both `connection_id` and `entity_ids` parameters as filter"
+            )
+
+        if connection_id is not None:
+            response = self._raise_if_required(
+                self.client.http.get(
+                    url=str(self.endpoint / connection_id),
+                )
+            )
+            return self.model(**response.json())
+
+        quries = {}
+        if len(entity_ids) > 0:
+            quries["user_uuid"] = ",".join(entity_ids)
+
+        if active:
+            quries["showActiveOnly"] = "true"
+
+        response = self._raise_if_required(
+            self.client.http.get(
+                url=str(self.endpoint(queries=quries)),
+            )
+        )
+        return [self.model(**account) for account in response.json().get("items", [])]
+
+
+class AppModel(BaseModel):
+    """App data model."""
+
+    key: str
+    name: str
+    description: str
+    logo: str
+    categories: t.List[str]
+    appId: str
+    enabled: bool
+    meta: t.Dict
+
+
+class Apps(Collection[AppModel]):
+    """Collection of composio apps.."""
+
+    model = AppModel
+    endpoint = v1.apps
+
+
+class TriggerPayloadPropertyModel(BaseModel):
+    """Trigger payload property data model."""
+
+    description: str
+    title: str
+    type: str
+
+    examples: t.Optional[t.List] = None
+
+
+class TriggerPayloadModel(BaseModel):
+    """Trigger payload data model."""
+
+    properties: t.Dict[str, TriggerPayloadPropertyModel]
+    title: str
+    type: str
+
+    required: t.Optional[t.List[str]] = None
+
+
+class TriggerConfigPropertyModel(BaseModel):
+    """Trigger config property data model."""
+
+    description: str
+    title: str
+    type: str
+
+
+class TriggerConfigModel(BaseModel):
+    """Trigger config data model."""
+
+    properties: t.Dict[str, TriggerConfigPropertyModel]
+    title: str
+    type: str
+
+    required: t.Optional[t.List[str]] = None
+
+
+class TriggerModel(BaseModel):
+    """Trigger data model."""
+
+    name: str
+    display_name: str
+    description: str
+    payload: TriggerPayloadModel
+    config: TriggerConfigModel
+    instructions: str
+    appId: str
+    appKey: str
+    logo: str
+    appName: str
+    count: int
+    enabled: bool
+
+
+class Triggers(Collection[TriggerModel]):
+    """Collection of triggers."""
+
+    model = TriggerModel
+    endpoint = v1.triggers
+
+    def get(
+        self,
+        trigger_ids: t.Optional[t.List[str]] = None,
+        app_names: t.Optional[t.List[str]] = None,
+    ) -> t.List[TriggerModel]:
+        """
+        List active triggers
+
+        :param trigger_ids: Trigger IDs to filter by
+        :param app_names: App names to filter by
+        :return: List of triggers filtered by provded parameters
+        """
+        queries = {}
+        if trigger_ids is not None and len(trigger_ids) > 0:
+            queries["triggerIds"] = ",".join(trigger_ids)
+        if app_names is not None and len(app_names) > 0:
+            queries["appNames"] = ",".join(app_names)
+        return super().get(queries=queries)
+
+    def enable(self, name: str, connected_account_id: str) -> None:
+        """
+        Enable a trigger
+
+        :param name: Name of the trigger
+        :param connected_account_id: ID of the relevant connected account
+        """
+        response = self._raise_if_required(
+            self.client.http.post(
+                url=str(self.endpoint / name / connected_account_id), json={}
+            )
+        )
+
+    def disable(self, id: str) -> None:
+        """
+        Disable a trigger
+
+        :param name: Name of the trigger
+        :param connected_account_id: ID of the relevant connected account
+        """
+
+
+class ActiveTriggerModel(BaseModel):
+    """Active trigger data model."""
+
+    id: str
+    connectionId: str
+    triggerName: str
+    triggerConfig: dict
+
+
+class ActiveTriggers(Collection[ActiveTriggerModel]):
+    """Collection of active triggers."""
+
+    model = ActiveTriggerModel
+    endpoint = v1.triggers / "active_triggers"
+
+    _list_key = "triggers"
+
+    def get(
+        self, trigger_ids: t.Optional[t.List[str]] = None
+    ) -> t.List[ActiveTriggerModel]:
+        """List active triggers."""
+        trigger_ids = trigger_ids or []
+        return super().get(
+            queries=(
+                {"triggerIds": ",".join(trigger_ids)} if len(trigger_ids) > 0 else {}
+            )
+        )
+
+
+class ActionParameterPropertyModel(BaseModel):
+    """Action parameter data model."""
+
+    examples: t.Optional[t.List] = None
+    description: t.Optional[str] = None
+    title: t.Optional[str] = None
+    type: t.Optional[str] = None
+
+
+class ActionParametersModel(BaseModel):
+    """Action parameter data models."""
+
+    properties: t.Dict[str, ActionParameterPropertyModel]
+    title: str
+    type: str
+
+    required: t.Optional[t.List[str]] = None
+
+
+class ActionResponsePropertyModel(BaseModel):
+    """Action response data model."""
+
+    description: t.Optional[str] = None
+    examples: t.Optional[t.List] = None
+    title: t.Optional[str] = None
+    type: t.Optional[str] = None
+
+
+class ActionResponseModel(BaseModel):
+    """Action response data model."""
+
+    properties: t.Dict[str, ActionResponsePropertyModel]
+    title: str
+    type: str
+
+    required: t.Optional[t.List[str]] = None
+
+
+class ActionModel(BaseModel):
+    """Action data model."""
+
+    name: str
+    display_name: str
+    tags: t.List[str]
+    description: str
+    parameters: ActionParametersModel
+    response: ActionResponseModel
+    appId: str
+    logo: str
+    appName: str
+    enabled: bool
+
+
+class Actions(Collection[ActionModel]):
+    """Collection of composio actions.."""
+
+    model = ActionModel
+    endpoint = v1.actions
+
+    # TODO: Overload
+    def get(
+        self,
+        actions: t.Optional[t.Sequence[Action]] = None,
+        apps: t.Optional[t.Sequence[App]] = None,
+        tags: t.Optional[t.Sequence[t.Union[str, Tag]]] = None,
+        limit: t.Optional[int] = None,
+        usecase: t.Optional[str] = None,
+    ) -> t.List[ActionModel]:
+        """
+        Get a list of apps by the specified filters.
+
+        :param actions: Filter by the list of Actions.
+        :param apps: Filter by the list of Apps.
+        :param tags: Filter by the list of given Tags.
+        :param limit: Limit the numnber of actions to a specific number.
+        :param usecase: Filter by use case.
+        """
+        actions = actions or []
+        apps = apps or []
+        tags = tags or []
+        if len(actions) > 0 and len(apps) > 0:
+            raise ComposioClientError(
+                "Error retrieving Actions, Both actions and apps "
+                "cannot be used as filters at the same time."
+            )
+
+        if len(actions) > 0 and len(tags) > 0:
+            raise ComposioClientError(
+                "Error retrieving Actions, Both actions and tags "
+                "cannot be used as filters at the same time."
+            )
+
+        if len(apps) > 0 and len(tags) == 0:
+            warnings.warn(
+                "Using all the actions of an app is not recommended. "
+                "Please use tags to filter actions or provide specific actions. "
+                "We just pass the important actions to the agent, but this is not meant "
+                "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
+                UserWarning,
+            )
+
+        if len(actions) == 0 and len(apps) == 0:
+            raise ComposioClientError(
+                "Error retrieving Actions, "
+                "Please provide either apps or actions as filters"
+            )
+
+        queries = {}
+        if usecase is not None and usecase != "":
+            if len(apps) != 1:
+                raise ComposioClientError(
+                    "Error retrieving Actions, Use case "
+                    "should be provided with exactly one app."
+                )
+            queries["useCase"] = usecase
+
+        if len(apps) > 0:
+            queries["appNames"] = ",".join(list(map(lambda x: x.value, apps)))
+
+        if len(actions) > 0:
+            queries["appNames"] = ",".join(set(map(lambda x: x.app, actions)))
+
+        if limit is not None:
+            queries["limit"] = limit
+
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                url=str(self.endpoint(queries=queries)),
+            )
+        )
+        items = [self.model(**action) for action in response.json().get("items")]
+        if len(actions) > 0:
+            required_triggers = [action.action for action in actions]
+            items = [item for item in items if item.name in required_triggers]
+
+        if len(tags) > 0:
+            required_triggers = [
+                tag.name if isinstance(tag, Tag) else tag for tag in tags
+            ]
+            items = [
+                item
+                for item in items
+                if any(tag in required_triggers for tag in item.tags)
+            ]
+
+        return items
+
+    def execute(
+        self,
+        action: Action,
+        params: t.Dict,
+        entity_id: str,
+        connected_account: t.Optional[str] = None,
+    ) -> t.Dict:
+        """Execute an action."""
+        if action.no_auth:
+            return self._raise_if_required(
+                self.client.http.post(
+                    url=str(self.endpoint / action.action / "execute"),
+                    json={
+                        "appName": action.app,
+                        "input": params,
+                        "entityId": entity_id,
+                    },
+                )
+            ).json()
+
+        if connected_account is None:
+            raise ComposioClientError(
+                "`connected_account` cannot be `None` when executing "
+                "an app which requires authentication"
+            )
+
+        return self._raise_if_required(
+            self.client.http.post(
+                url=str(self.endpoint / action.action / "execute"),
+                json={
+                    "connectedAccountId": connected_account,
+                    "input": params,
+                    "entityId": entity_id,
+                },
+            )
+        ).json()
+
+
+class IntegrationModel(dict):
+    """Integration data model."""
+
+
+class Integrations(Collection[IntegrationModel]):
+    """
+    Collection of composio integrations.
+    """
+
+    model = IntegrationModel
+    endpoint = v1.integrations
+
+
 class Composio:
     """Composio SDK Client."""
 
@@ -101,6 +569,7 @@ class Composio:
         self.apps = Apps(client=self)
         self.actions = Actions(client=self)
         self.triggers = Triggers(client=self)
+        self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
 
     @staticmethod
@@ -157,7 +626,11 @@ class Composio:
 class Entity:
     """Class to represent Entity object."""
 
-    def __init__(self, id: str, client: Composio) -> None:
+    def __init__(
+        self,
+        client: Composio,
+        id: str = DEFAULT_ENTITY_ID,
+    ) -> None:
         """
         Initialize Entity object.
 
@@ -169,7 +642,7 @@ class Entity:
 
     def execute(
         self,
-        action: ActionEnum,
+        action: Action,
         params: t.Dict,
         connected_account_id: t.Optional[str] = None,
     ) -> t.Dict:
@@ -182,329 +655,55 @@ class Entity:
                 connection
         :return: Dictionary containing execution result
         """
-        return {}
-
-
-class AuthConnectionParams(BaseModel):
-    """
-    Authentication connection parameters.
-    """
-
-    scope: t.Optional[str] = None
-    base_url: t.Optional[str] = None
-    client_id: t.Optional[str] = None
-    token_type: t.Optional[str] = None
-    access_token: t.Optional[str] = None
-    client_secret: t.Optional[str] = None
-    consumer_id: t.Optional[str] = None
-    consumer_secret: t.Optional[str] = None
-    headers: t.Optional[dict] = None
-    queryParams: t.Optional[dict] = None
-
-
-class ConnectedAccount(BaseModel):
-    """
-    Connected account data model.
-    """
-
-    id: str
-    status: str
-    createdAt: str
-    updatedAt: str
-    appUniqueId: str
-    integrationId: str
-    connectionParams: AuthConnectionParams
-    clientUniqueUserId: t.Optional[str] = None
-
-    model_config: ConfigDict = ConfigDict(
-        arbitrary_types_allowed=True,
-    )
-    sdk: t.Optional["Composio"] = None
-
-    # TODO: Add actions
-
-
-class ConnectedAccounts(Collection[ConnectedAccount]):
-    """Collection of connected accounts."""
-
-    model = ConnectedAccount
-    endpoint = v1 / "connectedAccounts"
-
-    @t.overload
-    def get(self, connection_id: t.Optional[str] = None) -> ConnectedAccount:
-        """
-        Get an account by connection ID
-
-        :param connection_id: ID of the connection to filter by
-        :return: Connected account
-        """
-
-    @t.overload
-    def get(self, *entity_ids: str, active: bool = False) -> t.List[ConnectedAccount]:
-        """
-        Get a list of connected accounts by entity IDs
-
-        :param entity_ids: List of entity IDs to filter by
-        :param active: Returns account which are currently active
-        :return: List of connected accounts
-        """
-
-    def get(
-        self,
-        connection_id: t.Optional[str] = None,
-        *entity_ids: str,
-        active: bool = False,
-    ) -> t.Union[ConnectedAccount, t.List[ConnectedAccount]]:
-        """
-        Get a list of connected accounts.
-
-        :param entity_ids: List of entity IDs to filter by
-        :param connection_id: Return the connected account by a specific
-                connection ID
-        :param active: Returns account which are currently active
-        :return: List of connected accounts
-        """
-        if connection_id is not None and len(entity_ids) > 0:
-            raise ComposioClientError(
-                message="Cannot use both `connection_id` and `entity_ids` parameters as filter"
+        if action.no_auth:
+            return self.client.actions.execute(
+                action=action,
+                params=params,
+                entity_id=self.id,
             )
 
-        if connection_id is not None:
-            response = self._raise_if_required(
-                self.client.http.get(
-                    url=str(self.endpoint / connection_id),
+        connected_account = self.get_connection(
+            action=action,
+            connected_account_id=connected_account_id,
+        )
+        return self.client.actions.execute(
+            action=action,
+            params=params,
+            entity_id=t.cast(str, connected_account.clientUniqueUserId),
+            connected_account=connected_account.id,
+        )
+
+    def get_connection(
+        self,
+        action: Action,
+        connected_account_id: t.Optional[str] = None,
+    ) -> ConnectedAccountModel:
+        """
+        Get connected account for an action.
+
+        :param action: Action type enum
+        :param connected_account_id: Connected account ID to use as filter
+        :return: Connected account object
+        :raises: If no connected account found for given entity ID
+        """
+        connected_accounts = self.client.connected_accounts.get(
+            entity_ids=[self.id],
+            active=True,
+        )
+        latest_account = None
+        latest_creation_date = datetime.fromtimestamp(0.0)
+        for connected_account in connected_accounts:
+            if connected_account.id == connected_account_id:
+                return connected_account
+            if action.app == connected_account.appUniqueId:
+                creation_date = datetime.fromisoformat(
+                    connected_account.createdAt.replace("Z", "+00:00")
                 )
+                if latest_account is None or creation_date > latest_creation_date:
+                    latest_creation_date = creation_date
+                    latest_account = connected_account
+        if latest_account is None:
+            raise ComposioClientError(
+                f"Entity `{self.id}` does not have a connection to {action.app}"
             )
-            return self.model(**response.json())
-
-        quries = {}
-        if len(entity_ids) > 0:
-            quries["user_uuid"] = ",".join(entity_ids)
-
-        if active:
-            quries["showActiveOnly"] = "true"
-
-        response = self._raise_if_required(
-            self.client.http.get(
-                url=str(self.endpoint(queries=quries)),
-            )
-        )
-        return [self.model(**account) for account in response.json().get("items", [])]
-
-
-class App(BaseModel):
-    """App data model."""
-
-    key: str
-    name: str
-    description: str
-    logo: str
-    categories: t.List[str]
-    appId: str
-    enabled: bool
-    meta: t.Dict
-
-
-class Apps(Collection[App]):
-    """Collection of composio apps.."""
-
-    model = App
-    endpoint = v1.apps
-
-
-class TriggerPayloadProperty(BaseModel):
-    """Trigger payload property data model."""
-
-    description: str
-    title: str
-    type: str
-
-    examples: t.Optional[t.List] = None
-
-
-class TriggerPayload(BaseModel):
-    """Trigger payload data model."""
-
-    properties: t.Dict[str, TriggerPayloadProperty]
-    title: str
-    type: str
-
-    required: t.Optional[t.List[str]] = None
-
-
-class TriggerConfigProperty(BaseModel):
-    """Trigger config property data model."""
-
-    description: str
-    title: str
-    type: str
-
-
-class TriggerConfig(BaseModel):
-    """Trigger config data model."""
-
-    properties: t.Dict[str, TriggerConfigProperty]
-    title: str
-    type: str
-
-    required: t.Optional[t.List[str]] = None
-
-
-class Trigger(BaseModel):
-    """Trigger data model."""
-
-    name: str
-    display_name: str
-    description: str
-    payload: TriggerPayload
-    config: TriggerConfig
-    instructions: str
-    appId: str
-    appKey: str
-    logo: str
-    appName: str
-    count: int
-    enabled: bool
-
-
-class Triggers(Collection[Trigger]):
-    """Collection of triggers."""
-
-    model = Trigger
-    endpoint = v1.triggers
-
-    def get(
-        self,
-        trigger_ids: t.Optional[t.List[str]] = None,
-        app_names: t.Optional[t.List[str]] = None,
-    ) -> t.List[Trigger]:
-        """
-        List active triggers
-
-        :param trigger_ids: Trigger IDs to filter by
-        :param app_names: App names to filter by
-        :return: List of triggers filtered by provded parameters
-        """
-        queries = {}
-        if trigger_ids is not None and len(trigger_ids) > 0:
-            queries["triggerIds"] = ",".join(trigger_ids)
-        if app_names is not None and len(app_names) > 0:
-            queries["appNames"] = ",".join(app_names)
-        return super().get(queries=queries)
-
-    def enable(self, name: str, connected_account_id: str) -> None:
-        """
-        Enable a trigger
-
-        :param name: Name of the trigger
-        :param connected_account_id: ID of the relevant connected account
-        """
-        response = self._raise_if_required(
-            self.client.http.post(
-                url=str(self.endpoint / name / connected_account_id), json={}
-            )
-        )
-
-    def disable(self, id: str) -> None:
-        """
-        Disable a trigger
-
-        :param name: Name of the trigger
-        :param connected_account_id: ID of the relevant connected account
-        """
-
-
-class ActiveTrigger(BaseModel):
-    """Active trigger data model."""
-
-    id: str
-    connectionId: str
-    triggerName: str
-    triggerConfig: dict
-
-
-class ActiveTriggers(Collection[ActiveTrigger]):
-    """Collection of active triggers."""
-
-    model = ActiveTrigger
-    endpoint = v1.triggers / "active_triggers"
-
-    _list_key = "triggers"
-
-    def get(self, trigger_ids: t.Optional[t.List[str]] = None) -> t.List[ActiveTrigger]:
-        """List active triggers."""
-        trigger_ids = trigger_ids or []
-        return super().get(
-            queries=(
-                {"triggerIds": ",".join(trigger_ids)} if len(trigger_ids) > 0 else {}
-            )
-        )
-
-
-class ActionParameterProperty(BaseModel):
-    """Action parameter data model."""
-
-    examples: t.Optional[t.List] = None
-    description: t.Optional[str] = None
-    title: t.Optional[str] = None
-    type: t.Optional[str] = None
-
-
-class ActionParameters(BaseModel):
-    """Action parameter data models."""
-
-    properties: t.Dict[str, ActionParameterProperty]
-    title: str
-    type: str
-
-    required: t.Optional[t.List[str]] = None
-
-
-class ActionResponseProperty(BaseModel):
-    """Action response data model."""
-
-    description: t.Optional[str] = None
-    examples: t.Optional[t.List] = None
-    title: t.Optional[str] = None
-    type: t.Optional[str] = None
-
-
-class ActionResponse(BaseModel):
-    """Action response data model."""
-
-    properties: t.Dict[str, ActionResponseProperty]
-    title: str
-    type: str
-
-    required: t.Optional[t.List[str]] = None
-
-
-class Action(BaseModel):
-    """Action data model."""
-
-    name: str
-    display_name: str
-    tags: t.List[str]
-    description: str
-    parameters: ActionParameters
-    response: ActionResponse
-    appId: str
-    logo: str
-    appName: str
-    enabled: bool
-
-
-class Actions(Collection[Action]):
-    """Collection of active triggers."""
-
-    model = Action
-    endpoint = v1.actions
-
-    def get(self) -> t.List[Action]:
-        """List active triggers."""
-        response = self._raise_if_required(
-            response=self.client.http.get(
-                url=str(self.endpoint),
-            )
-        )
-        return [self.model(**action) for action in response.json().get("items")]
+        return latest_account
