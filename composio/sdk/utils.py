@@ -133,7 +133,9 @@ def get_frontend_url(path: str) -> str:
         return f"http://localhost:3000/{path}"
     if base_url == "https://hermes-development.up.railway.app/":
         return f"https://hermes-frontend-git-master-composio.vercel.app/{path}"
+    if base_url == "https://staging-backend.composio.dev/api":
+        return f"https://hermes-frontend-git-master-composio.vercel.app/{path}"
 
     raise Exception(
-        f"Incorrect format for base_url: {base_url}. Format should be https://backend.composio.dev/api or http://localhost:9900/api"
+        f"Incorrect format for base_url: {base_url}. Format should be https://backend.composio.dev/api or http://localhost:9900/api or https://staging-backend.composio.dev/api"
     )
