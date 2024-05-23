@@ -16,3 +16,8 @@ USER_DATA_FILE_NAME = "user_data.json"
 """
 Filename for storing user data.
 """
+
+DEFAULT_ENTITY_ID = "default"
+"""
+Default entity ID value.
+"""
