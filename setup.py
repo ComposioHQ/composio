@@ -26,6 +26,7 @@ setup(
     entry_points={
         "console_scripts": [
             "composio-cli=composio.composio_cli:main",
+            "composio=composio.cli:composio",
         ],
     },
     install_requires=[
