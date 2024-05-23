@@ -93,10 +93,16 @@ class _V1(Endpoint):
         Endpoint /v1/apps
         """
 
+    class _Integrations(Endpoint):
+        """
+        Endpoint /v1/integrations
+        """
+
     cli: _CLI
     apps: _Apps
     actions: _Actions
     triggers: _Triggers
+    integrations: _Integrations
 
 
 v1 = _V1(endpoint="v1")
