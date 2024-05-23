@@ -17,10 +17,34 @@ from composio.sdk.exceptions import (
     NotFoundException,
     TimeoutException,
 )
+from composio.sdk.local_tools import LocalToolHandler
 from composio.sdk.http_client import HttpClient, HttpHandler
 
 from .enums import Action, App, Tag
+from .local_enums import LocalAction, LocalApp
 from .storage import get_base_url
+
+
+class ActionEnum(Enum):
+    def __init__(self, service, action, no_auth):
+        self.service = service
+        self.action = action
+        self.no_auth = no_auth
+
+
+# Collect all members from both enums
+combined_members = {name: member.value for name, member in Action.__members__.items()}
+combined_members.update({name: member.value for name, member in LocalAction.__members__.items()})
+
+# Dynamically create a new enum class with the combined members
+Action = ActionEnum('Action', combined_members)
+
+# Collect all members from both App enums
+combined_app_members = {name: member.value for name, member in App.__members__.items()}
+combined_app_members.update({name: member.value for name, member in LocalApp.__members__.items()})
+
+# Dynamically create a new App enum class with the combined members
+App = Enum('App', combined_app_members)
 
 
 class SchemaFormat(Enum):
@@ -243,6 +267,7 @@ class Composio:
         self.http_client.headers.update(
             {"Content-Type": "application/json", "x-api-key": self.api_key}
         )
+        self.local_tool_handler = LocalToolHandler()
         self.http_handler = HttpHandler(base_url=base_url, api_key=self.api_key)
 
     def list_triggers(self, app_names: list[str] = None):
@@ -320,6 +345,18 @@ class Composio:
         limit: int = 0,
     ) -> list:
 
+        if isinstance(apps, App):
+            apps = [apps]
+
+        if isinstance(actions, Action):
+            actions = [actions]
+
+        local_apps = [app for app in apps if self.local_tool_handler.is_local(app)]
+        apps = [app for app in apps if not self.local_tool_handler.is_local(app)]
+
+        local_actions = [action for action in actions if self.local_tool_handler.is_local(action)]
+        actions = [action for action in actions if not self.local_tool_handler.is_local(action)]
+
         app_unique_ids = [app.value for app in apps]
         action_unique_ids = [action.value[1] for action in actions]
 
@@ -379,9 +416,18 @@ class Composio:
             and tag_values == [Tag.IMPORTANT.value[1]]
             and all_relevent_app_ids != []
         ):
-            return important_actions
+            remote_schemas = important_actions
         else:
-            return filtered_actions
+            remote_schemas = filtered_actions
+
+        local_schemas = self.local_tool_handler.get_list_of_action_schemas(
+            apps=local_apps,
+            actions=local_actions,
+            tags=tags
+        )
+
+        return remote_schemas + local_schemas
+
 
     def get_list_of_triggers(self, apps: list[App] = None) -> list:
         if apps is None or len(apps) == 0:

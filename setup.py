@@ -38,6 +38,8 @@ setup(
         "rich>=13.7.1,<14",
         "importlib-metadata>=4.8.1,<5",
         "pyperclip>=1.8.2,<2",
+        "jsonref>=1.1.0",
+        "inflection>=0.5.1",
     ],
     include_package_data=True,
 )
