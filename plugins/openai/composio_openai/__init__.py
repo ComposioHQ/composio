@@ -1,12 +1,11 @@
-from composio import Action, App, Tag
+from composio_openai.toolspec import ComposioToolSet
 
-from .openai_toolspec import ComposioToolset, OpenaiStyleToolsetBase
+from composio.client.enums import Action, App, Tag
 
 
 __all__ = (
     "Action",
     "App",
     "Tag",
-    "ComposioToolset",
-    "OpenaiStyleToolsetBase",
+    "ComposioToolSet",
 )
