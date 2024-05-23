@@ -319,6 +319,7 @@ class Composio:
         tags: list[Union[str, Tag]] = [],
         limit: int = 0,
     ) -> list:
+
         app_unique_ids = [app.value for app in apps]
         action_unique_ids = [action.value[1] for action in actions]
 
@@ -343,6 +344,11 @@ class Composio:
         important_actions = []
         important_tag = Tag.IMPORTANT.value[1]
 
+        if tags is None:
+            tags = []
+        elif isinstance(tags, Tag):
+            tags = [tags]
+            
         if Tag.ALL in tags:  # or all_relevent_app_ids == []:
             # Everything should be added when Tag.ALL is specifically mentioned, or All actions actions and apps are called.
             tag_values = []
