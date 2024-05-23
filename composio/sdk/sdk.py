@@ -286,6 +286,7 @@ class Composio:
             f"v1/triggers/enable/{connected_account_id}/{trigger_name}",
             json={
                 "triggerConfig": user_inputs,
+                "verifyHost": get_base_url().rstrip("/api")
             },
         )
         return resp.json()
