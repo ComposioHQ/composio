@@ -11,3 +11,4 @@ from .workspace_manager_factory import (WorkspaceManagerFactory,
                                         KEY_IMAGE_NAME)
 from .docker_setup_env import DockerSetupEnvRequest, execute_docker_setup_env
 from .copy_github_repo import CopyGithubRepoRequest, execute_copy_github_repo
+from .swe_special_command_handler import EditorOperationRequest, ShellEditor

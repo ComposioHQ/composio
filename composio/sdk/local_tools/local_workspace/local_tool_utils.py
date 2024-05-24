@@ -15,9 +15,6 @@ from tools.services.swelib.local_workspace.workspace_manager_factory import (Wor
                                                                              KEY_CONTAINER_NAME,
                                                                              KEY_PARENT_PIDS,
                                                                              KEY_IMAGE_NAME)
-from tools.services.swelib.local_workspace.local_docker_workspace import LocalDockerWorkspace
-from tools.services.swelib.local_workspace.copy_github_repo import CopyGithubRepoRequest, execute_copy_github_repo
-
 try:
     import rich
 except ModuleNotFoundError as e:
@@ -34,12 +31,15 @@ except ImportError:
     )
     raise ImportError(msg)
 
+from tools.services.swelib.local_workspace.local_docker_workspace import LocalDockerWorkspace
+from tools.services.swelib.local_workspace.copy_github_repo import CopyGithubRepoRequest, execute_copy_github_repo
 from observation_assembler import ObservationAssemblerArgumentsModel, execute_observation_handler
 from local_workspace import LocalDockerArgumentsModel
 from docker_cmd_manager import DockerCommandManagerArgsModel, execute_docker_cmd_manager
 from workspace_status import DockerContainerStatusRequest, execute_docker_status
 from docker_setup_env import DockerSetupEnvRequest, execute_docker_setup_env
 from parsing import ParseCommandBash
+from tools.services.swelib.local_workspace.swe_special_command_handler import ShellEditor, EditorOperationRequest
 from utils import *
 
 
@@ -59,10 +59,13 @@ fallback_values = {
     "array": [],
 }
 
-workspace_factory = WorkspaceManagerFactory()
-
 HARD_CODED_REPO_NAME = os.environ.get("HARD_CODED_REPO_NAME", "princeton-nlp/SWE-bench")
 KEY_WORKSPACE_ID = "workspace_id"
+COMMANDS_CONFIG_PATH = "./config/commands.yaml"
+
+workspace_factory = WorkspaceManagerFactory()
+special_commands_util = ShellEditor(COMMANDS_CONFIG_PATH)
+all_special_cmds = special_commands_util.get_all_commands()
 
 
 def json_schema_to_model(json_schema: Dict[str, Any]) -> Type[BaseModel]:
@@ -283,6 +286,11 @@ def get_container_process(workspace: LocalDockerWorkspace):
     return workspace.container
 
 
+def get_arguments_from_params(params):
+    arguments = {k: v for k, v in params if k != KEY_WORKSPACE_ID}
+    return arguments
+
+
 def execute_action(action_name: str, params: dict[str, Any]):
     if action_name == "workspace":
         args: LocalDockerArgumentsModel = LocalDockerArgumentsModel(image_name=params[KEY_IMAGE_NAME])
@@ -320,8 +328,7 @@ def execute_action(action_name: str, params: dict[str, Any]):
         container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
         return execute_copy_github_repo(args, container_process, workspace_meta[KEY_PARENT_PIDS])
     if action_name == "dockerContainerStatus":
-        c_args = WorkspaceFactoryRequest(workspace_id=params[KEY_WORKSPACE_ID])
-        workspace_meta = workspace_factory.get_registered_manager(c_args.workspace_id)
+        workspace_meta = workspace_factory.get_registered_manager(params[KEY_WORKSPACE_ID])
         args: DockerContainerStatusRequest = DockerContainerStatusRequest(
             container_name=workspace_meta[KEY_CONTAINER_NAME])
         return execute_docker_status(args)
@@ -330,6 +337,17 @@ def execute_action(action_name: str, params: dict[str, Any]):
         return execute_observation_handler(args)
     if action_name == "waitFor10Second":
         return wait
+    if all_special_cmds.get(action_name):
+        # arguments: [str] = get_arguments_from_params(params)
+        workspace_meta = workspace_factory.get_registered_manager(params[KEY_WORKSPACE_ID])
+        args: EditorOperationRequest = EditorOperationRequest(command=action_name,
+                                                              workspace_id=params[KEY_WORKSPACE_ID],
+                                                              arguments=params["arguments"])
+        container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        container_name = workspace_meta[KEY_CONTAINER_NAME]
+        output = special_commands_util.perform_operation(args, container_process, container_name,
+                                                         workspace_meta[KEY_IMAGE_NAME], workspace_meta[KEY_PARENT_PIDS])
+        return output
     return Exception(f"action {action_name} not supported")
 
 
@@ -451,6 +469,14 @@ def ComposioToolset() -> List[StructuredTool]:
         "parameters": sort_params_on_default(json_schema_enum_processor(
             jsonable_encoder(WorkspaceFactoryRequest.schema(by_alias=False)))),
     }]
+    for each_cmd in all_special_cmds:
+        val = all_special_cmds[each_cmd]
+        action_list.append({
+            "name": each_cmd,
+            "description": "\n".join([val["docs"], "signature of the command is: " + val["signature"]]),
+            "parameters": sort_params_on_default(json_schema_enum_processor(
+            jsonable_encoder(EditorOperationRequest.schema(by_alias=False)))),
+        })
     return [
         ComposioTool(action) for action in action_list
     ]

@@ -6,7 +6,7 @@ from rich.logging import RichHandler
 
 from pydantic.v1 import BaseModel, Field
 
-from utils import communicate_with_handling, get_container_by_container_name
+from utils import communicate_with_handling, get_container_by_container_name, communicate
 
 LOGGER_NAME = "composio_logger"
 
@@ -63,6 +63,25 @@ class CopyGithubRepo:
             raise ValueError("GitHub access token is not set in the environment variables")
         return access_token
 
+    def reset(self):
+        # Clone repository if not already cloned
+        folders = communicate(self.container_process, self.container_obj, "ls", self.parent_pids).split("\n")
+        if self.repo_name not in folders:
+            self.copy_repo()
+
+        # Clean repository of any modifications + Checkout base commit
+        for cmd in [
+            f"cd {self.repo_name}",
+            "export ROOT=$(pwd -P)",
+        ]:
+            communicate_with_handling(
+                self.container_process,
+                self.container_obj,
+                cmd,
+                self.parent_pids,
+                error_msg="Failed to clean repository",
+            )
+
     def copy_repo(self) -> str:
         """Clone/copy repository/codebase in container
         Returns:
@@ -96,4 +115,5 @@ def execute_copy_github_repo(args: CopyGithubRepoRequest, container_process: sub
     c = CopyGithubRepo(args)
     c.set_container_process(container_process, parent_pids)
     c.copy_repo()
+    c.reset()
     return {"resp": f"repo: {c.repo_name} is cloned to container"}

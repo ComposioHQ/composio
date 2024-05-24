@@ -31,7 +31,7 @@ class DockerSetupEnvRequest(BaseModel):
     image_name: str
 
 
-class DockerCommandManager(CommandManager):
+class DockerSetupManager(CommandManager):
     def __init__(self, args: DockerSetupEnvRequest):
         super().__init__()
         self.args = args
@@ -70,32 +70,6 @@ class DockerCommandManager(CommandManager):
 
         # Copy tarfile to container
         self.container_obj.put_archive(os.path.dirname(container_path), stream.read())
-
-    def _copy_repo(self, repo_name):
-        """Clone/copy repository/codebase in container
-        Returns:
-            folder name of clone
-        """
-        if self._github_token:
-            token_prefix = f"{self._github_token}@"
-        # fixme: This if statement is brittle and should probably be replaced with better logic
-        if not self.args.no_mirror and self.record["problem_statement_source"] == "swe-bench":
-            self.logger.info(f"{self._repo_name} not found in container, cloning...")
-            self.communicate_with_handling(
-                input=f"git clone https://{token_prefix}github.com/swe-bench/{self._repo_name}.git",
-                error_msg="Failed to clone repository from mirror",
-                timeout_duration=LONG_TIMEOUT,
-            )
-            return self._repo_name
-        else:
-            logger.info(f"Trying to clone from non-mirror...")
-            self.communicate_with_handling(
-                input=f"git clone https://{token_prefix}github.com/{self.record['repo']}.git {self._repo_name}",
-                error_msg="Failed to clone repository from non-mirror",
-                timeout_duration=LONG_TIMEOUT,
-            )
-            return self._repo_name
-
 
     def set_env_variables(self):
         commands_to_execute = (
@@ -178,7 +152,7 @@ class DockerCommandManager(CommandManager):
 
 
 def execute_docker_setup_env(args: DockerSetupEnvRequest, container_process, parent_pids):
-    c = DockerCommandManager(args)
+    c = DockerSetupManager(args)
     c.set_container_process(container_process, parent_pids)
     c.set_env_variables()
     env_vars = "\n".join(c.config.env_variables)
