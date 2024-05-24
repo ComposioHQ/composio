@@ -1,13 +1,10 @@
-import json
-import logging
-import os
-import time
-import typing as t
-from typing import List, Union
+"""
+OpenAI tool spec.
+"""
 
-from openai import Client
-from openai.types.beta import thread
-from openai.types.beta.threads import run
+import json
+import typing as t
+
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
@@ -20,18 +17,19 @@ from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
 
 
-logger = logging.getLogger(__name__)
-
-
 class ComposioToolSet(BaseComposioToolSet):
     """
     Composio toolset for OpenAI framework.
 
     Example:
     ```python
-        from pprint import pprint
+        import dotenv
+        from composio_openai import App, ComposioToolset
         from openai import OpenAI
-        from composio_openai import ComposioToolset, App
+
+
+        # Load environment variables from .env
+        dotenv.load_dotenv()
 
         # Initialize tools.
         openai_client = OpenAI()
@@ -41,22 +39,22 @@ class ComposioToolSet(BaseComposioToolSet):
         task = "Star a repo SamparkAI/composio_sdk on GitHub"
 
         # Get GitHub tools that are pre-configured
-        actions = composio_tools.get_tools(tools=App.GITHUB)
+        actions = composio_toolset.get_tools(tools=[App.GITHUB])
 
         # Get response from the LLM
         response = openai_client.chat.completions.create(
             model="gpt-4-turbo-preview",
-            tools=actions, # Passing actions we fetched earlier.
+            tools=actions,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": my_task}
-            ]
+                {"role": "user", "content": task},
+            ],
         )
-        pprint(response)
+        print(response)
 
         # Execute the function calls.
         result = composio_tools.handle_calls(response)
-        pprint(result)
+        print(result)
     ```
     """
 
@@ -96,7 +94,15 @@ class ComposioToolSet(BaseComposioToolSet):
             entity_id = self.entity_id
         return entity_id
 
-    def get_actions(self, *actions: Action) -> t.List[ChatCompletionToolParam]:
+    def get_actions(
+        self, actions: t.Sequence[Action]
+    ) -> t.List[ChatCompletionToolParam]:
+        """
+        Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
+
+        :param actions: List of actions to wrap
+        :return: Composio tools wrapped as `ChatCompletionToolParam` objects
+        """
         return [
             ChatCompletionToolParam(
                 **t.cast(
@@ -104,8 +110,6 @@ class ComposioToolSet(BaseComposioToolSet):
                     self.schema.format(
                         schema.model_dump(
                             exclude_none=True,
-                            exclude_unset=True,
-                            exclude_defaults=True,
                         )
                     ),
                 ).model_dump()
@@ -114,8 +118,17 @@ class ComposioToolSet(BaseComposioToolSet):
         ]
 
     def get_tools(
-        self, apps: t.Sequence[App], tags: t.Optional[t.List[t.Union[str, Tag]]] = None
+        self,
+        apps: t.Sequence[App],
+        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
     ) -> t.Sequence[ChatCompletionToolParam]:
+        """
+        Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
+
+        :param apps: List of apps to wrap
+        :param tags: Filter the apps by given tags
+        :return: Composio tools wrapped as `ChatCompletionToolParam` objects
+        """
         return [
             ChatCompletionToolParam(
                 **t.cast(
@@ -123,8 +136,6 @@ class ComposioToolSet(BaseComposioToolSet):
                     self.schema.format(
                         schema.model_dump(
                             exclude_none=True,
-                            exclude_unset=True,
-                            exclude_defaults=True,
                         )
                     ),
                 ).model_dump()
