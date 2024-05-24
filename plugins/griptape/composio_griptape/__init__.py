@@ -1,11 +1,11 @@
-from composio import Action, App, Tag
+from composio_griptape.toolset import ComposioToolSet
 
-from .griptape_toolspec import ComposioToolset
+from composio.client.enums import Action, App, Tag
 
 
 __all__ = (
     "Action",
     "App",
     "Tag",
-    "ComposioToolset",
+    "ComposioToolSet",
 )
