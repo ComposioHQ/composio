@@ -1,30 +1,36 @@
-from pprint import pprint
+"""
+OpenAI demo.
+"""
 
 import dotenv
 from composio_openai import App, ComposioToolset
 from openai import OpenAI
 
 
+# Load environment variables from .env
 dotenv.load_dotenv()
+
+# Initialize tools.
 openai_client = OpenAI()
+composio_tools = ComposioToolset()
 
-toolset = ComposioToolset()
-actions = toolset.get_tools(tools=App.GITHUB)
-# pprint(actions)
+# Define task.
+task = "Star a repo SamparkAI/composio_sdk on GitHub"
 
-my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
+# Get GitHub tools that are pre-configured
+tools = composio_toolset.get_tools(tools=[App.GITHUB])
 
-# Create a chat completion request to decide on the action
+# Get response from the LLM
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
-    tools=actions,  # Passing actions we fetched earlier.
+    tools=tools,
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": my_task},
+        {"role": "user", "content": task},
     ],
 )
+print(response)
 
-pprint(response)
-
-result = toolset.handle_tool_calls(response)
-pprint(result)
+# Execute the function calls.
+result = composio_tools.handle_calls(response)
+print(result)
