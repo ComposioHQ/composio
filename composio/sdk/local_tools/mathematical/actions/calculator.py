@@ -20,7 +20,6 @@ class Calculator(Action):
     _tags = ["calculation"]
 
     def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
-
         operation_str = request_data.dict()["operation"]
         try:
             result = eval(operation_str)

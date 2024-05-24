@@ -169,6 +169,10 @@ class ConnectedAccount(BaseModel):
     def _execute_action(
         self, action_name: Action, connected_account_id: str, params: dict
     ):
+        if any(action_name.value[1] == local_action.value[1] for local_action in LocalAction):
+            # Handle local actions differently
+            local_tool_handler = LocalToolHandler()
+            return local_tool_handler.execute_local_action(action_name, params)
         resp = self.sdk_instance.http_client.post(
             f"v1/actions/{action_name.value[1]}/execute",
             json={
@@ -545,6 +549,10 @@ class Entity:
         connected_account_id: Optional[str] = None,
         entity_id="default",
     ):
+        if any(action.value[1] == local_action.value[1] for local_action in LocalAction):
+            # Handle local actions differently
+            local_tool_handler = LocalToolHandler()
+            return local_tool_handler.execute_local_action(action, params)
         no_auth = action.value[2] if len(action.value) > 2 else False
         if no_auth is True:
             tool_name = action.value[0]
