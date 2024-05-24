@@ -372,6 +372,14 @@ class Action(tuple, Enum):
                 return action
         raise ValueError(f"No action type found for name `{name}`")
 
+    @classmethod
+    def from_app_and_action(cls, app: str, name: str) -> "Action":
+        """From name and action params."""
+        for action in cls:
+            if app == action.app and name == action.action:
+                return action
+        raise ValueError("No action type found for app " f"`{app}` and action `{name}`")
+
     ZENDESK_CREATE_ZENDESK_ORGANIZATION = (
         "zendesk",
         "zendesk_create_zendesk_organization",
