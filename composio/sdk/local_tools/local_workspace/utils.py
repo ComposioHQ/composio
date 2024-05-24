@@ -352,7 +352,7 @@ def communicate_with_handling(container_process: subprocess.Popen, container_obj
     """
     Wrapper for communicate function that raises error if return code is non-zero
     """
-    logs, return_code= communicate(container_process, container_obj, input, parent_pids, timeout_duration=timeout_duration)
+    logs, return_code = communicate(container_process, container_obj, input, parent_pids, timeout_duration=timeout_duration)
     if return_code != 0:
         logger.error(f"{error_msg}: {logs}")
         # call close container here in future

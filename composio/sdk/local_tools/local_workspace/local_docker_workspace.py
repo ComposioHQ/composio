@@ -17,7 +17,9 @@ from typing import Optional, Tuple
 from utils import get_container, read_with_timeout, communicate
 # from tools.services.swelib.local_workspace.observation_assembler import ObservationAssemblerArgumentsModel, ObservationAssembler
 from tools.services.swelib.local_workspace.docker_cmd_manager import DockerCommandManagerArgsModel, DockerCommandManager
+from tools.services.swelib.local_workspace.docker_setup_env import DockerSetupEnvRequest, DockerSetupManager
 from tools.services.swelib.local_workspace.workspace_status import DockerContainerStatusRequest, DockerContainerStatus
+from tools.services.swelib.local_workspace.swe_special_command_handler import ShellEditor, EditorOperationRequest
 from tools.services.swelib.local_workspace.copy_github_repo import CopyGithubRepoRequest, CopyGithubRepo, execute_copy_github_repo
 
 
@@ -33,6 +35,8 @@ logger = logging.getLogger(LOGGER_NAME)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 logger.propagate = False
+
+COMMANDS_CONFIG_PATH = "./config/commands.yaml"
 
 
 @dataclass(frozen=True)
@@ -290,42 +294,37 @@ def check_simple_implementation():
     env = LocalDockerWorkspace(args)
     print(env.container_name, env.image_name)
     container_process = env.container
+    container_name = env.container_name
     container_pid = container_process.pid
     parent_pids = env.parent_pids
 
-    command_manager_args = DockerCommandManagerArgsModel(
-        container_name=env.container_name,
-        workspace_id="123",
-        input_cmd="find_file",
-        image_name=image_name
-    )
+    # setup environment + copy commands + source scripts
+    setup_docker_args = DockerSetupEnvRequest(container_name=container_name,
+                                              workspace_id="123",
+                                              image_name=image_name)
+    setup_manager = DockerSetupManager(setup_docker_args)
+    setup_manager.set_container_process(container_process, parent_pids)
+    setup_manager.set_env_variables()
 
+    # copy github repo
     copy_repo_args = CopyGithubRepoRequest(
         container_name=env.container_name,
         workspace_id="123",
         repo_name="princeton-nlp/SWE-bench",
         image_name=image_name)
-
     resp = execute_copy_github_repo(copy_repo_args, container_process, parent_pids)
-    # copy_git_hub_repo = CopyGithubRepo(copy_repo_args)
-    # copy_git_hub_repo.set_container_process(container_process, parent_pids)
-    # copy_git_hub_repo.copy_repo()
-    print(resp)
 
-    # command_manager = DockerCommandManager(command_manager_args)
-    # command_manager.set_container_process(container_process, parent_pids)
-    # observation, _, is_done, info = command_manager.run_incoming_action("find_file abc")
-    # print(observation)
-    # print(is_done)
-    # from pprint import pprint
-    # pprint(info)
-    # # set observation for next command to run
-    # # obs_recorder.set_current_observation(observation)
-    #
-    # ## check status of the docker
-    # status_request = DockerContainerStatusRequest(container_name=env.container_name)
-    # d_isnpector = DockerContainerStatus(status_request)
-    # print(f"🖖 container's status: {d_isnpector.execute()}")
+    # load all the special commands
+    special_commands_util = ShellEditor(COMMANDS_CONFIG_PATH)
+    all_special_cmds = special_commands_util.get_all_commands()
+
+    # run special command
+    special_cmd_args: EditorOperationRequest = EditorOperationRequest(command="find_file",
+                                                          workspace_id="123",
+                                                          arguments=["README.md", "/SWE-bench/"])
+    output = special_commands_util.perform_operation(special_cmd_args, container_process, container_name,
+                                            image_name, parent_pids)
+    print(output)
 
 
 if __name__ == "__main__":
