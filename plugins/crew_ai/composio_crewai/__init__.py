@@ -1,11 +1,9 @@
-from composio_langchain import Action, App, ComposioSDK, ComposioToolset, Tag, client
+from composio_langchain import Action, App, ComposioToolSet, Tag
 
 
 __all__ = (
     "Action",
     "App",
     "Tag",
-    "ComposioSDK",
-    "ComposioToolset",
-    "client",
+    "ComposioToolSet",
 )
