@@ -1,4 +1,4 @@
-from composio_openai.toolspec import ComposioToolSet
+from composio_openai.toolset import ComposioToolSet
 
 from composio.client.enums import Action, App, Tag
 
