@@ -5,16 +5,17 @@ Lyzr plugin demo.
 import os
 
 import dotenv
+from composio_lyzr import Action, ComposioToolSet
 from lyzr_automata import Agent, Task
 from lyzr_automata.ai_models.openai import OpenAIModel
 from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
 from lyzr_automata.tasks.task_literals import InputType, OutputType
 
 
+# Load environment variables from .env
 dotenv.load_dotenv()
-from composio_lyzr import Action, ComposioToolset  # noqa: E402
 
-
+# Initialize tools.
 open_ai_text_completion_model = OpenAIModel(
     api_key=os.environ["OPENAI_API_KEY"],
     parameters={
@@ -23,36 +24,42 @@ open_ai_text_completion_model = OpenAIModel(
         "max_tokens": 1500,
     },
 )
+composio_toolset = ComposioToolSet()
 
+# Define task
+instructions = "Star a repo SamparkAI/docs on GitHub"
 
+# Get required tool
+(github_tool,) = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
+
+# Define agent
 lyzr_agent = Agent(
     role="Github Agent",
-    prompt_persona="You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs",
+    prompt_persona=(
+        "You are AI agent that is responsible for taking actions on Github "
+        "on users behalf. You need to take action on Github using Github APIs"
+    ),
 )
 
-composio_toolset = ComposioToolset()
-composio_tool = composio_toolset.get_lyzr_tool(Action.GITHUB_STAR_REPO)
-
+# Run task
 task = Task(
     name="Github Starring",
     agent=lyzr_agent,
-    tool=composio_tool,
+    tool=github_tool,
     output_type=OutputType.TEXT,
     input_type=InputType.TEXT,
     model=open_ai_text_completion_model,
-    instructions="Star a repo SamparkAI/docs on GitHub",
+    instructions=instructions,
     log_output=True,
     enhance_prompt=False,
 )
-
-lyzr_output = LinearSyncPipeline(
+lyzr_pipline = LinearSyncPipeline(
     name="Composio Lyzr",
-    # completion message after pipeline completes
     completion_message="Task completed",
     tasks=[
-        # tasks are instance of Task class
         task,
     ],
-).run()
+)
 
-print(lyzr_output)
+# Print the output
+print(lyzr_pipline.run())
