@@ -2,41 +2,47 @@ import os
 
 import dotenv
 from autogen import AssistantAgent, UserProxyAgent
-from composio_autogen import App, ComposioToolset
+from composio_autogen import App, ComposioToolSet
 
 
-# Loading the variables from .env file
+# Load environment variables from .env
 dotenv.load_dotenv()
 
-llm_config = {
-    "config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]
-}
 
+# Initialize tools.
 chatbot = AssistantAgent(
     "chatbot",
     system_message="Reply TERMINATE when the task is done or when user's content is empty",
-    llm_config=llm_config,
+    llm_config={
+        "config_list": [
+            {"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]},
+        ]
+    },
 )
+composio_toolset = ComposioToolSet()
 
-# create a UserProxyAgent instance named "user_proxy"
+
+def is_termination_msg(content: dict) -> bool:
+    """Check if a message contains termination message."""
+    return "TERMINATE" in (content.get("content", "") or "")
+
+
+# Create a user proxy agent
 user_proxy = UserProxyAgent(
     "user_proxy",
-    is_termination_msg=lambda x: x.get("content", "")
-    and "TERMINATE" in x.get("content", ""),
-    human_input_mode="NEVER",  # Don't take input from User
+    is_termination_msg=is_termination_msg,
+    human_input_mode="NEVER",
     code_execution_config={"use_docker": False},
 )
-
-
-# Initialise the Composio Tool Set
-composio_tools = ComposioToolset()
 
 # Register the preferred Applications, with right executor.
 composio_tools.register_tools(tools=[App.GITHUB], caller=chatbot, executor=user_proxy)
 
+# Define task.
+task = "Star a repo SamparkAI/composio on GitHub"
 
-task = "Star a repo SamparkAI/docs on GitHub"
-
+# Execute task.
 response = user_proxy.initiate_chat(chatbot, message=task)
 
+# Print response
 print(response.chat_history)
