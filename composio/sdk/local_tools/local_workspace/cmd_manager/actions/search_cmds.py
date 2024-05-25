@@ -1,4 +1,4 @@
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from composio.sdk.local_tools.lib.action import Action
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (get_workspace_meta_from_manager,
