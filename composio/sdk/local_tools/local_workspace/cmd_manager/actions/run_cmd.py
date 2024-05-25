@@ -1,68 +1,58 @@
 import re
-import logging
 from pathlib import Path
 from dataclasses import dataclass
-from rich.logging import RichHandler
-from simple_parsing.helpers.serialization.serializable import FrozenSerializable
-from simple_parsing.helpers.fields import field
 from typing import Optional, Tuple, Dict, List, Any
+from pydantic.v1 import BaseModel, Field
 
-from pydantic.v1 import BaseModel, Field, create_model
+from composio.sdk.local_tools.local_workspace.utils import (get_workspace_meta_from_manager,
+                                                            communicate,
+                                                            interrupt_container, close_container,
+                                                            get_container_by_container_name,
+                                                            KEY_IMAGE_NAME, KEY_CONTAINER_NAME, KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
+from composio.sdk.local_tools.local_workspace.get_logger import get_logger
+from composio.sdk.local_tools.local_workspace.command_runner_model import AgentConfig
 
-from tools.services.swelib.command_manager import CommandManager
-from tools.services.swelib.local_workspace.command_runner_args import AgentConfig
 
-from utils import (communicate, interrupt_container, close_container,
-                   get_container_by_container_name, copy_file_to_container,
-                   communicate_with_handling)
-
-LOGGER_NAME = "composio_logger"
-
-handler = RichHandler(show_time=False, show_path=False)
-handler.setLevel(logging.DEBUG)
-logger = logging.getLogger(LOGGER_NAME)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(handler)
-logger.propagate = False
+logger = get_logger()
 
 
 @dataclass(frozen=True)
-class DockerCommandManagerArgs(FrozenSerializable):
-    """Configure e2b sandbox_id here
-    """
-    container_name: str = None
-    image_name: str = None
-    config: Optional[AgentConfig] = field(default=None, cmd=False)
-
-
-class DockerCommandManagerArgsModel(BaseModel):
-    container_name: str = Field(..., description="locally running docker-container name")
+class RunCommandOnWorkspaceRequest(BaseModel):
     workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
-    input_cmd: str
-    image_name: str
-    # image_name: str = Field(..., description="docker-image name from which docker-container is created")
-    # input_cmd: str = Field(..., description="input command to run")
+    input_cmd: str = Field(..., description="github repo-name for which issue needs to be solved")
 
 
-class DockerCommandManager(CommandManager):
-    def __init__(self, args: DockerCommandManagerArgsModel):
-        super().__init__()
+class RunCommandOnWorkspaceResponse(BaseModel):
+    pass
+
+
+class RunCommandOnWorkspace:
+    """
+      runs a command on the given workspace
+      """
+    _display_name = "Run command on workspace"
+    _request_schema = RunCommandOnWorkspaceRequest
+    _response_schema = RunCommandOnWorkspaceResponse
+    _tags = ["workspace"]
+
+    def _setup(self, args: RunCommandOnWorkspaceRequest):
         self.name = "agent"
         self.args = args
-        self.image_name = args.image_name
-        self.container_name = args.container_name
+        self.workspace_id = args.workspace_id
+        workspace_meta = get_workspace_meta_from_manager(self.workspace_id)
+        self.image_name = workspace_meta[KEY_IMAGE_NAME]
+        self.container_name = workspace_meta[KEY_CONTAINER_NAME]
+        self.container_process = workspace_meta[KEY_WORKSPACE_MANAGER]
+        self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
+        if not self.container_obj:
+            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.return_code = None
         self.logger = logger
-        self.container_process = None
-        self.parent_pids = None
         self.config = None
         self.config_file_path = Path("config/default.yaml")
         self.load_config_from_path()
         self._parse_command_patterns()
-        if not self.container_obj:
-                raise Exception(f"container-name {self.container_name} is not a valid docker-container")
-        # self._parse_command_patterns()
 
     def load_config_from_path(self):
         if not self.config and self.config_file_path is not None:
@@ -76,81 +66,6 @@ class DockerCommandManager(CommandManager):
             }
             object.__setattr__(config, "multi_line_command_endings", multi_line_command_endings)
         assert self.config is not None  # mypy
-
-    def set_env_variables(self):
-        commands_to_execute = (
-                [self.config.state_command.code]
-                +
-                [f"{k}={v}" for k, v in self.config.env_variables.items()]
-        )
-        commands = "\n".join(commands_to_execute)
-        return_code = 0
-        output = None
-        try:
-            output, return_code = communicate(self.container_process, self.container_obj, commands, self.parent_pids)
-        except KeyboardInterrupt:
-            if return_code != 0:
-                raise RuntimeError(
-                    f"Nonzero return code: {return_code}\nOutput: {output}"
-                )
-            raise
-        except Exception as e:
-            logger.warning("Failed to set environment variables")
-            raise e
-        command_files = list()
-        for file in self.config.command_files:
-            datum = dict()
-            contents = open(file, "r").read()
-            datum["contents"] = contents
-            filename = Path(file).name
-            if not contents.strip().startswith("#!"):
-                if filename.endswith(".sh"):
-                    # files are sourced, so they are not executable
-                    datum["name"] = Path(file).name
-                    datum["type"] = "source_file"
-                elif filename.startswith("_"):
-                    # files are sourced, so they are not executable
-                    datum["name"] = Path(file).name
-                    datum["type"] = "utility"
-                else:
-                    raise ValueError(
-                        (
-                            f"Non-shell script file {file} does not start with shebang.\n"
-                            "Either add a shebang (#!) or change the file extension to .sh if you want to source it.\n"
-                            "You can override this behavior by adding an underscore to the file name (e.g. _utils.py)."
-                        )
-                    )
-            else:
-                # scripts are made executable
-                datum["name"] = Path(file).name.rsplit(".", 1)[0]
-                datum["type"] = "script"
-            command_files.append(datum)
-        self.add_commands(command_files)
-
-    def add_commands(self, commands: list[dict]) -> None:
-        """
-        Adds custom commands to container
-        """
-        for command in commands:
-            name = command["name"]
-            contents = command["contents"]
-            copy_file_to_container(self.container_obj, contents, f"/root/commands/{name}")
-            if command['type'] == "source_file":
-                communicate_with_handling(self.container_process, self.container_obj,
-                    f"source /root/commands/{name}", self.parent_pids,
-                        error_msg=(f"Failed to source {name}. If you meant to make a script "
-                                   f"start the file with a shebang (e.g. #!/usr/bin/env python)." )
-                 )
-            elif command['type'] == "script":
-                communicate_with_handling(self.container_process, self.container_obj,
-                    f"chmod +x /root/commands/{name}", self.parent_pids,
-                    error_msg=f"Failed to chmod {name}",
-                )
-            elif command['type'] == "utility":
-                # nothing to do for utility scripts
-                pass
-            else:
-                raise ValueError(f"Invalid command type: {command['type']}")
 
     def _parse_command_patterns(self):
         assert self.config is not None  # mypy
@@ -239,8 +154,8 @@ class DockerCommandManager(CommandManager):
             first_match = self._get_first_match(rem_action, "multi_line_no_subroutines")
             if first_match:
                 pre_action = rem_action[: first_match.start()]
-                match_action = rem_action[first_match.start() : first_match.end()]
-                rem_action = rem_action[first_match.end() :]
+                match_action = rem_action[first_match.start(): first_match.end()]
+                rem_action = rem_action[first_match.end():]
                 if pre_action.strip():
                     parsed_action.append(pre_action)
                 if match_action.strip():
@@ -272,7 +187,8 @@ class DockerCommandManager(CommandManager):
         return env_vars
 
     def split_actions(self, action: str, pattern_type="subroutine") -> List[Dict[str, Any]]:
-        """Split an action into a list of actions in a greedy manner, each of which is a subroutine call or a single command."""
+        """Split an action into a list of actions in a greedy manner,
+        each of which is a subroutine call or a single command."""
         parsed_action = list()
         rem_action = action
         while rem_action.strip():
@@ -451,17 +367,10 @@ class DockerCommandManager(CommandManager):
     def interrupt(self):
         interrupt_container(self.container_process, self.container_obj)
 
-    # todo: this is a hack --> fix it
-    # fix container process
-    # fix parent-pids
-    def set_container_process(self, container_process, parent_pids):
-        self.container_process = container_process
-        self.parent_pids = parent_pids
 
-
-def execute_docker_cmd_manager(args: DockerCommandManagerArgsModel, container_process, parent_pids):
-    c = DockerCommandManager(args)
-    c.set_container_process(container_process, parent_pids)
-    observation, _, done, info = c.run_incoming_action(args.input_cmd)
-    return observation, done, info
+# def execute_docker_cmd_manager(args: DockerCommandManagerArgsModel, container_process, parent_pids):
+#     c = DockerCommandManager(args)
+#     c.set_container_process(container_process, parent_pids)
+#     observation, _, done, info = c.run_incoming_action(args.input_cmd)
+#     return observation, done, info
 

@@ -37,7 +37,7 @@ class CopyGithubRepo:
         self.container_process = None
         self.parent_pids = None
         self.config = None
-        self.config_file_path = Path("config/default.yaml")
+        self.config_file_path = Path("../config/default.yaml")
         self._github_token = self.load_github_token_from_host_env()
         # self.repo_type = local --> will copy from your local
         # path to docker container path

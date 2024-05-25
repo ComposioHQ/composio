@@ -105,7 +105,7 @@ class ShellEditor:
 
 
 def main():
-    config_path = "config/commands.yaml"
+    config_path = "../config/commands.yaml"
     # Setup container process and object here
     container_process = None  # Substitute with actual process
     container_obj = None  # Substitute with actual container object
