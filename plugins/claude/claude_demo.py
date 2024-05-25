@@ -12,7 +12,7 @@ dotenv.load_dotenv()
 
 # Initialize tools.
 claude_client = anthropic.Anthropic()
-composio_tools = ComposioToolset()
+composio_toolset = ComposioToolset()
 
 # Define task.
 task = "Star a repo SamparkAI/composio_sdk on GitHub"
@@ -31,5 +31,5 @@ response = claude_client.beta.tools.messages.create(
 )
 
 # Execute the function calls.
-result = composio_tools.handle_tool_calls(llm_response=response)
+result = composio_toolset.handle_tool_calls(llm_response=response)
 print(result)
