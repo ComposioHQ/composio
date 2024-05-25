@@ -4,14 +4,14 @@ Composio CLI Tool.
 
 import click
 
-from composio.cli.apps import _apps
 from composio.cli.actions import _actions
+from composio.cli.apps import _apps
+from composio.cli.connections import _connections
 from composio.cli.integrations import _integrations
 from composio.cli.login import _login
 from composio.cli.logout import _logout
 from composio.cli.triggers import _triggers
 from composio.cli.whoami import _whoami
-from composio.cli.connections import _connections
 
 
 @click.group(name="composio")

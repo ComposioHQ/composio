@@ -5,12 +5,13 @@ Usage:
     composio actions [command] [options]
 """
 
+import typing as t
+
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.exceptions import ComposioSDKError
 from composio.client.enums import App
-import typing as t
+from composio.exceptions import ComposioSDKError
 
 
 @click.group(name="actions", invoke_without_command=True)

@@ -5,15 +5,15 @@ Usage:
     composio triggers [command] [options]
 """
 
+import json
 import typing as t
 
 import click
-import json
 
 from composio.cli.context import Context, pass_context
-from composio.exceptions import ComposioSDKError
-from composio.client.exceptions import NoItemsFound
 from composio.client.enums import Action
+from composio.client.exceptions import NoItemsFound
+from composio.exceptions import ComposioSDKError
 
 
 @click.group(name="triggers", invoke_without_command=True)

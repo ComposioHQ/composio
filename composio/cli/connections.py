@@ -8,8 +8,8 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.exceptions import ComposioSDKError
 from composio.client.enums import Action
+from composio.exceptions import ComposioSDKError
 
 
 @click.group(name="connections")
