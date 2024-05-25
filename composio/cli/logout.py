@@ -6,7 +6,8 @@ Usage:
 """
 
 import click
-from composio.cli.context import pass_context, Context
+
+from composio.cli.context import Context, pass_context
 from composio.exceptions import ComposioSDKError
 
 

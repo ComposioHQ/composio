@@ -5,15 +5,16 @@ Usage:
     composio integrations [command] [options]
 """
 
+import webbrowser
+
 import click
+from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, pass_context
-from composio.exceptions import ComposioSDKError
-from composio.client.exceptions import ComposioClientError
 from composio.client.enums import Action
+from composio.client.exceptions import ComposioClientError
+from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
-import webbrowser
-from beaupy.spinners import DOTS, Spinner
 
 
 @click.group(name="integrations", invoke_without_command=True)
