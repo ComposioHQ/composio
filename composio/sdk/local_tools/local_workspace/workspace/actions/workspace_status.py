@@ -1,6 +1,7 @@
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 import docker
 
+from composio.sdk.local_tools.lib.action import Action
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
                                                                                      get_container_name_from_workspace_id)
@@ -19,7 +20,7 @@ class WorkspaceStatusResponse(BaseModel):
     workspace_status: str = Field(..., description="status of the workspace given in request")
 
 
-class WorkspaceStatus:
+class WorkspaceStatus(Action):
     """
         returns the status of workspace given in the request
     """

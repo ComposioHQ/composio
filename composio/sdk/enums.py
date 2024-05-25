@@ -329,8 +329,8 @@ class App(Enum):
     SNOWFLAKE = "snowflake"
     OKTA = "okta"
     TEST_ASANA = "test_asana"
-    WORKSPACE = "workspace"
-    CMD_MANAGER = "cmd_manager"
+    LOCAL_WORKSPACE = "localworkspace"
+    CMD_MANAGER = "cmdmanagertool"
 
 
 class Action(Enum):
@@ -4400,10 +4400,10 @@ class Action(Enum):
     )
     TEST_ASANA_CREATE_SUBTASK = ("test_asana", "test_asana_create_subtask", False)
     TEST_ASANA_GET_SUBTASKS = ("test_asana", "test_asana_get_subtasks", False)
-    WORKSPACE_CREATE_WORKSPACE_ACTION = ("workspace", "workspace_create_workspace_action", True)
-    WORKSPACE_WORKSPACE_STATUS = ("workspace", "workspace_workspace_status", True)
-    WORKSPACE_SETUP_WORKSPACE = ("workspace", "workspace_setup_workspace", True)
-    WORKSPACE_SETUP_GITHUB_REPO = ("workspace", "workspace_setup_github_repo", True)
+    LOCAL_WORKSPACE_CREATE_WORKSPACE_ACTION = ("local_workspace", "workspace_create_workspace_action", True)
+    LOCAL_WORKSPACE_WORKSPACE_STATUS = ("local_workspace", "workspace_workspace_status", True)
+    LOCAL_WORKSPACE_SETUP_WORKSPACE = ("local_workspace", "workspace_setup_workspace", True)
+    LOCAL_WORKSPACE_SETUP_GITHUB_REPO = ("local_workspace", "workspace_setup_github_repo", True)
     CMD_MANAGER_GOTO_CMD = ("cmd_manager", "cmd_manager_goto_cmd", True)
     CMD_MANAGER_CREATE_FILE_CMD = ("cmd_manager", "cmd_manager_create_file_cmd", True)
     CMD_MANAGER_OPEN_CMD = ("cmd_manager", "cmd_manager_open_cmd", True)
