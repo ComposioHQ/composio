@@ -35,3 +35,9 @@ class ComposioClientError(ComposioSDKError):
     """
     Exception class for Composio client errors.
     """
+
+
+class NoItemsFound(ComposioClientError):
+    """
+    Exception class for empty collection values.
+    """
