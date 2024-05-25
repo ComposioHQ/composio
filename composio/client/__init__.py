@@ -3,6 +3,7 @@ Composio SDK client.
 """
 
 import os
+import time
 import typing as t
 import warnings
 from datetime import datetime
@@ -19,9 +20,9 @@ from composio.client.enums import (  # TODO: Fix pseudo-circular dependendcy
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
-from composio.utils.url import get_api_url_base
 from composio.exceptions import raise_api_key_missing
-import time
+from composio.utils.url import get_api_url_base
+
 
 ModelType = t.TypeVar("ModelType")
 CollectionType = t.TypeVar("CollectionType", list, dict)
