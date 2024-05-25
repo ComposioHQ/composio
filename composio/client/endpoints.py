@@ -31,11 +31,11 @@ class Endpoint:
             endpoint = f"/{endpoint}"
         self.endpoint = endpoint
 
-    def __str___(self) -> str:
+    def __str__(self) -> str:
         """String representation of the endpoint."""
         return self.endpoint
 
-    __repr__ = __str___
+    __repr__ = __str__
 
     def __getattribute__(self, name: str) -> "Endpoint":
         """Get attribute."""
@@ -90,8 +90,21 @@ class _V1(Endpoint):
 
     class _Triggers(Endpoint):
         """
-        Endpoint /v1/apps
+        Endpoint /v1/triggers
         """
+
+        class _Enable(Endpoint):
+            """
+            Endpoint /v1/triggers/enable
+            """
+
+        class _Disable(Endpoint):
+            """
+            Endpoint /v1/triggers/disable
+            """
+
+        enable: _Enable
+        disable: _Disable
 
     class _Integrations(Endpoint):
         """
