@@ -36,7 +36,7 @@ user_proxy = UserProxyAgent(
 )
 
 # Register the preferred Applications, with right executor.
-composio_tools.register_tools(tools=[App.GITHUB], caller=chatbot, executor=user_proxy)
+composio_toolset.register_tools(tools=[App.GITHUB], caller=chatbot, executor=user_proxy)
 
 # Define task.
 task = "Star a repo SamparkAI/composio on GitHub"
