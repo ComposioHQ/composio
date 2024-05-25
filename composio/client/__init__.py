@@ -19,7 +19,7 @@ from composio.client.enums import (  # TODO: Fix pseudo-circular dependendcy
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
-from composio.sdk.storage import get_base_url
+from composio.utils.url import get_api_url_base
 from composio.exceptions import raise_api_key_missing
 import time
 
@@ -806,7 +806,7 @@ class Composio:
         if api_key is None:
             raise_api_key_missing()
 
-        self.base_url = base_url or get_base_url()
+        self.base_url = base_url or get_api_url_base()
         self.api_key = t.cast(str, api_key)
         self.http = HttpClient(
             base_url=self.base_url,
@@ -824,7 +824,7 @@ class Composio:
     def generate_auth_key(base_url: t.Optional[str] = None) -> str:
         """Generate auth key."""
         http = HttpClient(
-            base_url=base_url or get_base_url(),
+            base_url=base_url or get_api_url_base(),
             api_key="",
         )
         response = http.get(url=str(v1.cli.generate_cli_session))
@@ -849,7 +849,7 @@ class Composio:
         :param code: Authentication code
         """
         http = HttpClient(
-            base_url=base_url or get_base_url(),
+            base_url=base_url or get_api_url_base(),
             api_key="",
         )
         response = http.get(str(v1.cli.verify_cli_code({"key": key, "code": code})))
