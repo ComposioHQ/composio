@@ -12,7 +12,7 @@ import click
 from composio.cli.context import Context, pass_context
 from composio.client import Composio
 from composio.exceptions import ComposioSDKError
-from composio.sdk.utils import get_frontend_url
+from composio.utils.url import get_web_url
 
 
 @click.command(name="login")
@@ -37,7 +37,7 @@ def _login(
     context.console.print("\n[green]> Authenticating...[/green]\n")
     try:
         key = Composio.generate_auth_key()
-        url = get_frontend_url(f"?cliKey={key}")
+        url = get_web_url(path=f"?cliKey={key}")
         context.console.print(
             "> Redirecting you to the login page. Please login using the following link:\n"
         )
