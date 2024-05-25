@@ -1,5 +1,7 @@
 import os
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
+
+from composio.sdk.local_tools.lib.action import Action
 
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
@@ -24,7 +26,7 @@ class SetupGithubRepoResponse(BaseModel):
     github_repo_copy_resp: str = Field(..., description="response of github repo copy")
 
 
-class SetupGithubRepo:
+class SetupGithubRepo(Action):
     """
     clones github repo in the workspace
     """

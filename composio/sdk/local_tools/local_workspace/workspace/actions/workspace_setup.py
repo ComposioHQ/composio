@@ -1,7 +1,9 @@
 import logging
 from rich.logging import RichHandler
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from pathlib import Path
+
+from composio.sdk.local_tools.lib.action import Action
 
 from composio.sdk.local_tools.local_workspace.commons.command_runner_model import AgentConfig
 from composio.sdk.local_tools.local_workspace.commons.utils import (get_container_by_container_name,
@@ -36,7 +38,7 @@ class WorkspaceSetupResponse(BaseModel):
     workspace_status: str = Field(..., description="status of the workspace given in request")
 
 
-class SetupWorkspace:
+class SetupWorkspace(Action):
     """
     setsup workspace with the environment variables, scripts.
     sets the path, and sources necessary scripts
