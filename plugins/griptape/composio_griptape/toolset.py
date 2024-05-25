@@ -7,7 +7,7 @@ from schema import Literal, Schema
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.sdk.shared_utils import schema_type_python_type_dict
+from composio.utils.shared import SCHEMA_TYPE_TO_PYTHON_TYPE
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 
 
@@ -74,10 +74,10 @@ class ComposioToolSet(BaseComposioToolSet):
             dtype = param_body["type"]
             description = param_body["description"]
             schema_key = Literal(param_name, description=description)
-            if dtype in schema_type_python_type_dict:
-                schema_dtype = schema_type_python_type_dict.get(dtype)
+            if dtype in SCHEMA_TYPE_TO_PYTHON_TYPE:
+                schema_dtype = SCHEMA_TYPE_TO_PYTHON_TYPE.get(dtype)
             elif dtype == "array":
-                schema_array_dtype = schema_type_python_type_dict.get(
+                schema_array_dtype = SCHEMA_TYPE_TO_PYTHON_TYPE.get(
                     param_body["items"].get("type"),
                     None,
                 )
