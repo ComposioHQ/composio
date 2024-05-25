@@ -11,6 +11,7 @@ KEY_WORKSPACE_MANAGER = "workspace"
 KEY_CONTAINER_NAME = "container_name"
 KEY_PARENT_PIDS = "parent_pids"
 KEY_IMAGE_NAME = "image_name"
+KEY_WORKSPACE_ID = "workspace_id"
 
 
 class GetWorkspaceManagerRequest(BaseModel):

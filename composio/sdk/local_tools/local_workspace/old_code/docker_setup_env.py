@@ -43,7 +43,7 @@ class DockerSetupManager(CommandManager):
         self.container_process = None
         self.parent_pids = None
         self.config = None
-        self.config_file_path = Path("config/default.yaml")
+        self.config_file_path = Path("../config/default.yaml")
         self.load_config_from_path()
         if not self.container_obj:
                 raise Exception(f"container-name {self.container_name} is not a valid docker-container")
@@ -61,7 +61,7 @@ class DockerSetupManager(CommandManager):
 
     def copy_to_container(self):
         host_path = "./repo"
-        container_path = "./"
+        container_path = "../"
         # Create a tarfile with the file to copy
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w') as tar:
