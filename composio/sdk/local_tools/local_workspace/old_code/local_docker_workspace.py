@@ -36,7 +36,7 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 logger.propagate = False
 
-COMMANDS_CONFIG_PATH = "./config/commands.yaml"
+COMMANDS_CONFIG_PATH = "../config/commands.yaml"
 
 
 @dataclass(frozen=True)

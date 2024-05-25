@@ -1,4 +1,3 @@
-import os
 import types
 from inspect import Signature
 
@@ -10,8 +9,7 @@ from pydantic.v1 import BaseModel, Field, create_model
 from langchain_core.tools import StructuredTool
 from fastapi.encoders import jsonable_encoder
 
-from tools.services.swelib.local_workspace.workspace_manager_factory import (WorkspaceManagerFactory,
-                                                                             KEY_WORKSPACE_MANAGER,
+from tools.services.swelib.local_workspace.workspace_manager_factory import (KEY_WORKSPACE_MANAGER,
                                                                              KEY_CONTAINER_NAME,
                                                                              KEY_PARENT_PIDS,
                                                                              KEY_IMAGE_NAME)
@@ -33,12 +31,12 @@ except ImportError:
 
 from tools.services.swelib.local_workspace.local_docker_workspace import LocalDockerWorkspace
 from tools.services.swelib.local_workspace.copy_github_repo import CopyGithubRepoRequest, execute_copy_github_repo
-from observation_assembler import ObservationAssemblerArgumentsModel, execute_observation_handler
+from composio.sdk.local_tools.local_workspace.old_code.observation_assembler import ObservationAssemblerArgumentsModel, execute_observation_handler
 from local_workspace import LocalDockerArgumentsModel
-from docker_cmd_manager import DockerCommandManagerArgsModel, execute_docker_cmd_manager
-from workspace_status import DockerContainerStatusRequest, execute_docker_status
-from docker_setup_env import DockerSetupEnvRequest, execute_docker_setup_env
-from parsing import ParseCommandBash
+from composio.sdk.local_tools.local_workspace.old_code.docker_cmd_manager import DockerCommandManagerArgsModel, execute_docker_cmd_manager
+from composio.sdk.local_tools.local_workspace.old_code.workspace_status import DockerContainerStatusRequest, execute_docker_status
+from composio.sdk.local_tools.local_workspace.old_code.docker_setup_env import DockerSetupEnvRequest, execute_docker_setup_env
+from composio.sdk.local_tools.local_workspace.old_code.parsing import ParseCommandBash
 from tools.services.swelib.local_workspace.swe_special_command_handler import ShellEditor, EditorOperationRequest
 from utils import *
 

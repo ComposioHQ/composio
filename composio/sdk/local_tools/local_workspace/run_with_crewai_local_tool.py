@@ -23,7 +23,7 @@ from tools.services.swelib.local_workspace.local_tool_utils import ComposioTools
 
 
 # Read YAML file
-with open("agent_task_data.yaml", 'r') as stream:
+with open("config/agent_task_data.yaml", 'r') as stream:
     task_data = yaml.safe_load(stream)
 
 
