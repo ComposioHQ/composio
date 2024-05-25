@@ -4,13 +4,15 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, Dict, List, Any
 from pydantic.v1 import BaseModel, Field
 
-from composio.sdk.local_tools.local_workspace.utils import (get_workspace_meta_from_manager,
-                                                            communicate,
-                                                            interrupt_container, close_container,
-                                                            get_container_by_container_name,
-                                                            KEY_IMAGE_NAME, KEY_CONTAINER_NAME, KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
-from composio.sdk.local_tools.local_workspace.get_logger import get_logger
-from composio.sdk.local_tools.local_workspace.command_runner_model import AgentConfig
+from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (
+    get_workspace_meta_from_manager,
+    communicate,
+    KEY_IMAGE_NAME, KEY_CONTAINER_NAME, KEY_WORKSPACE_MANAGER,
+    KEY_PARENT_PIDS)
+from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name, interrupt_container, close_container
+from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.sdk.local_tools.local_workspace.commons.command_runner_model import AgentConfig
+from composio.sdk.local_tools.lib.action import Action
 
 
 logger = get_logger()
@@ -26,7 +28,7 @@ class RunCommandOnWorkspaceResponse(BaseModel):
     pass
 
 
-class RunCommandOnWorkspace:
+class RunCommandOnWorkspace(Action):
     """
       runs a command on the given workspace
       """
@@ -53,6 +55,10 @@ class RunCommandOnWorkspace:
         self.config_file_path = Path("config/default.yaml")
         self.load_config_from_path()
         self._parse_command_patterns()
+
+    def execute(self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}):
+        self._setup(request_data)
+        self.run_incoming_action(request_data.input_cmd)
 
     def load_config_from_path(self):
         if not self.config and self.config_file_path is not None:

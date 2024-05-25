@@ -1,4 +1,7 @@
 from .mathematical import Mathematical
+from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
+from composio.sdk.local_tools.local_workspace.workspace import LocalWorkspace
+from composio.sdk.local_tools.local_workspace.cmd_manager import CmdManagerTool
 
 
 class LocalToolHandler:
@@ -7,9 +10,15 @@ class LocalToolHandler:
         self.tool_map = {tool.tool_name: tool for tool in self.registered_tools}
 
     def register_local_tools(self):
+        workspace_factory = WorkspaceManagerFactory()
+        local_workspace_tool = LocalWorkspace()
+        local_workspace_tool.set_workspace_factory(workspace_factory)
         return [
-            Mathematical()
+            Mathematical(),
+            local_workspace_tool,
+            CmdManagerTool(),
         ]
+
 
     def is_local(self, app_or_action) -> bool:
 
