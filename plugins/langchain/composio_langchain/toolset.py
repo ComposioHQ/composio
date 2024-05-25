@@ -6,7 +6,7 @@ from langchain_core.tools import StructuredTool
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.sdk.shared_utils import (
+from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
