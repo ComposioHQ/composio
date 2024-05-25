@@ -8,7 +8,6 @@ from autogen.agentchat.conversable_agent import ConversableAgent
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.sdk.exceptions import UserNotAuthenticatedException
 from composio.sdk.shared_utils import get_signature_format_from_schema_params
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 

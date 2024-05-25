@@ -12,7 +12,7 @@ dotenv.load_dotenv()
 
 # Initialize tools.
 openai_client = OpenAI()
-composio_tools = ComposioToolset()
+composio_toolset = ComposioToolset()
 
 # Define task.
 task = "Star a repo SamparkAI/composio_sdk on GitHub"
@@ -32,5 +32,5 @@ response = openai_client.chat.completions.create(
 print(response)
 
 # Execute the function calls.
-result = composio_tools.handle_calls(response)
+result = composio_toolset.handle_calls(response)
 print(result)
