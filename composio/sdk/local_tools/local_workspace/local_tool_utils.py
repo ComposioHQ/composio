@@ -38,7 +38,7 @@ from composio.sdk.local_tools.local_workspace.old_code.workspace_status import D
 from composio.sdk.local_tools.local_workspace.old_code.docker_setup_env import DockerSetupEnvRequest, execute_docker_setup_env
 from composio.sdk.local_tools.local_workspace.old_code.parsing import ParseCommandBash
 from tools.services.swelib.local_workspace.swe_special_command_handler import ShellEditor, EditorOperationRequest
-from utils import *
+from composio.sdk.local_tools.local_workspace.commons.utils import *
 
 
 schema_type_python_type_dict = {

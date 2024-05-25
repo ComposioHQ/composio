@@ -1,19 +1,19 @@
 import logging
 from rich.logging import RichHandler
 from pydantic.v1 import BaseModel, Field
-import docker
 from pathlib import Path
 
-from composio.sdk.local_tools.local_workspace.workspace.actions.command_runner_args import AgentConfig
-from composio.sdk.local_tools.local_workspace.utils import (get_workspace_meta_from_manager,
-                                                            KEY_CONTAINER_NAME,
-                                                            KEY_IMAGE_NAME,
-                                                            KEY_WORKSPACE_MANAGER,
-                                                            KEY_PARENT_PIDS,
-                                                            get_container_by_container_name,
-                                                            communicate,
-                                                            communicate_with_handling,
-                                                            copy_file_to_container)
+from composio.sdk.local_tools.local_workspace.commons.command_runner_model import AgentConfig
+from composio.sdk.local_tools.local_workspace.commons.utils import (get_container_by_container_name,
+                                                                    communicate,
+                                                                    communicate_with_handling,
+                                                                    copy_file_to_container)
+from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
+                                                                                        get_workspace_meta_from_manager,
+                                                                                        KEY_IMAGE_NAME,
+                                                                                        KEY_CONTAINER_NAME,
+                                                                                        KEY_WORKSPACE_MANAGER,
+                                                                                        KEY_PARENT_PIDS)
 
 LOGGER_NAME = "composio_logger"
 
@@ -45,11 +45,12 @@ class SetupWorkspace:
     _request_schema = WorkspaceSetupRequest
     _response_schema = WorkspaceSetupResponse
     _tags = ["workspace"]
+    workspace_factory: WorkspaceManagerFactory = None
 
     def _setup(self, args: WorkspaceSetupRequest):
         self.args = args
         self.workspace_id = args.workspace_id
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
         if not workspace_meta:
             raise Exception(f"workspace not found, invalid workspace-id: {self.workspace_id}")
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
@@ -66,6 +67,9 @@ class SetupWorkspace:
         self.load_config_from_path()
         if not self.container_obj:
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+
+    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+        self.workspace_factory = workspace_factory
 
     def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
         self._setup(request_data)

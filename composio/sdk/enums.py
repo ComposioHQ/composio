@@ -329,6 +329,8 @@ class App(Enum):
     SNOWFLAKE = "snowflake"
     OKTA = "okta"
     TEST_ASANA = "test_asana"
+    WORKSPACE = "workspace"
+    CMD_MANAGER = "cmd_manager"
 
 
 class Action(Enum):
@@ -4398,6 +4400,20 @@ class Action(Enum):
     )
     TEST_ASANA_CREATE_SUBTASK = ("test_asana", "test_asana_create_subtask", False)
     TEST_ASANA_GET_SUBTASKS = ("test_asana", "test_asana_get_subtasks", False)
+    WORKSPACE_CREATE_WORKSPACE_ACTION = ("workspace", "workspace_create_workspace_action", True)
+    WORKSPACE_WORKSPACE_STATUS = ("workspace", "workspace_workspace_status", True)
+    WORKSPACE_SETUP_WORKSPACE = ("workspace", "workspace_setup_workspace", True)
+    WORKSPACE_SETUP_GITHUB_REPO = ("workspace", "workspace_setup_github_repo", True)
+    CMD_MANAGER_GOTO_CMD = ("cmd_manager", "cmd_manager_goto_cmd", True)
+    CMD_MANAGER_CREATE_FILE_CMD = ("cmd_manager", "cmd_manager_create_file_cmd", True)
+    CMD_MANAGER_OPEN_CMD = ("cmd_manager", "cmd_manager_open_cmd", True)
+    CMD_MANAGER_EDIT_FILE = ("cmd_manager", "cmd_manager_edit_file", True)
+    CMD_MANAGER_RUN_COMMAND_ON_WORKSPACE = ("cmd_manager", "cmd_manager_run_command_on_workspace", True)
+    CMD_MANAGER_SCROLL_DOWN = ("cmd_manager", "cmd_manager_scroll_down", True)
+    CMD_MANAGER_SCROLL_UP = ("cmd_manager", "cmd_manager_scroll_up", True)
+    CMD_MANAGER_SEARCH_DIR_CMD = ("cmd_manager", "cmd_manager_search_dir_cmd", True)
+    CMD_MANAGER_SEARCH_FILE_CMD = ("cmd_manager", "cmd_manager_search_file_cmd", True)
+    CMD_MANAGER_FIND_FILE_CMD = ("cmd_manager", "cmd_manager_find_file_cmd", True)
 
 
 class Trigger(Enum):

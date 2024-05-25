@@ -1,66 +1,35 @@
 import datetime
+from uuid import uuid4
 import docker
 import gymnasium as gym
 import hashlib
-import logging
 import os
 import time
-
-from dataclasses import dataclass
-from rich.logging import RichHandler
-from simple_parsing.helpers.serialization.serializable import FrozenSerializable
-
 from pydantic.v1 import BaseModel
+from typing import Optional, Dict, Any
 
-from typing import Optional, Tuple
+from composio.sdk.local_tools.local_workspace.commons.utils import (get_container,
+                                                                    read_with_timeout,
+                                                                    communicate)
+from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 
-
-LOGGER_NAME = "composio_logger"
-
-LONG_TIMEOUT = 500
-PATH_TO_REQS = "/root/requirements.txt"
-PATH_TO_ENV_YML = "/root/environment.yml"
-
-handler = RichHandler(show_time=False, show_path=False)
-handler.setLevel(logging.DEBUG)
-logger = logging.getLogger(LOGGER_NAME)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(handler)
-logger.propagate = False
+logger = get_logger()
 
 COMMANDS_CONFIG_PATH = "../config/commands.yaml"
+TYPE_WORKSPACE_LOCAL_DOCKER = "local_docker"
 
-
-@dataclass(frozen=True)
-class LocalDockerArguments(FrozenSerializable):
-    """Configure data sources and setup instructions for the environment in which we solve the tasks.
-    """
-    # Source of issue statement/problem statement. To run over a batch of issues: Path to a data file
-    # (`json`, `jsonl`) or directory. To run over single issue: github issue url or path to markdown file
-    # with problem statement or problem statement as text prefixed with `text://`.
-    image_name: str
-    container_name: Optional[str] = None
-    install_environment: bool = True
-    timeout: int = 35
-    verbose: bool = False
-    no_mirror: bool = False
-    # Custom environment setup. Currently only used when data_path points to a single issue.
-    # This needs to be either a string pointing to a yaml file (with yaml, yml file extension)
-    # or a shell script (with sh extension).
-    # See https://github.com/princeton-nlp/SWE-agent/pull/153 for more information
-    environment_setup: Optional[str] = None
+KEY_WORKSPACE_MANAGER = "workspace"
+KEY_CONTAINER_NAME = "container_name"
+KEY_PARENT_PIDS = "parent_pids"
+KEY_IMAGE_NAME = "image_name"
+KEY_WORKSPACE_ID = "workspace_id"
 
 
 class LocalDockerArgumentsModel(BaseModel):
     image_name: str
     timeout: int = 35
     verbose: bool = False
-    # Custom environment setup. Currently only used when data_path points to a single issue.
-    # This needs to be either a string pointing to a yaml file (with yaml, yml file extension)
-    # or a shell script (with sh extension).
-    # See https://github.com/princeton-nlp/SWE-agent/pull/153 for more information
     environment_setup: Optional[str] = None
-
 
 
 class LocalDockerWorkspace(gym.Env):
@@ -159,36 +128,23 @@ class LocalDockerWorkspace(gym.Env):
         )
 
     def reset_container(self):
-      pass
+        pass
 
-    def communicate_with_handling(
-        self, input: str, error_msg: str, timeout_duration=25
-    ) -> str:
+    def communicate_with_handling(self, input: str, error_msg: str, timeout_duration=25) -> str:
         """
         Wrapper for communicate function that raises error if return code is non-zero
         """
-        logs, self.returncode= communicate(self.container, self.container_obj, input, self.parent_pids, timeout_duration=timeout_duration)
+        logs, self.returncode = communicate(self.container, self.container_obj, input, self.parent_pids,
+                                            timeout_duration=timeout_duration)
         if self.returncode != 0:
             self.logger.error(f"{error_msg}: {logs}")
             self.close()
             raise RuntimeError(f"{error_msg}: {logs}")
         return logs
 
-    def communicate(
-        self,
-        input: str,
-        timeout_duration=25,
-    ) -> str:
-        """
-        Sends input to container and returns output
-
-        Args:
-            input (`str`) - input to send to container
-
-        Returns:
-            output (`str`) - output from container
-        """
-        output, self.returncode = communicate(self.container, input, self.parent_pids, timeout_duration)
+    def communicate(self, input: str, timeout_duration=25) -> str:
+        output, self.returncode = communicate(self.container, self.container_obj,
+                                              input, self.parent_pids, timeout_duration)
         self.communicate_output = output
 
     def interrupt(self):
@@ -222,14 +178,14 @@ class LocalDockerWorkspace(gym.Env):
         if not all_pids:
             pids = [x for x in pids if x[1] != "ps" and x[0] not in self.parent_pids]
         return pids
-    
+
     def close(self):
         """
         Handle environment shutdown
         """
         self.logger.info("Beginning environment shutdown...")
         try:
-            communicate(self.container, input="exit", parent_pids=self.parent_pids)
+            communicate(self.container, self.container_obj, "exit", parent_pids=self.parent_pids)
         except KeyboardInterrupt:
             raise
         except:
@@ -256,6 +212,49 @@ class LocalDockerWorkspace(gym.Env):
             hook.on_close()
 
 
+class WorkspaceManagerFactory:
+    _registry: Dict[str, Any] = {}
+
+    @staticmethod
+    def get_workspace_manager(args: LocalDockerArgumentsModel) -> str:
+        # currently we only support local docker
+        workspace_type = TYPE_WORKSPACE_LOCAL_DOCKER
+        if workspace_type == TYPE_WORKSPACE_LOCAL_DOCKER:
+            workspace_manager = LocalDockerWorkspace(args)
+            container_name = workspace_manager.container_name
+            parent_pids = workspace_manager.parent_pids
+            workspace_id = str(uuid4())
+            WorkspaceManagerFactory._registry[workspace_id] = {KEY_WORKSPACE_MANAGER: workspace_manager,
+                                                               KEY_CONTAINER_NAME: container_name,
+                                                               KEY_PARENT_PIDS: parent_pids,
+                                                               KEY_IMAGE_NAME: args.image_name}
+            return workspace_id
+        else:
+            raise ValueError(f"Unknown workspace manager type: {workspace_type}")
+
+    @staticmethod
+    def get_registered_manager(workspace_id: str) -> Dict[str, Any]:
+        return WorkspaceManagerFactory._registry.get(workspace_id)
+
+    @staticmethod
+    def remove_workspace_manager(workspace_id: str) -> None:
+        if workspace_id in WorkspaceManagerFactory._registry:
+            del WorkspaceManagerFactory._registry[workspace_id]
+
+    @staticmethod
+    def list_workspace_managers() -> Dict[str, LocalDockerWorkspace]:
+        return WorkspaceManagerFactory._registry
+
+
+def get_workspace_meta_from_manager(workspace_factory: WorkspaceManagerFactory, workspace_id: str) -> dict:
+    return workspace_factory.get_registered_manager(workspace_id)
+
+
+def get_container_name_from_workspace_id(workspace_factory: WorkspaceManagerFactory, workspace_id: str) -> str:
+    workspace_meta = workspace_factory.get_registered_manager(workspace_id)
+    return workspace_meta[KEY_CONTAINER_NAME]
+
+
 def execute_local_docker_workspace(args: LocalDockerArgumentsModel):
     w = LocalDockerWorkspace(args)
     resp = {"container_name": w.container_name,
@@ -263,62 +262,4 @@ def execute_local_docker_workspace(args: LocalDockerArgumentsModel):
             "container_process": w.container}
     print(resp)
     return resp
-
-
-if __name__ == "__main__":
-    # todo: handle install_env function --> in original code its installing envs
-    args = LocalDockerArguments(
-        image_name="sweagent/swe-agent:latest",
-        verbose=True,
-        install_environment=False,
-    )
-    w = LocalDockerWorkspace(args)
-    c = w.container
-
-
-def check_simple_implementation():
-    args = LocalDockerArgumentsModel(
-        image_name="sweagent/swe-agent:latest",
-        verbose=True,
-        install_environment=True,
-    )
-    image_name = args.image_name
-    env = LocalDockerWorkspace(args)
-    print(env.container_name, env.image_name)
-    container_process = env.container
-    container_name = env.container_name
-    container_pid = container_process.pid
-    parent_pids = env.parent_pids
-
-    # setup environment + copy commands + source scripts
-    setup_docker_args = DockerSetupEnvRequest(container_name=container_name,
-                                              workspace_id="123",
-                                              image_name=image_name)
-    setup_manager = DockerSetupManager(setup_docker_args)
-    setup_manager.set_container_process(container_process, parent_pids)
-    setup_manager.set_env_variables()
-
-    # copy github repo
-    copy_repo_args = CopyGithubRepoRequest(
-        container_name=env.container_name,
-        workspace_id="123",
-        repo_name="princeton-nlp/SWE-bench",
-        image_name=image_name)
-    resp = execute_copy_github_repo(copy_repo_args, container_process, parent_pids)
-
-    # load all the special commands
-    special_commands_util = ShellEditor(COMMANDS_CONFIG_PATH)
-    all_special_cmds = special_commands_util.get_all_commands()
-
-    # run special command
-    special_cmd_args: EditorOperationRequest = EditorOperationRequest(command="find_file",
-                                                          workspace_id="123",
-                                                          arguments=["README.md", "/SWE-bench/"])
-    output = special_commands_util.perform_operation(special_cmd_args, container_process, container_name,
-                                            image_name, parent_pids)
-    print(output)
-
-
-if __name__ == "__main__":
-    check_simple_implementation()
 

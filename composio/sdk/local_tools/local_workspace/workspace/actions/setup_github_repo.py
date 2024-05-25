@@ -1,15 +1,16 @@
 import os
 from pydantic.v1 import BaseModel, Field
 
-from composio.sdk.local_tools.local_workspace.get_logger import get_logger
-from composio.sdk.local_tools.local_workspace.utils import (communicate_with_handling,
-                                                            get_workspace_meta_from_manager,
-                                                            communicate,
-                                                            get_container_by_container_name,
-                                                            KEY_IMAGE_NAME,
-                                                            KEY_CONTAINER_NAME,
-                                                            KEY_WORKSPACE_MANAGER,
-                                                            KEY_PARENT_PIDS)
+from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
+get_workspace_meta_from_manager,
+                                                                                        KEY_IMAGE_NAME,
+                                                                                        KEY_CONTAINER_NAME,
+                                                                                        KEY_WORKSPACE_MANAGER,
+                                                                                        KEY_PARENT_PIDS)
+from composio.sdk.local_tools.local_workspace.commons.utils import (communicate_with_handling,
+                                                                    communicate,
+                                                                    get_container_by_container_name,)
 LONG_TIMEOUT = 200
 logger = get_logger()
 
@@ -31,12 +32,13 @@ class SetupGithubRepo:
     _request_schema = SetupGithubRepoRequest
     _response_schema = SetupGithubRepoResponse
     _tags = ["workspace"]
+    workspace_factory: WorkspaceManagerFactory = None
 
     def _setup(self, args: SetupGithubRepoRequest):
         self.args = args
         self.workspace_id = args.workspace_id
         self.repo_name = args.repo_name
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
         self.container_process = workspace_meta[KEY_WORKSPACE_MANAGER]
@@ -80,18 +82,11 @@ class SetupGithubRepo:
                 error_msg="Failed to clean repository",
             )
 
+    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+        self.workspace_factory = workspace_factory
+
     def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
         self._setup(request_data)
-        ## implement copy anything to container function --> so can copy repo from the machine to the
-        ## docker container
-        # if self.repo_type == "local":
-        #     self.copy_anything_to_container(self.container_obj, self.record["repo"].removeprefix("local://"), "/"+self._repo_name)
-        #     communicate_with_handling(self.container_process, self.container_obj,
-        #         f"chown -R root:root {self.repo_name}",
-        #          self.parent_pids,
-        #         error_msg="Failed to change permissions on copied repository",
-        #     )
-        #     return self.repo_name
         token_prefix = ""
         if self._github_token:
             token_prefix = f"{self._github_token}@"

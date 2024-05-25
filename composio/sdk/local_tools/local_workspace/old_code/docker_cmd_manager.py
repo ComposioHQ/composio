@@ -1,17 +1,15 @@
 import re
-import logging
 from pathlib import Path
 from dataclasses import dataclass
-from rich.logging import RichHandler
 from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 from simple_parsing.helpers.fields import field
 from typing import Optional, Tuple, Dict, List, Any
 
-from pydantic.v1 import BaseModel, Field, create_model
+from pydantic.v1 import BaseModel, Field
 
 from tools.services.swelib.command_manager import CommandManager
 from tools.services.swelib.local_workspace.command_runner_args import AgentConfig
-from composio.sdk.local_tools.local_workspace.get_logger import get_logger
+from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 
 from utils import (communicate, interrupt_container, close_container,
                    get_container_by_container_name, copy_file_to_container,
