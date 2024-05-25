@@ -11,12 +11,17 @@ from composio.constants import (
 )
 
 
-def get_web_url(path: str) -> str:
-    """Get URL for the Composio web app."""
-    base_url = os.environ.get(
+def get_api_url_base() -> str:
+    """Get URL for composio API Server."""
+    return os.environ.get(
         ENV_COMPOSIO_BASE_URL,
         DEFAULT_BASE_URL,
     )
+
+
+def get_web_url(path: str) -> str:
+    """Get URL for the Composio web app."""
+    base_url = get_api_url_base()
     web_url = BASE_URL_TO_PROD_MAPPING.get(base_url)
     if web_url is None:
         raise ValueError(
