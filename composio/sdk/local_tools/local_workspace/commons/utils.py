@@ -1,7 +1,5 @@
-import psutil
 import shlex
 import docker
-import logging
 import os
 import select
 import subprocess
@@ -9,34 +7,16 @@ import tarfile
 import tempfile
 import time
 import traceback
-
 from io import BytesIO
-
 from subprocess import PIPE, STDOUT
 from typing import Set, Tuple
 
-from composio.sdk.local_tools.local_workspace.workspace_manager_factory import (WorkspaceManagerFactory,
-                                                                                KEY_WORKSPACE_MANAGER,
-                                                                                KEY_CONTAINER_NAME,
-                                                                                KEY_PARENT_PIDS,
-                                                                                KEY_IMAGE_NAME,
-                                                                                KEY_WORKSPACE_ID)
+from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 
-LOGGER_NAME = "intercode"
 START_UP_DELAY = 5
 TIMEOUT_DURATION = 25
 
-logger = logging.getLogger(LOGGER_NAME)
-workspace_factory = WorkspaceManagerFactory()
-
-
-def get_workspace_meta_from_manager(workspace_id: str) -> dict:
-    return workspace_factory.get_registered_manager(workspace_id)
-
-
-def get_container_name_from_workspace_id(workspace_id: str) -> str:
-    workspace_meta = workspace_factory.get_registered_manager(workspace_id)
-    return workspace_meta[KEY_CONTAINER_NAME]
+logger = get_logger()
 
 
 def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> Tuple[subprocess.Popen, Set]:
@@ -90,19 +70,6 @@ def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> T
         return _get_persistent_container(ctr_name, image_name)
     else:
         return _get_non_persistent_container(ctr_name, image_name)
-
-
-def attach_to_process(pid):
-    try:
-        process = psutil.Process(pid)
-        if process.is_running():
-            logger.info(f"Process with PID {pid} is running.")
-            return process
-        else:
-            logger.error(f"Process with PID {pid} is not running.")
-    except psutil.NoSuchProcess:
-        logger.error(f"No process found with PID {pid}.")
-        raise Exception("no such process with pid")
 
 
 def get_container_by_container_name(container_name: str, image_name: str):

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 from simple_parsing.helpers.fields import field
-from typing import Dict, List, Optional, Tuple, Any, TypedDict, Union
+from typing import Dict, Optional, Tuple, Any
 
 
 @dataclass(frozen=True)
