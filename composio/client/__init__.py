@@ -16,13 +16,15 @@ from composio.client.enums import (  # TODO: Fix pseudo-circular dependendcy
     App,
     Tag,
 )
-from composio.client.exceptions import ComposioClientError, HTTPError
+from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.sdk.storage import get_base_url
-
+from composio.exceptions import raise_api_key_missing
+import time
 
 ModelType = t.TypeVar("ModelType")
+CollectionType = t.TypeVar("CollectionType", list, dict)
 
 
 class Collection(t.Generic[ModelType]):
@@ -47,7 +49,6 @@ class Collection(t.Generic[ModelType]):
 
         :param response: Http response
         :param status_code: Expected status code
-
         :raises composio.client.exceptions.HTTPError: If the status code does
                 not match with the expected status code
         """
@@ -58,6 +59,12 @@ class Collection(t.Generic[ModelType]):
             )
         return response
 
+    def _raise_if_empty(self, collection: CollectionType) -> CollectionType:
+        """Raise if provided colleciton is empty."""
+        if len(collection) > 0:
+            return collection
+        raise NoItemsFound(message="No items found")
+
     def get(self, queries: t.Optional[t.Dict[str, str]] = None) -> t.List[ModelType]:
         """List available models."""
         request = self._raise_if_required(
@@ -67,8 +74,10 @@ class Collection(t.Generic[ModelType]):
         )
 
         data = request.json()
+
         if isinstance(data, list):
             return [self.model(**item) for item in data]
+
         if self._list_key in data:
             return [self.model(**item) for item in data[self._list_key]]
 
@@ -115,6 +124,56 @@ class ConnectedAccountModel(BaseModel):
     sdk: t.Optional["Composio"] = None
 
     # TODO: Add actions
+
+
+class ConnectionRequestModel(BaseModel):
+    """Connection request model."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    connectionStatus: str
+    connectedAccountId: str
+    redirectUrl: t.Optional[str] = None
+
+    def save_user_access_data(
+        self,
+        client: "Composio",
+        field_inputs: t.Dict,
+        redirect_url: t.Optional[str] = None,
+        entity_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        """Save user access data."""
+        connected_account = client.connected_accounts.get(
+            connection_id=self.connectedAccountId,
+        )
+        resp = client.http.post(
+            url=str(v1 / "connectedAccounts"),
+            json={
+                "integrationId": connected_account.integrationId,
+                "data": field_inputs,
+                "redirectUri": redirect_url,
+                "userUuid": entity_id,
+            },
+        )
+        return resp.json()
+
+    def wait_until_active(
+        self,
+        client: "Composio",
+        timeout=60,
+    ) -> "ConnectedAccountModel":
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            connection = client.connected_accounts.get(
+                connection_id=self.connectedAccountId,
+            )
+            if connection.status == "ACTIVE":
+                return connection
+            time.sleep(1)
+
+        # TODO: Replace with timeout error.
+        raise ComposioClientError(
+            "Connection did not become active within the timeout period."
+        )
 
 
 class ConnectedAccounts(Collection[ConnectedAccountModel]):
@@ -190,18 +249,73 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         )
         return [self.model(**account) for account in response.json().get("items", [])]
 
+    def initiate(
+        self,
+        integration_id: str,
+        entity_id: t.Optional[str] = None,
+        params: t.Optional[t.Dict] = None,
+        redirect_url: t.Optional[str] = None,
+    ) -> ConnectionRequestModel:
+        """Initiate a new connected accont."""
+        response = self._raise_if_required(
+            response=self.client.http.post(
+                url=str(self.endpoint),
+                json={
+                    "integrationId": integration_id,
+                    "userUuid": entity_id,
+                    "data": params or {},
+                    "redirectUri": redirect_url,
+                },
+            )
+        )
+        return ConnectionRequestModel(**response.json())
+
+
+class AuthSchemeField(BaseModel):
+    """Auth scheme field."""
+
+    name: str
+    displayName: str
+    description: str
+    type: str
+    required: bool
+    expected_from_customer: bool
+
+
+class AppAuthScheme(BaseModel):
+    """App authenticatio scheme."""
+
+    scheme_name: str
+    auth_mode: str
+    authorization_url: str
+    token_url: str
+    proxy: t.Dict
+    default_scopes: t.List
+    token_response_metadata: t.List
+    client_id: str
+    client_secret: str
+    fields: t.List[AuthSchemeField]
+
 
 class AppModel(BaseModel):
     """App data model."""
 
-    key: str
     name: str
+    key: str
+    status: str
+    documentation_doc_text: str
+    configuration_docs_text: str
+    docs: str
     description: str
     logo: str
     categories: t.List[str]
+    auth_schemes: t.List[AppAuthScheme]
+    group: str
     appId: str
-    enabled: bool
+    testConnectors: t.List[t.Dict[str, t.Any]]
     meta: t.Dict
+
+    enabled: bool = False
 
 
 class Apps(Collection[AppModel]):
@@ -209,6 +323,27 @@ class Apps(Collection[AppModel]):
 
     model = AppModel
     endpoint = v1.apps
+
+    @t.overload
+    def get(self) -> t.List[AppModel]:
+        """Get available apps."""
+
+    @t.overload
+    def get(self, name: t.Optional[str] = None) -> AppModel:
+        """Get a specific app."""
+
+    def get(self, name: t.Optional[str] = None) -> t.Union[AppModel, t.List[AppModel]]:
+        """Get apps."""
+        if name is not None:
+            return self.model(
+                **self._raise_if_required(
+                    response=self.client.http.get(
+                        url=str(self.endpoint / name),
+                    )
+                ).json()
+            )
+
+        return super().get(queries={})
 
 
 class TriggerPayloadPropertyModel(BaseModel):
@@ -249,6 +384,38 @@ class TriggerConfigModel(BaseModel):
     required: t.Optional[t.List[str]] = None
 
 
+class CallbackModel(dict):
+    """Trigger callback model."""
+
+
+class CallbackCollection(Collection[CallbackModel]):
+    """Callback collection for triggers."""
+
+    model = CallbackModel
+    endpoint = v1.triggers
+
+    def set(self, url: str) -> CallbackModel:
+        """Set callback URL."""
+        response = self._raise_if_required(
+            response=self.client.http.post(
+                url=str(self.endpoint / "setCallbackURL"),
+                json={
+                    "callbackURL": url,
+                },
+            )
+        )
+        return response.json()
+
+    def get(self) -> str:
+        """Get current callback URL."""
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                url=str(self.endpoint / "callback_url"),
+            )
+        )
+        return response.json().get("callbackURL")
+
+
 class TriggerModel(BaseModel):
     """Trigger data model."""
 
@@ -271,6 +438,14 @@ class Triggers(Collection[TriggerModel]):
 
     model = TriggerModel
     endpoint = v1.triggers
+    callbacks: CallbackCollection
+
+    def __init__(self, client: "Composio") -> None:
+        """Initialize triggers collections."""
+        super().__init__(client)
+        self.callbacks = CallbackCollection(
+            client=self.client,
+        )
 
     def get(
         self,
@@ -291,7 +466,9 @@ class Triggers(Collection[TriggerModel]):
             queries["appNames"] = ",".join(app_names)
         return super().get(queries=queries)
 
-    def enable(self, name: str, connected_account_id: str) -> None:
+    def enable(
+        self, name: str, connected_account_id: str, config: t.Dict[str, t.Any]
+    ) -> t.Dict:
         """
         Enable a trigger
 
@@ -300,17 +477,25 @@ class Triggers(Collection[TriggerModel]):
         """
         response = self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / name / connected_account_id), json={}
+                url=str(self.endpoint.enable / connected_account_id / name),
+                json={"triggerConfig": config},
             )
         )
+        return response.json()
 
-    def disable(self, id: str) -> None:
+    def disable(self, id: str) -> t.Dict:
         """
         Disable a trigger
 
         :param name: Name of the trigger
         :param connected_account_id: ID of the relevant connected account
         """
+        response = self._raise_if_required(
+            self.client.http.post(
+                url=str(self.endpoint.disable / id),
+            )
+        )
+        return response.json()
 
 
 class ActiveTriggerModel(BaseModel):
@@ -335,9 +520,13 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
-        return super().get(
-            queries=(
-                {"triggerIds": ",".join(trigger_ids)} if len(trigger_ids) > 0 else {}
+        return self._raise_if_empty(
+            super().get(
+                queries=(
+                    {"triggerIds": ",".join(trigger_ids)}
+                    if len(trigger_ids) > 0
+                    else {}
+                )
             )
         )
 
@@ -386,7 +575,7 @@ class ActionModel(BaseModel):
     name: str
     display_name: str
     tags: t.List[str]
-    description: str
+    description: t.Optional[str]
     parameters: ActionParametersModel
     response: ActionResponseModel
     appId: str
@@ -408,7 +597,8 @@ class Actions(Collection[ActionModel]):
         apps: t.Optional[t.Sequence[App]] = None,
         tags: t.Optional[t.Sequence[t.Union[str, Tag]]] = None,
         limit: t.Optional[int] = None,
-        usecase: t.Optional[str] = None,
+        use_case: t.Optional[str] = None,
+        allow_all: bool = False,
     ) -> t.List[ActionModel]:
         """
         Get a list of apps by the specified filters.
@@ -417,7 +607,10 @@ class Actions(Collection[ActionModel]):
         :param apps: Filter by the list of Apps.
         :param tags: Filter by the list of given Tags.
         :param limit: Limit the numnber of actions to a specific number.
-        :param usecase: Filter by use case.
+        :param use_case: Filter by use case.
+        :param allow_all: Allow querying all of the actions for a specific
+                        app
+        :return: List of actions
         """
         actions = actions or []
         apps = apps or []
@@ -434,7 +627,7 @@ class Actions(Collection[ActionModel]):
                 "cannot be used as filters at the same time."
             )
 
-        if len(apps) > 0 and len(tags) == 0:
+        if len(apps) > 0 and len(tags) == 0 and not allow_all:
             warnings.warn(
                 "Using all the actions of an app is not recommended. "
                 "Please use tags to filter actions or provide specific actions. "
@@ -443,20 +636,22 @@ class Actions(Collection[ActionModel]):
                 UserWarning,
             )
 
-        if len(actions) == 0 and len(apps) == 0:
-            raise ComposioClientError(
-                "Error retrieving Actions, "
-                "Please provide either apps or actions as filters"
+        if len(actions) == 0 and len(apps) == 0 and len(tags) == 0 and allow_all:
+            response = self._raise_if_required(
+                response=self.client.http.get(
+                    url=str(self.endpoint),
+                )
             )
+            return [self.model(**action) for action in response.json().get("items")]
 
         queries = {}
-        if usecase is not None and usecase != "":
+        if use_case is not None and use_case != "":
             if len(apps) != 1:
                 raise ComposioClientError(
                     "Error retrieving Actions, Use case "
                     "should be provided with exactly one app."
                 )
-            queries["useCase"] = usecase
+            queries["useCase"] = use_case
 
         if len(apps) > 0:
             queries["appNames"] = ",".join(list(map(lambda x: x.value, apps)))
@@ -527,8 +722,22 @@ class Actions(Collection[ActionModel]):
         ).json()
 
 
-class IntegrationModel(dict):
+class IntegrationModel(BaseModel):
     """Integration data model."""
+
+    id: str
+    name: str
+    authScheme: str
+    createdAt: str
+    updatedAt: str
+    enabled: bool
+    deleted: bool
+    appId: str
+    defaultConnectorId: str
+    _count: t.Dict
+    connections: t.List[t.Dict]
+    appName: str
+    logo: str
 
 
 class Integrations(Collection[IntegrationModel]):
@@ -538,6 +747,45 @@ class Integrations(Collection[IntegrationModel]):
 
     model = IntegrationModel
     endpoint = v1.integrations
+
+    def create(
+        self,
+        app_id: str,
+        name: t.Optional[str] = None,
+        auth_mode: t.Optional[str] = None,
+        auth_schemes: t.Optional[t.List[AppAuthScheme]] = None,
+        use_composio_auth: bool = False,
+    ) -> IntegrationModel:
+        """
+        Create a new integration
+
+        :param app_id: App ID string.
+        :param name: Name of the integration.
+        :param auth_param: Auth mode string.
+        :param auth_schemes: Auth schemes supported by the app.
+        :param use_composio_auth: Whether to use default composio auth or not
+        :return: Integration model created by the request.
+        """
+        request = {
+            "appId": app_id,
+            "useComposioAuth": use_composio_auth,
+        }
+        if name is not None:
+            request["name"] = name
+        if auth_mode is not None:
+            request["authScheme"] = auth_mode
+            for auth_scheme in auth_schemes or []:
+                if auth_scheme.auth_mode == auth_mode:
+                    request["authConfig"] = {
+                        field.name: "" for field in auth_scheme.fields
+                    }
+        response = self._raise_if_required(
+            response=self.client.http.post(
+                url=str(self.endpoint),
+                json=request,
+            )
+        )
+        return IntegrationModel(**response.json())
 
 
 class Composio:
@@ -556,10 +804,10 @@ class Composio:
         """
         api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
         if api_key is None:
-            raise RuntimeError("Please provide API key")
+            raise_api_key_missing()
 
         self.base_url = base_url or get_base_url()
-        self.api_key = api_key
+        self.api_key = t.cast(str, api_key)
         self.http = HttpClient(
             base_url=self.base_url,
             api_key=self.api_key,
@@ -707,3 +955,39 @@ class Entity:
                 f"Entity `{self.id}` does not have a connection to {action.app}"
             )
         return latest_account
+
+    def initiate_connection(
+        self,
+        app_name: t.Union[str, App],
+        redirect_url: t.Optional[str] = None,
+        integration: t.Optional[IntegrationModel] = None,
+        auth_mode: t.Optional[str] = None,
+    ) -> ConnectionRequestModel:
+        """Initiate integration connection."""
+        if isinstance(app_name, App):
+            app_name = app_name.value
+
+        if auth_mode is None:
+            integration = self.client.integrations.create(
+                app_id=app_name,
+                use_composio_auth=True,
+            )
+            return self.client.connected_accounts.initiate(
+                integration_id=integration.id,
+                entity_id=self.id,
+                redirect_url=redirect_url,
+            )
+
+        app = self.client.apps.get(name=app_name)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        integration = self.client.integrations.create(
+            app_id=app.appId,
+            name=f"integration_{timestamp}",
+            auth_mode=auth_mode,
+            auth_schemes=app.auth_schemes,
+        )
+        return self.client.connected_accounts.initiate(
+            integration_id=integration.id,
+            entity_id=self.id,
+            redirect_url=redirect_url,
+        )
