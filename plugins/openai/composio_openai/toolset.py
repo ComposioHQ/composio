@@ -3,8 +3,12 @@ OpenAI tool spec.
 """
 
 import json
+import time
 import typing as t
 
+from openai import Client
+from openai.types.beta.thread import Thread
+from openai.types.beta.threads.run import RequiredAction, Run
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
@@ -90,7 +94,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 "Seperate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
-        elif self.entity_id != DEFAULT_ENTITY_ID:
+        if self.entity_id != DEFAULT_ENTITY_ID:
             entity_id = self.entity_id
         return entity_id
 
@@ -104,7 +108,7 @@ class ComposioToolSet(BaseComposioToolSet):
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         return [
-            ChatCompletionToolParam(
+            ChatCompletionToolParam(  # type: ignore
                 **t.cast(
                     OpenAISchema,
                     self.schema.format(
@@ -121,7 +125,7 @@ class ComposioToolSet(BaseComposioToolSet):
         self,
         apps: t.Sequence[App],
         tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
-    ) -> t.Sequence[ChatCompletionToolParam]:
+    ) -> t.List[ChatCompletionToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
 
@@ -130,7 +134,7 @@ class ComposioToolSet(BaseComposioToolSet):
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         return [
-            ChatCompletionToolParam(
+            ChatCompletionToolParam(  # type: ignore
                 **t.cast(
                     OpenAISchema,
                     self.schema.format(
@@ -187,3 +191,43 @@ class ComposioToolSet(BaseComposioToolSet):
                             )
                         )
         return outputs
+
+    def handle_assistant_tool_calls(self, run: Run) -> t.List:
+        """Wait and handle assisant function calls"""
+        tool_outputs = []
+        for tool_call in t.cast(
+            RequiredAction, run.required_action
+        ).submit_tool_outputs.tool_calls:
+            tool_response = self.execute_tool_call(
+                tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
+                entity_id=self.entity_id,
+            )
+            tool_output = {
+                "tool_call_id": tool_call.id,
+                "output": json.dumps(tool_response),
+            }
+            tool_outputs.append(tool_output)
+        return tool_outputs
+
+    def wait_and_handle_assistant_tool_calls(
+        self,
+        client: Client,
+        run: Run,
+        thread: Thread,
+    ) -> Run:
+        """Wait and handle assisant function calls"""
+        thread_object = thread
+        while run.status in ("queued", "in_progress", "requires_action"):
+            if run.status == "requires_action":
+                run = client.beta.threads.runs.submit_tool_outputs(
+                    thread_id=thread_object.id,
+                    run_id=run.id,
+                    tool_outputs=self.handle_assistant_tool_calls(run),
+                )
+            else:
+                run = client.beta.threads.runs.retrieve(
+                    thread_id=thread_object.id,
+                    run_id=run.id,
+                )
+                time.sleep(0.5)
+        return run

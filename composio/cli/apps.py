@@ -169,15 +169,14 @@ def _update(context: Context) -> None:
 
 def _get_tag_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> str:
     """Create Tag enum class."""
-    tag_map = {}
+    tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_key = app.key
         app_actions = [action for action in actions if action.appKey == app_key]
         for action in app_actions:
-            tag_enums = action.tags or []
             if app_key not in tag_map:
                 tag_map[app_key] = set()
-            tag_map[app_key].update(tag_enums)
+            tag_map[app_key].update(action.tags or [])
 
     tag_enums = ""
     for app_key, tags in tag_map.items():

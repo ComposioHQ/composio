@@ -7,8 +7,8 @@ from schema import Literal, Schema
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.utils.shared import SCHEMA_TYPE_TO_PYTHON_TYPE
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.utils.shared import SCHEMA_TYPE_TO_PYTHON_TYPE
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ class ComposioToolSet(BaseComposioToolSet):
                     param_body["items"].get("type"),
                     None,
                 )
-                schema_dtype = list[schema_array_dtype] if schema_array_dtype else list
+                schema_dtype = list[schema_array_dtype] if schema_array_dtype else list  # type: ignore
             else:
                 raise TypeError(
                     f"Some dtype of current schema are not handled yet. Current Schema: {param_body}"

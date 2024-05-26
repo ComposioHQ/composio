@@ -19,9 +19,6 @@ from composio.storage.user import UserData
 _context: t.Optional["Context"] = None
 
 
-click.pass_context
-
-
 class Context:
     """Runtime Context for Compsio CLI tool."""
 

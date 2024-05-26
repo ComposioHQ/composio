@@ -13,7 +13,7 @@ from composio.exceptions import ComposioSDKError
 
 @click.command(name="whoami")
 @pass_context
-def _whoami(context: Context, enabled: bool = False) -> None:
+def _whoami(context: Context) -> None:
     """Manage composio whoami"""
     try:
         context.console.print(f"API Key: [green]{context.user_data.api_key}[/green]")
