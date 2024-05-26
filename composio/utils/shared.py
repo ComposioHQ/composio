@@ -49,7 +49,7 @@ def json_schema_to_pydantic_type(
         items_schema = json_schema.get("items")
         if items_schema:
             ItemType = json_schema_to_pydantic_type(items_schema)
-            return t.List[t.cast(t.Type, ItemType)]
+            return t.List[t.cast(t.Type, ItemType)]  # type: ignore
         return t.List
 
     if type_ == "object":
@@ -126,7 +126,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     """
     required_fields = {}
     optional_fields = {}
-    param_title = param_schema["title"].replace(" ", "")
+    param_title = str(param_schema["title"]).replace(" ", "")
     required_props = param_schema.get("required", [])
 
     if param_schema.get("type") == "array":
@@ -139,7 +139,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
                     json_schema=item_schema,
                 ),
             )
-            return t.List[ItemType]
+            return t.List[ItemType]  # type: ignore
         return t.List
 
     for prop_name, prop_info in param_schema.get("properties", {}).items():
@@ -171,7 +171,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     if not required_fields and not optional_fields:
         return t.Dict
 
-    return create_model(
+    return create_model(  # type: ignore
         param_title,
         **required_fields,
         **optional_fields,

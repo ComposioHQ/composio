@@ -75,7 +75,6 @@ class Collection(t.Generic[ModelType]):
         )
 
         data = request.json()
-
         if isinstance(data, list):
             return [self.model(**item) for item in data]
 
@@ -119,12 +118,10 @@ class ConnectedAccountModel(BaseModel):
     connectionParams: AuthConnectionParamsModel
     clientUniqueUserId: t.Optional[str] = None
 
-    model_config: ConfigDict = ConfigDict(
+    model_config: ConfigDict = ConfigDict(  # type: ignore
         arbitrary_types_allowed=True,
     )
     sdk: t.Optional["Composio"] = None
-
-    # TODO: Add actions
 
 
 class ConnectionRequestModel(BaseModel):
@@ -183,7 +180,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     model = ConnectedAccountModel
     endpoint = v1 / "connectedAccounts"
 
-    @t.overload
+    @t.overload  # type: ignore
     def get(self, connection_id: t.Optional[str] = None) -> ConnectedAccountModel:
         """
         Get an account by connection ID
@@ -326,7 +323,7 @@ class Apps(Collection[AppModel]):
     model = AppModel
     endpoint = v1.apps
 
-    @t.overload
+    @t.overload  # type: ignore
     def get(self) -> t.List[AppModel]:
         """Get available apps."""
 
@@ -408,7 +405,7 @@ class CallbackCollection(Collection[CallbackModel]):
         )
         return response.json()
 
-    def get(self) -> str:
+    def get(self) -> str:  # type: ignore
         """Get current callback URL."""
         response = self._raise_if_required(
             response=self.client.http.get(
@@ -449,7 +446,7 @@ class Triggers(Collection[TriggerModel]):
             client=self.client,
         )
 
-    def get(
+    def get(  # type: ignore
         self,
         trigger_ids: t.Optional[t.List[str]] = None,
         app_names: t.Optional[t.List[str]] = None,
@@ -517,8 +514,9 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
 
     _list_key = "triggers"
 
-    def get(
-        self, trigger_ids: t.Optional[t.List[str]] = None
+    def get(  # type: ignore
+        self,
+        trigger_ids: t.Optional[t.List[str]] = None,
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
@@ -594,7 +592,7 @@ class Actions(Collection[ActionModel]):
     endpoint = v1.actions
 
     # TODO: Overload
-    def get(
+    def get(  # type: ignore
         self,
         actions: t.Optional[t.Sequence[Action]] = None,
         apps: t.Optional[t.Sequence[App]] = None,
@@ -647,7 +645,7 @@ class Actions(Collection[ActionModel]):
             )
             return [self.model(**action) for action in response.json().get("items")]
 
-        queries = {}
+        queries: t.Dict[str, str] = {}
         if use_case is not None and use_case != "":
             if len(apps) != 1:
                 raise ComposioClientError(
@@ -663,7 +661,7 @@ class Actions(Collection[ActionModel]):
             queries["appNames"] = ",".join(set(map(lambda x: x.app, actions)))
 
         if limit is not None:
-            queries["limit"] = limit
+            queries["limit"] = str(limit)
 
         response = self._raise_if_required(
             response=self.client.http.get(
@@ -677,7 +675,7 @@ class Actions(Collection[ActionModel]):
 
         if len(tags) > 0:
             required_triggers = [
-                tag.name if isinstance(tag, Tag) else tag for tag in tags
+                tag.app if isinstance(tag, Tag) else tag for tag in tags
             ]
             items = [
                 item
@@ -864,7 +862,7 @@ class Composio:
         data = response.json()
         return data["apiKey"]
 
-    def get_entity(self, id: str = "default") -> "Entity":
+    def get_entity(self, id: str = DEFAULT_ENTITY_ID) -> "Entity":
         """
         Create Entity object.
 
