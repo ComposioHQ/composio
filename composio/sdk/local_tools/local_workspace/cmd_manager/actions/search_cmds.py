@@ -24,7 +24,7 @@ class SearchDirResponse(BaseModel):
 
 class SearchDirCmd(Action):
     """
-    Moves the window down 100 lines.
+    search the given term in the given directory
     """
     _display_name = "Scroll down command on workspace"
     _request_schema = SearchDirRequest
@@ -166,4 +166,4 @@ class FindFileCmd(Action):
                                           self.container_obj,
                                           full_command,
                                           self.parent_pids)
-        return FindFileResponse(execution_output=output, return_code=return_code)
+        return FindFileResponse(output=output, return_code=return_code)

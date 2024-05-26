@@ -9,7 +9,11 @@ from setuptools import setup
 
 setup(
     name="composio_lyzr",
+<<<<<<< HEAD
     version="0.2.61",
+=======
+    version="0.2.64",
+>>>>>>> master
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Lyzr workflow.",
@@ -25,7 +29,11 @@ setup(
     install_requires=[
         "lyzr-automata>=0.1.3",
         "pydantic>=2.6.4",
+<<<<<<< HEAD
         "composio_core===0.2.61",
+=======
+        "composio_core===0.2.64",
+>>>>>>> master
         "langchain>=0.1.0",
     ],
     include_package_data=True,
