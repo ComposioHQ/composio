@@ -13,8 +13,7 @@ from composio.exceptions import ComposioSDKError
 
 
 @click.group(name="connections")
-@pass_context
-def _connections(context: Context) -> None:
+def _connections() -> None:
     """Manage composio connections"""
 
 

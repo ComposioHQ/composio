@@ -90,14 +90,14 @@ def _get(context: Context, id: str) -> None:
         context.console.print(
             f"[bold]Disable this trigger using[/bold]: [red]composio-cli disable-trigger {id}[/red]"
         )
-    except NoItemsFound:
+    except NoItemsFound as e:
         raise click.ClickException(
             message=(
                 "No trigger found with the specified ID or it's not active; "
                 "To list all active triggers, use the command: "
                 "\n\tcomposio triggers --active"
             )
-        )
+        ) from e
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 

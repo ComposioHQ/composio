@@ -6,11 +6,11 @@ from langchain_core.tools import StructuredTool
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
-from composio.tools import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(BaseComposioToolSet):
@@ -82,7 +82,7 @@ class ComposioToolSet(BaseComposioToolSet):
         description = schema["description"]
 
         def function(**kwargs: t.Any) -> t.Dict:
-            f"""Wrapper function for {action}."""
+            """Wrapper function for composio action."""
             return self.execute_action(
                 action=Action.from_app_and_action(
                     app=app,

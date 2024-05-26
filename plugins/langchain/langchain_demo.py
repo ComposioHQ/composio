@@ -9,7 +9,8 @@ from composio_langchain import App, ComposioToolSet
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
-from langchain import hub
+from langchain import hub  # type: ignore
+
 
 # Load environment variables from .env
 dotenv.load_dotenv()
