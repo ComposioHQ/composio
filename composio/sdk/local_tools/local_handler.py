@@ -13,10 +13,12 @@ class LocalToolHandler:
         workspace_factory = WorkspaceManagerFactory()
         local_workspace_tool = LocalWorkspace()
         local_workspace_tool.set_workspace_factory(workspace_factory)
+        cmd_manager_tool = CmdManagerTool()
+        cmd_manager_tool.set_workspace_factory(workspace_factory)
         return [
             Mathematical(),
             local_workspace_tool,
-            CmdManagerTool(),
+            cmd_manager_tool,
         ]
 
 

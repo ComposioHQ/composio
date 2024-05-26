@@ -1,12 +1,12 @@
 import os
 import yaml
 from pathlib import Path
-from composio import Action, App, ComposioCore, FrameworkEnum
+from composio import ComposioCore, FrameworkEnum
 from composio_crewai import App, ComposioToolset
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
-from composio.sdk.local_tools.local_workspace.old_code.parsing import ParseCommandBash
+from composio.sdk.local_tools.local_workspace.commons.parsing import ParseCommandBash
 
 # Path of the current script
 script_path = Path(__file__).resolve()
@@ -47,7 +47,7 @@ backstory = task_data["backstory"].format(command_docs=command_docs, WINDOW=wind
 description = task_data["description"]
 
 os.environ["OPENAI_MODEL_NAME"] = "gpt-4-turbo"
-llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"],model_name="gpt-4-turbo")
+llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo")
 
 
 if __name__ == "__main__":

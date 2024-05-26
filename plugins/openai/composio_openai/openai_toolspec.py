@@ -158,5 +158,5 @@ if __name__ == "__main__":
     from pprint import pprint
 
     toolset = ComposioToolset()
-    out = toolset.get_tools(tools=App.GITHUB)
+    out = toolset.get_tools(tools=App.LOCAL_WORKSPACE)
     pprint(out)
