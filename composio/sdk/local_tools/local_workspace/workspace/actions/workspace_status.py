@@ -42,12 +42,12 @@ class WorkspaceStatus(Action):
         try:
             container = client.containers.get(self.container_name)
             if container.status == STATUS_RUNNING:
-                return WorkspaceStatusResponse(container_status=STATUS_RUNNING)
+                return WorkspaceStatusResponse(workspace_status=STATUS_RUNNING)
             else:
-                return WorkspaceStatusResponse(container_status=STATUS_STOPPED)
+                return WorkspaceStatusResponse(workspace_status=STATUS_STOPPED)
         except docker.errors.NotFound:
             return False
         except docker.errors.APIError as e:
             logger.error(f"Error checking container status: {e}")
-            return WorkspaceStatusResponse(container_status=STATUS_STOPPED)
+            return WorkspaceStatusResponse(workspace_status=STATUS_STOPPED)
 

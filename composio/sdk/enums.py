@@ -331,6 +331,7 @@ class App(Enum):
     TEST_ASANA = "test_asana"
     LOCAL_WORKSPACE = "localworkspace"
     CMD_MANAGER = "cmdmanagertool"
+    MATHEMETICAL = "mathemetical"
 
 
 class Action(Enum):
@@ -4400,20 +4401,20 @@ class Action(Enum):
     )
     TEST_ASANA_CREATE_SUBTASK = ("test_asana", "test_asana_create_subtask", False)
     TEST_ASANA_GET_SUBTASKS = ("test_asana", "test_asana_get_subtasks", False)
-    LOCAL_WORKSPACE_CREATE_WORKSPACE_ACTION = ("local_workspace", "workspace_create_workspace_action", True)
-    LOCAL_WORKSPACE_WORKSPACE_STATUS = ("local_workspace", "workspace_workspace_status", True)
-    LOCAL_WORKSPACE_SETUP_WORKSPACE = ("local_workspace", "workspace_setup_workspace", True)
-    LOCAL_WORKSPACE_SETUP_GITHUB_REPO = ("local_workspace", "workspace_setup_github_repo", True)
-    CMD_MANAGER_GOTO_CMD = ("cmd_manager", "cmd_manager_goto_cmd", True)
-    CMD_MANAGER_CREATE_FILE_CMD = ("cmd_manager", "cmd_manager_create_file_cmd", True)
-    CMD_MANAGER_OPEN_CMD = ("cmd_manager", "cmd_manager_open_cmd", True)
-    CMD_MANAGER_EDIT_FILE = ("cmd_manager", "cmd_manager_edit_file", True)
-    CMD_MANAGER_RUN_COMMAND_ON_WORKSPACE = ("cmd_manager", "cmd_manager_run_command_on_workspace", True)
-    CMD_MANAGER_SCROLL_DOWN = ("cmd_manager", "cmd_manager_scroll_down", True)
-    CMD_MANAGER_SCROLL_UP = ("cmd_manager", "cmd_manager_scroll_up", True)
-    CMD_MANAGER_SEARCH_DIR_CMD = ("cmd_manager", "cmd_manager_search_dir_cmd", True)
-    CMD_MANAGER_SEARCH_FILE_CMD = ("cmd_manager", "cmd_manager_search_file_cmd", True)
-    CMD_MANAGER_FIND_FILE_CMD = ("cmd_manager", "cmd_manager_find_file_cmd", True)
+    LOCAL_WORKSPACE_CREATE_WORKSPACE_ACTION = ("localworkspace", "localworkspace_createworkspaceaction", True)
+    LOCAL_WORKSPACE_WORKSPACE_STATUS = ("localworkspace", "localworkspace_workspacestatus", True)
+    LOCAL_WORKSPACE_SETUP_WORKSPACE = ("localworkspace", "localworkspace_setupworkspace", True)
+    LOCAL_WORKSPACE_SETUP_GITHUB_REPO = ("localworkspace", "localworkspace_setupgithubrepo", True)
+    CMD_MANAGER_GOTO_CMD = ("cmd_manager", "cmd_manager_gotocmd", True)
+    CMD_MANAGER_CREATE_FILE_CMD = ("cmd_manager", "cmd_manager_createfilecmd", True)
+    CMD_MANAGER_OPEN_CMD = ("cmd_manager", "cmd_manager_opencmd", True)
+    CMD_MANAGER_EDIT_FILE = ("cmd_manager", "cmd_manager_editfile", True)
+    CMD_MANAGER_RUN_COMMAND_ON_WORKSPACE = ("cmd_manager", "cmd_manager_runcommandonworkspace", True)
+    CMD_MANAGER_SCROLL_DOWN = ("cmd_manager", "cmd_manager_scrolldown", True)
+    CMD_MANAGER_SCROLL_UP = ("cmd_manager", "cmd_manager_scrollup", True)
+    CMD_MANAGER_SEARCH_DIR_CMD = ("cmd_manager", "cmd_manager_searchdircmd", True)
+    CMD_MANAGER_SEARCH_FILE_CMD = ("cmd_manager", "cmd_manager_searchfilecmd", True)
+    CMD_MANAGER_FIND_FILE_CMD = ("cmd_manager", "cmd_manager_findfilecmd", True)
 
 
 class Trigger(Enum):

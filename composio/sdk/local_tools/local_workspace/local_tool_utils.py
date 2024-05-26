@@ -4,7 +4,7 @@ from inspect import Signature
 from inspect import Parameter
 from typing import Type, Dict, Any, List, Optional
 
-from pydantic.v1 import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, create_model
 
 from langchain_core.tools import StructuredTool
 from fastapi.encoders import jsonable_encoder
