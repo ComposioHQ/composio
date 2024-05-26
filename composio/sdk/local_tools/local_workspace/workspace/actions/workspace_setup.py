@@ -12,6 +12,7 @@ from composio.sdk.local_tools.local_workspace.commons.utils import (get_containe
                                                                     copy_file_to_container)
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
                                                                                         get_workspace_meta_from_manager,
+                                                                                        get_container_process,
                                                                                         KEY_IMAGE_NAME,
                                                                                         KEY_CONTAINER_NAME,
                                                                                         KEY_WORKSPACE_MANAGER,
@@ -28,6 +29,9 @@ logger.propagate = False
 
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
+
+script_path = Path(__file__).resolve()
+script_dir = script_path.parent
 
 
 class WorkspaceSetupRequest(BaseModel):
@@ -57,15 +61,13 @@ class SetupWorkspace(Action):
             raise Exception(f"workspace not found, invalid workspace-id: {self.workspace_id}")
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
-        self.container_process = workspace_meta[KEY_WORKSPACE_MANAGER]
+        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
-        self.container_process = None
-        self.parent_pids = None
         self.return_code = None
         self.logger = logger
         self.config = None
-        self.config_file_path = Path("config/default.yaml")
+        self.config_file_path = script_dir / Path("../../config/default.yaml")
         self.load_config_from_path()
         if not self.container_obj:
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
@@ -112,8 +114,9 @@ class SetupWorkspace(Action):
             raise e
         command_files = list()
         for file in self.config.command_files:
+            full_file_path = script_dir / Path("../../") / Path(file)
             datum = dict()
-            contents = open(file, "r").read()
+            contents = open(full_file_path, "r").read()
             datum["contents"] = contents
             filename = Path(file).name
             if not contents.strip().startswith("#!"):

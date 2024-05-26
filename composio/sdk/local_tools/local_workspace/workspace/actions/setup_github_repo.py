@@ -5,7 +5,7 @@ from composio.sdk.local_tools.lib.action import Action
 
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
-get_workspace_meta_from_manager,
+get_workspace_meta_from_manager, get_container_process,
                                                                                         KEY_IMAGE_NAME,
                                                                                         KEY_CONTAINER_NAME,
                                                                                         KEY_WORKSPACE_MANAGER,
@@ -19,7 +19,7 @@ logger = get_logger()
 
 class SetupGithubRepoRequest(BaseModel):
     workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
-    repo_name: str = Field(..., description="github repo-name for which issue needs to be solved")
+    # repo_name: str = Field(..., description="github repo-name for which issue needs to be solved")
 
 
 class SetupGithubRepoResponse(BaseModel):
@@ -39,11 +39,11 @@ class SetupGithubRepo(Action):
     def _setup(self, args: SetupGithubRepoRequest):
         self.args = args
         self.workspace_id = args.workspace_id
-        self.repo_name = args.repo_name
+        self.repo_name = "princeton-nlp/SWE-bench"
         workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = workspace_meta[KEY_WORKSPACE_MANAGER]
+        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         if not self.container_obj:
