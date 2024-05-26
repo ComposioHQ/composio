@@ -303,20 +303,21 @@ class AppModel(BaseModel):
 
     name: str
     key: str
-    status: str
-    documentation_doc_text: str
-    configuration_docs_text: str
-    docs: str
-    description: str
     logo: str
-    categories: t.List[str]
-    auth_schemes: t.List[AppAuthScheme]
-    group: str
     appId: str
-    testConnectors: t.List[t.Dict[str, t.Any]]
+    description: str
+    categories: t.List[str]
     meta: t.Dict
 
+    docs: t.Optional[str] = None
+    group: t.Optional[str] = None
+    status: t.Optional[str] = None
     enabled: bool = False
+    no_auth: bool = False
+    auth_schemes: t.Optional[t.List[AppAuthScheme]] = None
+    testConnectors: t.Optional[t.List[t.Dict[str, t.Any]]] = None
+    documentation_doc_text: t.Optional[str] = None
+    configuration_docs_text: t.Optional[str] = None
 
 
 class Apps(Collection[AppModel]):
@@ -575,12 +576,13 @@ class ActionModel(BaseModel):
 
     name: str
     display_name: str
-    tags: t.List[str]
     description: t.Optional[str]
     parameters: ActionParametersModel
     response: ActionResponseModel
+    appKey: str
     appId: str
     logo: str
+    tags: t.List[str]
     appName: str
     enabled: bool
 
