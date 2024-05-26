@@ -91,7 +91,7 @@ def json_schema_to_pydantic_field(
         Field(
             description=description,
             examples=examples,
-            default=ellipsis if name in required else None,
+            default=... if name in required else None,
         ),
     )
 
