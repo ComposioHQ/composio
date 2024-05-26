@@ -82,7 +82,7 @@ class ComposioToolset(ComposioToolSet):
                 "Seperate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
-        elif self.entity_id != DEFAULT_ENTITY_ID:
+        if self.entity_id != DEFAULT_ENTITY_ID:
             entity_id = self.entity_id
         return entity_id
 

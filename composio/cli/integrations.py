@@ -43,7 +43,11 @@ def _integrations(context: Context) -> None:
     help="Don't open browser for verifying connection",
 )
 @pass_context
-def _add(context: Context, name: str, no_browser: bool = False) -> None:
+def _add(  # pylint: disable=too-many-locals,too-many-nested-blocks
+    context: Context,
+    name: str,
+    no_browser: bool = False,
+) -> None:
     """Add a new integration"""
 
     try:
@@ -78,7 +82,8 @@ def _add(context: Context, name: str, no_browser: bool = False) -> None:
                 f"\n[green]> Adding integration: {name.capitalize()}...[/green]\n"
             )
             app = context.client.apps.get(name=name)
-            auth_modes = [auth_scheme.auth_mode for auth_scheme in app.auth_schemes]
+            auth_schemes = app.auth_schemes or []
+            auth_modes = [auth_scheme.auth_mode for auth_scheme in auth_schemes]
             if len(auth_modes) > 0 and auth_modes[0] in [
                 "API_KEY",
                 "BASIC",
@@ -88,24 +93,21 @@ def _add(context: Context, name: str, no_browser: bool = False) -> None:
                     app_name=name.lower(),
                     auth_mode=auth_modes[0],
                 )
-                fields = app.auth_schemes[0].fields
+                fields = auth_schemes[0].fields
                 field_inputs = {}
                 for _field in fields:
                     field = _field.model_dump()
                     if field.get("expected_from_customer", True):
                         if field.get("required", False):
-                            context.console.print(
-                                f"[green]> Enter {field.get('displayName', field.get('name'))}: [/green]",
-                                end="",
+                            value = field.get("default") or input(
+                                f"> Enter {field.get('displayName', field.get('name'))}: "
                             )
-                            value = input() or field.get("default")
                             if (
                                 not value
                             ):  # If a required field is not provided and no default is available
-                                context.console.print(
-                                    f"[red]Error: {field.get('displayName', field.get('name'))} is required[/red]"
+                                raise click.ClickException(
+                                    f"{field.get('displayName', field.get('name'))} is required"
                                 )
-                                exit(1)
                         else:
                             context.console.print(
                                 f"[green]> Enter {field.get('displayName', field.get('name'))} (Optional): [/green]",

@@ -10,11 +10,11 @@ from lyzr_automata import Tool
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
-from composio.tools import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(BaseComposioToolSet):

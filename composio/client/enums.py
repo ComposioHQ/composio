@@ -11,7 +11,7 @@ class Tag(tuple, Enum):
     """App tags."""
 
     @property
-    def name(self) -> str:
+    def app(self) -> str:
         """Returns trigger name."""
         return self.value[0]
 
