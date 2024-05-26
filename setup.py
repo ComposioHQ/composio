@@ -30,6 +30,7 @@ setup(
         ],
     },
     install_requires=[
+        "click",
         "requests>=2.31.0,<3",
         "jsonschema>=4.21.1,<5",
         "beaupy>=3.7.2,<4",

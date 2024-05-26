@@ -13,13 +13,13 @@ class Endpoint:
     Example:
         >>> v1 = Endpoint("v1")
         >>> print(v1)
-        "/v1"
+        /v1
         >>> v1 / "api" / "users"
-        "/v1/api/users"
+        /v1/api/users
         >>> v1.api.users
-        "/v1/api/users"
+        /v1/api/users
         >>> v1.api.users(queries={"user": "John Doe"})
-        "/v1/api/users?user=John+Doe"
+        /v1/api/users?user=John+Doe
     """
 
     def __init__(self, endpoint: t.Optional[str] = None) -> None:
