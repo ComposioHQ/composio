@@ -34,7 +34,8 @@ client = ComposioCore(framework=FrameworkEnum.OPENAI, api_key=os.environ.get("CO
 composio_tool_set = ComposioToolset([App.LOCAL_WORKSPACE, App.CMD_MANAGER])
 
 # Read YAML file
-with open("/home/shubhra/work/composio/composio_sdk/composio/sdk/local_tools/local_workspace/config/agent_task_data.yaml", 'r') as stream:
+task_config_path = script_dir / Path("../composio/sdk/local_tools/local_workspace/config/agent_task_data.yaml")
+with open(task_config_path, 'r') as stream:
     task_data = yaml.safe_load(stream)
 
 
