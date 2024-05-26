@@ -5,7 +5,7 @@ import gymnasium as gym
 import hashlib
 import os
 import time
-from pydantic.v1 import BaseModel
+from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 from composio.sdk.local_tools.local_workspace.commons.utils import (get_container,
@@ -215,8 +215,7 @@ class LocalDockerWorkspace(gym.Env):
 class WorkspaceManagerFactory:
     _registry: Dict[str, Any] = {}
 
-    @staticmethod
-    def get_workspace_manager(args: LocalDockerArgumentsModel) -> str:
+    def get_workspace_manager(self, args: LocalDockerArgumentsModel) -> str:
         # currently we only support local docker
         workspace_type = TYPE_WORKSPACE_LOCAL_DOCKER
         if workspace_type == TYPE_WORKSPACE_LOCAL_DOCKER:
@@ -224,7 +223,7 @@ class WorkspaceManagerFactory:
             container_name = workspace_manager.container_name
             parent_pids = workspace_manager.parent_pids
             workspace_id = str(uuid4())
-            WorkspaceManagerFactory._registry[workspace_id] = {KEY_WORKSPACE_MANAGER: workspace_manager,
+            self._registry[workspace_id] = {KEY_WORKSPACE_MANAGER: workspace_manager,
                                                                KEY_CONTAINER_NAME: container_name,
                                                                KEY_PARENT_PIDS: parent_pids,
                                                                KEY_IMAGE_NAME: args.image_name}
@@ -232,18 +231,15 @@ class WorkspaceManagerFactory:
         else:
             raise ValueError(f"Unknown workspace manager type: {workspace_type}")
 
-    @staticmethod
-    def get_registered_manager(workspace_id: str) -> Dict[str, Any]:
-        return WorkspaceManagerFactory._registry.get(workspace_id)
+    def get_registered_manager(self, workspace_id: str) -> Dict[str, Any]:
+        return self._registry.get(workspace_id)
 
-    @staticmethod
-    def remove_workspace_manager(workspace_id: str) -> None:
+    def remove_workspace_manager(self, workspace_id: str) -> None:
         if workspace_id in WorkspaceManagerFactory._registry:
-            del WorkspaceManagerFactory._registry[workspace_id]
+            del self._registry[workspace_id]
 
-    @staticmethod
-    def list_workspace_managers() -> Dict[str, LocalDockerWorkspace]:
-        return WorkspaceManagerFactory._registry
+    def list_workspace_managers(self) -> Dict[str, LocalDockerWorkspace]:
+        return self._registry
 
 
 def get_workspace_meta_from_manager(workspace_factory: WorkspaceManagerFactory, workspace_id: str) -> dict:
@@ -253,6 +249,12 @@ def get_workspace_meta_from_manager(workspace_factory: WorkspaceManagerFactory, 
 def get_container_name_from_workspace_id(workspace_factory: WorkspaceManagerFactory, workspace_id: str) -> str:
     workspace_meta = workspace_factory.get_registered_manager(workspace_id)
     return workspace_meta[KEY_CONTAINER_NAME]
+
+
+def get_container_process(workspace: LocalDockerWorkspace):
+    if not workspace or not workspace.container:
+        raise Exception("workspace null, or not running any container process")
+    return workspace.container
 
 
 def execute_local_docker_workspace(args: LocalDockerArgumentsModel):

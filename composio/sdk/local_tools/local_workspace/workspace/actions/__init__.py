@@ -1,4 +1,4 @@
-from .workspace_status import WorkspaceStatus
-from .workspace_setup import SetupWorkspace
-from .setup_github_repo import SetupGithubRepo
-from .create_workspace import CreateWorkspaceAction
+from .workspace_status import WorkspaceStatus, WorkspaceStatusRequest
+from .workspace_setup import SetupWorkspace, WorkspaceSetupRequest
+from .setup_github_repo import SetupGithubRepo, SetupGithubRepoRequest
+from .create_workspace import CreateWorkspaceAction, CreateWorkspaceRequest
