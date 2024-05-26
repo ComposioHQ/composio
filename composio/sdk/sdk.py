@@ -429,8 +429,9 @@ class Composio:
             actions=local_actions,
             tags=tags
         )
-
-        return remote_schemas + local_schemas
+        # todo: shubhra - > this has to be fixed before merging to master
+        # global actions were failing to commented to be able to test
+        return local_schemas
 
 
     def get_list_of_triggers(self, apps: list[App] = None) -> list:

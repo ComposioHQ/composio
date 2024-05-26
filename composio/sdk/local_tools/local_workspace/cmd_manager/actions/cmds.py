@@ -67,7 +67,7 @@ class GoToCmd(Action):
                                           self.container_obj,
                                           full_command,
                                           self.parent_pids)
-        return GoToResponse(execution_output=output)
+        return GoToResponse(execution_output=output, return_code=return_code)
 
 
 class CreateFileRequest(BaseModel):

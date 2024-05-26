@@ -5,7 +5,18 @@ from typing import List
 actions_require_workspace_factory = {"WorkspaceStatus": True,
                                      "SetupWorkspace": True,
                                      "CreateWorkspaceAction": True,
-                                     "SetupGithubRepo": True}
+                                     "SetupGithubRepo": True,
+                                     "GoToCmd": True,
+                                     "CreateFileCmd": True,
+                                     "OpenCmd": True,
+                                     "EditFile": True,
+                                     "RunCommandOnWorkspace": True,
+                                     "ScrollDown": True,
+                                     "ScrollUp": True,
+                                     "SetCursors": True,
+                                     "SearchDirCmd": True,
+                                     "SearchFileCmd": True,
+                                     "FindFileCmd": True}
 
 
 class Tool():

@@ -26,7 +26,8 @@ class RunCommandOnWorkspaceRequest(BaseModel):
 
 
 class RunCommandOnWorkspaceResponse(BaseModel):
-    pass
+    observation: str = Field(..., description="output of the command")
+    info: dict = Field(..., description="information")
 
 
 class RunCommandOnWorkspace(Action):
@@ -63,7 +64,8 @@ class RunCommandOnWorkspace(Action):
 
     def execute(self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}):
         self._setup(request_data)
-        self.run_incoming_action(request_data.input_cmd)
+        obs, _, done, info = self.run_incoming_action(request_data.input_cmd)
+        return RunCommandOnWorkspaceResponse(observation=obs, info=info)
 
     def load_config_from_path(self):
         if not self.config and self.config_file_path is not None:
