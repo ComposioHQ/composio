@@ -31,7 +31,7 @@ class SearchDirCmd(Action):
     _response_schema = SearchDirResponse
     _tags = ["workspace"]
     script_file = "/root/commands/search.sh"
-    command = "search"
+    command = "search_dir"
     workspace_factory: WorkspaceManagerFactory = None
 
     def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
