@@ -1,4 +1,4 @@
-from .cmds import GoToCmd, CreateFileCmd, OpenCmd
+from .cmds import GoToLineNumInOpenFile, CreateFileCmd, OpenFile
 from .cmds import GoToRequest, CreateFileRequest, OpenCmdRequest
 from .search_cmds import SearchFileCmd, SearchDirCmd, FindFileCmd
 from .search_cmds import SearchFileRequest, SearchDirRequest, FindFileRequest

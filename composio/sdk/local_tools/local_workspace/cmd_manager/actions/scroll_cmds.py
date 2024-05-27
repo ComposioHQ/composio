@@ -8,6 +8,7 @@ from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace imp
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name
 from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from .const import SCRIPT_CURSOR_DEFAULT
 
 logger = get_logger()
 
@@ -29,7 +30,7 @@ class ScrollDown(Action):
     _request_schema = ScrollDownRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollDownResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]
-    script_file = "/root/commands/cursor_defaults.sh"
+    script_file = SCRIPT_CURSOR_DEFAULT
     command = "scroll_down"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
@@ -81,7 +82,7 @@ class ScrollUp(Action):
     _request_schema = ScrollUpRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollUpResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]
-    script_file = "/root/commands/cursor_defaults.sh"
+    script_file = SCRIPT_CURSOR_DEFAULT
     command = "scroll_up"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None

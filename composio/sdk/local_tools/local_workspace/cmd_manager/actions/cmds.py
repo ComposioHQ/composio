@@ -10,6 +10,7 @@ from composio.sdk.local_tools.local_workspace.commons.utils import get_container
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (KEY_IMAGE_NAME, KEY_CONTAINER_NAME,
                                                                                         KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from .const import SCRIPT_CURSOR_DEFAULT
 
 logger = get_logger()
 
@@ -24,7 +25,7 @@ class GoToResponse(BaseModel):
     return_code: int = Field(..., description="return code for the command")
 
 
-class GoToCmd(Action):
+class GoToLineNumInOpenFile(Action):
     """
     Navigates to a specific line number in the open file, with checks to ensure the file is open
     and the line number is a valid number.
@@ -40,7 +41,7 @@ class GoToCmd(Action):
     _request_schema = GoToRequest
     _response_schema = GoToResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/cursor_defaults.sh"
+    script_file = SCRIPT_CURSOR_DEFAULT
     command = "goto"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
@@ -97,7 +98,7 @@ class CreateFileCmd(Action):
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/cursor_defaults.sh"
+    script_file = SCRIPT_CURSOR_DEFAULT
     command = "create"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
@@ -150,7 +151,7 @@ class OpenCmdResponse(BaseModel):
     return_code: int = Field(..., description="return code for the command")
 
 
-class OpenCmd(Action):
+class OpenFile(Action):
     """
     Opens a file in the editor based on the provided file path,
     If line_number is provided, the window will be move to include that line
@@ -159,11 +160,11 @@ class OpenCmd(Action):
     - ValueError: If file_path is not a string or if the file does not exist.
     - RuntimeError: If no file is currently open.
     """
-    _display_name = "Open command on workspace"
+    _display_name = "Open File on workspace"
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/cursor_defaults.sh"
+    script_file = SCRIPT_CURSOR_DEFAULT
     command = "open"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None

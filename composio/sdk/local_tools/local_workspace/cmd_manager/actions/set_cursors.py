@@ -8,6 +8,7 @@ from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace imp
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name
 from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from .const import SCRIPT_CURSOR_DEFAULT
 
 logger = get_logger()
 
@@ -36,7 +37,7 @@ class SetCursors(Action):
     _request_schema = SetCursorsRequest
     _response_schema = SetCursorsResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/cursor_defaults.sh"
+    script_file = SCRIPT_CURSOR_DEFAULT
     command = "set_cursors"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
@@ -64,6 +65,7 @@ class SetCursors(Action):
     @history_recorder()
     def execute(self, request_data: SetCursorsRequest, authorisation_data: dict) -> SetCursorsResponse:
         """Executes a shell script command inside the Docker container."""
+        self._setup(request_data)
         command = f"{self.command} {' '.join([str(self.start_line), str(self.end_line)])}"
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(self.container_process,

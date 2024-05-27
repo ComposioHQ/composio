@@ -6,9 +6,9 @@ actions_require_workspace_factory = {"WorkspaceStatus": True,
                                      "SetupWorkspace": True,
                                      "CreateWorkspaceAction": True,
                                      "SetupGithubRepo": True,
-                                     "GoToCmd": True,
+                                     "GoToLineNumInOpenFile": True,
                                      "CreateFileCmd": True,
-                                     "OpenCmd": True,
+                                     "OpenFile": True,
                                      "EditFile": True,
                                      "RunCommandOnWorkspace": True,
                                      "ScrollDown": True,
@@ -16,7 +16,8 @@ actions_require_workspace_factory = {"WorkspaceStatus": True,
                                      "SetCursors": True,
                                      "SearchDirCmd": True,
                                      "SearchFileCmd": True,
-                                     "FindFileCmd": True}
+                                     "FindFileCmd": True,
+                                     "GetWorkspaceHistory": True}
 
 
 class Tool():
@@ -33,7 +34,9 @@ class Tool():
         for action_class in self.actions():
             action_instance = action_class(self.tool_name)
             if action_class.__name__ in actions_require_workspace_factory:
-                action_instance.set_workspace_factory(self.get_workspace_factory())
+                action_instance.set_workspace_and_history(
+                    self.get_workspace_factory(),
+                    self.get_history_processor())
             action_name = action_instance.get_tool_merged_action_name()
 
             action_objects_dict[action_name] = action_instance

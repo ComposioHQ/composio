@@ -86,7 +86,7 @@ edit() {
         echo "Your proposed edit has introduced new syntax error(s). Please read this error message carefully and then retry editing the file."
         echo ""
         echo "ERRORS:"
-        _split_string "$lint_output"
+        python3 /root/commands/_split_string "$lint_output"
         echo ""
 
         # Save original values

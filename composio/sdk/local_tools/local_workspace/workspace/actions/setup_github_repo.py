@@ -13,6 +13,8 @@ get_workspace_meta_from_manager, get_container_process,
 from composio.sdk.local_tools.local_workspace.commons.utils import (communicate_with_handling,
                                                                     communicate,
                                                                     get_container_by_container_name,)
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor
+
 LONG_TIMEOUT = 200
 logger = get_logger()
 
@@ -35,6 +37,7 @@ class SetupGithubRepo(Action):
     _response_schema = SetupGithubRepoResponse
     _tags = ["workspace"]
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
     def _setup(self, args: SetupGithubRepoRequest):
         self.args = args
@@ -51,6 +54,11 @@ class SetupGithubRepo(Action):
         self.logger = logger
         self._github_token = self.load_github_token_from_host_env()
         self.repo_type = "not_local"
+        
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
+        self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def get_container_by_container_name(self):
         container_obj = get_container_by_container_name(self.container_name, self.image_name)
@@ -83,9 +91,6 @@ class SetupGithubRepo(Action):
                 self.parent_pids,
                 error_msg="Failed to clean repository",
             )
-
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
-        self.workspace_factory = workspace_factory
 
     def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
         self._setup(request_data)
