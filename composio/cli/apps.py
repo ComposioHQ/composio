@@ -11,6 +11,7 @@ import click
 
 from composio.cli.context import Context, pass_context
 from composio.client import ActionModel, AppModel, TriggerModel, enums
+from composio.client.local_handler import LocalToolHandler
 from composio.exceptions import ComposioSDKError
 
 
@@ -20,7 +21,7 @@ Helper Enum classes.
 - TODO: Replace Enums with something lightweight
 \"\"\"
 
-from aenum import Enum
+from enum import Enum
 
 
 {tag_enum}
@@ -50,7 +51,7 @@ APP_ENUM_TEMPLATE = """class App(str, Enum):
     @property
     def is_local(self) -> bool:
         \"\"\"If the app is local.\"\"\"
-        return False
+        return self.value.lower() in [{local_tools}]
 
 {apps}
 """
@@ -76,7 +77,7 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
     @property
     def is_local(self) -> bool:
         \"\"\"If the action is local.\"\"\"
-        return False
+        return self.value[3]
 
 
     @classmethod
@@ -211,7 +212,14 @@ def _get_app_enum(apps: t.List[AppModel]) -> str:
     for app in apps:
         app_name = app.key.upper().replace(" ", "_").replace("-", "_")
         app_enums += f'    {_get_enum_key(app_name)} = "{app.key}"\n'
-    return APP_ENUM_TEMPLATE.format(apps=app_enums)
+    local_tools = LocalToolHandler().registered_tools
+    print("Local tools - ", local_tools)
+    local_tools_concat = "\", \"".join([f'"{tool.tool_name}"' for tool in local_tools])
+    for tool in local_tools:
+        print("Handling - ", tool.tool_name)
+        app_enums += f'    {_get_enum_key(tool.tool_name)} = "{tool.tool_name}"\n'
+    
+    return APP_ENUM_TEMPLATE.format(apps=app_enums, local_tools=local_tools_concat)
 
 
 def _get_action_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> str:
@@ -222,6 +230,13 @@ def _get_action_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> st
         for action in app_actions:
             enum_name = f"{_get_enum_key(action.name)}"
             enum_value = f'("{app.key}", "{action.name}", {app.no_auth})'
+            action_enums += f"    {enum_name} = {enum_value}\n"
+    local_tool_handler = LocalToolHandler()
+    for tool in local_tool_handler.registered_tools:
+        for action in tool.actions():
+            print("Action - ", action().action_name)
+            enum_name = f"{_get_enum_key(action().action_name)}"
+            enum_value = f'("{tool.tool_name}", "{tool.tool_name}_{action().action_name}", True, True)'
             action_enums += f"    {enum_name} = {enum_value}\n"
     return ACTION_ENUM_TEMPLATE.format(actions=action_enums)
 
