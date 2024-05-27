@@ -1,4 +1,4 @@
-from composio_langchain import Action, App, ComposioToolSet, Tag
+from composio_langchain import Action, App, ComposioToolSet, LocalAction, LocalApp, Tag
 
 
 __all__ = (
@@ -6,4 +6,6 @@ __all__ = (
     "App",
     "Tag",
     "ComposioToolSet",
+    "LocalAction",
+    "LocalApp",
 )

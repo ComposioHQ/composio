@@ -4,7 +4,7 @@ Helper Enum classes.
 - TODO: Replace Enums with something lightweight
 """
 
-from enum import Enum
+from aenum import Enum
 
 
 class Tag(tuple, Enum):
