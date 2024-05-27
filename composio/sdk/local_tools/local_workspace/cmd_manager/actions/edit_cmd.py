@@ -7,6 +7,7 @@ WorkspaceManagerFactory, get_container_process,
                                                                     KEY_IMAGE_NAME, KEY_CONTAINER_NAME,
                                                                     KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 
 logger = get_logger()
@@ -39,9 +40,12 @@ class EditFile(Action):
     script_file = "/root/commands/edit_linting.sh"
     command = "edit"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: EditFileRequest):
         self.args = args
@@ -57,6 +61,7 @@ class EditFile(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: EditFileRequest, authorisation_data: dict) -> EditFileResponse:
         self._setup(request_data)
         command = f"{self.command}"

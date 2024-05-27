@@ -6,6 +6,7 @@ from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace imp
                                                                     KEY_IMAGE_NAME, KEY_CONTAINER_NAME,
                                                                     KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 
 logger = get_logger()
@@ -38,9 +39,12 @@ class SetCursors(Action):
     script_file = "/root/commands/cursor_defaults.sh"
     command = "set_cursors"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: SetCursorsRequest):
         self.args = args
@@ -57,6 +61,7 @@ class SetCursors(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: SetCursorsRequest, authorisation_data: dict) -> SetCursorsResponse:
         """Executes a shell script command inside the Docker container."""
         command = f"{self.command} {' '.join([str(self.start_line), str(self.end_line)])}"

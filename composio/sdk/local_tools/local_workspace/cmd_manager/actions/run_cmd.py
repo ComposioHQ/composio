@@ -11,6 +11,7 @@ from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace imp
     KEY_IMAGE_NAME, KEY_CONTAINER_NAME, KEY_WORKSPACE_MANAGER,
     KEY_PARENT_PIDS)
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name, interrupt_container, close_container
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.sdk.local_tools.local_workspace.commons.command_runner_model import AgentConfig
 from composio.sdk.local_tools.lib.action import Action
@@ -39,9 +40,12 @@ class RunCommandOnWorkspace(Action):
     _response_schema = RunCommandOnWorkspaceResponse
     _tags = ["workspace"]
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: RunCommandOnWorkspaceRequest):
         self.name = "agent"
@@ -62,6 +66,7 @@ class RunCommandOnWorkspace(Action):
         self.load_config_from_path()
         self._parse_command_patterns()
 
+    @history_recorder()
     def execute(self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}):
         self._setup(request_data)
         obs, _, done, info = self.run_incoming_action(request_data.input_cmd)
