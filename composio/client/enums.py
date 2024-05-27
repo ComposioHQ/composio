@@ -151,6 +151,11 @@ class Tag(tuple, Enum):
 class App(str, Enum):
     """Composio App."""
 
+    @property
+    def is_local(self) -> bool:
+        """Check if app is local."""
+        return False
+
     YNAB = "ynab"
     YOUTUBE = "youtube"
     ZENDESK = "zendesk"
@@ -348,6 +353,11 @@ class App(str, Enum):
 
 class Action(tuple, Enum):
     """App action."""
+
+    @property
+    def is_local(self) -> bool:
+        """Check if app is local."""
+        return False
 
     @property
     def app(self) -> str:
