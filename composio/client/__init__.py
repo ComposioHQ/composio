@@ -21,7 +21,7 @@ from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFo
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import raise_api_key_missing
-from composio.tools.local.local_handler import LocalToolHandler
+from .local_handler import LocalToolHandler
 from composio.utils.url import get_api_url_base
 
 
@@ -675,7 +675,8 @@ class Actions(Collection[ActionModel]):
                 url=str(self.endpoint(queries=queries)),
             )
         )
-        items = [self.model(**action) for action in response.json().get("items")]
+        response_json = response.json()
+        items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
             required_triggers = [action.action for action in actions]
             items = [item for item in items if item.name in required_triggers]
@@ -691,7 +692,9 @@ class Actions(Collection[ActionModel]):
             ]
 
         if len(local_apps) > 0 or len(local_actions) > 0:
-            items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags) + items
+            local_items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags)
+            print("local_items - ", local_items)
+            items = [self.model(**item) for item in local_items] + items
         return items
 
     def execute(
