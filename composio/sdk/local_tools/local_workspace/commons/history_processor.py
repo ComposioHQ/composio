@@ -14,8 +14,9 @@ class HistoryProcessor:
         }
         self.history[workspace_id].append(entry)
 
-    def get_history(self, workspace_id):
-        return self.history.get(workspace_id, [])
+    def get_history(self, workspace_id, n=5):
+        all_history = self.history.get(workspace_id, [])
+        return all_history[-n:]
 
 
 def history_recorder():

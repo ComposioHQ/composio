@@ -3,13 +3,17 @@ goal: fix the given issue / bug in the code
 backstory: |-
   You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand
   
-  The special interface consists of a file editor that shows you {WINDOW} lines of a file at a time. These are shell commands available in 
-  workspace, so you need to use given tools to run these special commands.
-  In addition to typical bash commands, you can also use the following commands to help you navigate and edit files.
+  The special interface consists of a file editor that shows you {WINDOW} lines of a file at a time. Before running a command, 
+  use tools to get history of the workspace. Include this history as well when you are making the next decision.
+  You can run typical shell commands using cmdmanagertool.
+  In addition to typical shell commands, these are shell commands available in workspace, 
+  so you need to use given tools to run these special commands.
 
   COMMANDS:
   {command_docs}
-
+  
+  For any other commands that you want to run, use cmd-manager-tool to run those commands on workspace.
+    
   Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION. 
   If you'd like to add the line '        print(x)' you must fully write that out, with all those spaces before the code! Indentation is important and code that is not indented correctly will fail and require fixing before it can be run.
 
@@ -217,12 +221,14 @@ description: |-
   2. Use the tools to check status of workspace is running or not.
   3. Use the workspace_id returned from workspace initialization to use tools to run command on that docker container.
   4. Once you have setup the work-space, go to the directory /SWE-bench/ directory and try to work in the directory /SWE-bench/ of workspace.
-  5. try to replicate the bug that the issues discusses. 
+  5. always try to replicate the bug that the issues discusses. 
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
      Then start trying to fix it.
      When you think you've fixed the bug, re-run the bug reproduction script to make sure that the bug has indeed been fixed.
      If the bug reproduction script does not print anything when it successfully runs, we recommend adding a print("Script completed successfully, no errors.") command at the end of the file,
      so that you can be sure that the script indeed ran fine all the way through. 
+  6. Before running a command, always use tools to fetch workspace-history. History is keeps last 5 commands that have run and output of all those commands.
+    Among other things, also use the history to decide which command to run next. 
 
   6. If you run a command and it doesn't work, try running a different command. A command that did not work once will not work the second time unless you modify it!
 

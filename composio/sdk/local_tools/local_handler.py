@@ -1,7 +1,9 @@
 from .mathematical import Mathematical
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor
 from composio.sdk.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.sdk.local_tools.local_workspace.cmd_manager import CmdManagerTool
+from composio.sdk.local_tools.local_workspace.history_keeper import HistoryKeeper
 
 
 class LocalToolHandler:
@@ -11,16 +13,22 @@ class LocalToolHandler:
 
     def register_local_tools(self):
         workspace_factory = WorkspaceManagerFactory()
+        history_processor = HistoryProcessor()
         local_workspace_tool = LocalWorkspace()
-        local_workspace_tool.set_workspace_factory(workspace_factory)
         cmd_manager_tool = CmdManagerTool()
+        history_keeper_tool = HistoryKeeper()
+        local_workspace_tool.set_workspace_factory(workspace_factory)
         cmd_manager_tool.set_workspace_factory(workspace_factory)
+        history_keeper_tool.set_workspace_factory(workspace_factory)
+        local_workspace_tool.set_history_processor(history_processor)
+        cmd_manager_tool.set_history_processor(history_processor)
+        history_keeper_tool.set_history_processor(history_processor)
         return [
             Mathematical(),
             local_workspace_tool,
             cmd_manager_tool,
+            history_keeper_tool,
         ]
-
 
     def is_local(self, app_or_action) -> bool:
 
