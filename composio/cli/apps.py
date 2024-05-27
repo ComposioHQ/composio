@@ -47,6 +47,11 @@ TAG_ENUM_TEMPLATE = """class Tag(tuple, Enum):
 APP_ENUM_TEMPLATE = """class App(str, Enum):
     \"\"\"Composio App.\"\"\"
 
+    @property
+    def is_local(self) -> bool:
+        \"\"\"If the app is local.\"\"\"
+        return False
+
 {apps}
 """
 
@@ -67,6 +72,12 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
     def no_auth(self) -> bool:
         \"\"\"Name of the action.\"\"\"
         return self.value[2]
+    
+    @property
+    def is_local(self) -> bool:
+        \"\"\"If the action is local.\"\"\"
+        return False
+
 
     @classmethod
     def from_app(cls, name: str) -> "Action":
