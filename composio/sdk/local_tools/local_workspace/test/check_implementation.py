@@ -12,6 +12,14 @@ from composio.sdk.local_tools.local_workspace.workspace.actions import (CreateWo
                                                                         WorkspaceStatusRequest,
                                                                         SetupGithubRepo)
 
+from composio.sdk.local_tools.local_workspace.cmd_manager.actions import (CreateFileCmd, CreateFileRequest,
+                                                                          GoToCmd, CreateFileCmd, OpenCmd,
+                                                                          GoToRequest, CreateFileRequest, OpenCmdRequest,
+                                                                          SearchFileCmd, SearchDirCmd, FindFileCmd,
+                                                                          SearchFileRequest, SearchDirRequest, FindFileRequest,
+                                                                          SetCursors, SetCursorsRequest,
+                                                                          ScrollUp, ScrollDown, ScrollDownRequest, ScrollUpRequest,
+                                                                          EditFileRequest, EditFile)
 
 def check_simple_implementation():
     args = LocalDockerArgumentsModel(
@@ -19,24 +27,27 @@ def check_simple_implementation():
         verbose=True,
         install_environment=True,
     )
-    image_name = args.image_name
+
     w = WorkspaceManagerFactory()
     workspace_id = w.get_workspace_manager(args)
-    workspace = w.get_registered_manager(workspace_id)
-    container_name = workspace[KEY_CONTAINER_NAME]
-    image_name = workspace[KEY_IMAGE_NAME]
-    container_process = workspace[KEY_WORKSPACE_MANAGER]
-    parent_pids = workspace[KEY_PARENT_PIDS]
 
     # setup environment + copy commands + source scripts
     setup_docker_args = WorkspaceSetupRequest(workspace_id=workspace_id)
     setup_manager = SetupWorkspace("setup-workspace")
+    setup_manager.set_workspace_factory(w)
     setup_manager.execute(setup_docker_args)
 
     # copy github repo
     copy_repo_args = SetupGithubRepoRequest(workspace_id=workspace_id)
     git_setup = SetupGithubRepo("setyp_git_repo")
+    git_setup.set_workspace_factory(w)
     git_setup.execute(copy_repo_args)
+
+    search_cmd = SearchFileCmd("abc")
+    search_cmd.set_workspace_factory(w)
+    search_cmd.execute(SearchFileRequest(workspace_id=workspace_id,
+                                         file_name="",
+                                         search_tern="golden"), authorisation_data=None)
 
     # load all the special commands
     # special_commands_util = ShellEditor(COMMANDS_CONFIG_PATH)
