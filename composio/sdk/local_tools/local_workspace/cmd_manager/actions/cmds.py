@@ -1,8 +1,10 @@
 from pydantic import BaseModel, Field
 
 from composio.sdk.local_tools.lib.action import Action
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (get_workspace_meta_from_manager,
-get_container_process, WorkspaceManagerFactory,
+                                                                                     get_container_process,
+                                                                                     WorkspaceManagerFactory,
                                                                                      communicate,)
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (KEY_IMAGE_NAME, KEY_CONTAINER_NAME,
@@ -41,9 +43,11 @@ class GoToCmd(Action):
     script_file = "/root/commands/cursor_defaults.sh"
     command = "goto"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory, history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: GoToRequest):
         self.args = args
@@ -59,6 +63,7 @@ class GoToCmd(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: GoToRequest, authorisation_data: dict) -> GoToResponse:
         self._setup(request_data)
         command = f"{self.command} {str(self.line_number)}"
@@ -95,9 +100,12 @@ class CreateFileCmd(Action):
     script_file = "/root/commands/cursor_defaults.sh"
     command = "create"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: CreateFileRequest):
         self.args = args
@@ -118,6 +126,7 @@ class CreateFileCmd(Action):
             return ValueError("file-name can not be empty")
         return True
 
+    @history_recorder()
     def execute(self, request_data: CreateFileRequest, authorisation_data: dict) -> CreateFileResponse:
         self._setup(request_data)
         self.validate_file_name()
@@ -157,9 +166,12 @@ class OpenCmd(Action):
     script_file = "/root/commands/cursor_defaults.sh"
     command = "open"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: OpenCmdRequest):
         self.args = args
@@ -176,6 +188,7 @@ class OpenCmd(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: OpenCmdRequest, authorisation_data: dict) -> OpenCmdResponse:
         self._setup(request_data)
         command = f"{self.command} {self.file_path}"
