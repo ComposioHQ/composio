@@ -216,7 +216,7 @@ description: |-
   1. Always start by initializing the workspace. Workspace is a docker-container with docker image_name='sweagent/swe-agent:latest'. 
   2. Use the tools to check status of workspace is running or not.
   3. Use the workspace_id returned from workspace initialization to use tools to run command on that docker container.
-  4. Once you have setup the work-space, find the path of the repo-name directory and try to work in the directory of the repo_name of workspace.
+  4. Once you have setup the work-space, go to the directory /SWE-bench/ directory and try to work in the directory /SWE-bench/ of workspace.
   5. try to replicate the bug that the issues discusses. 
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
      Then start trying to fix it.
@@ -241,4 +241,5 @@ command_files:
 - config/commands/edit_linting.sh
 - config/commands/_split_string.py
 WINDOW: 100
+repo_name: /princeton-nlp/SWE-bench/
 
