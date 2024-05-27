@@ -25,7 +25,6 @@ setup(
     packages=find_packages(include=["composio*"]),
     entry_points={
         "console_scripts": [
-            "composio-cli=composio.composio_cli:main",
             "composio=composio.cli:composio",
         ],
     },
