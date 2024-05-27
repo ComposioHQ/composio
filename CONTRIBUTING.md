@@ -15,7 +15,7 @@ There are various ways to contribute:
 - Before working on a feature, reach out to one of the core developers or discuss the feature in an issue. The framework caters a diverse audience and new features require upfront coordination.
 - Include unit tests for 100% coverage if possible when you contribute new features, as they help to a) prove that your code works correctly, and b) guard against future breaking changes to lower the maintenance cost.
 - Bug fixes also generally require unit tests, because the presence of bugs usually indicates insufficient test coverage.
-- Keep API compatibility in mind when you change code in the `composio`. Although `composio` is does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/SamparkAI/composio_sdk/blob/495cd0d8a644ee84e3f7ee4a6ab6907594895efe/composio/utils/decorators.py#L15) on the existing API and discussing the breaking changes with maintainers.
+- Keep API compatibility in mind when you change code in the `composio`. Although `composio` does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/SamparkAI/composio_sdk/blob/495cd0d8a644ee84e3f7ee4a6ab6907594895efe/composio/utils/decorators.py#L15) on the existing API and discussing the breaking changes with maintainers.
 - When you contribute a new feature to `composio`, the maintenance burden is transferred to the core team. This means that the benefit of the contribution must be compared against the cost of maintaining the feature.
 - Before committing and opening a PR, run all tests locally. This saves CI hours and ensures you only commit clean code.
 
@@ -49,3 +49,5 @@ We have various commands which are helpful during development.
   - Use `tox -e isort-check` and `tox -e black-check` for checking code formatting
   - Use `tox -e flake8` and `tox -e pylint` to run code linters
   - Use `tox -e mypy` for type checking
+
+Read more detailed guides on development [here](docs/development.md).
