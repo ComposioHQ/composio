@@ -3,6 +3,7 @@ import docker
 
 from composio.sdk.local_tools.lib.action import Action
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
                                                                                      get_container_name_from_workspace_id)
 
@@ -29,9 +30,12 @@ class WorkspaceStatus(Action):
     _response_schema = WorkspaceStatusResponse
     _tags = ["workspace"]
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
     
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: WorkspaceStatusRequest):
         self.container_name = get_container_name_from_workspace_id(self.workspace_factory, args.workspace_id)

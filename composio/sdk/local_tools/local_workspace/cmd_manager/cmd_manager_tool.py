@@ -2,8 +2,8 @@ from composio.sdk.local_tools.lib.tool import Tool
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
 from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor
 from composio.sdk.local_tools.local_workspace.cmd_manager.actions import (CreateFileCmd,
-                                                                          GoToCmd,
-                                                                          OpenCmd,
+                                                                          GoToLineNumInOpenFile,
+                                                                          OpenFile,
                                                                           ScrollUp,
                                                                           ScrollDown,
                                                                           SearchFileCmd,
@@ -24,8 +24,8 @@ class CmdManagerTool(Tool):
         return [
               FindFileCmd,
               CreateFileCmd,
-              GoToCmd,
-              OpenCmd,
+              GoToLineNumInOpenFile,
+              OpenFile,
               ScrollUp,
               ScrollDown,
               SearchFileCmd,

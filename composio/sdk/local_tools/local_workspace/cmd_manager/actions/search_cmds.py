@@ -8,6 +8,7 @@ from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace imp
                                                                     KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
 from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name
 from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
+from .const import SCRIPT_SEARCH
 
 logger = get_logger()
 
@@ -31,7 +32,7 @@ class SearchDirCmd(Action):
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/search.sh"
+    script_file = SCRIPT_SEARCH
     command = "search_dir"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
@@ -59,7 +60,7 @@ class SearchDirCmd(Action):
         if not request_data.dir or not request_data.dir.strip():
             raise ValueError("dir can not be null. Give a directory-name in which to search")
         self._setup(request_data)
-        command = f"{self.command} {request_data.search_term} {request_data.dir}"  # Command to scroll down 100 lines
+        command = f"{self.command} '{request_data.search_term}' {request_data.dir}"  # Command to scroll down 100 lines
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(self.container_process,
                                           self.container_obj,
@@ -87,7 +88,7 @@ class SearchFileCmd(Action):
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/search.sh"
+    script_file = SCRIPT_SEARCH
     command = "search_file"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
@@ -114,7 +115,7 @@ class SearchFileCmd(Action):
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("dir can not be null. Give a directory-name in which to search")
         self._setup(request_data)
-        command = f"{self.command} {request_data.search_term} {request_data.file_name}"
+        command = f"{self.command} '{request_data.search_term}' {request_data.file_name}"
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(self.container_process,
                                           self.container_obj,
@@ -142,7 +143,7 @@ class FindFileCmd(Action):
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
     _tags = ["workspace"]
-    script_file = "/root/commands/search.sh"
+    script_file = SCRIPT_SEARCH
     command = "find_file"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None

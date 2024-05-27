@@ -6,6 +6,7 @@ from pathlib import Path
 from composio.sdk.local_tools.lib.action import Action
 
 from composio.sdk.local_tools.local_workspace.commons.command_runner_model import AgentConfig
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor
 from composio.sdk.local_tools.local_workspace.commons.utils import (get_container_by_container_name,
                                                                     communicate,
                                                                     communicate_with_handling,
@@ -52,6 +53,7 @@ class SetupWorkspace(Action):
     _response_schema = WorkspaceSetupResponse
     _tags = ["workspace"]
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
     def _setup(self, args: WorkspaceSetupRequest):
         self.args = args
@@ -72,8 +74,10 @@ class SetupWorkspace(Action):
         if not self.container_obj:
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
         self._setup(request_data)
@@ -95,6 +99,7 @@ class SetupWorkspace(Action):
     def set_env_variables(self):
         commands_to_execute = (
                 [self.config.state_command.code]
+                + ["pip install flake8"]
                 +
                 [f"{k}={v}" for k, v in self.config.env_variables.items()]
         )
