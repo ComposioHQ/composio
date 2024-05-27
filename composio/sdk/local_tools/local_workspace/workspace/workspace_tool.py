@@ -3,6 +3,7 @@ from composio.sdk.local_tools.local_workspace.workspace.actions.workspace_setup 
 from composio.sdk.local_tools.local_workspace.workspace.actions.workspace_status import WorkspaceStatus
 from composio.sdk.local_tools.local_workspace.workspace.actions.setup_github_repo import SetupGithubRepo
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor
 from composio.sdk.local_tools.local_workspace.workspace.actions.create_workspace import CreateWorkspaceAction
 
 
@@ -11,6 +12,7 @@ class LocalWorkspace(Tool):
     local workspace tool for creating local workspace
     """
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
     def actions(self) -> list:
         return [WorkspaceStatus,
@@ -26,3 +28,9 @@ class LocalWorkspace(Tool):
 
     def get_workspace_factory(self) -> WorkspaceManagerFactory:
         return self.workspace_factory
+
+    def set_history_processor(self, history_processor: HistoryProcessor):
+        self.history_processor = history_processor
+
+    def get_history_processor(self) -> HistoryProcessor:
+        return self.history_processor

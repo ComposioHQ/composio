@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from composio.sdk.local_tools.lib.action import Action
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (get_workspace_meta_from_manager,
                                                                     communicate, WorkspaceManagerFactory, get_container_process,
                                                                     KEY_IMAGE_NAME, KEY_CONTAINER_NAME,
@@ -33,9 +34,12 @@ class SearchDirCmd(Action):
     script_file = "/root/commands/search.sh"
     command = "search_dir"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: SearchDirRequest):
         self.args = args
@@ -50,6 +54,7 @@ class SearchDirCmd(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: SearchDirRequest, authorisation_data: dict) -> SearchDirResponse:
         if not request_data.dir or not request_data.dir.strip():
             raise ValueError("dir can not be null. Give a directory-name in which to search")
@@ -85,9 +90,11 @@ class SearchFileCmd(Action):
     script_file = "/root/commands/search.sh"
     command = "search_file"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory, history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: SearchFileRequest):
         self.args = args
@@ -102,6 +109,7 @@ class SearchFileCmd(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: SearchFileRequest, authorisation_data: dict) -> SearchDirResponse:
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("dir can not be null. Give a directory-name in which to search")
@@ -137,9 +145,12 @@ class FindFileCmd(Action):
     script_file = "/root/commands/search.sh"
     command = "find_file"
     workspace_factory: WorkspaceManagerFactory = None
+    history_processor: HistoryProcessor = None
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
+    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
+                                  history_processor: HistoryProcessor):
         self.workspace_factory = workspace_factory
+        self.history_processor = history_processor
 
     def _setup(self, args: FindFileRequest):
         self.args = args
@@ -154,6 +165,7 @@ class FindFileCmd(Action):
             raise Exception(f"container-name {self.container_name} is not a valid docker-container")
         self.logger = logger
 
+    @history_recorder()
     def execute(self, request_data: FindFileRequest, authorisation_data: dict) -> FindFileResponse:
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("file-name can not be null. Give a file-name to find")

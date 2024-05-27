@@ -11,6 +11,7 @@ from composio.sdk.local_tools.local_workspace.workspace.actions import (CreateWo
                                                                         WorkspaceStatus,
                                                                         WorkspaceStatusRequest,
                                                                         SetupGithubRepo)
+from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
 
 from composio.sdk.local_tools.local_workspace.cmd_manager.actions import (CreateFileCmd, CreateFileRequest,
                                                                           GoToCmd, CreateFileCmd, OpenCmd,
@@ -21,6 +22,7 @@ from composio.sdk.local_tools.local_workspace.cmd_manager.actions import (Create
                                                                           ScrollUp, ScrollDown, ScrollDownRequest, ScrollUpRequest,
                                                                           EditFileRequest, EditFile)
 
+
 def check_simple_implementation():
     args = LocalDockerArgumentsModel(
         image_name="sweagent/swe-agent:latest",
@@ -29,6 +31,7 @@ def check_simple_implementation():
     )
 
     w = WorkspaceManagerFactory()
+    h = HistoryProcessor()
     workspace_id = w.get_workspace_manager(args)
 
     # setup environment + copy commands + source scripts
@@ -44,10 +47,14 @@ def check_simple_implementation():
     git_setup.execute(copy_repo_args)
 
     search_cmd = SearchFileCmd("abc")
-    search_cmd.set_workspace_factory(w)
+    search_cmd.set_workspace_and_history(w, h)
     search_cmd.execute(SearchFileRequest(workspace_id=workspace_id,
-                                         file_name="",
-                                         search_tern="golden"), authorisation_data=None)
+                                         search_term="golden",
+                                         file_name="./xyz",), authorisation_data={})
+
+    # get history
+    from pprint import pprint
+    pprint(h.get_history(workspace_id))
 
     # load all the special commands
     # special_commands_util = ShellEditor(COMMANDS_CONFIG_PATH)
