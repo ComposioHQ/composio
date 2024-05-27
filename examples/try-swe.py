@@ -5,7 +5,7 @@ from composio import ComposioCore, FrameworkEnum
 from composio_crewai import App, ComposioToolset
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
-from composio.sdk.local_tools.local_workspace.commons.parsing import ParseCommandBash
+from composio.local_tools.local_workspace.commons.parsing import ParseCommandBash
 from langchain.globals import set_debug
 set_debug(False)
 
