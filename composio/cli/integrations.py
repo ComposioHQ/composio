@@ -10,7 +10,7 @@ import webbrowser
 import click
 from beaupy.spinners import DOTS, Spinner
 
-from composio.cli.context import Context, pass_context
+from composio.cli.context import Context, login_required, pass_context
 from composio.client.enums import Action
 from composio.client.exceptions import ComposioClientError
 from composio.exceptions import ComposioSDKError
@@ -42,6 +42,7 @@ def _integrations(context: Context) -> None:
     default=False,
     help="Don't open browser for verifying connection",
 )
+@login_required
 @pass_context
 def _add(  # pylint: disable=too-many-locals,too-many-nested-blocks
     context: Context,
@@ -120,29 +121,29 @@ def _add(  # pylint: disable=too-many-locals,too-many-nested-blocks
                     field_inputs=field_inputs,
                     entity_id=entity.id,
                 )
-            else:
-                connection = entity.initiate_connection(
-                    app_name=name,
-                    redirect_url=get_web_url(path="redirect"),
-                )
+        else:
+            connection = entity.initiate_connection(
+                app_name=name,
+                redirect_url=get_web_url(path="redirect"),
+            )
 
-                if not no_browser:
-                    webbrowser.open(
-                        url=str(connection.redirectUrl),
-                    )
-                context.console.print(
-                    f"Please authenticate {name} in the browser and come back here. "
-                    f"URL: {connection.redirectUrl}"
+            if not no_browser:
+                webbrowser.open(
+                    url=str(connection.redirectUrl),
                 )
-                spinner = Spinner(
-                    DOTS,
-                    f"[yellow]⚠[/yellow] Waiting for {name} authentication...",
-                )
-                spinner.start()
-                connection.wait_until_active(
-                    client=context.client,
-                )
-                spinner.stop()
+            context.console.print(
+                f"Please authenticate {name} in the browser and come back here. "
+                f"URL: {connection.redirectUrl}"
+            )
+            spinner = Spinner(
+                DOTS,
+                f"[yellow]⚠[/yellow] Waiting for {name} authentication...",
+            )
+            spinner.start()
+            connection.wait_until_active(
+                client=context.client,
+            )
+            spinner.stop()
             context.console.print(f"[green]✔[/green] {name} added successfully!")
     except ComposioSDKError as e:
         raise click.ClickException(
