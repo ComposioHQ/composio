@@ -14,7 +14,6 @@ rich = ">=13.7.1,<14"
 importlib-metadata = ">=4.8.1,<5"
 cloup = ">=3.0.0"
 pyperclip = ">=1.8.2,<2"
-aenum = ">=3.1.15"
 
 [dev-packages]
 black = ">=24.1.1"
