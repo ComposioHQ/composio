@@ -1,0 +1,44 @@
+commands:
+  open:
+    script: "/root/commands/defaults.sh"
+    docs: opens the file at the given path in the editor. If line_number is provided, the window will be centered on that line
+    signature: open <path> [<line_number>]
+  set_cursors:
+    script: "/root/commands/defaults.sh"
+    docs: sets the start and end cursors to the given line numbers
+    signature: set_cursors <start_line> <end_line>
+  scroll_down:
+    script: "/root/commands/defaults.sh"
+    docs: moves the window down 100 lines
+    signature: scroll_down
+  scroll_up:
+    script: "/root/commands/defaults.sh"
+    docs: moves the window up 100 lines
+    signature: scroll_up
+  goto:
+    script: "/root/commands/defaults.sh"
+    docs: moves the window to show <line_number>
+    signature: goto <line_number>
+  create:
+    script: "/root/commands/defaults.sh"
+    docs: creates and opens a new file with the given name
+    signature: create <file_name>
+  edit:
+    script: "/root/commands/cursor_edit_linting.sh"
+    docs: replaces lines <start_line> through <end_line> (inclusive) with the given text in the open file. The replacement text is terminated by a line with only end_of_edit on it. All of the <replacement text> will be entered, so make sure your indentation is formatted properly. Python files will be checked for syntax errors after the edit. If the system detects a syntax error, the edit will not be executed. Simply try to edit the file again, but make sure to read the error message and modify the edit command you issue accordingly. Issuing the same command a second time will just lead to the same error message again.
+    signature: |-
+       edit <start_line>:<end_line>
+       <replacement_text>
+       end_of_edit
+  search_dir:
+    script: "/root/commands/search.sh"
+    docs: searches for search_term in all files in dir. If dir is not provided, searches in the current directory
+    signature: search_dir <search_term> [<dir>]
+  search_file:
+    script: "/root/commands/search.sh"
+    docs: searches for search_term in file. If file is not provided, searches in the current open file
+    signature: search_file <search_term> [<file>]
+  find_file:
+    script: "/root/commands/search.sh"
+    docs: finds all files with the given name in dir. If dir is not provided, searches in the current directory
+    signature: find_file <file_name> [<dir>]

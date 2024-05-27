@@ -434,6 +434,9 @@ class App(str, Enum):
     ZOHO_MAIL = "zoho-mail"
     ZOOM = "zoom"
     MATHEMATICAL = "mathematical"
+    LOCAL_WORKSPACE = "localworkspace"
+    CMD_MANAGER = "cmdmanagertool"
+    HISTORY_KEEPER = "historykeeper"
 
 
 
@@ -2182,7 +2185,21 @@ class Action(tuple, Enum):
     ZOOM_WEB_IN_ARS_GET_WEB_IN_ART_OKEN = ("zoom", "zoom_web_in_ars_get_web_in_art_oken", False)
     ZOOM_WEB_IN_ARS_LIST_TRACKING_SOURCES = ("zoom", "zoom_web_in_ars_list_tracking_sources", False)
     CALCULATOR = ("mathematical", "mathematical_calculator", True, True)
-
+    LOCAL_WORKSPACE_CREATE_WORKSPACE_ACTION = ("localworkspace", "localworkspace_createworkspaceaction", True)
+    LOCAL_WORKSPACE_WORKSPACE_STATUS = ("localworkspace", "localworkspace_workspacestatus", True)
+    LOCAL_WORKSPACE_SETUP_WORKSPACE = ("localworkspace", "localworkspace_setupworkspace", True)
+    LOCAL_WORKSPACE_SETUP_GITHUB_REPO = ("localworkspace", "localworkspace_setupgithubrepo", True)
+    CMD_MANAGER_TOOL_GOTO_CMD = ("cmdmanagertool", "cmdmanagertool_gotocmd", True)
+    CMD_MANAGER_TOOL_CREATE_FILE_CMD = ("cmdmanagertool", "cmdmanagertool_createfilecmd", True)
+    CMD_MANAGER_TOOL_OPEN_FILE = ("cmdmanagertool", "cmdmanagertool_openfile", True)
+    CMD_MANAGER_TOOL_EDIT_FILE = ("cmdmanagertool", "cmdmanagertool_editfile", True)
+    CMD_MANAGER_TOOL_RUN_COMMAND_ON_WORKSPACE = ("cmdmanagertool", "cmdmanagertool_runcommandonworkspace", True)
+    CMD_MANAGER_TOOL_SCROLL_DOWN = ("cmdmanagertool", "cmdmanagertool_scrolldown", True)
+    CMD_MANAGER_TOOL_SCROLL_UP = ("cmdmanagertool", "cmdmanagertool_scrollup", True)
+    CMD_MANAGER_TOOL_SEARCH_DIR_CMD = ("cmdmanagertool", "cmdmanagertool_searchdircmd", True)
+    CMD_MANAGER_TOOL_SEARCH_FILE_CMD = ("cmdmanagertool", "cmdmanagertool_searchfilecmd", True)
+    CMD_MANAGER_TOOL_FIND_FILE_CMD = ("cmdmanagertool", "cmdmanagertool_findfilecmd", True)
+    HISTORY_KEEPER_GET_HISTORY = ("historykeeper", "historykeeper_getworkspacehistory", True)
 
 
 class Trigger(tuple, Enum):
