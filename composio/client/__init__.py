@@ -21,6 +21,7 @@ from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFo
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import raise_api_key_missing
+from composio.tools.local.local_handler import LocalToolHandler
 from composio.utils.url import get_api_url_base
 
 
@@ -590,6 +591,7 @@ class Actions(Collection[ActionModel]):
 
     model = ActionModel
     endpoint = v1.actions
+    local_handler = LocalToolHandler()
 
     # TODO: Overload
     def get(  # type: ignore
@@ -616,6 +618,11 @@ class Actions(Collection[ActionModel]):
         actions = actions or []
         apps = apps or []
         tags = tags or []
+        # Filter out local apps and actions
+        local_apps = [app for app in apps if app.is_local]
+        local_actions = [action for action in actions if action.is_local]
+        apps = [app for app in apps if not app.is_local]
+        actions = [action for action in actions if not action.is_local]
         if len(actions) > 0 and len(apps) > 0:
             raise ComposioClientError(
                 "Error retrieving Actions, Both actions and apps "
@@ -683,6 +690,8 @@ class Actions(Collection[ActionModel]):
                 if any(tag in required_triggers for tag in item.tags)
             ]
 
+        if len(local_apps) > 0 or len(local_actions) > 0:
+            items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags) + items
         return items
 
     def execute(
@@ -693,6 +702,11 @@ class Actions(Collection[ActionModel]):
         connected_account: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute an action."""
+        if action.is_local:
+            return self.local_handler.execute_local_action(
+                action=action,
+                request_data=params,
+            )
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
