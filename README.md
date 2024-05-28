@@ -15,7 +15,7 @@
     </p>
 </p>
 
-<img alt="Illustraion" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
+<img alt="Illustration" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
 
 Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
 
@@ -27,7 +27,7 @@ Composio provides a platform that seamlessly integrates over 200+ apps with your
 
 ## Getting started
 
-To get started, select a framework and install the correseponding plugin:
+To get started, select a framework and install the corresponding plugin:
 
 - **Autogen**: `pip install composio_autogen`
 - **CrewAI**: `pip install composio_crewai`
