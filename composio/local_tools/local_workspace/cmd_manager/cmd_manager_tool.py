@@ -10,7 +10,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (CreateFile
                                                                           SearchDirCmd,
                                                                           FindFileCmd,
                                                                           SetCursors,
-                                                                          EditFile)
+                                                                          EditFile, RunCommandOnWorkspace)
 
 
 class CmdManagerTool(Tool):
@@ -31,7 +31,9 @@ class CmdManagerTool(Tool):
               SearchFileCmd,
               SearchDirCmd,
               SetCursors,
-              EditFile]
+              EditFile,
+              RunCommandOnWorkspace
+        ]
 
     def triggers(self) -> list:
         return []
