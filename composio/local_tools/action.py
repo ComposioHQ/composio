@@ -19,8 +19,8 @@ def generate_hashed_appId(input_string):
 
 class Action(ABC):
     _display_name: str = ""  # Add an internal variable to hold the display name
-    _request_schema: BaseModel  # Placeholder for request schema
-    _response_schema: BaseModel  # Placeholder for response schema
+    _request_schema: Type[BaseModel]  # Placeholder for request schema
+    _response_schema: Type[BaseModel]  # Placeholder for response schema
     _tags: List[str] = []  # Placeholder for tags
     _tool_name: str = ""
 
