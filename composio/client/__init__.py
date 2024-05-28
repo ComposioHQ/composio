@@ -618,11 +618,18 @@ class Actions(Collection[ActionModel]):
         actions = actions or []
         apps = apps or []
         tags = tags or []
+        print("Apps - ", apps)
+        print("Actions - ", actions)
         # Filter out local apps and actions
         local_apps = [app for app in apps if app.is_local]
         local_actions = [action for action in actions if action.is_local]
         apps = [app for app in apps if not app.is_local]
         actions = [action for action in actions if not action.is_local]
+        only_local_apps = len(apps) == 0 and len(actions) == 0 and (len(local_apps) > 0 or len(local_actions) > 0)
+        if only_local_apps:
+            local_items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags)
+            return [self.model(**item) for item in local_items]
+
         if len(actions) > 0 and len(apps) > 0:
             raise ComposioClientError(
                 "Error retrieving Actions, Both actions and apps "
@@ -644,7 +651,7 @@ class Actions(Collection[ActionModel]):
                 UserWarning,
             )
 
-        if len(actions) == 0 and len(apps) == 0 and len(tags) == 0 and allow_all:
+        if len(actions) == 0 and len(apps) == 0 and len(tags) == 0 and allow_all and len(local_apps) == 0 and len(local_actions) == 0:
             response = self._raise_if_required(
                 response=self.client.http.get(
                     url=str(self.endpoint),
@@ -669,7 +676,6 @@ class Actions(Collection[ActionModel]):
 
         if limit is not None:
             queries["limit"] = str(limit)
-
         response = self._raise_if_required(
             response=self.client.http.get(
                 url=str(self.endpoint(queries=queries)),
@@ -694,6 +700,7 @@ class Actions(Collection[ActionModel]):
         if len(local_apps) > 0 or len(local_actions) > 0:
             local_items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags)
             items = [self.model(**item) for item in local_items] + items
+        print("Items - ", items)
         return items
 
     def execute(
