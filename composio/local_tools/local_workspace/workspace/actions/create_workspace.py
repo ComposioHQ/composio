@@ -27,6 +27,7 @@ class CreateWorkspaceAction(Action):
     _request_schema = CreateWorkspaceRequest
     _response_schema = CreateWorkspaceResponse
     _tags = ["workspace"]
+    _tool_name = "localworkspace"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
