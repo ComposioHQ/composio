@@ -1,16 +1,12 @@
-from .sdk import Composio
-from .sdk.core import ComposioCore, FrameworkEnum
-from .sdk.enums import Action, App, Tag
-from .sdk.sdk import SchemaFormat
+from composio.client import Composio
+from composio.client.enums import Action, App, Tag
+from composio.tools import ComposioToolSet
 
 
 __all__ = (
-    "Composio",
-    "ComposioCore",
-    "ComposioCore",
-    "FrameworkEnum",
-    "Action",
-    "App",
     "Tag",
-    "SchemaFormat",
+    "App",
+    "Action",
+    "Composio",
+    "ComposioToolSet",
 )
