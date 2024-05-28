@@ -57,6 +57,7 @@ if __name__ == "__main__":
         tools=tools,
         llm=llm,
         memory=True,
+        cachetools=False,
     )
     task = Task(
             description=description,
