@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from composio.local_tools.lib.action import Action
+from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.local_docker_workspace import LocalDockerArgumentsModel
 from composio.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory

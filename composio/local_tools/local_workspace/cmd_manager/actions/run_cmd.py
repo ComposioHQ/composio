@@ -4,17 +4,17 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, Dict, List, Any
 from pydantic import BaseModel, Field
 
-from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     get_workspace_meta_from_manager,
     WorkspaceManagerFactory, get_container_process,
     communicate,
     KEY_IMAGE_NAME, KEY_CONTAINER_NAME, KEY_WORKSPACE_MANAGER,
     KEY_PARENT_PIDS)
-from composio.sdk.local_tools.local_workspace.commons.utils import get_container_by_container_name, interrupt_container, close_container
-from composio.sdk.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
-from composio.sdk.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.sdk.local_tools.local_workspace.commons.command_runner_model import AgentConfig
-from composio.sdk.local_tools.lib.action import Action
+from composio.local_tools.local_workspace.commons.utils import get_container_by_container_name, interrupt_container, close_container
+from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.local_tools.local_workspace.commons.command_runner_model import AgentConfig
+from composio.local_tools.action import Action
 
 
 logger = get_logger()
