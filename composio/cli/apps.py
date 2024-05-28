@@ -77,7 +77,7 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
     @property
     def is_local(self) -> bool:
         \"\"\"If the action is local.\"\"\"
-        return self.value[3]
+        return len(self.value) > 3 and self.value[3]
 
 
     @classmethod
