@@ -36,6 +36,7 @@ class SetupGithubRepo(Action):
     _request_schema = SetupGithubRepoRequest
     _response_schema = SetupGithubRepoResponse
     _tags = ["workspace"]
+    _tool_name = "localworkspace"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
