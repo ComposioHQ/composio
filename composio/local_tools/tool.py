@@ -17,6 +17,7 @@ action_require_workspace_and_history = {
                 "SearchDirCmd": True,
                 "SetCursors": True,
                 "EditFile": True,
+                "RunCommandOnWorkspace": True,
 }
 
 class Tool:
