@@ -693,7 +693,6 @@ class Actions(Collection[ActionModel]):
 
         if len(local_apps) > 0 or len(local_actions) > 0:
             local_items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags)
-            print("local_items - ", local_items)
             items = [self.model(**item) for item in local_items] + items
         return items
 
