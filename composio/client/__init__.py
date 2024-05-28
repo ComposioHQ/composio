@@ -752,9 +752,10 @@ class IntegrationModel(BaseModel):
     appId: str
     defaultConnectorId: str
     _count: t.Dict
-    connections: t.List[t.Dict]
     appName: str
     logo: str
+
+    connections: t.Optional[t.List[t.Dict]] = None
 
 
 class Integrations(Collection[IntegrationModel]):
@@ -928,7 +929,7 @@ class Entity:
             )
 
         connected_account = self.get_connection(
-            action=action,
+            app=action.app,
             connected_account_id=connected_account_id,
         )
         return self.client.actions.execute(
@@ -940,7 +941,7 @@ class Entity:
 
     def get_connection(
         self,
-        action: Action,
+        app: str,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
@@ -960,7 +961,7 @@ class Entity:
         for connected_account in connected_accounts:
             if connected_account.id == connected_account_id:
                 return connected_account
-            if action.app == connected_account.appUniqueId:
+            if app == connected_account.appUniqueId:
                 creation_date = datetime.fromisoformat(
                     connected_account.createdAt.replace("Z", "+00:00")
                 )
@@ -969,7 +970,7 @@ class Entity:
                     latest_account = connected_account
         if latest_account is None:
             raise ComposioClientError(
-                f"Entity `{self.id}` does not have a connection to {action.app}"
+                f"Entity `{self.id}` does not have a connection to {app}"
             )
         return latest_account
 
@@ -985,7 +986,7 @@ class Entity:
             app_name = app_name.value
 
         if auth_mode is None:
-            integration = self.client.integrations.create(
+            integration = integration or self.client.integrations.create(
                 app_id=app_name,
                 use_composio_auth=True,
             )
@@ -997,7 +998,7 @@ class Entity:
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        integration = self.client.integrations.create(
+        integration = integration or self.client.integrations.create(
             app_id=app.appId,
             name=f"integration_{timestamp}",
             auth_mode=auth_mode,
