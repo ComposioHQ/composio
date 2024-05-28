@@ -48,3 +48,8 @@ To run each of these individually use `tox`
 ## Unit tests
 
 Run unit tests using `tox -e unittests` to verify the changes you made and check the code coverage.
+
+## Environment variables
+
+- `COMPOSIO_API_KEY`: Environment variable for Composio API key
+- `COMPOSIO_BASE_URL`: Environment variable for Composio API server base URL
