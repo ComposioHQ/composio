@@ -38,10 +38,10 @@ openai_client = OpenAI()
 
 This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
 ```python
-from composio_openai import App, ComposioToolset
+from composio_openai import App, ComposioToolSet
 
 toolset = ComposioToolset()
-actions = toolset.get_tools(tools=App.GITHUB)
+actions = toolset.get_tools(apps=[App.GITHUB])
 ```
 
 ### Step 3: Agent Execution
