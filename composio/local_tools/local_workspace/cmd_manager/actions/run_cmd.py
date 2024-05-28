@@ -39,6 +39,7 @@ class RunCommandOnWorkspace(Action):
     _request_schema = RunCommandOnWorkspaceRequest
     _response_schema = RunCommandOnWorkspaceResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 

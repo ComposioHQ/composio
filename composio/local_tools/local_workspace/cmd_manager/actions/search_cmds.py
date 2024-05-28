@@ -32,6 +32,7 @@ class SearchDirCmd(Action):
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_SEARCH
     command = "search_dir"
     workspace_factory: WorkspaceManagerFactory = None
@@ -88,6 +89,7 @@ class SearchFileCmd(Action):
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_SEARCH
     command = "search_file"
     workspace_factory: WorkspaceManagerFactory = None
@@ -143,6 +145,7 @@ class FindFileCmd(Action):
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_SEARCH
     command = "find_file"
     workspace_factory: WorkspaceManagerFactory = None

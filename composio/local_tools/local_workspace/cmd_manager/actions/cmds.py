@@ -43,6 +43,7 @@ class GoToLineNumInOpenFile(Action):
     _tags = ["workspace"]
     script_file = SCRIPT_CURSOR_DEFAULT
     command = "goto"
+    _tool_name = "cmdmanagertool"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
@@ -98,6 +99,7 @@ class CreateFileCmd(Action):
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_CURSOR_DEFAULT
     command = "create"
     workspace_factory: WorkspaceManagerFactory = None
@@ -164,6 +166,7 @@ class OpenFile(Action):
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_CURSOR_DEFAULT
     command = "open"
     workspace_factory: WorkspaceManagerFactory = None
