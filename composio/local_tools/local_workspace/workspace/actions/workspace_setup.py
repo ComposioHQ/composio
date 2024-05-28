@@ -52,6 +52,7 @@ class SetupWorkspace(Action):
     _request_schema = WorkspaceSetupRequest
     _response_schema = WorkspaceSetupResponse
     _tags = ["workspace"]
+    _tool_name = "localworkspace"
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
