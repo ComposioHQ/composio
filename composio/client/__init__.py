@@ -969,7 +969,7 @@ class Entity:
             app_name = app_name.value
 
         if auth_mode is None:
-            integration = self.client.integrations.create(
+            integration = integration or self.client.integrations.create(
                 app_id=app_name,
                 use_composio_auth=True,
             )
@@ -981,7 +981,7 @@ class Entity:
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        integration = self.client.integrations.create(
+        integration = integration or self.client.integrations.create(
             app_id=app.appId,
             name=f"integration_{timestamp}",
             auth_mode=auth_mode,
