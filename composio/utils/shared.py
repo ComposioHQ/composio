@@ -130,7 +130,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     required_props = param_schema.get("required", [])
 
     if param_schema.get("type") == "array":
-        print("param_schema inside array - ", param_schema)
+        # print("param_schema inside array - ", param_schema)
         item_schema = param_schema.get("items")
         if item_schema:
             ItemType = t.cast(
