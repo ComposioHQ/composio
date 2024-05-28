@@ -222,8 +222,6 @@ class Tag(tuple, Enum):
     ZOOM_MEETINGS = ("zoom", "Meetings")
 
 
-
-
 class App(str, Enum):
     """Composio App."""
 
@@ -434,7 +432,6 @@ class App(str, Enum):
     ZOHO_MAIL = "zoho-mail"
     ZOOM = "zoom"
     MATHEMATICAL = "mathematical"
-
 
 
 class Action(tuple, Enum):
