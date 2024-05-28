@@ -96,10 +96,14 @@ env: clean
 		pipenv install --skip-lock;\
 		pipenv install --dev --skip-lock;\
 		pipenv run pip install -e .;\
-		pipenv run pip install -e plugins/lyzr;\
-		pipenv run pip install -e plugins/crew_ai;\
 		pipenv run pip install -e plugins/autogen;\
+		pipenv run pip install -e plugins/claude;\
+		pipenv run pip install -e plugins/crew_ai;\
+		pipenv run pip install -e plugins/griptape;\
+		pipenv run pip install -e plugins/julep;\
 		pipenv run pip install -e plugins/langchain;\
+		pipenv run pip install -e plugins/lyzr;\
+		pipenv run pip install -e plugins/openai;\
 		echo "Enter virtual environment with all development dependencies now: 'pipenv shell'.";\
 	else\
 		echo "In a virtual environment! Exit first: 'exit'.";\
