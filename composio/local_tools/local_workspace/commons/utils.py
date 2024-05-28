@@ -43,9 +43,6 @@ def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> T
             msg = (
                 "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
                 "You might need to allow the use of the docker socket "
-                "(https://github.com/princeton-nlp/SWE-agent/issues/159) or symlink the socket "
-                "if it's at a non-standard location "
-                "(https://github.com/princeton-nlp/SWE-agent/issues/20#issuecomment-2047506005)."
             )
             raise RuntimeError(msg) from e
         raise
@@ -93,9 +90,6 @@ def get_container_by_container_name(container_name: str, image_name: str):
             msg = (
                 "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
                 "You might need to allow the use of the docker socket "
-                "(https://github.com/princeton-nlp/SWE-agent/issues/159) or symlink the socket "
-                "if it's at a non-standard location "
-                "(https://github.com/princeton-nlp/SWE-agent/issues/20#issuecomment-2047506005)."
             )
             raise RuntimeError(msg) from e
         raise

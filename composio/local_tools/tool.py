@@ -3,16 +3,20 @@ from typing import List
 
 
 action_require_workspace_and_history = {
-"FindFileCmd": True,
-"CreateFileCmd": True,
-"GoToLineNumInOpenFile": True,
-"OpenFile": True,
-"ScrollUp": True,
-"ScrollDown": True,
-"SearchFileCmd": True,
-"SearchDirCmd": True,
-"SetCursors": True,
-"EditFile": True,
+                "WorkspaceStatus": True,
+                "SetupWorkspace": True,
+                "SetupGithubRepo": True,
+                "CreateWorkspaceAction": True,
+                "FindFileCmd": True,
+                "CreateFileCmd": True,
+                "GoToLineNumInOpenFile": True,
+                "OpenFile": True,
+                "ScrollUp": True,
+                "ScrollDown": True,
+                "SearchFileCmd": True,
+                "SearchDirCmd": True,
+                "SetCursors": True,
+                "EditFile": True,
 }
 
 class Tool:

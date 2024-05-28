@@ -40,6 +40,7 @@ class EditFile(Action):
     _request_schema = EditFileRequest  # Reusing the request schema from SetCursors
     _response_schema = EditFileResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_EDIT_LINTING
     command = "edit"
     workspace_factory: WorkspaceManagerFactory = None

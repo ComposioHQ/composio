@@ -37,6 +37,7 @@ class SetCursors(Action):
     _request_schema = SetCursorsRequest
     _response_schema = SetCursorsResponse
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_CURSOR_DEFAULT
     command = "set_cursors"
     workspace_factory: WorkspaceManagerFactory = None

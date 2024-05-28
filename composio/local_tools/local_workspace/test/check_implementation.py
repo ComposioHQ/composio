@@ -21,12 +21,12 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (CreateFile
                                                                           SetCursors, SetCursorsRequest,
                                                                           ScrollUp, ScrollDown, ScrollDownRequest, ScrollUpRequest,
                                                                           EditFileRequest, EditFile)
-from composio.sdk.local_tools.local_workspace.history_keeper.actions import GetWorkspaceHistory, GetWorkspaceHistoryRequest
+from composio.local_tools.local_workspace.history_keeper.actions import GetWorkspaceHistory, GetWorkspaceHistoryRequest
 from pprint import pprint
 
-
-import autopep8
-import pylint.lint
+#
+# import autopep8
+# import pylint.lint
 
 
 def format_and_lint_code(source_code):

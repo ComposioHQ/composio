@@ -30,6 +30,7 @@ class ScrollDown(Action):
     _request_schema = ScrollDownRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollDownResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_CURSOR_DEFAULT
     command = "scroll_down"
     workspace_factory: WorkspaceManagerFactory = None
@@ -82,6 +83,7 @@ class ScrollUp(Action):
     _request_schema = ScrollUpRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollUpResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]
+    _tool_name = "cmdmanagertool"
     script_file = SCRIPT_CURSOR_DEFAULT
     command = "scroll_up"
     workspace_factory: WorkspaceManagerFactory = None
