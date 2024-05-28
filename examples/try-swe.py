@@ -13,7 +13,7 @@ def get_command_docs(command_files):
     parse_command = ParseCommandBash()
     command_docs = []
     for file in command_files:
-        file_path = os.path.join(script_dir, "../composio/sdk/local_tools/local_workspace", file)
+        file_path = os.path.join(script_dir, "../composio/local_tools/local_workspace", file)
         commands = parse_command.parse_command_file(path=file_path)
         commands = [
             command for command in commands if not command.name.startswith("_")
@@ -24,12 +24,10 @@ def get_command_docs(command_files):
 
 # Path of the current script
 script_path = Path(__file__).resolve()
-print("Script path:", script_path)
 script_dir = script_path.parent
-print("Script directory:", script_dir)
 composio_toolset = ComposioToolSet()
 
-tools = composio_toolset.get_tools([App.LOCAL_WORKSPACE, App.CMD_MANAGER, App.HISTORY_KEEPER])
+tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
 
 # Read YAML file
 task_config_path = script_dir / Path("../composio/local_tools/local_workspace/config/agent_task_data.yaml")
