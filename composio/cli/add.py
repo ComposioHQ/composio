@@ -13,7 +13,7 @@ from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, login_required, pass_context
 from composio.cli.decorators import pass_entity_id
-from composio.client import AuthSchemeField, IntegrationModel, AppModel
+from composio.client import AppModel, AuthSchemeField, IntegrationModel
 from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
