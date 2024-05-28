@@ -9,7 +9,8 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 
 class LocalWorkspace(Tool):
     """
-    local workspace tool for creating local workspace
+    Use this action to create a workspace and get workspace ID in return.
+    this is a tool for creating local workspace
     """
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
