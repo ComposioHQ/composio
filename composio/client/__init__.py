@@ -276,7 +276,7 @@ class AuthSchemeField(BaseModel):
     displayName: str
     description: str
     type: str
-    
+
     required: bool = False
     expected_from_customer: bool = False
 
