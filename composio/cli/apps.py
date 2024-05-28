@@ -213,7 +213,7 @@ def _get_app_enum(apps: t.List[AppModel]) -> str:
         app_name = app.key.upper().replace(" ", "_").replace("-", "_")
         app_enums += f'    {_get_enum_key(app_name)} = "{app.key}"\n'
     local_tools = LocalToolHandler().registered_tools
-    local_tools_concat = "\", \"".join([f'"{tool.tool_name}"' for tool in local_tools])
+    local_tools_concat = ", ".join([f'"{tool.tool_name}"' for tool in local_tools])
     for tool in local_tools:
         app_enums += f'    {_get_enum_key(tool.tool_name)} = "{tool.tool_name}"\n'
     
