@@ -29,7 +29,7 @@ Base URL for composio API server.
 
 ENV_COMPOSIO_BASE_URL = "COMPOSIO_BASE_URL"
 """
-Environment variable name for composio base URL
+Environment variable for Composio API server base URL
 """
 
 BASE_URL_PROD = "https://backend.composio.dev/api"
@@ -42,7 +42,7 @@ WEB_URL_PROD = "https://app.composio.dev"
 Web URL for production server.
 """
 
-BASE_URL_STAGING = "https://hermes-development.up.railway.app/api"
+BASE_URL_STAGING = "https://staging-backend.composio.dev/api"
 """
 Base URL for staging server.
 """
