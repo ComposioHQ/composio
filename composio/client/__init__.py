@@ -736,9 +736,10 @@ class IntegrationModel(BaseModel):
     appId: str
     defaultConnectorId: str
     _count: t.Dict
-    connections: t.List[t.Dict]
     appName: str
     logo: str
+
+    connections: t.Optional[t.List[t.Dict]] = None
 
 
 class Integrations(Collection[IntegrationModel]):
