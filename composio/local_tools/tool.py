@@ -2,6 +2,19 @@ from .action import Action
 from typing import List
 
 
+action_require_workspace_and_history = {
+"FindFileCmd": True,
+"CreateFileCmd": True,
+"GoToLineNumInOpenFile": True,
+"OpenFile": True,
+"ScrollUp": True,
+"ScrollDown": True,
+"SearchFileCmd": True,
+"SearchDirCmd": True,
+"SetCursors": True,
+"EditFile": True,
+}
+
 class Tool:
 
     @property
@@ -16,8 +29,9 @@ class Tool:
 
         for action_class in self.actions():
             action_instance = action_class()
+            if action_require_workspace_and_history.get(action_class.__name__):
+                action_instance.set_workspace_and_history(self.get_workspace_factory(), self.get_history_processor())
             action_name = action_instance.get_tool_merged_action_name()
-
             action_objects_dict[action_name] = action_instance
 
         return action_objects_dict
