@@ -1,12 +1,11 @@
-from composio import Action, App, Tag
+from composio_lyzr.toolset import ComposioToolSet
 
-from .lyzr_toolspec import ComposioToolset, client
+from composio.client.enums import Action, App, Tag
 
 
 __all__ = (
     "Tag",
     "App",
     "Action",
-    "client",
-    "ComposioToolset",
+    "ComposioToolSet",
 )

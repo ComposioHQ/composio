@@ -25,10 +25,12 @@ setup(
     packages=find_packages(include=["composio*"]),
     entry_points={
         "console_scripts": [
-            "composio-cli=composio.composio_cli:main",
+            "composio=composio.cli:composio",
         ],
     },
     install_requires=[
+        "click",
+        "aiohttp",
         "requests>=2.31.0,<3",
         "jsonschema>=4.21.1,<5",
         "beaupy>=3.7.2,<4",

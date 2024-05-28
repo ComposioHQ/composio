@@ -1,20 +1,31 @@
+"""
+Julep demo.
+"""
+
 import os
+import typing as t
 
-from composio_julep import App, ComposioToolset
-from dotenv import load_dotenv
+import dotenv
+from composio_julep import App, ComposioToolSet
 from julep import Client
+from julep.api import Agent, Session, User
+from julep.managers.types import InputChatMlMessageDict
 
 
-load_dotenv()
-toolset = ComposioToolset()
-composio_tools = toolset.get_tools(tools=App.GITHUB)
+# Load environment variables from .env
+dotenv.load_dotenv()
 
-api_key = os.environ["JULEP_API_KEY"]
-base_url = os.environ["JULEP_API_URL"]
+# Initialize Toolset
+composio_toolset = ComposioToolSet()
+client = Client(
+    api_key=os.environ["JULEP_API_KEY"],
+    base_url=os.environ["JULEP_API_URL"],
+)
 
-client = Client(api_key=api_key, base_url=base_url)
+# Retrieve tools
+composio_tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
-
+# Define assitant
 name = "Jessica"
 about = (
     "Jessica is a forward-thinking tech entrepreneur with a sharp "
@@ -22,6 +33,7 @@ about = (
     "nurturing innovative tech startups, with a particular interest "
     "in sustainability and AI."
 )
+
 default_settings = {
     "temperature": 0.7,
     "top_p": 1,
@@ -32,21 +44,27 @@ default_settings = {
     "max_tokens": 150,
 }
 
-agent = client.agents.create(
-    name=name,
-    about=about,
-    default_settings=default_settings,
-    model="gpt-4",
-    tools=composio_tools,
+agent = t.cast(
+    Agent,
+    client.agents.create(
+        name=name,
+        about=about,
+        default_settings=default_settings,
+        model="gpt-4",
+        tools=composio_tools,
+    ),
 )
 
-about = """
-Sawradip, a software developer, is passionate about impactful tech.
+about = """ Sawradip, a software developer, is passionate about impactful tech.
 At the tech fair, he seeks investors and collaborators for his project.
 """
-user = client.users.create(
-    name="Sawradip",
-    about=about,
+
+user = t.cast(
+    User,
+    client.users.create(
+        name="Sawradip",
+        about=about,
+    ),
 )
 
 situation_prompt = """You are Jessica, a key figure in the tech community,
@@ -62,25 +80,35 @@ Recent Tweets
 2. 'Met a developer with a transformative tool for NGOs. This is the
 """
 
-session = client.sessions.create(
-    user_id=user.id, agent_id=agent.id, situation=situation_prompt
+session = t.cast(
+    Session,
+    client.sessions.create(
+        user_id=user.id,
+        agent_id=agent.id,
+        situation=situation_prompt,
+    ),
 )
 
-user_msg = "Hi, I am presenting my project, hosted at github repository SamparkAI/composio_sdk. If you like it, adding a star would be helpful "
+user_msg = (
+    "Hi, I am presenting my project, hosted at github repository "
+    "SamparkAI/composio_sdk. If you like it, adding a star would be helpful"
+)
 
-
+# Get LLM response
 response = client.sessions.chat(
     session_id=session.id,
     messages=[
-        {
-            "role": "user",
-            "content": user_msg,
-            "name": "Sawradip",
-        }
+        InputChatMlMessageDict(
+            **{
+                "role": "user",
+                "content": user_msg,
+                "name": "Sawradip",
+            }
+        )
     ],
     recall=True,
     remember=True,
 )
 
-execution_output = toolset.handle_tool_calls(response)
-print(execution_output)
+# Execute function calls
+print(composio_toolset.handle_tool_calls(response))

@@ -3,25 +3,27 @@ ignore-patterns=
 ignore=
 
 [MESSAGES CONTROL]
-disable=C0114,C0115,C0116,C0301,W0719,W0718,C0103,W0602,R1702,W0612,W0603,R1715,W0622,W0621
+disable=C0114,C0115,C0116,C0301,C0103,W0603,R1715,W0621,R0903,W0237,W0511,W0622,R0913,R0902,W0221,C0302,R0801,C0411,C0412
 
 # To discuss
-# C0114: missing-module-docstring
-# C0115: missing-class-docstring
-# C0116: missing-function-docstring
-# C0301: line-too-long
-# C0103: invalid-name
-# R1715: consider-using-get
-# W0603: global-statement
 # W0621: redefined-outer-name
-
-# To fix
-# W0602: global-variable-not-assigned
-# W0719: broad-exception-raised
-# W0718: broad-exception-caught
-# R1702: too-many-nested-blocks
 # W0622: redefined-builtin
-# W0612: unused-variable
+
+# Disabled
+# W0511: fixme
+# R0903: too-few-public-methods
+# R0913: too-many-arguments
+# R0801: Similar lines
+# C0411: wrong-import-order
+# C0412: ungrouped-imports
+
+# Design issues to discuss
+# R0914: too-many-locals
+# W0221: arguments-differ
+# W0237: arguments-renamed
+# R0902: too-many-instance-attributes
+# C0302: too-many-lines
 
 [IMPORTS]
-ignored-modules=semver
+ignored-modules=semver,click,aiohttp,anthropic,autogen,composio,composio_autogen,composio_claude,composio_crewai,composio_griptape,composio_julep,composio_langchain,composio_lyzr,composio_openai,crewai,dotenv,griptape,julep,langchain,langchain_core,langchain_openai,lyzr_automata,schema
+
