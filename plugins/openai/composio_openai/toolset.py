@@ -43,7 +43,7 @@ class ComposioToolSet(BaseComposioToolSet):
         task = "Star a repo SamparkAI/composio_sdk on GitHub"
 
         # Get GitHub tools that are pre-configured
-        actions = composio_toolset.get_tools(tools=[App.GITHUB])
+        actions = composio_toolset.get_tools(apps=[App.GITHUB])
 
         # Get response from the LLM
         response = openai_client.chat.completions.create(
