@@ -285,14 +285,15 @@ class AppAuthScheme(BaseModel):
 
     scheme_name: str
     auth_mode: str
-    authorization_url: str
-    token_url: str
     proxy: t.Dict
-    default_scopes: t.List
-    token_response_metadata: t.List
-    client_id: str
-    client_secret: str
     fields: t.List[AuthSchemeField]
+
+    authorization_url: t.Optional[str] = None
+    token_url: t.Optional[str] = None
+    default_scopes: t.Optional[t.List] = None
+    token_response_metadata: t.Optional[t.List] = None
+    client_id: t.Optional[str] = None
+    client_secret: t.Optional[str] = None
 
 
 class AppModel(BaseModel):
