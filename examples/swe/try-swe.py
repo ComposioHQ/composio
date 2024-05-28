@@ -30,7 +30,7 @@ composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
 
 # Read YAML file
-task_config_path = script_dir / Path("../composio/local_tools/local_workspace/config/agent_task_data.yaml")
+task_config_path = script_dir / Path("./task_config.yaml")
 with open(task_config_path, 'r') as stream:
     task_data = yaml.safe_load(stream)
 
