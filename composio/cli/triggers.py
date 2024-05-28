@@ -50,7 +50,7 @@ def _triggers(
     try:
         if active or len(trigger_ids):
             triggers = [
-                _trigger.triggerName
+                _trigger
                 for _trigger in context.client.active_triggers.get(
                     trigger_ids=list(trigger_ids)
                 )
@@ -58,12 +58,15 @@ def _triggers(
             if not triggers:
                 raise click.ClickException("No active triggers found!")
             context.console.print("[green]Showing active triggers[/green]")
-        else:
-            triggers = [
-                _trigger.name
-                for _trigger in context.client.triggers.get(app_names=list(app_names))
-            ]
-            context.console.print("[green]Showing all triggers[/green]")
+            for trg in triggers:
+                context.console.print(f"• Name: {trg.triggerName}\n  ID: {trg.id}")
+            return
+
+        triggers = [
+            _trigger.name
+            for _trigger in context.client.triggers.get(app_names=list(app_names))
+        ]
+        context.console.print("[green]Showing all triggers[/green]")
         for name in triggers:
             context.console.print(f"• {name}")
     except ComposioSDKError as e:
