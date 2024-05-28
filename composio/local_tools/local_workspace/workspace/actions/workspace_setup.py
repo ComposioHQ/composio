@@ -11,7 +11,7 @@ from composio.local_tools.local_workspace.commons.utils import (get_container_by
                                                                     communicate,
                                                                     communicate_with_handling,
                                                                     copy_file_to_container)
-from composio.sdk.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
                                                                                         get_workspace_meta_from_manager,
                                                                                         get_container_process,
                                                                                         KEY_IMAGE_NAME,
