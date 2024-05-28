@@ -8,7 +8,6 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 
 
@@ -23,11 +22,7 @@ def _connections() -> None:
 def _get(context: Context, name: str) -> None:
     """Get connection information"""
     try:
-        connection = context.client.get_entity().get_connection(
-            action=Action.from_app(
-                name=name,
-            )
-        )
+        connection = context.client.get_entity().get_connection(app=name)
         context.console.print(f"[green]App:[/green] {name}")
         context.console.print(f"[green]Id:[/green] {connection.integrationId}")
         context.console.print(f"[green]Status:[/green] {connection.status}")

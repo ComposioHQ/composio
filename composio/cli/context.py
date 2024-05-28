@@ -80,7 +80,23 @@ def pass_context(f: t.Callable[te.Concatenate[Context, P], R]) -> t.Callable[P, 
     if _context is None:
         _context = Context()
 
-    def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         return f(t.cast(Context, _context), *args, **kwargs)
+
+    return update_wrapper(wrapper, f)
+
+
+def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
+    """Marks a callback as wanting to receive the current context object as first argument."""
+    global _context
+    if _context is None:
+        _context = Context()
+
+    def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        if t.cast(Context, _context).user_data.api_key is None:
+            raise click.ClickException(
+                message="User not logged in, please login using `composio login` ",
+            )
+        return f(*args, **kwargs)
 
     return update_wrapper(wapper, f)

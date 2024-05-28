@@ -5,6 +5,7 @@ Composio CLI Tool.
 import click
 
 from composio.cli.actions import _actions
+from composio.cli.add import _add
 from composio.cli.apps import _apps
 from composio.cli.connections import _connections
 from composio.cli.integrations import _integrations
@@ -21,6 +22,7 @@ def composio() -> None:
     """
 
 
+composio.add_command(_add)
 composio.add_command(_apps)
 composio.add_command(_login)
 composio.add_command(_logout)
