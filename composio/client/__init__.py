@@ -912,7 +912,7 @@ class Entity:
             )
 
         connected_account = self.get_connection(
-            action=action,
+            app=action.app,
             connected_account_id=connected_account_id,
         )
         return self.client.actions.execute(
@@ -924,7 +924,7 @@ class Entity:
 
     def get_connection(
         self,
-        action: Action,
+        app: str,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
@@ -944,7 +944,7 @@ class Entity:
         for connected_account in connected_accounts:
             if connected_account.id == connected_account_id:
                 return connected_account
-            if action.app == connected_account.appUniqueId:
+            if app == connected_account.appUniqueId:
                 creation_date = datetime.fromisoformat(
                     connected_account.createdAt.replace("Z", "+00:00")
                 )
@@ -953,7 +953,7 @@ class Entity:
                     latest_account = connected_account
         if latest_account is None:
             raise ComposioClientError(
-                f"Entity `{self.id}` does not have a connection to {action.app}"
+                f"Entity `{self.id}` does not have a connection to {app}"
             )
         return latest_account
 

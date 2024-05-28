@@ -11,7 +11,6 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.client.enums import Action
 from composio.client.exceptions import NoItemsFound
 from composio.exceptions import ComposioSDKError
 
@@ -111,7 +110,7 @@ def _enable_trigger(context: Context, id: str) -> None:
     try:
         (trigger,) = context.client.triggers.get(trigger_ids=[id])
         connected_account = context.client.get_entity().get_connection(
-            action=Action.from_app(name=trigger.appKey)
+            app=trigger.appKey
         )
 
         config = {}
