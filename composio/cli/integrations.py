@@ -11,7 +11,6 @@ import click
 from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, login_required, pass_context
-from composio.client.enums import Action
 from composio.client.exceptions import ComposioClientError
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
@@ -54,11 +53,7 @@ def _add(  # pylint: disable=too-many-locals,too-many-nested-blocks
     try:
         entity = context.client.get_entity()
         try:
-            existing_connection = entity.get_connection(
-                action=Action.from_app(
-                    name=name,
-                )
-            )
+            existing_connection = entity.get_connection(app=name)
         except ComposioClientError:
             existing_connection = None
 
