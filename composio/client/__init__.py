@@ -618,8 +618,6 @@ class Actions(Collection[ActionModel]):
         actions = actions or []
         apps = apps or []
         tags = tags or []
-        print("Apps - ", apps)
-        print("Actions - ", actions)
         # Filter out local apps and actions
         local_apps = [app for app in apps if app.is_local]
         local_actions = [action for action in actions if action.is_local]
@@ -700,7 +698,6 @@ class Actions(Collection[ActionModel]):
         if len(local_apps) > 0 or len(local_actions) > 0:
             local_items = self.local_handler.get_list_of_action_schemas(apps=local_apps, actions=local_actions, tags=tags)
             items = [self.model(**item) for item in local_items] + items
-        print("Items - ", items)
         return items
 
     def execute(
