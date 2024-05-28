@@ -232,7 +232,6 @@ def _get_action_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> st
     local_tool_handler = LocalToolHandler()
     for tool in local_tool_handler.registered_tools:
         for action in tool.actions():
-            print("Action - ", action().action_name)
             enum_name = f"{_get_enum_key(action().action_name)}"
             enum_value = f'("{tool.tool_name}", "{tool.tool_name}_{action().action_name}", True, True)'
             action_enums += f"    {enum_name} = {enum_value}\n"
