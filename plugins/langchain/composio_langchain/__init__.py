@@ -1,13 +1,11 @@
-from composio import Action, App, Tag
+from composio_langchain.toolset import ComposioToolSet
 
-from .langchain_toolspec import ComposioSDK, ComposioToolset, client
+from composio.client.enums import Action, App, Tag
 
 
 __all__ = (
     "Action",
     "App",
     "Tag",
-    "ComposioSDK",
-    "ComposioToolset",
-    "client",
+    "ComposioToolSet",
 )

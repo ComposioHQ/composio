@@ -53,11 +53,10 @@ jobs:
           tox -e black-check
           tox -e isort-check
           tox -e flake8
-      # Temporary skip
-      # - name: Pylint check
-      #   run: tox -e pylint
-      # - name: Static type check
-      #   run: tox -e mypy
+      - name: Pylint check
+        run: tox -e pylint
+      - name: Static type check
+        run: tox -e mypy
 
   test:
     continue-on-error: True
