@@ -1,6 +1,5 @@
 """Test login command."""
 
-from unittest import mock
 
 from composio.cli.context import get_context
 
