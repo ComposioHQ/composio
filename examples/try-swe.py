@@ -1,8 +1,7 @@
 import os
 import yaml
 from pathlib import Path
-from composio import ComposioCore, FrameworkEnum
-from composio_crewai import App, ComposioToolset
+from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 from composio.local_tools.local_workspace.commons.parsing import ParseCommandBash
@@ -28,12 +27,12 @@ script_path = Path(__file__).resolve()
 print("Script path:", script_path)
 script_dir = script_path.parent
 print("Script directory:", script_dir)
+composio_toolset = ComposioToolSet()
 
-client = ComposioCore(framework=FrameworkEnum.OPENAI, api_key=os.environ.get("COMPOSIO_API_KEY"))
-composio_tool_set = ComposioToolset([App.LOCAL_WORKSPACE, App.CMD_MANAGER, App.HISTORY_KEEPER])
+tools = composio_toolset.get_tools([App.LOCAL_WORKSPACE, App.CMD_MANAGER, App.HISTORY_KEEPER])
 
 # Read YAML file
-task_config_path = script_dir / Path("../composio/sdk/local_tools/local_workspace/config/agent_task_data.yaml")
+task_config_path = script_dir / Path("../composio/local_tools/local_workspace/config/agent_task_data.yaml")
 with open(task_config_path, 'r') as stream:
     task_data = yaml.safe_load(stream)
 
@@ -58,7 +57,7 @@ if __name__ == "__main__":
         goal="successfully fix the given issue",
         backstory=backstory,
         verbose=True,
-        tools=composio_tool_set,
+        tools=tools,
         llm=llm,
         memory=True,
     )
