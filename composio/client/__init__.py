@@ -976,9 +976,10 @@ class Entity:
         if isinstance(app_name, App):
             app_name = app_name.value
 
+        app = self.client.apps.get(name=app_name)
         if auth_mode is None:
             integration = integration or self.client.integrations.create(
-                app_id=app_name,
+                app_id=app.appId,
                 use_composio_auth=True,
             )
             return self.client.connected_accounts.initiate(
@@ -987,7 +988,6 @@ class Entity:
                 redirect_url=redirect_url,
             )
 
-        app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         integration = integration or self.client.integrations.create(
             app_id=app.appId,

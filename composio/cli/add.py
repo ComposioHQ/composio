@@ -174,6 +174,7 @@ def add_integration(
     else:
         connection = entity.initiate_connection(
             app_name=name,
+            auth_mode=auth_modes[0],
             redirect_url=get_web_url(path="redirect"),
             integration=integration,
         )
