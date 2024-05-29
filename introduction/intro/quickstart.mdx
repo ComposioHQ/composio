@@ -12,7 +12,7 @@ description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to
 <Step title="Install Composio Package">
 <CodeGroup>
 ```bash Install Composio SDK 
-pip install composio-core 
+pip install composio_core 
 pip install composio_openai 
 ```
 </CodeGroup>
@@ -20,9 +20,8 @@ pip install composio_openai
 <Step title="Authenticate your github account using CLI">
 <CodeGroup>
 ```bash Authenticate your Github Account 
-composio-cli add github
+composio add github
 ```
-
 </CodeGroup>
 </Step>
 <Step title="Import python packages">
@@ -46,7 +45,7 @@ composio_tools = ComposioToolset()
   <CodeGroup>
     ```python Fetch Actions
 # Get GitHub tools that are pre-configured
-actions = composio_tools.get_tools(tools=App.GITHUB)
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
     ```
   </CodeGroup>
 </Step>
@@ -55,17 +54,26 @@ actions = composio_tools.get_tools(tools=App.GITHUB)
 
 <CodeGroup>
 ```python Task to Action Selection
-my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
+my_task = "Star a repo SamparkAI/composio on GitHub"
 
-# Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(
-model="gpt-4-turbo",
-tools=actions, # Passing actions we fetched earlier.
-messages=[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": my_task}
-  ]
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions,  # type: ignore
 )
+
+
+# create a thread
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+
 ```
 
 </CodeGroup>
@@ -77,10 +85,13 @@ messages=[
 <CodeGroup>
 ```python Executing Selected Actions!
 # Execute Function calls
-execution_details = composio_tools.handle_tool_calls(response)
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
 
-print(execution_details)
-print("Completed Task")
+print(response_after_tool_calls)
 ```
 </CodeGroup>
 </Tab>
@@ -89,10 +100,15 @@ You can checkout adding connections for your user [here](/introduction/foundatio
 <CodeGroup>
 ```python Executing Selected Actions!
 # Execute Function calls
-execution_details = composio_tools.handle_tool_calls(response,entity_id="user_id")
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
 
-print(execution_details)
-print("Completed Task")
+url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
+print(f"Open this URL to see the assistant in action: {url}")
+print(response_after_tool_calls)
 ```
 </CodeGroup>
 </Tab>
@@ -108,12 +124,11 @@ Replace `OPENAIKEY`.
 <CodeGroup>
 ```python Complete Code
 ## Step 1
-#!pip install composio-core
+#!pip install composio_core
 #!pip install composio_openai
 
-
 ## Step 2
-#!composio-cli add github
+#!composio add github
 
 ## Step 3
 from openai import OpenAI
@@ -126,11 +141,11 @@ composio_tools = ComposioToolset()
 
 ## Step 4
 # Get GitHub tools that are pre-configured
-actions = composio_tools.get_tools(tools=App.GITHUB)
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
 
 
 ## Step 5
-my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
+my_task = "Star a repo SamparkAI/composio on GitHub"
 
 # Create a chat completion request to decide on the action
 response = openai_client.chat.completions.create(
@@ -145,11 +160,14 @@ messages=[
 
 ## Step 6
 # Execute Function calls
-execution_details = composio_tools.handle_tool_calls(response)
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
 
-print(execution_details)
-
-print("Completed Task")
+url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
+print(f"Open this URL to see the assistant in action: {url}")
+print(response_after_tool_calls)
 ```
-
 </CodeGroup>

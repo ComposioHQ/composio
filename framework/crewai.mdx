@@ -18,15 +18,14 @@ description: "Integrate Composio with Crewai agents to let them seamlessly inter
 These commands prepare your environment for seamless interaction between CrewAI and Github.
 
 <CodeGroup>
-  ```bash Run Command
-  pip install composio_crewai
-  
-  #Connect your Github so agents can use it. 
-  composio-cli add github
+```bash Run Command
+pip install composio_crewai
+
+#Connect your Github so agents can use it. 
+composio add github #Also try - composio add notion 
 
 #Check all different apps which you can connect with
-composio-cli show-apps
-
+composio apps
 ```
 </CodeGroup>
 
@@ -41,10 +40,9 @@ composio-cli show-apps
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
-
+# add OPENAI_API_KEY to env variables. 
+llm = ChatOpenAI()
 ```
-
 </CodeGroup>
 
 </Step>
@@ -54,14 +52,13 @@ llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 <CodeGroup>
 ```python Tools For Github
 
-from composio_crewai import ComposioToolset, Action, App
+from composio_crewai import ComposioToolSet, Action, App
 
 # Get All the tools
 
-tools = ComposioToolset(apps=[App.GITHUB])
-
+composio_toolset = ComposioToolSet()
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
 ```
-
 </CodeGroup>
 
 </Step>
@@ -72,16 +69,21 @@ tools = ComposioToolset(apps=[App.GITHUB])
 <CodeGroup>
 ```python CrewAI Agent Executes Task
 
+# Define agent
 crewai_agent = Agent(
-    role='Github Agent',
+    role="Github Agent",
     goal="""You take action on Github using Github APIs""",
-    backstory="""You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs""",
+    backstory=(
+        "You are AI agent that is responsible for taking actions on Github "
+        "on users behalf. You need to take action on Github using Github APIs"
+    ),
     verbose=True,
     tools=tools,
-    llm=llm
+    llm=openai_client,
 )
+
 task = Task(
-    description="Star a repo SamparkAI/composio_sdk on GitHub",
+    description="Star a repo SamparkAI/composio on GitHub",
     agent=crewai_agent,
     expected_output="if the star happened"
 )
@@ -98,7 +100,7 @@ task.execute()
 <CodeGroup>
 ```bash Executing Agents
 > Entering new CrewAgentExecutor chain...[0m
-I need to star a repository on GitHub, specifically the repo "SamparkAI/composio_sdk".
+I need to star a repository on GitHub, specifically the repo "SamparkAI/composio".
 
 Action:
 github_star_repo
@@ -106,7 +108,7 @@ github_star_repo
 Action Input:
 {
 "owner": "SamparkAI",
-"repo": "docs"
+"repo": "composio"
 }
 
 {'execution_details': {'executed': True}, 'response_data': ''}
@@ -124,7 +126,8 @@ Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from using all the actions, filter specific actions
-toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
+composio_toolset = ComposioToolSet()
+tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 
 </CodeGroup>
@@ -133,17 +136,8 @@ toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
 
 <CodeGroup>
 ```bash Filter Specific App 
-  # To restrict agents from using all tools, filter specific tools
-  specific tools toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB])
+# To restrict agents from using all tools, filter specific tools
+composio_toolset = ComposioToolSet()
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
 ```
 </CodeGroup>
-
-### Filter apps actions by tags
-
-<CodeGroup>
-```bash Filter Actions by Tag
-  # To restrict agents from using all actions, filter the actions by tags
-  specific tools toolsAsanaGithub = ComposioToolset(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
-```
-</CodeGroup>
-
