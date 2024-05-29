@@ -33,6 +33,10 @@ from composio.local_tools.local_workspace.commons.utils import (
 
 logger = get_logger()
 
+script_path = Path(__file__).resolve()
+script_dir = script_path.parent
+CONFIG_FILE_PATH = script_dir / Path("../../config/default.yaml")
+
 
 @dataclass(frozen=True)
 class RunCommandOnWorkspaceRequest(BaseModel):
@@ -74,6 +78,8 @@ class RunCommandOnWorkspace(Action):
         self.name = "agent"
         self.args = args
         self.workspace_id = args.workspace_id
+        # set self.command --> it is used by history-processor to record the command as part of history
+        self.command = args.input_cmd
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )
@@ -91,7 +97,7 @@ class RunCommandOnWorkspace(Action):
         self.return_code = None
         self.logger = logger
         self.config = None
-        self.config_file_path = Path("config/default.yaml")
+        self.config_file_path = Path(CONFIG_FILE_PATH)
         self.load_config_from_path()
         self._parse_command_patterns()
 

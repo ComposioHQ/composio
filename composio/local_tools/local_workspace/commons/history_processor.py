@@ -1,6 +1,10 @@
 from collections import defaultdict
 from functools import wraps
 
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
+logger = get_logger()
+
 
 class HistoryProcessor:
     def __init__(self):
@@ -21,7 +25,11 @@ def history_recorder():
         def wrapper(self, *args, **kwargs):
             output, return_code = func(self, *args, **kwargs)
             if hasattr(self, "history_processor") and hasattr(self, "workspace_id"):
-                command = self.command + " " + args[0].json()
+                command = ""
+                if hasattr(self, "command"):
+                    command = self.command + " " + args[0].json()
+                else:
+                    logger.error("command is not set in command-runner action class. History will have empty command for this")
                 # Assume the state check and logging are meant to be done after the command execution
                 # state = self.workspace_factory.get_workspace_state(workspace_id)
                 state = None
