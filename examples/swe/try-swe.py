@@ -6,7 +6,7 @@ from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
 
 
-CONFIG_FILE_PATH = "./task_flake8.yaml"
+CONFIG_FILE_PATH = "./task_config.yaml"
 # Path of the current script
 script_path = Path(__file__).resolve()
 script_dir = script_path.parent
