@@ -2199,6 +2199,7 @@ class Action(tuple, Enum):
     SEARCHDIRCMD = ("cmdmanagertool", "cmdmanagertool_searchdircmd", True, True)
     SETCURSORS = ("cmdmanagertool", "cmdmanagertool_setcursors", True, True)
     EDITFILE = ("cmdmanagertool", "cmdmanagertool_editfile", True, True)
+    RUNCOMMANDONWORKSPACE = ("cmdmanagertool", "cmdmanagertool_runcommandonworkspace", True, True)
     GETWORKSPACEHISTORY = ("historykeeper", "historykeeper_getworkspacehistory", True, True)
 
 
