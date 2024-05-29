@@ -23,6 +23,8 @@ from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import raise_api_key_missing
 from composio.utils.url import get_api_url_base
 
+from .local_handler import LocalToolHandler
+
 
 ModelType = t.TypeVar("ModelType")
 CollectionType = t.TypeVar("CollectionType", list, dict)
@@ -592,6 +594,7 @@ class Actions(Collection[ActionModel]):
 
     model = ActionModel
     endpoint = v1.actions
+    local_handler = LocalToolHandler()
 
     # TODO: Overload
     def get(  # type: ignore
@@ -618,6 +621,22 @@ class Actions(Collection[ActionModel]):
         actions = actions or []
         apps = apps or []
         tags = tags or []
+        # Filter out local apps and actions
+        local_apps = [app for app in apps if app.is_local]
+        local_actions = [action for action in actions if action.is_local]
+        apps = [app for app in apps if not app.is_local]
+        actions = [action for action in actions if not action.is_local]
+        only_local_apps = (
+            len(apps) == 0
+            and len(actions) == 0
+            and (len(local_apps) > 0 or len(local_actions) > 0)
+        )
+        if only_local_apps:
+            local_items = self.local_handler.get_list_of_action_schemas(
+                apps=local_apps, actions=local_actions, tags=tags
+            )
+            return [self.model(**item) for item in local_items]
+
         if len(actions) > 0 and len(apps) > 0:
             raise ComposioClientError(
                 "Error retrieving Actions, Both actions and apps "
@@ -640,7 +659,14 @@ class Actions(Collection[ActionModel]):
             )
             tags = ["important"]
 
-        if len(actions) == 0 and len(apps) == 0 and len(tags) == 0 and allow_all:
+        if (
+            len(actions) == 0
+            and len(apps) == 0
+            and len(tags) == 0
+            and allow_all
+            and len(local_apps) == 0
+            and len(local_actions) == 0
+        ):
             response = self._raise_if_required(
                 response=self.client.http.get(
                     url=str(self.endpoint),
@@ -665,13 +691,13 @@ class Actions(Collection[ActionModel]):
 
         if limit is not None:
             queries["limit"] = str(limit)
-
         response = self._raise_if_required(
             response=self.client.http.get(
                 url=str(self.endpoint(queries=queries)),
             )
         )
-        items = [self.model(**action) for action in response.json().get("items")]
+        response_json = response.json()
+        items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
             required_triggers = [action.action for action in actions]
             items = [item for item in items if item.name in required_triggers]
@@ -686,6 +712,11 @@ class Actions(Collection[ActionModel]):
                 if any(tag in required_triggers for tag in item.tags)
             ]
 
+        if len(local_apps) > 0 or len(local_actions) > 0:
+            local_items = self.local_handler.get_list_of_action_schemas(
+                apps=local_apps, actions=local_actions, tags=tags
+            )
+            items = [self.model(**item) for item in local_items] + items
         return items
 
     def execute(
@@ -696,6 +727,11 @@ class Actions(Collection[ActionModel]):
         connected_account: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute an action."""
+        if action.is_local:
+            return self.local_handler.execute_local_action(
+                action=action,
+                request_data=params,
+            )
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
