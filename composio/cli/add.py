@@ -161,29 +161,6 @@ def add_integration(
     app = t.cast(AppModel, context.client.apps.get(name=name))
     auth_schemes = app.auth_schemes or []
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
-
-    if "OAUTH2" in auth_modes:
-        return _handle_oauth(
-            entity=entity,
-            client=context.client,
-            app_name=name,
-            auth_mode="OAUTH2",
-            auth_scheme=auth_modes["OAUTH2"],
-            no_browser=no_browser,
-            integration=integration,
-        )
-
-    if "OAUTH1" in auth_modes:
-        return _handle_oauth(
-            entity=entity,
-            client=context.client,
-            app_name=name,
-            auth_mode="OAUTH1",
-            auth_scheme=auth_modes["OAUTH1"],
-            no_browser=no_browser,
-            integration=integration,
-        )
-
     if "API_KEY" in auth_modes:
         return _handle_basic_auth(
             entity=entity,
@@ -221,6 +198,7 @@ def _handle_no_auth(
     """Handle basic auth."""
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
+        redirect_url=get_web_url(path="redirect"),
         integration=integration,
     )
     if not no_browser:
@@ -261,42 +239,4 @@ def _handle_basic_auth(
         ),
         entity_id=entity.id,
     )
-    click.echo(f"✔ {app_name} added successfully!")
-
-
-def _handle_oauth(
-    entity: Entity,
-    client: Composio,
-    app_name: str,
-    auth_mode: str,
-    auth_scheme: AppAuthScheme,
-    no_browser: bool = False,
-    integration: t.Optional[IntegrationModel] = None,
-) -> None:
-    """Handle oauth"""
-    connection = entity.initiate_connection(
-        app_name=app_name.lower(),
-        auth_mode=auth_mode,
-        auth_config=_collect_input_fields(
-            fields=auth_scheme.fields,
-        ),
-        redirect_url=get_web_url(path="redirect"),
-        integration=integration,
-    )
-    if not no_browser:
-        webbrowser.open(
-            url=str(connection.redirectUrl),
-        )
-
-    click.echo(
-        f"Please authenticate {app_name} in the browser and come back here. "
-        f"URL: {connection.redirectUrl}"
-    )
-    spinner = Spinner(
-        DOTS,
-        f"⚠ Waiting for {app_name} authentication...",
-    )
-    spinner.start()
-    connection.wait_until_active(client=client)
-    spinner.stop()
     click.echo(f"✔ {app_name} added successfully!")
