@@ -76,14 +76,25 @@ F = t.TypeVar("F", bound=t.Union[t.Callable[..., t.Any], click.Command, click.Gr
 
 def pass_context(f: t.Callable[te.Concatenate[Context, P], R]) -> t.Callable[P, R]:
     """Marks a callback as wanting to receive the current context object as first argument."""
+
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        return f(get_context(), *args, **kwargs)
+
+    return update_wrapper(wrapper, f)
+
+
+def get_context() -> Context:
+    """Get runtime context."""
     global _context
     if _context is None:
         _context = Context()
+    return _context
 
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        return f(t.cast(Context, _context), *args, **kwargs)
 
-    return update_wrapper(wrapper, f)
+def set_context(context: Context) -> None:
+    """Set runtime context."""
+    global _context
+    _context = context
 
 
 def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
