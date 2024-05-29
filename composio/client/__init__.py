@@ -276,9 +276,9 @@ class AuthSchemeField(BaseModel):
     displayName: str
     description: str
     type: str
-    
+
     required: bool = False
-    expected_from_customer: bool = False
+    expected_from_customer: bool = True
 
 
 class AppAuthScheme(BaseModel):
@@ -757,7 +757,7 @@ class Integrations(Collection[IntegrationModel]):
         app_id: str,
         name: t.Optional[str] = None,
         auth_mode: t.Optional[str] = None,
-        auth_schemes: t.Optional[t.List[AppAuthScheme]] = None,
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_auth: bool = False,
     ) -> IntegrationModel:
         """
@@ -766,7 +766,7 @@ class Integrations(Collection[IntegrationModel]):
         :param app_id: App ID string.
         :param name: Name of the integration.
         :param auth_param: Auth mode string.
-        :param auth_schemes: Auth schemes supported by the app.
+        :param auth_config: Authentication configuration.
         :param use_composio_auth: Whether to use default composio auth or not
         :return: Integration model created by the request.
         """
@@ -774,15 +774,14 @@ class Integrations(Collection[IntegrationModel]):
             "appId": app_id,
             "useComposioAuth": use_composio_auth,
         }
+
         if name is not None:
             request["name"] = name
+
         if auth_mode is not None:
             request["authScheme"] = auth_mode
-            for auth_scheme in auth_schemes or []:
-                if auth_scheme.auth_mode == auth_mode:
-                    request["authConfig"] = {
-                        field.name: "" for field in auth_scheme.fields
-                    }
+            request["authConfig"] = auth_config or {}
+
         response = self._raise_if_required(
             response=self.client.http.post(
                 url=str(self.endpoint),
@@ -968,24 +967,14 @@ class Entity:
     def initiate_connection(
         self,
         app_name: t.Union[str, App],
+        auth_mode: t.Optional[str] = None,
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
-        auth_mode: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
         """Initiate integration connection."""
         if isinstance(app_name, App):
             app_name = app_name.value
-
-        if auth_mode is None:
-            integration = integration or self.client.integrations.create(
-                app_id=app_name,
-                use_composio_auth=True,
-            )
-            return self.client.connected_accounts.initiate(
-                integration_id=integration.id,
-                entity_id=self.id,
-                redirect_url=redirect_url,
-            )
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -993,7 +982,8 @@ class Entity:
             app_id=app.appId,
             name=f"integration_{timestamp}",
             auth_mode=auth_mode,
-            auth_schemes=app.auth_schemes,
+            auth_config=auth_config,
+            use_composio_auth=False,
         )
         return self.client.connected_accounts.initiate(
             integration_id=integration.id,
