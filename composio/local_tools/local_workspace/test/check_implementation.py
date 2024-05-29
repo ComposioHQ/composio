@@ -92,21 +92,24 @@ def check_simple_implementation():
     # create file
     create_file_cmd = CreateFileCmd()
     create_file_cmd.set_workspace_and_history(w, h)
-    create_file_output = create_file_cmd.execute(CreateFileRequest(
-        workspace_id=workspace_id,
-        file_name="/SWE-bench/tmp-pv.py"
-    ), authorisation_data={})
+    create_file_output = create_file_cmd.execute(
+        CreateFileRequest(workspace_id=workspace_id, file_name="/SWE-bench/tmp-pv.py"),
+        authorisation_data={},
+    )
     print(create_file_output)
 
     # edit file
     edit_file_cmd = EditFile()
     edit_file_cmd.set_workspace_and_history(w, h)
-    edit_file_output = edit_file_cmd.execute(EditFileRequest(
-        workspace_id=workspace_id,
-        start_line=1,
-        end_line=1,
-        replacement_text='''print("this is a test")''',
-    ), authorisation_data={})
+    edit_file_output = edit_file_cmd.execute(
+        EditFileRequest(
+            workspace_id=workspace_id,
+            start_line=1,
+            end_line=1,
+            replacement_text="""print("this is a test")""",
+        ),
+        authorisation_data={},
+    )
     print(edit_file_output)
 
     run_command = RunCommandOnWorkspace()
@@ -114,7 +117,8 @@ def check_simple_implementation():
     output = run_command.execute(
         RunCommandOnWorkspaceRequest(
             workspace_id=workspace_id, input_cmd="python /SWE-bench/tmp-pv.py"
-        ), authorisation_data={}
+        ),
+        authorisation_data={},
     )
 
     print(output)
