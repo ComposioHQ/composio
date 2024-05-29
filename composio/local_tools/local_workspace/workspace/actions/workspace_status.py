@@ -31,7 +31,7 @@ class WorkspaceStatusResponse(BaseModel):
 
 class WorkspaceStatus(Action):
     """
-    returns the status of workspace given in the request
+    Returns the status of workspace given in the request
     """
 
     _display_name = "Get workspace status"

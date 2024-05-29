@@ -38,7 +38,7 @@ class CmdManagerTool(Tool):
             ScrollDown,
             SearchFileCmd,
             SearchDirCmd,
-            SetCursors,
+            # SetCursors,
             EditFile,
             RunCommandOnWorkspace,
         ]

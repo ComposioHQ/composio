@@ -58,8 +58,8 @@ class WorkspaceSetupResponse(BaseModel):
 
 class SetupWorkspace(Action):
     """
-    setsup workspace with the environment variables, scripts.
-    sets the path, and sources necessary scripts
+    Setup workspace with the environment variables, scripts.
+    Sets the path, and sources necessary scripts.
     """
 
     _display_name = "Setup workspace"
