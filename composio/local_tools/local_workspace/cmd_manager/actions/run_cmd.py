@@ -359,7 +359,8 @@ class RunCommandOnWorkspace(Action):
                 return observation, 0, True, info
             except KeyboardInterrupt:
                 raise
-            except:
+            except Exception as e:
+                logger.error(f"exiting cmd, exception: {e}")
                 observation = "Exited"
                 info["exit_status"] = action
                 return observation, 0, True, info
@@ -401,6 +402,7 @@ class RunCommandOnWorkspace(Action):
             self.close_container()
             return observation, 0, True, info
         except Exception as e:
+            logger.error(f"cmd failed with exception: {e}")
             observation += "\nEXECUTION FAILED OR COMMAND MALFORMED"
 
         # Record submission and end episode if `submit` keyword found
@@ -442,8 +444,7 @@ class RunCommandOnWorkspace(Action):
         self.close()
         self.container_process = None
         self.container_obj = None
-        ## this will happen from the workspace (docker-container class)
-        # self._reset_container()
+
 
     def close(self):
         close_container(self.container_process, self.container_obj)
@@ -451,9 +452,3 @@ class RunCommandOnWorkspace(Action):
     def interrupt(self):
         interrupt_container(self.container_process, self.container_obj)
 
-
-# def execute_docker_cmd_manager(args: DockerCommandManagerArgsModel, container_process, parent_pids):
-#     c = DockerCommandManager(args)
-#     c.set_container_process(container_process, parent_pids)
-#     observation, _, done, info = c.run_incoming_action(args.input_cmd)
-#     return observation, done, info

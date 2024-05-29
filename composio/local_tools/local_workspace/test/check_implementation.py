@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from pprint import pprint
 
 from composio.local_tools.local_workspace.cmd_manager.actions import (
@@ -101,7 +103,10 @@ def check_simple_implementation():
     run_command = RunCommandOnWorkspace()
     run_command.set_workspace_and_history(w, h)
     output = run_command.execute(
-    RunCommandOnWorkspaceRequest(workspace_id=workspace_id, input_cmd="python /SWE-bench/swebench/metrics"))
+        RunCommandOnWorkspaceRequest(
+            workspace_id=workspace_id, input_cmd="python /SWE-bench/swebench/metrics"
+        )
+    )
 
     print(output)
 
