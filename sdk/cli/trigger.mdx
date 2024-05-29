@@ -12,7 +12,7 @@ description: "Learn how to enable, disable, list, and manage triggers using the 
 Set a global callback URL to which all triggers from Composio will be sent.
   <CodeGroup>
   ```bash Set Global Callback
-  composio-cli set global-trigger-callback https://31-*****-163.ngrok.app
+  composio triggers callbacks set https://31-*****-163.ngrok.app
   ```
   </CodeGroup>
   This step is crucial for receiving triggers. 
@@ -21,7 +21,7 @@ Set a global callback URL to which all triggers from Composio will be sent.
 Identify which triggers are available for `slack` and explore potential activations.
   <CodeGroup>
   ```bash List Slack Triggers
-  composio-cli list-triggers slack
+  composio triggers --app slack
   ```
   </CodeGroup>
 </Step>
@@ -29,17 +29,17 @@ Identify which triggers are available for `slack` and explore potential activati
 **Activate** a Slack trigger to **obtain a unique `Trigger_ID`**.
   <CodeGroup>
   ```bash Enable a Trigger
-  composio-cli enable-trigger slack_receive_message # Replace 'slack_receive_message' with your desired trigger name
+  composio triggers enable slack_receive_message # Replace 'slack_receive_message' with your desired trigger name
   ```
   </CodeGroup>
-  `Trigger_ID` is **crucial for distinguishing** your triggers.
+  In the output, you should get a `Trigger_ID`. This is **crucial for distinguishing** your triggers.
 </Step>
 
 <Step title="Disable a Specific Trigger">
 Deactivate a trigger if it no longer meets your needs after testing.
   <CodeGroup>
   ```bash Disable a Trigger
-  composio-cli disable-trigger <trigger_id>
+  composio triggers disable <trigger_id>
   ```
   </CodeGroup>
 </Step>
@@ -47,7 +47,7 @@ Deactivate a trigger if it no longer meets your needs after testing.
 Review all triggers that are currently active within your account.
   <CodeGroup>
   ```bash List all Active Triggers
-  composio-cli list-active-triggers
+  composio triggers --active
   ```
   </CodeGroup>
 </Step>
