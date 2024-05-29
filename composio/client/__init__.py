@@ -978,6 +978,8 @@ class Entity:
             app_name = app_name.value
 
         app = self.client.apps.get(name=app_name)
+        if not app:
+            raise ComposioClientError(f"App with name {app_name} not found")
         if auth_mode is None:
             integration = integration or self.client.integrations.create(
                 app_id=app.appId,
