@@ -131,7 +131,7 @@ class SetupGithubRepo(Action):
                 error_msg="Failed to clean repository",
             )
 
-    def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
+    def execute(self, request_data: SetupGithubRepoRequest, authorisation_data: dict = {}):
         self._setup(request_data)
         token_prefix = ""
         if self._github_token:
