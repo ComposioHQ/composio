@@ -1,13 +1,15 @@
-import re, json
-import gym
-from abc import ABC
+import json
 import logging
-from pathlib import Path
+import re
+from abc import ABC
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
+
+import gym
 from rich.logging import RichHandler
-from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 from simple_parsing.helpers.fields import field
-from typing import Dict, List, Optional, Tuple, Any, TypedDict, Union
+from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 
 
 @dataclass(frozen=True)
@@ -28,7 +30,9 @@ class Command(FrozenSerializable):
     code: str
     name: str
     docstring: Optional[str] = None
-    end_name: Optional[str] = None  # if there is an end_name, then it is a multi-line command
+    end_name: Optional[
+        str
+    ] = None  # if there is an end_name, then it is a multi-line command
     arguments: Optional[Dict] = None
     signature: Optional[str] = None
 

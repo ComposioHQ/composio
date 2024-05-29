@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from simple_parsing.helpers.serialization.serializable import FrozenSerializable
+from typing import Any, Dict, Optional, Tuple
+
 from simple_parsing.helpers.fields import field
-from typing import Dict, Optional, Tuple, Any
+from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,9 @@ class Command(FrozenSerializable):
     code: str
     name: str
     docstring: Optional[str] = None
-    end_name: Optional[str] = None  # if there is an end_name, then it is a multi-line command
+    end_name: Optional[
+        str
+    ] = None  # if there is an end_name, then it is a multi-line command
     arguments: Optional[Dict] = None
     signature: Optional[str] = None
 

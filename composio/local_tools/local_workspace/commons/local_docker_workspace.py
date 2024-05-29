@@ -1,17 +1,21 @@
 import datetime
-from uuid import uuid4
-import docker
-import gymnasium as gym
 import hashlib
 import os
 import time
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+from uuid import uuid4
 
-from composio.local_tools.local_workspace.commons.utils import (get_container,
-                                                                    read_with_timeout,
-                                                                    communicate)
+import docker
+import gymnasium as gym
+from pydantic import BaseModel
+
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.local_tools.local_workspace.commons.utils import (
+    communicate,
+    get_container,
+    read_with_timeout,
+)
+
 
 logger = get_logger()
 
@@ -86,7 +90,9 @@ class LocalDockerWorkspace(gym.Env):
             # i.e., when we want swe-agent to pull the image from dockerhub
             image_name_sanitized = self.image_name.replace("/", "-")
             image_name_sanitized = image_name_sanitized.replace(":", "-")
-            self.container_name = f"{image_name_sanitized}-{hash_object.hexdigest()[:10]}"
+            self.container_name = (
+                f"{image_name_sanitized}-{hash_object.hexdigest()[:10]}"
+            )
         self.container, self.parent_pids = get_container(
             self.container_name, self.image_name, persistent=self.persistent
         )
@@ -130,12 +136,19 @@ class LocalDockerWorkspace(gym.Env):
     def reset_container(self):
         pass
 
-    def communicate_with_handling(self, input: str, error_msg: str, timeout_duration=25) -> str:
+    def communicate_with_handling(
+        self, input: str, error_msg: str, timeout_duration=25
+    ) -> str:
         """
         Wrapper for communicate function that raises error if return code is non-zero
         """
-        logs, self.returncode = communicate(self.container, self.container_obj, input, self.parent_pids,
-                                            timeout_duration=timeout_duration)
+        logs, self.returncode = communicate(
+            self.container,
+            self.container_obj,
+            input,
+            self.parent_pids,
+            timeout_duration=timeout_duration,
+        )
         if self.returncode != 0:
             self.logger.error(f"{error_msg}: {logs}")
             self.close()
@@ -143,8 +156,13 @@ class LocalDockerWorkspace(gym.Env):
         return logs
 
     def communicate(self, input: str, timeout_duration=25) -> str:
-        output, self.returncode = communicate(self.container, self.container_obj,
-                                              input, self.parent_pids, timeout_duration)
+        output, self.returncode = communicate(
+            self.container,
+            self.container_obj,
+            input,
+            self.parent_pids,
+            timeout_duration,
+        )
         self.communicate_output = output
 
     def interrupt(self):
@@ -161,7 +179,9 @@ class LocalDockerWorkspace(gym.Env):
             pass
         try:
             output = self.communicate(input="echo 'interrupted'", timeout_duration=5)
-            assert output.strip().endswith("interrupted"), "container health check failed"
+            assert output.strip().endswith(
+                "interrupted"
+            ), "container health check failed"
         except TimeoutError:
             raise RuntimeError("Failed to interrupt container")
 
@@ -185,7 +205,9 @@ class LocalDockerWorkspace(gym.Env):
         """
         self.logger.info("Beginning environment shutdown...")
         try:
-            communicate(self.container, self.container_obj, "exit", parent_pids=self.parent_pids)
+            communicate(
+                self.container, self.container_obj, "exit", parent_pids=self.parent_pids
+            )
         except KeyboardInterrupt:
             raise
         except:
@@ -223,10 +245,12 @@ class WorkspaceManagerFactory:
             container_name = workspace_manager.container_name
             parent_pids = workspace_manager.parent_pids
             workspace_id = str(uuid4())
-            self._registry[workspace_id] = {KEY_WORKSPACE_MANAGER: workspace_manager,
-                                                               KEY_CONTAINER_NAME: container_name,
-                                                               KEY_PARENT_PIDS: parent_pids,
-                                                               KEY_IMAGE_NAME: args.image_name}
+            self._registry[workspace_id] = {
+                KEY_WORKSPACE_MANAGER: workspace_manager,
+                KEY_CONTAINER_NAME: container_name,
+                KEY_PARENT_PIDS: parent_pids,
+                KEY_IMAGE_NAME: args.image_name,
+            }
             return workspace_id
         else:
             raise ValueError(f"Unknown workspace manager type: {workspace_type}")
@@ -242,11 +266,15 @@ class WorkspaceManagerFactory:
         return self._registry
 
 
-def get_workspace_meta_from_manager(workspace_factory: WorkspaceManagerFactory, workspace_id: str) -> dict:
+def get_workspace_meta_from_manager(
+    workspace_factory: WorkspaceManagerFactory, workspace_id: str
+) -> dict:
     return workspace_factory.get_registered_manager(workspace_id)
 
 
-def get_container_name_from_workspace_id(workspace_factory: WorkspaceManagerFactory, workspace_id: str) -> str:
+def get_container_name_from_workspace_id(
+    workspace_factory: WorkspaceManagerFactory, workspace_id: str
+) -> str:
     workspace_meta = workspace_factory.get_registered_manager(workspace_id)
     return workspace_meta[KEY_CONTAINER_NAME]
 
@@ -259,9 +287,10 @@ def get_container_process(workspace: LocalDockerWorkspace):
 
 def execute_local_docker_workspace(args: LocalDockerArgumentsModel):
     w = LocalDockerWorkspace(args)
-    resp = {"container_name": w.container_name,
-            "parent_pids": w.parent_pids,
-            "container_process": w.container}
+    resp = {
+        "container_name": w.container_name,
+        "parent_pids": w.parent_pids,
+        "container_process": w.container,
+    }
     print(resp)
     return resp
-

@@ -1,13 +1,20 @@
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    WorkspaceManagerFactory,
+)
+from composio.local_tools.local_workspace.history_keeper.actions.get_workspace_history import (
+    GetWorkspaceHistory,
+)
 from composio.local_tools.tool import Tool
-from composio.local_tools.local_workspace.history_keeper.actions.get_workspace_history import GetWorkspaceHistory
-from composio.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor
 
 
 class HistoryKeeper(Tool):
     """
     local workspace tool for creating local workspace
     """
+
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 

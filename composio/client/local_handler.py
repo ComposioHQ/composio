@@ -1,9 +1,18 @@
-from ..local_tools import Mathematical
+from composio.local_tools.local_workspace.cmd_manager.cmd_manager_tool import (
+    CmdManagerTool,
+)
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    WorkspaceManagerFactory,
+)
+from composio.local_tools.local_workspace.history_keeper.history_keeper_tool import (
+    HistoryKeeper,
+)
 from composio.local_tools.local_workspace.workspace.workspace_tool import LocalWorkspace
-from composio.local_tools.local_workspace.cmd_manager.cmd_manager_tool import CmdManagerTool
-from composio.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor
-from composio.local_tools.local_workspace.history_keeper.history_keeper_tool import HistoryKeeper
+
+from ..local_tools import Mathematical
 
 
 class LocalToolHandler:
@@ -34,7 +43,6 @@ class LocalToolHandler:
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
-
         tag_values = [tag if isinstance(tag, str) else tag.value for tag in tags]
 
         all_action_objs = []
@@ -49,13 +57,24 @@ class LocalToolHandler:
             all_action_objs.append(action_obj)
 
         # all_action_objs = list(set(all_action_objs))
-        all_action_schemas = [action_obj.get_action_schema() for action_obj in all_action_objs]
+        all_action_schemas = [
+            action_obj.get_action_schema() for action_obj in all_action_objs
+        ]
         # all_action_schemas = list(set(all_action_schemas))
 
-        all_action_schemas = list({action_schema["name"]: action_schema for action_schema in all_action_schemas}.values())
+        all_action_schemas = list(
+            {
+                action_schema["name"]: action_schema
+                for action_schema in all_action_schemas
+            }.values()
+        )
 
         if tag_values:
-            all_action_schemas = [action_schema for action_schema in all_action_schemas if bool(set(tag_values) & set(action_schema["tags"]))]
+            all_action_schemas = [
+                action_schema
+                for action_schema in all_action_schemas
+                if bool(set(tag_values) & set(action_schema["tags"]))
+            ]
 
         return all_action_schemas
 

@@ -1,23 +1,32 @@
 import logging
-from rich.logging import RichHandler
-from pydantic import BaseModel, Field
 from pathlib import Path
 
-from composio.local_tools.action import Action
+from pydantic import BaseModel, Field
+from rich.logging import RichHandler
 
-from composio.local_tools.local_workspace.commons.command_runner_model import AgentConfig
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor
-from composio.local_tools.local_workspace.commons.utils import (get_container_by_container_name,
-                                                                    communicate,
-                                                                    communicate_with_handling,
-                                                                    copy_file_to_container)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
-                                                                                        get_workspace_meta_from_manager,
-                                                                                        get_container_process,
-                                                                                        KEY_IMAGE_NAME,
-                                                                                        KEY_CONTAINER_NAME,
-                                                                                        KEY_WORKSPACE_MANAGER,
-                                                                                        KEY_PARENT_PIDS)
+from composio.local_tools.action import Action
+from composio.local_tools.local_workspace.commons.command_runner_model import (
+    AgentConfig,
+)
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    KEY_CONTAINER_NAME,
+    KEY_IMAGE_NAME,
+    KEY_PARENT_PIDS,
+    KEY_WORKSPACE_MANAGER,
+    WorkspaceManagerFactory,
+    get_container_process,
+    get_workspace_meta_from_manager,
+)
+from composio.local_tools.local_workspace.commons.utils import (
+    communicate,
+    communicate_with_handling,
+    copy_file_to_container,
+    get_container_by_container_name,
+)
+
 
 LOGGER_NAME = "composio_logger"
 
@@ -36,11 +45,15 @@ script_dir = script_path.parent
 
 
 class WorkspaceSetupRequest(BaseModel):
-    workspace_id: str = Field(..., description="workspace-id will be used to get status of the workspace")
+    workspace_id: str = Field(
+        ..., description="workspace-id will be used to get status of the workspace"
+    )
 
 
 class WorkspaceSetupResponse(BaseModel):
-    workspace_status: str = Field(..., description="status of the workspace given in request")
+    workspace_status: str = Field(
+        ..., description="status of the workspace given in request"
+    )
 
 
 class SetupWorkspace(Action):
@@ -48,6 +61,7 @@ class SetupWorkspace(Action):
     setsup workspace with the environment variables, scripts.
     sets the path, and sources necessary scripts
     """
+
     _display_name = "Setup workspace"
     _request_schema = WorkspaceSetupRequest
     _response_schema = WorkspaceSetupResponse
@@ -59,12 +73,18 @@ class SetupWorkspace(Action):
     def _setup(self, args: WorkspaceSetupRequest):
         self.args = args
         self.workspace_id = args.workspace_id
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(
+            self.workspace_factory, self.workspace_id
+        )
         if not workspace_meta:
-            raise Exception(f"workspace not found, invalid workspace-id: {self.workspace_id}")
+            raise Exception(
+                f"workspace not found, invalid workspace-id: {self.workspace_id}"
+            )
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
-        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        self.container_process = get_container_process(
+            workspace_meta[KEY_WORKSPACE_MANAGER]
+        )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         self.return_code = None
@@ -73,10 +93,15 @@ class SetupWorkspace(Action):
         self.config_file_path = script_dir / Path("../../config/default.yaml")
         self.load_config_from_path()
         if not self.container_obj:
-            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+            raise Exception(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
 
-    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
-                                  history_processor: HistoryProcessor):
+    def set_workspace_and_history(
+        self,
+        workspace_factory: WorkspaceManagerFactory,
+        history_processor: HistoryProcessor,
+    ):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
@@ -87,7 +112,9 @@ class SetupWorkspace(Action):
         return {"message": f"environment is set with variables: {env_vars}"}
 
     def get_container_by_container_name(self):
-        container_obj = get_container_by_container_name(self.container_name, self.image_name)
+        container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         return container_obj
 
     def load_config_from_path(self):
@@ -99,16 +126,17 @@ class SetupWorkspace(Action):
 
     def set_env_variables(self):
         commands_to_execute = (
-                [self.config.state_command.code]
-                + ["pip install flake8"]
-                +
-                [f"{k}={v}" for k, v in self.config.env_variables.items()]
+            [self.config.state_command.code]
+            + ["pip install flake8"]
+            + [f"{k}={v}" for k, v in self.config.env_variables.items()]
         )
         commands = "\n".join(commands_to_execute)
         return_code = 0
         output = None
         try:
-            output, return_code = communicate(self.container_process, self.container_obj, commands, self.parent_pids)
+            output, return_code = communicate(
+                self.container_process, self.container_obj, commands, self.parent_pids
+            )
         except KeyboardInterrupt:
             if return_code != 0:
                 raise RuntimeError(
@@ -156,21 +184,30 @@ class SetupWorkspace(Action):
         for command in commands:
             name = command["name"]
             contents = command["contents"]
-            copy_file_to_container(self.container_obj, contents, f"/root/commands/{name}")
-            if command['type'] == "source_file":
-                communicate_with_handling(self.container_process, self.container_obj,
-                                          f"source /root/commands/{name}", self.parent_pids,
-                                          error_msg=(f"Failed to source {name}. If you meant to make a script "
-                                                     f"start the file with a shebang (e.g. #!/usr/bin/env python).")
-                                          )
-            elif command['type'] == "script":
-                communicate_with_handling(self.container_process, self.container_obj,
-                                          f"chmod +x /root/commands/{name}", self.parent_pids,
-                                          error_msg=f"Failed to chmod {name}",
-                                          )
-            elif command['type'] == "utility":
+            copy_file_to_container(
+                self.container_obj, contents, f"/root/commands/{name}"
+            )
+            if command["type"] == "source_file":
+                communicate_with_handling(
+                    self.container_process,
+                    self.container_obj,
+                    f"source /root/commands/{name}",
+                    self.parent_pids,
+                    error_msg=(
+                        f"Failed to source {name}. If you meant to make a script "
+                        f"start the file with a shebang (e.g. #!/usr/bin/env python)."
+                    ),
+                )
+            elif command["type"] == "script":
+                communicate_with_handling(
+                    self.container_process,
+                    self.container_obj,
+                    f"chmod +x /root/commands/{name}",
+                    self.parent_pids,
+                    error_msg=f"Failed to chmod {name}",
+                )
+            elif command["type"] == "utility":
                 # nothing to do for utility scripts
                 pass
             else:
                 raise ValueError(f"Invalid command type: {command['type']}")
-
