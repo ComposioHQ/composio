@@ -41,7 +41,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
-        package: [langchain, autogen, crew_ai, lyzr]
+        package: [autogen, claude,crew_ai, griptape, julep, langchain, lyzr, openai]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -67,3 +67,5 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
           packages-dir: plugins/${{ matrix.package }}/dist/
+
+
