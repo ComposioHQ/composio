@@ -12,6 +12,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     OpenCmdRequest,
     OpenFile,
     RunCommandOnWorkspace,
+    RunCommandOnWorkspaceRequest,
     ScrollDown,
     ScrollDownRequest,
     ScrollUp,
@@ -76,26 +77,32 @@ def check_simple_implementation():
 
     # setup environment + copy commands + source scripts
     setup_docker_args = WorkspaceSetupRequest(workspace_id=workspace_id)
-    setup_manager = SetupWorkspace("setup-workspace")
+    setup_manager = SetupWorkspace()
     setup_manager.set_workspace_and_history(w, h)
     setup_manager.execute(setup_docker_args)
 
     # copy github repo
     copy_repo_args = SetupGithubRepoRequest(workspace_id=workspace_id)
-    git_setup = SetupGithubRepo("setyp_git_repo")
+    git_setup = SetupGithubRepo()
     git_setup.set_workspace_and_history(w, h)
     git_setup.execute(copy_repo_args)
 
-    search_cmd = SearchDirCmd("abc")
-    search_cmd.set_workspace_and_history(w, h)
-    output = search_cmd.execute(
-        SearchDirRequest(
-            workspace_id=workspace_id,
-            search_term="'golden-python search'",
-            dir="/SWE-bench/",
-        ),
-        authorisation_data={},
-    )
+    # search_cmd = SearchDirCmd("abc")
+    # search_cmd.set_workspace_and_history(w, h)
+    # output = search_cmd.execute(
+    #     SearchDirRequest(
+    #         workspace_id=workspace_id,
+    #         search_term="'golden-python search'",
+    #         dir="/SWE-bench/",
+    #     ),
+    #     authorisation_data={},
+    # )
+
+    run_command = RunCommandOnWorkspace()
+    run_command.set_workspace_and_history(w, h)
+    output = run_command.execute(
+    RunCommandOnWorkspaceRequest(workspace_id=workspace_id, input_cmd="python /SWE-bench/swebench/metrics"))
+
     print(output)
 
     # set_cursor_cmd = SetCursors("set-cursors")
