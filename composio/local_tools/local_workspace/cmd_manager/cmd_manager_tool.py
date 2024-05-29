@@ -1,38 +1,46 @@
+from composio.local_tools.local_workspace.cmd_manager.actions import (
+    CreateFileCmd,
+    EditFile,
+    FindFileCmd,
+    GoToLineNumInOpenFile,
+    OpenFile,
+    RunCommandOnWorkspace,
+    ScrollDown,
+    ScrollUp,
+    SearchDirCmd,
+    SearchFileCmd,
+    SetCursors,
+)
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    WorkspaceManagerFactory,
+)
 from composio.local_tools.tool import Tool
-from composio.local_tools.local_workspace.commons.local_docker_workspace import WorkspaceManagerFactory
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor
-from composio.local_tools.local_workspace.cmd_manager.actions import (CreateFileCmd,
-                                                                          GoToLineNumInOpenFile,
-                                                                          OpenFile,
-                                                                          ScrollUp,
-                                                                          ScrollDown,
-                                                                          SearchFileCmd,
-                                                                          SearchDirCmd,
-                                                                          FindFileCmd,
-                                                                          SetCursors,
-                                                                          EditFile, RunCommandOnWorkspace)
 
 
 class CmdManagerTool(Tool):
     """
     command manager tool for workspace
     """
+
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
     def actions(self) -> list:
         return [
-              FindFileCmd,
-              CreateFileCmd,
-              GoToLineNumInOpenFile,
-              OpenFile,
-              ScrollUp,
-              ScrollDown,
-              SearchFileCmd,
-              SearchDirCmd,
-              SetCursors,
-              EditFile,
-              RunCommandOnWorkspace
+            FindFileCmd,
+            CreateFileCmd,
+            GoToLineNumInOpenFile,
+            OpenFile,
+            ScrollUp,
+            ScrollDown,
+            SearchFileCmd,
+            SearchDirCmd,
+            SetCursors,
+            EditFile,
+            RunCommandOnWorkspace,
         ]
 
     def triggers(self) -> list:

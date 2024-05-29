@@ -1,7 +1,6 @@
-import shlex
-import docker
 import os
 import select
+import shlex
 import subprocess
 import tarfile
 import tempfile
@@ -11,7 +10,10 @@ from io import BytesIO
 from subprocess import PIPE, STDOUT
 from typing import Set, Tuple
 
+import docker
+
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
 
 START_UP_DELAY = 5
 TIMEOUT_DURATION = 25
@@ -19,7 +21,9 @@ TIMEOUT_DURATION = 25
 logger = get_logger()
 
 
-def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> Tuple[subprocess.Popen, Set]:
+def get_container(
+    ctr_name: str, image_name: str, persistent: bool = False
+) -> Tuple[subprocess.Popen, Set]:
     """
     Get a container object for a given container name and image name
 
@@ -34,11 +38,13 @@ def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> T
     try:
         client = docker.from_env()
     except docker.errors.DockerException as e:
-        docker_not_running = any((
-            "connection aborted" in str(e).lower(),
-            "connection refused" in str(e).lower(),
-            "error while fetching server api version" in str(e).lower(),
-        ))
+        docker_not_running = any(
+            (
+                "connection aborted" in str(e).lower(),
+                "connection refused" in str(e).lower(),
+                "error while fetching server api version" in str(e).lower(),
+            )
+        )
         if docker_not_running:
             msg = (
                 "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
@@ -46,7 +52,7 @@ def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> T
             )
             raise RuntimeError(msg) from e
         raise
-    filtered_images = client.images.list(filters={'reference': image_name})
+    filtered_images = client.images.list(filters={"reference": image_name})
     if len(filtered_images) == 0:
         msg = (
             f"Image {image_name} not found. Please ensure it is built and available. "
@@ -70,22 +76,24 @@ def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> T
 
 
 def get_container_by_container_name(container_name: str, image_name: str):
-    '''
+    """
     1. initialize docker client from the local environment
     2. call client.list_images --> it populates the resource-id for docker-client
         else the call to get container_object fails
     2. returns docker_container_obj from the docker client using the container_name
-    '''
+    """
     container_obj = None
     # Let's first check that the image exists and give some better error messages
     try:
         client = docker.from_env()
     except docker.errors.DockerException as e:
-        docker_not_running = any((
-            "connection aborted" in str(e).lower(),
-            "connection refused" in str(e).lower(),
-            "error while fetching server api version" in str(e).lower(),
-        ))
+        docker_not_running = any(
+            (
+                "connection aborted" in str(e).lower(),
+                "connection refused" in str(e).lower(),
+                "error while fetching server api version" in str(e).lower(),
+            )
+        )
         if docker_not_running:
             msg = (
                 "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
@@ -93,7 +101,7 @@ def get_container_by_container_name(container_name: str, image_name: str):
             )
             raise RuntimeError(msg) from e
         raise
-    filtered_images = client.images.list(filters={'reference': image_name})
+    filtered_images = client.images.list(filters={"reference": image_name})
     if len(filtered_images) == 0:
         msg = (
             f"Image {image_name} not found. Please ensure it is built and available. "
@@ -110,7 +118,7 @@ def get_container_by_container_name(container_name: str, image_name: str):
             f"for {attrs['Os']} {attrs['Architecture']}."
         )
     try:
-            container_obj = client.containers.get(container_name)
+        container_obj = client.containers.get(container_name)
     except docker.errors.NotFound:
         logger.debug("Couldn't find container. Let's wait and retry.")
         time.sleep(3)
@@ -119,7 +127,9 @@ def get_container_by_container_name(container_name: str, image_name: str):
     return container_obj
 
 
-def _get_persistent_container(ctr_name: str, image_name: str, persistent: bool = False) -> Tuple[subprocess.Popen, Set]:
+def _get_persistent_container(
+    ctr_name: str, image_name: str, persistent: bool = False
+) -> Tuple[subprocess.Popen, Set]:
     client = docker.from_env()
     containers = client.containers.list(all=True, filters={"name": ctr_name})
     if ctr_name in [c.name for c in containers]:
@@ -137,7 +147,7 @@ def _get_persistent_container(ctr_name: str, image_name: str, persistent: bool =
     else:
         container_obj = client.containers.run(
             image_name,
-            command='/bin/bash -l -m',
+            command="/bin/bash -l -m",
             name=ctr_name,
             stdin_open=True,
             tty=True,
@@ -161,11 +171,13 @@ def _get_persistent_container(ctr_name: str, image_name: str, persistent: bool =
         stdout=PIPE,
         stderr=STDOUT,
         text=True,
-        bufsize=1, # line buffered
+        bufsize=1,  # line buffered
     )
     time.sleep(START_UP_DELAY)
     # try to read output from container setup (usually an error), timeout if no output
-    output = read_with_timeout(container, None, lambda arge1, arg2: list(), [], timeout_duration=2)
+    output = read_with_timeout(
+        container, None, lambda arge1, arg2: list(), [], timeout_duration=2
+    )
     if output:
         logger.error(f"Unexpected container setup output: {output}")
     # Get the process IDs of the container
@@ -175,11 +187,23 @@ def _get_persistent_container(ctr_name: str, image_name: str, persistent: bool =
     if len(bash_pids) == 1:
         bash_pid = bash_pids[0][0]
     elif len(bash_pids) > 1 or len(other_pids) > 0:
-        raise RuntimeError(f"Detected alien processes attached or running. Please ensure that no other agents are running on this container. PIDs: {bash_pids}, {other_pids}")
-    return container, set(map(str, [bash_pid, 1, ]))
+        raise RuntimeError(
+            f"Detected alien processes attached or running. Please ensure that no other agents are running on this container. PIDs: {bash_pids}, {other_pids}"
+        )
+    return container, set(
+        map(
+            str,
+            [
+                bash_pid,
+                1,
+            ],
+        )
+    )
 
 
-def _get_non_persistent_container(ctr_name: str, image_name: str) -> Tuple[subprocess.Popen, set]:
+def _get_non_persistent_container(
+    ctr_name: str, image_name: str
+) -> Tuple[subprocess.Popen, set]:
     startup_cmd = [
         "docker",
         "run",
@@ -199,14 +223,18 @@ def _get_non_persistent_container(ctr_name: str, image_name: str) -> Tuple[subpr
         stdout=PIPE,
         stderr=STDOUT,
         text=True,
-        bufsize=1, # line buffered
+        bufsize=1,  # line buffered
     )
     time.sleep(START_UP_DELAY)
     # try to read output from container setup (usually an error), timeout if no output
-    output = read_with_timeout(container, None, lambda arg1, arg2: list(), [], timeout_duration=2)
+    output = read_with_timeout(
+        container, None, lambda arg1, arg2: list(), [], timeout_duration=2
+    )
     if output:
         logger.error(f"Unexpected container setup output: {output}")
-    return container, {"1", } # bash PID is always 1 for non-persistent containers
+    return container, {
+        "1",
+    }  # bash PID is always 1 for non-persistent containers
 
 
 def get_background_pids(container_obj):
@@ -222,7 +250,9 @@ def get_background_pids(container_obj):
     return bash_pids, other_pids
 
 
-def read_with_timeout(container, container_obj, pid_func, parent_pids, timeout_duration):
+def read_with_timeout(
+    container, container_obj, pid_func, parent_pids, timeout_duration
+):
     """
     Read data from a subprocess with a timeout.
     This function uses a file descriptor to read data from the subprocess in a non-blocking way.
@@ -259,9 +289,17 @@ def read_with_timeout(container, container_obj, pid_func, parent_pids, timeout_d
         time.sleep(0.05)  # Prevents CPU hogging
 
     if container.poll() is not None:
-        raise RuntimeError("Subprocess exited unexpectedly.\nCurrent buffer: {}".format(buffer.decode()))
+        raise RuntimeError(
+            "Subprocess exited unexpectedly.\nCurrent buffer: {}".format(
+                buffer.decode()
+            )
+        )
     if time.time() >= end_time:
-        raise TimeoutError("Timeout reached while reading from subprocess.\nCurrent buffer: {}\nRunning PIDs: {}".format(buffer.decode(), pids))
+        raise TimeoutError(
+            "Timeout reached while reading from subprocess.\nCurrent buffer: {}\nRunning PIDs: {}".format(
+                buffer.decode(), pids
+            )
+        )
     return buffer.decode()
 
 
@@ -284,22 +322,26 @@ def copy_file_to_container(container_obj, contents, container_path):
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file_name = temp_file.name
             # Write the string to the temporary file and ensure it's written to disk
-            temp_file.write(contents.encode('utf-8'))
+            temp_file.write(contents.encode("utf-8"))
             temp_file.flush()
             os.fsync(temp_file.fileno())
 
         # Create a TAR archive in memory containing the temporary file
         with tempfile.NamedTemporaryFile():
-            with open(temp_file_name, 'rb') as temp_file:
+            with open(temp_file_name, "rb") as temp_file:
                 # Prepare the TAR archive
                 with BytesIO() as tar_stream:
-                    with tarfile.open(fileobj=tar_stream, mode='w') as tar:
-                        tar_info = tarfile.TarInfo(name=os.path.basename(container_path))
+                    with tarfile.open(fileobj=tar_stream, mode="w") as tar:
+                        tar_info = tarfile.TarInfo(
+                            name=os.path.basename(container_path)
+                        )
                         tar_info.size = os.path.getsize(temp_file_name)
                         tar.addfile(tarinfo=tar_info, fileobj=temp_file)
                     tar_stream.seek(0)
                     # Copy the TAR stream to the container
-                    container_obj.put_archive(path=os.path.dirname(container_path), data=tar_stream.read())
+                    container_obj.put_archive(
+                        path=os.path.dirname(container_path), data=tar_stream.read()
+                    )
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -310,14 +352,25 @@ def copy_file_to_container(container_obj, contents, container_path):
             os.remove(temp_file_name)
 
 
-def communicate(container: subprocess.Popen, container_obj, input_cmd: str, parent_pids: [str], timeout_duration=25):
+def communicate(
+    container: subprocess.Popen,
+    container_obj,
+    input_cmd: str,
+    parent_pids: [str],
+    timeout_duration=25,
+):
     return_code = None
     if input_cmd.strip() != "exit":
         output, valid = _check_syntax(container, container_obj, input_cmd, parent_pids)
         if not valid:
             return output, return_code  # shows syntax errors
-        output, return_code = _communicate(container, container_obj, input_cmd,
-                                           parent_pids, timeout_duration=timeout_duration)
+        output, return_code = _communicate(
+            container,
+            container_obj,
+            input_cmd,
+            parent_pids,
+            timeout_duration=timeout_duration,
+        )
         return output, return_code
     else:
         terminate_container(container)
@@ -325,12 +378,24 @@ def communicate(container: subprocess.Popen, container_obj, input_cmd: str, pare
         return "", return_code
 
 
-def communicate_with_handling(container_process: subprocess.Popen, container_obj, input: str, parent_pids: [str],
-                              error_msg: str, timeout_duration=25) -> str:
+def communicate_with_handling(
+    container_process: subprocess.Popen,
+    container_obj,
+    input: str,
+    parent_pids: [str],
+    error_msg: str,
+    timeout_duration=25,
+) -> str:
     """
     Wrapper for communicate function that raises error if return code is non-zero
     """
-    logs, return_code = communicate(container_process, container_obj, input, parent_pids, timeout_duration=timeout_duration)
+    logs, return_code = communicate(
+        container_process,
+        container_obj,
+        input,
+        parent_pids,
+        timeout_duration=timeout_duration,
+    )
     if return_code != 0:
         logger.error(f"{error_msg}: {logs}")
         # call close container here in future
@@ -343,11 +408,15 @@ def _check_syntax(container, container_obj, input: str, parent_pids):
     """
     Saves environment variables to file
     """
-    output, return_code = _communicate(container, container_obj, f"/bin/bash -n <<'EOF'\n{input}\nEOF\n", parent_pids)
+    output, return_code = _communicate(
+        container, container_obj, f"/bin/bash -n <<'EOF'\n{input}\nEOF\n", parent_pids
+    )
     return output, return_code == 0
 
 
-def _communicate(container, container_obj, input: str, parent_pids, timeout_duration=25):
+def _communicate(
+    container, container_obj, input: str, parent_pids, timeout_duration=25
+):
     return_code = None
     try:
         cmd = input if input.endswith("\n") else input + "\n"
@@ -361,23 +430,29 @@ def _communicate(container, container_obj, input: str, parent_pids, timeout_dura
         )
         raise RuntimeError("Failed to communicate with container")
     try:
-        buffer = read_with_timeout(container, container_obj, get_pids, parent_pids, timeout_duration)
+        buffer = read_with_timeout(
+            container, container_obj, get_pids, parent_pids, timeout_duration
+        )
         container.stdin.write("echo $?\n")
         time.sleep(0.1)
         container.stdin.flush()
-        exit_code = read_with_timeout(container, container_obj, get_pids, parent_pids, 5).strip()
+        exit_code = read_with_timeout(
+            container, container_obj, get_pids, parent_pids, 5
+        ).strip()
     except Exception as e:
         logger.error(f"Read with timeout failed on input:\n---\n{input}\n---")
         raise e
     if not exit_code.isdigit():
-        raise RuntimeError(f"Container crashed. Failed to get exit code. Output:\n---\n{buffer}\n---")
+        raise RuntimeError(
+            f"Container crashed. Failed to get exit code. Output:\n---\n{buffer}\n---"
+        )
     return_code = int(exit_code)
     return buffer, return_code
 
 
 def get_pids(container_obj, parent_pids, all_pids=False) -> list[str]:
     """
-        Gets list of processes running inside docker container
+    Gets list of processes running inside docker container
     """
     pids = (
         container_obj.exec_run("ps -eo pid,comm --no-headers")
@@ -401,4 +476,3 @@ def interrupt_container(container_process, container_obj):
 
 def close_container(container_process, container_obj):
     pass
-

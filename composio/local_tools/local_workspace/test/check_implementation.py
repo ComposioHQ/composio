@@ -1,28 +1,55 @@
-from composio.local_tools.local_workspace.commons.local_docker_workspace import LocalDockerArgumentsModel
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
-                                                                                     KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS,
-                                                                                     KEY_CONTAINER_NAME, KEY_IMAGE_NAME)
-from composio.local_tools.local_workspace.cmd_manager.actions import RunCommandOnWorkspace
-from composio.local_tools.local_workspace.workspace.actions import (CreateWorkspaceAction,
-                                                                        CreateWorkspaceRequest,
-                                                                        SetupWorkspace,
-                                                                        SetupGithubRepoRequest,
-                                                                        WorkspaceSetupRequest,
-                                                                        WorkspaceStatus,
-                                                                        WorkspaceStatusRequest,
-                                                                        SetupGithubRepo)
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
-
-from composio.local_tools.local_workspace.cmd_manager.actions import (CreateFileCmd, CreateFileRequest,
-                                                                          GoToLineNumInOpenFile, CreateFileCmd, OpenFile,
-                                                                          GoToRequest, CreateFileRequest, OpenCmdRequest,
-                                                                          SearchFileCmd, SearchDirCmd, FindFileCmd,
-                                                                          SearchFileRequest, SearchDirRequest, FindFileRequest,
-                                                                          SetCursors, SetCursorsRequest,
-                                                                          ScrollUp, ScrollDown, ScrollDownRequest, ScrollUpRequest,
-                                                                          EditFileRequest, EditFile)
-from composio.local_tools.local_workspace.history_keeper.actions import GetWorkspaceHistory, GetWorkspaceHistoryRequest
 from pprint import pprint
+
+from composio.local_tools.local_workspace.cmd_manager.actions import (
+    CreateFileCmd,
+    CreateFileRequest,
+    EditFile,
+    EditFileRequest,
+    FindFileCmd,
+    FindFileRequest,
+    GoToLineNumInOpenFile,
+    GoToRequest,
+    OpenCmdRequest,
+    OpenFile,
+    RunCommandOnWorkspace,
+    ScrollDown,
+    ScrollDownRequest,
+    ScrollUp,
+    ScrollUpRequest,
+    SearchDirCmd,
+    SearchDirRequest,
+    SearchFileCmd,
+    SearchFileRequest,
+    SetCursors,
+    SetCursorsRequest,
+)
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+    history_recorder,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    KEY_CONTAINER_NAME,
+    KEY_IMAGE_NAME,
+    KEY_PARENT_PIDS,
+    KEY_WORKSPACE_MANAGER,
+    LocalDockerArgumentsModel,
+    WorkspaceManagerFactory,
+)
+from composio.local_tools.local_workspace.history_keeper.actions import (
+    GetWorkspaceHistory,
+    GetWorkspaceHistoryRequest,
+)
+from composio.local_tools.local_workspace.workspace.actions import (
+    CreateWorkspaceAction,
+    CreateWorkspaceRequest,
+    SetupGithubRepo,
+    SetupGithubRepoRequest,
+    SetupWorkspace,
+    WorkspaceSetupRequest,
+    WorkspaceStatus,
+    WorkspaceStatusRequest,
+)
+
 
 #
 # import autopep8
@@ -61,9 +88,14 @@ def check_simple_implementation():
 
     search_cmd = SearchDirCmd("abc")
     search_cmd.set_workspace_and_history(w, h)
-    output = search_cmd.execute(SearchDirRequest(workspace_id=workspace_id,
-                                         search_term="'golden-python search'",
-                                         dir="/SWE-bench/",), authorisation_data={})
+    output = search_cmd.execute(
+        SearchDirRequest(
+            workspace_id=workspace_id,
+            search_term="'golden-python search'",
+            dir="/SWE-bench/",
+        ),
+        authorisation_data={},
+    )
     print(output)
 
     # set_cursor_cmd = SetCursors("set-cursors")
@@ -108,8 +140,3 @@ def check_simple_implementation():
 
 if __name__ == "__main__":
     check_simple_implementation()
-
-
-
-
-

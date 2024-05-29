@@ -6,6 +6,7 @@ class Mathematical(Tool):
     """
     Mathematical Tools for LLM
     """
+
     def actions(self) -> list:
         return [Calculator]
 

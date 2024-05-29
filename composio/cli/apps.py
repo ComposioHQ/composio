@@ -216,7 +216,7 @@ def _get_app_enum(apps: t.List[AppModel]) -> str:
     local_tools_concat = ", ".join([f'"{tool.tool_name}"' for tool in local_tools])
     for tool in local_tools:
         app_enums += f'    {_get_enum_key(tool.tool_name)} = "{tool.tool_name}"\n'
-    
+
     return APP_ENUM_TEMPLATE.format(apps=app_enums, local_tools=local_tools_concat)
 
 

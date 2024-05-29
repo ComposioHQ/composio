@@ -1,22 +1,35 @@
 from pydantic import BaseModel, Field
 
 from composio.local_tools.action import Action
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (get_workspace_meta_from_manager,
-                                                                                     get_container_process,
-                                                                                     WorkspaceManagerFactory,
-                                                                                     communicate,)
-from composio.local_tools.local_workspace.commons.utils import get_container_by_container_name
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (KEY_IMAGE_NAME, KEY_CONTAINER_NAME,
-                                                                                        KEY_WORKSPACE_MANAGER, KEY_PARENT_PIDS)
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+    history_recorder,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    KEY_CONTAINER_NAME,
+    KEY_IMAGE_NAME,
+    KEY_PARENT_PIDS,
+    KEY_WORKSPACE_MANAGER,
+    WorkspaceManagerFactory,
+    communicate,
+    get_container_process,
+    get_workspace_meta_from_manager,
+)
+from composio.local_tools.local_workspace.commons.utils import (
+    get_container_by_container_name,
+)
+
 from .const import SCRIPT_CURSOR_DEFAULT
+
 
 logger = get_logger()
 
 
 class GoToRequest(BaseModel):
-    workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
+    workspace_id: str = Field(
+        ..., description="workspace-id to get the running workspace-manager"
+    )
     line_number: int = Field(..., description="line number to navigate to")
 
 
@@ -37,6 +50,7 @@ class GoToLineNumInOpenFile(Action):
     - ValueError: If line_number is not an integer.
     - RuntimeError: If no file is currently open.
     """
+
     _display_name = "Navigate to line in open-file in the workspace"
     _request_schema = GoToRequest
     _response_schema = GoToResponse
@@ -47,7 +61,11 @@ class GoToLineNumInOpenFile(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
-    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory, history_processor: HistoryProcessor):
+    def set_workspace_and_history(
+        self,
+        workspace_factory: WorkspaceManagerFactory,
+        history_processor: HistoryProcessor,
+    ):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
@@ -55,30 +73,41 @@ class GoToLineNumInOpenFile(Action):
         self.args = args
         self.workspace_id = args.workspace_id
         self.line_number = args.line_number
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(
+            self.workspace_factory, self.workspace_id
+        )
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        self.container_process = get_container_process(
+            workspace_meta[KEY_WORKSPACE_MANAGER]
+        )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        self.container_obj = get_container_by_container_name(self.container_name, self.image_name)
+        self.container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         if not self.container_obj:
-            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+            raise Exception(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
         self.logger = logger
 
     @history_recorder()
-    def execute(self, request_data: GoToRequest, authorisation_data: dict) -> GoToResponse:
+    def execute(
+        self, request_data: GoToRequest, authorisation_data: dict
+    ) -> GoToResponse:
         self._setup(request_data)
         command = f"{self.command} {str(self.line_number)}"
         full_command = f"source {self.script_file} && {command}"
-        output, return_code = communicate(self.container_process,
-                                          self.container_obj,
-                                          full_command,
-                                          self.parent_pids)
+        output, return_code = communicate(
+            self.container_process, self.container_obj, full_command, self.parent_pids
+        )
         return GoToResponse(execution_output=output, return_code=return_code)
 
 
 class CreateFileRequest(BaseModel):
-    workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
+    workspace_id: str = Field(
+        ..., description="workspace-id to get the running workspace-manager"
+    )
     file_name: str = Field(..., description="name of the file to create")
 
 
@@ -95,6 +124,7 @@ class CreateFileCmd(Action):
     - ValueError: If line_number is not an integer.
     - RuntimeError: If no file is currently open.
     """
+
     _display_name = "Create and open a new file"
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
@@ -105,8 +135,11 @@ class CreateFileCmd(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
-    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
-                                  history_processor: HistoryProcessor):
+    def set_workspace_and_history(
+        self,
+        workspace_factory: WorkspaceManagerFactory,
+        history_processor: HistoryProcessor,
+    ):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
@@ -114,14 +147,22 @@ class CreateFileCmd(Action):
         self.args = args
         self.workspace_id = args.workspace_id
         self.file_name = args.file_name
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(
+            self.workspace_factory, self.workspace_id
+        )
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        self.container_process = get_container_process(
+            workspace_meta[KEY_WORKSPACE_MANAGER]
+        )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        self.container_obj = get_container_by_container_name(self.container_name, self.image_name)
+        self.container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         if not self.container_obj:
-            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+            raise Exception(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
         self.logger = logger
 
     def validate_file_name(self):
@@ -130,22 +171,28 @@ class CreateFileCmd(Action):
         return True
 
     @history_recorder()
-    def execute(self, request_data: CreateFileRequest, authorisation_data: dict) -> CreateFileResponse:
+    def execute(
+        self, request_data: CreateFileRequest, authorisation_data: dict
+    ) -> CreateFileResponse:
         self._setup(request_data)
         self.validate_file_name()
         command = f"{self.command} {str(self.file_name)}"
         full_command = f"source {self.script_file} && {command}"
-        output, return_code = communicate(self.container_process,
-                                          self.container_obj,
-                                          full_command,
-                                          self.parent_pids)
+        output, return_code = communicate(
+            self.container_process, self.container_obj, full_command, self.parent_pids
+        )
         return CreateFileResponse(execution_output=output, return_code=return_code)
 
 
 class OpenCmdRequest(BaseModel):
-    workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
+    workspace_id: str = Field(
+        ..., description="workspace-id to get the running workspace-manager"
+    )
     file_name: str = Field(..., description="file path to open in the editor")
-    line_number: int = Field(default=0, description="if file-number is given, file will be open from that line number")
+    line_number: int = Field(
+        default=0,
+        description="if file-number is given, file will be open from that line number",
+    )
 
 
 class OpenCmdResponse(BaseModel):
@@ -162,6 +209,7 @@ class OpenFile(Action):
     - ValueError: If file_path is not a string or if the file does not exist.
     - RuntimeError: If no file is currently open.
     """
+
     _display_name = "Open File on workspace"
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
@@ -172,8 +220,11 @@ class OpenFile(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
-    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
-                                  history_processor: HistoryProcessor):
+    def set_workspace_and_history(
+        self,
+        workspace_factory: WorkspaceManagerFactory,
+        history_processor: HistoryProcessor,
+    ):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
@@ -182,27 +233,34 @@ class OpenFile(Action):
         self.workspace_id = args.workspace_id
         self.file_path = args.file_name
         self.line_number = args.line_number
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(
+            self.workspace_factory, self.workspace_id
+        )
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        self.container_process = get_container_process(
+            workspace_meta[KEY_WORKSPACE_MANAGER]
+        )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        self.container_obj = get_container_by_container_name(self.container_name, self.image_name)
+        self.container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         if not self.container_obj:
-            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+            raise Exception(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
         self.logger = logger
 
     @history_recorder()
-    def execute(self, request_data: OpenCmdRequest, authorisation_data: dict) -> OpenCmdResponse:
+    def execute(
+        self, request_data: OpenCmdRequest, authorisation_data: dict
+    ) -> OpenCmdResponse:
         self._setup(request_data)
         command = f"{self.command} {self.file_path}"
         if self.line_number != 0:
             command += f"{self.line_number}"
         full_command = f"source {self.script_file} && {command}"
-        output, return_code = communicate(self.container_process,
-                                          self.container_obj,
-                                          full_command,
-                                          self.parent_pids)
+        output, return_code = communicate(
+            self.container_process, self.container_obj, full_command, self.parent_pids
+        )
         return OpenCmdResponse(output=output, return_code=return_code)
-
-

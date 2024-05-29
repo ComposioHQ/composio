@@ -1,5 +1,6 @@
-from rich.logging import RichHandler
 import logging
+
+from rich.logging import RichHandler
 
 
 LOGGER_NAME = "local_workspace"
