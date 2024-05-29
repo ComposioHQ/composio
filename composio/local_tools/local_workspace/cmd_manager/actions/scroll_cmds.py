@@ -52,6 +52,17 @@ class ScrollDown(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.logger = logger
+        self.args = None
+        self.workspace_id = ""
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+
     def set_workspace_and_history(
         self,
         workspace_factory: WorkspaceManagerFactory,
@@ -76,7 +87,7 @@ class ScrollDown(Action):
             self.container_name, self.image_name
         )
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
         self.logger = logger
@@ -118,6 +129,17 @@ class ScrollUp(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.logger = logger
+        self.args = None
+        self.workspace_id = ""
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+
     def set_workspace_and_history(
         self,
         workspace_factory: WorkspaceManagerFactory,
@@ -142,10 +164,9 @@ class ScrollUp(Action):
             self.container_name, self.image_name
         )
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
-        self.logger = logger
 
     @history_recorder()
     def execute(

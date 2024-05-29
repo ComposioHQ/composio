@@ -3,7 +3,6 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
-
 import yaml
 from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 
@@ -54,8 +53,8 @@ class ParseCommand(metaclass=ParseCommandMeta):
     def get(cls, name):
         try:
             return cls._registry[name]()
-        except KeyError:
-            raise ValueError(f"Command parser ({name}) not found.")
+        except KeyError as exc:
+            raise ValueError(f"Command parser ({name}) not found.") from exc
 
     @abstractmethod
     def parse_command_file(self, path: str) -> List[Command]:
@@ -76,7 +75,8 @@ class ParseCommand(metaclass=ParseCommandMeta):
 
 class ParseCommandBash(ParseCommand):
     def parse_command_file(self, path: str) -> List[Command]:
-        contents = open(path, "r").read()
+        with open(path, "r") as f:
+            contents = f.read()
         if contents.strip().startswith("#!"):
             commands = self.parse_script(path, contents)
         else:
@@ -100,8 +100,7 @@ class ParseCommandBash(ParseCommand):
                     "it should start with an underscore (e.g. _utils.py)."
                 )
             )
-        else:
-            return commands
+        return commands
 
     def parse_bash_functions(self, path, contents) -> List[Command]:
         """
@@ -160,43 +159,42 @@ class ParseCommandBash(ParseCommand):
         matches = pattern.findall(contents)
         if len(matches) == 0:
             return []
-        elif len(matches) > 1:
+        if len(matches) > 1:
             raise ValueError(
                 (
                     "Non-shell file contains multiple @yaml tags.\n"
                     "Only one @yaml tag is allowed per script."
                 )
             )
-        else:
-            yaml_content = matches[0]
-            yaml_content = re.sub(r"^#", "", yaml_content, flags=re.MULTILINE)
-            docs_dict = yaml.safe_load(yaml_content.replace("@yaml", ""))
-            assert docs_dict is not None
-            docstring = docs_dict["docstring"]
-            end_name = docs_dict.get("end_name", None)
-            arguments = docs_dict.get("arguments", None)
-            signature = docs_dict.get("signature", None)
-            name = Path(path).name.rsplit(".", 1)[0]
-            if signature is None and arguments is not None:
-                signature = name
-                for param, settings in arguments.items():
-                    if settings["required"]:
-                        signature += f" <{param}>"
-                    else:
-                        signature += f" [<{param}>]"
-            code = contents
-            return [
-                Command.from_dict(
-                    {
-                        "code": code,
-                        "docstring": docstring,
-                        "end_name": end_name,
-                        "name": name,
-                        "arguments": arguments,
-                        "signature": signature,
-                    }
-                )
-            ]
+        yaml_content = matches[0]
+        yaml_content = re.sub(r"^#", "", yaml_content, flags=re.MULTILINE)
+        docs_dict = yaml.safe_load(yaml_content.replace("@yaml", ""))
+        assert docs_dict is not None
+        docstring = docs_dict["docstring"]
+        end_name = docs_dict.get("end_name", None)
+        arguments = docs_dict.get("arguments", None)
+        signature = docs_dict.get("signature", None)
+        name = Path(path).name.rsplit(".", 1)[0]
+        if signature is None and arguments is not None:
+            signature = name
+            for param, settings in arguments.items():
+                if settings["required"]:
+                    signature += f" <{param}>"
+                else:
+                    signature += f" [<{param}>]"
+        code = contents
+        return [
+            Command.from_dict(
+                {
+                    "code": code,
+                    "docstring": docstring,
+                    "end_name": end_name,
+                    "name": name,
+                    "arguments": arguments,
+                    "signature": signature,
+                }
+            )
+        ]
 
     def generate_command_docs(
         self, commands: List[Command], subroutine_types, **kwargs

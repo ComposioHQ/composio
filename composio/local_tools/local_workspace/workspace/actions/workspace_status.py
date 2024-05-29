@@ -50,6 +50,10 @@ class WorkspaceStatus(Action):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
+    def __init__(self):
+        super().__init__()
+        self.container_name = ""
+
     def _setup(self, args: WorkspaceStatusRequest):
         self.container_name = get_container_name_from_workspace_id(
             self.workspace_factory, args.workspace_id
@@ -62,10 +66,9 @@ class WorkspaceStatus(Action):
             container = client.containers.get(self.container_name)
             if container.status == STATUS_RUNNING:
                 return WorkspaceStatusResponse(workspace_status=STATUS_RUNNING)
-            else:
-                return WorkspaceStatusResponse(workspace_status=STATUS_STOPPED)
+            return WorkspaceStatusResponse(workspace_status=STATUS_STOPPED)
         except docker.errors.NotFound:
             return False
         except docker.errors.APIError as e:
-            logger.error(f"Error checking container status: {e}")
+            logger.error("Error checking container status: %s", e)
             return WorkspaceStatusResponse(workspace_status=STATUS_STOPPED)

@@ -70,8 +70,7 @@ def get_container(
 
     if persistent:
         return _get_persistent_container(ctr_name, image_name)
-    else:
-        return _get_non_persistent_container(ctr_name, image_name)
+    return _get_non_persistent_container(ctr_name, image_name)
 
 
 def get_container_by_container_name(container_name: str, image_name: str):
@@ -108,7 +107,7 @@ def get_container_by_container_name(container_name: str, image_name: str):
             "readme."
         )
         raise RuntimeError(msg)
-    elif len(filtered_images) > 1:
+    if len(filtered_images) > 1:
         logger.warning(f"Multiple images found for {image_name}, that's weird.")
     attrs = filtered_images[0].attrs
     if attrs is not None:
@@ -175,7 +174,7 @@ def _get_persistent_container(
     time.sleep(START_UP_DELAY)
     # try to read output from container setup (usually an error), timeout if no output
     output = read_with_timeout(
-        container, None, lambda arge1, arg2: list(), [], timeout_duration=2
+        container, None, lambda arge1, arg2: [], [], timeout_duration=2
     )
     if output:
         logger.error(f"Unexpected container setup output: {output}")
@@ -227,7 +226,7 @@ def _get_non_persistent_container(
     time.sleep(START_UP_DELAY)
     # try to read output from container setup (usually an error), timeout if no output
     output = read_with_timeout(
-        container, None, lambda arg1, arg2: list(), [], timeout_duration=2
+        container, None, lambda arg1, arg2: [], [], timeout_duration=2
     )
     if output:
         logger.error(f"Unexpected container setup output: {output}")
@@ -289,15 +288,11 @@ def read_with_timeout(
 
     if container.poll() is not None:
         raise RuntimeError(
-            "Subprocess exited unexpectedly.\nCurrent buffer: {}".format(
-                buffer.decode()
-            )
+            f"Subprocess exited unexpectedly.\nCurrent buffer: {buffer.decode()}"
         )
     if time.time() >= end_time:
         raise TimeoutError(
-            "Timeout reached while reading from subprocess.\nCurrent buffer: {}\nRunning PIDs: {}".format(
-                buffer.decode(), pids
-            )
+            f"Timeout reached while reading from subprocess.\nCurrent buffer: {buffer.decode()}\nRunning PIDs: {pids}"
         )
     return buffer.decode()
 
@@ -371,10 +366,10 @@ def communicate(
             timeout_duration=timeout_duration,
         )
         return output, return_code
-    else:
-        terminate_container(container)
-        return_code = 0
-        return "", return_code
+    # if input_cmd = "exit" --> terminate container and exit
+    terminate_container(container)
+    return_code = 0
+    return "", return_code
 
 
 def communicate_with_handling(
@@ -422,12 +417,12 @@ def _communicate(
         os.write(container.stdin.fileno(), cmd.encode())
         time.sleep(0.1)
         container.stdin.flush()
-    except BrokenPipeError:
+    except BrokenPipeError as exc:
         traceback.print_exc()
         logger.error(
             "Failed to communicate with container. Check docker logs for more information."
         )
-        raise RuntimeError("Failed to communicate with container")
+        raise RuntimeError("Failed to communicate with container") from exc
     try:
         buffer = read_with_timeout(
             container, container_obj, get_pids, parent_pids, timeout_duration
