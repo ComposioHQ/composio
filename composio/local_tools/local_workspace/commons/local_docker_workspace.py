@@ -72,7 +72,8 @@ class LocalDockerWorkspace(gym.Env):
                 self.container.terminate()
             except KeyboardInterrupt:
                 raise
-            except:
+            except Exception as e:
+                logger.error(f"reset container exception: {e}")
                 pass
         self._init_container()
         self._init_scripts()
@@ -210,7 +211,8 @@ class LocalDockerWorkspace(gym.Env):
             )
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception as e:
+            logger.error(f"docker close exception: {e}")
             pass
         assert self.container is not None
         assert self.container_obj is not None
@@ -226,7 +228,8 @@ class LocalDockerWorkspace(gym.Env):
                 self.container_obj.remove(force=True)
             except KeyboardInterrupt:
                 raise
-            except:
+            except Exception as e:
+                logger.error(f"docker close exception: {e}")
                 pass
             self.logger.info("Agent container stopped")
         # todo: implement these hooks

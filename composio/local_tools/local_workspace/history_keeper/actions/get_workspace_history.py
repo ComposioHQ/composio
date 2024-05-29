@@ -1,4 +1,3 @@
-import docker
 from pydantic import BaseModel, Field
 
 from composio.local_tools.action import Action
@@ -8,7 +7,6 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 )
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
-    get_container_name_from_workspace_id,
 )
 
 
