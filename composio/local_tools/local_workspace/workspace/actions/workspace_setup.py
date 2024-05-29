@@ -70,6 +70,20 @@ class SetupWorkspace(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.args = None
+        self.workspace_id = ""
+        self.container_name = ""
+        self.image_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+        self.return_code = None
+        self.logger = logger
+        self.config = None
+        self.config_file_path = None
+
     def _setup(self, args: WorkspaceSetupRequest):
         self.args = args
         self.workspace_id = args.workspace_id
@@ -77,7 +91,7 @@ class SetupWorkspace(Action):
             self.workspace_factory, self.workspace_id
         )
         if not workspace_meta:
-            raise Exception(
+            raise ValueError(
                 f"workspace not found, invalid workspace-id: {self.workspace_id}"
             )
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
@@ -93,7 +107,7 @@ class SetupWorkspace(Action):
         self.config_file_path = script_dir / Path("../../config/default.yaml")
         self.load_config_from_path()
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
 
@@ -137,20 +151,22 @@ class SetupWorkspace(Action):
             output, return_code = communicate(
                 self.container_process, self.container_obj, commands, self.parent_pids
             )
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as exc:
             if return_code != 0:
                 raise RuntimeError(
                     f"Nonzero return code: {return_code}\nOutput: {output}"
-                )
+                ) from exc
             raise
         except Exception as e:
             logger.warning("Failed to set environment variables")
             raise e
-        command_files = list()
+        command_files = []
         for file in self.config.command_files:
             full_file_path = script_dir / Path("../../") / Path(file)
-            datum = dict()
-            contents = open(full_file_path, "r").read()
+            datum = {}
+            contents = ""
+            with open(full_file_path, "r") as f:
+                contents = f.read()
             datum["contents"] = contents
             filename = Path(file).name
             if not contents.strip().startswith("#!"):

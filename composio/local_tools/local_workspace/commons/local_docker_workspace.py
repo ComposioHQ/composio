@@ -2,7 +2,7 @@ import datetime
 import hashlib
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 from uuid import uuid4
 
 import docker
@@ -51,8 +51,11 @@ class LocalDockerWorkspace(gym.Env):
         # self.persistent = args.container_name is not None
         self.returncode = None
         self.container_name = None
+        self.container = None
+        self.container_obj = None
         self.persistent = None
         self.container_pid = None
+        self.parent_pids = []
         if not self.args.verbose:
             self.logger.disabled = True
 
@@ -71,10 +74,10 @@ class LocalDockerWorkspace(gym.Env):
             try:
                 self.container.terminate()
             except KeyboardInterrupt:
+                logger.error("handling keyboard interrupt")
                 raise
             except Exception as e:
                 logger.error(f"reset container exception: {e}")
-                pass
         self._init_container()
         self._init_scripts()
 
@@ -156,15 +159,15 @@ class LocalDockerWorkspace(gym.Env):
             raise RuntimeError(f"{error_msg}: {logs}")
         return logs
 
-    def communicate(self, input: str, timeout_duration=25) -> str:
-        output, self.returncode = communicate(
+    def communicate(self, input: str, timeout_duration=25) -> Tuple[str, int]:
+        output, return_code = communicate(
             self.container,
             self.container_obj,
             input,
             self.parent_pids,
             timeout_duration,
         )
-        self.communicate_output = output
+        return output, return_code
 
     def interrupt(self):
         """
@@ -175,16 +178,16 @@ class LocalDockerWorkspace(gym.Env):
             if pid not in self.parent_pids and cmd != "ps":
                 self.container_obj.exec_run(f"kill -9 {pid}")
         try:
-            _ = read_with_timeout(self.container, self.get_pids, 20)
+            _ = read_with_timeout(self.container, self.container_obj, self.get_pids, self.parent_pids, 20)
         except TimeoutError:
             pass
         try:
-            output = self.communicate(input="echo 'interrupted'", timeout_duration=5)
+            output, return_code = self.communicate(input="echo 'interrupted'", timeout_duration=5)
             assert output.strip().endswith(
                 "interrupted"
             ), "container health check failed"
-        except TimeoutError:
-            raise RuntimeError("Failed to interrupt container")
+        except TimeoutError as exc:
+            raise RuntimeError("Failed to interrupt container") from exc
 
     def get_pids(self, all_pids=False) -> list[str]:
         """
@@ -210,10 +213,10 @@ class LocalDockerWorkspace(gym.Env):
                 self.container, self.container_obj, "exit", parent_pids=self.parent_pids
             )
         except KeyboardInterrupt:
+            logger.error("handling keyboard interrupt")
             raise
         except Exception as e:
             logger.error(f"docker close exception: {e}")
-            pass
         assert self.container is not None
         assert self.container_obj is not None
         self.container.terminate()
@@ -227,10 +230,10 @@ class LocalDockerWorkspace(gym.Env):
             try:
                 self.container_obj.remove(force=True)
             except KeyboardInterrupt:
+                logger.error("handling keyboard interrupt")
                 raise
             except Exception as e:
                 logger.error(f"docker close exception: {e}")
-                pass
             self.logger.info("Agent container stopped")
         # todo: implement these hooks
         for hook in self.hooks:
@@ -255,8 +258,8 @@ class WorkspaceManagerFactory:
                 KEY_IMAGE_NAME: args.image_name,
             }
             return workspace_id
-        else:
-            raise ValueError(f"Unknown workspace manager type: {workspace_type}")
+
+        raise ValueError(f"Unknown workspace manager type: {workspace_type}")
 
     def get_registered_manager(self, workspace_id: str) -> Dict[str, Any]:
         return self._registry.get(workspace_id)
@@ -284,16 +287,5 @@ def get_container_name_from_workspace_id(
 
 def get_container_process(workspace: LocalDockerWorkspace):
     if not workspace or not workspace.container:
-        raise Exception("workspace null, or not running any container process")
+        raise ValueError("workspace null, or not running any container process")
     return workspace.container
-
-
-def execute_local_docker_workspace(args: LocalDockerArgumentsModel):
-    w = LocalDockerWorkspace(args)
-    resp = {
-        "container_name": w.container_name,
-        "parent_pids": w.parent_pids,
-        "container_process": w.container,
-    }
-    print(resp)
-    return resp
