@@ -187,7 +187,7 @@ class RunCommandOnWorkspace(Action):
         """Return the first match of a command pattern in the action string."""
         assert self.config is not None  # mypy
         if pattern_type == "subroutine":
-            patterns = {k: v for k,v in self.subroutine_patterns.items()}
+            patterns = {k: v for k, v in self.subroutine_patterns.items()}
         elif pattern_type == "multi_line":
             patterns = {
                 k: v
@@ -368,7 +368,9 @@ class RunCommandOnWorkspace(Action):
                 assert (
                     submission is not None and submission.strip() != ""
                 ), AssertionError("No submission found.")
-                self.logger.info(f"Found submission: {submission}, return-code: {return_code}")
+                self.logger.info(
+                    f"Found submission: {submission}, return-code: {return_code}"
+                )
                 info["exit_status"] = f"submitted ({action})"
                 info["submission"] = submission
                 observation = "Exited (autosubmitted)"
@@ -462,7 +464,6 @@ class RunCommandOnWorkspace(Action):
         self.close()
         self.container_process = None
         self.container_obj = None
-
 
     def close(self):
         close_container(self.container_process, self.container_obj)
