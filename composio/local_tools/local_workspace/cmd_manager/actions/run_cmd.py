@@ -232,14 +232,14 @@ class RunCommandOnWorkspace(Action):
             first_match = self._get_first_match(rem_action, "multi_line_no_subroutines")
             if first_match:
                 pre_action = rem_action[: first_match.start()]
-                match_action = rem_action[first_match.start(): first_match.end()]
-                rem_action = rem_action[first_match.end():]
+                match_action = rem_action[first_match.start() : first_match.end()]
+                rem_action = rem_action[first_match.end() :]
                 if pre_action.strip():
                     parsed_action.append(pre_action)
                 if match_action.strip():
                     eof = first_match.group(3).strip()
                     if not match_action.split("\n")[0].strip().endswith(f"<< '{eof}'"):
-                        guarded_command = match_action[first_match.start():]
+                        guarded_command = match_action[first_match.start() :]
                         first_line = guarded_command.split("\n")[0]
                         guarded_command = guarded_command.replace(
                             first_line, first_line + f" << '{eof}'", 1
@@ -277,8 +277,8 @@ class RunCommandOnWorkspace(Action):
             first_match = self._get_first_match(rem_action, pattern_type)
             if first_match:
                 pre_action = rem_action[: first_match.start()]
-                match_action = rem_action[first_match.start(): first_match.end()]
-                rem_action = rem_action[first_match.end():]
+                match_action = rem_action[first_match.start() : first_match.end()]
+                rem_action = rem_action[first_match.end() :]
                 if pre_action.strip():
                     parsed_action.append(
                         {"agent": self.name, "action": pre_action, "cmd_name": None}
