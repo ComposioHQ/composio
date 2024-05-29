@@ -128,6 +128,7 @@ class SetupWorkspace(Action):
         commands_to_execute = (
             [self.config.state_command.code]
             + ["pip install flake8"]
+            + ["pip install tox"]
             + [f"{k}={v}" for k, v in self.config.env_variables.items()]
         )
         commands = "\n".join(commands_to_execute)
