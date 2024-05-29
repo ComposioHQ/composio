@@ -18,10 +18,10 @@ These commands set up your environment to enable smooth interactions between Jul
   pip install composio-julep
 
   # Connect your GitHub so agents can interact with it
-  composio-cli add github 
+  composio add github 
 
   # Check all supported apps 
-  composio-cli show-apps
+  composio apps
    ```
 </CodeGroup>
 
@@ -84,7 +84,7 @@ user = julep_client.users.create(
 situation_prompt = "You are at a tech fair seeking innovative projects."
 session = julep_client.sessions.create(user_id=user.id, agent_id=agent.id, situation=situation_prompt)
 
-user_msg = "Could you star the GitHub repository SamparkAI/composio_sdk?"
+user_msg = "Could you star the GitHub repository SamparkAI/composio?"
 
 response = julep_client.sessions.chat(
     session_id=session.id,
@@ -109,7 +109,7 @@ print(response.messages)
 <Step title="Check Response">
 <CodeGroup>
 ```bash Check Agent Response
-[{'content': 'I have starred the repository "composio_sdk" for you on GitHub under the account "SamparkAI".', 'role': 'agent'}]
+[{'content': 'I have starred the repository "composio" for you on GitHub under the account "SamparkAI".', 'role': 'agent'}]
 ```
 
 </CodeGroup>

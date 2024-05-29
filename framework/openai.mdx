@@ -5,7 +5,7 @@ icon: "robot"
 description: "Enable OpenAI assistants to seamlessly interact with external apps via Composio for enhanced functionality"
 ---
 
-**Composio and OpenAI** work together to **extend the capabilities** of your agents by interacting with a variety of **external applications**.
+**Composio enables** your **OpenAI Assistants** to **connect** with many **tools**!
 
 ### Install Packages & Connect a Tool
 
@@ -18,10 +18,10 @@ These steps prepare your environment to enable interactions between OpenAI and G
   pip install composio-openai
 
   # Connect your GitHub so agents can interact with it
-  composio-cli add github 
+  composio add github 
 
   # Check all supported apps 
-  composio-cli show-apps
+  composio apps
   ```
 </CodeGroup>
 
@@ -43,34 +43,50 @@ composio_tools = ComposioToolset()
 <CodeGroup>
 ```python Tools For GitHub
 # Get GitHub tools that are pre-configured
-actions = composio_tools.get_tools(tools=App.GITHUB)
+# Retrieve actions
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
 ```
 </CodeGroup>
 </Step>
-<Step title="Execute the Task via OpenAI Agent"> 
+<Step title="Execute the Task via OpenAI Assistant APIs"> 
 <CodeGroup>
 ```python OpenAI Agent Executes the Task
-my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
+my_task = "Star a repo SamparkAI/composio on GitHub"
 
-response = openai_client.chat.completions.create(
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+# Prepare assistant
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
     model="gpt-4-turbo-preview",
-    tools=actions, # Passing actions we fetched earlier.
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": my_task}
-    ]
+    tools=actions,  # type: ignore
 )
 
-from pprint import pprint
-pprint(response)
+
+# create a thread
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+
 ```
 </CodeGroup>
 </Step>
 <Step title="Handle Tool Calls and Check Response">
 <CodeGroup>
 ```python Handling Tool Responses
-result = composio_tools.handle_tool_calls(response)
-pprint(result)
+
+# Execute function calls
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
 ```
 
 </CodeGroup>
@@ -81,7 +97,7 @@ pprint(result)
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
-composio_tools.register_tools(actions=[Action.GITHUB_CREATE_ISSUE])
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
 ```
 </CodeGroup>
 
@@ -89,17 +105,7 @@ composio_tools.register_tools(actions=[Action.GITHUB_CREATE_ISSUE])
 
 <CodeGroup>
   ```bash Filter Specific App
-  # To restrict agents from using all tools, filter specific tools
-  composio_tools.register_tools(apps=[App.ASANA, App.GITHUB])
-  ```
-</CodeGroup>
-
-### Filter apps actions by tags
-
-<CodeGroup>
-  ```bash Filter Actions by
-
-Tags
-composio_tools.register_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
+  # To restrict agents from using all tools, filter specific Apps
+  actions = composio_toolset.get_tools(apps=[App.GITHUB])
   ```
 </CodeGroup>
