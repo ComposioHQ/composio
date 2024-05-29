@@ -119,7 +119,9 @@ class SetupWorkspace(Action):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
-    def execute(self, request_data: WorkspaceSetupRequest, authorisation_data: dict = {}):
+    def execute(
+        self, request_data: WorkspaceSetupRequest, authorisation_data: dict = {}
+    ):
         self._setup(request_data)
         self.set_env_variables()
         env_vars = "\n".join(self.config.env_variables)

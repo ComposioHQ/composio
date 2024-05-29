@@ -8,7 +8,7 @@ import time
 import traceback
 from io import BytesIO
 from subprocess import PIPE, STDOUT
-from typing import Set, Tuple, List
+from typing import List, Set, Tuple
 
 import docker
 
