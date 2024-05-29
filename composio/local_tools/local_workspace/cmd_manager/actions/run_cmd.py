@@ -1,20 +1,34 @@
 import re
-from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional, Tuple, Dict, List, Any
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 from pydantic import BaseModel, Field
 
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    get_workspace_meta_from_manager,
-    WorkspaceManagerFactory, get_container_process,
-    communicate,
-    KEY_IMAGE_NAME, KEY_CONTAINER_NAME, KEY_WORKSPACE_MANAGER,
-    KEY_PARENT_PIDS)
-from composio.local_tools.local_workspace.commons.utils import get_container_by_container_name, interrupt_container, close_container
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor, history_recorder
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.command_runner_model import AgentConfig
 from composio.local_tools.action import Action
+from composio.local_tools.local_workspace.commons.command_runner_model import (
+    AgentConfig,
+)
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+    history_recorder,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    KEY_CONTAINER_NAME,
+    KEY_IMAGE_NAME,
+    KEY_PARENT_PIDS,
+    KEY_WORKSPACE_MANAGER,
+    WorkspaceManagerFactory,
+    communicate,
+    get_container_process,
+    get_workspace_meta_from_manager,
+)
+from composio.local_tools.local_workspace.commons.utils import (
+    close_container,
+    get_container_by_container_name,
+    interrupt_container,
+)
 
 
 logger = get_logger()
@@ -22,8 +36,12 @@ logger = get_logger()
 
 @dataclass(frozen=True)
 class RunCommandOnWorkspaceRequest(BaseModel):
-    workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
-    input_cmd: str = Field(..., description="github repo-name for which issue needs to be solved")
+    workspace_id: str = Field(
+        ..., description="workspace-id to get the running workspace-manager"
+    )
+    input_cmd: str = Field(
+        ..., description="github repo-name for which issue needs to be solved"
+    )
 
 
 class RunCommandOnWorkspaceResponse(BaseModel):
@@ -33,8 +51,9 @@ class RunCommandOnWorkspaceResponse(BaseModel):
 
 class RunCommandOnWorkspace(Action):
     """
-      runs a command on the given workspace
-      """
+    runs a command on the given workspace
+    """
+
     _display_name = "Run command on workspace"
     _request_schema = RunCommandOnWorkspaceRequest
     _response_schema = RunCommandOnWorkspaceResponse
@@ -43,8 +62,11 @@ class RunCommandOnWorkspace(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
-    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
-                                  history_processor: HistoryProcessor):
+    def set_workspace_and_history(
+        self,
+        workspace_factory: WorkspaceManagerFactory,
+        history_processor: HistoryProcessor,
+    ):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
@@ -52,14 +74,20 @@ class RunCommandOnWorkspace(Action):
         self.name = "agent"
         self.args = args
         self.workspace_id = args.workspace_id
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(
+            self.workspace_factory, self.workspace_id
+        )
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        self.container_process = get_container_process(
+            workspace_meta[KEY_WORKSPACE_MANAGER]
+        )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         if not self.container_obj:
-            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+            raise Exception(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
         self.return_code = None
         self.logger = logger
         self.config = None
@@ -68,7 +96,9 @@ class RunCommandOnWorkspace(Action):
         self._parse_command_patterns()
 
     @history_recorder()
-    def execute(self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}):
+    def execute(
+        self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}
+    ):
         self._setup(request_data)
         obs, _, done, info = self.run_incoming_action(request_data.input_cmd)
         return RunCommandOnWorkspaceResponse(observation=obs, info=info)
@@ -83,7 +113,9 @@ class RunCommandOnWorkspace(Action):
                 for command in [*config._commands]
                 if command.end_name is not None
             }
-            object.__setattr__(config, "multi_line_command_endings", multi_line_command_endings)
+            object.__setattr__(
+                config, "multi_line_command_endings", multi_line_command_endings
+            )
         assert self.config is not None  # mypy
 
     def _parse_command_patterns(self):
@@ -123,7 +155,9 @@ class RunCommandOnWorkspace(Action):
         self.command_patterns[self.config.submit_command] = submit_pat
 
     def get_container_by_container_name(self):
-        container_obj = get_container_by_container_name(self.container_name, self.image_name)
+        container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         return container_obj
 
     def _get_first_match(self, action: str, pattern_type: str) -> Optional[re.Match]:
@@ -173,8 +207,8 @@ class RunCommandOnWorkspace(Action):
             first_match = self._get_first_match(rem_action, "multi_line_no_subroutines")
             if first_match:
                 pre_action = rem_action[: first_match.start()]
-                match_action = rem_action[first_match.start(): first_match.end()]
-                rem_action = rem_action[first_match.end():]
+                match_action = rem_action[first_match.start() : first_match.end()]
+                rem_action = rem_action[first_match.end() :]
                 if pre_action.strip():
                     parsed_action.append(pre_action)
                 if match_action.strip():
@@ -197,15 +231,19 @@ class RunCommandOnWorkspace(Action):
         assert self.config is not None  # mypy
         env_vars = dict()
         for var in self.config.env_variables:
-            observation, return_code = communicate(self.container_process,
-                                                   self.container_obj,
-                                                   f"echo ${var}",
-                                                   parent_pids=self.parent_pids)
+            observation, return_code = communicate(
+                self.container_process,
+                self.container_obj,
+                f"echo ${var}",
+                parent_pids=self.parent_pids,
+            )
             if return_code == 0:
                 env_vars[var] = observation.strip()
         return env_vars
 
-    def split_actions(self, action: str, pattern_type="subroutine") -> List[Dict[str, Any]]:
+    def split_actions(
+        self, action: str, pattern_type="subroutine"
+    ) -> List[Dict[str, Any]]:
         """Split an action into a list of actions in a greedy manner,
         each of which is a subroutine call or a single command."""
         parsed_action = list()
@@ -251,8 +289,8 @@ class RunCommandOnWorkspace(Action):
         info = None
         for sub_action in self.split_actions(run_action):
             if (
-                    sub_action["agent"] == self.name
-                    or sub_action["cmd_name"] == self.config.submit_command
+                sub_action["agent"] == self.name
+                or sub_action["cmd_name"] == self.config.submit_command
             ):
                 obs, _, done, info = self.step(sub_action["action"])
                 observations.append(obs)
@@ -271,17 +309,17 @@ class RunCommandOnWorkspace(Action):
 
     def step(self, action: str) -> Tuple[Optional[str], int, bool, dict]:
         """
-                Runs given action in environment and returns corresponding output
+        Runs given action in environment and returns corresponding output
 
-                Args:
-                    action (`str`) - command to run in bash shell
+        Args:
+            action (`str`) - command to run in bash shell
 
-                Returns:
-                    observation (`str`) - output from container
-                    reward (`float`) - value between 0 and 1 quantifying correctness of output + environment state
-                    done (`bool`) - whether task is over
-                    info (`dict`) - additional information (e.g. debugging information)
-                """
+        Returns:
+            observation (`str`) - output from container
+            reward (`float`) - value between 0 and 1 quantifying correctness of output + environment state
+            done (`bool`) - whether task is over
+            info (`dict`) - additional information (e.g. debugging information)
+        """
         info = {}
 
         # Handle special actions
@@ -289,12 +327,24 @@ class RunCommandOnWorkspace(Action):
             observation = "Skipped"
             info["exit_status"] = "skipped"
             return observation, 0, True, info
-        if action in {"exit_context", "exit_cost", "exit_error", "exit_format", "exit_api"}:
+        if action in {
+            "exit_context",
+            "exit_cost",
+            "exit_error",
+            "exit_format",
+            "exit_api",
+        }:
             try:
-                observation, return_code = communicate(self.container_process, self.container_obj,
-                                                       "submit", parent_pids=self.parent_pids)
-                submission = self.get_submission('submit', observation)
-                assert submission is not None and submission.strip() != "", AssertionError('No submission found.')
+                observation, return_code = communicate(
+                    self.container_process,
+                    self.container_obj,
+                    "submit",
+                    parent_pids=self.parent_pids,
+                )
+                submission = self.get_submission("submit", observation)
+                assert (
+                    submission is not None and submission.strip() != ""
+                ), AssertionError("No submission found.")
                 self.logger.info(f"Found submission: {submission}")
                 info["exit_status"] = f"submitted ({action})"
                 info["submission"] = submission
@@ -311,16 +361,25 @@ class RunCommandOnWorkspace(Action):
         # Attempt to run action in container
         observation = ""
         try:
-            observation, return_code = communicate(self.container_process, self.container_obj,
-                                      action, parent_pids=self.parent_pids, timeout_duration=25)
+            observation, return_code = communicate(
+                self.container_process,
+                self.container_obj,
+                action,
+                parent_pids=self.parent_pids,
+                timeout_duration=25,
+            )
         except TimeoutError:
             try:
                 self.interrupt()
                 observation += "\nEXECUTION TIMED OUT"
             except RuntimeError as e:
-                observation += "\nEXECUTION TIMED OUT AND INTERRUPT FAILED. RESTARTING PROCESS."
+                observation += (
+                    "\nEXECUTION TIMED OUT AND INTERRUPT FAILED. RESTARTING PROCESS."
+                )
                 info["exit_status"] = "early_exit"
-                logger.warning(f"Failed to interrupt container: {e}\nRESTARTING PROCESS.")
+                logger.warning(
+                    f"Failed to interrupt container: {e}\nRESTARTING PROCESS."
+                )
                 self.close_container()
                 return observation, 0, True, info
         except RuntimeError as e:
@@ -364,11 +423,11 @@ class RunCommandOnWorkspace(Action):
         return match.group(1)
 
     def close_container(self) -> None:
-        '''
+        """
         called when a command failed to run on the local docker container.
         NOTE: this works here, as its a local container workspace,
               for docker on cloud, handle it appropriately
-        '''
+        """
         self.close()
         self.container_process = None
         self.container_obj = None
@@ -392,4 +451,3 @@ class RunCommandOnWorkspace(Action):
 #     c.set_container_process(container_process, parent_pids)
 #     observation, _, done, info = c.run_incoming_action(args.input_cmd)
 #     return observation, done, info
-

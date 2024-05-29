@@ -11,6 +11,7 @@ def _print(container_process: subprocess.Popen, container_obj, parent_pids):
 
     def my_communicate(in_cmd):
         return communicate(container_process, container_obj, in_cmd, parent_pids)
+
     cursor_warning = my_communicate("bash -c '_constrain_cursors'")
     cursor_values = my_communicate("echo '{}' | tail -n 1".format(cursor_warning))
     cursor_warning = my_communicate("echo '{}' | head -n -1".format(cursor_warning))
@@ -26,14 +27,16 @@ def _print(container_process: subprocess.Popen, container_obj, parent_pids):
 
     print(f"[File: {current_file_path} ({total_lines} lines total)]")
 
-    current_line = int(os.getenv('CURRENT_LINE', 1))
-    window_size = int(os.getenv('WINDOW', 10))  # Default window size
+    current_line = int(os.getenv("CURRENT_LINE", 1))
+    window_size = int(os.getenv("WINDOW", 10))  # Default window size
 
     start_line = max(current_line - window_size // 2, 1)
     end_line = min(current_line + window_size // 2, total_lines)
 
     # Get lines from start_line to end_line
-    lines = communicate(f"awk 'NR>={start_line} && NR<={end_line} {{print}}' $CURRENT_FILE").split('\n')
+    lines = communicate(
+        f"awk 'NR>={start_line} && NR<={end_line} {{print}}' $CURRENT_FILE"
+    ).split("\n")
 
     # Printing lines with cursor marks
     for i, line in enumerate(lines, start=start_line):

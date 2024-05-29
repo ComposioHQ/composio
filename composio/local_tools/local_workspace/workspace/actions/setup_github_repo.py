@@ -1,26 +1,36 @@
 import os
+
 from pydantic import BaseModel, Field
 
 from composio.local_tools.action import Action
-
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (WorkspaceManagerFactory,
-get_workspace_meta_from_manager, get_container_process,
-                                                                                        KEY_IMAGE_NAME,
-                                                                                        KEY_CONTAINER_NAME,
-                                                                                        KEY_WORKSPACE_MANAGER,
-                                                                                        KEY_PARENT_PIDS)
-from composio.local_tools.local_workspace.commons.utils import (communicate_with_handling,
-                                                                    communicate,
-                                                                    get_container_by_container_name,)
-from composio.local_tools.local_workspace.commons.history_processor import HistoryProcessor
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    KEY_CONTAINER_NAME,
+    KEY_IMAGE_NAME,
+    KEY_PARENT_PIDS,
+    KEY_WORKSPACE_MANAGER,
+    WorkspaceManagerFactory,
+    get_container_process,
+    get_workspace_meta_from_manager,
+)
+from composio.local_tools.local_workspace.commons.utils import (
+    communicate,
+    communicate_with_handling,
+    get_container_by_container_name,
+)
+
 
 LONG_TIMEOUT = 200
 logger = get_logger()
 
 
 class SetupGithubRepoRequest(BaseModel):
-    workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
+    workspace_id: str = Field(
+        ..., description="workspace-id to get the running workspace-manager"
+    )
     # repo_name: str = Field(..., description="github repo-name for which issue needs to be solved")
 
 
@@ -32,6 +42,7 @@ class SetupGithubRepo(Action):
     """
     clones github repo in the workspace
     """
+
     _display_name = "Clone github repo on workspace"
     _request_schema = SetupGithubRepoRequest
     _response_schema = SetupGithubRepoResponse
@@ -44,39 +55,54 @@ class SetupGithubRepo(Action):
         self.args = args
         self.workspace_id = args.workspace_id
         self.repo_name = "princeton-nlp/SWE-bench"
-        workspace_meta = get_workspace_meta_from_manager(self.workspace_factory, self.workspace_id)
+        workspace_meta = get_workspace_meta_from_manager(
+            self.workspace_factory, self.workspace_id
+        )
         self.image_name = workspace_meta[KEY_IMAGE_NAME]
         self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        self.container_process = get_container_process(
+            workspace_meta[KEY_WORKSPACE_MANAGER]
+        )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         if not self.container_obj:
-            raise Exception(f"container-name {self.container_name} is not a valid docker-container")
+            raise Exception(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
         self.logger = logger
         self._github_token = self.load_github_token_from_host_env()
         self.repo_type = "not_local"
-        
-    def set_workspace_and_history(self, workspace_factory: WorkspaceManagerFactory,
-                                  history_processor: HistoryProcessor):
+
+    def set_workspace_and_history(
+        self,
+        workspace_factory: WorkspaceManagerFactory,
+        history_processor: HistoryProcessor,
+    ):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
     def get_container_by_container_name(self):
-        container_obj = get_container_by_container_name(self.container_name, self.image_name)
+        container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         return container_obj
 
     def load_github_token_from_host_env(self):
         # Retrieve the token from an environment variable
-        access_token = os.getenv('GITHUB_ACCESS_TOKEN')
+        access_token = os.getenv("GITHUB_ACCESS_TOKEN")
 
         # Check if the token is available
         if access_token is None:
-            raise ValueError("GitHub access token is not set in the environment variables")
+            raise ValueError(
+                "GitHub access token is not set in the environment variables"
+            )
         return access_token
 
     def reset(self):
         # Clone repository if not already cloned
-        folders = communicate(self.container_process, self.container_obj, "ls", self.parent_pids).split("\n")
+        folders = communicate(
+            self.container_process, self.container_obj, "ls", self.parent_pids
+        ).split("\n")
         if self.repo_name not in folders:
             raise Exception(f"repo name {self.repo_name} is not found in workspace")
 
@@ -99,10 +125,13 @@ class SetupGithubRepo(Action):
         if self._github_token:
             token_prefix = f"{self._github_token}@"
         communicate_with_handling(
-            self.container_process, self.container_obj,
+            self.container_process,
+            self.container_obj,
             f"git clone https://{token_prefix}github.com/{self.repo_name}.git",
             self.parent_pids,
             error_msg="Failed to clone repository from mirror",
             timeout_duration=LONG_TIMEOUT,
         )
-        return SetupGithubRepoResponse(github_repo_copy_resp=f"repo: {self.repo_name} is cloned to container")
+        return SetupGithubRepoResponse(
+            github_repo_copy_resp=f"repo: {self.repo_name} is cloned to container"
+        )

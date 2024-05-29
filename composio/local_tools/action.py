@@ -1,10 +1,11 @@
-import json
-import jsonref
 import hashlib
-import inflection
-from pydantic import BaseModel
-from typing import List
+import json
 from abc import ABC, abstractmethod
+from typing import List
+
+import inflection
+import jsonref
+from pydantic import BaseModel
 
 
 def generate_hashed_appId(input_string):
@@ -91,15 +92,11 @@ class Action(ABC):
             "enabled": True,
             "description": self.__class__.__doc__ if self.__class__.__doc__ else self.action_name,  # type: ignore
             "parameters": jsonref.loads(
-                            json.dumps(
-                                self.request_schema.model_json_schema(by_alias=False)
-                            )
-                        ),
+                json.dumps(self.request_schema.model_json_schema(by_alias=False))
+            ),
             "response": jsonref.loads(
-                    json.dumps(
-                        self.response_schema.model_json_schema()
-                    )
-                )
+                json.dumps(self.response_schema.model_json_schema())
+            ),
         }
 
         return action_schema
@@ -116,8 +113,11 @@ class Action(ABC):
             # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
             return {
                 "status": "failure",
-                "details": f"Could not parse response with error: {e}. Please contact the tool developer."
+                "details": f"Could not parse response with error: {e}. Please contact the tool developer.",
             }
         except Exception as e:
             # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
-            return {"status": "failure", "details": "Error executing action with error: " + str(e)}
+            return {
+                "status": "failure",
+                "details": "Error executing action with error: " + str(e),
+            }
