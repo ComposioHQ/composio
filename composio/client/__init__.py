@@ -638,6 +638,7 @@ class Actions(Collection[ActionModel]):
                 "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
                 UserWarning,
             )
+            tags = ["important"]
 
         if len(actions) == 0 and len(apps) == 0 and len(tags) == 0 and allow_all:
             response = self._raise_if_required(
@@ -646,6 +647,7 @@ class Actions(Collection[ActionModel]):
                 )
             )
             return [self.model(**action) for action in response.json().get("items")]
+        
 
         queries: t.Dict[str, str] = {}
         if use_case is not None and use_case != "":
