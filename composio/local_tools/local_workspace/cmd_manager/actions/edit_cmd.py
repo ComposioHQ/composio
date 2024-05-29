@@ -99,7 +99,6 @@ class EditFile(Action):
         self, request_data: EditFileRequest, authorisation_data: dict
     ) -> EditFileResponse:
         self._setup(request_data)
-        command = f"{self.command}"
         full_command = f"source {self.script_file} && edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
         print(full_command)
         output, return_code = communicate(
