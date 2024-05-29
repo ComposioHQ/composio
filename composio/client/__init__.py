@@ -638,6 +638,7 @@ class Actions(Collection[ActionModel]):
                 "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
                 UserWarning,
             )
+            tags = ["important"]
 
         if len(actions) == 0 and len(apps) == 0 and len(tags) == 0 and allow_all:
             response = self._raise_if_required(
@@ -976,9 +977,12 @@ class Entity:
         if isinstance(app_name, App):
             app_name = app_name.value
 
+        app = self.client.apps.get(name=app_name)
+        if not app:
+            raise ComposioClientError(f"App with name {app_name} not found")
         if auth_mode is None:
             integration = integration or self.client.integrations.create(
-                app_id=app_name,
+                app_id=app.appId,
                 use_composio_auth=True,
             )
             return self.client.connected_accounts.initiate(
@@ -987,7 +991,6 @@ class Entity:
                 redirect_url=redirect_url,
             )
 
-        app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         integration = integration or self.client.integrations.create(
             app_id=app.appId,
