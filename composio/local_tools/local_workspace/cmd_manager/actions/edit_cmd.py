@@ -50,10 +50,10 @@ class EditFile(Action):
     """
 
     _display_name = """
-    replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text. 
-    The replacement text is terminated by a line with only end_of_edit on it. All of the <replacement_text> will be entered, 
-    so make sure your indentation is formatted properly. To enter text at the beginning of the file, 
-    set START CURSOR and END CURSOR to 0. Use set_cursors to move the cursors around. 
+    replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text.
+    The replacement text is terminated by a line with only end_of_edit on it. All of the <replacement_text>
+    will be entered, so make sure your indentation is formatted properly. To enter text at the beginning of the file,
+    set START CURSOR and END CURSOR to 0. Use set_cursors to move the cursors around.
     Python files will be checked for syntax errors after the edit.
     """
     _request_schema = EditFileRequest  # Reusing the request schema from SetCursors
