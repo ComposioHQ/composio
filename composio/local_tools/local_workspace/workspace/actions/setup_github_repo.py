@@ -53,10 +53,23 @@ class SetupGithubRepo(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.args = None
+        self.workspace_id = ""
+        self.repo_name = REPO_NAME
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+        self.logger = logger
+        self._github_token = self.load_github_token_from_host_env()
+        self.repo_type = "not_local"
+
     def _setup(self, args: SetupGithubRepoRequest):
         self.args = args
         self.workspace_id = args.workspace_id
-        self.repo_name = REPO_NAME
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )
@@ -68,12 +81,9 @@ class SetupGithubRepo(Action):
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
-        self.logger = logger
-        self._github_token = self.load_github_token_from_host_env()
-        self.repo_type = "not_local"
 
     def set_workspace_and_history(
         self,
@@ -106,7 +116,7 @@ class SetupGithubRepo(Action):
             self.container_process, self.container_obj, "ls", self.parent_pids
         ).split("\n")
         if self.repo_name not in folders:
-            raise Exception(f"repo name {self.repo_name} is not found in workspace")
+            raise ValueError(f"repo name {self.repo_name} is not found in workspace")
 
         # Clean repository of any modifications + Checkout base commit
         for cmd in [

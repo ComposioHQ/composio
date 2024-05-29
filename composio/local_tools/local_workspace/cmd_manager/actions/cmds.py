@@ -61,6 +61,18 @@ class GoToLineNumInOpenFile(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.args = None
+        self.workspace_id = ""
+        self.line_number = -1
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+        self.logger = logger
+
     def set_workspace_and_history(
         self,
         workspace_factory: WorkspaceManagerFactory,
@@ -86,10 +98,9 @@ class GoToLineNumInOpenFile(Action):
             self.container_name, self.image_name
         )
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
-        self.logger = logger
 
     @history_recorder()
     def execute(
@@ -135,6 +146,18 @@ class CreateFileCmd(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.args = None
+        self.workspace_id = ""
+        self.file_name = ""
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+        self.logger = logger
+
     def set_workspace_and_history(
         self,
         workspace_factory: WorkspaceManagerFactory,
@@ -160,10 +183,9 @@ class CreateFileCmd(Action):
             self.container_name, self.image_name
         )
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
-        self.logger = logger
 
     def validate_file_name(self):
         if not self.file_name or self.file_name.strip():
@@ -220,6 +242,19 @@ class OpenFile(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.args = None
+        self.workspace_id = ""
+        self.file_path = ""
+        self.line_number = ""
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+        self.logger = logger
+
     def set_workspace_and_history(
         self,
         workspace_factory: WorkspaceManagerFactory,
@@ -246,10 +281,9 @@ class OpenFile(Action):
             self.container_name, self.image_name
         )
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
-        self.logger = logger
 
     @history_recorder()
     def execute(

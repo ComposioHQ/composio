@@ -66,6 +66,25 @@ class RunCommandOnWorkspace(Action):
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
+    def __init__(self):
+        super().__init__()
+        self.name = "agent"
+        self.logger = logger
+        self.config_file_path = Path(CONFIG_FILE_PATH)
+        self.args = None
+        self.workspace_id = ""
+        # set self.command --> it is used by history-processor to record the command as part of history
+        self.command = ""
+        self.image_name = ""
+        self.container_name = ""
+        self.container_process = None
+        self.parent_pids = []
+        self.container_obj = None
+        self.return_code = None
+        self.config = None
+        self.command_patterns = None
+        self.subroutine_patterns = None
+
     def set_workspace_and_history(
         self,
         workspace_factory: WorkspaceManagerFactory,
@@ -75,7 +94,6 @@ class RunCommandOnWorkspace(Action):
         self.history_processor = history_processor
 
     def _setup(self, args: RunCommandOnWorkspaceRequest):
-        self.name = "agent"
         self.args = args
         self.workspace_id = args.workspace_id
         # set self.command --> it is used by history-processor to record the command as part of history
@@ -91,13 +109,11 @@ class RunCommandOnWorkspace(Action):
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         if not self.container_obj:
-            raise Exception(
+            raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
         self.return_code = None
-        self.logger = logger
         self.config = None
-        self.config_file_path = Path(CONFIG_FILE_PATH)
         self.load_config_from_path()
         self._parse_command_patterns()
 
@@ -107,6 +123,7 @@ class RunCommandOnWorkspace(Action):
     ):
         self._setup(request_data)
         obs, _, done, info = self.run_incoming_action(request_data.input_cmd)
+        logger.info("returned from process: %s", done)
         return RunCommandOnWorkspaceResponse(observation=obs, info=info)
 
     def load_config_from_path(self):
@@ -126,7 +143,7 @@ class RunCommandOnWorkspace(Action):
 
     def _parse_command_patterns(self):
         assert self.config is not None  # mypy
-        self.command_patterns = dict()
+        self.command_patterns = {}
         for command in self.config._commands:
             if command.end_name is not None:
                 pat = re.compile(
@@ -137,7 +154,7 @@ class RunCommandOnWorkspace(Action):
             else:
                 pat = re.compile(rf"^\s*({command.name})\s*(.*?)$", re.MULTILINE)
                 self.command_patterns[command.name] = pat
-        self.subroutine_patterns = dict()
+        self.subroutine_patterns = {}
         for _, subroutine in self.config._subroutines.items():
             if subroutine.end_name is None:
                 pat = re.compile(rf"^\s*({subroutine.name})\s*(.*?)$", re.MULTILINE)
@@ -170,7 +187,7 @@ class RunCommandOnWorkspace(Action):
         """Return the first match of a command pattern in the action string."""
         assert self.config is not None  # mypy
         if pattern_type == "subroutine":
-            patterns = {k: v for k, v in self.subroutine_patterns.items()}
+            patterns = {k: v for k, v in self.subroutine_patterns}
         elif pattern_type == "multi_line":
             patterns = {
                 k: v
@@ -180,7 +197,7 @@ class RunCommandOnWorkspace(Action):
             }
             patterns += {
                 k: v
-                for k, v in self.subroutine_patterns.items()
+                for k, v in self.subroutine_patterns
                 if k in self.config.multi_line_command_endings
             }
         elif pattern_type == "multi_line_no_subroutines":
@@ -191,7 +208,7 @@ class RunCommandOnWorkspace(Action):
             }
         else:
             raise ValueError(f"Unknown pattern type: {pattern_type}")
-        matches = list()
+        matches = []
         for name, pat in patterns.items():
             match = pat.search(action)
             if match:
@@ -207,7 +224,7 @@ class RunCommandOnWorkspace(Action):
 
         Their multi-line argument is sent using a heredoc, which is a way to send a multi-line string to a command in bash.
         """
-        parsed_action = list()
+        parsed_action = []
         rem_action = action
         while rem_action.strip():
             first_match = self._get_first_match(rem_action, "multi_line_no_subroutines")
@@ -235,7 +252,7 @@ class RunCommandOnWorkspace(Action):
 
     def get_environment_vars(self):
         assert self.config is not None  # mypy
-        env_vars = dict()
+        env_vars = {}
         for var in self.config.env_variables:
             observation, return_code = communicate(
                 self.container_process,
@@ -252,7 +269,7 @@ class RunCommandOnWorkspace(Action):
     ) -> List[Dict[str, Any]]:
         """Split an action into a list of actions in a greedy manner,
         each of which is a subroutine call or a single command."""
-        parsed_action = list()
+        parsed_action = []
         rem_action = action
         while rem_action.strip():
             first_match = self._get_first_match(rem_action, pattern_type)
@@ -290,7 +307,7 @@ class RunCommandOnWorkspace(Action):
         return parsed_action
 
     def run_incoming_action(self, action: str):
-        observations = list()
+        observations = []
         run_action = self._guard_multiline_input(action)
         info = None
         for sub_action in self.split_actions(run_action):
@@ -305,7 +322,7 @@ class RunCommandOnWorkspace(Action):
                 if done:
                     break
             else:
-                raise Exception(f"sub-command not supported {sub_action}")
+                raise ValueError(f"sub-command not supported {sub_action}")
                 # agent_name = sub_action["agent"]
                 # sub_agent_output = self.call_subroutine(agent_name, sub_action)
                 # observations.append(sub_agent_output)
@@ -351,13 +368,14 @@ class RunCommandOnWorkspace(Action):
                 assert (
                     submission is not None and submission.strip() != ""
                 ), AssertionError("No submission found.")
-                self.logger.info(f"Found submission: {submission}")
+                self.logger.info(f"Found submission: {submission}, return-code: {return_code}")
                 info["exit_status"] = f"submitted ({action})"
                 info["submission"] = submission
                 observation = "Exited (autosubmitted)"
                 logger.info("Exiting with autosubmission")
                 return observation, 0, True, info
             except KeyboardInterrupt:
+                logger.info("got keyboard interrupt")
                 raise
             except Exception as e:
                 logger.error(f"exiting cmd, exception: {e}")
@@ -451,4 +469,3 @@ class RunCommandOnWorkspace(Action):
 
     def interrupt(self):
         interrupt_container(self.container_process, self.container_obj)
-

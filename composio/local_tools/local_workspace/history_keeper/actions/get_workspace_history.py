@@ -61,4 +61,5 @@ class GetWorkspaceHistory(Action):
         """
         Returns:
         """
-        pass
+        return
+
