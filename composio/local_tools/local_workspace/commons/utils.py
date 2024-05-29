@@ -8,7 +8,7 @@ import time
 import traceback
 from io import BytesIO
 from subprocess import PIPE, STDOUT
-from typing import Set, Tuple
+from typing import Set, Tuple, List
 
 import docker
 
@@ -351,7 +351,7 @@ def communicate(
     container: subprocess.Popen,
     container_obj,
     input_cmd: str,
-    parent_pids: [str],
+    parent_pids: List[str],
     timeout_duration=25,
 ):
     return_code = None
@@ -377,7 +377,7 @@ def communicate_with_handling(
     container_process: subprocess.Popen,
     container_obj,
     input: str,
-    parent_pids: [str],
+    parent_pids: List[str],
     error_msg: str,
     timeout_duration=25,
 ) -> str:

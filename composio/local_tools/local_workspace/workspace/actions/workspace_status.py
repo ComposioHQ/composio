@@ -59,7 +59,7 @@ class WorkspaceStatus(Action):
             self.workspace_factory, args.workspace_id
         )
 
-    def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
+    def execute(self, request_data: WorkspaceStatusRequest, authorisation_data: dict = {}):
         self._setup(request_data)
         client = docker.from_env()
         try:
