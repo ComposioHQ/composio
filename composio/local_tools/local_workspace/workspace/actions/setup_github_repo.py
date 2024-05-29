@@ -27,7 +27,7 @@ LONG_TIMEOUT = 200
 logger = get_logger()
 
 REPO_NAME = os.environ.get("REPO_NAME", "princeton-nlp/SWE-bench")
-REPO_NAME = "SamparkAI/composio"
+
 
 class SetupGithubRepoRequest(BaseModel):
     workspace_id: str = Field(
