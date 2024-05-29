@@ -979,15 +979,24 @@ class Entity:
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        integration = integration or self.client.integrations.create(
-            app_id=app.appId,
-            name=f"integration_{timestamp}",
-            auth_mode=auth_mode,
-            auth_config=auth_config,
-            use_composio_auth=False,
-        )
+        if integration is None and auth_mode is not None:
+            integration = self.client.integrations.create(
+                app_id=app.appId,
+                name=f"integration_{timestamp}",
+                auth_mode=auth_mode,
+                auth_config=auth_config,
+                use_composio_auth=False,
+            )
+
+        if integration is None and auth_mode is None:
+            integration = self.client.integrations.create(
+                app_id=app.appId,
+                name=f"integration_{timestamp}",
+                use_composio_auth=True,
+            )
+
         return self.client.connected_accounts.initiate(
-            integration_id=integration.id,
+            integration_id=t.cast(IntegrationModel, integration).id,
             entity_id=self.id,
             redirect_url=redirect_url,
         )

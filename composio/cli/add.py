@@ -153,7 +153,7 @@ def add_integration(
             context.console.print(
                 "\n[green]Existing connection retained. No new connection added.[/green]\n"
             )
-            return
+            return None
 
     context.console.print(
         f"\n[green]> Adding integration: {name.capitalize()}...[/green]\n"
@@ -163,7 +163,7 @@ def add_integration(
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
 
     if "OAUTH2" in auth_modes:
-        _handle_oauth(
+        return _handle_oauth(
             entity=entity,
             client=context.client,
             app_name=name,
@@ -172,10 +172,9 @@ def add_integration(
             no_browser=no_browser,
             integration=integration,
         )
-        return
 
     if "OAUTH1" in auth_modes:
-        _handle_oauth(
+        return _handle_oauth(
             entity=entity,
             client=context.client,
             app_name=name,
@@ -184,29 +183,62 @@ def add_integration(
             no_browser=no_browser,
             integration=integration,
         )
-        return
 
     if "API_KEY" in auth_modes:
-        _handle_basic_auth(
+        return _handle_basic_auth(
             entity=entity,
             client=context.client,
             app_name=name,
             auth_mode="API_KEY",
             auth_scheme=auth_modes["API_KEY"],
         )
-        return
 
     if "BASIC" in auth_modes:
-        _handle_basic_auth(
+        return _handle_basic_auth(
             entity=entity,
             client=context.client,
             app_name=name,
             auth_mode="BASIC",
             auth_scheme=auth_modes["BASIC"],
         )
-        return
 
-    raise click.ClickException(f"Unknow auth mode found `{auth_modes.keys()}`")
+    return _handle_no_auth(
+        entity=entity,
+        client=context.client,
+        app_name=name,
+        no_browser=no_browser,
+        integration=integration,
+    )
+
+
+def _handle_no_auth(
+    entity: Entity,
+    client: Composio,
+    app_name: str,
+    no_browser: bool = False,
+    integration: t.Optional[IntegrationModel] = None,
+) -> None:
+    """Handle basic auth."""
+    connection = entity.initiate_connection(
+        app_name=app_name.lower(),
+        integration=integration,
+    )
+    if not no_browser:
+        webbrowser.open(
+            url=str(connection.redirectUrl),
+        )
+    click.echo(
+        f"Please authenticate {app_name} in the browser and come back here. "
+        f"URL: {connection.redirectUrl}"
+    )
+    spinner = Spinner(
+        DOTS,
+        f"⚠ Waiting for {app_name} authentication...",
+    )
+    spinner.start()
+    connection.wait_until_active(client=client)
+    spinner.stop()
+    click.echo(f"✔ {app_name} added successfully!")
 
 
 def _handle_basic_auth(
