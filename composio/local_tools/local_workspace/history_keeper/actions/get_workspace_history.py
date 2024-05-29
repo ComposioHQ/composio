@@ -40,6 +40,7 @@ class GetWorkspaceHistory(Action):
     _request_schema = GetWorkspaceHistoryRequest
     _response_schema = GetWorkspaceHistoryRequest
     _tags = ["workspace"]
+    _tool_name = "historykeeper"
     _history_len = 5
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
