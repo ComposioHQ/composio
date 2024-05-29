@@ -187,7 +187,7 @@ class RunCommandOnWorkspace(Action):
         """Return the first match of a command pattern in the action string."""
         assert self.config is not None  # mypy
         if pattern_type == "subroutine":
-            patterns = {k: v for k, v in self.subroutine_patterns}
+            patterns = {k: v for k,v in self.subroutine_patterns.items()}
         elif pattern_type == "multi_line":
             patterns = {
                 k: v
@@ -197,7 +197,7 @@ class RunCommandOnWorkspace(Action):
             }
             patterns += {
                 k: v
-                for k, v in self.subroutine_patterns
+                for k, v in self.subroutine_patterns.items()
                 if k in self.config.multi_line_command_endings
             }
         elif pattern_type == "multi_line_no_subroutines":
