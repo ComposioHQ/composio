@@ -277,8 +277,9 @@ class AuthSchemeField(BaseModel):
     displayName: str
     description: str
     type: str
-    required: bool
-    expected_from_customer: bool
+
+    required: bool = False
+    expected_from_customer: bool = False
 
 
 class AppAuthScheme(BaseModel):
@@ -286,14 +287,15 @@ class AppAuthScheme(BaseModel):
 
     scheme_name: str
     auth_mode: str
-    authorization_url: str
-    token_url: str
     proxy: t.Dict
-    default_scopes: t.List
-    token_response_metadata: t.List
-    client_id: str
-    client_secret: str
     fields: t.List[AuthSchemeField]
+
+    authorization_url: t.Optional[str] = None
+    token_url: t.Optional[str] = None
+    default_scopes: t.Optional[t.List] = None
+    token_response_metadata: t.Optional[t.List] = None
+    client_id: t.Optional[str] = None
+    client_secret: t.Optional[str] = None
 
 
 class AppModel(BaseModel):
@@ -754,11 +756,11 @@ class IntegrationModel(BaseModel):
     enabled: bool
     deleted: bool
     appId: str
-    defaultConnectorId: str
     _count: t.Dict
     appName: str
     logo: str
 
+    defaultConnectorId: t.Optional[str] = None
     connections: t.Optional[t.List[t.Dict]] = None
 
 
@@ -945,7 +947,7 @@ class Entity:
 
     def get_connection(
         self,
-        app: str,
+        app: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
@@ -956,15 +958,18 @@ class Entity:
         :return: Connected account object
         :raises: If no connected account found for given entity ID
         """
+        if connected_account_id is not None:
+            return self.client.connected_accounts.get(
+                connection_id=connected_account_id
+            )
+
+        latest_account = None
+        latest_creation_date = datetime.fromtimestamp(0.0)
         connected_accounts = self.client.connected_accounts.get(
             entity_ids=[self.id],
             active=True,
         )
-        latest_account = None
-        latest_creation_date = datetime.fromtimestamp(0.0)
         for connected_account in connected_accounts:
-            if connected_account.id == connected_account_id:
-                return connected_account
             if app == connected_account.appUniqueId:
                 creation_date = datetime.fromisoformat(
                     connected_account.createdAt.replace("Z", "+00:00")
@@ -974,7 +979,9 @@ class Entity:
                     latest_account = connected_account
         if latest_account is None:
             raise ComposioClientError(
-                f"Entity `{self.id}` does not have a connection to {app}"
+                f"Could not find a connection with app='{app}',"
+                f"connected_account_id=`{connected_account_id}` and "
+                f"entity=`{self.id}`"
             )
         return latest_account
 
