@@ -26,6 +26,8 @@ from composio.local_tools.local_workspace.commons.utils import (
 LONG_TIMEOUT = 200
 logger = get_logger()
 
+REPO_NAME = os.environ.get("REPO_NAME", "princeton-nlp/SWE-bench")
+REPO_NAME = "SamparkAI/composio"
 
 class SetupGithubRepoRequest(BaseModel):
     workspace_id: str = Field(
@@ -54,7 +56,7 @@ class SetupGithubRepo(Action):
     def _setup(self, args: SetupGithubRepoRequest):
         self.args = args
         self.workspace_id = args.workspace_id
-        self.repo_name = "princeton-nlp/SWE-bench"
+        self.repo_name = REPO_NAME
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )

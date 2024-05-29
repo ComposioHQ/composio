@@ -9,7 +9,6 @@ import traceback
 from io import BytesIO
 from subprocess import PIPE, STDOUT
 from typing import Set, Tuple
-
 import docker
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -60,7 +59,7 @@ def get_container(
             "readme."
         )
         raise RuntimeError(msg)
-    elif len(filtered_images) > 1:
+    if len(filtered_images) > 1:
         logger.warning(f"Multiple images found for {image_name}, that's weird.")
     attrs = filtered_images[0].attrs
     if attrs is not None:
@@ -466,13 +465,16 @@ def get_pids(container_obj, parent_pids, all_pids=False) -> list[str]:
 
 
 def terminate_container(container):
+    # pylint: disable=unused-argument
     pass
 
 
 # todo: implement this function --> used while running a command on container
 def interrupt_container(container_process, container_obj):
+    # pylint: disable=unused-argument
     pass
 
 
 def close_container(container_process, container_obj):
+    # pylint: disable=unused-argument
     pass
