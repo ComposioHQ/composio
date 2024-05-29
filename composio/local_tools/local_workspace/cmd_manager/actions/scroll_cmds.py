@@ -39,10 +39,10 @@ class ScrollDownResponse(BaseModel):
 
 class ScrollDown(Action):
     """
-    Moves the window down 100 lines.
+    Scrolls the view within a shell session down by 100 lines
     """
 
-    _display_name = "Scroll down command on workspace"
+    _display_name = "Scroll down"
     _request_schema = ScrollDownRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollDownResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]
@@ -106,7 +106,7 @@ class ScrollDown(Action):
 
 
 class ScrollUpRequest(BaseModel):
-    workspace_id: str = Field(..., description="moves the window up 100 lines")
+    workspace_id: str = Field(..., description="workspace-id to get the running workspace-manager")
 
 
 class ScrollUpResponse(BaseModel):
@@ -116,10 +116,10 @@ class ScrollUpResponse(BaseModel):
 
 class ScrollUp(Action):
     """
-    Moves the window up 100 lines.
+    Scrolls the view within a shell session either up by 100 lines
     """
 
-    _display_name = "Scroll up command on workspace"
+    _display_name = "Scroll up"
     _request_schema = ScrollUpRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollUpResponse  # Reusing the response schema from SetCursors
     _tags = ["workspace"]

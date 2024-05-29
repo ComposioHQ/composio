@@ -28,7 +28,7 @@ class CreateWorkspaceResponse(BaseModel):
 
 class CreateWorkspaceAction(Action):
     """
-    creates a workspace, and returns workspace-id
+    Creates a workspace, and returns workspace-id
     """
 
     _display_name = "Create workspace"

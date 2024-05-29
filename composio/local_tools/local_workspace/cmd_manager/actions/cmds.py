@@ -30,7 +30,7 @@ class GoToRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id to get the running workspace-manager"
     )
-    line_number: int = Field(..., description="line number to navigate to")
+    line_number: int = Field(..., description="The line number to which the view should be moved.")
 
 
 class GoToResponse(BaseModel):
@@ -51,7 +51,7 @@ class GoToLineNumInOpenFile(Action):
     - RuntimeError: If no file is currently open.
     """
 
-    _display_name = "Navigate to line in open-file in the workspace"
+    _display_name = "Goto Line Action"
     _request_schema = GoToRequest
     _response_schema = GoToResponse
     _tags = ["workspace"]
@@ -119,7 +119,7 @@ class CreateFileRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id to get the running workspace-manager"
     )
-    file_name: str = Field(..., description="name of the file to create")
+    file_name: str = Field(..., description="The name of the new file to be created within the shell session")
 
 
 class CreateFileResponse(BaseModel):
@@ -129,8 +129,10 @@ class CreateFileResponse(BaseModel):
 
 class CreateFileCmd(Action):
     """
-    creates and opens a new file with the given name
-
+    Creates a new file within a shell session.
+    Example:
+        - To create a file, provide the shell ID and the name of the new file. 
+        - The response will indicate whether the file was created successfully and list any errors.
     Raises:
     - ValueError: If line_number is not an integer.
     - RuntimeError: If no file is currently open.

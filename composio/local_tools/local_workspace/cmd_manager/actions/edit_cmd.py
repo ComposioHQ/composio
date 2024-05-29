@@ -30,31 +30,34 @@ class EditFileRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id to get the running workspace-manager"
     )
-    start_line: int = Field(..., description="the line number to start the edit at")
+    start_line: int = Field(..., description="The line number at which the file edit will start")
     end_line: int = Field(
-        ..., description="the line number to end the edit at (inclusive)"
+        ..., description="The line number at which the file edit will end (inclusive)."
     )
     replacement_text: str = Field(
-        ..., description="the text to replace the current selection with"
+        ..., description="The text that will replace the specified line range in the file."
     )
 
 
 class EditFileResponse(BaseModel):
     output: str = Field(..., description="output of the command")
-    return_code: int = Field(..., description="return code for the command")
+    return_code: int = Field(..., description="Any output or errors that occurred during the file edit.")
 
 
 class EditFile(Action):
     """
-    Moves the window down 100 lines.
+    replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text. 
+    Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION. 
+    Python files will be checked for syntax errors after the edit.
+    If you'd like to add the line '        print(x)' you must fully write that out,
+    with all those spaces before the code! 
+    If the system detects a syntax error, the edit will not be executed.
+    Simply try to edit the file again, but make sure to read the error message and modify the edit command you issue accordingly.
+    Issuing the same command a second time will just lead to the same error message again.
     """
 
     _display_name = """
-    replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text. 
-    The replacement text is terminated by a line with only end_of_edit on it. All of the <replacement_text> will be entered, 
-    so make sure your indentation is formatted properly. To enter text at the beginning of the file, 
-    set START CURSOR and END CURSOR to 0. Use set_cursors to move the cursors around. 
-    Python files will be checked for syntax errors after the edit.
+    Edit File Action
     """
     _request_schema = EditFileRequest  # Reusing the request schema from SetCursors
     _response_schema = EditFileResponse  # Reusing the response schema from SetCursors

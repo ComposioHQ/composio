@@ -3,7 +3,6 @@ CrewAI demo.
 """
 
 import os
-
 import dotenv
 from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task

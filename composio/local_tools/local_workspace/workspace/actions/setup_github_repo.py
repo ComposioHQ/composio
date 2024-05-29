@@ -42,7 +42,7 @@ class SetupGithubRepoResponse(BaseModel):
 
 class SetupGithubRepo(Action):
     """
-    clones github repo in the workspace
+    Clones github repo in the workspace
     """
 
     _display_name = "Clone github repo on workspace"
