@@ -31,7 +31,7 @@ class SearchDirRequest(BaseModel):
         ..., description="workspace-id to get the running workspace-manager"
     )
     search_term: str = Field(..., description="search term to search in the directory")
-    dir: str = Field(..., description="directory in which search needs to be done")
+    dir: str = Field(..., description="The directory to search in (if not provided, searches in the current directory)")
 
 
 class SearchDirResponse(BaseModel):
@@ -41,10 +41,10 @@ class SearchDirResponse(BaseModel):
 
 class SearchDirCmd(Action):
     """
-    search the given term in the given directory
+    Searches for search_term in all files in dir. If dir is not provided, searches in the current directory.
     """
 
-    _display_name = "Scroll down command on workspace"
+    _display_name = "Search Directory Action"
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
     _tags = ["workspace"]
@@ -128,10 +128,10 @@ class SearchFileResponse(BaseModel):
 
 class SearchFileCmd(Action):
     """
-    searches for search_term in file. If file is not provided, searches in the current open file
+    Searches for a specified term within a specified file or the current open file if none is specified.
     """
 
-    _display_name = "Search term in file"
+    _display_name = "Search file Action"
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
     _tags = ["workspace"]
@@ -203,9 +203,9 @@ class FindFileRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id to get the running workspace-manager"
     )
-    file_name: str = Field(..., description="file-name to search for")
+    file_name: str = Field(..., description="The name of the file to be searched for within the specified directory or the current directory if none is specified.")
     dir: str = Field(
-        ..., description="name of the directory in which search needs to be done"
+        ..., description="The directory within which to search for the file. If not provided, the search will default to the current directory."
     )
 
 
@@ -216,10 +216,13 @@ class FindFileResponse(BaseModel):
 
 class FindFileCmd(Action):
     """
-    finds all files with the given name in dir.
+    Searches for files by name within a specified directory or the current directory if none is specified.
+    Example:
+        - To find a file, provide the workspace ID, the file name, and optionally a directory. 
+        - The response will list any files found and indicate whether the search was successful.
     """
 
-    _display_name = "finds file in directory"
+    _display_name = "Find File Action"
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
     _tags = ["workspace"]
