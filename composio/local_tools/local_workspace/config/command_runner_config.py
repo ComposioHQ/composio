@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
+
 from simple_parsing.helpers.fields import field
 from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 
