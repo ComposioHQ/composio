@@ -647,7 +647,6 @@ class Actions(Collection[ActionModel]):
                 )
             )
             return [self.model(**action) for action in response.json().get("items")]
-        
 
         queries: t.Dict[str, str] = {}
         if use_case is not None and use_case != "":
