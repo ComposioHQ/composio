@@ -108,3 +108,8 @@ env: clean
 	else\
 		echo "In a virtual environment! Exit first: 'exit'.";\
 	fi
+
+test-demo:
+	for dir in plugins/*; do \
+		find $$dir -name '*_demo.py' -exec python3 {} \;;\
+	done
