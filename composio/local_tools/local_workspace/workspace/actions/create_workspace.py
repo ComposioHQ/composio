@@ -2,33 +2,36 @@ from pydantic import BaseModel, Field
 
 from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
-)
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     LocalDockerArgumentsModel,
-    WorkspaceManagerFactory,
 )
 
+from .base_workspace_action import (
+    BaseWorkspaceAction,
+    BaseWorkspaceRequest,
+    BaseWorkspaceResponse,
+)
 
 logger = get_logger()
 
 
-class CreateWorkspaceRequest(BaseModel):
+class CreateWorkspaceRequest(BaseWorkspaceRequest):
     image_name: str = Field(
         default="sweagent/swe-agent:latest",
-        description="""The workspace is a docker container. Use sweagent/swe-agent:latest for default. 
-        To create a workspace image name can be also given to specify the image to use.
-        If no image name is given, the default image is used.""",
-        examples=["sweagent/swe-agent:latest"],
+        description="""The workspace is a docker container. 
+        Use sweagent/swe-agent:latest it works for most use cases. 
+        Only use a different image if you have a good reason.
+        Ex. image names ubuntu:22.04
+        """,
+        examples=["sweagent/swe-agent:latest", "ubuntu:22.04"],
     )
 
 
-class CreateWorkspaceResponse(BaseModel):
+class CreateWorkspaceResponse(BaseWorkspaceResponse):
     workspace_id: str = Field(..., description="workspace-id for the created workspace")
 
 
-class CreateWorkspaceAction(Action):
+class CreateWorkspaceAction(BaseWorkspaceAction):
     """
     Creates a workspace, and returns workspace-id
     """
@@ -36,24 +39,18 @@ class CreateWorkspaceAction(Action):
     _display_name = "Create workspace"
     _request_schema = CreateWorkspaceRequest
     _response_schema = CreateWorkspaceResponse
-    _tags = ["workspace"]
-    _tool_name = "localworkspace"
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
 
     def execute(
         self, request_data: CreateWorkspaceRequest, authorisation_data: dict
     ) -> CreateWorkspaceResponse:
+        if self.workspace_factory is None:
+            raise ValueError("Workspace factory is not set")
+
+        if request_data.image_name == "":
+            request_data.image_name = "sweagent/swe-agent:latest"
+
         args: LocalDockerArgumentsModel = LocalDockerArgumentsModel(
             image_name=request_data.image_name
         )
         workspace_id = self.workspace_factory.get_workspace_manager(args)
         return CreateWorkspaceResponse(workspace_id=workspace_id)
-
-    def set_workspace_and_history(
-        self,
-        workspace_factory: WorkspaceManagerFactory,
-        history_processor: HistoryProcessor,
-    ):
-        self.workspace_factory = workspace_factory
-        self.history_processor = history_processor
