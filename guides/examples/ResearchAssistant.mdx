@@ -2,55 +2,56 @@
 title: "Research Assistant"
 sidebarTitle: "Research Assistant"
 icon: "book"
-description: "CrewAI Implementation of Research Assistant Agent"
+description: "This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and
+Google Gemma AI API to perform web searches and compile research reports."
 ---
 
-<Tip>Goal: Provide a research drafts based on a particular topic</Tip>
 
-### Install required packages
-
-Connect serpapi account using composio cli
-
-<CodeGroup>
-    ```bash Run Command
-    pip install composio-langchain
-    pip install composio-core
-    pip install langchain-community
-    pip install huggingface_hub
-    pip install google-search-results
-
-    # Connect your serpapi account so agents can use it.
-
-    composio-cli add serpapi
-    ```
-
-</CodeGroup>
 
 <Steps>
+    <Step title="Install Required Packages">
+    You need to connect your SerpAPI account using the Composio CLI. This allows agents to use SerpAPI for web searches.
+    Run the following commands on your terminal:
+    <CodeGroup>
+        ```bash Run Command
+        pip install composio-langchain composio-core langchain-community huggingface_hub google-search-results
+
+        # Connect your serpapi account so agents can use it.
+
+        composio-cli add serpapi
+        ```
+
+    </CodeGroup>
+    </Step>
+
     <Step title="Importing required libraries">
+    Now, import the necessary libraries in your Python script:
     <CodeGroup>
         ```python Import statements
         from crewai import Agent, Task, Crew, Process
-        from composio_langchain import ComposioToolset, Action, App
+        from composio_langchain import ComposioToolSet, Action, App
         from langchain_google_genai import ChatGoogleGenerativeAI
         ```
     </CodeGroup>
     </Step>
     
     <Step title="Initialise tools and agents">
+    Initialize the tools and agents required for your research assistant:
     <CodeGroup>
         ```python Tools and Agents
         llm = ChatGoogleGenerativeAI(
         model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
         )
         # Composio tool for serpapi
-        tools = ComposioToolset([App.SERPAPI])
+        tools = ComposioToolSet([App.SERPAPI])
         ```
 
-</CodeGroup>
-</Step>
+    </CodeGroup>
+    Make sure to set the *GOOGLE_API_KEY* environment variable with your Google API key.
+    </Step>
 
    <Step title="Defining the Agent">
+   Define the Researcher agent with the necessary parameters:
    <CodeGroup>
        ```python Agents
         researcher = Agent(
@@ -71,6 +72,7 @@ Connect serpapi account using composio cli
    </Step>
 
     <Step title="Defining the Task">
+    Create and execute a task for the agent:
     <CodeGroup>
         ```python Execute
         task1 = Task( description="""Research about open source LLMs vs
@@ -85,3 +87,60 @@ Connect serpapi account using composio cli
     </Step>
 
 </Steps>
+
+## Putting It All Together
+
+Below is the complete code snippet combining all the steps:
+
+<CodeGroup>
+    ```python Final code
+        # Install required packages
+        # pip install composio-langchain
+        # pip install composio-core
+        # pip install langchain-community
+        # pip install huggingface_hub
+        # pip install google-search-results
+
+        # Connect your SerpAPI account so agents can use it.
+        # composio-cli add serpapi
+
+        # Import required libraries
+        from crewai import Agent, Task, Crew, Process
+        from composio_langchain import ComposioToolset, Action, App
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        import os
+
+        # Initialize tools and agents
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
+
+        # Composio tool for SerpAPI
+        tools = ComposioToolset([App.SERPAPI])
+
+        # Define the Agent
+        researcher = Agent(
+            role='Researcher',
+            goal='Search the internet for the information requested',
+            backstory="""
+            You are a researcher. Using the information in the task, you find out some of the most popular facts about the topic along with some of the trending aspects.
+            You provide a lot of information thereby allowing a choice in the content selected for the final blog.
+            """,
+            verbose=True,
+            allow_delegation=False,
+            tools=tools,
+            llm=llm
+        )
+
+        # Define the Task
+        task1 = Task(
+            description="""Research about open source LLMs vs closed source LLMs. Your final answer MUST be a full analysis report""",
+            expected_output='When the research report is ready',
+            agent=researcher
+        )
+
+        # Execute the Task
+        task1.execute()
+
+    ```
+</CodeGroup>
