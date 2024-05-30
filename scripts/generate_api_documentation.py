@@ -1,5 +1,12 @@
 """
 API Documentation generator for Composio SDK.
+
+Usage:
+    python PATH_TO_COMPOSIO_REPO PATH_TO_DOCUMENTATION_OUTPUT
+
+Defaults:
+    PATH_TO_COMPOSIO_REPO: ./composio
+    PATH_TO_DOCUMENTATION_OUTPUT: ./sdk/composio
 """
 
 import os
@@ -180,7 +187,7 @@ def parse_function(node: ast.FunctionDef) -> FuctionMetadata:
 
     returns = FunctionParam(
         name="returns",
-        type=ast.unparse(node.returns),
+        type=ast.unparse(node.returns or ast.Constant(None)),
         required=False,
         description=docmeta.get("return") or "No description provided",
     )
@@ -289,11 +296,13 @@ def handle_file(file: Path, output: Path) -> None:
     if not file.name.endswith(".py"):
         return
 
-    module = import_file(file=file)
     header, *body = ast.parse(source=file.read_text(encoding="utf-8")).body
-    content = handle_header(
+    if isinstance(header, ast.Expr):
+        content = handle_header(
         header=t.cast(ast.Constant, t.cast(ast.Expr, header).value).value
     )
+    else:
+        content = ""
     content += "\n"
 
     while len(body) > 0:
@@ -317,14 +326,18 @@ def handle_file(file: Path, output: Path) -> None:
             content += handle_class(node=node)
             continue
 
-    outdir = output / file.parent.relative_to(Path.cwd() / "composio")
+    outdir = output / Path(
+        *file.parent.parts[file.parent.parts.index("composio") + 1 :]
+    )
     outdir.mkdir(exist_ok=True, parents=True)
     filename = (
         "index.mdx" if file.name == "__init__.py" else file.name.replace(".py", ".mdx")
     )
     (outdir / filename).write_text(content, encoding="utf-8")
     return str(
-        "sdk" / file.parent.relative_to(Path.cwd()) / filename.replace(".mdx", "")
+        "sdk"
+        / Path(*file.parent.parts[file.parent.parts.index("composio") + 1 :])
+        / filename.replace(".mdx", "")
     )
 
 
@@ -377,4 +390,17 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    path = None
+    output = None
+    args = sys.argv[1:]
+    if len(args) == 2:
+        path = Path(args.pop(0)).resolve()
+        output = Path(args.pop(0)).resolve()
+
+    if len(args) == 1:
+        path = Path(args.pop(0))
+    
+    main(
+        path=path,
+        output=output,
+    )
