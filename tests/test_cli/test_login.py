@@ -1,6 +1,5 @@
 """Test login command."""
 
-
 from composio.cli.context import get_context
 
 from tests.test_cli.base import BaseCliTest

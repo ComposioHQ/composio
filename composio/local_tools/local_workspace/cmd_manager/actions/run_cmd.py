@@ -55,16 +55,16 @@ class RunCommandOnWorkspaceResponse(BaseModel):
 
 class RunCommandOnWorkspace(Action):
     """
-    In general if you want to run any other command directly on shell, use this action.
-    Few examples:
-    1 - If you want to run python script, use this tool to run the python script. *NOTE* : while running a script, give complete path of the script.
-    2 - Or if you want to `ls -a` use this tool to run the command.  
+      In general if you want to run any other command directly on shell, use this action.
+      Few examples:
+      1 - If you want to run python script, use this tool to run the python script. *NOTE* : while running a script, give complete path of the script.
+      2 - Or if you want to `ls -a` use this tool to run the command.
 
-  You should only include a *SINGLE* command in the command section and then wait for a response from the shell before continuing with more discussion and commands.
-  If you'd like to issue two commands at once, PLEASE DO NOT DO THAT!  
-  You're free to use any other bash commands you want (e.g. find, grep, cat, ls, cd) in addition to the special commands listed above.
-  However, the environment does NOT support interactive session commands (e.g. python, vim), so please do not invoke them.
-  Never issue a find command against "/" directory. It will not work. Always try to find files within the base directory given in the task.
+    You should only include a *SINGLE* command in the command section and then wait for a response from the shell before continuing with more discussion and commands.
+    If you'd like to issue two commands at once, PLEASE DO NOT DO THAT!
+    You're free to use any other bash commands you want (e.g. find, grep, cat, ls, cd) in addition to the special commands listed above.
+    However, the environment does NOT support interactive session commands (e.g. python, vim), so please do not invoke them.
+    Never issue a find command against "/" directory. It will not work. Always try to find files within the base directory given in the task.
     """
 
     _display_name = "Run command"
@@ -377,7 +377,9 @@ class RunCommandOnWorkspace(Action):
                 assert (
                     submission is not None and submission.strip() != ""
                 ), AssertionError("No submission found.")
-                self.logger.info(f"Found submission: {submission}, return-code: {return_code}")
+                self.logger.info(
+                    f"Found submission: {submission}, return-code: {return_code}"
+                )
                 info["exit_status"] = f"submitted ({action})"
                 info["submission"] = submission
                 observation = "Exited (autosubmitted)"
@@ -471,7 +473,6 @@ class RunCommandOnWorkspace(Action):
         self.close()
         self.container_process = None
         self.container_obj = None
-
 
     def close(self):
         close_container(self.container_process, self.container_obj)
