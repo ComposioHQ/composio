@@ -1,3 +1,5 @@
+system_template:
+instance_template:
 env_variables:
   WINDOW: 100
   OVERLAP: 2

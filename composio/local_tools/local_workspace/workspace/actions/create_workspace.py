@@ -16,9 +16,11 @@ logger = get_logger()
 
 class CreateWorkspaceRequest(BaseModel):
     image_name: str = Field(
-        ...,
-        description="the workspace is a docker container. To create a workspace"
-        "image name needs to be given, so container can start from the image",
+        default="sweagent/swe-agent:latest",
+        description="""The workspace is a docker container. Use sweagent/swe-agent:latest for default. 
+        To create a workspace image name can be also given to specify the image to use.
+        If no image name is given, the default image is used.""",
+        examples=["sweagent/swe-agent:latest"],
     )
 
 

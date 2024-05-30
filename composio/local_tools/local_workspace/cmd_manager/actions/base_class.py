@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-
+from abc import ABC, abstractmethod
 from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
@@ -12,7 +12,6 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     KEY_PARENT_PIDS,
     KEY_WORKSPACE_MANAGER,
     WorkspaceManagerFactory,
-    communicate,
     get_container_process,
     get_workspace_meta_from_manager,
 )
@@ -20,47 +19,38 @@ from composio.local_tools.local_workspace.commons.utils import (
     get_container_by_container_name,
 )
 
-from .const import SCRIPT_CURSOR_DEFAULT
-
-
 logger = get_logger()
 
 
-class SetCursorsRequest(BaseModel):
+class BaseRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id to get the running workspace-manager"
     )
-    start_line: int = Field(..., description="start line of the cursor")
-    end_line: int = Field(..., description="end line of the cursor")
 
 
-class SetCursorsResponse(BaseModel):
+class BaseResponse(BaseModel):
     output: str = Field(..., description="output of the command")
-    return_code: int = Field(..., description="return code for the command")
+    return_code: int = Field(
+        ..., description="Any output or errors that occurred during the file edit."
+    )
 
 
-class SetCursors(Action):
+class BaseAction(Action, ABC):
     """
-    Sets the start and end cursors based on the provided line numbers, with checks to ensure the file is open,
-    the arguments are numbers, and the start line is less than or equal to the end line.
-
-    Raises:
-    - ValueError: If start_line or end_line are not integers, or if start_line > end_line.
-    - RuntimeError: If no file is currently open.
+    Base class for all actions
     """
 
-    _display_name = "Run command on workspace"
-    _request_schema = SetCursorsRequest
-    _response_schema = SetCursorsResponse
+    _display_name = ""
+    _request_schema = BaseRequest
+    _response_schema = BaseResponse
     _tags = ["workspace"]
     _tool_name = "cmdmanagertool"
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "set_cursors"
+    script_file = ""
+    command = ""
     workspace_factory: WorkspaceManagerFactory = None
     history_processor: HistoryProcessor = None
 
     def __init__(self):
-        super().__init__()
         super().__init__()
         self.args = None
         self.workspace_id = ""
@@ -79,11 +69,9 @@ class SetCursors(Action):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
-    def _setup(self, args: SetCursorsRequest):
+    def _setup(self, args: BaseRequest):
         self.args = args
         self.workspace_id = args.workspace_id
-        self.start_line = args.start_line
-        self.end_line = args.end_line
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )
@@ -101,20 +89,19 @@ class SetCursors(Action):
                 f"container-name {self.container_name} is not a valid docker-container"
             )
 
-    @history_recorder()
+    def validate_file_name(self, file_name):
+        if file_name is None or file_name.strip() == "":
+            return "Exception: file-name can not be empty", 1
+        return None, 0
+
+    def process_output(self, output, return_code):
+        if return_code is None:
+            return_code = 1
+            output = "Exception: " + output
+        return output, return_code
+
+    @abstractmethod
     def execute(
-        self, request_data: SetCursorsRequest, authorisation_data: dict
-    ) -> SetCursorsResponse:
-        """Executes a shell script command inside the Docker container."""
-        self._setup(request_data)
-        command = (
-            f"{self.command} {' '.join([str(self.start_line), str(self.end_line)])}"
-        )
-        full_command = f"source {self.script_file} && {command}"
-        output, return_code = communicate(
-            self.container_process,
-            self.container_obj,
-            full_command,
-            self.parent_pids,
-        )
-        return SetCursorsResponse(output=output, return_code=return_code)
+        self, request_data: BaseRequest, authorisation_data: dict
+    ) -> BaseResponse:
+        pass
