@@ -41,14 +41,14 @@ class GoToLineNumInOpenFile(BaseAction):
     _display_name = "Goto Line Action"
     _request_schema = GoToRequest
     _response_schema = GoToResponse
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "goto"
 
     @history_recorder()
     def execute(
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> GoToResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "goto"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         command = f"{self.command} {str(request_data.line_number)}"
@@ -85,14 +85,14 @@ class CreateFileCmd(BaseAction):
     _display_name = "Create and open a new file"
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "create"
 
     @history_recorder()
     def execute(
         self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> CreateFileResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "create"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         file_name = request_data.file_name
@@ -100,6 +100,7 @@ class CreateFileCmd(BaseAction):
         if output is not None:
             return CreateFileResponse(output=output, return_code=return_code)
         command = f"{self.command} {str(request_data.file_name)}"
+        print(f"Running command: {command}")
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
@@ -133,14 +134,14 @@ class OpenFile(BaseAction):
     _display_name = "Open File on workspace"
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "open"
 
     @history_recorder()
     def execute(
         self, request_data: OpenCmdRequest, authorisation_data: dict
     ) -> OpenCmdResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "open"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         command = f"{self.command} {request_data.file_name}"

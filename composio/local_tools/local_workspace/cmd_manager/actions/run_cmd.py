@@ -1,50 +1,30 @@
 # flake8: noqa
 
 import re
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from pydantic import Field
 
-from pydantic import BaseModel, Field
-
-from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.command_runner_model import (
     AgentConfig,
 )
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
     history_recorder,
 )
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    KEY_CONTAINER_NAME,
-    KEY_IMAGE_NAME,
-    KEY_PARENT_PIDS,
-    KEY_WORKSPACE_MANAGER,
-    WorkspaceManagerFactory,
     communicate,
-    get_container_process,
-    get_workspace_meta_from_manager,
 )
 from composio.local_tools.local_workspace.commons.utils import (
     close_container,
-    get_container_by_container_name,
     interrupt_container,
 )
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
 logger = get_logger()
-
-script_path = Path(__file__).resolve()
-script_dir = script_path.parent
-CONFIG_FILE_PATH = script_dir / Path("../../config/default.yaml")
+from .base_class import BaseAction, BaseRequest, BaseResponse
 
 
-@dataclass(frozen=True)
-class RunCommandOnWorkspaceRequest(BaseModel):
-    workspace_id: str = Field(
-        ..., description="workspace-id to get the running workspace-manager"
-    )
+class RunCommandOnWorkspaceRequest(BaseRequest):
     input_cmd: str = Field(
         ...,
         description="command to run in the shell. Ex. `ls -a` or `cd /home/user`",
@@ -52,12 +32,11 @@ class RunCommandOnWorkspaceRequest(BaseModel):
     )
 
 
-class RunCommandOnWorkspaceResponse(BaseModel):
-    observation: str = Field(..., description="output of the command")
+class RunCommandOnWorkspaceResponse(BaseResponse):
     info: Optional[dict] = Field(..., description="information")
 
 
-class RunCommandOnWorkspace(Action):
+class RunCommandOnWorkspace(BaseAction):
     """
       In general if you want to run any other command directly on shell, use this action.
       Few examples:
@@ -74,94 +53,33 @@ class RunCommandOnWorkspace(Action):
     _display_name = "Run command"
     _request_schema = RunCommandOnWorkspaceRequest
     _response_schema = RunCommandOnWorkspaceResponse
-    _tags = ["workspace"]
-    _tool_name = "cmdmanagertool"
-    workspace_factory: Optional[WorkspaceManagerFactory] = None
-    history_processor: Optional[HistoryProcessor] = None
-
-    def __init__(self):
-        super().__init__()
-        self.name = "agent"
-        self.logger = logger
-        self.config_file_path = Path(CONFIG_FILE_PATH)
-        self.args = None
-        self.workspace_id = ""
-        # set self.command --> it is used by history-processor to record the command as part of history
-        self.command = ""
-        self.image_name = ""
-        self.container_name = ""
-        self.container_process = None
-        self.parent_pids = []
-        self.container_obj = None
-        self.return_code = None
-        self.config = None
-        self.command_patterns = None
-        self.subroutine_patterns = None
-
-    def set_workspace_and_history(
-        self,
-        workspace_factory: WorkspaceManagerFactory,
-        history_processor: HistoryProcessor,
-    ):
-        self.workspace_factory = workspace_factory
-        self.history_processor = history_processor
-
-    def _setup(self, args: RunCommandOnWorkspaceRequest):
-        self.args = args
-        self.workspace_id = args.workspace_id
-        # set self.command --> it is used by history-processor to record the command as part of history
-        self.command = args.input_cmd
-        if self.workspace_factory is None:
-            logger.error("Workspace factory is not set")
-            raise ValueError("Workspace factory is not set")
-        if self.history_processor is None:
-            logger.error("History processor is not set")
-            raise ValueError("History processor is not set")
-        workspace_meta = get_workspace_meta_from_manager(
-            self.workspace_factory, self.workspace_id
-        )
-        self.image_name = workspace_meta[KEY_IMAGE_NAME]
-        self.container_name = workspace_meta[KEY_CONTAINER_NAME]
-        self.container_process = get_container_process(
-            workspace_meta[KEY_WORKSPACE_MANAGER]
-        )
-        self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        self.container_obj = self.get_container_by_container_name()
-        if not self.container_obj:
-            logger.error(
-                f"container-name {self.container_name} is not a valid docker-container"
-            )
-            raise ValueError(
-                f"container-name {self.container_name} is not a valid docker-container"
-            )
-        self.return_code = None
-        self.config = None
-        self.load_config_from_path()
-        self._parse_command_patterns()
 
     @history_recorder()
     def execute(
         self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}
     ):
+        print("Executing command...")
         self._setup(request_data)
+        print("Setup completed.")
+        self.return_code = None
+        config = AgentConfig.load_yaml(self.config_file_path)
+        print("Loaded AgentConfig.")
+        multi_line_command_endings = {
+            command.name: command.end_name
+            for command in [*config._commands]
+            if command.end_name is not None
+        }
+        print("Multi-line command endings processed.")
+        config.multi_line_command_endings.update(multi_line_command_endings)
+        self.config = config
+        print("Updated config with multi-line command endings.")
+        self._parse_command_patterns()
+        print("Parsed command patterns.")
         obs, _, done, info = self.run_incoming_action(request_data.input_cmd)
+        print("Ran incoming action.")
         logger.info("returned from process: %s", done)
-        return RunCommandOnWorkspaceResponse(observation=obs, info=info)
-
-    def load_config_from_path(self):
-        if not self.config and self.config_file_path is not None:
-            # If unassigned, we load the config from the file to store its contents with the overall arguments
-            config = AgentConfig.load_yaml(self.config_file_path)
-            object.__setattr__(self, "config", config)
-            multi_line_command_endings = {
-                command.name: command.end_name
-                for command in [*config._commands]
-                if command.end_name is not None
-            }
-            object.__setattr__(
-                config, "multi_line_command_endings", multi_line_command_endings
-            )
-        assert self.config is not None  # mypy
+        print("Returning response...")
+        return RunCommandOnWorkspaceResponse(output=obs, return_code=1, info=info)
 
     def _parse_command_patterns(self):
         assert self.config is not None  # mypy
@@ -198,12 +116,6 @@ class RunCommandOnWorkspace(Action):
             )  # group 2 is nothing
         self.subroutine_patterns[self.config.submit_command] = submit_pat
         self.command_patterns[self.config.submit_command] = submit_pat
-
-    def get_container_by_container_name(self):
-        container_obj = get_container_by_container_name(
-            self.container_name, self.image_name
-        )
-        return container_obj
 
     def _get_first_match(self, action: str, pattern_type: str) -> Optional[re.Match]:
         """Return the first match of a command pattern in the action string."""
@@ -277,6 +189,11 @@ class RunCommandOnWorkspace(Action):
     def get_environment_vars(self):
         assert self.config is not None  # mypy
         env_vars = {}
+
+        if self.container_process is None:
+            logger.error("Container process is None")
+            return {}
+
         for var in self.config.env_variables:
             observation, return_code = communicate(
                 self.container_process,
@@ -332,8 +249,8 @@ class RunCommandOnWorkspace(Action):
 
     def run_incoming_action(self, action: str):
         observations = []
-        run_action = self._guard_multiline_input(action)
         info = None
+        run_action = self._guard_multiline_input(action)
         for sub_action in self.split_actions(run_action):
             if (
                 sub_action["agent"] == self.name
@@ -382,6 +299,10 @@ class RunCommandOnWorkspace(Action):
             "exit_api",
         }:
             try:
+                if self.container_process is None:
+                    logger.error("Container process is None")
+                    raise ValueError("Container process is None")
+
                 observation, return_code = communicate(
                     self.container_process,
                     self.container_obj,
@@ -412,6 +333,8 @@ class RunCommandOnWorkspace(Action):
         # Attempt to run action in container
         observation = ""
         try:
+            if self.container_process is None:
+                raise ValueError("Container process is None")
             observation, return_code = communicate(
                 self.container_process,
                 self.container_obj,
