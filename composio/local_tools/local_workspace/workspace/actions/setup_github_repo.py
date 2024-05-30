@@ -64,7 +64,6 @@ class SetupGithubRepo(Action):
         self.parent_pids = []
         self.container_obj = None
         self.logger = logger
-        self._github_token = self.load_github_token_from_host_env()
         self.repo_type = "not_local"
 
     def _setup(self, args: SetupGithubRepoRequest):
@@ -84,6 +83,7 @@ class SetupGithubRepo(Action):
             raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )
+        self._github_token = self.load_github_token_from_host_env()
 
     def set_workspace_and_history(
         self,
