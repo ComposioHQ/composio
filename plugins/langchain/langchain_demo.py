@@ -23,7 +23,7 @@ openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 composio_toolset = ComposioToolSet()
 
 # Get All the tools
-tools = composio_toolset.get_tools(apps=[LocalApp.MATHEMATICAL])
+tools = composio_toolset.get_tools(apps=[App.MATHEMATICAL])
 
 # Define task
 task = "Star a repo SamparkAI/docs on GitHub"

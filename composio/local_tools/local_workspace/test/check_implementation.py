@@ -87,23 +87,36 @@ def check_simple_implementation():
     git_setup.set_workspace_and_history(w, h)
     git_setup.execute(copy_repo_args)
 
-    # search_cmd = SearchDirCmd("abc")
-    # search_cmd.set_workspace_and_history(w, h)
-    # output = search_cmd.execute(
-    #     SearchDirRequest(
-    #         workspace_id=workspace_id,
-    #         search_term="'golden-python search'",
-    #         dir="/SWE-bench/",
-    #     ),
-    #     authorisation_data={},
-    # )
+    # create file
+    create_file_cmd = CreateFileCmd()
+    create_file_cmd.set_workspace_and_history(w, h)
+    create_file_output = create_file_cmd.execute(
+        CreateFileRequest(workspace_id=workspace_id, file_name="/SWE-bench/tmp-pv.py"),
+        authorisation_data={},
+    )
+    print(create_file_output)
+
+    # edit file
+    edit_file_cmd = EditFile()
+    edit_file_cmd.set_workspace_and_history(w, h)
+    edit_file_output = edit_file_cmd.execute(
+        EditFileRequest(
+            workspace_id=workspace_id,
+            start_line=1,
+            end_line=1,
+            replacement_text="""print("this is a test")""",
+        ),
+        authorisation_data={},
+    )
+    print(edit_file_output)
 
     run_command = RunCommandOnWorkspace()
     run_command.set_workspace_and_history(w, h)
     output = run_command.execute(
         RunCommandOnWorkspaceRequest(
-            workspace_id=workspace_id, input_cmd="python /SWE-bench/swebench/metrics"
-        )
+            workspace_id=workspace_id, input_cmd="python /SWE-bench/tmp-pv.py"
+        ),
+        authorisation_data={},
     )
 
     print(output)

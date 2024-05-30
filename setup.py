@@ -10,7 +10,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="composio_core",
-    version="0.2.64",
+    version="0.3.1",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
@@ -39,10 +39,14 @@ setup(
         "pydantic>=2.6.4,<3",
         "openai>=1.3.0",
         "rich>=13.7.1,<14",
-        "importlib-metadata>=4.8.1,<5",
+        "importlib-metadata>=4.8.1",
         "pyperclip>=1.8.2,<2",
         "jsonref>=1.1.0",
         "inflection>=0.5.1",
+        "simple-parsing>=0.1.5",
+        "docker>=7.1.0",
+        "gymnasium>=0.29.1",
+        "pyyaml>=6.0.1",
     ],
     include_package_data=True,
 )
