@@ -7,6 +7,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     communicate,
 )
+from composio.local_tools.local_workspace.commons.utils import process_output
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_CURSOR_DEFAULT
@@ -52,11 +53,11 @@ class GoToLineNumInOpenFile(BaseAction):
         if self.container_process is None:
             raise ValueError("Container process is not set")
         command = f"{self.command} {str(request_data.line_number)}"
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return GoToResponse(output=output, return_code=return_code)
 
 
@@ -101,11 +102,11 @@ class CreateFileCmd(BaseAction):
             return CreateFileResponse(output=output, return_code=return_code)
         command = f"{self.command} {str(request_data.file_name)}"
         print(f"Running command: {command}")
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return CreateFileResponse(output=output, return_code=return_code)
 
 
@@ -147,9 +148,9 @@ class OpenFile(BaseAction):
         command = f"{self.command} {request_data.file_name}"
         if request_data.line_number != 0:
             command += f"{request_data.line_number}"
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return OpenCmdResponse(output=output, return_code=return_code)
