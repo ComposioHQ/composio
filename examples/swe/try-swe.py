@@ -1,9 +1,11 @@
 import os
-import yaml
 from pathlib import Path
-from composio_crewai import App, ComposioToolSet, Action
-from crewai import Agent, Task, Process, Crew
+
+import yaml
+from composio_crewai import Action, App, ComposioToolSet
+from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
+
 
 CONFIG_FILE_PATH = "./task_config.yaml"
 

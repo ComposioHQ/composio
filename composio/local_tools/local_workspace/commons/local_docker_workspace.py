@@ -178,11 +178,15 @@ class LocalDockerWorkspace(gym.Env):
             if pid not in self.parent_pids and cmd != "ps":
                 self.container_obj.exec_run(f"kill -9 {pid}")
         try:
-            _ = read_with_timeout(self.container, self.container_obj, self.get_pids, self.parent_pids, 20)
+            _ = read_with_timeout(
+                self.container, self.container_obj, self.get_pids, self.parent_pids, 20
+            )
         except TimeoutError:
             pass
         try:
-            output, return_code = self.communicate(input="echo 'interrupted'", timeout_duration=5)
+            output, return_code = self.communicate(
+                input="echo 'interrupted'", timeout_duration=5
+            )
             assert output.strip().endswith(
                 "interrupted"
             ), "container health check failed"

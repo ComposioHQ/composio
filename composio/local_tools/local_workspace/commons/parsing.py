@@ -3,6 +3,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
+
 import yaml
 from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 
@@ -30,9 +31,9 @@ class Command(FrozenSerializable):
     code: str
     name: str
     docstring: Optional[str] = None
-    end_name: Optional[
-        str
-    ] = None  # if there is an end_name, then it is a multi-line command
+    end_name: Optional[str] = (
+        None  # if there is an end_name, then it is a multi-line command
+    )
     arguments: Optional[Dict] = None
     signature: Optional[str] = None
 
