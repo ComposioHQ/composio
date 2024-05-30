@@ -704,7 +704,7 @@ class Actions(Collection[ActionModel]):
 
         if len(tags) > 0:
             required_triggers = [
-                tag.app if isinstance(tag, Tag) else tag for tag in tags
+                tag.name if isinstance(tag, Tag) else tag for tag in tags
             ]
             items = [
                 item
