@@ -1,7 +1,10 @@
+from typing import Optional
+
 from composio.local_tools.local_workspace.cmd_manager.actions import (
     CreateFileCmd,
     EditFile,
     FindFileCmd,
+    GetCurrentDirCmd,
     GoToLineNumInOpenFile,
     OpenFile,
     RunCommandOnWorkspace,
@@ -9,7 +12,6 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     ScrollUp,
     SearchDirCmd,
     SearchFileCmd,
-    GetCurrentDirCmd,
 )
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
@@ -18,7 +20,6 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     WorkspaceManagerFactory,
 )
 from composio.local_tools.tool import Tool
-from typing import Optional
 
 
 class CmdManagerTool(Tool):
