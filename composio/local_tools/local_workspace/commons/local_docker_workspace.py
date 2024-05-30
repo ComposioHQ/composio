@@ -1,8 +1,9 @@
 import datetime
 import hashlib
 import os
+import subprocess
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import uuid4
 
 import docker
@@ -50,12 +51,12 @@ class LocalDockerWorkspace(gym.Env):
         self.logger = logger
         # self.persistent = args.container_name is not None
         self.returncode = None
-        self.container_name = None
-        self.container = None
+        self.container_name: str = ""
+        self.container: subprocess.Popen = None
         self.container_obj = None
-        self.persistent = None
+        self.persistent = False
         self.container_pid = None
-        self.parent_pids = []
+        self.parent_pids: Set[str] = []
         if not self.args.verbose:
             self.logger.disabled = True
 
@@ -67,7 +68,7 @@ class LocalDockerWorkspace(gym.Env):
         self.timeout = self.args.timeout
         self.idx = 0
         self.clean_multi_line_functions = lambda x: x
-        self.hooks = []
+        self.hooks: List[Any] = []
 
     def _reset_container(self) -> None:
         if hasattr(self, "container"):
@@ -85,7 +86,7 @@ class LocalDockerWorkspace(gym.Env):
         """
         Handles container initialization. Defines container name and creates it
         """
-        if self.container_name is None:
+        if not self.container_name:
             process_id = str(os.getpid())
             current_time = str(datetime.datetime.now())
             unique_string = current_time + process_id
@@ -245,7 +246,7 @@ class LocalDockerWorkspace(gym.Env):
 
 
 class WorkspaceManagerFactory:
-    _registry: Dict[str, Any] = {}
+    _registry: Dict[str, Dict[str, Any]] = {}
 
     def get_workspace_manager(self, args: LocalDockerArgumentsModel) -> str:
         # currently we only support local docker
@@ -265,14 +266,14 @@ class WorkspaceManagerFactory:
 
         raise ValueError(f"Unknown workspace manager type: {workspace_type}")
 
-    def get_registered_manager(self, workspace_id: str) -> Dict[str, Any]:
+    def get_registered_manager(self, workspace_id: str) -> Optional[Dict[str, Any]]:
         return self._registry.get(workspace_id)
 
     def remove_workspace_manager(self, workspace_id: str) -> None:
         if workspace_id in WorkspaceManagerFactory._registry:
             del self._registry[workspace_id]
 
-    def list_workspace_managers(self) -> Dict[str, LocalDockerWorkspace]:
+    def list_workspace_managers(self) -> Dict[str, Any]:
         return self._registry
 
 

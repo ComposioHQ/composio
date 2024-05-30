@@ -15,9 +15,6 @@ script_dir = script_path.parent
 task_config_path = script_dir / Path(CONFIG_FILE_PATH)
 
 task_data = ""
-# read yaml
-with open(task_config_path, "r") as stream:
-    task_data = yaml.safe_load(stream)
 
 composio_toolset = ComposioToolSet()
 
@@ -28,10 +25,13 @@ goal = "Help fix the given issue / bug in the code."
 
 tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL])
 
-print("Task data : ", task_data)
 if __name__ == "__main__":
     assert os.environ.get("GITHUB_ACCESS_TOKEN") is not None
-    assert os.environ.get("HARD_CODED_REPO_NAME") is not None
+    # load config from YAML file
+    task_config_path = script_dir / Path(CONFIG_FILE_PATH)
+    with open(task_config_path, 'r') as stream:
+        task_data = yaml.safe_load(stream)
+    print("Task data : ", task_data)
     # start agent and task
     agent_1 = Agent(
         role=base_role + " You manage workspaces.",

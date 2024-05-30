@@ -36,6 +36,7 @@ class EditFile(BaseAction):
     """
     replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text.
     Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
+
     Python files will be checked for syntax errors after the edit.
     If you'd like to add the line '        print(x)' you must fully write that out,
     with all those spaces before the code!
@@ -56,7 +57,7 @@ class EditFile(BaseAction):
     ) -> EditFileResponse:
         self._setup(request_data)
         full_command = f"source {self.script_file} && edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
-        print(full_command)
+        # print(full_command)
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )

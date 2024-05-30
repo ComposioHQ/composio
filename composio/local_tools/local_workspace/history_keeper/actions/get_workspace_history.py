@@ -53,7 +53,9 @@ class GetWorkspaceHistory(Action):
         self.workspace_factory = workspace_factory
         self.history_processor = history_processor
 
-    def execute(self, request_data: _request_schema, authorisation_data: dict = {}):
+    def execute(
+        self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict = {}
+    ):
         return self.history_processor.get_history(
             workspace_id=request_data.workspace_id, n=self._history_len
         )
