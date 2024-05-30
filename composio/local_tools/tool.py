@@ -20,6 +20,7 @@ action_require_workspace_and_history = {
     "RunCommandOnWorkspace": True,
     "GetCurrentDirCmd": True,
     "GithubCloneCmd": True,
+    "GetWorkspaceHistory": True,
 }
 
 
