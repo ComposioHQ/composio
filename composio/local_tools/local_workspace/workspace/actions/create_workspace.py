@@ -42,8 +42,8 @@ class CreateWorkspaceRequest(BaseWorkspaceRequest):
     image_name: str = Field(
         default="sweagent/swe-agent:latest",
         description="""The workspace is a docker container. 
-        Use sweagent/swe-agent:latest it works for most use cases. 
-        Only use a different image if you have a good reason.
+        Use docker image sweagent/swe-agent:latest it works for most use cases. 
+        Only use a different docker image if you have a good reason.
         Ex. image names ubuntu:22.04
         """,
         examples=["sweagent/swe-agent:latest", "ubuntu:22.04"],
@@ -160,6 +160,21 @@ class CreateWorkspaceAction(BaseWorkspaceAction):
                 datum["type"] = "script"
             command_files.append(datum)
         self.add_commands(command_files)
+        # create home directory and cd into it
+        communicate_with_handling(
+            self.container_process,
+            self.container_obj,
+            "mkdir -p /home/swe-agent",
+            self.parent_pids,
+            error_msg="Failed to create home directory",
+        )
+        communicate_with_handling(
+            self.container_process,
+            self.container_obj,
+            "cd /home/swe-agent",
+            self.parent_pids,
+            error_msg="Failed to cd to home directory",
+        )
 
     def add_commands(self, commands: list[dict]) -> None:
         """
