@@ -93,20 +93,10 @@ Google Gemma AI API to perform web searches and compile research reports."
 Below is the complete code snippet combining all the steps:
 
 <CodeGroup>
-    ```python Final code
-        # Install required packages
-        # pip install composio-langchain
-        # pip install composio-core
-        # pip install langchain-community
-        # pip install huggingface_hub
-        # pip install google-search-results
-
-        # Connect your SerpAPI account so agents can use it.
-        # composio-cli add serpapi
-
+    ```python Final Code
         # Import required libraries
         from crewai import Agent, Task, Crew, Process
-        from composio_langchain import ComposioToolset, Action, App
+        from composio_langchain import ComposioToolSet, Action, App
         from langchain_google_genai import ChatGoogleGenerativeAI
         import os
 
@@ -116,7 +106,7 @@ Below is the complete code snippet combining all the steps:
         )
 
         # Composio tool for SerpAPI
-        tools = ComposioToolset([App.SERPAPI])
+        tools = ComposioToolSet([App.SERPAPI])
 
         # Define the Agent
         researcher = Agent(
