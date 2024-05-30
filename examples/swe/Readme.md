@@ -10,8 +10,8 @@
 
 ## Docker Issues
 
-1. if docker client is not working - 
-   - socket issue: allow use of default socket - https://github.com/princeton-nlp/SWE-agent/issues/159
-   - if socket is at non-standard location - https://github.com/princeton-nlp/SWE-agent/issues/20#issuecomment-2047506005
-2. if getting errors like "https+url" is not valid scheme - update `requests` package in python
-   `pip install --upgrade requests` 
+1. If the Docker client is not working:
+   - Socket issue: allow use of default socket - https://github.com/princeton-nlp/SWE-agent/issues/159
+   - If socket is at a non-standard location - https://github.com/princeton-nlp/SWE-agent/issues/20#issuecomment-2047506005
+   - If getting errors like "https+url" is not a valid scheme, update the `requests` package in Python:
+    `pip install --upgrade requests`
