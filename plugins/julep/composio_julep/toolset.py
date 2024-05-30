@@ -36,17 +36,17 @@ class ComposioToolSet(BaseComposioToolSet):
     def handle_tool_calls(
         self,
         response: ChatResponse,
-        entity_id: str = "default",
+        entity_id: str = DEFAULT_ENTITY_ID,
     ) -> t.List[t.Dict]:
         """
         Handle tool calls from Julep chat client object.
 
         :param response: Chat completion object from
                         julep.Client.sessions.chat function call
-        :param entity_id: Entity ID.
+        :param entity_id: Entity ID to use for executing function calls.
         :return: A list of output objects from the function calls.
         """
-        entity_id = self.validate_entity_id(entity_id)
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
 
         for _responses in response.response:
@@ -57,7 +57,7 @@ class ComposioToolSet(BaseComposioToolSet):
                         self.execute_action(
                             action=Action.from_action(name=function["name"]),
                             params=json.loads(function["arguments"]),
-                            entity_id=self.entity_id,
+                            entity_id=entity_id or self.entity_id,
                         )
                     )
                 except json.JSONDecodeError:
