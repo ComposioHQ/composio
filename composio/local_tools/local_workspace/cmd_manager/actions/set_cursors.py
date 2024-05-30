@@ -61,7 +61,6 @@ class SetCursors(Action):
 
     def __init__(self):
         super().__init__()
-        super().__init__()
         self.args = None
         self.workspace_id = ""
         self.image_name = ""
