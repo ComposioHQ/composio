@@ -18,9 +18,9 @@ These commands prepare your environment for seamless interaction between Lyzr an
     pip install lyzr-automata -q
     pip install composio_lyzr
     #Connect your Github so agents can use it. 
-    composio-cli add github
+    composio add github
     #Check all different apps which you can connect with
-    composio-cli show-apps
+    composio apps
 
 ```
 </CodeGroup>
@@ -63,7 +63,7 @@ These commands prepare your environment for seamless interaction between Lyzr an
         agent=lyzr_agent,
         tool=composio_tool,
         model=open_ai_text_completion_model,
-        instructions="Star a repo SamparkAI/composio_sdk on GitHub",
+        instructions="Star a repo SamparkAI/composio on GitHub",
     )
 
     LinearSyncPipeline(name="Composio Lyzr", completion_message="Task completed",tasks=[task]).run()
