@@ -31,7 +31,7 @@ from composio.local_tools.local_workspace.commons.utils import (
     get_container_by_container_name,
     interrupt_container,
 )
-
+from .base_class import BaseAction, BaseRequest, BaseResponse
 
 logger = get_logger()
 
@@ -46,13 +46,15 @@ class RunCommandOnWorkspaceRequest(BaseModel):
         ..., description="workspace-id to get the running workspace-manager"
     )
     input_cmd: str = Field(
-        ..., description="github repo-name for which issue needs to be solved"
+        ...,
+        description="command to run in the shell. Ex. `ls -a` or `cd /home/user`",
+        examples=["ls -a", "cd /home/user"],
     )
 
 
 class RunCommandOnWorkspaceResponse(BaseModel):
     observation: str = Field(..., description="output of the command")
-    info: dict = Field(..., description="information")
+    info: Optional[dict] = Field(..., description="information")
 
 
 class RunCommandOnWorkspace(Action):
@@ -74,8 +76,8 @@ class RunCommandOnWorkspace(Action):
     _response_schema = RunCommandOnWorkspaceResponse
     _tags = ["workspace"]
     _tool_name = "cmdmanagertool"
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
+    workspace_factory: Optional[WorkspaceManagerFactory] = None
+    history_processor: Optional[HistoryProcessor] = None
 
     def __init__(self):
         super().__init__()
@@ -109,6 +111,12 @@ class RunCommandOnWorkspace(Action):
         self.workspace_id = args.workspace_id
         # set self.command --> it is used by history-processor to record the command as part of history
         self.command = args.input_cmd
+        if self.workspace_factory is None:
+            logger.error("Workspace factory is not set")
+            raise ValueError("Workspace factory is not set")
+        if self.history_processor is None:
+            logger.error("History processor is not set")
+            raise ValueError("History processor is not set")
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )
@@ -120,6 +128,9 @@ class RunCommandOnWorkspace(Action):
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
         self.container_obj = self.get_container_by_container_name()
         if not self.container_obj:
+            logger.error(
+                f"container-name {self.container_name} is not a valid docker-container"
+            )
             raise ValueError(
                 f"container-name {self.container_name} is not a valid docker-container"
             )

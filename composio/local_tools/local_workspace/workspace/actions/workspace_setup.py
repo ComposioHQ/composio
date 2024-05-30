@@ -4,27 +4,29 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from rich.logging import RichHandler
 
-from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.command_runner_model import (
     AgentConfig,
-)
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
 )
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     KEY_CONTAINER_NAME,
     KEY_IMAGE_NAME,
     KEY_PARENT_PIDS,
     KEY_WORKSPACE_MANAGER,
-    WorkspaceManagerFactory,
     get_container_process,
     get_workspace_meta_from_manager,
 )
+
 from composio.local_tools.local_workspace.commons.utils import (
     communicate,
     communicate_with_handling,
     copy_file_to_container,
     get_container_by_container_name,
+)
+
+from .base_workspace_action import (
+    BaseWorkspaceAction,
+    BaseWorkspaceRequest,
+    BaseWorkspaceResponse,
 )
 
 
@@ -44,19 +46,19 @@ script_path = Path(__file__).resolve()
 script_dir = script_path.parent
 
 
-class WorkspaceSetupRequest(BaseModel):
+class WorkspaceSetupRequest(BaseWorkspaceRequest):
     workspace_id: str = Field(
         ..., description="workspace-id will be used to get status of the workspace"
     )
 
 
-class WorkspaceSetupResponse(BaseModel):
+class WorkspaceSetupResponse(BaseWorkspaceResponse):
     workspace_status: str = Field(
         ..., description="status of the workspace given in request"
     )
 
 
-class SetupWorkspace(Action):
+class SetupWorkspace(BaseWorkspaceAction):
     """
     Setup workspace with the environment variables, scripts.
     Sets the path, and sources necessary scripts.
@@ -65,24 +67,6 @@ class SetupWorkspace(Action):
     _display_name = "Setup workspace"
     _request_schema = WorkspaceSetupRequest
     _response_schema = WorkspaceSetupResponse
-    _tags = ["workspace"]
-    _tool_name = "localworkspace"
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
-
-    def __init__(self):
-        super().__init__()
-        self.args = None
-        self.workspace_id = ""
-        self.container_name = ""
-        self.image_name = ""
-        self.container_process = None
-        self.parent_pids = []
-        self.container_obj = None
-        self.return_code = None
-        self.logger = logger
-        self.config = None
-        self.config_file_path = None
 
     def _setup(self, args: WorkspaceSetupRequest):
         self.args = args
@@ -100,7 +84,9 @@ class SetupWorkspace(Action):
             workspace_meta[KEY_WORKSPACE_MANAGER]
         )
         self.parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        self.container_obj = self.get_container_by_container_name()
+        self.container_obj = get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         self.return_code = None
         self.logger = logger
         self.config = None
@@ -111,14 +97,6 @@ class SetupWorkspace(Action):
                 f"container-name {self.container_name} is not a valid docker-container"
             )
 
-    def set_workspace_and_history(
-        self,
-        workspace_factory: WorkspaceManagerFactory,
-        history_processor: HistoryProcessor,
-    ):
-        self.workspace_factory = workspace_factory
-        self.history_processor = history_processor
-
     def execute(
         self, request_data: WorkspaceSetupRequest, authorisation_data: dict = {}
     ):
@@ -126,12 +104,6 @@ class SetupWorkspace(Action):
         self.set_env_variables()
         env_vars = "\n".join(self.config.env_variables)
         return {"message": f"environment is set with variables: {env_vars}"}
-
-    def get_container_by_container_name(self):
-        container_obj = get_container_by_container_name(
-            self.container_name, self.image_name
-        )
-        return container_obj
 
     def load_config_from_path(self):
         if not self.config and self.config_file_path is not None:

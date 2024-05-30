@@ -40,6 +40,8 @@ class ScrollDown(BaseAction):
         self, request_data: ScrollDownRequest, authorisation_data: dict
     ) -> ScrollDownResponse:
         self._setup(request_data)
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         command = f"{self.command}"  # Command to scroll down 100 lines
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(
@@ -75,6 +77,8 @@ class ScrollUp(BaseAction):
         self._setup(request_data)
         command = f"{self.command}"  # Command to scroll down 100 lines
         full_command = f"source {self.script_file} && {command}"
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )

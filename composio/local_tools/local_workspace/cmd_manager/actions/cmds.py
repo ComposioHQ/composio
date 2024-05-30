@@ -49,6 +49,8 @@ class GoToLineNumInOpenFile(BaseAction):
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> GoToResponse:
         self._setup(request_data)
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         command = f"{self.command} {str(request_data.line_number)}"
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(
@@ -91,6 +93,8 @@ class CreateFileCmd(BaseAction):
         self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> CreateFileResponse:
         self._setup(request_data)
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         file_name = request_data.file_name
         output, return_code = self.validate_file_name(file_name)
         if output is not None:
@@ -137,6 +141,8 @@ class OpenFile(BaseAction):
         self, request_data: OpenCmdRequest, authorisation_data: dict
     ) -> OpenCmdResponse:
         self._setup(request_data)
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         command = f"{self.command} {request_data.file_name}"
         if request_data.line_number != 0:
             command += f"{request_data.line_number}"

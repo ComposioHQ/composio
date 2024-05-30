@@ -16,4 +16,5 @@ from .search_cmds import (
     SearchDirRequest,
     SearchFileCmd,
     SearchFileRequest,
+    GetCurrentDirCmd,
 )
