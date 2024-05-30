@@ -48,14 +48,14 @@ class EditFile(BaseAction):
     _display_name = "Edit File Action"
     _request_schema = EditFileRequest
     _response_schema = EditFileResponse
-    script_file = SCRIPT_EDIT_LINTING
-    command = "edit"
 
     @history_recorder()
     def execute(
         self, request_data: EditFileRequest, authorisation_data: dict
     ) -> EditFileResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_EDIT_LINTING
+        self.command = "edit"
         full_command = f"source {self.script_file} && edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
 
         if self.container_process is None:

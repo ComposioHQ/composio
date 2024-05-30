@@ -1,3 +1,2 @@
 from .create_workspace import CreateWorkspaceAction, CreateWorkspaceRequest
-from .workspace_setup import SetupWorkspace, WorkspaceSetupRequest
 from .workspace_status import WorkspaceStatus, WorkspaceStatusRequest

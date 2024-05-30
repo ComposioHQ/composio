@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
-
+from pathlib import Path
 from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
@@ -20,9 +20,12 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
 from composio.local_tools.local_workspace.commons.utils import (
     get_container_by_container_name,
 )
-
+from typing import Optional
 
 logger = get_logger()
+script_path = Path(__file__).resolve()
+script_dir = script_path.parent
+CONFIG_FILE_PATH = script_dir / Path("../../config/default.yaml")
 
 
 class BaseRequest(BaseModel):
@@ -50,19 +53,27 @@ class BaseAction(Action, ABC):
     _tool_name = "cmdmanagertool"
     script_file = ""
     command = ""
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
+    workspace_factory: Optional[WorkspaceManagerFactory] = None
+    history_processor: Optional[HistoryProcessor] = None
 
     def __init__(self):
         super().__init__()
+        self.name = "agent"
+        self.logger = logger
+        self.config_file_path = Path(CONFIG_FILE_PATH)
         self.args = None
         self.workspace_id = ""
+        self.command = ""
         self.image_name = ""
         self.container_name = ""
         self.container_process = None
         self.parent_pids = []
         self.container_obj = None
         self.logger = logger
+        self.return_code = None
+        self.config = None
+        self.command_patterns = None
+        self.subroutine_patterns = None
 
     def set_workspace_and_history(
         self,
@@ -75,6 +86,9 @@ class BaseAction(Action, ABC):
     def _setup(self, args: BaseRequest):
         self.args = args
         self.workspace_id = args.workspace_id
+        if self.workspace_factory is None:
+            logger.error("workspace_factory is not set")
+            raise ValueError("workspace_factory is not set")
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )

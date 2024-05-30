@@ -32,14 +32,14 @@ class ScrollDown(BaseAction):
     _display_name = "Scroll down"
     _request_schema = ScrollDownRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollDownResponse  # Reusing the response schema from SetCursors
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "scroll_down"
 
     @history_recorder()
     def execute(
         self, request_data: ScrollDownRequest, authorisation_data: dict
     ) -> ScrollDownResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "scroll_down"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         command = f"{self.command}"  # Command to scroll down 100 lines
@@ -67,14 +67,14 @@ class ScrollUp(BaseAction):
     _display_name = "Scroll up"
     _request_schema = ScrollUpRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollUpResponse  # Reusing the response schema from SetCursors
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "scroll_up"
 
     @history_recorder()
     def execute(
         self, request_data: ScrollDownRequest, authorisation_data: dict
     ) -> ScrollDownResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "scroll_up"
         command = f"{self.command}"  # Command to scroll down 100 lines
         full_command = f"source {self.script_file} && {command}"
         if self.container_process is None:
