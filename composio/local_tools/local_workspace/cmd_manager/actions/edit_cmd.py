@@ -57,7 +57,10 @@ class EditFile(BaseAction):
     ) -> EditFileResponse:
         self._setup(request_data)
         full_command = f"source {self.script_file} && edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
-        # print(full_command)
+
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
+
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )

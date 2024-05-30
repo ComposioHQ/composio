@@ -8,6 +8,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
+from typing import Optional
 
 
 STATUS_RUNNING = "running"
@@ -42,8 +43,8 @@ class GetWorkspaceHistory(Action):
     _tags = ["workspace"]
     _tool_name = "historykeeper"
     _history_len = 5
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
+    workspace_factory: Optional[WorkspaceManagerFactory] = None
+    history_processor: Optional[HistoryProcessor] = None
 
     def set_workspace_and_history(
         self,
@@ -56,12 +57,10 @@ class GetWorkspaceHistory(Action):
     def execute(
         self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict = {}
     ):
+        if self.history_processor is None:
+            logger.error("History processor is not set")
+            raise ValueError("History processor is not set")
+
         return self.history_processor.get_history(
             workspace_id=request_data.workspace_id, n=self._history_len
         )
-
-    def get_history_n(self):
-        """
-        Returns:
-        """
-        return

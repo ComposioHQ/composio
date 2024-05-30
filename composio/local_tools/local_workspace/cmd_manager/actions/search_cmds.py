@@ -18,8 +18,8 @@ logger = get_logger()
 
 class SearchDirRequest(BaseRequest):
     search_term: str = Field(..., description="search term to search in the directory")
-    dir: str = Field(
-        ...,
+    directory: str = Field(
+        default=".",
         description="The directory to search in (if not provided, searches in the current directory)",
     )
 
@@ -43,12 +43,14 @@ class SearchDirCmd(BaseAction):
     def execute(
         self, request_data: SearchDirRequest, authorisation_data: dict
     ) -> SearchDirResponse:
-        if not request_data.dir or not request_data.dir.strip():
+        if not request_data.directory or not request_data.directory.strip():
             raise ValueError(
                 "dir can not be null. Give a directory-name in which to search"
             )
         self._setup(request_data)
-        command = f"{self.command} '{request_data.search_term}' {request_data.dir}"  # Command to scroll down 100 lines
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
+        command = f"{self.command} '{request_data.search_term}' {request_data.directory}"  # Command to scroll down 100 lines
         full_command = f"source {self.script_file} && {command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
@@ -58,7 +60,7 @@ class SearchDirCmd(BaseAction):
 
 
 class SearchFileRequest(BaseRequest):
-    search_term: str = Field(..., description="search term to search in the directory")
+    search_term: str = Field(..., description="search term to search in the file")
     file_name: str = Field(
         ..., description="name of the file in which search needs to be done"
     )
@@ -85,9 +87,11 @@ class SearchFileCmd(BaseAction):
     ) -> SearchFileResponse:
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError(
-                "dir can not be null. Give a directory-name in which to search"
+                "file-name can not be null. Give a file-name in which to search"
             )
         self._setup(request_data)
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         command = (
             f"{self.command} '{request_data.search_term}' {request_data.file_name}"
         )
@@ -105,7 +109,7 @@ class FindFileRequest(BaseRequest):
         description="The name of the file to be searched for within the specified directory or the current directory if none is specified.",
     )
     dir: str = Field(
-        ...,
+        default=".",
         description="The directory within which to search for the file. If not provided, the search will default to the current directory.",
     )
 
@@ -141,8 +145,44 @@ class FindFileCmd(BaseAction):
         self._setup(request_data)
         command = f"{self.command} {request_data.file_name} {request_data.dir}"
         full_command = f"source {self.script_file} && {command}"
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = self.process_output(output, return_code)
         return FindFileResponse(output=output, return_code=return_code)
+
+
+class GetCurrentDirRequest(BaseRequest):
+    pass
+
+
+class GetCurrentDirResponse(BaseResponse):
+    pass
+
+
+class GetCurrentDirCmd(BaseAction):
+    """
+    Gets the current directory.
+    """
+
+    _display_name = "Get Current Directory Action"
+    _request_schema = GetCurrentDirRequest
+    _response_schema = GetCurrentDirResponse
+    script_file = SCRIPT_SEARCH
+    command = "pwd"
+
+    @history_recorder()
+    def execute(
+        self, request_data: GetCurrentDirRequest, authorisation_data: dict
+    ) -> GetCurrentDirResponse:
+        self._setup(request_data)
+        full_command = f"{self.command}"
+        if self.container_process is None:
+            raise ValueError("Container process is not set")
+        output, return_code = communicate(
+            self.container_process, self.container_obj, full_command, self.parent_pids
+        )
+        output, return_code = self.process_output(output, return_code)
+        return GetCurrentDirResponse(output=output, return_code=return_code)

@@ -6,7 +6,6 @@ from .action import Action
 action_require_workspace_and_history = {
     "WorkspaceStatus": True,
     "SetupWorkspace": True,
-    "SetupGithubRepo": True,
     "CreateWorkspaceAction": True,
     "FindFileCmd": True,
     "CreateFileCmd": True,
@@ -19,6 +18,8 @@ action_require_workspace_and_history = {
     "SetCursors": True,
     "EditFile": True,
     "RunCommandOnWorkspace": True,
+    "GetCurrentDirCmd": True,
+    "GithubCloneCmd": True,
 }
 
 

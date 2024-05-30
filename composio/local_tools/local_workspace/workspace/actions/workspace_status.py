@@ -3,12 +3,14 @@ from pydantic import BaseModel, Field
 
 from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
-)
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    WorkspaceManagerFactory,
     get_container_name_from_workspace_id,
+)
+
+from .base_workspace_action import (
+    BaseWorkspaceAction,
+    BaseWorkspaceRequest,
+    BaseWorkspaceResponse,
 )
 
 
@@ -17,19 +19,19 @@ STATUS_STOPPED = "stopped"
 logger = get_logger()
 
 
-class WorkspaceStatusRequest(BaseModel):
+class WorkspaceStatusRequest(BaseWorkspaceRequest):
     workspace_id: str = Field(
         ..., description="workspace-id will be used to get status of the workspace"
     )
 
 
-class WorkspaceStatusResponse(BaseModel):
+class WorkspaceStatusResponse(BaseWorkspaceResponse):
     workspace_status: str = Field(
         ..., description="status of the workspace given in request"
     )
 
 
-class WorkspaceStatus(Action):
+class WorkspaceStatus(BaseWorkspaceAction):
     """
     Returns the status of workspace given in the request
     """
@@ -37,32 +39,15 @@ class WorkspaceStatus(Action):
     _display_name = "Get workspace status"
     _request_schema = WorkspaceStatusRequest
     _response_schema = WorkspaceStatusResponse
-    _tags = ["workspace"]
-    _tool_name = "localworkspace"
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
-
-    def set_workspace_and_history(
-        self,
-        workspace_factory: WorkspaceManagerFactory,
-        history_processor: HistoryProcessor,
-    ):
-        self.workspace_factory = workspace_factory
-        self.history_processor = history_processor
-
-    def __init__(self):
-        super().__init__()
-        self.container_name = ""
-
-    def _setup(self, args: WorkspaceStatusRequest):
-        self.container_name = get_container_name_from_workspace_id(
-            self.workspace_factory, args.workspace_id
-        )
 
     def execute(
         self, request_data: WorkspaceStatusRequest, authorisation_data: dict = {}
     ):
-        self._setup(request_data)
+        if self.workspace_factory is None:
+            raise ValueError("Workspace factory is not set")
+        self.container_name = get_container_name_from_workspace_id(
+            self.workspace_factory, request_data.workspace_id
+        )
         client = docker.from_env()
         try:
             container = client.containers.get(self.container_name)

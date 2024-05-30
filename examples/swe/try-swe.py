@@ -20,23 +20,30 @@ composio_toolset = ComposioToolSet()
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
-base_role = "You are an autonomous programmer. You think carefully and step by step take action."
+base_role = (
+    "You are the best programmer. You think carefully and step by step take action."
+)
+
 goal = "Help fix the given issue / bug in the code."
 
-tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL])
+tools = composio_toolset.get_tools(
+    [App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER]
+)
 
 if __name__ == "__main__":
     assert os.environ.get("GITHUB_ACCESS_TOKEN") is not None
     # load config from YAML file
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
-    with open(task_config_path, 'r') as stream:
+    with open(task_config_path, "r") as stream:
         task_data = yaml.safe_load(stream)
     print("Task data : ", task_data)
-    # start agent and task
+
+    print("Tools: ", tools)
+
     agent_1 = Agent(
-        role=base_role + " You manage workspaces.",
-        goal=goal,
-        backstory=task_data["backstory"],
+        role=base_role,
+        goal=task_data["backstory"],
+        backstory=goal,
         verbose=True,
         tools=tools,
         llm=llm,
