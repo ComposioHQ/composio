@@ -141,10 +141,9 @@ class SetupWorkspace(Action):
         assert self.config is not None  # mypy
 
     def set_env_variables(self):
-        commands_to_execute = (
-            [self.config.state_command.code]
-            + [f"{k}={v}" for k, v in self.config.env_variables.items()]
-        )
+        commands_to_execute = [self.config.state_command.code] + [
+            f"{k}={v}" for k, v in self.config.env_variables.items()
+        ]
         commands = "\n".join(commands_to_execute)
         return_code = 0
         output = None
