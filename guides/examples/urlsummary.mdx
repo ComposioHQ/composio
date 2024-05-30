@@ -64,7 +64,7 @@ Notion page using Composio and Langchain."
     Finally, we’ll define and execute the agent responsible for creating notion page based on the given id.
     <CodeGroup>
         ```python Execute Agents
-        summary = getContent()
+        summary = getContent("https://example.com")
         id = "034d89de-f9af-444b-b4ca-5b0ab87c2376"
         task = "Create a page in notion under the parent page :" + id + "if the parent page with given id
         doesn't exist, find the most suitable parent page among existing pages. Add the summary
