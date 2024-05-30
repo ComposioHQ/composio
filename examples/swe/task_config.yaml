@@ -193,5 +193,6 @@ issue_description: |-
     '0.9.1'>>> pandas.__version__'1.4.3'
   ```
   Now, you're going to solve this issue on your own.
+  In case of missing modules, Install required packages using command `conda install pandas -y`  
 
 
