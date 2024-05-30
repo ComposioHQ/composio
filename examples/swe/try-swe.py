@@ -19,7 +19,6 @@ llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-
 
 if __name__ == "__main__":
     assert os.environ.get("GITHUB_ACCESS_TOKEN") is not None
-    assert os.environ.get("HARD_CODED_REPO_NAME") is not None
     # load config from YAML file
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
     with open(task_config_path, 'r') as stream:
