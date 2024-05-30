@@ -1,0 +1,103 @@
+---
+title: "Competitor Researcher"
+sidebarTitle: "Competitor Researcher"
+icon: "pen"
+description: "This is a project that let's you get information on a comeptitor's website and add it to your notion."
+---
+
+<Tip>
+  Goal: Paste URL of a competitor company website and get detailed research
+  notes.
+</Tip>
+
+### Install packages and Connect tools
+
+We are trying to connect notion account
+
+<CodeGroup>
+    ```bash Run Command
+    # Install dependencies
+    pip install crewai==0.28.8
+
+    # Composio SDK
+    composio-cli update
+    composio-cli login
+    composio-cli add notion
+    ```
+
+</CodeGroup>
+
+<Steps>
+    <Step title="Import base packages">
+    <CodeGroup>
+        ```python Import statements
+        import os
+        import re
+        import time
+        import requests
+        from bs4 import BeautifulSoup
+        from openai import OpenAI, OpenAIError
+        from composio_crewai import ComposioToolset, App, ComposioSDK
+        from crewai import Agent, Task
+        from langchain_openai import ChatOpenAI
+        import base64
+        ```
+    </CodeGroup>
+    </Step>
+    <Step title="Initialise Agents using CrewAI">
+    <CodeGroup>
+        ```python CrewAI Agents
+        dotenv.load_dotenv()
+        llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
+
+        composio_crewai = ComposioToolset([App.NOTION])
+
+        date = datetime.today().strftime('%Y-%m-%d')
+
+        timezone = datetime.now().astimezone().tzinfo
+        ```
+    </CodeGroup>
+    </Step>
+    <Step title="Scrape Webpage">
+    <CodeGroup>
+        ```python Web Server in flask
+        def scrape_website(url):
+            content = []
+            reqs = requests.get(url)
+            content.append(remove_tags(reqs.content))
+            cleaned_content = "\n".join(content)
+            competitor_info = get_info(cleaned_content)
+            return jsonify(competitor_info)
+        ```
+
+    </CodeGroup>
+    </Step>
+
+    <Step title="Execute Agent">
+    <CodeGroup>
+        ```python Run agent
+        agent = Agent(
+        role="Notion Agent",
+        goal="Take action on Notion.",
+        backstory="You are an AI Agent with access to Notion",
+        verbose=True,
+        tools=composio_crewai,
+        llm=llm,
+        step_callback=step_callback,
+        )
+
+        competitor_data = scrape_website(url)
+        task = Task(
+        description=f"Create a page for the competitor with the specified name. If a page with the same name already exists, append a unique identifier as a prefix or suffix. Create the page under '{parent_page}', if the parent page '{parent_page}' doesn't exist, find the most suitable parent page among existing pages. Place the pointers given to you in the created page without altering them. \nPointers to be included in the page: {competitor_data}. \n Your task ends only after successfully putting in the pointers in the page that you created.",
+        expected_output="List down the contents of the page and title of the page created.",
+        agent=agent,
+        async_execution=True,
+        )
+
+        task.execute()
+        ```
+
+    </CodeGroup>
+    </Step>
+
+</Steps>
