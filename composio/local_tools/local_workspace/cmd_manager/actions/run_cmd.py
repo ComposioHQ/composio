@@ -72,7 +72,7 @@ class RunCommandOnWorkspace(Action):
         super().__init__()
         self.name = "agent"
         self.logger = logger
-        self.config_file_path = Path(CONFIG_FILE_PATH)
+        self.config_file_path = ""
         self.args = None
         self.workspace_id = ""
         # set self.command --> it is used by history-processor to record the command as part of history
@@ -98,6 +98,7 @@ class RunCommandOnWorkspace(Action):
     def _setup(self, args: RunCommandOnWorkspaceRequest):
         self.args = args
         self.workspace_id = args.workspace_id
+        self.config_file_path = Path(CONFIG_FILE_PATH)
         # set self.command --> it is used by history-processor to record the command as part of history
         self.command = args.input_cmd
         workspace_meta = get_workspace_meta_from_manager(
