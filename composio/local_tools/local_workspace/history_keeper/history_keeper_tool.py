@@ -12,7 +12,7 @@ from composio.local_tools.tool import Tool
 
 class HistoryKeeper(Tool):
     """
-    local workspace tool which can maintain history across commands. 
+    local workspace tool which can maintain history across commands.
     """
 
     workspace_factory: WorkspaceManagerFactory = None
