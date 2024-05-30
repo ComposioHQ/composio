@@ -62,7 +62,7 @@
       "url": "sdk"
     },
     {
-      "name": "Casestudies",
+      "name": "Examples",
       "url": "guides"
     },
 
@@ -154,6 +154,21 @@
         "sdk/cli/trigger",
         "sdk/cli/actions"
       ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        {"group": "Demo Apps", "pages":[
+        "guides/examples/github-trello",
+        "guides/examples/urlsummary",
+        "guides/examples/news-summary",
+        "guides/examples/ResearchAssistant",
+        "guides/examples/qnasummary",
+        "guides/examples/todo-to-calendar",
+        "guides/examples/CompetitorResearcher",
+        "guides/examples/InvestmentAnalyst"
+        ]}
+        ]
     },
     {
       "group": "Gallery",
