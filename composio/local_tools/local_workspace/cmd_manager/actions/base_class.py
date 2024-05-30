@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Optional
 
 from pydantic import BaseModel, Field
-from pathlib import Path
+
 from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
@@ -20,7 +22,7 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
 from composio.local_tools.local_workspace.commons.utils import (
     get_container_by_container_name,
 )
-from typing import Optional
+
 
 logger = get_logger()
 script_path = Path(__file__).resolve()
@@ -110,12 +112,6 @@ class BaseAction(Action, ABC):
         if file_name is None or file_name.strip() == "":
             return "Exception: file-name can not be empty", 1
         return None, 0
-
-    def process_output(self, output, return_code):
-        if return_code is None:
-            return_code = 1
-            output = "Exception: " + output
-        return output, return_code
 
     @abstractmethod
     def execute(

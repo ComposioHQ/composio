@@ -347,6 +347,13 @@ def copy_file_to_container(container_obj, contents, container_path):
             os.remove(temp_file_name)
 
 
+def process_output(output, return_code):
+    if return_code is None:
+        return_code = 1
+        output = "Exception: " + output
+    return output, return_code
+
+
 def communicate(
     container: subprocess.Popen,
     container_obj,

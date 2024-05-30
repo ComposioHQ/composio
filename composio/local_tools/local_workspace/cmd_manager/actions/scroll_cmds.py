@@ -8,6 +8,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     communicate,
 )
+from composio.local_tools.local_workspace.commons.utils import process_output
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_CURSOR_DEFAULT
@@ -42,12 +43,11 @@ class ScrollDown(BaseAction):
         self.command = "scroll_down"
         if self.container_process is None:
             raise ValueError("Container process is not set")
-        command = f"{self.command}"  # Command to scroll down 100 lines
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{self.command}"  # Command to scroll down 100 lines
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return ScrollDownResponse(output=output, return_code=return_code)
 
 
@@ -75,12 +75,11 @@ class ScrollUp(BaseAction):
         self._setup(request_data)
         self.script_file = SCRIPT_CURSOR_DEFAULT
         self.command = "scroll_up"
-        command = f"{self.command}"  # Command to scroll down 100 lines
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{self.command}"  # Command to scroll down 100 lines
         if self.container_process is None:
             raise ValueError("Container process is not set")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return ScrollDownResponse(output=output, return_code=return_code)

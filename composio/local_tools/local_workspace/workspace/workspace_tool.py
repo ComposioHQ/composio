@@ -1,3 +1,5 @@
+from typing import Optional
+
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
@@ -7,12 +9,10 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceAction,
 )
-
 from composio.local_tools.local_workspace.workspace.actions.workspace_status import (
     WorkspaceStatus,
 )
 from composio.local_tools.tool import Tool
-from typing import Optional
 
 
 class LocalWorkspace(Tool):
