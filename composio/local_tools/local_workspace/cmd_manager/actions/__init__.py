@@ -17,4 +17,3 @@ from .search_cmds import (
     SearchFileCmd,
     SearchFileRequest,
 )
-from .set_cursors import SetCursors, SetCursorsRequest

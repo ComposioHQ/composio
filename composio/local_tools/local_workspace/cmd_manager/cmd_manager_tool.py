@@ -9,7 +9,6 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     ScrollUp,
     SearchDirCmd,
     SearchFileCmd,
-    SetCursors,
 )
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
@@ -38,7 +37,6 @@ class CmdManagerTool(Tool):
             ScrollDown,
             SearchFileCmd,
             SearchDirCmd,
-            # SetCursors,
             EditFile,
             RunCommandOnWorkspace,
         ]
