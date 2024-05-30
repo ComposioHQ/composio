@@ -29,7 +29,7 @@ class LocalWorkspace(Tool):
     history_processor: HistoryProcessor = None
 
     def actions(self) -> list:
-        return [WorkspaceStatus, SetupWorkspace, SetupGithubRepo, CreateWorkspaceAction]
+        return [WorkspaceStatus, SetupWorkspace, CreateWorkspaceAction]
 
     def triggers(self) -> list:
         return []
