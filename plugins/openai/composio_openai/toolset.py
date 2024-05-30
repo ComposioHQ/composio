@@ -150,35 +150,35 @@ class ComposioToolSet(BaseComposioToolSet):
     def execute_tool_call(
         self,
         tool_call: ChatCompletionMessageToolCall,
-        entity_id: str = DEFAULT_ENTITY_ID,
+        entity_id: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute a tool call.
 
         :param tool_call: Tool call metadata.
-        :param entity_id: Entity ID.
+        :param entity_id: Entity ID to use for executing the function call.
         :return: Object containing output data from the tool call.
         """
         return self.execute_action(
             action=Action.from_action(name=tool_call.function.name),
             params=json.loads(tool_call.function.arguments),
-            entity_id=entity_id,
+            entity_id=entity_id or self.entity_id,
         )
 
     def handle_tool_calls(
         self,
         response: ChatCompletion,
-        entity_id: str = DEFAULT_ENTITY_ID,
+        entity_id: t.Optional[str] = None,
     ) -> t.List[t.Dict]:
         """
         Handle tool calls from OpenAI chat completion object.
 
         :param response: Chat completion object from
                         openai.OpenAI.chat.completions.create function call
-        :param entity_id: Entity ID.
+        :param entity_id: Entity ID to use for executing the function call.
         :return: A list of output objects from the function calls.
         """
-        entity_id = self.validate_entity_id(entity_id)
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
         if response.choices:
             for choice in response.choices:
@@ -187,12 +187,16 @@ class ComposioToolSet(BaseComposioToolSet):
                         outputs.append(
                             self.execute_tool_call(
                                 tool_call=tool_call,
-                                entity_id=entity_id,
+                                entity_id=entity_id or self.entity_id,
                             )
                         )
         return outputs
 
-    def handle_assistant_tool_calls(self, run: Run) -> t.List:
+    def handle_assistant_tool_calls(
+        self,
+        run: Run,
+        entity_id: t.Optional[str] = None,
+    ) -> t.List:
         """Wait and handle assisant function calls"""
         tool_outputs = []
         for tool_call in t.cast(
@@ -200,7 +204,7 @@ class ComposioToolSet(BaseComposioToolSet):
         ).submit_tool_outputs.tool_calls:
             tool_response = self.execute_tool_call(
                 tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
-                entity_id=self.entity_id,
+                entity_id=entity_id or self.entity_id,
             )
             tool_output = {
                 "tool_call_id": tool_call.id,
@@ -214,6 +218,7 @@ class ComposioToolSet(BaseComposioToolSet):
         client: Client,
         run: Run,
         thread: Thread,
+        entity_id: t.Optional[str] = None,
     ) -> Run:
         """Wait and handle assisant function calls"""
         thread_object = thread
@@ -222,7 +227,10 @@ class ComposioToolSet(BaseComposioToolSet):
                 run = client.beta.threads.runs.submit_tool_outputs(
                     thread_id=thread_object.id,
                     run_id=run.id,
-                    tool_outputs=self.handle_assistant_tool_calls(run),
+                    tool_outputs=self.handle_assistant_tool_calls(
+                        run=run,
+                        entity_id=entity_id or self.entity_id,
+                    ),
                 )
             else:
                 run = client.beta.threads.runs.retrieve(
