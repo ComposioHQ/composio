@@ -1,3 +1,5 @@
+# flake8: noqa
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -196,7 +198,7 @@ class RunCommandOnWorkspace(Action):
         """Return the first match of a command pattern in the action string."""
         assert self.config is not None  # mypy
         if pattern_type == "subroutine":
-            patterns = {k: v for k, v in self.subroutine_patterns}
+            patterns = {k: v for k, v in self.subroutine_patterns.items()}
         elif pattern_type == "multi_line":
             patterns = {
                 k: v
@@ -204,11 +206,13 @@ class RunCommandOnWorkspace(Action):
                 if k in self.config.multi_line_command_endings
                 or k == self.config.submit_command
             }
-            patterns += {
-                k: v
-                for k, v in self.subroutine_patterns
-                if k in self.config.multi_line_command_endings
-            }
+            patterns.update(
+                {
+                    k: v
+                    for k, v in self.subroutine_patterns.items()
+                    if k in self.config.multi_line_command_endings
+                }
+            )
         elif pattern_type == "multi_line_no_subroutines":
             patterns = {
                 k: v
@@ -439,8 +443,8 @@ class RunCommandOnWorkspace(Action):
         if submission is not None:
             self.logger.info(f"Found submission: {submission}")
             info["exit_status"] = "submitted"
-            info["submission"] = submission if submission.strip() != "" else None
-            observation = submission if submission.strip() != "" else None
+            info["submission"] = submission if submission.strip() != "" else None  # type: ignore
+            observation = submission if submission.strip() != "" else None  # type: ignore
             return observation, 0, True, info
         return observation, 0, False, info
 
@@ -456,7 +460,7 @@ class RunCommandOnWorkspace(Action):
         pattern = r"\<\<SUBMISSION\|\|(.*)\|\|SUBMISSION\>\>"
         match = re.search(pattern, output, re.DOTALL)
         if match is None:
-            return None
+            return ""
         return match.group(1)
 
     def close_container(self) -> None:

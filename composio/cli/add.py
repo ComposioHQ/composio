@@ -13,7 +13,14 @@ from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, login_required, pass_context
 from composio.cli.decorators import pass_entity_id
-from composio.client import AppModel, AuthSchemeField, IntegrationModel
+from composio.client import (
+    AppAuthScheme,
+    AppModel,
+    AuthSchemeField,
+    Composio,
+    Entity,
+    IntegrationModel,
+)
 from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
@@ -146,53 +153,90 @@ def add_integration(
             context.console.print(
                 "\n[green]Existing connection retained. No new connection added.[/green]\n"
             )
-            return
+            return None
 
     context.console.print(
         f"\n[green]> Adding integration: {name.capitalize()}...[/green]\n"
     )
     app = t.cast(AppModel, context.client.apps.get(name=name))
     auth_schemes = app.auth_schemes or []
-    auth_modes = [auth_scheme.auth_mode for auth_scheme in auth_schemes]
-    # TOFIX: What about other auth schemes?
-    if len(auth_modes) > 0 and auth_modes[0] in [
-        "API_KEY",
-        "BASIC",
-        "SNOWFLAKE",
-    ]:
-        entity.initiate_connection(
-            app_name=name.lower(),
-            auth_mode=auth_modes[0],
-            integration=integration,
-        ).save_user_access_data(
+    auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
+    if "API_KEY" in auth_modes:
+        return _handle_basic_auth(
+            entity=entity,
             client=context.client,
-            field_inputs=_collect_input_fields(
-                fields=auth_schemes[0].fields,
-            ),
-            entity_id=entity.id,
-        )
-    else:
-        connection = entity.initiate_connection(
             app_name=name,
-            redirect_url=get_web_url(path="redirect"),
-            integration=integration,
+            auth_mode="API_KEY",
+            auth_scheme=auth_modes["API_KEY"],
         )
-        if not no_browser:
-            webbrowser.open(
-                url=str(connection.redirectUrl),
-            )
 
-        context.console.print(
-            f"Please authenticate {name} in the browser and come back here. "
-            f"URL: {connection.redirectUrl}"
-        )
-        spinner = Spinner(
-            DOTS,
-            f"[yellow]⚠[/yellow] Waiting for {name} authentication...",
-        )
-        spinner.start()
-        connection.wait_until_active(
+    if "BASIC" in auth_modes:
+        return _handle_basic_auth(
+            entity=entity,
             client=context.client,
+            app_name=name,
+            auth_mode="BASIC",
+            auth_scheme=auth_modes["BASIC"],
         )
-        spinner.stop()
-        context.console.print(f"[green]✔[/green] {name} added successfully!")
+
+    return _handle_no_auth(
+        entity=entity,
+        client=context.client,
+        app_name=name,
+        no_browser=no_browser,
+        integration=integration,
+    )
+
+
+def _handle_no_auth(
+    entity: Entity,
+    client: Composio,
+    app_name: str,
+    no_browser: bool = False,
+    integration: t.Optional[IntegrationModel] = None,
+) -> None:
+    """Handle basic auth."""
+    connection = entity.initiate_connection(
+        app_name=app_name.lower(),
+        redirect_url=get_web_url(path="redirect"),
+        integration=integration,
+    )
+    if not no_browser:
+        webbrowser.open(
+            url=str(connection.redirectUrl),
+        )
+    click.echo(
+        f"Please authenticate {app_name} in the browser and come back here. "
+        f"URL: {connection.redirectUrl}"
+    )
+    spinner = Spinner(
+        DOTS,
+        f"⚠ Waiting for {app_name} authentication...",
+    )
+    spinner.start()
+    connection.wait_until_active(client=client)
+    spinner.stop()
+    click.echo(f"✔ {app_name} added successfully!")
+
+
+def _handle_basic_auth(
+    entity: Entity,
+    client: Composio,
+    app_name: str,
+    auth_mode: str,
+    auth_scheme: AppAuthScheme,
+    integration: t.Optional[IntegrationModel] = None,
+) -> None:
+    """Handle basic auth."""
+    entity.initiate_connection(
+        app_name=app_name.lower(),
+        auth_mode=auth_mode,
+        integration=integration,
+    ).save_user_access_data(
+        client=client,
+        field_inputs=_collect_input_fields(
+            fields=auth_scheme.fields,
+        ),
+        entity_id=entity.id,
+    )
+    click.echo(f"✔ {app_name} added successfully!")

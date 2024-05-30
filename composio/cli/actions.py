@@ -30,6 +30,13 @@ from composio.exceptions import ComposioSDKError
     help="Filter by app name",
 )
 @click.option(
+    "--limit",
+    "limit",
+    type=int,
+    default=10,
+    help="Limit the number of actions to show",
+)
+@click.option(
     "--enabled",
     is_flag=True,
     default=False,
@@ -47,6 +54,7 @@ def _actions(
     context: Context,
     apps: t.Sequence[str],
     use_case: t.Optional[str] = None,
+    limit: int = 10,
     enabled: bool = False,
     copy_enums: bool = False,
 ) -> None:
@@ -56,6 +64,7 @@ def _actions(
             apps=[App(app) for app in apps],
             use_case=use_case,
             allow_all=True,
+            limit=limit,
         )
         if enabled:
             actions = [integration for integration in actions if integration.enabled]

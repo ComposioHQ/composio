@@ -1,3 +1,5 @@
+# flake8: noqa: W293
+
 """
 Apps manager for Composio SDK.
 
@@ -73,7 +75,7 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
     def no_auth(self) -> bool:
         \"\"\"Name of the action.\"\"\"
         return self.value[2]
-    
+     
     @property
     def is_local(self) -> bool:
         \"\"\"If the action is local.\"\"\"
