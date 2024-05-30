@@ -1,0 +1,79 @@
+---
+title: "URL Summary"
+sidebarTitle: "URL Summary"
+icon: "dove"
+description: "Get summary of a Webpage using its URL"
+---
+
+<Tip>Paste URL and get summary of the webpage and write it to Notion</Tip>
+
+### Install packages and Connect tools
+
+We are trying to connect notion account. We willadd the generated summary to a notion page.
+
+<CodeGroup>
+    ```bash Run Command
+    pip install composio-langchain
+
+    # Connect your notion account so agents can use it.
+
+    composio-cli add notion
+    ```
+
+</CodeGroup>
+
+<Steps>
+    <Step title="Import base packages">
+    <CodeGroup>
+        ```python Import statements
+        from langchain_community.document_loaders import WebBaseLoader
+        from langchain.agents import create_openai_functions_agent, AgentExecutor
+        from langchain import hub
+        from langchain_openai import ChatOpenAI
+        from composio_langchain import ComposioToolset, Action, App
+        from langchain.chains.summarize import load_summarize_chain
+        ```
+    </CodeGroup>
+    </Step>
+    <Step title="Initialise tools and agents">
+    <CodeGroup>
+        ```python CrewAI Agents
+        llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0, api_key="sk-***",)
+
+        prompt = hub.pull("hwchase17/openai-functions-agent")
+
+        tools = ComposioToolset(apps=[App.NOTION])
+        ```
+    </CodeGroup>
+    </Step>
+    <Step title="Get Content from url">
+    <CodeGroup>
+        ```python Function to get content from a URL
+        def getContent(url):
+        loader = WebBaseLoader(url)
+        docs = loader.load()
+        chain = load_summarize_chain(llm, chain_type="stuff")
+        return chain.run(docs)
+        ```
+    </CodeGroup>
+
+    </Step>
+
+    <Step title="Execute agent">
+
+    <CodeGroup>
+        ```python Execute Agents
+        summary = getContent()
+        id = "034d89de-f9af-444b-b4ca-5b0ab87c2376"
+        task = "Create a page in notion under the parent page :" + id + "if the parent page with given id
+        doesn't exist, find the most suitable parent page among existing pages. Add the summary
+        generated:" + summary
+
+        agent = create_openai_functions_agent(llm, tools, prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+        agent_executor.invoke({"input": task})
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>

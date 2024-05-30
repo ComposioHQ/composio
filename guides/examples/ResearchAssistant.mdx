@@ -1,0 +1,87 @@
+---
+title: "Research Assistant"
+sidebarTitle: "Research Assistant"
+icon: "book"
+description: "CrewAI Implementation of Research Assistant Agent"
+---
+
+<Tip>Goal: Provide a research drafts based on a particular topic</Tip>
+
+### Install required packages
+
+Connect serpapi account using composio cli
+
+<CodeGroup>
+    ```bash Run Command
+    pip install composio-langchain
+    pip install composio-core
+    pip install langchain-community
+    pip install huggingface_hub
+    pip install google-search-results
+
+    # Connect your serpapi account so agents can use it.
+
+    composio-cli add serpapi
+    ```
+
+</CodeGroup>
+
+<Steps>
+    <Step title="Importing required libraries">
+    <CodeGroup>
+        ```python Import statements
+        from crewai import Agent, Task, Crew, Process
+        from composio_langchain import ComposioToolset, Action, App
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        ```
+    </CodeGroup>
+    </Step>
+    
+    <Step title="Initialise tools and agents">
+    <CodeGroup>
+        ```python Tools and Agents
+        llm = ChatGoogleGenerativeAI(
+        model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
+        # Composio tool for serpapi
+        tools = ComposioToolset([App.SERPAPI])
+        ```
+
+</CodeGroup>
+</Step>
+
+   <Step title="Defining the Agent">
+   <CodeGroup>
+       ```python Agents
+        researcher = Agent(
+            role='Researcher',
+            goal='Search the internet for the information requested',
+            backstory="""
+            You are a researcher. Using the information in the task, you find out some of the most popular facts about the topic along with some of the trending aspects.
+            You provide a lot of information thereby allowing a choice in the content selected for the final blog.
+            """,
+            verbose=True,
+            allow_delegation=False,
+            tools=tools,
+            llm=llm
+        )
+       ```
+
+   </CodeGroup>
+   </Step>
+
+    <Step title="Defining the Task">
+    <CodeGroup>
+        ```python Execute
+        task1 = Task( description="""Research about open source LLMs vs
+            closed source LLMs. Your final answer MUST be a full analysis report""", #To
+            change the topic, edit the text after 'Research about' in the description
+            parameter of task1 expected_output='When the research report is ready',
+            agent=researcher
+        )
+        task1.execute()
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
