@@ -7,7 +7,7 @@ This document guides you through creating a new local tool for Composi.io.
 Your local tool and its actions should be organized as follows:
 
 ```
-local_tools/
+composio/local_tools/
 ├── <tool_name>/
 │   ├── tool.py
 │   ├── __init__.py
@@ -108,56 +108,9 @@ index 9a36573..94dfd1b 100644
          ]
 ```
 
-**Example:**
+**Examples/Sample Code:**
 
-**`composio/local_tools/sentiment/tool.py`**
-
-```python
-from composio.core.local import Tool, Action
-from .actions.sentiment_analysis import SentimentAnalysis
-
-class SentimentAnalyzer(Tool):
-    """
-    Analyzes the sentiment of text.
-    """
-
-    def actions(self) -> list[Action]:
-        return [SentimentAnalysis]
-
-    def triggers(self) -> list:
-        return []
-```
-
-**`composio/local_tools/sentiment/actions/sentiment_analysis.py`**
-
-```python
-from pydantic import BaseModel, Field
-from composio.core.local import Action
-
-class SentimentRequest(BaseModel):
-    text: str = Field(..., description="Text to analyze sentiment")
-
-class SentimentResponse(BaseModel):
-    sentiment: str = Field(..., description="Sentiment (e.g., positive, negative, neutral)")
-
-class SentimentAnalysis(Action):
-    """
-    Analyzes the sentiment of text.
-    """
-
-    _display_name = "Analyze Sentiment"
-    _request_schema = SentimentRequest
-    _response_schema = SentimentResponse
-    _tags = ["sentiment", "analysis"]
-    _tool_name = "sentiment"
-
-    def execute(
-        self, request_data: SentimentRequest, authorisation_data: dict = {}
-    ) -> dict:
-        # Implement sentiment analysis logic here
-        response_data = {"sentiment": "positive"}  # Placeholder
-        return {"execution_details": {"executed": True}, "response_data": response_data}
-```
+There are lot of local tools available in `composio/local_tools` directory, that you can use as a reference. To get started, you should check out the `mathematical` tool.
 
 **Integration:**
 
