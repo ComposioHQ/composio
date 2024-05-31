@@ -22,6 +22,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import
     FindFileCmd,
     SearchDirCmd,
     SearchFileCmd,
+    GithubCloneCmd,
     GetCurrentDirCmd,
 )
 
