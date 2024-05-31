@@ -17,7 +17,7 @@ Notion page using Composio and Langchain."
 
         # Connect your notion account so agents can use it.
 
-        composio-cli add notion
+        composio add notion
         ```
     </CodeGroup>
     </Step>
@@ -30,7 +30,7 @@ Notion page using Composio and Langchain."
         from langchain.agents import create_openai_functions_agent, AgentExecutor
         from langchain import hub
         from langchain_openai import ChatOpenAI
-        from composio_langchain import ComposioToolset, Action, App
+        from composio_langchain import ComposioToolSet, Action, App
         from langchain.chains.summarize import load_summarize_chain
         ```
     </CodeGroup>
