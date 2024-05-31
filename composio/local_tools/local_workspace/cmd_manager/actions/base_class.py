@@ -60,7 +60,7 @@ class BaseAction(Action, ABC):
         super().__init__()
         self.name = "agent"
         self.logger = logger
-        self.config_file_path = Path(CONFIG_FILE_PATH)
+        self.config_file_path = ""
         self.args = None
         self.workspace_id = ""
         self.command = ""
@@ -85,6 +85,7 @@ class BaseAction(Action, ABC):
 
     def _setup(self, args: BaseRequest):
         self.args = args
+        self.config_file_path = Path(CONFIG_FILE_PATH)
         self.workspace_id = args.workspace_id
         if self.workspace_factory is None:
             logger.error("workspace_factory is not set")
