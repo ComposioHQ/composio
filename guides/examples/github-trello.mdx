@@ -14,9 +14,9 @@ description: "This guide provides steps to create a pipeline to automatically ad
 
         # Connect your Github and Trello so agents can use it.
 
-        composio-cli add github
+        composio add github
 
-        composio-cli add trello
+        composio add trello
         ```
 
     </CodeGroup>
@@ -34,11 +34,11 @@ description: "This guide provides steps to create a pipeline to automatically ad
         # Set the callback URL (replace the example URL with your actual ngrok URL):
         # Replace your ngrok url
 
-        composio-cli set global-trigger-callback "<https://try.ngrok.io/asdfjh2>"
+        composio triggers callbacks set "<https://try.ngrok.io/asdfjh2>"
 
         # Enable the GitHub commit event trigger
 
-        composio-cli enable-trigger github_commit_event
+        composio triggers enable github_commit_event
         ```
 
     </CodeGroup>
@@ -60,13 +60,14 @@ description: "This guide provides steps to create a pipeline to automatically ad
     <CodeGroup>
         ```python CrewAI Agents
         llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-3.5-turbo")
-        composioCrewAI = ComposioToolSet([App.TRELLO])
+        composiotoolset = ComposioToolSet()
+        tools = composiotoolset.get_tools(apps=[App.TRELLO])        
         crewai_agent = Agent(
                 role="Github-Trello TODO Agent",
                 goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
                 backstory="""You are an AI Agent with access to Github and Trello and wants to keep the Github Code TODOs, commit messages and TRELLO Board in Sync. Action to be performed: trello_create_trello_card""",
                 verbose=True,
-                tools=composioCrewAI,
+                tools=tools,
                 llm=llm,
             )
         ```
@@ -115,20 +116,20 @@ description: "This guide provides steps to create a pipeline to automatically ad
     # Import necessary libraries
     from flask import Flask, request
     from crewai import Agent, Task
-    from composio_crewai import ComposioToolset, App, Action
+    from composio_crewai import ComposioToolSet, App, Action
     from langchain_openai import ChatOpenAI
 
     # Initialize agents using CrewAI
     openai_api_key = "your_openai_api_key"  # Replace with your actual OpenAI API key
-    llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-3.5-turbo")
-    composioCrewAI = ComposioToolset([App.TRELLO])
-
+    llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4-turbo")
+    composiotoolset = ComposioToolSet()
+    tools = composiotoolset.get_tools(apps=[App.TRELLO])
     crewai_agent = Agent(
         role="Github-Trello TODO Agent",
         goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
         backstory="""You are an AI Agent with access to Github and Trello and want to keep the Github Code TODOs, commit messages, and TRELLO Board in Sync. Action to be performed: trello_create_trello_card""",
         verbose=True,
-        tools=composioCrewAI,
+        tools=tools,
         llm=llm,
     )
 
