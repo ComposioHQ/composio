@@ -27,7 +27,7 @@ class RunCommandOnWorkspaceRequest(BaseRequest):
     timeout: int = Field(
         default=25,
         description="Timeout in seconds for the command to run."
-                    " If the command takes more than this, it will be terminated.",
+        " If the command takes more than this, it will be terminated.",
         examples=[10, 30],
     )
 
