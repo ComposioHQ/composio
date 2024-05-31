@@ -3,7 +3,7 @@ backstory: |-
   Your mentor gave you following tips.
   1. Always start by initializing the workspace and check the status of workspace to make sure it's running. 
   2. Use the workspace_id returned to use tools to run commands. The commands are run on shell. 
-  3. use clone the git repo {repo_name} in workspace, with github_access_token: ''
+  3. use clone the git repo {repo_name} in workspace, with github_access_token: {git_access_token}
   4. always try to replicate the bug that the issues discusses. 
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
      Then start trying to fix it.
