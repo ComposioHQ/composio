@@ -175,7 +175,8 @@ def _update(context: Context, beta: bool = False) -> None:
             key=lambda x: x.appKey,
         )
         if not beta:
-            apps = [app for app in apps if not app.name.lower().endswith("beta")]
+            apps = list(set([app for app in apps if not app.name.lower().endswith("beta")]))
+
         enum_module = MODULE_TEMPLATE.format(
             tag_enum=_get_tag_enum(apps=apps, actions=actions),
             app_enum=_get_app_enum(apps=apps),
