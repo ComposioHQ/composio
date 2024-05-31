@@ -1,8 +1,17 @@
+import yaml
 from datasets import load_dataset
 from pathlib import Path
 from composio_crewai import ComposioToolSet, Action
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
+
+
+CONFIG_FILE_PATH = "./base_task_config.yaml"
+
+# Path of the current script
+script_path = Path(__file__).resolve()
+script_dir = script_path.parent
+base_task_config_path = script_dir / Path(CONFIG_FILE_PATH)
 
 
 def filter_short_problem_statements(instance):
@@ -37,16 +46,22 @@ def main():
     goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
     tools = composio_toolset.get_actions(actions=[Action.GREPTILECODEQUERY])
     issues = get_issues_dataset()
+
     for issue in issues:
-        backstory = issue["backstory"]
         issue_description = issue["issue_description"]
         repo_name = issue["repo_name"]
         instance_id = issue["instance_id"]
+        with open(base_task_config_path) as f:
+            base_config = yaml.safe_load(f.read())
+        backstory = base_config["backstory"].format(repo_name=repo_name)
+        issue = base_config["issue"].format(issue=issue_description)
         print(f"Backstory: {backstory}")
-        print(f"Issue Description: {issue_description}")
+        print(f"Issue Description: {issue}")
         print(f"Repository Name: {repo_name}")
         print(f"Instance ID: {instance_id}")
         print("--------------------------------------------------")
+
+        #todo: change this from the issue
         expected_output = "Name of the file"
         agent_1 = Agent(
             role=base_role,
@@ -60,7 +75,7 @@ def main():
         )
 
         task = Task(
-            description=issue_description,
+            description=issue,
             agent=agent_1,
             expected_output=expected_output,
         )
