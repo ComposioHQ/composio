@@ -28,6 +28,7 @@ goal = "Help fix the given issue / bug in the code. And make sure you get it wor
 
 tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL])
 
+
 if __name__ == "__main__":
     # load config from YAML file
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
