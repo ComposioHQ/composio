@@ -34,6 +34,7 @@ class GithubCloneCmd(BaseAction):
     """
     Clones a github repository
     """
+
     _history_maintains: bool = True
     _display_name = "Clone Github Repository Action"
     _request_schema = GithubCloneRequest
@@ -44,9 +45,7 @@ class GithubCloneCmd(BaseAction):
         self, request_data: GithubCloneRequest, authorisation_data: dict
     ) -> GithubCloneResponse:
         if not request_data.repo_name or not request_data.repo_name.strip():
-            raise ValueError(
-                "repo_name can not be null. Give a repo_name to clone"
-            )
+            raise ValueError("repo_name can not be null. Give a repo_name to clone")
 
         if not request_data.github_token or not request_data.github_token.strip():
             raise ValueError("github_token can not be null")
