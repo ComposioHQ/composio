@@ -1,13 +1,6 @@
-# flake8: noqa
-
-import re
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Tuple
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.command_runner_model import (
-    AgentConfig,
-)
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
@@ -19,15 +12,10 @@ from composio.local_tools.local_workspace.commons.utils import (
     close_container,
     interrupt_container,
 )
-
 from .base_class import BaseAction, BaseRequest, BaseResponse
-
+from composio.local_tools.local_workspace.commons.utils import process_output
 
 logger = get_logger()
-from composio.local_tools.local_workspace.commons.utils import process_output
-
-from .base_class import BaseAction, BaseRequest, BaseResponse
-from composio.local_tools.local_workspace.commons.utils import process_output
 
 
 class RunCommandOnWorkspaceRequest(BaseRequest):
@@ -38,7 +26,8 @@ class RunCommandOnWorkspaceRequest(BaseRequest):
     )
     timeout: int = Field(
         default=25,
-        description="Timeout in seconds for the command to run. If the command takes more than this, it will be terminated.",
+        description="Timeout in seconds for the command to run."
+                    " If the command takes more than this, it will be terminated.",
         examples=[10, 30],
     )
 
