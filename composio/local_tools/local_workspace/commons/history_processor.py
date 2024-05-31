@@ -44,7 +44,7 @@ class HistoryProcessor:
         # Define the file path using instance-id and ensure it's unique per workspace
         file_path = self.base_dir / Path(f"{workspace_id}_instance_{instance_id}.json")
         history_logs = self.history.get(workspace_id, [])
-        with open(file_path, 'w') as file:
+        with open(file_path, "w") as file:
             json.dump(history_logs, file)
 
 
@@ -72,7 +72,9 @@ def history_recorder():
 
                 # save history to file-path once submit command is submitted
                 if is_submit_command:
-                    self.history_processor.save_history_to_file(self.workspace_id, self.instance_id)
+                    self.history_processor.save_history_to_file(
+                        self.workspace_id, self.instance_id
+                    )
 
             return output, return_code
 
