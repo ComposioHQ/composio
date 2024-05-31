@@ -54,11 +54,6 @@ The SWE-bench Lite dataset includes the following fields:
 - **FAIL_TO_PASS**: A json list of strings that represent the set of tests resolved by the PR and tied to the issue resolution.
 - **PASS_TO_PASS**: A json list of strings that represent tests that should pass before and after the PR application.
 
-## Usage Example
-
-To use the dataset, follow the example code below:
-To get started with the SWE-bench Lite dataset from Hugging Face, you can use the following Python code snippet. This dataset provides a comprehensive set of fields that are useful for software engineering research, particularly in the context of automated patch generation and issue resolution.
-
 
 ## Task Configuration
 
