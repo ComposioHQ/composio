@@ -1,5 +1,5 @@
 
-# SWE-bench Lite Dataset Usage Guide
+# Running benchamrk on SWE-bench Lite Dataset
 
 This guide provides instructions on how to download and use the SWE-bench Lite dataset from Hugging Face.
 
