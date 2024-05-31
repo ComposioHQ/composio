@@ -14,7 +14,7 @@ from composio.exceptions import ComposioSDKError
 @click.command(name="logout")
 @pass_context
 def _logout(context: Context) -> None:
-    """Logout from the session."""
+    """Logout from the Composio SDK"""
     try:
         context.user_data.api_key = None
         context.user_data.store()

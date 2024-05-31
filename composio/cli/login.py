@@ -27,7 +27,7 @@ def _login(
     context: Context,
     no_browser: bool = False,
 ) -> None:
-    """Login to the Composio SDK API."""
+    """Login to the Composio SDK"""
 
     # TODO: Abstract away
     user_data = context.user_data
