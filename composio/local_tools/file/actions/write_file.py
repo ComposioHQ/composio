@@ -1,7 +1,7 @@
 import typing as t
 from pathlib import Path
 from pydantic import BaseModel, Field
-from ...tool import Action
+from composio.tools.local import Action
 
 class WriteFileRequest(BaseModel):
     """Safe file request schema."""
@@ -22,7 +22,6 @@ class WriteFileRequest(BaseModel):
         ...,
         description="Whether to overwrite a file if it exists or not.",
     )
-
 
 class WriteFileResponse(BaseModel):
     """Save file response schema."""
