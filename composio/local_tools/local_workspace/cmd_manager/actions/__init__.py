@@ -6,6 +6,7 @@ from .cmds import (
     OpenCmdRequest,
     OpenFile,
 )
+from .clone_github import GithubCloneCmd, GithubCloneRequest
 from .edit_cmd import EditFile, EditFileRequest
 from .run_cmd import RunCommandOnWorkspace, RunCommandOnWorkspaceRequest
 from .scroll_cmds import Scroll, ScrollRequest
