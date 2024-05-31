@@ -3,7 +3,7 @@ import os
 import requests
 from pydantic import BaseModel, Field
 
-from composio.tools.local import Action
+from composio.core.local import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 logger = get_logger()

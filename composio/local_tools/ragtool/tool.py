@@ -1,5 +1,5 @@
 import typing as t
-from composio.tools.local import Tool, Action
+from composio.core.local import Tool, Action
 from .actions import RagToolQuery, AddContentToRagTool
 
 class RagTool(Tool):

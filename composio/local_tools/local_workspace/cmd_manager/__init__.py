@@ -1,1 +1,1 @@
-from .cmd_manager_tool import CmdManagerTool
+from .tool import CmdManagerTool
