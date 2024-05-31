@@ -54,8 +54,16 @@ The SWE-bench Lite dataset includes the following fields:
 - **FAIL_TO_PASS**: A json list of strings that represent the set of tests resolved by the PR and tied to the issue resolution.
 - **PASS_TO_PASS**: A json list of strings that represent tests that should pass before and after the PR application.
 
+## Running the Task
 
-## Task Configuration
+To run the task and save the history of the run, use the following Python code:
+
+```python
+python swe/try-swe.yaml --config_path <path/to/config>
+```
+
+
+### Task Configuration
 
 To facilitate the use of the dataset in practical scenarios, a `task_config.yaml` file is used to configure the specifics of the task:
 ```yaml
@@ -66,10 +74,3 @@ instance_id: ""
 ```
 
 
-## Running the Task
-
-To run the task and save the history of the run, use the following Python code:
-
-```python
-python swe/try-swe.yaml --config_path <path/to/config>
-```
