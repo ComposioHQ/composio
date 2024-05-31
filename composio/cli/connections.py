@@ -14,7 +14,7 @@ from composio.exceptions import ComposioSDKError
 @click.group(name="connections", invoke_without_command=True)
 @pass_context
 def _connections(context: Context) -> None:
-    """Manage composio connections"""
+    """List composio connections for your account"""
     if context.click_ctx.invoked_subcommand:
         return
 

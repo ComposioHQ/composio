@@ -58,7 +58,7 @@ def _actions(
     enabled: bool = False,
     copy_enums: bool = False,
 ) -> None:
-    """Manage composio actions"""
+    """List composio actions"""
     try:
         actions = context.client.actions.get(
             apps=[App(app) for app in apps],
