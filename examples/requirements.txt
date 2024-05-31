@@ -1,2 +1,12 @@
 datasets==2.19.1
 crewai==0.30.11
+langchain_google_genai
+composio_crewai
+composio_langchain
+langchain_openai
+langchain_google_genai
+openai
+flask
+bs4
+langchain
+langchain_community
