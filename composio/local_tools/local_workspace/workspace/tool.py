@@ -1,5 +1,5 @@
 import typing as t
-from composio.tools.local import Tool
+from composio.core.local import Tool, Action
 
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
@@ -28,11 +28,11 @@ class LocalWorkspace(Tool):
     def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
         self.workspace_factory = workspace_factory
 
-    def get_workspace_factory(self) -> Optional[WorkspaceManagerFactory]:
+    def get_workspace_factory(self) -> t.Optional[WorkspaceManagerFactory]:
         return self.workspace_factory
 
     def set_history_processor(self, history_processor: HistoryProcessor):
         self.history_processor = history_processor
 
-    def get_history_processor(self) -> Optional[HistoryProcessor]:
+    def get_history_processor(self) -> t.Optional[HistoryProcessor]:
         return self.history_processor

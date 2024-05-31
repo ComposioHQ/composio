@@ -5,7 +5,7 @@ File I/O tool for Composio.
 import typing as t
 
 from .actions import ReadFile, WriteFile
-from composio.tools.local import Tool, Action
+from composio.core.local import Tool, Action
 
 class FileTool(Tool):
     """File I/O tool."""

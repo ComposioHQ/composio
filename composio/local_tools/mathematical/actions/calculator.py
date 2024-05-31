@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from composio.tools.local import Action
+from composio.core.local import Action
 
 class CalculatorRequest(BaseModel):
     operation: str = Field(
