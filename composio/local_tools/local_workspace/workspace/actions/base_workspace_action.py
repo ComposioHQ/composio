@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Type
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-from typing import Type
+
 
 logger = get_logger()
 

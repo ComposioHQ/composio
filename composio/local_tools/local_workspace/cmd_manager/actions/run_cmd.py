@@ -1,4 +1,5 @@
 from typing import Tuple
+
 from pydantic import Field
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -11,9 +12,11 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
 from composio.local_tools.local_workspace.commons.utils import (
     close_container,
     interrupt_container,
+    process_output,
 )
+
 from .base_class import BaseAction, BaseRequest, BaseResponse
-from composio.local_tools.local_workspace.commons.utils import process_output
+
 
 logger = get_logger()
 
