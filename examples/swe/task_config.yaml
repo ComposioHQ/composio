@@ -3,7 +3,7 @@ backstory: |-
   Your mentor gave you following tips.
   1. Always start by initializing the workspace and check the status of workspace to make sure it's running. 
   2. Use the workspace_id returned to use tools to run commands. 
-  3. clone the git rep {repo_name} in workspace
+  3. use clone the git repo {repo_name} in workspace, with github_access_token: ''
   4. Always try to work from home directory in workspace. 
   5. always try to replicate the bug that the issues discusses. 
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
@@ -194,8 +194,9 @@ issue_description: |-
     '0.9.1'>>> pandas.__version__'1.4.3'
   ```
   Now, you're going to solve this issue on your own.
-  In case of missing modules, Install required packages using command `conda install pandas -y`  
+  In case of missing modules, Install required packages using command `pip install pandas -y`  
 
 repo_name: pvlib/pvlib-python
+
 
 
