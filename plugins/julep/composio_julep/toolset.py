@@ -3,7 +3,7 @@ import typing as t
 
 from composio_openai import ComposioToolSet as BaseComposioToolSet
 from julep.api.types import ChatResponse
-
+from julep import Client
 from composio.client.enums import Action
 from composio.constants import DEFAULT_ENTITY_ID
 
@@ -35,9 +35,11 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def handle_tool_calls(
         self,
+        julep_client: Client,
+        session_id: str,
         response: ChatResponse,
         entity_id: str = DEFAULT_ENTITY_ID,
-    ) -> t.List[t.Dict]:
+    ) -> ChatResponse:
         """
         Handle tool calls from Julep chat client object.
 
@@ -48,18 +50,31 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
-
-        for _responses in response.response:
-            for _response in _responses:
-                try:
-                    function = json.loads(_response.content)
-                    outputs.append(
-                        self.execute_action(
-                            action=Action.from_action(name=function["name"]),
-                            params=json.loads(function["arguments"]),
-                            entity_id=entity_id or self.entity_id,
+        while response.finish_reason == "tool_calls":
+            for _responses in response.response:
+                for _response in _responses:
+                    try:
+                        tool_function = json.loads(_response.content)
+                        outputs.append(
+                            self.execute_action(
+                                action=Action.from_action(name=tool_function["name"]),
+                                params=json.loads(tool_function["arguments"]),
+                                entity_id=entity_id or self.entity_id,
+                            )
                         )
-                    )
-                except json.JSONDecodeError:
-                    outputs.append(_response.content)
-        return outputs
+                    except json.JSONDecodeError:
+                        outputs.append(_response.content)
+
+            response = julep_client.sessions.chat(  # submit the tool call
+                session_id=session_id,
+                messages=[
+                    {
+                        "role": "assistant",
+                        "content": json.dumps(outputs),
+                    }
+                ],
+                recall=True,
+                remember=True,
+            )
+
+        return response
