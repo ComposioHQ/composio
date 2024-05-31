@@ -1,4 +1,4 @@
-from composio.local_tools.local_workspace.cmd_manager.cmd_manager_tool import (
+from composio.local_tools.local_workspace.cmd_manager.tool import (
     CmdManagerTool,
 )
 from composio.local_tools.local_workspace.commons.history_processor import (
@@ -7,12 +7,12 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-from composio.local_tools.local_workspace.history_keeper.history_keeper_tool import (
+from composio.local_tools.local_workspace.history_keeper import (
     HistoryKeeper,
 )
-from composio.local_tools.local_workspace.workspace.workspace_tool import LocalWorkspace
+from composio.local_tools.local_workspace.workspace import LocalWorkspace
 
-from composio.local_tools.ragtool import RagToolActions
+from composio.local_tools.ragtool import RagTool
 from composio.local_tools import Mathematical
 from composio.local_tools.webtool import WebTool
 from composio.local_tools.greptile.tool import Greptile
@@ -43,7 +43,7 @@ class LocalToolHandler:
             workspace_tool,
             cmd_manager_tool,
             h_keeper_tool,
-            RagToolActions(),
+            RagTool(),
             WebTool(),
             Greptile(),
         ]
