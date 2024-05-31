@@ -727,13 +727,13 @@ class Actions(Collection[ActionModel]):
         connected_account: t.Optional[str] = None,
     ) -> t.Dict:
         """
-        Execute an action.
+        Execute an action on the specified entity with optional connected account.
 
-        :param action: Action to execute.
-        :param params: Parameters to pass to the action.
-        :param entity_id: Entity ID.
-        :param connected_account: Connected account ID.
-        :return: Response from the action.
+        :param action: The Action object to be executed.
+        :param params: A dictionary of parameters to be passed to the action.
+        :param entity_id: The unique identifier of the entity on which the action is executed.
+        :param connected_account: Optional connected account ID if required for the action.
+        :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
             return self.local_handler.execute_local_action(
@@ -1018,14 +1018,14 @@ class Entity:
         integration: t.Optional[IntegrationModel] = None,
     ) -> ConnectionRequestModel:
         """
-        Initiate integration connection.
+        Initiate an integration connection process for a specified application.
 
-        :param app_name: App name
-        :param auth_mode: Auth mode
-        :param auth_config: Auth config
-        :param redirect_url: Redirect URL
-        :param integration: Integration
-        :return: Connection request model
+        :param app_name: The name of the application or an App enum instance.
+        :param auth_mode: Optional authentication mode to be used.
+        :param auth_config: Optional dictionary containing authentication configuration details.
+        :param redirect_url: Optional URL to which a user will be redirected after authentication.
+        :param integration: Optional existing IntegrationModel instance to be used.
+        :return: A ConnectionRequestModel instance representing the initiated connection.
         """
         if isinstance(app_name, App):
             app_name = app_name.value
