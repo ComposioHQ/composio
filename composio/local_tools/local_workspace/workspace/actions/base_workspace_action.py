@@ -11,7 +11,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-
+from typing import Type
 
 logger = get_logger()
 
@@ -59,5 +59,7 @@ class BaseWorkspaceAction(Action, ABC):
         self.history_processor = history_processor
 
     @abstractmethod
-    def execute(self, request_data, authorisation_data: dict):
+    def execute(
+        self, request_data: BaseWorkspaceRequest, authorisation_data: dict
+    ) -> BaseWorkspaceResponse:
         pass
