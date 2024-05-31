@@ -38,14 +38,13 @@ description: "Learn how to perform actions with a connected account."
 <CodeGroup>
 ```python Get Action/s Input Schema
 
-from composio import Composio
+from composio_openai import ComposioToolSet, Action
 
-composio = Composio("api-key")
+tool_set = ComposioToolSet()
 
-print(composio.get_list_of_actions(actions = [Action.GITHUB_CREATE_ISSUE]))
+tools = tool_set.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
 
-print(composio.get_list_of_actions())
-
+print(tools)
 ```
 </CodeGroup>
 
@@ -97,32 +96,17 @@ The response will include the **Action's ID, Name and Input/Output schema** in *
 <CodeGroup>
 ```python Execute Action
 
-# Get connected Account
+from composio import ComposioToolSet, Action
 
-connected_account = composio.get_connected_account(connection_id="Account_ID")
+tool_set = ComposioToolSet(api_key="COMPOSIO_API_KEY")
 
-# Ideally this will be decided by LLM using something like function calling
-
-params = { "repo":"docs", "owner":"SamparkAI",
-"title":"Too much light","body":"Show my dark night"}
-
-# Execute the Action
-
-execution_details = connected_account.execute_action(action_name=Action.GITHUB_CREATE_ISSUE, input_data=params)
-
+tool_set.execute_action(
+    action=Action.SLACK_CHAT_POST_MESSAGE,
+    params={"text": "Hello, world!", "channel": "D04N8SVQKKU"},
+    entity_id="melissa",
+)
 ```
 </CodeGroup>
 When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
 </Step>
 </Steps>
-
-### Retrieving All Supported Actions with Composio
-
-<CodeGroup>
-```python Different Methods to Get All Actions
-composio.getAllTools(uuid) # pick all Tools that are relevant for user.
-connected_account.get_all_actions() # Get all tools from connection
-```
-
-</CodeGroup>
-This approach ensures that users can easily discover and utilize the full range of actions available to them, enhancing their integration and automation capabilities.

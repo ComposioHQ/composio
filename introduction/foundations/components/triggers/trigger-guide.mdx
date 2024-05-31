@@ -25,51 +25,22 @@ description: "Learn, how to use triggers in Connected Apps"
 ## Listing Default Triggers
 
 <CodeGroup>
-``` python Code for Get List of Triggers
-from composio import Composio
-
-composio_client = Composio("api-key")
-
-print(composio_client.get_list_of_triggers())
-
+``` Bash Get List of Triggers
+# In CLI
+composio triggers
 ```
 </CodeGroup>
 
-The response will include the trigger’s config/payload schema in a JSON compatible manner. It will also contain metadata like trigger name, ID. 
+The response will be a list of all triggers.
 
 <CodeGroup>
-```JSON Response for Get Triggers 
-[
-    {
-        "name": "github_pull_request_event",
-        "display_name": "Pull Request Event",
-        "description": "Triggered when a pull request is opened, closed, or synchronized.",
-        "payload": {
-            "properties": {
-                "action": {
-                    "description": "The action that was performed on the pull request",
-                    ...
-                }...
-            }...
-            "type": "object"
-        },
-        "config": {
-            "properties": {
-                "owner": {
-                    "description": "Owner of the repository",
-                    ...
-                }...
-            },
-            "required": [
-                "owner"...
-            ],
-            "title": "WebhookConfigSchema",
-            "type": "object"
-        },
-        ...
-        "enabled": true
-    }...
-]
+```Bash List of all Triggers 
+github_issue_added_event
+• slackbot_receive_message
+• slackbot_receive_thread_reply
+• slackbot_reaction_removed
+• slackbot_reaction_added
+....
 ```
 </CodeGroup>
 
@@ -77,7 +48,7 @@ The response will include the trigger’s config/payload schema in a JSON compat
 
 To set up triggers, follow these steps:
 
-1. **Set Universal Callback URL**: Define a universal callback URL to receive payloads for all your triggers. You can set this URL through the [settings](https://app.composio.dev/api_keys) or by using the API endpoint `api/v1/triggers/setCallbackURL`.
+1. **Set Universal Callback URL**: Define a universal callback URL to receive payloads for all your triggers. You can set this URL through the [settings](https://app.composio.dev/settings) or by using the API endpoint `api/v1/triggers/setCallbackURL`.
 
 2. **Review Trigger Instructions**: Each trigger may have specific instructions. For example, in Slack, you need to configure our webhook URL in the OAuth app settings.
 
