@@ -1,7 +1,6 @@
 from functools import cache
 import os
 from pathlib import Path
-
 import yaml
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
@@ -27,9 +26,7 @@ base_role = (
 
 goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
 
-tools = composio_toolset.get_tools(
-    [App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER]
-)
+tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL])
 
 if __name__ == "__main__":
     # load config from YAML file
