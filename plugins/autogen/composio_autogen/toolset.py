@@ -146,10 +146,10 @@ class ComposioToolSet(BaseComposioToolSet):
         Register a schema to the Autogen registry.
 
         Args:
-            schema (dict[str, any]): The action schema.
-            caller (ConversableAgent): The caller for the tools.
-            executor (ConversableAgent): The executor for the tools.
-            entity_id (str, optional): The ID of the entity for which to execute the action. Defaults to "default".
+            schema (dict[str, any]): The action schema to be registered.
+            caller (ConversableAgent): The agent responsible for initiating the tool registration.
+            executor (ConversableAgent): The agent responsible for executing the registered tools.
+            entity_id (str, optional): The identifier of the entity for which the action is executed. Defaults to None.
         """
         name = schema["name"]
         appName = schema["appName"]
