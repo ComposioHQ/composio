@@ -4,7 +4,7 @@ import os
 import requests
 from pydantic import BaseModel, Field
 
-from ..action import Action
+from ...tool import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 
