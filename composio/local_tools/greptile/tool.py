@@ -1,6 +1,6 @@
-from composio.local_tools.tool import Tool, Action
-from .actions.codequery import CodeQuery
 import typing as t
+from composio.tools.local import Tool, Action
+from .actions import CodeQuery
 
 class Greptile(Tool):
     """
