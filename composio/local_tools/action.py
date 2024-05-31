@@ -19,6 +19,7 @@ def generate_hashed_appId(input_string):
 
 
 class Action(ABC):
+    _history_maintains: bool = False
     _display_name: str = ""  # Add an internal variable to hold the display name
     _request_schema: type[BaseModel]  # Placeholder for request schema
     _response_schema: type[BaseModel]  # Placeholder for response schema
@@ -54,23 +55,23 @@ class Action(ABC):
         self._tags = value  # Set the internal variable
 
     @property
-    def request_schema(self) -> BaseModel:
+    def request_schema(self) -> type[BaseModel]:
         return self._request_schema
 
     @request_schema.setter
-    def request_schema(self, value: BaseModel):
+    def request_schema(self, value: type[BaseModel]):
         self._request_schema = value
 
     @property
-    def response_schema(self) -> BaseModel:
+    def response_schema(self) -> type[BaseModel]:
         return self._response_schema
 
     @response_schema.setter
-    def response_schema(self, value: BaseModel):
+    def response_schema(self, value: type[BaseModel]):
         self._response_schema = value
 
     @abstractmethod
-    def execute(self, request_data: BaseModel, authorisation_data: dict) -> dict:
+    def execute(self, request_data: type[BaseModel], authorisation_data: dict) -> dict:
         pass
 
     @property
