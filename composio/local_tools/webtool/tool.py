@@ -1,4 +1,4 @@
-from composio.tools.local import Tool, Action
+from composio.core.local import Tool, Action
 from .actions import ScrapeWebsiteContent, ScrapeWebsiteElement
 import typing as t
 
