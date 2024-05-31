@@ -703,14 +703,14 @@ class Actions(Collection[ActionModel]):
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:
-            required_triggers = [
+            required_tags = [
                 tag.name if isinstance(tag, Tag) else tag for tag in tags
             ]
-            if (not len(items) < 15 and len(required_triggers) == 1 and required_triggers[0] == "important"):
+            if (not len(items) < 15 and len(required_tags) == 1 and required_tags[0] == "important"):
                 items = [
                     item
                     for item in items
-                    if any(tag in required_triggers for tag in item.tags)
+                    if any(tag in required_tags for tag in item.tags)
                 ]
 
         if len(local_apps) > 0 or len(local_actions) > 0:
