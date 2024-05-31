@@ -1,7 +1,7 @@
 import typing as t
 from pathlib import Path
 from pydantic import BaseModel, Field
-from composio.tools.local import Action
+from composio.core.local import Action
 
 class ReadFileRequest(BaseModel):
     """Read file request schema."""

@@ -1,5 +1,5 @@
 from typing import Optional
-from composio.tools.local import Tool
+from composio.core.local import Tool
 
 from composio.local_tools.local_workspace.cmd_manager.actions import (
     GithubCloneCmd,
