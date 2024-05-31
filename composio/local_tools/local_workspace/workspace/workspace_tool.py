@@ -1,19 +1,14 @@
-from typing import Optional
+import typing as t
+from composio.tools.local import Tool
 
-from composio.local_tools.local_workspace.commons.history_processor import (
+from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
-)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
+from composio.local_tools.local_workspace.workspace.actions import (
+    WorkspaceStatusAction,
     CreateWorkspaceAction,
 )
-from composio.local_tools.local_workspace.workspace.actions.workspace_status import (
-    WorkspaceStatus,
-)
-from composio.local_tools.tool import Tool
-
 
 class LocalWorkspace(Tool):
     """
@@ -21,11 +16,11 @@ class LocalWorkspace(Tool):
     this is a tool for creating local workspace
     """
 
-    workspace_factory: Optional[WorkspaceManagerFactory] = None
-    history_processor: Optional[HistoryProcessor] = None
+    workspace_factory: t.Optional[WorkspaceManagerFactory] = None
+    history_processor: t.Optional[HistoryProcessor] = None
 
-    def actions(self) -> list:
-        return [WorkspaceStatus, CreateWorkspaceAction]
+    def actions(self) -> list[t.Type[Action]]:
+        return [WorkspaceStatusAction, CreateWorkspaceAction]
 
     def triggers(self) -> list:
         return []
