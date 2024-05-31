@@ -15,7 +15,7 @@ from composio.exceptions import ComposioSDKError
 @login_required
 @pass_context
 def _integrations(context: Context) -> None:
-    """Manage composio integrations"""
+    """List composio integrations for your account"""
     if context.click_ctx.invoked_subcommand:
         return
 
