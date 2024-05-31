@@ -84,6 +84,30 @@ local_tools/
    from .<action_name> import <ActionName>
    ```
 
+5. Register your tool inside `composio/client/local_handler.py` file.
+
+```diff
+diff --git a/composio/client/local_handler.py b/composio/client/local_handler.py
+index 9a36573..94dfd1b 100644
+--- a/composio/client/local_handler.py
++++ b/composio/client/local_handler.py
+@@ -16,7 +16,7 @@ from composio.local_tools.ragtool import RagTool
+ from composio.local_tools import Mathematical
+ from composio.local_tools.webtool import WebTool
+ from composio.local_tools.greptile.tool import Greptile
+-
++from composio.tools.local_tools.<tool_name> import <ToolName>
+ 
+ class LocalToolHandler:
+     def __init__(self):
+@@ -46,6 +46,7 @@ class LocalToolHandler:
+             RagTool(),
+             WebTool(),
+             Greptile(),
++            <ToolName>(),
+         ]
+```
+
 **Example:**
 
 **`composio/local_tools/sentiment/tool.py`**
@@ -137,8 +161,8 @@ class SentimentAnalysis(Action):
 
 **Integration:**
 
-* Make sure your `local_tools` folder is in your project's root directory.
-* You can now access your new tool through Composi.io's interface and use it in your LLM applications.
+* Make sure you register your new tool inside `composio/client/local_handler.py` file.
+* You can now access your new tool through Composio SdK and use it to power you Agents.
 
 **Key Points:**
 
