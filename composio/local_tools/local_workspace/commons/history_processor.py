@@ -23,8 +23,7 @@ class HistoryProcessor:
     def make_submission_dir(self):
         # make submit_path directory
         try:
-            date_time_folder = self.date_time_folder
-            base_dir = script_dir / Path(date_time_folder)
+            base_dir = script_dir / Path(self.date_time_folder)
             if not os.path.exists(base_dir):
                 os.makedirs(base_dir)
             self.base_dir = base_dir
