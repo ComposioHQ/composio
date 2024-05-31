@@ -34,8 +34,10 @@ if __name__ == "__main__":
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
     with open(task_config_path, "r") as stream:
         task_data = yaml.safe_load(stream)
+    git_access_token = os.environ.get("GIT_ACCESS_TOKEN", "")
     repo_name = task_data["repo_name"]
-    b = task_data["backstory"].format(repo_name=repo_name)
+    b = task_data["backstory"].format(repo_name=repo_name, git_access_token=git_access_token) \
+        if git_access_token else task_data["backstory"].format(repo_name=repo_name)
 
     agent_1 = Agent(
         role=base_role,
@@ -51,7 +53,7 @@ if __name__ == "__main__":
     task = Task(
         description=task_data["issue_description"],
         agent=agent_1,
-        expected_output="issue should not be reproduced",
+        expected_output="produce a patch that will fix the given issue",
     )
 
     my_crew = Crew(
