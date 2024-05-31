@@ -19,7 +19,7 @@ to perform investment research, analyze stocks, and offer recommendations based 
 
         # Connect your serpapi account so agents can use it.
 
-        composio-cli add serpapi
+        composio add serpapi
         ```
     </CodeGroup>
     </Step>
@@ -29,7 +29,7 @@ to perform investment research, analyze stocks, and offer recommendations based 
     <CodeGroup>
         ```python Import statements
         from crewai import Agent, Task, Crew, Process
-        from composio_langchain import ComposioToolset, Action, App
+        from composio_langchain import ComposioToolSet, Action, App
         from langchain_google_genai import ChatGoogleGenerativeAI
         import os
         ```
@@ -48,7 +48,9 @@ to perform investment research, analyze stocks, and offer recommendations based 
         )
 
         # Define tools for the agents
-        tools = ComposioToolset(actions=[Action.SERPAPI_SEARCH])
+        composiotoolset = ComposioToolSet()
+        tools = composiotoolset.get_actions(actions=[Action.SERPAPI_SEARCH])    
+
         ```
 
 </CodeGroup>
@@ -138,7 +140,7 @@ to perform investment research, analyze stocks, and offer recommendations based 
 <CodeGroup>
     ```python Final Code
     from crewai import Agent, Task, Crew, Process
-    from composio_langchain import ComposioToolset, Action, App
+    from composio_langchain import ComposioToolSet, Action, App
     from langchain_google_genai import ChatGoogleGenerativeAI
     import os
 
@@ -151,8 +153,9 @@ to perform investment research, analyze stocks, and offer recommendations based 
     )
 
     # Define tools for the agents
-    tools = ComposioToolset(actions=[Action.SERPAPI_SEARCH])
-
+    composiotoolset = ComposioToolSet()
+    tools = composiotoolset.get_actions(actions=[Action.SERPAPI_SEARCH])
+    
     # Define the Investment Researcher agent
     researcher = Agent(
         role='Investment Researcher',

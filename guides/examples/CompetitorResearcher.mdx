@@ -14,9 +14,9 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
         pip install crewai==0.28.8
 
         # Composio SDK
-        composio-cli update
-        composio-cli login
-        composio-cli add notion
+        composio update
+        composio login
+        composio add notion
         ```
     </CodeGroup>
     </Step>
@@ -42,11 +42,8 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
         dotenv.load_dotenv()
         llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
 
-        composio_crewai = ComposioToolSet([App.NOTION])
-
-        date = datetime.today().strftime('%Y-%m-%d')
-
-        timezone = datetime.now().astimezone().tzinfo
+        composiotoolset = ComposioToolSet()
+        tools = composiotoolset.get_tools(apps=[App.NOTION])
         ```
     </CodeGroup>
     </Step>
@@ -58,21 +55,13 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
             soup = BeautifulSoup(html, "html.parser")
             return soup.get_text()
 
-        def get_info(content):
-            # Implement your logic to extract and format information from the content
-            info = {
-                "Summary": "Detailed competitor analysis goes here",
-                "Key Points": "Key points extracted from the website content"
-            }
-            return info
-
         def scrape_website(url):
             content = []
             reqs = requests.get(url)
             content.append(remove_tags(reqs.content))
             cleaned_content = "\n".join(content)
-            competitor_info = get_info(cleaned_content)
-            return jsonify(competitor_info)        
+            competitor_info = cleaned_content
+            return jsonify(competitor_info)      
     ```
 
     </CodeGroup>
@@ -90,7 +79,7 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
         goal="Take action on Notion.",
         backstory="You are an AI Agent with access to Notion",
         verbose=True,
-        tools=composio_crewai,
+        tools=tools,
         llm=llm,
         step_callback=step_callback,
     )
@@ -128,7 +117,8 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
 
     dotenv.load_dotenv()
     llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
-    composio_crewai = ComposioToolSet([App.NOTION])
+    composiotoolset = ComposioToolSet()
+    tools = composiotoolset.get_tools(apps=[App.NOTION])
 
     date = datetime.today().strftime('%Y-%m-%d')
     timezone = datetime.now().astimezone().tzinfo
