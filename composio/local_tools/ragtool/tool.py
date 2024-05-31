@@ -1,9 +1,6 @@
-from ..action import Action
-from composio.local_tools.tool import Tool
-from ..tool import Tool
-from .actions.rag_query import RagToolQuery
-from .actions.rag_add_request import AddContentToRagTool
 import typing as t
+from composio.tools.local import Tool, Action
+from .actions import RagToolQuery, AddContentToRagTool
 
 class RagTool(Tool):
     """Rag Tool"""

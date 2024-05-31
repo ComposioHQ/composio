@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from ...tool import Action
+from composio.tools.local import Action
 
 class RagToolQueryRequest(BaseModel):
     query: str = Field(..., description="The query to search in the knowledge base")

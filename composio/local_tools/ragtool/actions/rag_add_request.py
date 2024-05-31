@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Any, Type, List
-from ...tool import Action
+from composio.tools.local import Action
 
 class RagToolAddRequest(BaseModel):
     content: str = Field(..., description="Content to add to the knowledge base")
