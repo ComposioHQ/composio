@@ -8,6 +8,7 @@ description: "Authorize Users Seamlessly 🌐"
 When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
 
 ## Steps to Connect an Account (~ 4️⃣ 🕰️ minutes )
+
 <Tabs>
 <Tab title="Adding Account via Dashboard">
 The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
@@ -35,9 +36,11 @@ Example: API Key, Subdomain URL, Username.
 
 <CodeGroup>
 ```python Printing Required Params
-from composio import Composio
+from composio import Composio, App
 
-client = Composio("api-key")
+client = Composio(api_key="COMPOSIO_API_KEY")
+
+entity = client.get_entity(id="default")
 
 # Integration Chosen by User to Connect with
 
@@ -47,7 +50,7 @@ integration = client.get_integration(integration_id)
 
 print(integration.get_required_variables())
 
-```
+````
 </CodeGroup>
 
 Response if `Zendesk` Integration was chosen.
@@ -63,7 +66,7 @@ Response if `Zendesk` Integration was chosen.
     "required": true
   }
 ]
-```
+````
 
 </CodeGroup>
 </Step>
@@ -82,7 +85,7 @@ print("Please complete the auth flow by opening this link: ", connection_request
 else:
 print("The account status is: ",connection_request)
 
-```
+````
 </CodeGroup>
 </Step>
 <Step title="Authorisation Flow Redirect (Optional)">
@@ -102,7 +105,8 @@ On approval, User will be redirected back to configured URL.
     "connectedAccountId": "1f32dbf-f7cfec95e567",
     "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
 }
-```
+````
+
 </CodeGroup>
 
 </Step>
@@ -140,5 +144,6 @@ print(connected_account.status)
 </Tab>
 </Tabs>
 
-## Using Connected Accounts 
+## Using Connected Accounts
+
 By leveraging the `connected_account.id`, you can execute actions or configure triggers. For example, if you need to create a repository on GitHub, you can use the Composio SDK or the Action API. Simply provide the `connection_id` to enable this operation.

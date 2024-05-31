@@ -15,8 +15,7 @@ In Composio, an entity represents either a user or an organization, encapsulatin
 from composio import Composio, App
 from openai import OpenAI
 
-
-client = Composio('api-key')
+composio_client = Composio(api_key="COMPOSIO_API_KEY")
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 ```
 </CodeGroup>
@@ -25,7 +24,7 @@ Let's create an entity for a user via their email. Email is just an example, you
 
 <CodeGroup>
 ```python Create or get an entity
-entity = client.get_entity('user_email_id') 
+entity = composio_client.get_entity(id='user_email_id') 
 ```
 </CodeGroup>
 
@@ -33,15 +32,10 @@ Now, let's get the connected account for the entity. If the connected account do
 
 <CodeGroup>
 ```python Get connected account
-if entity.is_app_authenticated(App.GITHUB) == False: 
-    request = entity.initiate_connection(app_name = App.GITHUB)   
-    print("Complete the auth flow, link: ", request.redirectUrl)
-    ## Step 3
-    #Keep Polling and wait until timeout
-    connected_account = request.wait_until_active(timeout=60)
-else:
-    print("Already connected to GitHub")
-    connected_account = entity.get_active_connection(app_name = App.GITHUB)
+try:
+    connected_account  = entity.get_connection(app="slack")
+except Exception as e:
+    print("No connected account found")
 ```
 </CodeGroup>
 
@@ -56,20 +50,25 @@ Now, let's call our agent for this entity to perform the task on Github on behal
 
 <CodeGroup>
 ```python Agent Execution
+from composio_openai import ComposioToolSet, Action, App
+from openai import OpenAI
+
+openai_client = OpenAI()
+# can be configured to use the entity id of the user
+tool_set = ComposioToolSet(entity_id="melissa") 
+actions = tool_set.get_tools(apps=[App.GITHUB])
+
 my_task = "Star a repo SamparkAI/composio on GitHub"
 
-response = openai_client.chat.completions.create(model="gpt-4-turbo-preview",
-tools=actions, # Passing actions we fetched earlier.
-messages=[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": my_task}
-  ]
+response = openai_client.chat.completions.create(
+    model="gpt-4-turbo-preview",
+    tools=actions,  # Passing actions we fetched earlier.
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": my_task},
+    ],
 )
-
-# Execute Function calls
-execution_details = connected_account.handle_tools_calls(response)
-
-print(execution_details)
+tool_set.handle_tool_calls(response=response, entity_id="melissa")
 ```
 </CodeGroup>
 
