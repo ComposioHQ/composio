@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TypeVar, Type
 
 from pydantic import BaseModel, Field
 
@@ -8,7 +8,6 @@ from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
-    history_recorder,
 )
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     KEY_CONTAINER_NAME,
@@ -48,9 +47,8 @@ class BaseAction(Action, ABC):
     Base class for all actions
     """
 
+    _history_maintains = True
     _display_name = ""
-    _request_schema = BaseRequest
-    _response_schema = BaseResponse
     _tags = ["workspace"]
     _tool_name = "cmdmanagertool"
     script_file = ""
