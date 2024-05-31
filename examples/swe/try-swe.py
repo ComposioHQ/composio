@@ -27,10 +27,6 @@ goal = "Help fix the given issue / bug in the code. And make sure you get it wor
 tools = composio_toolset.get_actions(actions=[Action.GREPTILECODEQUERY])
 
 
-def record_history(output: TaskOutput):
-    print(output)
-
-
 if __name__ == "__main__":
 
     agent_1 = Agent(
