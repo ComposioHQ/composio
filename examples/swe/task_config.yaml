@@ -192,7 +192,10 @@ issue_description: |-
     >>> pvlib.__version__
     '0.9.1'>>> pandas.__version__'1.4.3'
   ```
-  Now, you're going to solve this issue on your own.
+  Now, you're going to solve this issue on your own. 
+  When you're satisfied with all of the changes you've made, you can submit your changes to the code base by simply running the submit command.
+  Note however that you cannot use any interactive session commands (e.g. python, vim) in this environment, but you can write scripts and run them. E.g. you can write a python script and then run it with `python </path/to/script>.py`.
+
   In case of missing modules, Install required packages using command `pip install pandas -y`  
 
 repo_name: pvlib/pvlib-python

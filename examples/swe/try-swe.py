@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
+from crewai.task import TaskOutput
 from langchain_openai import ChatOpenAI
 
 
@@ -29,12 +30,16 @@ goal = "Help fix the given issue / bug in the code. And make sure you get it wor
 tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL])
 
 
+def record_history(output: TaskOutput):
+    print(output)
+
+
 if __name__ == "__main__":
     # load config from YAML file
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
     with open(task_config_path, "r") as stream:
         task_data = yaml.safe_load(stream)
-    git_access_token = os.environ.get("GIT_ACCESS_TOKEN", "")
+    git_access_token = os.environ.get("GITHUB_ACCESS_TOKEN", "")
     repo_name = task_data["repo_name"]
     b = task_data["backstory"].format(repo_name=repo_name, git_access_token=git_access_token) \
         if git_access_token else task_data["backstory"].format(repo_name=repo_name)
