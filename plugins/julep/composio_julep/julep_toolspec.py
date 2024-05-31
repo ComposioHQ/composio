@@ -13,6 +13,16 @@ class ComposioToolset(OpenaiStyleToolsetBase):
     def handle_tool_calls(
         self, llm_response: ChatResponse, entity_id: str = "default"
     ) -> list[any]:
+        """
+        Handle tool calls in the Julep response.
+
+        Args:
+            llm_response (ChatResponse): The response from the Julep model.
+            entity_id (str, optional): The ID of the entity for which to execute the action. Defaults to "default".
+
+        Returns:
+            list: A list of outputs from the action.
+        """
         entity_id = self.finalize_entity_id(entity_id)
         outputs = []
 

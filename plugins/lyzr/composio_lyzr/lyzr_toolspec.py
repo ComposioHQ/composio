@@ -22,10 +22,26 @@ class ComposioToolset:
         client: ComposioCore = client,
         entity_id: str = "default",
     ):
+        """
+        Initialize the ComposioToolset.
+
+        Args:
+            client (ComposioCore, optional): The ComposioCore client. Defaults to the global client.
+            entity_id (str, optional): The ID of the entity for which to execute the action. Defaults to "default".
+        """
         self.client = client
         self.entity_id = entity_id
 
     def get_lyzr_tool(self, action: Action):
+        """
+        Retrieves a Lyzr tool from the Composio API.
+
+        Args:
+            action (Action): The action to retrieve the tool for.
+
+        Returns:
+            Tool: A Tool instance.
+        """
         action_schema = self.client.sdk.get_list_of_actions(actions=[action])[0]
         request_model = json_schema_to_model(action_schema["parameters"])
         response_model = json_schema_to_model(action_schema["response"])

@@ -21,6 +21,15 @@ class ComposioToolset:
         )
 
     def get_actions(self, actions: Union[Action, List[Action]]):
+        """
+        Retrieves a list of action schemas from the Composio API.
+
+        Args:
+            actions (Union[Action, List[Action]]): A list of Action enum instances to filter the actions by. If None, all actions are retrieved.
+
+        Returns:
+            list[dict[str, any]]: A list of action schemas.
+        """
         if isinstance(actions, Action):
             actions = [actions]
 
@@ -35,6 +44,16 @@ class ComposioToolset:
     def get_tools(
         self, tools: Union[App, List[App]], tags: List[Union[str, Tag]] = None
     ):
+        """
+        Retrieves a list of tools from the Composio API.
+
+        Args:
+            tools (Union[App, List[App]]): A list of App enum instances to filter the tools by. If None, all tools are retrieved.
+            tags (List[Union[str, Tag]], optional): A list of tags to filter the tools by. If None, all tags are retrieved.
+
+        Returns:
+            list[StructuredTool]: A list of StructuredTool instances.
+        """
         if isinstance(tools, App):
             tools = [tools]
 
@@ -46,6 +65,15 @@ class ComposioToolset:
         return formatted_schemas
 
     def action_schema_to_griptape(self, action_schema):
+        """
+        Convert a Composio action schema to a Griptape tool.
+
+        Args:
+            action_schema (dict[str, any]): The action schema.
+
+        Returns:
+            type: A type that is a subclass of BaseTool.
+        """
         schema_dict = {}
         name = action_schema["name"]
         appName = action_schema["appName"]

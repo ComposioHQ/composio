@@ -29,6 +29,16 @@ class ComposioToolset:
         entity_id: str = "default",
         connection_ids: Optional[Dict[Union[str, App], str]] = None,
     ):
+        """
+        Initialize the ComposioToolset.
+
+        Args:
+            client (ComposioCore, optional): The ComposioCore client. Defaults to the global client.
+            caller (ConversableAgent, optional): The caller for the tools. Defaults to None.
+            executor (ConversableAgent, optional): The executor for the tools. Defaults to None.
+            entity_id (str, optional): The ID of the entity for which to execute the action. Defaults to "default".
+            connection_ids (Dict[Union[str, App], str], optional): A dictionary of connection IDs to filter the tools by. If None, all connection IDs are retrieved.
+        """
         self.client = client
         self.caller = caller
         self.executor = executor
@@ -42,6 +52,15 @@ class ComposioToolset:
         executor: ConversableAgent = None,
         tags: List[Union[str, Tag]] = None,
     ):
+        """
+        Register a list of tools to the Autogen agent.
+
+        Args:
+            tools (Union[App, List[App]]): A list of App enum instances to filter the tools by. If None, all tools are retrieved.
+            caller (ConversableAgent, optional): The caller for the tools. Defaults to None.
+            executor (ConversableAgent, optional): The executor for the tools. Defaults to None.
+            tags (List[Union[str, Tag]], optional): A list of tags to filter the tools by. If None, all tags are retrieved.
+        """
         if isinstance(tools, App):
             tools = [tools]
         assert (
@@ -71,6 +90,14 @@ class ComposioToolset:
         caller: ConversableAgent = None,
         executor: ConversableAgent = None,
     ):
+        """
+        Register a list of actions to the Autogen agent.
+
+        Args:
+            actions (Union[Action, List[Action]]): A list of Action enum instances to filter the actions by. If None, all actions are retrieved.
+            caller (ConversableAgent, optional): The caller for the tools. Defaults to None.
+            executor (ConversableAgent, optional): The executor for the tools. Defaults to None.
+        """
         if isinstance(actions, Action):
             actions = [actions]
 
@@ -93,6 +120,17 @@ class ComposioToolset:
     def process_function_name_for_registration(
         self, input_string, max_allowed_length=64, num_hash_char=10
     ):
+        """
+        Process the function name for registration.
+
+        Args:
+            input_string (str): The input string to process.
+            max_allowed_length (int, optional): The maximum allowed length of the function name. Defaults to 64.
+            num_hash_char (int, optional): The number of hash characters to attach to the function name. Defaults to 10.
+
+        Returns:
+            str: The processed function name.
+        """
         hash_obj = hashlib.sha256(input_string.encode())
         hash_hex = hash_obj.hexdigest()
 
@@ -106,6 +144,14 @@ class ComposioToolset:
     def _register_schema_to_autogen(
         self, action_schema, caller: ConversableAgent, executor: ConversableAgent
     ):
+        """
+        Register a tool to the Autogen agent.
+
+        Args:
+            action_schema (dict[str, any]): The action schema.
+            caller (ConversableAgent): The caller for the tools.
+            executor (ConversableAgent): The executor for the tools.
+        """
         name = action_schema["name"]
         processed_name = self.process_function_name_for_registration(name)
         appName = action_schema["appName"]

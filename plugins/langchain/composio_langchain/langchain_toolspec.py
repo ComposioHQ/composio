@@ -16,6 +16,17 @@ from composio.sdk.shared_utils import (
 def ComposioTool(
     client: ComposioCore, action_schema: dict[str, any], entity_id: str = None
 ) -> StructuredTool:
+    """
+    Create a ComposioTool from a Composio action schema.
+
+    Args:
+        client (ComposioCore): The ComposioCore client.
+        action_schema (dict[str, any]): The action schema.
+        entity_id (str, optional): The ID of the entity for which to execute the action. Defaults to "default".
+
+    Returns:
+        StructuredTool: A StructuredTool instance.
+    """
     name = action_schema["name"]
     description = action_schema["description"]
     parameters = json_schema_to_model(action_schema["parameters"])
@@ -44,6 +55,15 @@ def ComposioTool(
 
 
 def create_client(api_key=os.environ.get("COMPOSIO_API_KEY", None)):
+    """
+    Create a ComposioCore client.
+
+    Args:
+        api_key (str, optional): The API key to use for the session. Defaults to the API key stored in the user's data.
+
+    Returns:
+        tuple: A tuple containing the ComposioCore client and the SDK.
+    """
     try:
         client = ComposioCore(framework=FrameworkEnum.LANGCHAIN, api_key=api_key)
         return client, client.sdk
@@ -61,6 +81,18 @@ def ComposioToolset(
     entity_id: str = "default",
     tags: List[Union[str, Tag]] = [],
 ) -> List[StructuredTool]:
+    """
+    Retrieves a list of tools from the Composio API.
+
+    Args:
+        apps (list[App], optional): A list of App enum instances to filter the tools by. If None, all apps are retrieved.
+        actions (list[Action], optional): A list of Action enum instances to filter the tools by. If None, all actions are retrieved.
+        entity_id (str, optional): The ID of the entity for which to retrieve the tools. Defaults to "default".
+        tags (list[Union[str, Tag]], optional): A list of tags to filter the tools by. If None, all tags are retrieved.
+
+    Returns:
+        list[StructuredTool]: A list of StructuredTool instances.
+    """
     if len(apps) > 0 and len(actions) > 0:
         raise ValueError(
             "You must provide either a list of tools or a list of actions, not both"
