@@ -17,9 +17,13 @@ submit_logs_dir = script_dir / Path("../../../examples/swe/submit_logs/")
 class HistoryProcessor:
     def __init__(self):
         self.history = defaultdict(list)
+        self.date_time_folder = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.base_dir = ""
+
+    def make_submission_dir(self):
         # make submit_path directory
         try:
-            date_time_folder = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            date_time_folder = self.date_time_folder
             base_dir = script_dir / Path(date_time_folder)
             if not os.path.exists(base_dir):
                 os.makedirs(base_dir)
@@ -36,6 +40,8 @@ class HistoryProcessor:
         return all_history[-n:]
 
     def save_history_to_file(self, workspace_id: str, instance_id: str):
+        # make the submission dir if it doesnt exist
+        self.make_submission_dir()
         # Define the file path using instance-id and ensure it's unique per workspace
         file_path = self.base_dir / Path(f"{workspace_id}_instance_{instance_id}.json")
         history_logs = self.history.get(workspace_id, [])
