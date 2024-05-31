@@ -1,2 +1,2 @@
-from .codequery import CodeQuery
+from .actions.codequery import CodeQuery
 from .tool import Greptile
