@@ -706,11 +706,12 @@ class Actions(Collection[ActionModel]):
             required_triggers = [
                 tag.name if isinstance(tag, Tag) else tag for tag in tags
             ]
-            items = [
-                item
-                for item in items
-                if any(tag in required_triggers for tag in item.tags)
-            ]
+            if (not len(items) < 15 and len(required_triggers) == 1 and required_triggers[0] == "important"):
+                items = [
+                    item
+                    for item in items
+                    if any(tag in required_triggers for tag in item.tags)
+                ]
 
         if len(local_apps) > 0 or len(local_actions) > 0:
             local_items = self.local_handler.get_list_of_action_schemas(
