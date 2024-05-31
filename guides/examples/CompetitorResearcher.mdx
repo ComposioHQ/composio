@@ -43,10 +43,6 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
         llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
 
         composio_crewai = ComposioToolSet([App.NOTION])
-
-        date = datetime.today().strftime('%Y-%m-%d')
-
-        timezone = datetime.now().astimezone().tzinfo
         ```
     </CodeGroup>
     </Step>
@@ -58,21 +54,13 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
             soup = BeautifulSoup(html, "html.parser")
             return soup.get_text()
 
-        def get_info(content):
-            # Implement your logic to extract and format information from the content
-            info = {
-                "Summary": "Detailed competitor analysis goes here",
-                "Key Points": "Key points extracted from the website content"
-            }
-            return info
-
         def scrape_website(url):
             content = []
             reqs = requests.get(url)
             content.append(remove_tags(reqs.content))
             cleaned_content = "\n".join(content)
-            competitor_info = get_info(cleaned_content)
-            return jsonify(competitor_info)        
+            competitor_info = cleaned_content
+            return jsonify(competitor_info)      
     ```
 
     </CodeGroup>
