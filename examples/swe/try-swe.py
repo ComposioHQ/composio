@@ -36,11 +36,13 @@ if __name__ == "__main__":
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
     with open(task_config_path, "r") as stream:
         task_data = yaml.safe_load(stream)
+    repo_name = task_data["repo_name"]
+    b = task_data["backstory"].format(repo_name=repo_name)
 
     agent_1 = Agent(
         role=base_role,
         goal=goal,
-        backstory=task_data["backstory"],
+        backstory=b,
         verbose=True,
         tools=tools,
         llm=llm,
