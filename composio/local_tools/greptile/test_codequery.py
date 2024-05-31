@@ -1,4 +1,5 @@
 import pytest
+
 from composio.local_tools.greptile.codequery import CodeQuery, CodeQueryRequest
 
 

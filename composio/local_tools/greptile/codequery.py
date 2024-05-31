@@ -1,9 +1,12 @@
-from pydantic import BaseModel, Field
+import json
 import os
 from typing import List
-from ..action import Action
+
 import requests
-import json
+from pydantic import BaseModel, Field
+
+from ..action import Action
+
 
 ## Greptile query tool. Given the github repo and the question, it will return the answer to the question.
 
