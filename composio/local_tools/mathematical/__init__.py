@@ -1,1 +1,1 @@
-from .mathematical import Mathematical
+from .tool import Mathematical

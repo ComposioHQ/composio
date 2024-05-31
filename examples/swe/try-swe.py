@@ -4,7 +4,6 @@ from crewai import Agent, Crew, Process, Task
 from crewai.task import TaskOutput
 from langchain_openai import ChatOpenAI
 
-
 CONFIG_FILE_PATH = "./task_config.yaml"
 
 # Path of the current script
