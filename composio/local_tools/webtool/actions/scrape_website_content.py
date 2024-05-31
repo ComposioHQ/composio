@@ -1,7 +1,7 @@
 import ssl
 from pydantic import BaseModel, Field
 from urllib.request import Request, urlopen
-from ...tool import Action
+from composio.tools.local.tool import Action
 
 class ScrapeWebsiteToolRequest(BaseModel):
     website_url: str = Field(..., description="Mandatory website url to read contents of the website from")

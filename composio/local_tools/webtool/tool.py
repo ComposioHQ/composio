@@ -1,7 +1,5 @@
-from composio.local_tools.tool import Tool
-from ..tool import Action
-from .actions.scrape_website_content import ScrapeWebsiteContent
-from .actions.scrape_website_element import ScrapeWebsiteElement
+from composio.tools.local import Tool, Action
+from .actions import ScrapeWebsiteContent, ScrapeWebsiteElement
 import typing as t
 
 class WebTool(Tool):

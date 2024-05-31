@@ -1,7 +1,7 @@
 import typing as t
 from pathlib import Path
 from pydantic import BaseModel, Field
-from ...tool import Action
+from composio.tools.local import Action
 
 class ReadFileRequest(BaseModel):
     """Read file request schema."""
@@ -15,7 +15,6 @@ class ReadFileRequest(BaseModel):
         description="File name to be saved.",
     )
 
-
 class ReadFileResponse(BaseModel):
     """Read file response schema."""
 
@@ -23,7 +22,6 @@ class ReadFileResponse(BaseModel):
         ...,
         description="Content read from the file.",
     )
-
 
 class ReadFile(Action):
     """Read file tool."""
@@ -36,7 +34,7 @@ class ReadFile(Action):
     _tool_name = "file"
 
 
-    def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
+    def execute(self, request: ReadFileRequest) -> ReadFileResponse:
         """
         Reads the contents of the file `file_name` and returns the contents
         if successful.
