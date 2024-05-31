@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 import typing as t
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 import docker

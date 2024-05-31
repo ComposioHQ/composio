@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -29,9 +29,8 @@ class BaseWorkspaceAction(Action, ABC):
     Base class for all Workspace actions
     """
 
+    _history_maintains = True
     _display_name = ""
-    _request_schema = BaseWorkspaceRequest
-    _response_schema = BaseWorkspaceResponse
     _tags = ["workspace"]
     _tool_name = "localworkspace"
     workspace_factory: Optional[WorkspaceManagerFactory] = None
@@ -60,7 +59,5 @@ class BaseWorkspaceAction(Action, ABC):
         self.history_processor = history_processor
 
     @abstractmethod
-    def execute(
-        self, request_data: BaseWorkspaceRequest, authorisation_data: dict
-    ) -> BaseWorkspaceResponse:
+    def execute(self, request_data, authorisation_data: dict):
         pass

@@ -25,7 +25,9 @@ class Calculator(Action):
     _tags = ["calculation"]
     _tool_name = "mathematical"
 
-    def execute(self, request_data: CalculatorRequest, authorisation_data: dict = {}):
+    def execute(
+        self, request_data: CalculatorRequest, authorisation_data: dict = {}
+    ) -> dict:
         operation_str = request_data.dict()["operation"]
         try:
             result = eval(operation_str)
