@@ -1,25 +1,13 @@
-from typing import List
+from typing import List, Optional
+
+from composio.local_tools.local_workspace.commons.history_processor import (
+    HistoryProcessor,
+)
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    WorkspaceManagerFactory,
+)
 
 from .action import Action
-
-
-action_require_workspace_and_history = {
-    "WorkspaceStatus": True,
-    "SetupWorkspace": True,
-    "SetupGithubRepo": True,
-    "CreateWorkspaceAction": True,
-    "FindFileCmd": True,
-    "CreateFileCmd": True,
-    "GoToLineNumInOpenFile": True,
-    "OpenFile": True,
-    "ScrollUp": True,
-    "ScrollDown": True,
-    "SearchFileCmd": True,
-    "SearchDirCmd": True,
-    "SetCursors": True,
-    "EditFile": True,
-    "RunCommandOnWorkspace": True,
-}
 
 
 class Tool:
@@ -30,12 +18,18 @@ class Tool:
     def actions(self) -> List[Action]:
         raise NotImplementedError("This method should be overridden by subclasses.")
 
+    def get_workspace_factory(self) -> Optional[WorkspaceManagerFactory]:
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def get_history_processor(self) -> Optional[HistoryProcessor]:
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
     def get_actions_dict(self) -> dict:
         action_objects_dict = {}
 
         for action_class in self.actions():
             action_instance = action_class()
-            if action_require_workspace_and_history.get(action_class.__name__):
+            if action_class._history_maintains:
                 action_instance.set_workspace_and_history(
                     self.get_workspace_factory(), self.get_history_processor()
                 )

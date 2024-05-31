@@ -3594,4 +3594,3 @@ class Trigger(tuple, Enum):
     YOUTUBE_NEW_YOUTUBE_CHANNEL_SUBSCRIPTION = ("youtube", "youtube_new_subscription_trigger")
     YOUTUBE_NEW_PLAYLIST_IN_YOUTUBE_CHANNEL = ("youtube", "youtube_new_playlist_trigger")
 
-

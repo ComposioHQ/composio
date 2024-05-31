@@ -2,92 +2,53 @@
 
 from pprint import pprint
 
-from composio.local_tools.local_workspace.cmd_manager.actions import (
+from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
+    GithubCloneCmd,
+    GithubCloneRequest,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.cmds import (
     CreateFileCmd,
     CreateFileRequest,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import (
     EditFile,
     EditFileRequest,
-    FindFileCmd,
-    FindFileRequest,
-    GoToLineNumInOpenFile,
-    GoToRequest,
-    OpenCmdRequest,
-    OpenFile,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.run_cmd import (
     RunCommandOnWorkspace,
     RunCommandOnWorkspaceRequest,
-    ScrollDown,
-    ScrollDownRequest,
-    ScrollUp,
-    ScrollUpRequest,
-    SearchDirCmd,
-    SearchDirRequest,
-    SearchFileCmd,
-    SearchFileRequest,
-    SetCursors,
-    SetCursorsRequest,
 )
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
-    history_recorder,
 )
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    KEY_CONTAINER_NAME,
-    KEY_IMAGE_NAME,
-    KEY_PARENT_PIDS,
-    KEY_WORKSPACE_MANAGER,
     LocalDockerArgumentsModel,
     WorkspaceManagerFactory,
 )
-from composio.local_tools.local_workspace.history_keeper.actions import (
-    GetWorkspaceHistory,
-    GetWorkspaceHistoryRequest,
-)
-from composio.local_tools.local_workspace.workspace.actions import (
-    CreateWorkspaceAction,
-    CreateWorkspaceRequest,
-    SetupGithubRepo,
-    SetupGithubRepoRequest,
-    SetupWorkspace,
-    WorkspaceSetupRequest,
-    WorkspaceStatus,
-    WorkspaceStatusRequest,
-)
-
-
-#
-# import autopep8
-# import pylint.lint
-
-
-def format_and_lint_code(source_code):
-    # Format code using autopep8
-    formatted_code = autopep8.fix_code(source_code)
-
-    # Save the formatted code to a temporary file (optional
 
 
 def check_simple_implementation():
     args = LocalDockerArgumentsModel(
         image_name="sweagent/swe-agent:latest",
         verbose=True,
-        install_environment=True,
     )
 
     w = WorkspaceManagerFactory()
     h = HistoryProcessor()
     workspace_id = w.get_workspace_manager(args)
 
-    # setup environment + copy commands + source scripts
-    setup_docker_args = WorkspaceSetupRequest(workspace_id=workspace_id)
-    setup_manager = SetupWorkspace()
-    setup_manager.set_workspace_and_history(w, h)
-    setup_manager.execute(setup_docker_args)
-
-    # copy github repo
-    copy_repo_args = SetupGithubRepoRequest(workspace_id=workspace_id)
-    git_setup = SetupGithubRepo()
-    git_setup.set_workspace_and_history(w, h)
-    git_setup.execute(copy_repo_args)
+    # clone git repo
+    git_clone = GithubCloneCmd()
+    git_clone.set_workspace_and_history(w, h)
+    git_clone_output = git_clone.execute(
+        GithubCloneRequest(
+            workspace_id=workspace_id,
+            github_token="",
+            repo_name="https://github.com/SWE-bench/SWE-bench.git",
+        ),
+        authorisation_data={},
+    )
+    print(git_clone_output)
 
     # create file
     create_file_cmd = CreateFileCmd()

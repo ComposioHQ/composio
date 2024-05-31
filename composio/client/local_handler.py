@@ -15,6 +15,8 @@ from composio.local_tools.local_workspace.workspace.workspace_tool import LocalW
 from composio.local_tools.ragtool import RagToolActions
 from composio.local_tools import Mathematical
 from composio.local_tools.webtool import WebTool
+from composio.local_tools.greptile.tool import Greptile
+
 
 class LocalToolHandler:
     def __init__(self):
@@ -43,6 +45,7 @@ class LocalToolHandler:
             h_keeper_tool,
             RagToolActions(),
             WebTool(),
+            Greptile(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
