@@ -9,6 +9,8 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     EditFileRequest,
     RunCommandOnWorkspace,
     RunCommandOnWorkspaceRequest,
+    GithubCloneCmd,
+    GithubCloneRequest
 )
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
@@ -28,6 +30,9 @@ def check_simple_implementation():
     w = WorkspaceManagerFactory()
     h = HistoryProcessor()
     workspace_id = w.get_workspace_manager(args)
+
+    # clone git repo
+    git_clone = GithubCloneRequest()
 
     # create file
     create_file_cmd = CreateFileCmd()

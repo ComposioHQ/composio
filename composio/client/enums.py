@@ -2436,6 +2436,7 @@ class Action(tuple, Enum):
     GETCURRENTDIRCMD = ("cmdmanagertool", "cmdmanagertool_getcurrentdircmd", True, True)
     GITHUBCLONECMD = ("cmdmanagertool", "cmdmanagertool_githubclonecmd", True, True)
     GETWORKSPACEHISTORY = ("historykeeper", "historykeeper_getworkspacehistory", True, True)
+    GithubCloneCmd = ("cmdmanagertool", "cmdmanagertool_githubclonecmd", True, True)
 
 
 
