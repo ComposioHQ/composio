@@ -84,3 +84,4 @@ class AgentConfig(FrozenSerializable):
     _commands: list[Command] = field(default_factory=list)
     _subroutines: dict[str, Subroutine] = field(default_factory=dict)
     subroutine_types: list[Subroutine] = field(default_factory=list)
+    multi_line_command_endings: dict[str, str] = field(default_factory=dict)
