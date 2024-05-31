@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, TypeVar, Type
+from typing import Optional, Type, TypeVar
 
 from pydantic import BaseModel, Field
 
