@@ -1,0 +1,3 @@
+[submodule "composio"]
+	path = composio
+	url = git@github.com:samparkai/composio.git
