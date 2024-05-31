@@ -8,6 +8,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     communicate,
 )
+from composio.local_tools.local_workspace.commons.utils import process_output
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_SEARCH
@@ -36,8 +37,6 @@ class SearchDirCmd(BaseAction):
     _display_name = "Search Directory Action"
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
-    script_file = SCRIPT_SEARCH
-    command = "search_dir"
 
     @history_recorder()
     def execute(
@@ -48,14 +47,16 @@ class SearchDirCmd(BaseAction):
                 "dir can not be null. Give a directory-name in which to search"
             )
         self._setup(request_data)
+        self.script_file = SCRIPT_SEARCH
+        self.command = "search_dir"
         if self.container_process is None:
             raise ValueError("Container process is not set")
-        command = f"{self.command} '{request_data.search_term}' {request_data.directory}"  # Command to scroll down 100 lines
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{self.command} '{request_data.search_term}' {request_data.directory}"  # Command to scroll down 100 lines
+        print(f"Running command: {full_command}")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return SearchDirResponse(output=output, return_code=return_code)
 
 
@@ -78,8 +79,6 @@ class SearchFileCmd(BaseAction):
     _display_name = "Search file Action"
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
-    script_file = SCRIPT_SEARCH
-    command = "search_file"
 
     @history_recorder()
     def execute(
@@ -90,16 +89,18 @@ class SearchFileCmd(BaseAction):
                 "file-name can not be null. Give a file-name in which to search"
             )
         self._setup(request_data)
+        self.script_file = SCRIPT_SEARCH
+        self.command = "search_file"
         if self.container_process is None:
             raise ValueError("Container process is not set")
-        command = (
+        full_command = (
             f"{self.command} '{request_data.search_term}' {request_data.file_name}"
         )
-        full_command = f"source {self.script_file} && {command}"
+        print(f"Running command: {full_command}")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return SearchFileResponse(output=output, return_code=return_code)
 
 
@@ -129,8 +130,6 @@ class FindFileCmd(BaseAction):
     _display_name = "Find File Action"
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
-    script_file = SCRIPT_SEARCH
-    command = "find_file"
 
     @history_recorder()
     def execute(
@@ -143,14 +142,16 @@ class FindFileCmd(BaseAction):
                 "directory in which file-name needs to be searched cant be empty. Give a directory name"
             )
         self._setup(request_data)
-        command = f"{self.command} {request_data.file_name} {request_data.dir}"
-        full_command = f"source {self.script_file} && {command}"
+        self.script_file = SCRIPT_SEARCH
+        self.command = "find_file"
+        full_command = f"{self.command} {request_data.file_name} {request_data.dir}"
+        print(f"Running command: {full_command}")
         if self.container_process is None:
             raise ValueError("Container process is not set")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return FindFileResponse(output=output, return_code=return_code)
 
 
@@ -179,10 +180,11 @@ class GetCurrentDirCmd(BaseAction):
     ) -> GetCurrentDirResponse:
         self._setup(request_data)
         full_command = f"{self.command}"
+        print(f"Running command: {full_command}")
         if self.container_process is None:
             raise ValueError("Container process is not set")
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return GetCurrentDirResponse(output=output, return_code=return_code)

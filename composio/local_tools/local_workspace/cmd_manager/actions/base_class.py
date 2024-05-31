@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -23,6 +25,9 @@ from composio.local_tools.local_workspace.commons.utils import (
 
 
 logger = get_logger()
+script_path = Path(__file__).resolve()
+script_dir = script_path.parent
+CONFIG_FILE_PATH = script_dir / Path("../../config/default.yaml")
 
 
 class BaseRequest(BaseModel):
@@ -50,19 +55,27 @@ class BaseAction(Action, ABC):
     _tool_name = "cmdmanagertool"
     script_file = ""
     command = ""
-    workspace_factory: WorkspaceManagerFactory = None
-    history_processor: HistoryProcessor = None
+    workspace_factory: Optional[WorkspaceManagerFactory] = None
+    history_processor: Optional[HistoryProcessor] = None
 
     def __init__(self):
         super().__init__()
+        self.name = "agent"
+        self.logger = logger
+        self.config_file_path = Path(CONFIG_FILE_PATH)
         self.args = None
         self.workspace_id = ""
+        self.command = ""
         self.image_name = ""
         self.container_name = ""
         self.container_process = None
         self.parent_pids = []
         self.container_obj = None
         self.logger = logger
+        self.return_code = None
+        self.config = None
+        self.command_patterns = None
+        self.subroutine_patterns = None
 
     def set_workspace_and_history(
         self,
@@ -75,6 +88,9 @@ class BaseAction(Action, ABC):
     def _setup(self, args: BaseRequest):
         self.args = args
         self.workspace_id = args.workspace_id
+        if self.workspace_factory is None:
+            logger.error("workspace_factory is not set")
+            raise ValueError("workspace_factory is not set")
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
         )
@@ -96,12 +112,6 @@ class BaseAction(Action, ABC):
         if file_name is None or file_name.strip() == "":
             return "Exception: file-name can not be empty", 1
         return None, 0
-
-    def process_output(self, output, return_code):
-        if return_code is None:
-            return_code = 1
-            output = "Exception: " + output
-        return output, return_code
 
     @abstractmethod
     def execute(

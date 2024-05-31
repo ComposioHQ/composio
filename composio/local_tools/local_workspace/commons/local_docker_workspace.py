@@ -3,6 +3,7 @@ import hashlib
 import os
 import subprocess
 import time
+import typing as t
 from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import uuid4
 
@@ -14,6 +15,7 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.utils import (
     communicate,
     get_container,
+    process_output,
     read_with_timeout,
 )
 
@@ -52,11 +54,11 @@ class LocalDockerWorkspace(gym.Env):
         # self.persistent = args.container_name is not None
         self.returncode = None
         self.container_name: str = ""
-        self.container: subprocess.Popen = None
+        self.container: t.Optional[subprocess.Popen] = None
         self.container_obj = None
         self.persistent = False
         self.container_pid = None
-        self.parent_pids: Set[str] = []
+        self.parent_pids: t.Set[str] = set()
         if not self.args.verbose:
             self.logger.disabled = True
 
@@ -73,6 +75,8 @@ class LocalDockerWorkspace(gym.Env):
     def _reset_container(self) -> None:
         if hasattr(self, "container"):
             try:
+                if self.container is None:
+                    raise ValueError("Container is None")
                 self.container.terminate()
             except KeyboardInterrupt:
                 logger.error("handling keyboard interrupt")
@@ -102,19 +106,26 @@ class LocalDockerWorkspace(gym.Env):
             self.container_name, self.image_name, persistent=self.persistent
         )
         self.container_pid = self.container.pid
+
+        client = None
+
         try:
             client = docker.from_env()
+            self.container_obj = client.containers.get(self.container_name)
         except docker.errors.DockerException as e:
             if "Error while fetching server API version" in str(e):
                 raise RuntimeError(
                     "Docker is not running. Please start Docker and try again."
                 ) from e
-        try:
-            self.container_obj = client.containers.get(self.container_name)
+
         except docker.errors.NotFound:
             logger.debug("Couldn't find container. Let's wait and retry.")
             time.sleep(3)
-            self.container_obj = client.containers.get(self.container_name)
+            if client is not None:
+                self.container_obj = client.containers.get(self.container_name)
+            else:
+                raise ValueError("Client is None")
+
         self.logger.info("🌱 Environment Initialized")
 
     def _init_scripts(self):
@@ -147,11 +158,14 @@ class LocalDockerWorkspace(gym.Env):
         """
         Wrapper for communicate function that raises error if return code is non-zero
         """
+        if self.container is None:
+            raise ValueError("Container is None")
+
         logs, self.returncode = communicate(
             self.container,
             self.container_obj,
             input,
-            self.parent_pids,
+            list(self.parent_pids),
             timeout_duration=timeout_duration,
         )
         if self.returncode != 0:
@@ -161,13 +175,16 @@ class LocalDockerWorkspace(gym.Env):
         return logs
 
     def communicate(self, input: str, timeout_duration=25) -> Tuple[str, int]:
+        if self.container is None:
+            raise ValueError("Container is None")
         output, return_code = communicate(
             self.container,
             self.container_obj,
             input,
-            self.parent_pids,
+            list(self.parent_pids),
             timeout_duration,
         )
+        output, return_code = process_output(output, return_code)
         return output, return_code
 
     def interrupt(self):
@@ -175,6 +192,8 @@ class LocalDockerWorkspace(gym.Env):
         Send interrupt signal to container and exhaust stdout buffer with a communicate call
         """
         pids = self.get_pids()
+        if self.container_obj is None:
+            raise ValueError("Container is None")
         for pid, cmd in pids:
             if pid not in self.parent_pids and cmd != "ps":
                 self.container_obj.exec_run(f"kill -9 {pid}")
@@ -198,6 +217,9 @@ class LocalDockerWorkspace(gym.Env):
         """
         Gets list of processes running inside docker container
         """
+        if self.container_obj is None:
+            raise ValueError("Container is None")
+
         pids = (
             self.container_obj.exec_run("ps -eo pid,comm --no-headers")
             .output.decode()
@@ -214,8 +236,13 @@ class LocalDockerWorkspace(gym.Env):
         """
         self.logger.info("Beginning environment shutdown...")
         try:
+            if self.container is None:
+                raise ValueError("Container is None")
             communicate(
-                self.container, self.container_obj, "exit", parent_pids=self.parent_pids
+                self.container,
+                self.container_obj,
+                "exit",
+                parent_pids=list(self.parent_pids),
             )
         except KeyboardInterrupt:
             logger.error("handling keyboard interrupt")
@@ -280,13 +307,18 @@ class WorkspaceManagerFactory:
 def get_workspace_meta_from_manager(
     workspace_factory: WorkspaceManagerFactory, workspace_id: str
 ) -> dict:
-    return workspace_factory.get_registered_manager(workspace_id)
+    workspace_meta = workspace_factory.get_registered_manager(workspace_id)
+    if workspace_meta is None:
+        raise ValueError(f"Workspace manager not found: {workspace_id}")
+    return workspace_meta
 
 
 def get_container_name_from_workspace_id(
     workspace_factory: WorkspaceManagerFactory, workspace_id: str
 ) -> str:
     workspace_meta = workspace_factory.get_registered_manager(workspace_id)
+    if workspace_meta is None:
+        raise ValueError(f"Workspace manager not found: {workspace_id}")
     return workspace_meta[KEY_CONTAINER_NAME]
 
 

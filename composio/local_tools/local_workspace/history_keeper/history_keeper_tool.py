@@ -1,3 +1,6 @@
+from typing import Optional
+
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
@@ -8,8 +11,7 @@ from composio.local_tools.local_workspace.history_keeper.actions.get_workspace_h
     GetWorkspaceHistory,
 )
 from composio.local_tools.tool import Tool
-from typing import Optional
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
 
 logger = get_logger()
 

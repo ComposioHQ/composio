@@ -7,6 +7,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     communicate,
 )
+from composio.local_tools.local_workspace.commons.utils import process_output
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_CURSOR_DEFAULT
@@ -41,22 +42,22 @@ class GoToLineNumInOpenFile(BaseAction):
     _display_name = "Goto Line Action"
     _request_schema = GoToRequest
     _response_schema = GoToResponse
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "goto"
 
     @history_recorder()
     def execute(
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> GoToResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "goto"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         command = f"{self.command} {str(request_data.line_number)}"
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return GoToResponse(output=output, return_code=return_code)
 
 
@@ -85,14 +86,14 @@ class CreateFileCmd(BaseAction):
     _display_name = "Create and open a new file"
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "create"
 
     @history_recorder()
     def execute(
         self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> CreateFileResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "create"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         file_name = request_data.file_name
@@ -100,11 +101,12 @@ class CreateFileCmd(BaseAction):
         if output is not None:
             return CreateFileResponse(output=output, return_code=return_code)
         command = f"{self.command} {str(request_data.file_name)}"
-        full_command = f"source {self.script_file} && {command}"
+        print(f"Running command: {command}")
+        full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return CreateFileResponse(output=output, return_code=return_code)
 
 
@@ -133,22 +135,22 @@ class OpenFile(BaseAction):
     _display_name = "Open File on workspace"
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
-    script_file = SCRIPT_CURSOR_DEFAULT
-    command = "open"
 
     @history_recorder()
     def execute(
         self, request_data: OpenCmdRequest, authorisation_data: dict
     ) -> OpenCmdResponse:
         self._setup(request_data)
+        self.script_file = SCRIPT_CURSOR_DEFAULT
+        self.command = "open"
         if self.container_process is None:
             raise ValueError("Container process is not set")
         command = f"{self.command} {request_data.file_name}"
         if request_data.line_number != 0:
             command += f"{request_data.line_number}"
-        full_command = f"source {self.script_file} && {command}"
+        full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return OpenCmdResponse(output=output, return_code=return_code)

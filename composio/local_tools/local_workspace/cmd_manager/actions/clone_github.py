@@ -8,7 +8,10 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     communicate,
 )
-from composio.local_tools.local_workspace.commons.utils import communicate_with_handling
+from composio.local_tools.local_workspace.commons.utils import (
+    communicate_with_handling,
+    process_output,
+)
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_SEARCH
@@ -43,7 +46,6 @@ class GithubCloneCmd(BaseAction):
     def execute(
         self, request_data: GithubCloneRequest, authorisation_data: dict
     ) -> GithubCloneResponse:
-
         if not request_data.repo_name or not request_data.repo_name.strip():
             raise ValueError(
                 "repo_name can not be null. Give a directory-name in which to search"
@@ -64,5 +66,5 @@ class GithubCloneCmd(BaseAction):
             self.parent_pids,
             timeout_duration=LONG_TIMEOUT,
         )
-        output, return_code = self.process_output(output, return_code)
+        output, return_code = process_output(output, return_code)
         return GithubCloneResponse(output=output, return_code=return_code)
