@@ -154,7 +154,7 @@ to perform investment research, analyze stocks, and offer recommendations based 
 
     # Define tools for the agents
     composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(actions=[Action.SERPAPI_SEARCH])
+    tools = composiotoolset.get_actions(actions=[Action.SERPAPI_SEARCH])
     
     # Define the Investment Researcher agent
     researcher = Agent(
