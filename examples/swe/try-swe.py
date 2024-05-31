@@ -1,8 +1,5 @@
-from functools import cache
-import os
 from pathlib import Path
-import yaml
-from composio_crewai import Action, App, ComposioToolSet
+from composio_crewai import App, ComposioToolSet, Action
 from crewai import Agent, Crew, Process, Task
 from crewai.task import TaskOutput
 from langchain_openai import ChatOpenAI
@@ -27,7 +24,7 @@ base_role = (
 
 goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
 
-tools = composio_toolset.get_tools([App.LOCALWORKSPACE, App.CMDMANAGERTOOL])
+tools = composio_toolset.get_actions(actions=[Action.GREPTILECODEQUERY])
 
 
 def record_history(output: TaskOutput):
@@ -35,19 +32,11 @@ def record_history(output: TaskOutput):
 
 
 if __name__ == "__main__":
-    # load config from YAML file
-    task_config_path = script_dir / Path(CONFIG_FILE_PATH)
-    with open(task_config_path, "r") as stream:
-        task_data = yaml.safe_load(stream)
-    git_access_token = os.environ.get("GITHUB_ACCESS_TOKEN", "")
-    repo_name = task_data["repo_name"]
-    b = task_data["backstory"].format(repo_name=repo_name, git_access_token=git_access_token) \
-        if git_access_token else task_data["backstory"].format(repo_name=repo_name)
 
     agent_1 = Agent(
         role=base_role,
         goal=goal,
-        backstory=b,
+        backstory="You are the best programmer. You think carefully and step by step take action.",
         verbose=True,
         tools=tools,
         llm=llm,
@@ -56,9 +45,9 @@ if __name__ == "__main__":
     )
 
     task = Task(
-        description=task_data["issue_description"],
+        description="Can you tell me in which file enums are stored? for repo samparkai/composio. ",
         agent=agent_1,
-        expected_output="produce a patch that will fix the given issue",
+        expected_output="Name of the file",
     )
 
     my_crew = Crew(
