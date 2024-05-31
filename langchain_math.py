@@ -1,17 +1,18 @@
 # Initialise imports
-from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain import hub
+from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
+
 # Import from composio_langchain
-from plugins.langchain.composio_langchain import ComposioToolSet, Action, App
+from plugins.langchain.composio_langchain import Action, App, ComposioToolSet
 
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
-# Get All the tools 
-tools = ComposioToolSet().get_tools([App.MATHEMATICAL]) 
+# Get All the tools
+tools = ComposioToolSet().get_tools([App.MATHEMATICAL])
 print(tools)
 
 
