@@ -728,7 +728,15 @@ class Actions(Collection[ActionModel]):
         entity_id: str,
         connected_account: t.Optional[str] = None,
     ) -> t.Dict:
-        """Execute an action."""
+        """
+        Execute an action.
+
+        :param action: Action to execute.
+        :param params: Parameters to pass to the action.
+        :param entity_id: Entity ID.
+        :param connected_account: Connected account ID.
+        :return: Response from the action.
+        """
         if action.is_local:
             return self.local_handler.execute_local_action(
                 action=action,
@@ -1011,7 +1019,16 @@ class Entity:
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
     ) -> ConnectionRequestModel:
-        """Initiate integration connection."""
+        """
+        Initiate integration connection.
+
+        :param app_name: App name
+        :param auth_mode: Auth mode
+        :param auth_config: Auth config
+        :param redirect_url: Redirect URL
+        :param integration: Integration
+        :return: Connection request model
+        """
         if isinstance(app_name, App):
             app_name = app_name.value
 
