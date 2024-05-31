@@ -20,7 +20,7 @@ retrieves the latest news articles and generates summaries using Langchain and C
 
         # Connect your serpapi account so agents can use it.
 
-        composio-cli add serpapi
+        composio add serpapi
         ```
     </CodeGroup>
     </Step>
@@ -54,8 +54,9 @@ retrieves the latest news articles and generates summaries using Langchain and C
         llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta")
         chat_model = ChatHuggingFace(llm=llm)
 
-        tools = ComposioToolSet(apps=[App.SERPAPI])
-        ```
+        composiotoolset = ComposioToolSet()
+        tools = composiotoolset.get_tools(apps=[App.SERPAPI])        
+    ```
     </CodeGroup>
     </Step>
 
@@ -123,13 +124,13 @@ retrieves the latest news articles and generates summaries using Langchain and C
     from langchain.agents.output_parsers import ReActJsonSingleInputOutputParser
     from langchain import hub
     from langchain.tools.render import render_text_description
-    from composio_langchain import ComposioToolset, Action, App
+    from composio_langchain import ComposioToolSet, Action, App
 
     # Initialize the language model and toolset
     llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta")
     chat_model = ChatHuggingFace(llm=llm)
-    tools = ComposioToolset(apps=[App.SERPAPI])
-
+    composiotoolset = ComposioToolSet()
+    tools = composiotoolset.get_tools(apps=[App.SERPAPI])
     # Setup the ReAct style prompt template
     prompt = hub.pull("hwchase17/react-json")
     prompt = prompt.partial(

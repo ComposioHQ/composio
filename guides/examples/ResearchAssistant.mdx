@@ -18,7 +18,7 @@ Google Gemma API to perform web searches and compile research reports."
 
         # Connect your serpapi account so agents can use it.
 
-        composio-cli add serpapi
+        composio add serpapi
         ```
 
     </CodeGroup>
@@ -44,7 +44,8 @@ Google Gemma API to perform web searches and compile research reports."
         model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
         )
         # Composio tool for serpapi
-        tools = ComposioToolSet([App.SERPAPI])
+        composiotoolset = ComposioToolSet()
+        tools = composiotoolset.get_tools(actions=[Action.SERPAPI_SEARCH])
         ```
 
     </CodeGroup>
@@ -107,8 +108,9 @@ Below is the complete code snippet combining all the steps:
         )
 
         # Composio tool for SerpAPI
-        tools = ComposioToolSet([App.SERPAPI])
-
+        composiotoolset = ComposioToolSet()
+        tools = composiotoolset.get_tools(actions=[Action.SERPAPI_SEARCH])
+        
         # Define the Agent
         researcher = Agent(
             role='Researcher',
