@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Any, Type, List
 from ..action import Action
 from composio.local_tools.tool import Tool
+from ..tool import Tool
 
 
 class RagToolQueryRequest(BaseModel):
