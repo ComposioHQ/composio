@@ -1,26 +1,26 @@
 import typing as t
-from composio.tools.local import Tool
+from typing import Optional
+from composio.core.local import Tool, Action
 
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons import (
-    HistoryProcessor,
     WorkspaceManagerFactory,
+    HistoryProcessor
 )
-from composio.local_tools.local_workspace.workspace.actions import (
-    WorkspaceStatusAction,
-    CreateWorkspaceAction,
-)
+from .actions import GetWorkspaceHistory
 
-class LocalWorkspace(Tool):
+logger = get_logger()
+
+class HistoryKeeper(Tool):
     """
-    Use this action to create a workspace and get workspace ID in return.
-    this is a tool for creating local workspace
+    local workspace tool which can maintain history across commands.
     """
 
-    workspace_factory: t.Optional[WorkspaceManagerFactory] = None
-    history_processor: t.Optional[HistoryProcessor] = None
+    workspace_factory: Optional[WorkspaceManagerFactory] = None
+    history_processor: Optional[HistoryProcessor] = None
 
     def actions(self) -> list[t.Type[Action]]:
-        return [WorkspaceStatusAction, CreateWorkspaceAction]
+        return [GetWorkspaceHistory]
 
     def triggers(self) -> list:
         return []
