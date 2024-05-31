@@ -1,17 +1,25 @@
 # flake8: noqa
 
 from pprint import pprint
-
-from composio.local_tools.local_workspace.cmd_manager.actions import (
-    CreateFileCmd,
-    CreateFileRequest,
-    EditFile,
-    EditFileRequest,
+from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
     GithubCloneCmd,
     GithubCloneRequest,
+)
+
+from composio.local_tools.local_workspace.cmd_manager.actions.cmds import (
+    CreateFileCmd,
+    CreateFileRequest,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import (
+    EditFile,
+    EditFileRequest,
+)
+
+from composio.local_tools.local_workspace.cmd_manager.actions.run_cmd import (
     RunCommandOnWorkspace,
     RunCommandOnWorkspaceRequest,
 )
+
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
@@ -32,7 +40,17 @@ def check_simple_implementation():
     workspace_id = w.get_workspace_manager(args)
 
     # clone git repo
-    git_clone = GithubCloneRequest()
+    git_clone = GithubCloneCmd()
+    git_clone.set_workspace_and_history(w, h)
+    git_clone_output = git_clone.execute(
+        GithubCloneRequest(
+            workspace_id=workspace_id,
+            github_token="",
+            repo_name="https://github.com/SWE-bench/SWE-bench.git",
+        ),
+        authorisation_data={},
+    )
+    print(git_clone_output)
 
     # create file
     create_file_cmd = CreateFileCmd()
