@@ -41,6 +41,8 @@ class LocalToolHandler:
             workspace_tool,
             cmd_manager_tool,
             h_keeper_tool,
+            RagToolActions(),
+            WebTool(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
