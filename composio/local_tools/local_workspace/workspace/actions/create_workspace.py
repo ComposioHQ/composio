@@ -40,8 +40,8 @@ script_dir = script_path.parent
 class CreateWorkspaceRequest(BaseWorkspaceRequest):
     image_name: str = Field(
         default="sweagent/swe-agent:latest",
-        description="""The workspace is a docker container. 
-        Use docker image sweagent/swe-agent:latest it works for most use cases. 
+        description="""The workspace is a docker container.
+        Use docker image sweagent/swe-agent:latest it works for most use cases.
         Only use a different docker image if you have a good reason.
         Ex. image names ubuntu:22.04
         """,
