@@ -1,3 +1,4 @@
+from functools import cache
 import os
 from pathlib import Path
 
@@ -24,31 +25,27 @@ base_role = (
     "You are the best programmer. You think carefully and step by step take action."
 )
 
-goal = "Help fix the given issue / bug in the code."
+goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
 
 tools = composio_toolset.get_tools(
     [App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER]
 )
 
 if __name__ == "__main__":
-    assert os.environ.get("GITHUB_ACCESS_TOKEN") is not None
     # load config from YAML file
     task_config_path = script_dir / Path(CONFIG_FILE_PATH)
     with open(task_config_path, "r") as stream:
         task_data = yaml.safe_load(stream)
-    print("Task data : ", task_data)
-
-    print("Tools: ", tools)
 
     agent_1 = Agent(
         role=base_role,
-        goal=task_data["backstory"],
-        backstory=goal,
+        goal=goal,
+        backstory=task_data["backstory"],
         verbose=True,
         tools=tools,
         llm=llm,
         memory=True,
-        cachetools=False,
+        cache=False,
     )
 
     task = Task(

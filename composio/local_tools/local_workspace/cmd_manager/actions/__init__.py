@@ -12,9 +12,9 @@ from .scroll_cmds import ScrollDown, ScrollDownRequest, ScrollUp, ScrollUpReques
 from .search_cmds import (
     FindFileCmd,
     FindFileRequest,
+    GetCurrentDirCmd,
     SearchDirCmd,
     SearchDirRequest,
     SearchFileCmd,
     SearchFileRequest,
-    GetCurrentDirCmd,
 )
