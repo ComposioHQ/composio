@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from ..action import Action
+from ...tool import Action
 
 
 class CalculatorRequest(BaseModel):
