@@ -38,6 +38,7 @@ class GetWorkspaceHistory(Action):
             - output from last n commands
     """
 
+    _history_maintains = True
     _display_name = "Get workspace history"
     _request_schema = GetWorkspaceHistoryRequest
     _response_schema = GetWorkspaceHistoryRequest
@@ -57,11 +58,13 @@ class GetWorkspaceHistory(Action):
 
     def execute(
         self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict = {}
-    ):
+    ) -> dict:
         if self.history_processor is None:
             logger.error("History processor is not set")
             raise ValueError("History processor is not set")
 
-        return self.history_processor.get_history(
-            workspace_id=request_data.workspace_id, n=self._history_len
-        )
+        return {
+            "workspace_history": self.history_processor.get_history(
+                workspace_id=request_data.workspace_id, n=self._history_len
+            )
+        }

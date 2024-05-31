@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from composio.local_tools.action import Action
 from composio.local_tools.local_workspace.commons.command_runner_model import (
     AgentConfig,
 )
