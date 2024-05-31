@@ -12,8 +12,10 @@ from composio.local_tools.local_workspace.history_keeper.history_keeper_tool imp
 )
 from composio.local_tools.local_workspace.workspace.workspace_tool import LocalWorkspace
 
-from ..local_tools import Mathematical
-from ..local_tools.greptile.tool import Greptile
+from composio.local_tools.ragtool import RagToolActions
+from composio.local_tools import Mathematical
+from composio.local_tools.webtool import WebTool
+from composio.local_tools.greptile.tool import Greptile
 
 
 class LocalToolHandler:
@@ -41,6 +43,8 @@ class LocalToolHandler:
             workspace_tool,
             cmd_manager_tool,
             h_keeper_tool,
+            RagToolActions(),
+            WebTool(),
             Greptile(),
         ]
 
