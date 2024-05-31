@@ -49,6 +49,7 @@ class ComposioToolSet(BaseComposioToolSet):
         caller: t.Optional[ConversableAgent] = None,
         executor: t.Optional[ConversableAgent] = None,
         tags: t.Optional[t.Sequence[Tag]] = None,
+        entity_id: t.Optional[str] = None,
     ) -> None:
         """
         Register tools to the proxy agents.
@@ -57,6 +58,7 @@ class ComposioToolSet(BaseComposioToolSet):
         :param caller: Caller agent.
         :param executor: Executor agent.
         :param tags: Filter by the list of given Tags.
+        :param entity_id: Entity ID to use for executing function calls.
         """
         if isinstance(tools, App):
             tools = [tools]
@@ -79,6 +81,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 ),
                 caller=caller,
                 executor=executor,
+                entity_id=entity_id or self.entity_id,
             )
 
     def register_actions(
@@ -86,6 +89,7 @@ class ComposioToolSet(BaseComposioToolSet):
         actions: t.Sequence[Action],
         caller: t.Optional[ConversableAgent] = None,
         executor: t.Optional[ConversableAgent] = None,
+        entity_id: t.Optional[str] = None,
     ):
         """
         Register tools to the proxy agents.
@@ -93,6 +97,7 @@ class ComposioToolSet(BaseComposioToolSet):
         :param actions: List of tools to register.
         :param caller: Caller agent.
         :param executor: Executor agent.
+        :param entity_id: Entity ID to use for executing function calls.
         """
 
         caller = caller or self.caller
@@ -113,6 +118,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 ),
                 caller=caller,
                 executor=executor,
+                entity_id=entity_id or self.entity_id,
             )
 
     def _process_function_name_for_registration(
@@ -134,7 +140,9 @@ class ComposioToolSet(BaseComposioToolSet):
         schema: t.Dict,
         caller: ConversableAgent,
         executor: ConversableAgent,
-    ):
+        entity_id: t.Optional[str] = None,
+    ) -> None:
+        """Register action schema to autogen registry."""
         name = schema["name"]
         appName = schema["appName"]
         description = schema["description"]
@@ -147,7 +155,7 @@ class ComposioToolSet(BaseComposioToolSet):
                     name=name,
                 ),
                 params=kwargs,
-                entity_id=self.entity_id,
+                entity_id=entity_id or self.entity_id,
             )
 
         function = types.FunctionType(
