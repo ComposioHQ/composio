@@ -142,7 +142,15 @@ class ComposioToolSet(BaseComposioToolSet):
         executor: ConversableAgent,
         entity_id: t.Optional[str] = None,
     ) -> None:
-        """Register action schema to autogen registry."""
+        """
+        Register a schema to the Autogen registry.
+
+        Args:
+            schema (dict[str, any]): The action schema.
+            caller (ConversableAgent): The caller for the tools.
+            executor (ConversableAgent): The executor for the tools.
+            entity_id (str, optional): The ID of the entity for which to execute the action. Defaults to "default".
+        """
         name = schema["name"]
         appName = schema["appName"]
         description = schema["description"]
