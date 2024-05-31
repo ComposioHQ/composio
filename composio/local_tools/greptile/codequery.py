@@ -64,7 +64,6 @@ class CodeQuery(Action):
     def execute(
         self, request_data: CodeQueryRequest, authorisation_data: dict = {}
     ) -> dict:
-
         token = os.getenv("GREPTILE_TOKEN")
         if token is None:
             logger.error("GREPTILE_TOKEN is not set")
