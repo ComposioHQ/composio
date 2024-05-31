@@ -2,6 +2,7 @@ from datasets import load_dataset
 
 '''
 huggingface dataset download :
+Its a swe-bench lite dataset, description can be found here
 - dataset link: https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite
 '''
 
