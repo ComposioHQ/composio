@@ -96,7 +96,7 @@ index 9a36573..94dfd1b 100644
  from composio.local_tools.webtool import WebTool
  from composio.local_tools.greptile.tool import Greptile
 -
-+from composio.tools.local_tools.<tool_name> import <ToolName>
++from composio.local_tools.<tool_name> import <ToolName>
  
  class LocalToolHandler:
      def __init__(self):
