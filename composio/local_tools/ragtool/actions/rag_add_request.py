@@ -16,7 +16,7 @@ class AddContentToRagTool(Action):
     _request_schema = RagToolAddRequest
     _response_schema = RagToolAddResponse
     _tags = ["Knowledge Base"]
-    _tool_name = "ragtoolactions"
+    _tool_name = "ragtool"
 
     def execute(self, request: RagToolAddRequest, authorisation_data: dict = {}):
         """Add content to the knowledge base"""
