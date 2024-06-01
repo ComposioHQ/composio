@@ -1,3 +1,5 @@
+import os
+
 from pydantic import Field
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -17,11 +19,10 @@ logger = get_logger()
 
 
 class GithubCloneRequest(BaseRequest):
-    github_token: str = Field(..., description="github token to clone the repository.")
-    repo_name: str = Field(
-        default="princeton-nlp/SWE-bench",
-        description="github repository to clone. defaults to princeton-nlp/SWE-bench",
-    )
+    workspace_id: str = Field(..., description="workspace id on which to clone the repo")
+    repo_name: str = Field(..., description="github repository to clone. defaults to princeton-nlp/SWE-bench")
+    commit_id: str = Field("", description="after cloning the git repo, repo will be set to this commit-id."
+                                           "commit-id can be empty.")
 
 
 class GithubCloneResponse(BaseResponse):
@@ -45,7 +46,8 @@ class GithubCloneCmd(BaseAction):
         if not request_data.repo_name or not request_data.repo_name.strip():
             raise ValueError("repo_name can not be null. Give a repo_name to clone")
 
-        if not request_data.github_token or not request_data.github_token.strip():
+        git_token = os.environ.get("GITHUB_ACCESS_TOKEN")
+        if not git_token or not git_token.strip():
             raise ValueError("github_token can not be null")
 
         self._setup(request_data)
@@ -56,7 +58,8 @@ class GithubCloneCmd(BaseAction):
         output, return_code = communicate(
             self.container_process,
             self.container_obj,
-            f"git clone https://{request_data.github_token}@github.com/{request_data.repo_name}.git",
+            f"git clone https://{git_token}@github.com/{request_data.repo_name}.git "
+            f"&& cd {request_data.repo_name} && git reset --hard {request_data.commit_id}",
             self.parent_pids,
             timeout_duration=LONG_TIMEOUT,
         )
