@@ -1,6 +1,6 @@
 ## Adding a New Local Tool for Composio
 
-This document guides you through creating a new local tool for Composi.io.
+This document guides you through adding a new local tool and it's actions.
 
 **Structure:**
 
@@ -122,5 +122,3 @@ There are lot of local tools available in `composio/local_tools` directory, that
 * Replace placeholders `<tool_name>`, `<action_name>`, `<ToolName>`, `<ActionName>`, `<RequestSchema>`, `<ResponseSchema>` with your own names and logic.
 * Use the Composi.io documentation for further details on defining tools and actions: [https://docs.composio.dev/](https://docs.composio.dev/)
 * Install any required dependencies for your tools and actions.
-
-By following these steps, you can easily create custom local tools that enhance your LLM applications within Composi.io. 
