@@ -175,11 +175,37 @@ index 9a36573..94dfd1b 100644
 </CodeGroup>
 </Step>
 
+<Step title="Add New App and Action Enum value">
+**`composio/client/enums.py`:** 
 
+<CodeGroup>
+```enum Add new App & Action entry
+diff --git a/composio/client/local_handler.py b/composio/client/local_handler.py
+index 9a36573..94dfd1b 100644
+--- a/composio/client/local_handler.py
++++ b/composio/client/local_handler.py
+@@ -16,7 +16,7 @@ from composio.local_tools.ragtool import RagTool
+ from composio.local_tools import Mathematical
+ from composio.local_tools.webtool import WebTool
+ from composio.local_tools.greptile.tool import Greptile
+-
++from composio.local_tools.<tool_name> import <ToolName>
+ 
+ class LocalToolHandler:
+     def __init__(self):
+@@ -46,6 +46,7 @@ class LocalToolHandler:
+             RagTool(),
+             WebTool(),
+             Greptile(),
++            <ToolName>(),
+         ]
+```
+</CodeGroup>
+</Step>
 </Steps>
 
 
-<Info> Make sure _tool_name is always the lowercase of the `ToolName` class we defined in the previous steps. E.g if we defined `ToolName` as `MyTool`, then _tool_name should be `mytool`.</Info>
+<Info> Make sure _tool_name is always the lowercase of the `<ToolName>` class we defined in the previous steps. E.g if we defined `<ToolName>` as `MyTool`, then _tool_name should be `mytool`.</Info>
 
 
 **Examples/Sample Code:**
