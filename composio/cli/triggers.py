@@ -102,7 +102,10 @@ def _enable_trigger(context: Context, id: str) -> None:
     """Enable a trigger for an app"""
     context.console.print(f"Enabling trigger [green]{id}[/green]")
     try:
-        (trigger,) = context.client.triggers.get(trigger_ids=[id])
+        triggers = context.client.triggers.get(trigger_ids=[id])
+        if len(triggers) == 0:
+            raise click.ClickException(f"Trigger with ID {id} not found")
+        trigger = triggers[0]
         connected_account = context.client.get_entity().get_connection(
             app=trigger.appKey
         )
