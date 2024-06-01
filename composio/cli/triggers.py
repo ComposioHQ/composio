@@ -43,7 +43,7 @@ def _triggers(
     app_names: t.Tuple[str, ...],
     active: bool = True,
 ) -> None:
-    """Manage triggers"""
+    """List triggers available for your account"""
     if context.click_ctx.invoked_subcommand:
         return
 

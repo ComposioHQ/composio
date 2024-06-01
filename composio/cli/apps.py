@@ -135,7 +135,7 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 )
 @pass_context
 def _apps(context: Context, enabled: bool = False) -> None:
-    """Manage composio apps"""
+    """List composio tools/apps which you have access to"""
     if context.click_ctx.invoked_subcommand:
         return
 
