@@ -1,1 +1,1 @@
-from .ragtool import RagToolActions
+from .tool import RagTool
