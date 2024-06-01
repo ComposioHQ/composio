@@ -1,5 +1,5 @@
 from composio.core.local import Tool, Action
-from .actions.calculator import Calculator
+from .actions import Calculator
 import typing as t
 
 class Mathematical(Tool):
