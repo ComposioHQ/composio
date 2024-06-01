@@ -78,6 +78,8 @@ composio/local_tools/
            return {"execution_details": {"executed": True}, "response_data": response_data}
    ```
 
+**Note:** Make sure _tool_name is always the lowercase of the <ToolName> class we defined in the previous steps. E.g if we defined <ToolName> as `MyTool`, then _tool_name should be `mytool`.
+
 4. **`composio/local_tools/<tool_name>/actions/__init__.py`:** Exports the action class.
 
    ```python
