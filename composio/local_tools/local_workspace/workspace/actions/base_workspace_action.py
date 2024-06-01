@@ -1,28 +1,21 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-
 from pydantic import BaseModel
+from composio.core.local import Action
 
-from composio.local_tools.action import Action
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
+from composio.local_tools.local_workspace.commons import (
+    get_logger,
     HistoryProcessor,
-)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
 
-
 logger = get_logger()
-
 
 class BaseWorkspaceRequest(BaseModel):
     pass
 
-
 class BaseWorkspaceResponse(BaseModel):
     pass
-
 
 class BaseWorkspaceAction(Action, ABC):
     """
