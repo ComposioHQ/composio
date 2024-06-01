@@ -15,8 +15,11 @@ from composio.cli.triggers import _triggers
 from composio.cli.whoami import _whoami
 
 
-@click.group(name="composio")
+@click.group(name="composio", context_settings={'help_option_names': ['-h', '--help']})
 def composio() -> None:
+    """
+    Composio CLI Tool.
+    """
     """
     Composio CLI Tool.
     """
