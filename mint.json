@@ -143,6 +143,7 @@
         "sdk/python/introduction",
         "sdk/python/configuration",
         "sdk/python/actions",
+        "sdk/python/local_tools",
           {
           "group": "Reference",
           "pages": [
