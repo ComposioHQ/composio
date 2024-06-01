@@ -54,7 +54,7 @@ def _add(
     """Add a new integration."""
     try:
         add_integration(
-            name=name,
+            name=name.lower().strip(),
             context=context,
             entity_id=entity_id,
             integration_id=integration_id,
