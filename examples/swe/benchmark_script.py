@@ -44,7 +44,7 @@ def main():
         "You are the best programmer. You think carefully and step by step take action."
     )
     goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
-    tools = composio_toolset.get_actions(actions=[Action.GREPTILECODEQUERY])
+    tools = composio_toolset.get_actions(actions=[Action.GREPTILE_CODEQUERY])
     issues = get_issues_dataset()
 
     for issue in issues:
