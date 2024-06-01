@@ -17,7 +17,7 @@ class RagToolQuery(Action):
     _request_schema = RagToolQueryRequest
     _response_schema = RagToolQueryResponse
     _tags = ["Knowledge Base"]
-    _tool_name = "ragtoolactions"
+    _tool_name = "ragtool"
 
 
     def execute(self, request: RagToolQueryRequest, authorisation_data: dict = {}):
