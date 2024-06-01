@@ -32,7 +32,7 @@ Replace `julep_api_key` with actual API key.
 <CodeGroup>
 ```python Default Imports & Configuration
 from julep import Client
-from composio_julep import ComposioToolset, App
+from composio_julep import ComposioToolSet, App
 import os
 
 julep_api_key = "{julep_api_key}" # Replace it
@@ -45,10 +45,10 @@ julep_client = Client(api_key=julep_api_key)
 <CodeGroup>
 ```python Agent Configuration
 # Initialise the Composio Tool Set
-toolset = ComposioToolset()
+composio_toolset = ComposioToolSet()
 
 # Register the GitHub app with the right settings
-composio_tools = toolset.get_tools(tools=[App.GITHUB])
+tools = composio_toolset.get_tools(tools=[App.GITHUB])
 
 # Create and configure the Julep agent
 agent = julep_client.agents.create(
@@ -64,7 +64,7 @@ agent = julep_client.agents.create(
         "max_tokens": 150
     },
     model="gpt-4-turbo",
-    tools=composio_tools,
+    tools=tools,
 )
 ```
 </CodeGroup>
@@ -137,6 +137,6 @@ actions = composio_tools.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
 
 <CodeGroup>
   ```python Filter Actions by Tags
-  actions = composio_tools.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
+  actions = toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
   ```
 </CodeGroup>
