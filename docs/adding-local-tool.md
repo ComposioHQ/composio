@@ -110,12 +110,10 @@ index 9a36573..94dfd1b 100644
 
 **Examples/Sample Code:**
 
-There are lot of local tools available in `composio/local_tools` directory, that you can use as a reference. To get started, you should check out the `mathematical` tool.
+There are lot of local tools available in `composio/local_tools` directory, that you can use as a reference. To get started, you should check out the below two tools:
 
-**Integration:**
-
-* Make sure you register your new tool inside `composio/client/local_handler.py` file.
-* You can now access your new tool through Composio SdK and use it to power you Agents.
+- [Mathematical tool](https://github.com/SamparkAI/composio_sdk/blob/main/composio/local_tools/mathematical/tool.py): Simple tool to perform mathematical operations.
+- [Greptile tool](https://github.com/SamparkAI/composio_sdk/blob/main/composio/local_tools/greptile/tool.py): Tool to integrate with [Greptile](https://github.com/hwchase17/greptile) framework.
 
 **Key Points:**
 
