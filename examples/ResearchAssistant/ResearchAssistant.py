@@ -11,7 +11,7 @@ llm = ChatGoogleGenerativeAI(
 
 # Composio tool for SerpAPI
 composiotoolset = ComposioToolSet()
-tools = composiotoolset.get_tools(actions=[Action.SERPAPI_SEARCH])
+tools = composiotoolset.get_actions(actions=[Action.SERPAPI_SEARCH])
 
 # Define the Agent
 researcher = Agent(
