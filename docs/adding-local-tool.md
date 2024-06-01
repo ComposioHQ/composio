@@ -120,5 +120,5 @@ There are lot of local tools available in `composio/local_tools` directory, that
 **Key Points:**
 
 * Replace placeholders `<tool_name>`, `<action_name>`, `<ToolName>`, `<ActionName>`, `<RequestSchema>`, `<ResponseSchema>` with your own names and logic.
-* Use the Composi.io documentation for further details on defining tools and actions: [https://docs.composio.dev/](https://docs.composio.dev/)
+* Use the Composio documentation for further details on defining tools and actions: [https://docs.composio.dev/](https://docs.composio.dev/)
 * Install any required dependencies for your tools and actions.
