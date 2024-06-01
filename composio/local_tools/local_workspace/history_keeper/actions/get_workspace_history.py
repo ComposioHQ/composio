@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from composio.local_tools.action import Action
+from composio.core.local import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
@@ -11,23 +11,19 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     WorkspaceManagerFactory,
 )
 
-
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
 logger = get_logger()
-
 
 class GetWorkspaceHistoryRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id will be used to get status of the workspace"
     )
 
-
 class GetWorkspaceHistoryResponse(BaseModel):
     workspace_history: dict = Field(
         ..., description="history of last n commands on the workspace"
     )
-
 
 class GetWorkspaceHistory(Action):
     """

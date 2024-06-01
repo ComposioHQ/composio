@@ -30,7 +30,7 @@ class WorkspaceStatusResponse(BaseWorkspaceResponse):
     )
 
 
-class WorkspaceStatus(BaseWorkspaceAction):
+class WorkspaceStatusAction(BaseWorkspaceAction):
     """
     Returns the status of workspace given in the request
     """
