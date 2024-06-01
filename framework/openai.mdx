@@ -44,7 +44,7 @@ composio_toolset = ComposioToolSet()
 ```python Tools For GitHub
 # Get GitHub tools that are pre-configured
 # Retrieve actions
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 ```
 </CodeGroup>
 </Step>
@@ -97,7 +97,7 @@ print(response_after_tool_calls)
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 ```
 </CodeGroup>
 
