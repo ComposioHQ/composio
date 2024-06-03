@@ -9,9 +9,16 @@ import click
 
 from composio.cli.context import Context, pass_context
 from composio.exceptions import ComposioSDKError
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 
-@click.command(name="whoami")
+class WhoamiExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio whoami", fg='green') + click.style("  # Display your account information\n", fg='black'),
+    ]
+
+@click.command(name="whoami", cls=WhoamiExamples)
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _whoami(context: Context) -> None:
     """Manage composio whoami"""

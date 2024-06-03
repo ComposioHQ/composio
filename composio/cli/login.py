@@ -8,20 +8,27 @@ Usage:
 import webbrowser
 
 import click
-
 from composio.cli.context import Context, pass_context
 from composio.client import Composio
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+
+class Examples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio login2 --help", fg='green') + click.style("  # Display help for login command\n", fg='black'),
+        click.style("composio login --no-browser", fg='green') + click.style("  # Login without browser interaction\n", fg='black'),
+    ]
 
 
-@click.command(name="login")
+@click.command(name="login",cls=Examples)
 @click.option(
     "--no-browser",
     is_flag=True,
     default=False,
     help="Prevent from opening browser window",
 )
+@click.help_option("--help", "-h","-help")
 @pass_context
 def _login(
     context: Context,
