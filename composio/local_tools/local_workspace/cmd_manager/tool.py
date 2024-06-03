@@ -13,11 +13,13 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     SearchDirCmd,
     SearchFileCmd,
     EditFile,
+    GitRepoTree,
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
     WorkspaceManagerFactory
 )
+
 
 class CmdManagerTool(Tool):
     """
@@ -40,6 +42,7 @@ class CmdManagerTool(Tool):
             RunCommandOnWorkspace,
             GetCurrentDirCmd,
             GithubCloneCmd,
+            GitRepoTree,
         ]
 
     def triggers(self) -> list:

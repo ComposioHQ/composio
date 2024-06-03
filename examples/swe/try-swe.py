@@ -2,7 +2,10 @@ from pathlib import Path
 from composio_crewai import App, ComposioToolSet, Action
 from crewai import Agent, Crew, Process, Task
 from crewai.task import TaskOutput
+import yaml
 from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
+import os
 
 CONFIG_FILE_PATH = "./task_config.yaml"
 
@@ -15,7 +18,7 @@ task_data = ""
 
 composio_toolset = ComposioToolSet()
 
-llm = ChatOpenAI(model="gpt-4-turbo")
+llm = ChatOpenAI(model="gpt-4-1106-preview")
 
 base_role = (
     "You are the best programmer. You think carefully and step by step take action."
@@ -23,15 +26,17 @@ base_role = (
 
 goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
 
-tools = composio_toolset.get_actions(actions=[Action.GREPTILE_CODEQUERY])
+tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
 
 
 if __name__ == "__main__":
+    with open("/home/shubhra/work/composio/composio_sdk/examples/swe/task_config.yaml") as f:
+        base_config = yaml.safe_load(f.read())
 
     agent_1 = Agent(
         role=base_role,
         goal=goal,
-        backstory="You are the best programmer. You think carefully and step by step take action.",
+        backstory=base_config["backstory"].format(repo_name=base_config["repo_name"]),
         verbose=True,
         tools=tools,
         llm=llm,
@@ -40,20 +45,12 @@ if __name__ == "__main__":
     )
 
     task = Task(
-        description="Can you tell me in which file enums are stored? for repo samparkai/composio. ",
+        description=base_config["issue_description"],
         agent=agent_1,
         expected_output="Name of the file",
     )
 
-    my_crew = Crew(
-        agents=[agent_1],
-        tasks=[task],
-        process=Process.sequential,
-        full_output=True,
-        verbose=True,
-        cache=False,
-        memory=True,
-    )
-
-    my_crew.kickoff()
-    print(my_crew.usage_metrics)
+    task.execute()
+    #
+    # my_crew.kickoff()
+    # print(my_crew.usage_metrics)

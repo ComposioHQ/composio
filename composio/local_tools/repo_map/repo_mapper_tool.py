@@ -6,7 +6,8 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-from composio.local_tools.tool import Tool
+from composio.core.local.tool import Tool
+from aider.repomap import RepoMap
 
 
 class RepoMapper(Tool):
@@ -35,3 +36,8 @@ class RepoMapper(Tool):
 
     def get_history_processor(self) -> Optional[HistoryProcessor]:
         return self.history_processor
+
+
+if __name__ == "__main__":
+    repo_map = RepoMap("/home/shubhra/work/pvlib-python")
+    repo_map.load_tags_cache()

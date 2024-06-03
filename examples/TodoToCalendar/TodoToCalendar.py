@@ -24,6 +24,7 @@ todo = '''
     8PM - 10PM -> Game
 '''
 
+
 # Execute Agent
 def run_crew():
     gcal_agent = Agent(
@@ -36,11 +37,14 @@ def run_crew():
         llm=llm
     )
     task = Task(
-        description=f"Book slots according to {todo}. Label them with the work provided to be done in that time period. Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
+        description=f"Book slots according to {todo}. Label them with the work"
+                    f" provided to be done in that time period. Schedule it for today. "
+                    f"Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
         agent=gcal_agent,
         expected_output="if free slot is found"
     )
     task.execute()
     return "Crew run initiated", 200
+
 
 run_crew()
