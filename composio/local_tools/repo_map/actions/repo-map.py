@@ -7,6 +7,7 @@ import json
 from collections import Counter, defaultdict, namedtuple
 from importlib import resources
 from pathlib import Path
+import litellm
 
 import networkx as nx
 from diskcache import Cache
@@ -16,11 +17,35 @@ from pygments.token import Token
 from pygments.util import ClassNotFound
 from tqdm import tqdm
 
+import composio.local_tools.repo_map
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
+logger = get_logger()
+
+
 # tree_sitter is throwing a FutureWarning
 warnings.simplefilter("ignore", category=FutureWarning)
-from tree_sitter_languages import get_language, get_parser  # noqa: E402
+from tree_sitter_languages import get_language, get_parser
 
 Tag = namedtuple("Tag", "rel_fname fname line name kind".split())
+
+MODEL_NAME = "gpt-3.5-turbo"
+
+__package__ = composio.local_tools.repo_map
+def tokenizer(text):
+    return litellm.encode(model=MODEL_NAME, text=text)
+
+
+def token_count(messages):
+    if not tokenizer:
+        return
+
+    if type(messages) is str:
+        msgs = messages
+    else:
+        msgs = json.dumps(messages)
+
+    return len(tokenizer(msgs))
 
 
 class RepoMap:
@@ -35,13 +60,10 @@ class RepoMap:
         self,
         map_tokens=1024,
         root=None,
-        main_model=None,
-        io=None,
         repo_content_prefix=None,
         verbose=False,
         max_context_window=None,
     ):
-        self.io = io
         self.verbose = verbose
 
         if not root:
@@ -53,7 +75,7 @@ class RepoMap:
         self.max_map_tokens = map_tokens
         self.max_context_window = max_context_window
 
-        self.token_count = main_model.token_count
+        self.token_count = token_count
         self.repo_content_prefix = repo_content_prefix
 
     def get_repo_map(self, chat_files, other_files, mentioned_fnames=None, mentioned_idents=None):
@@ -83,7 +105,7 @@ class RepoMap:
                 chat_files, other_files, max_map_tokens, mentioned_fnames, mentioned_idents
             )
         except RecursionError:
-            self.io.tool_error("Disabling repo map, git repo too large?")
+            logger.error("Disabling repo map, git repo too large?")
             self.max_map_tokens = 0
             return
 
@@ -92,7 +114,7 @@ class RepoMap:
 
         num_tokens = self.token_count(files_listing)
         if self.verbose:
-            self.io.tool_output(f"Repo-map: {num_tokens/1024:.1f} k-tokens")
+            logger.info(f"Repo-map: {num_tokens/1024:.1f} k-tokens")
 
         if chat_files:
             other = "other "
@@ -119,7 +141,8 @@ class RepoMap:
         path = Path(self.root) / self.TAGS_CACHE_DIR
         if not path.exists():
             self.cache_missing = True
-        self.TAGS_CACHE = Cache(path)
+        x = Cache(path)
+        self.TAGS_CACHE = x
 
     def save_tags_cache(self):
         pass
@@ -128,7 +151,7 @@ class RepoMap:
         try:
             return os.path.getmtime(fname)
         except FileNotFoundError:
-            self.io.tool_error(f"File not found error: {fname}")
+            logger.error(f"File not found error: {fname}")
 
     def get_tags(self, fname, rel_fname):
         # Check if the file is in the cache and if the modification time has not changed
@@ -137,8 +160,8 @@ class RepoMap:
             return []
 
         cache_key = fname
-        if cache_key in self.TAGS_CACHE and self.TAGS_CACHE[cache_key]["mtime"] == file_mtime:
-            return self.TAGS_CACHE[cache_key]["data"]
+        # if cache_key in self.TAGS_CACHE and self.TAGS_CACHE[cache_key]["mtime"] == file_mtime:
+        #     return self.TAGS_CACHE[cache_key]["data"]
 
         # miss!
 
@@ -156,20 +179,21 @@ class RepoMap:
 
         language = get_language(lang)
         parser = get_parser(lang)
-
+        print(fname)
+        print(rel_fname)
         # Load the tags queries
         try:
-            scm_fname = resources.files(__package__).joinpath(
-                "queries", f"tree-sitter-{lang}-tags.scm"
-            )
-        except KeyError:
+            scm_fname = Path("/home/shubhra/work/aider/aider/queries/tree-sitter-python-tags.scm")
+        except KeyError as e:
+            print(e)
             return
         query_scm = scm_fname
         if not query_scm.exists():
             return
         query_scm = query_scm.read_text()
 
-        code = self.io.read_text(fname)
+        with open(fname, "r") as f:
+            code = f.read()
         if not code:
             return
         tree = parser.parse(bytes(code, "utf-8"))
@@ -251,11 +275,11 @@ class RepoMap:
             if not Path(fname).is_file():
                 if fname not in self.warned_files:
                     if Path(fname).exists():
-                        self.io.tool_error(
+                        logger.error(
                             f"Repo-map can't include {fname}, it is not a normal file"
                         )
                     else:
-                        self.io.tool_error(f"Repo-map can't include {fname}, it no longer exists")
+                        logger.error(f"Repo-map can't include {fname}, it no longer exists")
 
                 self.warned_files.add(fname)
                 continue
@@ -417,7 +441,8 @@ class RepoMap:
         if key in self.tree_cache:
             return self.tree_cache[key]
 
-        code = self.io.read_text(abs_fname) or ""
+        with open(abs_fname, "r") as f:
+            code = f.read()
         if not code.endswith("\n"):
             code += "\n"
 
@@ -502,7 +527,7 @@ def get_random_color():
 if __name__ == "__main__":
     fnames = sys.argv[1:]
 
-    chat_fnames = []
+    chat_fnames = ["/home/shubhra/work/pvlib-python/pvlib/modelchain.py"]
     other_fnames = []
     for fname in sys.argv[1:]:
         if Path(fname).is_dir():
@@ -510,10 +535,7 @@ if __name__ == "__main__":
         else:
             chat_fnames.append(fname)
 
-    model = Model("gpt-3.5-turbo")
-    io = InputOutput()
-
-    rm = RepoMap(root=".", main_model=model, io=io)
+    rm = RepoMap(root="/home/shubhra/work/pvlib-python/")
     repo_map = rm.get_ranked_tags_map(chat_fnames, other_fnames)
 
     print(repo_map)

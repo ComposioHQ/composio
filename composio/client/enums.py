@@ -3553,6 +3553,7 @@ class Action(tuple, Enum):
     CMDMANAGERTOOL_RUNCOMMANDONWORKSPACE = ("cmdmanagertool", "cmdmanagertool_runcommandonworkspace", True, True)
     CMDMANAGERTOOL_GETCURRENTDIRCMD = ("cmdmanagertool", "cmdmanagertool_getcurrentdircmd", True, True)
     CMDMANAGERTOOL_GITHUBCLONECMD = ("cmdmanagertool", "cmdmanagertool_githubclonecmd", True, True)
+    CMDMANAGERTOOL_GITREPOTREE = ("cmdmanagertool", "cmdmanagertool_gitrepotree", True, True)
     HISTORYKEEPER_GETWORKSPACEHISTORY = ("historykeeper", "historykeeper_getworkspacehistory", True, True)
     RAGTOOL_RAGTOOLQUERY = ("ragtool", "ragtool_ragtoolquery", True, True)
     RAGTOOL_ADDCONTENTTORAGTOOL = ("ragtool", "ragtool_addcontenttoragtool", True, True)
