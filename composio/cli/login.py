@@ -39,7 +39,9 @@ def _login(
     # TODO: Abstract away
     user_data = context.user_data
     if user_data.api_key is not None:
-        raise click.ClickException("Already logged in!")
+        context.console.print("\n[green]✔ You're already logged in![/green]\n")
+        context.console.print("> Use [green]'composio logout'[/green] to log out and then login again")
+        return
 
     context.console.print("\n[green]> Authenticating...[/green]\n")
     try:
