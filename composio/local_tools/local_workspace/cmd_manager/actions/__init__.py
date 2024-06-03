@@ -10,6 +10,7 @@ from .edit_cmd import EditFile
 from .run_cmd import (
     RunCommandOnWorkspace,
 )
+from .git_tree import GitRepoTree
 from .scroll_cmds import Scroll
 from .search_cmds import (
     FindFileCmd,
