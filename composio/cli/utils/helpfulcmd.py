@@ -10,6 +10,7 @@ from click.core import Context as ClickContext
 
 class HelpfulCmdBase:
     examples = []
+    help = None 
 
     def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
         """Writes the help text to the formatter if it exists."""
