@@ -16,7 +16,7 @@ from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 class Examples(HelpfulCmdBase, click.Command):
     examples = [
-        click.style("composio login2 --help", fg='green') + click.style("  # Display help for login command\n", fg='black'),
+        click.style("composio login --help", fg='green') + click.style("  # Display help for login command\n", fg='black'),
         click.style("composio login --no-browser", fg='green') + click.style("  # Login without browser interaction\n", fg='black'),
     ]
 
