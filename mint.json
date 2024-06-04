@@ -201,15 +201,18 @@
     {
       "group": "Examples",
       "pages": [
-        {"group": "Demo Apps", "pages":[
-        "guides/examples/ResearchAssistant",
-        "guides/examples/CompetitorResearcher",
-        "guides/examples/InvestmentAnalyst",
-        "guides/examples/github-trello",
-        "guides/examples/urlsummary",
-        "guides/examples/news-summary",
-        "guides/examples/todo-to-calendar",
-        "guides/examples/qnasummary"
+        "guides/examples/Example",
+        {
+          "group": "Demo Apps", 
+          "pages":[
+            "guides/examples/ResearchAssistant",
+            "guides/examples/CompetitorResearcher",
+            "guides/examples/InvestmentAnalyst",
+            "guides/examples/github-trello",
+            "guides/examples/urlsummary",
+            "guides/examples/news-summary",
+            "guides/examples/todo-to-calendar",
+            "guides/examples/qnasummary"
 
         ]}
         ]
