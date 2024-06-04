@@ -15,8 +15,8 @@ from composio.cli.context import Context, pass_context
 from composio.client import ActionModel, AppModel, TriggerModel, enums
 from composio.client.local_handler import LocalToolHandler
 from composio.exceptions import ComposioSDKError
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-
 
 MODULE_TEMPLATE = """\"\"\"
 Helper Enum classes.
@@ -126,7 +126,7 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 {triggers}
 """
 
-class AppsExamples(HelpfulCmdBase, click.Group):
+class AppsExamples(HelpfulCmdBase, DYMGroup):
     examples = [
         click.style("composio apps", fg='green') + click.style("            # List all apps\n", fg='black'),
         click.style("composio apps --enabled", fg='green') + click.style("  # List only enabled apps\n", fg='black'),
