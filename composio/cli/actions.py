@@ -12,10 +12,20 @@ import pyperclip
 
 from composio.cli.context import Context, pass_context
 from composio.client.enums import App
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+
+class ActionsExamples(HelpfulCmdBase, DYMGroup):
+    examples = [
+        click.style("composio actions", fg='green') + click.style("                                    # List all actions\n", fg='black'),
+        click.style("composio actions --app slack", fg='green') + click.style("                        # List all actions for the Slack app\n", fg='black'),
+        click.style("composio actions --use-case 'get channel messages'", fg='green') + click.style("  # List all actions for the 'get channel messages' use case\n", fg='black'),
+    ]
 
 
-@click.group(name="actions", invoke_without_command=True)
+@click.group(name="actions", invoke_without_command=True, cls=ActionsExamples)
+@click.help_option("--help", "-h", "-help")
 @click.option(
     "--app",
     "apps",
