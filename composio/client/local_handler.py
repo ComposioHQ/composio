@@ -46,8 +46,6 @@ class LocalToolHandler:
             RagTool(),
             WebTool(),
             Greptile(),
-            RagToolActions(),
-            WebTool(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
