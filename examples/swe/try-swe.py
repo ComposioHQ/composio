@@ -15,11 +15,7 @@ task_data = ""
 
 composio_toolset = ComposioToolSet()
 
-<<<<<<< HEAD
-llm = ChatOpenAI(model="gpt-4-1106-preview")
-=======
 llm = ChatOpenAI(model="gpt-4-turbo")
->>>>>>> d773802 (add evaluation from swe-bench)
 
 base_role = (
     "You are the best programmer. You think carefully and step by step take action."
@@ -35,11 +31,7 @@ if __name__ == "__main__":
     agent_1 = Agent(
         role=base_role,
         goal=goal,
-<<<<<<< HEAD
-        backstory=base_config["backstory"].format(repo_name=base_config["repo_name"]),
-=======
         backstory="You are the best programmer. You think carefully and step by step take action.",
->>>>>>> d773802 (add evaluation from swe-bench)
         verbose=True,
         tools=tools,
         llm=llm,

@@ -189,12 +189,23 @@ def _update(context: Context, beta: bool = False) -> None:
         )
         if not beta:
             c = []
-            for app in apps:
-                if app.name.lower().endswith("beta"):
-                    continue
-                c.append(app)
-            apps = c
-            # apps = list(set([app for app in apps if not app.name.lower().endswith("beta")]))
+            def filter_non_beta_items(items):
+                filtered_items = []
+                for item in items:
+                    if not item.name.lower().endswith("beta"):
+                        filtered_items.append(item)
+                
+                seen = set()
+                unique_items = []
+                for item in filtered_items:
+                    if item.name not in seen:
+                        unique_items.append(item)
+                        seen.add(item.name)
+                return unique_items
+
+            apps = filter_non_beta_items(apps)
+            actions = filter_non_beta_items(actions)
+            triggers = filter_non_beta_items(triggers)
 
         enum_module = MODULE_TEMPLATE.format(
             tag_enum=_get_tag_enum(apps=apps, actions=actions),
