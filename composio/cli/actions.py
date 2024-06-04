@@ -12,10 +12,11 @@ import pyperclip
 
 from composio.cli.context import Context, pass_context
 from composio.client.enums import App
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 
-@click.group(name="actions", invoke_without_command=True)
+@click.group(name="actions", invoke_without_command=True, cls=DYMGroup)
 @click.option(
     "--app",
     "apps",

@@ -12,10 +12,11 @@ import click
 
 from composio.cli.context import Context, pass_context
 from composio.client.exceptions import NoItemsFound
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 
-@click.group(name="triggers", invoke_without_command=True)
+@click.group(name="triggers", invoke_without_command=True, cls=DYMGroup)
 @click.option(
     "--active",
     is_flag=True,
