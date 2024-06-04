@@ -8,10 +8,11 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 
-@click.group(name="connections", invoke_without_command=True)
+@click.group(name="connections", invoke_without_command=True, cls=DYMGroup)
 @pass_context
 def _connections(context: Context) -> None:
     """List composio connections for your account"""

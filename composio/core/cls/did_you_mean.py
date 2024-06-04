@@ -43,8 +43,7 @@ class DYMMixin:
             )
             if matches:
                 fmt_matches = "\n    ".join(matches)
-                error_msg += "\n\n"
-                error_msg += f"Did you mean one of these?\n    {fmt_matches}"
+                error_msg += f" Did you mean one of these?\n    {fmt_matches}"
 
             raise click.exceptions.UsageError(error_msg, error.ctx) from error
 
