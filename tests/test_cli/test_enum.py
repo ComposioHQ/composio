@@ -6,10 +6,30 @@ class TestTagEnum(unittest.TestCase):
     def test_tag_enum_values(self):
         # Test for specific expected enum values
         self.assertEqual(Tag.IMPORTANT.value, ("default", "important"))
+        self.assertEqual(Tag.IMPORTANT.value, ("default", "important"))
+        self.assertEqual(Tag.ASANA_GOAL_RELATIONSHIPS.value, ("asana", "Goal relationships"))
+        self.assertEqual(Tag.ATTIO_LISTS.value, ("attio", "Lists"))
+        self.assertEqual(Tag.BREVO_TASKS.value, ("brevo", "Tasks"))
+        self.assertEqual(Tag.CLICKUP_TASKS.value, ("clickup", "Tasks"))
 
     def test_tag_enum_name_property(self):
         # Test the name property
         self.assertEqual(Tag.IMPORTANT.name, "default")
+
+    def test_tag_enum_names(self):
+        """Test the names of the Tag enum."""
+        self.assertEqual(Tag.IMPORTANT.name, "default")
+        self.assertEqual(Tag.ASANA_GOAL_RELATIONSHIPS.name, "asana")
+        self.assertEqual(Tag.ATTIO_LISTS.name, "attio")
+        self.assertEqual(Tag.BREVO_TASKS.name, "brevo")
+        self.assertEqual(Tag.CLICKUP_TASKS.name, "clickup")
+
+    def test_tag_enum_contains(self):
+        """Test if specific tags are in the enum."""
+        self.assertTrue(Tag.IMPORTANT in Tag)
+        self.assertTrue(Tag.ASANA_BATCH_API in Tag)
+        self.assertTrue(Tag.BREVO_EMAIL_CAMPAIGNS in Tag)
+        self.assertTrue(Tag.CLICKUP_USERS in Tag)
 
 
 class TestAppEnum(unittest.TestCase):
@@ -45,6 +65,7 @@ class TestTriggerEnum(unittest.TestCase):
         # Test properties
         self.assertEqual(Trigger.SLACK_THREAD_REPLY.app, "slack")
         self.assertEqual(Trigger.SLACK_THREAD_REPLY.event, "slack_receive_thread_reply")
+
 
 
 if __name__ == '__main__':
