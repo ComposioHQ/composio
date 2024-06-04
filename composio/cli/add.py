@@ -25,8 +25,17 @@ from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
+from composio.cli.utils.helpfulcmd import HelpfulCmd
 
-@click.command(name="add")
+class AddIntegrationExamples(HelpfulCmd):
+    examples = [
+        click.style("composio add <app_name>", fg='green') + click.style("                      # Add a new integration\n", fg='black'),
+        click.style("composio add <app_name> --no-browser", fg='green') + click.style("         # Add a new integration without opening the browser\n", fg='black'),
+        click.style("composio add <app_name> -i <integration_id>", fg='green') + click.style("  # Add a new integration using an existing integration ID\n", fg='black'),
+    ]
+
+@click.command(name="add", cls=AddIntegrationExamples)
+@click.help_option("--help", "-h", "-help")
 @click.argument("name", type=str)
 @click.option(
     "--no-browser",
