@@ -8,10 +8,11 @@ Usage:
 import click
 
 from composio.cli.context import Context, login_required, pass_context
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
-class IntegrationsExamples(HelpfulCmdBase, click.Group):
+class IntegrationsExamples(HelpfulCmdBase, DYMGroup):
     examples = [
         click.style("composio integrations", fg='green') + click.style("                                # List all integrations\n", fg='black'),
         click.style("composio integrations add --name GitHub", fg='green') + click.style("              # Add a new integration named GitHub\n", fg='black'),
