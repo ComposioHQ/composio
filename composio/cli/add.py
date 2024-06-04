@@ -26,7 +26,6 @@ from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
 
-
 @click.command(name="add")
 @click.argument("name", type=str)
 @click.option(
