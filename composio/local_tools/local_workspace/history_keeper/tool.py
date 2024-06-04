@@ -11,7 +11,6 @@ from .actions import GetWorkspaceHistory, SaveWorkspaceHistory
 
 logger = get_logger()
 
-
 class HistoryKeeper(Tool):
     """
     local workspace tool which can maintain history across commands.
