@@ -12,12 +12,13 @@ import click
 
 from composio.cli.context import Context, pass_context
 from composio.client.exceptions import NoItemsFound
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 
-class TriggersExamples(HelpfulCmdBase, click.Group):
+class TriggersExamples(HelpfulCmdBase, DYMGroup):
     examples = [
         click.style("composio triggers", fg='green') + click.style("              # List all triggers\n", fg='black'),
         click.style("composio triggers --active", fg='green') + click.style("     # List only active triggers\n", fg='black'),
