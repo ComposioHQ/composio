@@ -15,6 +15,7 @@ from composio.cli.context import Context, pass_context
 from composio.client import ActionModel, AppModel, TriggerModel, enums
 from composio.client.local_handler import LocalToolHandler
 from composio.exceptions import ComposioSDKError
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 
 MODULE_TEMPLATE = """\"\"\"
@@ -125,8 +126,14 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 {triggers}
 """
 
-
-@click.group(name="apps", invoke_without_command=True)
+class AppsExamples(HelpfulCmdBase, click.Group):
+    examples = [
+        click.style("composio apps", fg='green') + click.style("            # List all apps\n", fg='black'),
+        click.style("composio apps --enabled", fg='green') + click.style("  # List only enabled apps\n", fg='black'),
+        click.style("composio apps update", fg='green') + click.style("     # Update local Apps database\n", fg='black'),
+    ]
+@click.group(name="apps", invoke_without_command=True, cls=AppsExamples)
+@click.help_option("--help", "-h", "-help")
 @click.option(
     "--enabled",
     is_flag=True,
@@ -152,12 +159,18 @@ def _apps(context: Context, enabled: bool = False) -> None:
         raise click.ClickException(message=e.message) from e
 
 
-@_apps.command(name="update")
+class UpdateExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio apps update", fg='green') + click.style("  # Update local Apps database\n", fg='black'),
+    ]
+
+@_apps.command(name="update", cls=UpdateExamples)
 @click.option(
     "--beta",
     is_flag=True,
     help="Include beta apps.",
 )
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _update(context: Context, beta: bool = False) -> None:
     """Updates local Apps database."""
