@@ -35,7 +35,7 @@ class TestTagEnum(unittest.TestCase):
 class TestAppEnum(unittest.TestCase):
     def test_app_enum_values(self):
         # Test for specific expected enum values
-        self.assertTrue(App.GITHUB.value, "github")
+        self.assertEqual(App.GITHUB.value, "github")
 
     def test_app_enum_is_local_property(self):
         # Test the is_local property
