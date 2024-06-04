@@ -8,10 +8,11 @@ Usage:
 import click
 
 from composio.cli.context import Context, login_required, pass_context
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 
-@click.group(name="integrations", invoke_without_command=True)
+@click.group(name="integrations", invoke_without_command=True, cls=DYMGroup)
 @login_required
 @pass_context
 def _integrations(context: Context) -> None:
