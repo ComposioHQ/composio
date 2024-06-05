@@ -23,26 +23,25 @@ def main(predictions_dir, log_dir, swe_bench_tasks, testbed, skip_existing, time
     all_patches = []
     # Walk through the directory and process each file
     pred_total, pred_will_eval = 0, 0
-    with open(pred_path_temp, "w") as f_out:
-        for file_path in glob.glob(os.path.join(predictions_dir, "*_instance_*")):
-            instance_id = file_path.split('_instance_')[-1].replace(".json", "")
-            with open(file_path, "r") as f:
-                prediction_data = json.loads(f.read())
-            if len(prediction_data) == 0:
-                print(f"Skipping {file_path} because it has no predictions")
-                continue
+    for file_path in glob.glob(os.path.join(predictions_dir, "*_instance_*")):
+        instance_id = file_path.split('_instance_')[-1].replace(".json", "")
+        with open(file_path, "r") as f:
+            prediction_data = json.loads(f.read())
+        if len(prediction_data) == 0:
+            print(f"Skipping {file_path} because it has no predictions")
+            continue
 
-            patch_found = find_patch(prediction_data)
-            if not patch_found:
-                print(f"Skipping {file_path} because no patch was found")
-                continue
-            transformed_prediction = {
-                                "instance_id": instance_id,
-                                "model": directory_name,
-                                "prediction": patch_found
-                            }
-            all_patches.append(transformed_prediction)
-            pred_will_eval += 1
+        patch_found = find_patch(prediction_data)
+        if not patch_found:
+            print(f"Skipping {file_path} because no patch was found")
+            continue
+        transformed_prediction = {
+                            "instance_id": instance_id,
+                            "model": directory_name,
+                            "prediction": patch_found
+                        }
+        all_patches.append(transformed_prediction)
+        pred_will_eval += 1
     with open(pred_path_temp, "w") as f_out:
         for patch in all_patches:
             json.dump(patch, f_out)
@@ -72,8 +71,6 @@ def main(predictions_dir, log_dir, swe_bench_tasks, testbed, skip_existing, time
     # Clean up temporary files
     os.remove(pred_path_temp)
 
-    # Additional reporting and logging can be added here as needed
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -84,7 +81,6 @@ if __name__ == "__main__":
     parser.add_argument("--skip_existing", action="store_true", help="(Optional) Skip existing logs")
     parser.add_argument("--timeout", type=int, default=900, help="(Optional) Timeout in seconds")
     parser.add_argument("--verbose", action="store_true", help="(Optional) Verbose mode")
-    parser.add_argument("--conda_link", type=str, help="(Optional) URL to conda installation to use")
     parser.add_argument("--log_suffix", type=str, help="(Optional) Log suffix")
     parser.add_argument("--num_processes", type=int, default=-1, help="Num processes")
     args = parser.parse_args()
