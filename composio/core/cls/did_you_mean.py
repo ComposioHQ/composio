@@ -6,7 +6,7 @@ with a git-like *did-you-mean* feature.
 import difflib
 import typing
 import click
-
+import sentry_sdk
 
 class DYMMixin:
     """
@@ -46,6 +46,10 @@ class DYMMixin:
                 error_msg += f" Did you mean one of these?\n    {fmt_matches}"
 
             raise click.exceptions.UsageError(error_msg, error.ctx) from error
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            sentry_sdk.flush()
+            raise e
 
 
 class DYMGroup(DYMMixin, click.Group):
