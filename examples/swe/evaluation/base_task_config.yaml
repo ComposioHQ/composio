@@ -27,10 +27,10 @@ issue_description: |-
   When you're satisfied with all of the changes you've made, you can submit your changes to the code base by simply running the submit command.
   Note however that you cannot use any interactive session commands (e.g. python, vim) in this environment, but you can write scripts and run them. E.g. you can write a python script and then run it with `python </path/to/script>.py`.
 
-  In case of "no module found error", if module is related to the {repo_name} for which we are solving the issue, run the script with correct PYTHONPATH,
-  else resolve the module by installing it with "pip install". For example, if we are solving issue in `django` repo, and while running the script, 
-  error "no module found django", run python script as `PYTHONPATH=/path/to/django python <script_name>.py`
-
+  We are trying to solve python repo issues. If the current repo is not installed, its better to install the repo with {install_commit_id}. 
+  Example: If the current repo is django, and the issue is "no module found django", 
+           its better to install django with the {install_commit_id} of django repo like this -
+           `pip install git+https://github.com/django/django.git@{install_commit_id}`
 repo_name: ""
 
 

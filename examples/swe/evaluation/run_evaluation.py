@@ -45,15 +45,19 @@ PASS_TO_PASS: (str) - A json list of strings that represent tests that should pa
 '''
 
 
+def filter_from_repo_name(curr_dataset, repo_name):
+    filtered_dataset = curr_dataset.filter(lambda x: x["repo"] == repo_name.strip().lower())
+    return filtered_dataset
+
+
 def get_issues_dataset():
     # Load the SWE-bench dataset
     dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
     test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test")
 
-    # Filter the dataset to include only longer problem statements
-    # filtered_test_dataset = test_dataset.filter(filter_short_problem_statements)
+    # filter by repo-name 
+    test_dataset = filter_from_repo_name(test_dataset, "pandas")
 
-    # Display the first few entries of the filtered dataset
     print(test_dataset[:5])
     return test_dataset
 
@@ -76,8 +80,8 @@ def run():
     Main function to load and display entries from the SWE-bench lite dataset.
     """
     azure_llm = AzureChatOpenAI(
-        azure_endpoint="",
-        api_key="",
+        azure_endpoint=os.environ.get("azure_endpoint"),
+        api_key=os.environ.get("azure_key"),
         model="test",
         model_version="1106-Preview",
         api_version="2024-02-01",
