@@ -43,7 +43,9 @@ def json_schema_to_pydantic_type(
     :param json_schema: The JSON schema to convert.
     :return: A Pydantic type.
     """
-
+    # Add fallback type - string
+    if "type" not in json_schema:
+        json_schema["type"] = "string"
     type_ = t.cast(str, json_schema.get("type"))
     if type_ == "array":
         items_schema = json_schema.get("items")
