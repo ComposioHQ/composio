@@ -1,15 +1,7 @@
 """
 Composio CLI Tool.
 """
-import sentry_sdk
-
-def init_sentry():
-    sentry_sdk.init(
-        dsn="https://11fa6caf2e5c80f6d3580e2d50b9feb5@o4506274564079616.ingest.us.sentry.io/4507267098345472",
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0
-    )
-
+from composio.core.cls.catch_all_exceptions import CatchAllExceptions, handle_exceptions, init_sentry
 init_sentry()
 
 import click
@@ -37,7 +29,7 @@ class HelpDYMGroup(DYMGroup):
         formatter.write(click.style("composio login", fg='green') + click.style("           # Log in to your Composio account\n", fg='black'))
 
 
-@click.group(name="composio",cls=HelpDYMGroup)
+@click.group(name="composio",cls=CatchAllExceptions(HelpDYMGroup, handler=handle_exceptions))
 @click.help_option("--help", "-h","-help")
 def composio() -> None:
     """
