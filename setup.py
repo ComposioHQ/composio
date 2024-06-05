@@ -49,4 +49,10 @@ setup(
         "pyyaml>=6.0.1",
     ],
     include_package_data=True,
+    package_data={
+        "composio": [
+            "local_tools/local_workspace/config/*.yaml",
+            "local_tools/local_workspace/config/commands/*.sh"
+        ]
+    }
 )
