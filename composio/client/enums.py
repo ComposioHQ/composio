@@ -3556,7 +3556,6 @@ class Action(tuple, Enum):
     CMDMANAGERTOOL_GITREPOTREE = ("cmdmanagertool", "cmdmanagertool_gitrepotree", True, True)
     CMDMANAGERTOOL_SUBMITPATCHCMD = ("cmdmanagertool", "cmdmanagertool_submitpatchcmd", True, True)
     HISTORYKEEPER_GETWORKSPACEHISTORY = ("historykeeper", "historykeeper_getworkspacehistory", True, True)
-    HISTORYKEEPER_SAVEWORKSPACEHISTORY = ("historykeeper", "historykeeper_saveworkspacehistory", True, True)
     RAGTOOL_RAGTOOLQUERY = ("ragtool", "ragtool_ragtoolquery", True, True)
     RAGTOOL_ADDCONTENTTORAGTOOL = ("ragtool", "ragtool_addcontenttoragtool", True, True)
     WEBTOOL_SCRAPEWEBSITECONTENT = ("webtool", "webtool_scrapewebsitecontent", True, True)

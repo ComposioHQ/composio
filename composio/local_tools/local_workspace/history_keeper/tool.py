@@ -7,9 +7,10 @@ from composio.local_tools.local_workspace.commons import (
     WorkspaceManagerFactory,
     HistoryProcessor
 )
-from .actions import GetWorkspaceHistory, SaveWorkspaceHistory
+from .actions import GetWorkspaceHistory
 
 logger = get_logger()
+
 
 class HistoryKeeper(Tool):
     """
@@ -20,7 +21,7 @@ class HistoryKeeper(Tool):
     history_processor: Optional[HistoryProcessor] = None
 
     def actions(self) -> list[t.Type[Action]]:
-        return [GetWorkspaceHistory, SaveWorkspaceHistory]
+        return [GetWorkspaceHistory]
 
     def triggers(self) -> list:
         return []
