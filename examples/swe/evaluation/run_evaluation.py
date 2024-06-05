@@ -1,6 +1,7 @@
 import os
 
 import yaml
+import json
 import datetime
 from datasets import load_dataset
 from pathlib import Path
@@ -114,6 +115,8 @@ def run():
                     f"repo_name: {repo_name}\n")
         current_logs = []
 
+        # this is a step_callback function --> used to store logs of agent actions and
+        # responses
         def add_in_logs(step_output):
             # get agent input
             if len(step_output) < 1:
@@ -158,6 +161,8 @@ def run():
         )
         coding_task.execute()
         agent_logs[instance_id] = current_logs
+    with open(task_output_dir, "w") as f:
+        f.write(json.dumps(agent_logs))
 
 
 if __name__ == "__main__":
