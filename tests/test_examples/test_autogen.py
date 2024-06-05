@@ -6,6 +6,7 @@ import click
 import pytest
 
 from composio.cli import composio as composio_cli
+from composio.exceptions import ApiKeyNotProvidedError
 
 
 def run_autogen_script():
@@ -34,9 +35,9 @@ def pytest_sessionstart_autogen():
         sys.argv = original_argv  # Restore original arguments
 
 def test_autogen_script_not_authorized_error():
-    with pytest.raises(click.ClickException) as exc_info:
+    with pytest.raises(ApiKeyNotProvidedError) as exc_info:
         run_autogen_script()
-    assert "User not logged in, please login using `composio login`" in str(
+    assert "API Key not provided" in str(
         exc_info.value
     )
 
