@@ -46,7 +46,7 @@ class GoToLineNumInOpenFile(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: GoToRequest, authorisation_data: dict
-    ) -> GoToResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
         self.script_file = SCRIPT_CURSOR_DEFAULT
         self.command = "goto"
@@ -58,7 +58,7 @@ class GoToLineNumInOpenFile(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return GoToResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
 
 
 class CreateFileRequest(BaseRequest):
@@ -90,7 +90,7 @@ class CreateFileCmd(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: CreateFileRequest, authorisation_data: dict
-    ) -> CreateFileResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
         self.script_file = SCRIPT_CURSOR_DEFAULT
         self.command = "create"
@@ -107,7 +107,7 @@ class CreateFileCmd(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return CreateFileResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
 
 
 class OpenCmdRequest(BaseRequest):
@@ -139,7 +139,7 @@ class OpenFile(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: OpenCmdRequest, authorisation_data: dict
-    ) -> OpenCmdResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
         self.script_file = SCRIPT_CURSOR_DEFAULT
         self.command = "open"
@@ -147,10 +147,10 @@ class OpenFile(BaseAction):
             raise ValueError("Container process is not set")
         command = f"{self.command} {request_data.file_name}"
         if request_data.line_number != 0:
-            command += f"{request_data.line_number}"
+            command += f" {request_data.line_number}"
         full_command = f"{command}"
         output, return_code = communicate(
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return OpenCmdResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)

@@ -43,7 +43,6 @@ class CmdManagerTool(Tool):
             RunCommandOnWorkspace,
             GetCurrentDirCmd,
             GithubCloneCmd,
-            GitRepoTree,
             SubmitPatchCmd,
         ]
 

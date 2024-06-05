@@ -38,7 +38,7 @@ class Scroll(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: ScrollRequest, authorisation_data: dict
-    ) -> ScrollResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
         self.script_file = SCRIPT_CURSOR_DEFAULT
         if request_data.direction == "down":
@@ -51,4 +51,4 @@ class Scroll(BaseAction):
             self.container_process, self.container_obj, self.command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return ScrollResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)

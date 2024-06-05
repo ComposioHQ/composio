@@ -38,11 +38,12 @@ class GithubCloneCmd(BaseAction):
     _display_name = "Clone Github Repository Action"
     _request_schema = GithubCloneRequest
     _response_schema = GithubCloneResponse
+    command = "git clone <repo_name> && cd <repo_name> && git reset --hard <repo-commit-id>"
 
     @history_recorder()
     def execute(
         self, request_data: GithubCloneRequest, authorisation_data: dict
-    ) -> GithubCloneResponse:
+    ) -> BaseResponse:
         if not request_data.repo_name or not request_data.repo_name.strip():
             raise ValueError("repo_name can not be null. Give a repo_name to clone")
 
@@ -55,13 +56,16 @@ class GithubCloneCmd(BaseAction):
         if self.container_process is None:
             raise ValueError("Container process is not set")
 
+        repo_dir = request_data.repo_name.split("/")[-1].strip()
+        self.command = f"git clone https://{git_token}@github.com/{request_data.repo_name}.git " \
+            f"&& cd {repo_dir} && git reset --hard {request_data.commit_id}"
+
         output, return_code = communicate(
             self.container_process,
             self.container_obj,
-            f"git clone https://{git_token}@github.com/{request_data.repo_name}.git "
-            f"&& cd {request_data.repo_name} && git reset --hard {request_data.commit_id}",
+            self.command,
             self.parent_pids,
             timeout_duration=LONG_TIMEOUT,
         )
         output, return_code = process_output(output, return_code)
-        return GithubCloneResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
