@@ -6,7 +6,6 @@ class TestTagEnum(unittest.TestCase):
     def test_tag_enum_values(self):
         # Test for specific expected enum values
         self.assertEqual(Tag.IMPORTANT.value, ("default", "important"))
-        self.assertEqual(Tag.IMPORTANT.value, ("default", "important"))
         self.assertEqual(Tag.ASANA_GOAL_RELATIONSHIPS.value, ("asana", "Goal relationships"))
         self.assertEqual(Tag.ATTIO_LISTS.value, ("attio", "Lists"))
         self.assertEqual(Tag.BREVO_TASKS.value, ("brevo", "Tasks"))
