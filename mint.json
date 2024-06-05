@@ -232,8 +232,11 @@
     {
       "group": "Tools",
       "pages": [
-        {"group":"Apps","pages":[
-                  "apps/list",
+        "apps/list",
+        {
+          "group":"Apps",
+          "pages":[
+                 
         "apps/accelo",
         "apps/adobe",
         "apps/amazon",
