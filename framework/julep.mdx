@@ -45,10 +45,10 @@ julep_client = Client(api_key=julep_api_key)
 <CodeGroup>
 ```python Agent Configuration
 # Initialise the Composio Tool Set
-composio_toolset = ComposioToolSet()
+composiotoolset = ComposioToolSet()
 
 # Register the GitHub app with the right settings
-tools = composio_toolset.get_tools(tools=[App.GITHUB])
+tools = composiotoolset.get_tools(tools=[App.GITHUB])
 
 # Create and configure the Julep agent
 agent = julep_client.agents.create(
@@ -100,7 +100,7 @@ response = julep_client.sessions.chat(
 <Step title="Handle all the Tool calls">
 <CodeGroup>
 ```python Handle Tool Call
-response = composio_tools.handle_tool_calls(response)
+response = composiotoolset.handle_tool_calls(response)
 
 print(response.messages)
 ```
@@ -120,7 +120,7 @@ print(response.messages)
 <CodeGroup>
 ```python Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
-actions = composio_tools.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
+actions = composiotoolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>
 
@@ -129,7 +129,7 @@ actions = composio_tools.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
 <CodeGroup>
   ```python Filter Specific App
   # To restrict agents from using all tools, filter specific tools
-  actions = composio_tools.get_tools(apps=[App.ASANA, App.GITHUB])
+  actions = composiotoolset.get_tools(apps=[App.ASANA, App.GITHUB])
   ```
 </CodeGroup>
 
