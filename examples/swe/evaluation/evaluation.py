@@ -9,10 +9,14 @@ SUBMIT_PATCH_CMD = "submit_patch"
 
 
 def find_patch(prediction_data):
-    for patch in prediction_data:
-        if SUBMIT_PATCH_CMD in patch["command"]:
-            if len(patch["output"]) > 1:
-                return patch["output"][1]
+    # Iterate through each action in the prediction data
+    for action in prediction_data:
+        # Parse the 'agent_action' field which contains JSON string
+        agent_action = json.loads(action['agent_action'])
+        # Check if the action type is 'AgentAction' and contains a 'tool' that might indicate a patch submission
+        if agent_action['type'] == 'AgentAction' and SUBMIT_PATCH_CMD in agent_action['tool']:
+            # Assuming the patch or relevant output is in 'tool_output'
+            return action['tool_output']
     return None
 
 
