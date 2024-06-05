@@ -44,6 +44,8 @@ FAIL_TO_PASS: (str) - A json list of strings that represent the set of tests res
 PASS_TO_PASS: (str) - A json list of strings that represent tests that should pass before and after the PR application.
 '''
 
+repo_name = "scikit-learn/scikit-learn"
+
 
 def filter_from_repo_name(curr_dataset, repo_name):
     filtered_dataset = curr_dataset.filter(lambda x: x["repo"] == repo_name.strip().lower())
@@ -56,7 +58,7 @@ def get_issues_dataset():
     test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test")
 
     # filter by repo-name 
-    test_dataset = filter_from_repo_name(test_dataset, "pandas")
+    test_dataset = filter_from_repo_name(test_dataset, repo_name)
 
     print(test_dataset[:5])
     return test_dataset
@@ -101,6 +103,7 @@ def run():
         instance_id = issue["instance_id"]
         patch = issue["patch"]
         base_commit = issue["base_commit"]
+        install_commit_id = issue["environment_setup_commit"]
         logger.info(f"starting agent for issue-id: {instance_id}\n"
                     f"issue-description: {issue_description}\n"
                     f"repo_name: {repo_name}\n")
@@ -108,7 +111,9 @@ def run():
         with open(base_task_config_path) as f:
             base_config = yaml.safe_load(f.read())
 
-        issue_added_instruction = base_config["issue_description"].format(issue=issue_description, issue_id=instance_id)
+        issue_added_instruction = base_config["issue_description"].format(issue=issue_description,
+                                                                          issue_id=instance_id,
+                                                                          install_commit_id=install_commit_id)
         backstory_added_instruction = base_config["backstory"].format(repo_name=repo_name,
                                                                       base_commit=base_commit,
                                                                       git_access_token=os.environ.get("GITHUB_ACCESS_TOKEN"))
