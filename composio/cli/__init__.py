@@ -1,6 +1,16 @@
 """
 Composio CLI Tool.
 """
+import sentry_sdk
+
+def init_sentry():
+    sentry_sdk.init(
+        dsn="https://11fa6caf2e5c80f6d3580e2d50b9feb5@o4506274564079616.ingest.us.sentry.io/4507267098345472",
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0
+    )
+
+init_sentry()
 
 import click
 
