@@ -63,11 +63,14 @@ def history_recorder():
                         "command is not set in command-runner action class. History will have empty command for this"
                     )
                 # Assume the state check and logging are meant to be done after the command execution
-                # state = self.workspace_factory.get_workspace_state(workspace_id)
-                state = None
+                state = self.workspace_factory.get_workspace_state(self.workspace_id)
                 self.history_processor.log_command(
                     self.workspace_id, command, output, state
                 )
+                # add state of the workspace in the outgoing output
+                if len(output) > 1:
+                    output_with_state = "\n".join([output[1], state])
+                    output = tuple([output[0], output_with_state])
             return output, return_code
         return wrapper
     return decorator
