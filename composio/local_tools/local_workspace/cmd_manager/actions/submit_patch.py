@@ -28,11 +28,12 @@ class SubmitPatchCmd(BaseAction):
     _display_name = "submit patch action"
     _request_schema = SubmitPatchRequest
     _response_schema = SubmitPatchResponse
+    command = "submit_patch"
 
     @history_recorder()
     def execute(
         self, request_data: SubmitPatchRequest, authorisation_data: dict
-    ) -> SubmitPatchResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
 
         if self.container_process is None:
@@ -41,5 +42,5 @@ class SubmitPatchCmd(BaseAction):
         history_file_name = self.history_processor.save_history_to_file(request_data.workspace_id,
                                                                         request_data.issue_id)
 
-        return SubmitPatchResponse(output=f"generated patch is submitted, and "
+        return BaseResponse(output=f"generated patch is submitted, and "
                                           f"the history of workspace is copied to path: {history_file_name}")
