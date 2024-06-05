@@ -35,7 +35,7 @@ from composio_openai import ComposioToolSet, App
 
 openai_client = OpenAI()
 # Initialise the Composio Tool Set
-composio_toolset = ComposioToolSet()
+composiotoolset = ComposioToolSet()
 ```
 </CodeGroup>
 </Step>
@@ -44,7 +44,7 @@ composio_toolset = ComposioToolSet()
 ```python Tools For GitHub
 # Get GitHub tools that are pre-configured
 # Retrieve actions
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+actions = composiotoolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 ```
 </CodeGroup>
 </Step>
@@ -97,7 +97,7 @@ print(response_after_tool_calls)
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from executing any actions, filter specific actions
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+actions = composiotoolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 ```
 </CodeGroup>
 
@@ -106,6 +106,6 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO
 <CodeGroup>
   ```bash Filter Specific App
   # To restrict agents from using all tools, filter specific Apps
-  actions = composio_toolset.get_tools(apps=[App.GITHUB])
+  actions = composiotoolset.get_tools(apps=[App.GITHUB])
   ```
 </CodeGroup>

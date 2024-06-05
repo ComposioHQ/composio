@@ -46,8 +46,8 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 from composio_langchain import ComposioToolSet, Action, App
 
 # Get All the tools 
-composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
+composiotoolset = ComposioToolSet()
+tools = composiotoolset.get_tools(apps=[App.GITHUB])
 ```
 </CodeGroup>
 </Step>
@@ -81,7 +81,7 @@ Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'docs'}`
 <CodeGroup>
 ```bash Filter Specific Action
 # To restrict agents from using all the actions, filter specific actions
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
+tools = composiotoolset.get_tools(apps=[App.GITHUB])
 ```
 </CodeGroup>
 
@@ -89,6 +89,6 @@ tools = composio_toolset.get_tools(apps=[App.GITHUB])
 <CodeGroup>
 ```bash Filter Specific App
 # To restrict agents from using all tools, filter specific tools
-tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+tools = composiotoolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>

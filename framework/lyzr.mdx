@@ -35,7 +35,7 @@ These commands prepare your environment for seamless interaction between Lyzr an
 
     from lyzr_automata import Task, Agent
     from lyzr_automata.ai_models.openai import OpenAIModel
-    from composio_lyzr import ComposioToolset, App, Action
+    from composio_lyzr import ComposioToolSet, App, Action
     from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
 
 
@@ -56,12 +56,12 @@ These commands prepare your environment for seamless interaction between Lyzr an
         prompt_persona="You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs",
     )
 
-    composio_tool = ComposioToolset().get_lyzr_tool(Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER)
+    composiotoolset = ComposioToolSet().get_lyzr_tool(Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER)
 
     task = Task(
         name="Github Starring",
         agent=lyzr_agent,
-        tool=composio_tool,
+        tool=composiotoolset,
         model=open_ai_text_completion_model,
         instructions="Star a repo SamparkAI/composio on GitHub",
     )
