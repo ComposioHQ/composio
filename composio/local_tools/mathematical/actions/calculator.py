@@ -1,14 +1,17 @@
 from pydantic import BaseModel, Field
 from composio.core.local import Action
 
+
 class CalculatorRequest(BaseModel):
     operation: str = Field(
         ...,
         description="A mathematical expression, a couple examples are `200*7` or `5000/2*10`",
     )
 
+
 class CalculatorResponse(BaseModel):
     result: str = Field(..., description="Result of the calculation")
+
 
 class Calculator(Action):
     """

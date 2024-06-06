@@ -126,12 +126,18 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 {triggers}
 """
 
+
 class AppsExamples(HelpfulCmdBase, DYMGroup):
     examples = [
-        click.style("composio apps", fg='green') + click.style("            # List all apps\n", fg='black'),
-        click.style("composio apps --enabled", fg='green') + click.style("  # List only enabled apps\n", fg='black'),
-        click.style("composio apps update", fg='green') + click.style("     # Update local Apps database\n", fg='black'),
+        click.style("composio apps", fg="green")
+        + click.style("            # List all apps\n", fg="black"),
+        click.style("composio apps --enabled", fg="green")
+        + click.style("  # List only enabled apps\n", fg="black"),
+        click.style("composio apps update", fg="green")
+        + click.style("     # Update local Apps database\n", fg="black"),
     ]
+
+
 @click.group(name="apps", invoke_without_command=True, cls=AppsExamples)
 @click.help_option("--help", "-h", "-help")
 @click.option(
@@ -161,8 +167,10 @@ def _apps(context: Context, enabled: bool = False) -> None:
 
 class UpdateExamples(HelpfulCmdBase, click.Command):
     examples = [
-        click.style("composio apps update", fg='green') + click.style("  # Update local Apps database\n", fg='black'),
+        click.style("composio apps update", fg="green")
+        + click.style("  # Update local Apps database\n", fg="black"),
     ]
+
 
 @_apps.command(name="update", cls=UpdateExamples)
 @click.option(
@@ -189,12 +197,13 @@ def _update(context: Context, beta: bool = False) -> None:
         )
         if not beta:
             c = []
+
             def filter_non_beta_items(items):
                 filtered_items = []
                 for item in items:
                     if not item.name.lower().endswith("beta"):
                         filtered_items.append(item)
-                
+
                 seen = set()
                 unique_items = []
                 for item in filtered_items:

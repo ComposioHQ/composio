@@ -8,9 +8,10 @@ from composio.utils.url import get_web_url
 
 from click.core import Context as ClickContext
 
+
 class HelpfulCmdBase:
     examples = []
-    help = None 
+    help = None
 
     def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
         """Writes the help text to the formatter if it exists."""
@@ -21,12 +22,12 @@ class HelpfulCmdBase:
             text = ""
 
         text = "📄" + text
-        if getattr(self, 'deprecated', False):
+        if getattr(self, "deprecated", False):
             text = "(Deprecated) {text}".format(text=text)
 
         if text:
             formatter.write_paragraph()
-            formatter.write_text(click.style(text, fg='white'))
+            formatter.write_text(click.style(text, fg="white"))
 
     def format_options(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
         """Writes all the options into the formatter if they exist."""
@@ -34,7 +35,7 @@ class HelpfulCmdBase:
         for param in self.get_params(ctx):
             rv = param.get_help_record(ctx)
             if rv is not None:
-                if '-h' in rv[0] or '-help' in rv[0] or '--help' in rv[0]:
+                if "-h" in rv[0] or "-help" in rv[0] or "--help" in rv[0]:
                     continue
                 opts.append(rv)
 
@@ -57,8 +58,10 @@ class HelpfulCmdBase:
 
 class HelpfulCmd(HelpfulCmdBase, click.Command):
     examples = [
-        click.style("composio login", fg='green') + click.style("  # Login with browser support\n", fg='black'),
-        click.style("composio login --no-browser", fg='green') + click.style("  # Login without browser interaction\n", fg='black'),
+        click.style("composio login", fg="green")
+        + click.style("  # Login with browser support\n", fg="black"),
+        click.style("composio login --no-browser", fg="green")
+        + click.style("  # Login without browser interaction\n", fg="black"),
     ]
 
 

@@ -19,10 +19,18 @@ logger = get_logger()
 
 
 class GithubCloneRequest(BaseRequest):
-    workspace_id: str = Field(..., description="workspace id on which to clone the repo")
-    repo_name: str = Field(..., description="github repository to clone. defaults to princeton-nlp/SWE-bench")
-    commit_id: str = Field("", description="after cloning the git repo, repo will be set to this commit-id."
-                                           "commit-id can be empty.")
+    workspace_id: str = Field(
+        ..., description="workspace id on which to clone the repo"
+    )
+    repo_name: str = Field(
+        ...,
+        description="github repository to clone. defaults to princeton-nlp/SWE-bench",
+    )
+    commit_id: str = Field(
+        "",
+        description="after cloning the git repo, repo will be set to this commit-id."
+        "commit-id can be empty.",
+    )
 
 
 class GithubCloneResponse(BaseResponse):
@@ -38,7 +46,9 @@ class GithubCloneCmd(BaseAction):
     _display_name = "Clone Github Repository Action"
     _request_schema = GithubCloneRequest
     _response_schema = GithubCloneResponse
-    command = "git clone <repo_name> && cd <repo_name> && git reset --hard <repo-commit-id>"
+    command = (
+        "git clone <repo_name> && cd <repo_name> && git reset --hard <repo-commit-id>"
+    )
 
     @history_recorder()
     def execute(
@@ -57,8 +67,10 @@ class GithubCloneCmd(BaseAction):
             raise ValueError("Container process is not set")
 
         repo_dir = request_data.repo_name.split("/")[-1].strip()
-        self.command = f"git clone https://{git_token}@github.com/{request_data.repo_name}.git " \
+        self.command = (
+            f"git clone https://{git_token}@github.com/{request_data.repo_name}.git "
             f"&& cd {repo_dir} && git reset --hard {request_data.commit_id}"
+        )
 
         output, return_code = communicate(
             self.container_process,
