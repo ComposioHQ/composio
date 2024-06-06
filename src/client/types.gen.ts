@@ -902,8 +902,6 @@ export type ListActiveTriggersResponse = {
          * Timestamp when the trigger was disabled, if applicable.
          */
         disabledAt?: string;
-        type?: unknown;
-        description?: unknown;
     }>;
     pageInfo?: {
         /**
@@ -919,6 +917,56 @@ export type ListActiveTriggersResponse = {
          */
         perPage?: number;
     };
+};
+
+export type GetActiveTriggerData = {
+    /**
+     * The ID of the trigger to retrieve.
+     */
+    triggerId: string;
+};
+
+export type GetActiveTriggerResponse = {
+    /**
+     * Unique identifier for the trigger.
+     */
+    id?: string;
+    /**
+     * Identifier for the connection associated with the trigger.
+     */
+    connectionId?: string;
+    /**
+     * Name of the trigger.
+     */
+    triggerName?: string;
+    /**
+     * Data associated with the trigger.
+     */
+    triggerData?: string;
+    /**
+     * Configuration settings for the trigger.
+     */
+    triggerConfig?: {
+        [key: string]: unknown;
+    };
+    /**
+     * State information for the trigger.
+     */
+    state?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Timestamp when the trigger was created.
+     */
+    createdAt?: string;
+    /**
+     * Timestamp when the trigger was last updated.
+     */
+    updatedAt?: string;
+    /**
+     * Timestamp when the trigger was disabled, if applicable.
+     */
+    disabledAt?: string;
 };
 
 export type $OpenApiTs = {
@@ -1791,8 +1839,6 @@ export type $OpenApiTs = {
                          * Timestamp when the trigger was disabled, if applicable.
                          */
                         disabledAt?: string;
-                        type?: unknown;
-                        description?: unknown;
                     }>;
                     pageInfo?: {
                         /**
@@ -1809,6 +1855,66 @@ export type $OpenApiTs = {
                         perPage?: number;
                     };
                 };
+            };
+        };
+    };
+    '/v1/triggers/get/{triggerId}': {
+        get: {
+            req: GetActiveTriggerData;
+            res: {
+                /**
+                 * A successful response containing the details of the active trigger.
+                 */
+                200: {
+                    /**
+                     * Unique identifier for the trigger.
+                     */
+                    id?: string;
+                    /**
+                     * Identifier for the connection associated with the trigger.
+                     */
+                    connectionId?: string;
+                    /**
+                     * Name of the trigger.
+                     */
+                    triggerName?: string;
+                    /**
+                     * Data associated with the trigger.
+                     */
+                    triggerData?: string;
+                    /**
+                     * Configuration settings for the trigger.
+                     */
+                    triggerConfig?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * State information for the trigger.
+                     */
+                    state?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Timestamp when the trigger was created.
+                     */
+                    createdAt?: string;
+                    /**
+                     * Timestamp when the trigger was last updated.
+                     */
+                    updatedAt?: string;
+                    /**
+                     * Timestamp when the trigger was disabled, if applicable.
+                     */
+                    disabledAt?: string;
+                };
+                /**
+                 * Trigger not found
+                 */
+                404: unknown;
+                /**
+                 * Internal server error
+                 */
+                500: unknown;
             };
         };
     };
