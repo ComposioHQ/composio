@@ -55,7 +55,9 @@ class DockerManager:
         raise
 
     @classmethod
-    def get_container(cls, ctr_name: str, image_name: str, persistent: bool = False) -> Tuple[subprocess.Popen, Set]:
+    def get_container(
+        cls, ctr_name: str, image_name: str, persistent: bool = False
+    ) -> Tuple[subprocess.Popen, Set]:
         instance = cls()
         client = instance.get_client()
         filtered_images = client.images.list(filters={"reference": image_name})
@@ -84,7 +86,9 @@ class DockerManager:
     @classmethod
     def get_container_by_container_name(cls, container_name: str, image_name: str):
         instance = cls()
-        filtered_images = instance.get_client().images.list(filters={"reference": image_name})
+        filtered_images = instance.get_client().images.list(
+            filters={"reference": image_name}
+        )
         if len(filtered_images) == 0:
             msg = (
                 f"Image {image_name} not found. Please ensure it is built and available. "
@@ -105,14 +109,18 @@ class DockerManager:
         except docker.errors.NotFound:
             logger.debug("Couldn't find container. Let's wait and retry.")
             time.sleep(3)
-            container_obj = docker_client.containers.get(container_name)
+            container_obj = instance.get_client().containers.get(container_name)
 
         return container_obj
 
-    def _get_persistent_container(self, ctr_name: str, image_name: str) -> Tuple[subprocess.Popen, Set]:
-        containers = self.get_client().containers.list(all=True, filters={"name": ctr_name})
+    def _get_persistent_container(
+        self, ctr_name: str, image_name: str
+    ) -> Tuple[subprocess.Popen, Set]:
+        containers = self.get_client().containers.list(
+            all=True, filters={"name": ctr_name}
+        )
         if ctr_name in [c.name for c in containers]:
-            container_obj = client.containers.get(ctr_name)
+            container_obj = self.get_client().containers.get(ctr_name)
             if container_obj.status in {"created"}:
                 container_obj.start()
             elif container_obj.status in {"running"}:
@@ -122,16 +130,18 @@ class DockerManager:
             elif container_obj.status in {"paused"}:
                 container_obj.unpause()
             else:
-                raise RuntimeError(f"Unexpected container status: {container_obj.status}")
+                raise RuntimeError(
+                    f"Unexpected container status: {container_obj.status}"
+                )
         else:
-            container_obj = client.containers.run(
+            container_obj = self.get_client().containers.run(
                 image_name,
                 command="/bin/bash -l -m",
                 name=ctr_name,
                 stdin_open=True,
                 tty=True,
                 detach=True,
-                auto_remove=not persistent,
+                auto_remove=False,
             )
             container_obj.start()
         startup_cmd = [
@@ -169,9 +179,19 @@ class DockerManager:
             raise RuntimeError(
                 f"Detected alien processes attached or running. Please ensure that no other agents are running on this container. PIDs: {bash_pids}, {other_pids}"
             )
-        return container, set(map(str,[bash_pid,1,],))
+        return container, set(
+            map(
+                str,
+                [
+                    bash_pid,
+                    1,
+                ],
+            )
+        )
 
-    def _get_non_persistent_container(self, ctr_name: str, image_name: str) -> Tuple[subprocess.Popen, Set]:
+    def _get_non_persistent_container(
+        self, ctr_name: str, image_name: str
+    ) -> Tuple[subprocess.Popen, Set]:
         startup_cmd = [
             "docker",
             "run",
@@ -209,6 +229,7 @@ def get_container(
     ctr_name: str, image_name: str, persistent: bool = False
 ) -> Tuple[subprocess.Popen, Set]:
     return DockerManager.get_container(ctr_name, image_name)
+
 
 def get_container_by_container_name(container_name: str, image_name: str):
     return DockerManager.get_container_by_container_name(container_name, image_name)
