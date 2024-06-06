@@ -23,8 +23,11 @@
   },
   "dependencies": {
     "@langchain/core": "^0.2.6",
+    "@langchain/openai": "^0.1.2",
     "axios": "^1.7.2",
     "clean-webpack-plugin": "^4.0.0",
-    "enumify": "^2.0.0"
+    "enumify": "^2.0.0",
+    "langchain": "^0.2.5",
+    "zod": "^3.23.8"
   }
 }

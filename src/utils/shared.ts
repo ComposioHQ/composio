@@ -1,3 +1,5 @@
+import z from "zod";
+
 type SchemaTypeToTsType = {
     [key: string]: any;
 };
@@ -75,16 +77,46 @@ export function jsonSchemaToTsField(
     ];
 }
 
-export function jsonSchemaToModel(jsonSchema: Record<string, any>): any {
-    const modelName = jsonSchema.title;
-    const fieldDefinitions: Record<string, any> = {};
 
-    for (const [name, prop] of Object.entries(jsonSchema.properties || {})) {
-        fieldDefinitions[name] = jsonSchemaToTsField(name, prop as any, jsonSchema.required || []);
+export function jsonSchemaToModel(jsonSchema: Record<string, any>): any {
+    const properties = jsonSchema.properties;
+    if (!properties) {
+        return z.object({});
     }
 
-    return class {
-        static modelName = modelName;
-        static fields = fieldDefinitions;
-    };
+    const zodSchema: Record<string, any> = {};
+    for (const [key, _] of Object.entries(properties)) {
+        const value = _ as any;
+        let zodType;
+        switch (value.type) {
+            case "string":
+                zodType = z.string().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+                break;
+            case "number":
+                zodType = z.number().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+                break;
+            case "integer":
+                zodType = z.number().int().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+                break;
+            case "boolean":
+                zodType = z.boolean().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+                break;
+            case "array":
+                zodType = z.array(jsonSchemaToModel(value.items)).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+                break;
+            case "object":
+                zodType = jsonSchemaToModel(value).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+                break;
+            default:
+                throw new Error(`Unsupported JSON schema type: ${value.type}`);
+        }
+
+        if (value.description) {
+            zodType = zodType.describe(value.description);
+        }
+
+        zodSchema[key] = zodType;
+    }
+
+    return z.object(zodSchema);
 }

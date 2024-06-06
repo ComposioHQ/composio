@@ -40,6 +40,7 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     execute(data: ExecuteActionData): CancelablePromise<ExecuteActionResponse> {
+        console.log("EXEC", data);
         return executeAction(data, this.client.config);
     }
 }
