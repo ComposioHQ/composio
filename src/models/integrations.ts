@@ -1,4 +1,4 @@
-import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, GetIntegrationResponse, listAllIntegrations, getIntegration } from "../client";
+import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, GetIntegrationResponse, listAllIntegrations, getIntegration, ListAllIntegrationsData } from "../client";
 import { Composio } from "../sdk";
 
 export class Integrations {
@@ -14,8 +14,8 @@ export class Integrations {
      * @returns {Promise<ListAllIntegrationsResponse>} A promise that resolves to the list of all integrations.
      * @throws {ApiError} If the request fails.
      */
-    list(): CancelablePromise<ListAllIntegrationsResponse> {
-        return listAllIntegrations();
+    list(data: ListAllIntegrationsData = {}): CancelablePromise<ListAllIntegrationsResponse> {
+        return listAllIntegrations(data, this.client.config);
     }
 
     /**
@@ -28,6 +28,6 @@ export class Integrations {
      * @throws {ApiError} If the request fails.
      */
     get(data: GetIntegrationData): CancelablePromise<GetIntegrationResponse> {
-        return getIntegration(data);
+        return getIntegration(data, this.client.config);
     }
 }

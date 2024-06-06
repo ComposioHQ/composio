@@ -15,7 +15,7 @@ export class Apps {
      * @throws {ApiError} If the request fails.
      */
     list(): CancelablePromise<ListAllAppsResponse> {
-        return listAllApps();
+        return listAllApps(this.client.config);
     }
 }
 
