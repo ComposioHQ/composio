@@ -13,7 +13,6 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     Scroll,
     SearchDirCmd,
     SearchFileCmd,
-    SubmitPatchCmd,
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
@@ -42,7 +41,6 @@ class CmdManagerTool(Tool):
             RunCommandOnWorkspace,
             GetCurrentDirCmd,
             GithubCloneCmd,
-            SubmitPatchCmd,
         ]
 
     def triggers(self) -> list:

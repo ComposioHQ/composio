@@ -68,12 +68,6 @@ def history_recorder():
                 self.history_processor.log_command(
                     self.workspace_id, command, output, state
                 )
-                # commenting this code as nly current-working-dir
-                # in workspace state is not useful --> uncomment if adding anything else in state cmd
-                # # add state of the workspace in the outgoing output
-                # if len(output) > 1:
-                #     output_with_state = "\n".join([output[1], state])
-                #     output = tuple([output[0], output_with_state])
             return output, return_code
 
         return wrapper
