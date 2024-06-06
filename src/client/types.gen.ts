@@ -37,6 +37,12 @@ export type ListAllConnectionsData = {
      * Filter by using specific Integration
      */
     integrationId?: string;
+
+    /**
+     * Filter by using specific entity id, seperated by comma
+     */
+    user_uuid?: string;
+
     /**
      * Page number to fetch
      */
