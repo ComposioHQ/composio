@@ -104,14 +104,19 @@ class DockerManager:
                 f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
                 f"for {attrs['Os']} {attrs['Architecture']}."
             )
-        try:
-            container_obj = instance.get_client().containers.get(container_name)
-        except docker.errors.NotFound:
-            logger.debug("Couldn't find container. Let's wait and retry.")
-            time.sleep(3)
-            container_obj = instance.get_client().containers.get(container_name)
-
-        return container_obj
+        max_attempts = 5
+        attempt = 0
+        backoff_time = 1  # Initial backoff time in seconds
+        while attempt < max_attempts:
+            try:
+                container_obj = instance.get_client().containers.get(container_name)
+                return container_obj
+            except docker.errors.NotFound:
+                logger.debug("Couldn't find container. Let's wait and retry.")
+                time.sleep(backoff_time)
+                backoff_time *= 2
+                attempt += 1
+        raise RuntimeError(f"Failed to find container {container_name} after {max_attempts} attempts.")
 
     def _get_persistent_container(
         self, ctr_name: str, image_name: str
