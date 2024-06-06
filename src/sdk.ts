@@ -6,6 +6,7 @@ import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
 import { OpenAPI } from './client';
+import { Action } from './enums';
 
 export class Composio {
     private apiKey: string;
@@ -98,14 +99,41 @@ class Entity {
         this.id = id;
     }
 
-    // async execute(action: Action, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
-    //     if (action.noAuth) {
-    //         return this.client.actions.execute(action, params, this.id);
-    //     }
+    async execute(action: Action, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
+        if (action.no_auth) {
+            return this.client.actions.execute({
+                actionName: action.action,
+                requestBody: {
+                    input: params,
+                    appName: action.app
+                }
+            });
+        }
+        let connectedAccount = null;
 
-    //     const connectedAccount = await this.getConnection(action.app, connectedAccountId);
-    //     return this.client.actions.execute(action, params, connectedAccount.clientUniqueUserId, connectedAccount.id);
-    // }
+        if(connectedAccountId) {
+            connectedAccount = await this.client.connectedAccounts.get({
+                connectedAccountId: connectedAccountId
+            });
+        } else {
+            const connectedAccounts = await this.client.connectedAccounts.list({
+                user_uuid: this.id
+            });
+            if (connectedAccounts.items!.length === 0) {
+                throw new Error('No connected account found');
+            }
+
+            connectedAccount = connectedAccounts.items![0];
+        }
+        return this.client.actions.execute({
+            actionName: action.action,
+            requestBody: {
+                connectedAccountId: connectedAccount.id,
+                input: params,
+                appName: action.app
+            }
+        });
+    }
 
     // async getConnection(app?: string, connectedAccountId?: string): Promise<ConnectedAccountModel> {
     //     if (connectedAccountId) {
