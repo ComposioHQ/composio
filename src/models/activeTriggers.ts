@@ -2,7 +2,7 @@ import { CancelablePromise, GetActiveTriggerData, GetActiveTriggerResponse, List
 import { Composio } from "../sdk";
 
 export class ActiveTriggers {
-    constructor(private client: Composio) {
+    constructor(private readonly client: Composio) {
         this.client = client;
     }
 

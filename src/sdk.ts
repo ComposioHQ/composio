@@ -11,6 +11,14 @@ export class Composio {
     private baseUrl: string;
     private http: AxiosInstance;
 
+
+    connectedAccounts: ConnectedAccounts;
+    apps: Apps;
+    actions: Actions;
+    triggers: Triggers;
+    integrations: Integrations;
+    activeTriggers: ActiveTriggers;
+
     constructor(apiKey?: string, baseUrl?: string) {
         this.apiKey = apiKey || process.env.ENV_COMPOSIO_API_KEY || '';
         if (!this.apiKey) {
@@ -81,72 +89,72 @@ class Entity {
         this.id = id;
     }
 
-    async execute(action: Action, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
-        if (action.noAuth) {
-            return this.client.actions.execute(action, params, this.id);
-        }
+    // async execute(action: Action, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
+    //     if (action.noAuth) {
+    //         return this.client.actions.execute(action, params, this.id);
+    //     }
 
-        const connectedAccount = await this.getConnection(action.app, connectedAccountId);
-        return this.client.actions.execute(action, params, connectedAccount.clientUniqueUserId, connectedAccount.id);
-    }
+    //     const connectedAccount = await this.getConnection(action.app, connectedAccountId);
+    //     return this.client.actions.execute(action, params, connectedAccount.clientUniqueUserId, connectedAccount.id);
+    // }
 
-    async getConnection(app?: string, connectedAccountId?: string): Promise<ConnectedAccountModel> {
-        if (connectedAccountId) {
-            return this.client.connectedAccounts.get(connectedAccountId);
-        }
+    // async getConnection(app?: string, connectedAccountId?: string): Promise<ConnectedAccountModel> {
+    //     if (connectedAccountId) {
+    //         return this.client.connectedAccounts.get(connectedAccountId);
+    //     }
 
-        let latestAccount = null;
-        let latestCreationDate = new Date(0);
-        const connectedAccounts = await this.client.connectedAccounts.get({ entityIds: [this.id], active: true });
+    //     let latestAccount = null;
+    //     let latestCreationDate = new Date(0);
+    //     const connectedAccounts = await this.client.connectedAccounts.get({ entityIds: [this.id], active: true });
 
-        for (const connectedAccount of connectedAccounts) {
-            if (app === connectedAccount.appUniqueId) {
-                const creationDate = new Date(connectedAccount.createdAt);
-                if (!latestAccount || creationDate > latestCreationDate) {
-                    latestCreationDate = creationDate;
-                    latestAccount = connectedAccount;
-                }
-            }
-        }
+    //     for (const connectedAccount of connectedAccounts) {
+    //         if (app === connectedAccount.appUniqueId) {
+    //             const creationDate = new Date(connectedAccount.createdAt);
+    //             if (!latestAccount || creationDate > latestCreationDate) {
+    //                 latestCreationDate = creationDate;
+    //                 latestAccount = connectedAccount;
+    //             }
+    //         }
+    //     }
 
-        if (!latestAccount) {
-            throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
-        }
+    //     if (!latestAccount) {
+    //         throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
+    //     }
 
-        return latestAccount;
-    }
+    //     return latestAccount;
+    // }
 
-    async initiateConnection(appName: string | App, authMode?: string, authConfig?: Record<string, any>, redirectUrl?: string, integration?: IntegrationModel): Promise<ConnectionRequestModel> {
-        if (typeof appName !== 'string') {
-            appName = appName.value;
-        }
+    // async initiateConnection(appName: string | App, authMode?: string, authConfig?: Record<string, any>, redirectUrl?: string, integration?: IntegrationModel): Promise<ConnectionRequestModel> {
+    //     if (typeof appName !== 'string') {
+    //         appName = appName.value;
+    //     }
 
-        const app = await this.client.apps.get(appName);
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-        if (!integration && authMode) {
-            integration = await this.client.integrations.create({
-                appId: app.appId,
-                name: `integration_${timestamp}`,
-                authMode,
-                authConfig,
-                useComposioAuth: false
-            });
-        }
+    //     const app = await this.client.apps.get(appName);
+    //     const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+    //     if (!integration && authMode) {
+    //         integration = await this.client.integrations.create({
+    //             appId: app.appId,
+    //             name: `integration_${timestamp}`,
+    //             authMode,
+    //             authConfig,
+    //             useComposioAuth: false
+    //         });
+    //     }
 
-        if (!integration && !authMode) {
-            integration = await this.client.integrations.create({
-                appId: app.appId,
-                name: `integration_${timestamp}`,
-                useComposioAuth: true
-            });
-        }
+    //     if (!integration && !authMode) {
+    //         integration = await this.client.integrations.create({
+    //             appId: app.appId,
+    //             name: `integration_${timestamp}`,
+    //             useComposioAuth: true
+    //         });
+    //     }
 
-        return this.client.connectedAccounts.initiate({
-            integrationId: integration.id,
-            entityId: this.id,
-            redirectUrl
-        });
-    }
+    //     return this.client.connectedAccounts.initiate({
+    //         integrationId: integration.id,
+    //         entityId: this.id,
+    //         redirectUrl
+    //     });
+    // }
 }
 
 // Define other classes like ConnectedAccounts, Apps, Actions, Triggers, Integrations, ActiveTriggers, Action, ConnectedAccountModel, IntegrationModel, ConnectionRequestModel as needed.
