@@ -11,10 +11,10 @@ import click
 import pyperclip
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client.enums import App
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
-from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 
 class ActionsExamples(HelpfulCmdBase, DYMGroup):

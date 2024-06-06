@@ -1,6 +1,8 @@
-import typing as t
+import typing as t  # noqa: F401
 from pathlib import Path
+
 from pydantic import BaseModel, Field
+
 from composio.core.local import Action
 
 

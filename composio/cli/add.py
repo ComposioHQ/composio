@@ -13,6 +13,7 @@ from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, login_required, pass_context
 from composio.cli.decorators import pass_entity_id
+from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import (
     AppAuthScheme,
     AppModel,
@@ -25,7 +26,6 @@ from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
-from composio.cli.utils.helpfulcmd import HelpfulCmd
 
 
 class AddIntegrationExamples(HelpfulCmd):
