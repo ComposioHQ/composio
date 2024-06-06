@@ -1,8 +1,9 @@
 import { CancelablePromise, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, getAction, getListActions, executeAction } from "../client";
+import { Composio } from "../sdk";
 
 export class Actions {
-    constructor() {}
-
+    constructor(private readonly client: Composio) {
+    }
     /**
      * Retrieves details of a specific action in the Composio platform by providing its action name.
      * 

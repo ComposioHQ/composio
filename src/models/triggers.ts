@@ -1,4 +1,4 @@
-import { CancelablePromise, ListTriggersData, ListTriggersResponse, getTrigger, listTriggers } from "../client";
+import { CancelablePromise, ListTriggersData, ListTriggersResponse, listTriggers } from "../client";
 import { Composio } from "../sdk";
 
 export class Triggers {

@@ -1,8 +1,8 @@
 import { CancelablePromise, listAllConnections, createConnection, GetConnectedAccountResponse, GetConnectedAccountData, CreateConnectionData, CreateConnectionResponse, ListAllConnectionsData, ListAllConnectionsResponse, getConnectedAccount } from "../client";
+import { Composio } from "../sdk";
 
 export class ConnectedAccounts {
-    constructor() {
-        
+    constructor(private readonly client: Composio) {
     }
 
     /**

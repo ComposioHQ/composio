@@ -2,7 +2,7 @@ import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, Get
 import { Composio } from "../sdk";
 
 export class Integrations {
-    constructor(private client: Composio) {
+    constructor(private readonly client: Composio) {
         this.client = client;
     }
 

@@ -1,8 +1,8 @@
 import { CancelablePromise, ListAllAppsResponse, listAllApps } from "../client";
-import { Composio } from "../index"
+import { Composio } from "../sdk"
 
 export class Apps {
-    constructor(private client: Composio) {
+    constructor(private readonly client: Composio) {
         this.client = client;
     }
 
