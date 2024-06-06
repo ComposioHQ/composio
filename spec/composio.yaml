@@ -1622,8 +1622,6 @@ paths:
                             type: string
                             format: date-time
                             description: Timestamp when the trigger was disabled, if applicable.
-                          type: boolean
-                          description: Whether the event is enabled.
                   pageInfo:
                     type: object
                     properties:
@@ -1636,6 +1634,62 @@ paths:
                       perPage:
                         type: integer
                         description: The number of items per page.
+  /v1/triggers/get/{triggerId}:
+    get:
+      summary: Get Active Trigger
+      operationId: Get-Active-Trigger
+      description: Retrieves details of a specific active trigger in the Composio platform by providing its trigger ID.
+      parameters:
+        - name: triggerId
+          in: path
+          required: true
+          description: The ID of the trigger to retrieve.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A successful response containing the details of the active trigger.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier for the trigger.
+                  connectionId:
+                    type: string
+                    description: Identifier for the connection associated with the trigger.
+                  triggerName:
+                    type: string
+                    description: Name of the trigger.
+                  triggerData:
+                    type: string
+                    description: Data associated with the trigger.
+                  triggerConfig:
+                      type: object
+                      description: Configuration settings for the trigger.
+                      default: {}
+                  state:
+                    type: object
+                    description: State information for the trigger.
+                    default: {}
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the trigger was created.
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the trigger was last updated.
+                  disabledAt:
+                      type: string
+                      format: date-time
+                      description: Timestamp when the trigger was disabled, if applicable.
+        '404':
+          description: Trigger not found
+        '500':
+          description: Internal server error
 tags:
   - name: actions
   - name: apps

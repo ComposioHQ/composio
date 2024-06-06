@@ -1,24 +1,10 @@
-import { CancelablePromise, GetTriggerData, GetTriggerResponse, ListTriggersData, ListTriggersResponse, getTrigger, listTriggers } from "../client";
+import { CancelablePromise, ListTriggersData, ListTriggersResponse, getTrigger, listTriggers } from "../client";
 import { Composio } from "../sdk";
 
 export class Triggers {
     constructor(private client: Composio) {
         this.client = client;
     }
-
-    /**
-     * Retrieves details of a specific trigger in the Composio platform by providing its trigger name.
-     * 
-     * The response includes the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
-     * 
-     * @param {GetTriggerData} data The data for the request.
-     * @returns {CancelablePromise<GetTriggerResponse>} A promise that resolves to the details of the trigger.
-     * @throws {ApiError} If the request fails.
-     */
-    get(data: GetTriggerData): CancelablePromise<GetTriggerResponse> {
-        return getTrigger(data);
-    }
-
     /**
      * Retrieves a list of all triggers in the Composio platform.
      * 

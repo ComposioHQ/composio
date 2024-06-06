@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse } from './types.gen';
+import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse } from './types.gen';
 
 /**
  * List All Apps
@@ -324,5 +324,25 @@ export const listActiveTriggers = (data: ListActiveTriggersData = {}): Cancelabl
         integrationIds: data.integrationIds,
         triggerIds: data.triggerIds,
         triggerNames: data.triggerNames
+    }
+}); };
+
+/**
+ * Get Active Trigger
+ * Retrieves details of a specific active trigger in the Composio platform by providing its trigger ID.
+ * @param data The data for the request.
+ * @param data.triggerId The ID of the trigger to retrieve.
+ * @returns unknown A successful response containing the details of the active trigger.
+ * @throws ApiError
+ */
+export const getActiveTrigger = (data: GetActiveTriggerData): CancelablePromise<GetActiveTriggerResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/v1/triggers/get/{triggerId}',
+    path: {
+        triggerId: data.triggerId
+    },
+    errors: {
+        404: 'Trigger not found',
+        500: 'Internal server error'
     }
 }); };
