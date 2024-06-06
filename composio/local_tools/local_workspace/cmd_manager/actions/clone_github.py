@@ -29,7 +29,7 @@ class GithubCloneRequest(BaseRequest):
     commit_id: str = Field(
         "",
         description="after cloning the git repo, repo will be set to this commit-id."
-        "if commit-id is empty, master branch of the repo will be cloned",
+        "if commit-id is empty, default branch of the repo will be cloned",
     )
 
 
