@@ -47,7 +47,7 @@ logger.propagate = False
     PASS_TO_PASS: (str) - A json list of strings that represent tests that should pass before and after the PR application.
 '''
 
-repo_name = "scikit-learn/scikit-learn"
+repo_name = "pydata/xarray"
 
 
 def filter_from_repo_name(curr_dataset, repo_name):
