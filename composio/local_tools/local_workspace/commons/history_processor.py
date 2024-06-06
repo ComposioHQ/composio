@@ -38,7 +38,7 @@ class HistoryProcessor:
         all_history = self.history.get(workspace_id, [])
         return all_history[-n:]
 
-    def save_history_to_file(self, workspace_id: str, instance_id: str)->str:
+    def save_history_to_file(self, workspace_id: str, instance_id: str) -> str:
         # make the submission dir if it doesn't exist
         self.make_submission_dir()
         # Define the file path using instance-id and ensure it's unique per workspace
@@ -75,5 +75,7 @@ def history_recorder():
                 #     output_with_state = "\n".join([output[1], state])
                 #     output = tuple([output[0], output_with_state])
             return output, return_code
+
         return wrapper
+
     return decorator

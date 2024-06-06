@@ -5,7 +5,7 @@ from composio.core.local import Tool, Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons import (
     WorkspaceManagerFactory,
-    HistoryProcessor
+    HistoryProcessor,
 )
 from .actions import GetWorkspaceHistory
 

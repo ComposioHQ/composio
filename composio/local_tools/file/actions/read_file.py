@@ -3,6 +3,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from composio.core.local import Action
 
+
 class ReadFileRequest(BaseModel):
     """Read file request schema."""
 
@@ -15,6 +16,7 @@ class ReadFileRequest(BaseModel):
         description="File name to be saved.",
     )
 
+
 class ReadFileResponse(BaseModel):
     """Read file response schema."""
 
@@ -22,6 +24,7 @@ class ReadFileResponse(BaseModel):
         ...,
         description="Content read from the file.",
     )
+
 
 class ReadFile(Action):
     """Read file tool."""
@@ -32,7 +35,6 @@ class ReadFile(Action):
     _response = ReadFileResponse
     _tags = ["file", "read"]
     _tool_name = "file"
-
 
     def execute(self, request: ReadFileRequest) -> ReadFileResponse:
         """
@@ -47,4 +49,3 @@ class ReadFile(Action):
             )
         except Exception as e:  # pylint: disable=broad-exception-caught
             return ReadFileResponse(contents=f"Error reading file: {e}")
-

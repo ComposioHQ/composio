@@ -18,7 +18,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
-    WorkspaceManagerFactory
+    WorkspaceManagerFactory,
 )
 
 
