@@ -15,6 +15,7 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.utils import (
     communicate,
     get_container,
+    get_container_by_container_name,
     process_output,
     read_with_timeout,
 )
@@ -292,6 +293,27 @@ class WorkspaceManagerFactory:
             return workspace_id
 
         raise ValueError(f"Unknown workspace manager type: {workspace_type}")
+
+    def get_workspace_state(self, workspace_id: str):
+        """
+        returns the current working directory in the workspace
+        """
+        state_cmd = "echo '{\"working_dir\": \"'${PWD}'\"}'"
+        workspace_meta = self.get_registered_manager(workspace_id)
+        if not workspace_meta:
+            logger.error(
+                "workspace-manager has no workspace by workspace-id:", workspace_id
+            )
+            return
+        image_name = workspace_meta[KEY_IMAGE_NAME]
+        container_name = workspace_meta[KEY_CONTAINER_NAME]
+        container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        container_obj = get_container_by_container_name(container_name, image_name)
+        parent_pids = workspace_meta[KEY_PARENT_PIDS]
+        output, return_code = communicate(
+            container_process, container_obj, state_cmd, parent_pids
+        )
+        return output
 
     def get_registered_manager(self, workspace_id: str) -> Optional[Dict[str, Any]]:
         return self._registry.get(workspace_id)
