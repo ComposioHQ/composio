@@ -119,10 +119,10 @@ def run():
         #           used to store logs of agent actions and responses
         def add_in_logs(step_output):
             # get agent input
-            if len(step_output) < 1:
-                return
-            agent_action_with_tool_out = step_output[0]
-            if agent_action_with_tool_out and isinstance(agent_action_with_tool_out, list):
+            if isinstance(step_output, list):
+                if len(step_output) < 1:
+                    return
+                agent_action_with_tool_out = step_output[0]
                 if isinstance(agent_action_with_tool_out[0], langchain_core.agents.AgentAction):
                     agent_action = agent_action_with_tool_out[0]
                     tool_out = None
@@ -132,6 +132,8 @@ def run():
                                          "tool_output": tool_out})
                 else:
                     print(type(agent_action_with_tool_out[0]))
+            else:
+                print("type is not list: ", type(step_output))
 
         with open(base_task_config_path) as f:
             base_config = yaml.safe_load(f.read())
