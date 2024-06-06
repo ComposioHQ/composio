@@ -147,7 +147,7 @@ def run():
 
         print("--------------------------------------------------")
 
-        expected_output = "Given issue should not be reproduced"
+        expected_output = "A patch should be generated which fixes the given issue"
         swe_agent = Agent(
             role=base_role,
             goal=goal,
