@@ -6,7 +6,9 @@ class TestTagEnum(unittest.TestCase):
     def test_tag_enum_values(self):
         # Test for specific expected enum values
         self.assertEqual(Tag.IMPORTANT.value, ("default", "important"))
-        self.assertEqual(Tag.ASANA_GOAL_RELATIONSHIPS.value, ("asana", "Goal relationships"))
+        self.assertEqual(
+            Tag.ASANA_GOAL_RELATIONSHIPS.value, ("asana", "Goal relationships")
+        )
         self.assertEqual(Tag.ATTIO_LISTS.value, ("attio", "Lists"))
         self.assertEqual(Tag.BREVO_TASKS.value, ("brevo", "Tasks"))
         self.assertEqual(Tag.CLICKUP_TASKS.value, ("clickup", "Tasks"))
@@ -45,8 +47,10 @@ class TestAppEnum(unittest.TestCase):
 class TestActionEnum(unittest.TestCase):
     def test_action_enum_values(self):
         # Test for specific expected enum values
-        self.assertEqual(Action.GITHUB_ACTIONS_GET_SELF_HOSTED_RUNNER_FOR_ORG.value,
-                         ("github", "github_actions_get_self_hosted_runner_for_org", False))
+        self.assertEqual(
+            Action.GITHUB_ACTIONS_GET_SELF_HOSTED_RUNNER_FOR_ORG.value,
+            ("github", "github_actions_get_self_hosted_runner_for_org", False),
+        )
 
     def test_action_enum_properties(self):
         # Test properties
@@ -58,7 +62,9 @@ class TestActionEnum(unittest.TestCase):
 class TestTriggerEnum(unittest.TestCase):
     def test_trigger_enum_values(self):
         # Test for specific expected enum values
-        self.assertEqual(Trigger.SLACK_NEW_MESSAGE.value, ("slack", "slack_receive_message"))
+        self.assertEqual(
+            Trigger.SLACK_NEW_MESSAGE.value, ("slack", "slack_receive_message")
+        )
 
     def test_trigger_enum_properties(self):
         # Test properties
@@ -66,6 +72,5 @@ class TestTriggerEnum(unittest.TestCase):
         self.assertEqual(Trigger.SLACK_THREAD_REPLY.event, "slack_receive_thread_reply")
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -2,6 +2,7 @@ import typing as t
 from composio.core.local import Tool, Action
 from .actions import CodeQuery
 
+
 class Greptile(Tool):
     """
     Code understanding tool. Index Code and answer questions about it.

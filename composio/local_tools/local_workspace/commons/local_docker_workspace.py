@@ -295,21 +295,19 @@ class WorkspaceManagerFactory:
         raise ValueError(f"Unknown workspace manager type: {workspace_type}")
 
     def get_workspace_state(self, workspace_id: str):
-        '''
+        """
         returns the current working directory in the workspace
-        '''
+        """
         state_cmd = "echo '{\"working_dir\": \"'${PWD}'\"}'"
         workspace_meta = self.get_registered_manager(workspace_id)
         image_name = workspace_meta[KEY_IMAGE_NAME]
         container_name = workspace_meta[KEY_CONTAINER_NAME]
-        container_process = get_container_process(
-            workspace_meta[KEY_WORKSPACE_MANAGER]
-        )
-        container_obj = get_container_by_container_name(
-            container_name, image_name
-        )
+        container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        container_obj = get_container_by_container_name(container_name, image_name)
         parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        output, return_code = communicate(container_process, container_obj, state_cmd, parent_pids)
+        output, return_code = communicate(
+            container_process, container_obj, state_cmd, parent_pids
+        )
         return output
 
     def get_registered_manager(self, workspace_id: str) -> Optional[Dict[str, Any]]:

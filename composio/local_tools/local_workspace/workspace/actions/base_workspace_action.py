@@ -11,11 +11,14 @@ from composio.local_tools.local_workspace.commons import (
 
 logger = get_logger()
 
+
 class BaseWorkspaceRequest(BaseModel):
     pass
 
+
 class BaseWorkspaceResponse(BaseModel):
     pass
+
 
 class BaseWorkspaceAction(Action, ABC):
     """

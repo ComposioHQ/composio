@@ -23,7 +23,9 @@ logger = get_logger()
 docker_client = None
 
 
-def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> Tuple[subprocess.Popen, Set]:
+def get_container(
+    ctr_name: str, image_name: str, persistent: bool = False
+) -> Tuple[subprocess.Popen, Set]:
     global docker_client
     if docker_client is None:
         try:

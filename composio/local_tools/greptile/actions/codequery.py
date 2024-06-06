@@ -8,6 +8,7 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 logger = get_logger()
 
+
 class message(BaseModel):
     id: str = Field(..., description="The id of the message")
     content: str = Field(..., description="The content of the message")
@@ -16,6 +17,7 @@ class message(BaseModel):
         description="The role of the message. ex system,user",
         examples=["system", "user"],
     )
+
 
 class CodeQueryRequest(BaseModel):
     question: str = Field(
@@ -37,6 +39,7 @@ class CodeQueryRequest(BaseModel):
         description="The repository to ask the question about. This should be a github repository. Example openai/docs, samparkai/composio",
         examples=["openai/docs", "samparkai/composio"],
     )
+
 
 class CodeQueryResponse(BaseModel):
     response: str = Field(..., description="The response to the question")
