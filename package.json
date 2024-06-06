@@ -12,12 +12,14 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.14.2",
+    "fork-ts-checker-webpack-plugin": "^9.0.2",
     "ts-loader": "^9.5.1",
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "axios": "^1.7.2"
+    "axios": "^1.7.2",
+    "clean-webpack-plugin": "^4.0.0"
   }
 }
