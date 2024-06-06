@@ -16,5 +16,8 @@
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "axios": "^1.7.2"
   }
 }

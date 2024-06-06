@@ -722,7 +722,7 @@ paths:
         Retrieves a list of all integrations in the Composio platform. It supports pagination to handle large numbers of connectors. The response includes an array of connector objects, each containing information such as the connector's ID, name, authentication scheme, creation/update timestamps, enabled status, associated app information, and logo.
 
         This are the integration you can showcase to end user, and let them select which integration they want to connect an account with. 
-      operationId: list-connectors
+      operationId: list-all-integrations
       parameters:
         - name: page
           in: query
