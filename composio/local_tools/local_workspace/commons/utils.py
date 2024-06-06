@@ -101,7 +101,7 @@ class DockerManager:
                 f"for {attrs['Os']} {attrs['Architecture']}."
             )
         try:
-            container_obj = docker_client.containers.get(container_name)
+            container_obj = instance.get_client().containers.get(container_name)
         except docker.errors.NotFound:
             logger.debug("Couldn't find container. Let's wait and retry.")
             time.sleep(3)
@@ -172,8 +172,38 @@ class DockerManager:
         return container, set(map(str,[bash_pid,1,],))
 
     def _get_non_persistent_container(self, ctr_name: str, image_name: str) -> Tuple[subprocess.Popen, Set]:
-        # Your implementation here
-        pass
+        startup_cmd = [
+            "docker",
+            "run",
+            "-i",
+            "--rm",
+            "--name",
+            ctr_name,
+            image_name,
+            "/bin/bash",
+            "-l",
+            "-m",
+        ]
+        logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
+        container = subprocess.Popen(
+            startup_cmd,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=STDOUT,
+            text=True,
+            bufsize=1,  # line buffered
+        )
+        time.sleep(START_UP_DELAY)
+        # try to read output from container setup (usually an error), timeout if no output
+        output = read_with_timeout(
+            container, None, lambda arg1, arg2: [], [], timeout_duration=2
+        )
+        if output:
+            logger.error(f"Unexpected container setup output: {output}")
+        return container, {
+            "1",
+        }  # bash PID is always 1 for non-persistent containers
+
 
 def get_container(
     ctr_name: str, image_name: str, persistent: bool = False
