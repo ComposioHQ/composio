@@ -64,8 +64,10 @@ class GithubCloneCmd(BaseAction):
             raise ValueError("Container process is not set")
 
         repo_dir = request_data.repo_name.split("/")[-1].strip()
-        command_list = [f"git clone https://{git_token}@github.com/{request_data.repo_name}.git",
-                        f"cd {repo_dir}"]
+        command_list = [
+            f"git clone https://{git_token}@github.com/{request_data.repo_name}.git",
+            f"cd {repo_dir}",
+        ]
         if request_data.commit_id:
             command_list.append(f"git reset --hard {request_data.commit_id}")
         self.command = " && ".join(command_list)
