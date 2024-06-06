@@ -16,7 +16,7 @@ export class ActiveTriggers {
      * @throws {ApiError} If the request fails.
      */
     get(data: GetActiveTriggerData): CancelablePromise<GetActiveTriggerResponse> {
-        return getActiveTrigger(data);
+        return getActiveTrigger(data, this.client.config);
     }
 
     /**
@@ -29,6 +29,6 @@ export class ActiveTriggers {
      * @throws {ApiError} If the request fails.
      */
     list(data: ListActiveTriggersData = {}): CancelablePromise<ListActiveTriggersResponse> {
-        return listActiveTriggers(data);
+        return listActiveTriggers(data, this.client.config);
     }
 }

@@ -15,6 +15,6 @@ export class Triggers {
      * @throws {ApiError} If the request fails.
      */
     list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
-        return listTriggers(data);
+        return listTriggers(data, this.client.config);
     }
 }

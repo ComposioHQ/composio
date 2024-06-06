@@ -15,7 +15,7 @@ export class ConnectedAccounts {
      * @throws {ApiError} If the request fails.
      */
     list(data: ListAllConnectionsData = {}): CancelablePromise<ListAllConnectionsResponse> {
-        return listAllConnections(data);
+        return listAllConnections(data, this.client.config);
     }
 
     /**
@@ -28,7 +28,7 @@ export class ConnectedAccounts {
      * @throws {ApiError} If the request fails.
      */
     create(data: CreateConnectionData = {}): CancelablePromise<CreateConnectionResponse> {
-        return createConnection(data);
+        return createConnection(data, this.client.config);
     }
 
     /**
@@ -41,6 +41,6 @@ export class ConnectedAccounts {
      * @throws {ApiError} If the request fails.
      */
     get(data: GetConnectedAccountData): CancelablePromise<GetConnectedAccountResponse> {
-        return getConnectedAccount(data);
+        return getConnectedAccount(data, this.client.config);
     }
 }

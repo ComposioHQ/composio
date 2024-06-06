@@ -5,6 +5,7 @@ import { Actions } from './models/actions';
 import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
+import { OpenAPI } from './client';
 
 export class Composio {
     private apiKey: string;
@@ -18,6 +19,7 @@ export class Composio {
     triggers: Triggers;
     integrations: Integrations;
     activeTriggers: ActiveTriggers;
+    config: typeof OpenAPI;
 
     constructor(apiKey?: string, baseUrl?: string) {
         this.apiKey = apiKey || process.env.ENV_COMPOSIO_API_KEY || '';
@@ -29,9 +31,16 @@ export class Composio {
         this.http = axios.create({
             baseURL: this.baseUrl,
             headers: {
-                'Authorization': `Bearer ${this.apiKey}`
+                'X-API-KEY': `${this.apiKey}`
             }
         });
+
+        this.config = {
+            ...OpenAPI,
+            HEADERS: {
+                'X-API-Key': `${this.apiKey}`
+            }
+        }
 
         this.connectedAccounts = new ConnectedAccounts(this);
         this.apps = new Apps(this);

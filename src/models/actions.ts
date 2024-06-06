@@ -14,7 +14,7 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     get(data: GetActionData): CancelablePromise<GetActionResponse> {
-        return getAction(data);
+        return getAction(data, this.client.config);
     }
 
     /**
@@ -27,7 +27,7 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     list(data: GetListActionsData = {}): CancelablePromise<GetListActionsResponse> {
-        return getListActions(data);
+        return getListActions(data, this.client.config);
     }
 
     /**
@@ -40,6 +40,6 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     execute(data: ExecuteActionData): CancelablePromise<ExecuteActionResponse> {
-        return executeAction(data);
+        return executeAction(data, this.client.config);
     }
 }

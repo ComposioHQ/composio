@@ -12,10 +12,11 @@ import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsRes
  * This endpoint allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
  *
  * Use this endpoint to build a catalog of available apps and provide your users with an overview of the apps they can integrate with.
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const listAllApps = (): CancelablePromise<ListAllAppsResponse> => { return __request(OpenAPI, {
+export const listAllApps = (config: typeof OpenAPI): CancelablePromise<ListAllAppsResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/apps'
 }); };
@@ -31,10 +32,11 @@ export const listAllApps = (): CancelablePromise<ListAllAppsResponse> => { retur
  * @param data.page Page number to fetch
  * @param data.pageSize Page size to assume
  * @param data.integrationId Filter by using specific Integration
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const listAllConnections = (data: ListAllConnectionsData = {}): CancelablePromise<ListAllConnectionsResponse> => { return __request(OpenAPI, {
+export const listAllConnections = (data: ListAllConnectionsData = {}, config: typeof OpenAPI): CancelablePromise<ListAllConnectionsResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/connectedAccounts',
     query: {
@@ -53,10 +55,11 @@ export const listAllConnections = (data: ListAllConnectionsData = {}): Cancelabl
  * Use this endpoint to initiate the process of connecting an external app for your end user.
  * @param data The data for the request.
  * @param data.requestBody
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const createConnection = (data: CreateConnectionData = {}): CancelablePromise<CreateConnectionResponse> => { return __request(OpenAPI, {
+export const createConnection = (data: CreateConnectionData = {}, config: typeof OpenAPI): CancelablePromise<CreateConnectionResponse> => { return __request(config, {
     method: 'POST',
     url: '/v1/connectedAccounts',
     body: data.requestBody,
@@ -74,10 +77,11 @@ export const createConnection = (data: CreateConnectionData = {}): CancelablePro
  * The response includes the integration ID, connection parameters (such as scope, base URL, client ID, token type, access token, etc.), connection ID, status, and creation/update timestamps.
  * @param data The data for the request.
  * @param data.connectedAccountId The unique identifier of the connection.
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const getConnectedAccount = (data: GetConnectedAccountData): CancelablePromise<GetConnectedAccountResponse> => { return __request(OpenAPI, {
+export const getConnectedAccount = (data: GetConnectedAccountData, config: typeof OpenAPI): CancelablePromise<GetConnectedAccountResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/connectedAccounts/{connectedAccountId}',
     path: {
@@ -96,12 +100,13 @@ export const getConnectedAccount = (data: GetConnectedAccountData): CancelablePr
  * Use this endpoint to clean up unwanted connections for your end user and manage the connection lifecycle.
  * @param data The data for the request.
  * @param data.connectedAccountId The unique identifier of the connection.
+ * @param config The OpenAPI configuration.
  * @returns unknown {
  * "message": "Connection not found or already deleted"
  * }
  * @throws ApiError
  */
-export const deleteConnection = (data: DeleteConnectionData): CancelablePromise<DeleteConnectionResponse> => { return __request(OpenAPI, {
+export const deleteConnection = (data: DeleteConnectionData, config: typeof OpenAPI): CancelablePromise<DeleteConnectionResponse> => { return __request(config, {
     method: 'DELETE',
     url: '/v1/connectedAccounts/{connectedAccountId}',
     path: {
@@ -124,10 +129,11 @@ export const deleteConnection = (data: DeleteConnectionData): CancelablePromise<
  * If the end-user selects this flow, collect the parameters and connect an account using it.
  * @param data The data for the request.
  * @param data.integrationId The unique identifier of the integration.
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const getIntegration = (data: GetIntegrationData): CancelablePromise<GetIntegrationResponse> => { return __request(OpenAPI, {
+export const getIntegration = (data: GetIntegrationData, config: typeof OpenAPI): CancelablePromise<GetIntegrationResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/integrations/{integrationId}',
     path: {
@@ -148,10 +154,11 @@ export const getIntegration = (data: GetIntegrationData): CancelablePromise<GetI
  * @param data The data for the request.
  * @param data.integrationId The unique identifier of the integration.
  * @param data.requestBody
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const updateIntegration = (data: UpdateIntegrationData): CancelablePromise<UpdateIntegrationResponse> => { return __request(OpenAPI, {
+export const updateIntegration = (data: UpdateIntegrationData, config: typeof OpenAPI): CancelablePromise<UpdateIntegrationResponse> => { return __request(config, {
     method: 'PATCH',
     url: '/v1/integrations/{integrationId}',
     path: {
@@ -172,10 +179,11 @@ export const updateIntegration = (data: UpdateIntegrationData): CancelablePromis
  * @param data The data for the request.
  * @param data.page Page number to fetch
  * @param data.pageSize Page Size to assume
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const listAllIntegrations = (data: ListAllIntegrationsData = {}): CancelablePromise<ListAllIntegrationsResponse> => { return __request(OpenAPI, {
+export const listAllIntegrations = (data: ListAllIntegrationsData = {}, config: typeof OpenAPI): CancelablePromise<ListAllIntegrationsResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/integrations',
     query: {
@@ -189,10 +197,11 @@ export const listAllIntegrations = (data: ListAllIntegrationsData = {}): Cancela
  * This endpoint allows you to add a new integration by providing the necessary details such as the integration name, authentication scheme, associated app ID, and authentication configuration. Upon successful creation, the response includes the newly created connector object.
  * @param data The data for the request.
  * @param data.requestBody
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const createIntegration = (data: CreateIntegrationData = {}): CancelablePromise<CreateIntegrationResponse> => { return __request(OpenAPI, {
+export const createIntegration = (data: CreateIntegrationData = {}, config: typeof OpenAPI): CancelablePromise<CreateIntegrationResponse> => { return __request(config, {
     method: 'POST',
     url: '/v1/integrations',
     body: data.requestBody,
@@ -212,10 +221,11 @@ export const createIntegration = (data: CreateIntegrationData = {}): CancelableP
  * You can then pass this to function calling or use LLM to fill in the parameters.
  * @param data The data for the request.
  * @param data.actionName The unique identifier of the action.
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const getAction = (data: GetActionData): CancelablePromise<GetActionResponse> => { return __request(OpenAPI, {
+export const getAction = (data: GetActionData, config: typeof OpenAPI): CancelablePromise<GetActionResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/actions/{actionName}',
     path: {
@@ -239,10 +249,11 @@ export const getAction = (data: GetActionData): CancelablePromise<GetActionRespo
  * @param data.showEnabledOnly Show actions enabled for the API Key
  * @param data.limit Limit of apis
  * @param data.requestBody
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const getListActions = (data: GetListActionsData = {}): CancelablePromise<GetListActionsResponse> => { return __request(OpenAPI, {
+export const getListActions = (data: GetListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/actions',
     query: {
@@ -266,10 +277,11 @@ export const getListActions = (data: GetListActionsData = {}): CancelablePromise
  * @param data The data for the request.
  * @param data.actionName The name of the action to execute.
  * @param data.requestBody
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const executeAction = (data: ExecuteActionData): CancelablePromise<ExecuteActionResponse> => { return __request(OpenAPI, {
+export const executeAction = (data: ExecuteActionData, config: typeof OpenAPI): CancelablePromise<ExecuteActionResponse> => { return __request(config, {
     method: 'POST',
     url: '/v1/actions/{actionName}/execute',
     path: {
@@ -293,10 +305,11 @@ export const executeAction = (data: ExecuteActionData): CancelablePromise<Execut
  * @param data.appNames Name of the apps like "github", "linear" seperated by a comma
  * @param data.showEnabledOnly Show triggers enabled for the API Key
  * @param data.connectedAccountIds Filter by Aonnected Account ids
+ * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError
  */
-export const listTriggers = (data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> => { return __request(OpenAPI, {
+export const listTriggers = (data: ListTriggersData = {}, config: typeof OpenAPI): CancelablePromise<ListTriggersResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/triggers',
     query: {
@@ -313,10 +326,11 @@ export const listTriggers = (data: ListTriggersData = {}): CancelablePromise<Lis
  * @param data.integrationIds Filter by Integration ids
  * @param data.triggerIds Filter by Trigger ids
  * @param data.triggerNames Filter by Trigger names
+ * @param config The OpenAPI configuration.
  * @returns unknown A list of active triggers
  * @throws ApiError
  */
-export const listActiveTriggers = (data: ListActiveTriggersData = {}): CancelablePromise<ListActiveTriggersResponse> => { return __request(OpenAPI, {
+export const listActiveTriggers = (data: ListActiveTriggersData = {}, config: typeof OpenAPI): CancelablePromise<ListActiveTriggersResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/triggers/active_triggers',
     query: {
@@ -332,10 +346,11 @@ export const listActiveTriggers = (data: ListActiveTriggersData = {}): Cancelabl
  * Retrieves details of a specific active trigger in the Composio platform by providing its trigger ID.
  * @param data The data for the request.
  * @param data.triggerId The ID of the trigger to retrieve.
+ * @param config The OpenAPI configuration.
  * @returns unknown A successful response containing the details of the active trigger.
  * @throws ApiError
  */
-export const getActiveTrigger = (data: GetActiveTriggerData): CancelablePromise<GetActiveTriggerResponse> => { return __request(OpenAPI, {
+export const getActiveTrigger = (data: GetActiveTriggerData, config: typeof OpenAPI): CancelablePromise<GetActiveTriggerResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/triggers/get/{triggerId}',
     path: {
