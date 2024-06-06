@@ -739,6 +739,188 @@ export type ExecuteActionResponse = {
     };
 };
 
+export type ListTriggersData = {
+    /**
+     * Name of the apps like "github", "linear" seperated by a comma
+     */
+    appNames?: string;
+    /**
+     * Filter by Aonnected Account ids
+     */
+    connectedAccountIds?: string;
+    /**
+     * Show triggers enabled for the API Key
+     */
+    showEnabledOnly?: boolean;
+};
+
+export type ListTriggersResponse = Array<{
+    /**
+     * The name of the event.
+     */
+    name?: string;
+    /**
+     * The display name of the event.
+     */
+    display_name?: string;
+    /**
+     * A brief description of the event.
+     */
+    description?: string;
+    payload?: {
+        properties?: {
+            /**
+             * The SHA of the commit.
+             */
+            id: string;
+            /**
+             * The commit message.
+             */
+            message: string;
+            /**
+             * The timestamp of the commit.
+             */
+            timestamp: string;
+            /**
+             * The GitHub username of the commit author.
+             */
+            author: string;
+            /**
+             * The GitHub URL of the commit.
+             */
+            url: string;
+        };
+    };
+    config?: {
+        type?: string;
+        title?: string;
+        required?: Array<(string)>;
+        properties?: {
+            /**
+             * string
+             */
+            type?: string;
+            /**
+             * string
+             */
+            title?: string;
+            /**
+             * string
+             */
+            description?: string;
+            required?: Array<(string)>;
+        };
+    };
+    /**
+     * Instructions for the event.
+     */
+    instructions?: string;
+    /**
+     * The unique ID of the app.
+     */
+    appId?: string;
+    /**
+     * The key of the app.
+     */
+    appKey?: string;
+    /**
+     * The URL of the app's logo image.
+     */
+    logo?: string;
+    /**
+     * The name of the app.
+     */
+    appName?: string;
+    /**
+     * The count of the event.
+     */
+    count?: number;
+    /**
+     * Whether the event is enabled.
+     */
+    enabled?: boolean;
+}>;
+
+export type ListActiveTriggersData = {
+    /**
+     * Filter by Connected Account ids
+     */
+    connectedAccountIds?: string;
+    /**
+     * Filter by Integration ids
+     */
+    integrationIds?: string;
+    /**
+     * Filter by Trigger ids
+     */
+    triggerIds?: string;
+    /**
+     * Filter by Trigger names
+     */
+    triggerNames?: string;
+};
+
+export type ListActiveTriggersResponse = {
+    triggers?: Array<{
+        /**
+         * Unique identifier for the trigger.
+         */
+        id?: string;
+        /**
+         * Identifier for the connection associated with the trigger.
+         */
+        connectionId?: string;
+        /**
+         * Name of the trigger.
+         */
+        triggerName?: string;
+        /**
+         * Data associated with the trigger.
+         */
+        triggerData?: string;
+        /**
+         * Configuration settings for the trigger.
+         */
+        triggerConfig?: {
+            [key: string]: unknown;
+        };
+        /**
+         * State information for the trigger.
+         */
+        state?: {
+            [key: string]: unknown;
+        };
+        /**
+         * Timestamp when the trigger was created.
+         */
+        createdAt?: string;
+        /**
+         * Timestamp when the trigger was last updated.
+         */
+        updatedAt?: string;
+        /**
+         * Timestamp when the trigger was disabled, if applicable.
+         */
+        disabledAt?: string;
+        type?: unknown;
+        description?: unknown;
+    }>;
+    pageInfo?: {
+        /**
+         * The current page number.
+         */
+        currentPage?: number;
+        /**
+         * The total number of pages.
+         */
+        totalPages?: number;
+        /**
+         * The number of items per page.
+         */
+        perPage?: number;
+    };
+};
+
 export type $OpenApiTs = {
     '/v1/apps': {
         get: {
@@ -1461,6 +1643,172 @@ export type $OpenApiTs = {
                  * Not Found
                  */
                 404: unknown;
+            };
+        };
+    };
+    '/v1/triggers': {
+        get: {
+            req: ListTriggersData;
+            res: {
+                /**
+                 * OK
+                 */
+                200: Array<{
+                    /**
+                     * The name of the event.
+                     */
+                    name?: string;
+                    /**
+                     * The display name of the event.
+                     */
+                    display_name?: string;
+                    /**
+                     * A brief description of the event.
+                     */
+                    description?: string;
+                    payload?: {
+                        properties?: {
+                            /**
+                             * The SHA of the commit.
+                             */
+                            id: string;
+                            /**
+                             * The commit message.
+                             */
+                            message: string;
+                            /**
+                             * The timestamp of the commit.
+                             */
+                            timestamp: string;
+                            /**
+                             * The GitHub username of the commit author.
+                             */
+                            author: string;
+                            /**
+                             * The GitHub URL of the commit.
+                             */
+                            url: string;
+                        };
+                    };
+                    config?: {
+                        type?: string;
+                        title?: string;
+                        required?: Array<(string)>;
+                        properties?: {
+                            /**
+                             * string
+                             */
+                            type?: string;
+                            /**
+                             * string
+                             */
+                            title?: string;
+                            /**
+                             * string
+                             */
+                            description?: string;
+                            required?: Array<(string)>;
+                        };
+                    };
+                    /**
+                     * Instructions for the event.
+                     */
+                    instructions?: string;
+                    /**
+                     * The unique ID of the app.
+                     */
+                    appId?: string;
+                    /**
+                     * The key of the app.
+                     */
+                    appKey?: string;
+                    /**
+                     * The URL of the app's logo image.
+                     */
+                    logo?: string;
+                    /**
+                     * The name of the app.
+                     */
+                    appName?: string;
+                    /**
+                     * The count of the event.
+                     */
+                    count?: number;
+                    /**
+                     * Whether the event is enabled.
+                     */
+                    enabled?: boolean;
+                }>;
+            };
+        };
+    };
+    '/v1/triggers/active_triggers': {
+        get: {
+            req: ListActiveTriggersData;
+            res: {
+                /**
+                 * A list of active triggers
+                 */
+                200: {
+                    triggers?: Array<{
+                        /**
+                         * Unique identifier for the trigger.
+                         */
+                        id?: string;
+                        /**
+                         * Identifier for the connection associated with the trigger.
+                         */
+                        connectionId?: string;
+                        /**
+                         * Name of the trigger.
+                         */
+                        triggerName?: string;
+                        /**
+                         * Data associated with the trigger.
+                         */
+                        triggerData?: string;
+                        /**
+                         * Configuration settings for the trigger.
+                         */
+                        triggerConfig?: {
+                            [key: string]: unknown;
+                        };
+                        /**
+                         * State information for the trigger.
+                         */
+                        state?: {
+                            [key: string]: unknown;
+                        };
+                        /**
+                         * Timestamp when the trigger was created.
+                         */
+                        createdAt?: string;
+                        /**
+                         * Timestamp when the trigger was last updated.
+                         */
+                        updatedAt?: string;
+                        /**
+                         * Timestamp when the trigger was disabled, if applicable.
+                         */
+                        disabledAt?: string;
+                        type?: unknown;
+                        description?: unknown;
+                    }>;
+                    pageInfo?: {
+                        /**
+                         * The current page number.
+                         */
+                        currentPage?: number;
+                        /**
+                         * The total number of pages.
+                         */
+                        totalPages?: number;
+                        /**
+                         * The number of items per page.
+                         */
+                        perPage?: number;
+                    };
+                };
             };
         };
     };

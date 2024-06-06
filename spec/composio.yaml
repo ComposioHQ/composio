@@ -1383,11 +1383,265 @@ paths:
       servers:
         - url: 'https://backend.composio.dev/api'
           description: baseurl
+  '/v1/triggers':
+    get:
+      tags:
+        - triggers
+      summary: Get List of Triggers
+      description: |-
+        Retrieves a list of all triggers in the Composio platform.
+
+        This endpoint allows you to fetch a list of all the available triggers. It supports pagination to handle large numbers of triggers. The response includes an array of trigger objects, each containing information such as the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
+
+        Use this endpoint to explore and discover the triggers supported by the Composio platform and showcase them to end user. 
+      operationId: List-Triggers
+      parameters:
+        - name: appNames
+          in: query
+          description: 'Name of the apps like "github", "linear" seperated by a comma'
+          schema:
+            type: string
+            examples:
+              - 'github,linear'
+        - name: showEnabledOnly
+          in: query
+          description: Show triggers enabled for the API Key
+          schema:
+            type: boolean
+        - name: connectedAccountIds
+          in: query
+          description: Filter by Aonnected Account ids
+          schema:
+            type: string
+            examples:
+              - '12312,12312'
+            operationId: list-all-apps
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: The name of the event.
+                      display_name:
+                        type: string
+                        description: The display name of the event.
+                      description:
+                        type: string
+                        description: A brief description of the event.
+                      payload:
+                        type: object
+                        properties:
+                          properties:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                description: The SHA of the commit.
+                                examples:
+                                  - "7638417db6d59f3c431d3e1f261cc637155684cd"
+                              message:
+                                type: string
+                                description: The commit message.
+                                examples:
+                                  - "Fix typo in README"
+                              timestamp:
+                                type: string
+                                description: The timestamp of the commit.
+                                examples:
+                                  - "2021-04-14T02:15:15Z"
+                              author:
+                                type: string
+                                description: The GitHub username of the commit author.
+                                examples:
+                                  - "octocat"
+                              url:
+                                type: string
+                                description: The GitHub URL of the commit.
+                                examples:
+                                  - "https://github.com/octocat/Hello-World/commit/7638417db6d59f3c431d3e1f261cc637155684cd"
+                            required:
+                              - id
+                              - message
+                              - timestamp
+                              - author
+                              - url
+                            title: CommitPayloadSchema
+                      config:
+                        type: object
+                        properties:
+                          type: 
+                            type: string
+                          title:
+                            type: string
+                          required:
+                            type: array
+                            items:
+                              type: string
+                          properties:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                                title: string
+                                description: string
+                              title:
+                                type: string
+                                title: string
+                                description: string
+                              description:
+                                type: string
+                                title: string
+                                description: string
+                              required:
+                                type: array
+                                items:
+                                  type: string
+                      instructions:
+                        type: string
+                        description: Instructions for the event.
+                      appId:
+                        type: string
+                        description: The unique ID of the app.
+                      appKey:
+                        type: string
+                        description: The key of the app.
+                      logo:
+                        type: string
+                        description: The URL of the app's logo image.
+                      appName:
+                        type: string
+                        description: The name of the app.
+                      count:
+                        type: integer
+                        description: The count of the event.
+                      enabled:
+                        type: boolean
+                        description: Whether the event is enabled.
+                    
+              examples:
+                List All Apps:
+                  value:
+                    items:
+                      - key: asana
+                        name: Asana
+                        description: 'Tool to help teams organize, track, and manage their work.'
+                        logo: 'https://assets.asana.biz/m/7342a96f034ee491/original/trademark-logo-lockup-horizontal.png'
+                        categories:
+                          - productivity
+                          - ticketing
+                        appId: 36a0705d-7e93-42ba-9288-436ee6201d7c
+                      - key: calendly
+                        name: Calendly
+                        description: 'A business communication platform used for teams to schedule, prepare and follow up on external meetings.'
+                        logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/Calendly_company_logo.png/330px-Calendly_company_logo.png'
+                        categories:
+                          - productivity
+                        appId: fb9b4a59-8eda-4032-84d7-638e1df4ffef
+      security:
+        - authToken: []
+      servers:
+  '/v1/triggers/active_triggers':
+    description: Retrieves a list of all active triggers in the Composio platform.
+    get:
+      summary: Get List of Active Triggers
+      operationId: List-Active-Triggers
+      parameters:
+        - name: connectedAccountIds
+          in: query
+          description: Filter by Connected Account ids
+          required: false
+          schema:
+            type: string
+        - name: integrationIds
+          in: query
+          description: Filter by Integration ids
+          required: false
+          schema:
+            type: string
+        - name: triggerIds
+          in: query
+          description: Filter by Trigger ids
+          required: false
+          schema:
+            type: string
+        - name: triggerNames
+          in: query
+          description: Filter by Trigger names
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of active triggers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  triggers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                          id:
+                            type: string
+                            description: Unique identifier for the trigger.
+                          connectionId:
+                            type: string
+                            description: Identifier for the connection associated with the trigger.
+                          triggerName:
+                            type: string
+                            description: Name of the trigger.
+                          triggerData:
+                            type: string
+                            description: Data associated with the trigger.
+                          triggerConfig:
+                            type: object
+                            description: Configuration settings for the trigger.
+                            default: {}
+                          state:
+                            type: object
+                            description: State information for the trigger.
+                            default: {}
+                          createdAt:
+                            type: string
+                            format: date-time
+                            description: Timestamp when the trigger was created.
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            description: Timestamp when the trigger was last updated.
+                          disabledAt:
+                            type: string
+                            format: date-time
+                            description: Timestamp when the trigger was disabled, if applicable.
+                          type: boolean
+                          description: Whether the event is enabled.
+                  pageInfo:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                        description: The current page number.
+                      totalPages:
+                        type: integer
+                        description: The total number of pages.
+                      perPage:
+                        type: integer
+                        description: The number of items per page.
 tags:
   - name: actions
   - name: apps
   - name: connectedAccounts
   - name: integrations
+  - name: triggers
 components:
   securitySchemes:
     authToken:

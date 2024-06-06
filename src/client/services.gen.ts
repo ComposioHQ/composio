@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse } from './types.gen';
+import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse } from './types.gen';
 
 /**
  * List All Apps
@@ -279,5 +279,50 @@ export const executeAction = (data: ExecuteActionData): CancelablePromise<Execut
     mediaType: 'application/json',
     errors: {
         404: 'Not Found'
+    }
+}); };
+
+/**
+ * Get List of Triggers
+ * Retrieves a list of all triggers in the Composio platform.
+ *
+ * This endpoint allows you to fetch a list of all the available triggers. It supports pagination to handle large numbers of triggers. The response includes an array of trigger objects, each containing information such as the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
+ *
+ * Use this endpoint to explore and discover the triggers supported by the Composio platform and showcase them to end user.
+ * @param data The data for the request.
+ * @param data.appNames Name of the apps like "github", "linear" seperated by a comma
+ * @param data.showEnabledOnly Show triggers enabled for the API Key
+ * @param data.connectedAccountIds Filter by Aonnected Account ids
+ * @returns unknown OK
+ * @throws ApiError
+ */
+export const listTriggers = (data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/v1/triggers',
+    query: {
+        appNames: data.appNames,
+        showEnabledOnly: data.showEnabledOnly,
+        connectedAccountIds: data.connectedAccountIds
+    }
+}); };
+
+/**
+ * Get List of Active Triggers
+ * @param data The data for the request.
+ * @param data.connectedAccountIds Filter by Connected Account ids
+ * @param data.integrationIds Filter by Integration ids
+ * @param data.triggerIds Filter by Trigger ids
+ * @param data.triggerNames Filter by Trigger names
+ * @returns unknown A list of active triggers
+ * @throws ApiError
+ */
+export const listActiveTriggers = (data: ListActiveTriggersData = {}): CancelablePromise<ListActiveTriggersResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/v1/triggers/active_triggers',
+    query: {
+        connectedAccountIds: data.connectedAccountIds,
+        integrationIds: data.integrationIds,
+        triggerIds: data.triggerIds,
+        triggerNames: data.triggerNames
     }
 }); };
