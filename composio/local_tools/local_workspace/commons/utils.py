@@ -20,39 +20,18 @@ TIMEOUT_DURATION = 25
 
 logger = get_logger()
 
+docker_client = None
 
-def get_container(
-    ctr_name: str, image_name: str, persistent: bool = False
-) -> Tuple[subprocess.Popen, Set]:
-    """
-    Get a container object for a given container name and image name
 
-    Arguments:
-        ctr_name (str): Name of container
-        image_name (str): Name of image
-        persistent (bool): Whether to use a persistent container or not
-    Returns:
-        Container object
-    """
-    # Let's first check that the image exists and give some better error messages
-    try:
-        client = docker.from_env()
-    except docker.errors.DockerException as e:
-        docker_not_running = any(
-            (
-                "connection aborted" in str(e).lower(),
-                "connection refused" in str(e).lower(),
-                "error while fetching server api version" in str(e).lower(),
-            )
-        )
-        if docker_not_running:
-            msg = (
-                "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
-                "You might need to allow the use of the docker socket "
-            )
-            raise RuntimeError(msg) from e
-        raise
-    filtered_images = client.images.list(filters={"reference": image_name})
+def get_container(ctr_name: str, image_name: str, persistent: bool = False) -> Tuple[subprocess.Popen, Set]:
+    global docker_client
+    if docker_client is None:
+        try:
+            docker_client = docker.from_env()
+        except docker.errors.DockerException as e:
+            handle_docker_exception(e)
+
+    filtered_images = docker_client.images.list(filters={"reference": image_name})
     if len(filtered_images) == 0:
         msg = (
             f"Image {image_name} not found. Please ensure it is built and available. "
@@ -75,32 +54,14 @@ def get_container(
 
 
 def get_container_by_container_name(container_name: str, image_name: str):
-    """
-    1. initialize docker client from the local environment
-    2. call client.list_images --> it populates the resource-id for docker-client
-        else the call to get container_object fails
-    2. returns docker_container_obj from the docker client using the container_name
-    """
-    container_obj = None
-    # Let's first check that the image exists and give some better error messages
-    try:
-        client = docker.from_env()
-    except docker.errors.DockerException as e:
-        docker_not_running = any(
-            (
-                "connection aborted" in str(e).lower(),
-                "connection refused" in str(e).lower(),
-                "error while fetching server api version" in str(e).lower(),
-            )
-        )
-        if docker_not_running:
-            msg = (
-                "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
-                "You might need to allow the use of the docker socket "
-            )
-            raise RuntimeError(msg) from e
-        raise
-    filtered_images = client.images.list(filters={"reference": image_name})
+    global docker_client
+    if docker_client is None:
+        try:
+            docker_client = docker.from_env()
+        except docker.errors.DockerException as e:
+            handle_docker_exception(e)
+
+    filtered_images = docker_client.images.list(filters={"reference": image_name})
     if len(filtered_images) == 0:
         msg = (
             f"Image {image_name} not found. Please ensure it is built and available. "
@@ -117,13 +78,136 @@ def get_container_by_container_name(container_name: str, image_name: str):
             f"for {attrs['Os']} {attrs['Architecture']}."
         )
     try:
-        container_obj = client.containers.get(container_name)
+        container_obj = docker_client.containers.get(container_name)
     except docker.errors.NotFound:
         logger.debug("Couldn't find container. Let's wait and retry.")
         time.sleep(3)
-        container_obj = client.containers.get(container_name)
+        container_obj = docker_client.containers.get(container_name)
 
     return container_obj
+
+
+def handle_docker_exception(e):
+    docker_not_running = any(
+        (
+            "connection aborted" in str(e).lower(),
+            "connection refused" in str(e).lower(),
+            "error while fetching server api version" in str(e).lower(),
+        )
+    )
+    if docker_not_running:
+        msg = (
+            "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
+            "You might need to allow the use of the docker socket "
+        )
+        raise RuntimeError(msg) from e
+    raise
+    # Rest of the code remains the same...
+
+
+# def get_container(
+#     ctr_name: str, image_name: str, persistent: bool = False
+# ) -> Tuple[subprocess.Popen, Set]:
+#     """
+#     Get a container object for a given container name and image name
+
+#     Arguments:
+#         ctr_name (str): Name of container
+#         image_name (str): Name of image
+#         persistent (bool): Whether to use a persistent container or not
+#     Returns:
+#         Container object
+#     """
+#     # Let's first check that the image exists and give some better error messages
+#     try:
+#         client = docker.from_env()
+#     except docker.errors.DockerException as e:
+#         docker_not_running = any(
+#             (
+#                 "connection aborted" in str(e).lower(),
+#                 "connection refused" in str(e).lower(),
+#                 "error while fetching server api version" in str(e).lower(),
+#             )
+#         )
+#         if docker_not_running:
+#             msg = (
+#                 "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
+#                 "You might need to allow the use of the docker socket "
+#             )
+#             raise RuntimeError(msg) from e
+#         raise
+#     filtered_images = client.images.list(filters={"reference": image_name})
+#     if len(filtered_images) == 0:
+#         msg = (
+#             f"Image {image_name} not found. Please ensure it is built and available. "
+#             "Please double-check that you followed all installation/setup instructions from the "
+#             "readme."
+#         )
+#         raise RuntimeError(msg)
+#     if len(filtered_images) > 1:
+#         logger.warning(f"Multiple images found for {image_name}, that's weird.")
+#     attrs = filtered_images[0].attrs
+#     if attrs is not None:
+#         logger.info(
+#             f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
+#             f"for {attrs['Os']} {attrs['Architecture']}."
+#         )
+
+#     if persistent:
+#         return _get_persistent_container(ctr_name, image_name)
+#     return _get_non_persistent_container(ctr_name, image_name)
+
+
+# def get_container_by_container_name(container_name: str, image_name: str):
+#     """
+#     1. initialize docker client from the local environment
+#     2. call client.list_images --> it populates the resource-id for docker-client
+#         else the call to get container_object fails
+#     2. returns docker_container_obj from the docker client using the container_name
+#     """
+#     container_obj = None
+#     # Let's first check that the image exists and give some better error messages
+#     try:
+#         client = docker.from_env()
+#     except docker.errors.DockerException as e:
+#         docker_not_running = any(
+#             (
+#                 "connection aborted" in str(e).lower(),
+#                 "connection refused" in str(e).lower(),
+#                 "error while fetching server api version" in str(e).lower(),
+#             )
+#         )
+#         if docker_not_running:
+#             msg = (
+#                 "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
+#                 "You might need to allow the use of the docker socket "
+#             )
+#             raise RuntimeError(msg) from e
+#         raise
+#     filtered_images = client.images.list(filters={"reference": image_name})
+#     if len(filtered_images) == 0:
+#         msg = (
+#             f"Image {image_name} not found. Please ensure it is built and available. "
+#             "Please double-check that you followed all installation/setup instructions from the "
+#             "readme."
+#         )
+#         raise RuntimeError(msg)
+#     if len(filtered_images) > 1:
+#         logger.warning(f"Multiple images found for {image_name}, that's weird.")
+#     attrs = filtered_images[0].attrs
+#     if attrs is not None:
+#         logger.info(
+#             f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
+#             f"for {attrs['Os']} {attrs['Architecture']}."
+#         )
+#     try:
+#         container_obj = client.containers.get(container_name)
+#     except docker.errors.NotFound:
+#         logger.debug("Couldn't find container. Let's wait and retry.")
+#         time.sleep(3)
+#         container_obj = client.containers.get(container_name)
+
+#     return container_obj
 
 
 def _get_persistent_container(
