@@ -301,7 +301,9 @@ class WorkspaceManagerFactory:
         state_cmd = "echo '{\"working_dir\": \"'${PWD}'\"}'"
         workspace_meta = self.get_registered_manager(workspace_id)
         if not workspace_meta:
-            logger.error("workspace-manager has no workspace by workspace-id:", workspace_id)
+            logger.error(
+                "workspace-manager has no workspace by workspace-id:", workspace_id
+            )
             return
         image_name = workspace_meta[KEY_IMAGE_NAME]
         container_name = workspace_meta[KEY_CONTAINER_NAME]
