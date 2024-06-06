@@ -1,10 +1,11 @@
 import hashlib
 import json
-from abc import ABC, abstractmethod
-from typing import List
-
 import inflection
 import jsonref
+import os
+
+from abc import ABC, abstractmethod
+from typing import List
 from pydantic import BaseModel
 
 
@@ -129,7 +130,8 @@ class Action(ABC):
             modified_request_data = {}
 
             for param, value in request_data.items():
-                file_readable = request_schema.model_fields[param].json_schema_extra.get('file_readable', False)
+                annotations = request_schema.model_fields[param].json_schema_extra
+                file_readable = annotations is not None and annotations.get('file_readable', False)
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
                     with open(value, 'r') as file:
                         modified_request_data[param] = file.read()
