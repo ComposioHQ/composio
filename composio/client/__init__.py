@@ -744,13 +744,27 @@ class Actions(Collection[ActionModel]):
                 action=action,
                 request_data=params,
             )
+        actionsResp = self.client.actions.get(actions=[action])
+        if len(actionsResp) == 0:
+            raise ComposioClientError(f"Action {action} not found")
+        action_model = actionsResp[0]
+        action_req_schema = action_model.parameters
+        modified_params = {}
+        for param, value in params.items():
+            annotations = action_req_schema.model_fields[param].json_schema_extra
+            file_readable = annotations is not None and annotations.get('file_readable', False)
+            if file_readable and isinstance(value, str) and os.path.isfile(value):
+                with open(value, 'r') as file:
+                    modified_params[param] = file.read()
+            else:
+                modified_params[param] = value
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
                     url=str(self.endpoint / action.action / "execute"),
                     json={
                         "appName": action.app,
-                        "input": params,
+                        "input": modified_params,
                         "entityId": entity_id,
                     },
                 )
@@ -767,7 +781,7 @@ class Actions(Collection[ActionModel]):
                 url=str(self.endpoint / action.action / "execute"),
                 json={
                     "connectedAccountId": connected_account,
-                    "input": params,
+                    "input": modified_params,
                     "entityId": entity_id,
                 },
             )
