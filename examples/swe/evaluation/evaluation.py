@@ -16,7 +16,7 @@ def find_patch(prediction_data):
         # Check if the action type is 'AgentAction' and contains a 'tool' that might indicate a patch submission
         if agent_action['type'] == 'AgentAction' and SUBMIT_PATCH_CMD in agent_action['tool']:
             # Assuming the patch or relevant output is in 'tool_output'
-            return action['tool_output']
+            return action.get('tool_output')
     return None
 
 
