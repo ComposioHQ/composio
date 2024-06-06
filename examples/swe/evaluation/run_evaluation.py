@@ -158,7 +158,6 @@ def run():
             memory=True,
             cache=False,
             step_callback=add_in_logs,
-            max_iter=5,
         )
 
         coding_task = Task(
