@@ -116,7 +116,9 @@ class DockerManager:
                 time.sleep(backoff_time)
                 backoff_time *= 2
                 attempt += 1
-        raise RuntimeError(f"Failed to find container {container_name} after {max_attempts} attempts.")
+        raise RuntimeError(
+            f"Failed to find container {container_name} after {max_attempts} attempts."
+        )
 
     def _get_persistent_container(
         self, ctr_name: str, image_name: str
