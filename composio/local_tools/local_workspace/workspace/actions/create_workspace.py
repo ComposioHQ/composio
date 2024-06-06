@@ -159,21 +159,6 @@ class CreateWorkspaceAction(BaseWorkspaceAction):
                 datum["type"] = "script"
             command_files.append(datum)
         self.add_commands(command_files)
-        # create home directory and cd into it
-        communicate_with_handling(
-            self.container_process,
-            self.container_obj,
-            "mkdir -p /home/swe-agent",
-            self.parent_pids,
-            error_msg="Failed to create home directory",
-        )
-        communicate_with_handling(
-            self.container_process,
-            self.container_obj,
-            "cd /home/swe-agent",
-            self.parent_pids,
-            error_msg="Failed to cd to home directory",
-        )
 
     def add_commands(self, commands: list[dict]) -> None:
         """

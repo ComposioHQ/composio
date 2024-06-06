@@ -703,10 +703,12 @@ class Actions(Collection[ActionModel]):
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:
-            required_tags = [
-                tag.name if isinstance(tag, Tag) else tag for tag in tags
-            ]
-            should_not_filter_using_tags = len(items) < 15 and len(required_tags) == 1 and required_tags[0] == "important"
+            required_tags = [tag.name if isinstance(tag, Tag) else tag for tag in tags]
+            should_not_filter_using_tags = (
+                len(items) < 15
+                and len(required_tags) == 1
+                and required_tags[0] == "important"
+            )
             if not should_not_filter_using_tags:
                 items = [
                     item

@@ -8,14 +8,16 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.exceptions import ComposioSDKError
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+from composio.exceptions import ComposioSDKError
 
 
 class WhoamiExamples(HelpfulCmdBase, click.Command):
     examples = [
-        click.style("composio whoami", fg='green') + click.style("  # Display your account information\n", fg='black'),
+        click.style("composio whoami", fg="green")
+        + click.style("  # Display your account information\n", fg="black"),
     ]
+
 
 @click.command(name="whoami", cls=WhoamiExamples)
 @click.help_option("--help", "-h", "-help")

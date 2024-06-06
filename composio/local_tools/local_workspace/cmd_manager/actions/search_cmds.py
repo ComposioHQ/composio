@@ -40,7 +40,7 @@ class SearchDirCmd(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: SearchDirRequest, authorisation_data: dict
-    ) -> SearchDirResponse:
+    ) -> BaseResponse:
         if not request_data.directory or not request_data.directory.strip():
             raise ValueError(
                 "dir can not be null. Give a directory-name in which to search"
@@ -56,7 +56,7 @@ class SearchDirCmd(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return SearchDirResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
 
 
 class SearchFileRequest(BaseRequest):
@@ -82,7 +82,7 @@ class SearchFileCmd(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: SearchFileRequest, authorisation_data: dict
-    ) -> SearchFileResponse:
+    ) -> BaseResponse:
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError(
                 "file-name can not be null. Give a file-name in which to search"
@@ -100,7 +100,7 @@ class SearchFileCmd(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return SearchFileResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
 
 
 class FindFileRequest(BaseRequest):
@@ -133,7 +133,7 @@ class FindFileCmd(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: FindFileRequest, authorisation_data: dict
-    ) -> FindFileResponse:
+    ) -> BaseResponse:
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("file-name can not be null. Give a file-name to find")
         if not request_data.dir or not request_data.dir.strip():
@@ -151,7 +151,7 @@ class FindFileCmd(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return FindFileResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
 
 
 class GetCurrentDirRequest(BaseRequest):
@@ -176,7 +176,7 @@ class GetCurrentDirCmd(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: GetCurrentDirRequest, authorisation_data: dict
-    ) -> GetCurrentDirResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
         full_command = f"{self.command}"
         print(f"Running command: {full_command}")
@@ -186,4 +186,4 @@ class GetCurrentDirCmd(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return GetCurrentDirResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
