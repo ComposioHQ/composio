@@ -53,7 +53,7 @@ class EditFile(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: EditFileRequest, authorisation_data: dict
-    ) -> EditFileResponse:
+    ) -> BaseResponse:
         self._setup(request_data)
         self.script_file = SCRIPT_EDIT_LINTING
         self.command = "edit"
@@ -66,7 +66,7 @@ class EditFile(BaseAction):
             self.container_process, self.container_obj, full_command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        return EditFileResponse(
+        return BaseResponse(
             output=output,
             return_code=return_code,
         )

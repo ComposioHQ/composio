@@ -21,219 +21,225 @@ TIMEOUT_DURATION = 25
 logger = get_logger()
 
 
+class DockerManager:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(DockerManager, cls).__new__(cls)
+            cls._instance.docker_client = None
+        return cls._instance
+
+    def get_client(self):
+        if self.docker_client is None:
+            try:
+                self.docker_client = docker.from_env()
+            except docker.errors.DockerException as e:
+                self.handle_docker_exception(e)
+        return self.docker_client
+
+    def handle_docker_exception(self, e):
+        docker_not_running = any(
+            (
+                "connection aborted" in str(e).lower(),
+                "connection refused" in str(e).lower(),
+                "error while fetching server api version" in str(e).lower(),
+            )
+        )
+        if docker_not_running:
+            msg = (
+                "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
+                "You might need to allow the use of the docker socket "
+            )
+            raise RuntimeError(msg) from e
+        raise
+
+    @classmethod
+    def get_container(
+        cls, ctr_name: str, image_name: str, persistent: bool = False
+    ) -> Tuple[subprocess.Popen, Set]:
+        instance = cls()
+        client = instance.get_client()
+        filtered_images = client.images.list(filters={"reference": image_name})
+
+        if not filtered_images:
+            msg = (
+                f"Image {image_name} not found. Please ensure it is built and available. "
+                "Please double-check that you followed all installation/setup instructions from the "
+                "readme."
+            )
+            raise RuntimeError(msg)
+        if len(filtered_images) > 1:
+            logger.warning(f"Multiple images found for {image_name}, that's weird.")
+
+        attrs = filtered_images[0].attrs
+        if attrs:
+            logger.info(
+                f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
+                f"for {attrs['Os']} {attrs['Architecture']}."
+            )
+
+        if persistent:
+            return instance._get_persistent_container(ctr_name, image_name)
+        return instance._get_non_persistent_container(ctr_name, image_name)
+
+    @classmethod
+    def get_container_by_container_name(cls, container_name: str, image_name: str):
+        instance = cls()
+        filtered_images = instance.get_client().images.list(
+            filters={"reference": image_name}
+        )
+        if len(filtered_images) == 0:
+            msg = (
+                f"Image {image_name} not found. Please ensure it is built and available. "
+                "Please double-check that you followed all installation/setup instructions from the "
+                "readme."
+            )
+            raise RuntimeError(msg)
+        if len(filtered_images) > 1:
+            logger.warning(f"Multiple images found for {image_name}, that's weird.")
+        attrs = filtered_images[0].attrs
+        if attrs is not None:
+            logger.info(
+                f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
+                f"for {attrs['Os']} {attrs['Architecture']}."
+            )
+        max_attempts = 5
+        attempt = 0
+        backoff_time = 1  # Initial backoff time in seconds
+        while attempt < max_attempts:
+            try:
+                container_obj = instance.get_client().containers.get(container_name)
+                return container_obj
+            except docker.errors.NotFound:
+                logger.debug("Couldn't find container. Let's wait and retry.")
+                time.sleep(backoff_time)
+                backoff_time *= 2
+                attempt += 1
+        raise RuntimeError(
+            f"Failed to find container {container_name} after {max_attempts} attempts."
+        )
+
+    def _get_persistent_container(
+        self, ctr_name: str, image_name: str
+    ) -> Tuple[subprocess.Popen, Set]:
+        containers = self.get_client().containers.list(
+            all=True, filters={"name": ctr_name}
+        )
+        if ctr_name in [c.name for c in containers]:
+            container_obj = self.get_client().containers.get(ctr_name)
+            if container_obj.status in {"created"}:
+                container_obj.start()
+            elif container_obj.status in {"running"}:
+                pass
+            elif container_obj.status in {"exited"}:
+                container_obj.restart()
+            elif container_obj.status in {"paused"}:
+                container_obj.unpause()
+            else:
+                raise RuntimeError(
+                    f"Unexpected container status: {container_obj.status}"
+                )
+        else:
+            container_obj = self.get_client().containers.run(
+                image_name,
+                command="/bin/bash -l -m",
+                name=ctr_name,
+                stdin_open=True,
+                tty=True,
+                detach=True,
+                auto_remove=False,
+            )
+            container_obj.start()
+        startup_cmd = [
+            "docker",
+            "exec",
+            "-i",
+            ctr_name,
+            "/bin/bash",
+            "-l",
+            "-m",
+        ]
+        logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
+        container = subprocess.Popen(
+            startup_cmd,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=STDOUT,
+            text=True,
+            bufsize=1,  # line buffered
+        )
+        time.sleep(START_UP_DELAY)
+        # try to read output from container setup (usually an error), timeout if no output
+        output = read_with_timeout(
+            container, None, lambda arge1, arg2: [], [], timeout_duration=2
+        )
+        if output:
+            logger.error(f"Unexpected container setup output: {output}")
+        # Get the process IDs of the container
+        # There should be at least a head process and possibly one child bash process
+        bash_pids, other_pids = get_background_pids(container_obj)
+        bash_pid = 1
+        if len(bash_pids) == 1:
+            bash_pid = bash_pids[0][0]
+        elif len(bash_pids) > 1 or len(other_pids) > 0:
+            raise RuntimeError(
+                f"Detected alien processes attached or running. Please ensure that no other agents are running on this container. PIDs: {bash_pids}, {other_pids}"
+            )
+        return container, set(
+            map(
+                str,
+                [
+                    bash_pid,
+                    1,
+                ],
+            )
+        )
+
+    def _get_non_persistent_container(
+        self, ctr_name: str, image_name: str
+    ) -> Tuple[subprocess.Popen, Set]:
+        startup_cmd = [
+            "docker",
+            "run",
+            "-i",
+            "--rm",
+            "--name",
+            ctr_name,
+            image_name,
+            "/bin/bash",
+            "-l",
+            "-m",
+        ]
+        logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
+        container = subprocess.Popen(
+            startup_cmd,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=STDOUT,
+            text=True,
+            bufsize=1,  # line buffered
+        )
+        time.sleep(START_UP_DELAY)
+        # try to read output from container setup (usually an error), timeout if no output
+        output = read_with_timeout(
+            container, None, lambda arg1, arg2: [], [], timeout_duration=2
+        )
+        if output:
+            logger.error(f"Unexpected container setup output: {output}")
+        return container, {
+            "1",
+        }  # bash PID is always 1 for non-persistent containers
+
+
 def get_container(
     ctr_name: str, image_name: str, persistent: bool = False
 ) -> Tuple[subprocess.Popen, Set]:
-    """
-    Get a container object for a given container name and image name
-
-    Arguments:
-        ctr_name (str): Name of container
-        image_name (str): Name of image
-        persistent (bool): Whether to use a persistent container or not
-    Returns:
-        Container object
-    """
-    # Let's first check that the image exists and give some better error messages
-    try:
-        client = docker.from_env()
-    except docker.errors.DockerException as e:
-        docker_not_running = any(
-            (
-                "connection aborted" in str(e).lower(),
-                "connection refused" in str(e).lower(),
-                "error while fetching server api version" in str(e).lower(),
-            )
-        )
-        if docker_not_running:
-            msg = (
-                "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
-                "You might need to allow the use of the docker socket "
-            )
-            raise RuntimeError(msg) from e
-        raise
-    filtered_images = client.images.list(filters={"reference": image_name})
-    if len(filtered_images) == 0:
-        msg = (
-            f"Image {image_name} not found. Please ensure it is built and available. "
-            "Please double-check that you followed all installation/setup instructions from the "
-            "readme."
-        )
-        raise RuntimeError(msg)
-    if len(filtered_images) > 1:
-        logger.warning(f"Multiple images found for {image_name}, that's weird.")
-    attrs = filtered_images[0].attrs
-    if attrs is not None:
-        logger.info(
-            f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
-            f"for {attrs['Os']} {attrs['Architecture']}."
-        )
-
-    if persistent:
-        return _get_persistent_container(ctr_name, image_name)
-    return _get_non_persistent_container(ctr_name, image_name)
+    return DockerManager.get_container(ctr_name, image_name)
 
 
 def get_container_by_container_name(container_name: str, image_name: str):
-    """
-    1. initialize docker client from the local environment
-    2. call client.list_images --> it populates the resource-id for docker-client
-        else the call to get container_object fails
-    2. returns docker_container_obj from the docker client using the container_name
-    """
-    container_obj = None
-    # Let's first check that the image exists and give some better error messages
-    try:
-        client = docker.from_env()
-    except docker.errors.DockerException as e:
-        docker_not_running = any(
-            (
-                "connection aborted" in str(e).lower(),
-                "connection refused" in str(e).lower(),
-                "error while fetching server api version" in str(e).lower(),
-            )
-        )
-        if docker_not_running:
-            msg = (
-                "Probably the Docker daemon is not running. Please start the Docker daemon and try again. "
-                "You might need to allow the use of the docker socket "
-            )
-            raise RuntimeError(msg) from e
-        raise
-    filtered_images = client.images.list(filters={"reference": image_name})
-    if len(filtered_images) == 0:
-        msg = (
-            f"Image {image_name} not found. Please ensure it is built and available. "
-            "Please double-check that you followed all installation/setup instructions from the "
-            "readme."
-        )
-        raise RuntimeError(msg)
-    if len(filtered_images) > 1:
-        logger.warning(f"Multiple images found for {image_name}, that's weird.")
-    attrs = filtered_images[0].attrs
-    if attrs is not None:
-        logger.info(
-            f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
-            f"for {attrs['Os']} {attrs['Architecture']}."
-        )
-    try:
-        container_obj = client.containers.get(container_name)
-    except docker.errors.NotFound:
-        logger.debug("Couldn't find container. Let's wait and retry.")
-        time.sleep(3)
-        container_obj = client.containers.get(container_name)
-
-    return container_obj
-
-
-def _get_persistent_container(
-    ctr_name: str, image_name: str, persistent: bool = False
-) -> Tuple[subprocess.Popen, Set]:
-    client = docker.from_env()
-    containers = client.containers.list(all=True, filters={"name": ctr_name})
-    if ctr_name in [c.name for c in containers]:
-        container_obj = client.containers.get(ctr_name)
-        if container_obj.status in {"created"}:
-            container_obj.start()
-        elif container_obj.status in {"running"}:
-            pass
-        elif container_obj.status in {"exited"}:
-            container_obj.restart()
-        elif container_obj.status in {"paused"}:
-            container_obj.unpause()
-        else:
-            raise RuntimeError(f"Unexpected container status: {container_obj.status}")
-    else:
-        container_obj = client.containers.run(
-            image_name,
-            command="/bin/bash -l -m",
-            name=ctr_name,
-            stdin_open=True,
-            tty=True,
-            detach=True,
-            auto_remove=not persistent,
-        )
-        container_obj.start()
-    startup_cmd = [
-        "docker",
-        "exec",
-        "-i",
-        ctr_name,
-        "/bin/bash",
-        "-l",
-        "-m",
-    ]
-    logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
-    container = subprocess.Popen(
-        startup_cmd,
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=STDOUT,
-        text=True,
-        bufsize=1,  # line buffered
-    )
-    time.sleep(START_UP_DELAY)
-    # try to read output from container setup (usually an error), timeout if no output
-    output = read_with_timeout(
-        container, None, lambda arge1, arg2: [], [], timeout_duration=2
-    )
-    if output:
-        logger.error(f"Unexpected container setup output: {output}")
-    # Get the process IDs of the container
-    # There should be at least a head process and possibly one child bash process
-    bash_pids, other_pids = get_background_pids(container_obj)
-    bash_pid = 1
-    if len(bash_pids) == 1:
-        bash_pid = bash_pids[0][0]
-    elif len(bash_pids) > 1 or len(other_pids) > 0:
-        raise RuntimeError(
-            f"Detected alien processes attached or running. Please ensure that no other agents are running on this container. PIDs: {bash_pids}, {other_pids}"
-        )
-    return container, set(
-        map(
-            str,
-            [
-                bash_pid,
-                1,
-            ],
-        )
-    )
-
-
-def _get_non_persistent_container(
-    ctr_name: str, image_name: str
-) -> Tuple[subprocess.Popen, set]:
-    startup_cmd = [
-        "docker",
-        "run",
-        "-i",
-        "--rm",
-        "--name",
-        ctr_name,
-        image_name,
-        "/bin/bash",
-        "-l",
-        "-m",
-    ]
-    logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
-    container = subprocess.Popen(
-        startup_cmd,
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=STDOUT,
-        text=True,
-        bufsize=1,  # line buffered
-    )
-    time.sleep(START_UP_DELAY)
-    # try to read output from container setup (usually an error), timeout if no output
-    output = read_with_timeout(
-        container, None, lambda arg1, arg2: [], [], timeout_duration=2
-    )
-    if output:
-        logger.error(f"Unexpected container setup output: {output}")
-    return container, {
-        "1",
-    }  # bash PID is always 1 for non-persistent containers
+    return DockerManager.get_container_by_container_name(container_name, image_name)
 
 
 def get_background_pids(container_obj):

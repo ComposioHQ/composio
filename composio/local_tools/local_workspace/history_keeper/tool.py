@@ -1,15 +1,18 @@
 import typing as t
 from typing import Optional
-from composio.core.local import Tool, Action
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.core.local import Action, Tool
 from composio.local_tools.local_workspace.commons import (
+    HistoryProcessor,
     WorkspaceManagerFactory,
-    HistoryProcessor
 )
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
 from .actions import GetWorkspaceHistory
 
+
 logger = get_logger()
+
 
 class HistoryKeeper(Tool):
     """

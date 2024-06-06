@@ -1,11 +1,15 @@
 from pydantic import BaseModel, Field
+
 from composio.core.local import Action
+
 
 class RagToolAddRequest(BaseModel):
     content: str = Field(..., description="Content to add to the knowledge base")
 
+
 class RagToolAddResponse(BaseModel):
     status: str = Field(..., description="Status of the addition to the knowledge base")
+
 
 class AddContentToRagTool(Action):
     """
