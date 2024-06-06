@@ -154,7 +154,7 @@ def _apps(context: Context, enabled: bool = False) -> None:
         else:
             context.console.print("[green]Showing all apps[/green]")
         for app in apps:
-            context.console.print(f"• {app.name}")
+            context.console.print(f"• {app.key}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
