@@ -362,15 +362,7 @@ class App(str, Enum):
     @property
     def is_local(self) -> bool:
         """If the app is local."""
-        return self.value.lower() in [
-            "mathematical",
-            "localworkspace",
-            "cmdmanagertool",
-            "historykeeper",
-            "ragtool",
-            "webtool",
-            "greptile",
-        ]
+        return self.value.lower() in ["mathematical", "localworkspace", "cmdmanagertool", "historykeeper", "ragtool", "webtool", "greptile"]
 
     ABLY = "ably"
     ACCELO = "accelo"
