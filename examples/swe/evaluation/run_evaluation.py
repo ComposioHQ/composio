@@ -1,5 +1,6 @@
 import os
 
+import langchain_core.agents
 import yaml
 import json
 import datetime
@@ -58,12 +59,10 @@ def filter_from_repo_name(curr_dataset, repo_name):
 def get_issues_dataset():
     # Load the SWE-bench dataset
     dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test")
-
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[:1%]")
     # filter by repo-name 
-    test_dataset = filter_from_repo_name(test_dataset, repo_name)
+    # test_dataset = filter_from_repo_name(test_dataset, repo_name)
 
-    print(test_dataset[:5])
     return test_dataset
 
 
@@ -92,6 +91,7 @@ def run():
         api_version="2024-02-01",
     )
     task_output_dir = script_dir / Path(TASK_OUTPUT_PATH + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    task_output_logs = task_output_dir / Path("agent_logs.json")
     if not os.path.exists(task_output_dir):
         os.makedirs(task_output_dir)
     composio_toolset = ComposioToolSet()
@@ -101,7 +101,7 @@ def run():
     goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
     tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
     issues = get_issues_dataset()
-    agent_logs = []
+    agent_logs = {}
     for issue in issues:
         issue_description = build_issue_description(issue["hints_text"],
                                                     issue["problem_statement"])
@@ -115,19 +115,23 @@ def run():
                     f"repo_name: {repo_name}\n")
         current_logs = []
 
-        # this is a step_callback function --> used to store logs of agent actions and
-        # responses
+        # this is a step_callback function -->
+        #           used to store logs of agent actions and responses
         def add_in_logs(step_output):
             # get agent input
             if len(step_output) < 1:
                 return
             agent_action_with_tool_out = step_output[0]
-            agent_action = agent_action_with_tool_out[0]
-            tool_out = None
-            if len(agent_action_with_tool_out) > 1:
-                tool_out = agent_action_with_tool_out[1]
-            current_logs.append({"agent_action": agent_action.json(),
-                                 "tool_output": tool_out})
+            if agent_action_with_tool_out and isinstance(agent_action_with_tool_out, list):
+                if isinstance(agent_action_with_tool_out[0], langchain_core.agents.AgentAction):
+                    agent_action = agent_action_with_tool_out[0]
+                    tool_out = None
+                    if len(agent_action_with_tool_out) > 1:
+                        tool_out = agent_action_with_tool_out[1]
+                    current_logs.append({"agent_action": agent_action.json(),
+                                         "tool_output": tool_out})
+                else:
+                    print(type(agent_action_with_tool_out[0]))
 
         with open(base_task_config_path) as f:
             base_config = yaml.safe_load(f.read())
@@ -151,7 +155,7 @@ def run():
             llm=azure_llm,
             memory=True,
             cache=False,
-            step_callback=add_in_logs
+            step_callback=add_in_logs,
         )
 
         coding_task = Task(
@@ -161,7 +165,7 @@ def run():
         )
         coding_task.execute()
         agent_logs[instance_id] = current_logs
-    with open(task_output_dir, "w") as f:
+    with open(task_output_logs, "w") as f:
         f.write(json.dumps(agent_logs))
 
 
