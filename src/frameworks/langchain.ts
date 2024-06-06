@@ -2,6 +2,7 @@ import { Action, App, Tag } from "../enums";
 import { ComposioToolSet as BaseComposioToolSet } from "../base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
+import z from "zod";
 
 type Optional<T> = T | null;
 type Dict<T> = { [key: string]: T };
@@ -65,20 +66,19 @@ export class ComposioToolSet extends BaseComposioToolSet {
         const description = schema["description"];
 
         const func = async (...kwargs: any[]): Promise<any> => {
-            return this.execute_action(
+            return JSON.stringify(await this.execute_action(
                 Action.from_app_and_action(
                     app,
                     action
                 ),
-                kwargs,
+                kwargs[0],
                 entityId || this.entityId
-            );
+            ));
         };
 
         const parameters = jsonSchemaToModel(schema["parameters"]);
 
         // @TODO: Add escriiption an othjer stuff here
-    
 
         return new DynamicStructuredTool({
             name: action,
@@ -88,21 +88,23 @@ export class ComposioToolSet extends BaseComposioToolSet {
         });
     }
 
-    // async get_actions(
-    //     _actions: Sequence<Action>,
-    //     entityId: Optional<string> = null
-    // ): Promise<Sequence<DynamicStructuredTool>> {
-    //     const actions =  await this.client.actions.list({
-    //         appNames: _actions.map(action => action.action).join(",")
-    //      })
+    async get_actions(
+        _actions: Sequence<Action>,
+        entityId: Optional<string> = null
+    ): Promise<Sequence<DynamicStructuredTool>> {
+        const actions =  (await this.client.actions.list({
+            limit: "999999"
+        })).items?.filter((a) => {
+            return _actions.map(action => action.action).includes(a!.name!);
+        });
          
-    //      return actions.map(tool =>
-    //         this._wrap_tool({
-    //             schema: tool.model_dump({ excludeNone: true }),
-    //             entityId: entityId || this.entityId
-    //         })
-    //     );
-    // }
+         return actions!.map(tool =>
+            this._wrap_tool(
+                tool,
+                entityId || this.entityId
+            )
+        );
+    }
 
     async get_tools(
         _apps: Sequence<App>,
@@ -114,10 +116,10 @@ export class ComposioToolSet extends BaseComposioToolSet {
             limit: "99999"
          });
         return apps.items!.map(tool =>
-            this._wrap_tool({
-                schema: tool,
-                entityId: entityId || this.entityId
-            })
+            this._wrap_tool(
+                tool,
+                entityId || this.entityId
+            )
         );
     }
 }
