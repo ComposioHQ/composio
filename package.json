@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build": "webpack",
+    "postinstall": "tsc --declaration src/index.ts --outDir types"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,7 @@
     "@types/node": "^20.14.2",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "ts-loader": "^9.5.1",
+    "tsc": "^2.0.4",
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4"
