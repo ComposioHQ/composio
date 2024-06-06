@@ -8,11 +8,12 @@ Usage:
 import webbrowser
 
 import click
+
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import Composio
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
-from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 
 class Examples(HelpfulCmdBase, click.Command):

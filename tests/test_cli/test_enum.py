@@ -1,5 +1,6 @@
 import unittest
-from composio.client.enums import Tag, App, Action, Trigger
+
+from composio.client.enums import Action, App, Tag, Trigger
 
 
 class TestTagEnum(unittest.TestCase):

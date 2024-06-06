@@ -1,12 +1,13 @@
-import click
 import inspect
-from composio.cli.context import Context, pass_context
-from composio.client import Composio
-from click.formatting import HelpFormatter
-from composio.exceptions import ComposioSDKError
-from composio.utils.url import get_web_url
 
+import click
 from click.core import Context as ClickContext
+from click.formatting import HelpFormatter
+
+from composio.cli.context import Context, pass_context  # noqa: F401
+from composio.client import Composio  # noqa: F401
+from composio.exceptions import ComposioSDKError  # noqa: F401
+from composio.utils.url import get_web_url  # noqa: F401
 
 
 class HelpfulCmdBase:

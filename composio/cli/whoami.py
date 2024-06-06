@@ -8,8 +8,8 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.exceptions import ComposioSDKError
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+from composio.exceptions import ComposioSDKError
 
 
 class WhoamiExamples(HelpfulCmdBase, click.Command):
