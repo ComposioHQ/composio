@@ -8,9 +8,9 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
-from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 
 
 class ConnectionsExamples(HelpfulCmdBase, DYMGroup):

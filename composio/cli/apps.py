@@ -12,11 +12,12 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import ActionModel, AppModel, TriggerModel, enums
 from composio.client.local_handler import LocalToolHandler
-from composio.exceptions import ComposioSDKError
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+from composio.exceptions import ComposioSDKError
+
 
 MODULE_TEMPLATE = """\"\"\"
 Helper Enum classes.

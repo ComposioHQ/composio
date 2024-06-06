@@ -5,6 +5,7 @@ with a git-like *did-you-mean* feature.
 
 import difflib
 import typing
+
 import click
 
 

@@ -1,10 +1,10 @@
 import hashlib
 import json
-import inflection
-import jsonref
-
 from abc import ABC, abstractmethod
 from typing import List
+
+import inflection
+import jsonref
 from pydantic import BaseModel
 
 
