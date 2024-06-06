@@ -59,7 +59,7 @@ def filter_from_repo_name(curr_dataset, repo_name):
 def get_issues_dataset():
     # Load the SWE-bench dataset
     dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[:1%]")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[:3]")
     # filter by repo-name 
     # test_dataset = filter_from_repo_name(test_dataset, repo_name)
 
