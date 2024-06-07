@@ -27,7 +27,6 @@ class Action(ABC):
     _response_schema: type[BaseModel]  # Placeholder for response schema
     _tags: List[str] = []  # Placeholder for tags
     _tool_name: str = ""
-    _potentially_long_response: bool = False  # Placeholder for potentially long response
 
     @property
     def tool_name(self) -> str:
@@ -72,14 +71,6 @@ class Action(ABC):
     @response_schema.setter
     def response_schema(self, value: type[BaseModel]):
         self._response_schema = value
-    
-    @property
-    def potentially_long_response(self) -> bool:
-        return self._potentially_long_response
-    
-    @potentially_long_response.setter
-    def potentially_long_response(self, value: bool):
-        self._potentially_long_response = value
 
     @abstractmethod
     def execute(self, request_data: type[BaseModel], authorisation_data: dict) -> dict:
