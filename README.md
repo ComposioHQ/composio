@@ -66,6 +66,10 @@
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
 - [🔥 Key Features](#-key-features)
+- [💡 Examples](#-examples)
+  - [Competitor Researcher](#competitor-researcher)
+  - [Todolist to Calendar](#todolist-to-calendar)
+  - [Github to Trello](#github-to-trello)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
 - [🔗 Links](#-links)
@@ -171,6 +175,14 @@ print(response_after_tool_calls)
 - **Accuracy**: Get _upto 40% better agentic accuracy_ in your tool calls due to better tool designs.
 - **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
 - **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
+
+## 💡 Examples
+
+### [Competitor Researcher](https://docs.composio.dev/guides/examples/CompetitorResearcher)
+
+### [Todolist to Calendar](https://docs.composio.dev/guides/examples/todo-to-calendar)
+
+### [Github to Trello](https://docs.composio.dev/guides/examples/github-trello)
 
 ## 📋 Read Our Code Of Conduct
 
