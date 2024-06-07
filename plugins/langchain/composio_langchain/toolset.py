@@ -162,4 +162,3 @@ class ComposioToolSet(BaseComposioToolSet):
             )
             for tool in self.client.actions.get(apps=apps, tags=tags)
         ]
-
