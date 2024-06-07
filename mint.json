@@ -143,50 +143,7 @@
         "sdk/python/introduction",
         "sdk/python/configuration",
         "sdk/python/actions",
-        "sdk/python/local_tools",
-          {
-          "group": "Reference",
-          "pages": [
-            {
-              "group": "Client",
-              "pages": [
-                "sdk/composio/client/local_handler",
-                "sdk/composio/client/enums",
-                "sdk/composio/client/index",
-                "sdk/composio/client/http",
-                "sdk/composio/client/exceptions",
-                "sdk/composio/client/endpoints"
-              ]
-            },
-            {
-              "group": "Storage",
-              "pages": [
-                "sdk/composio/storage/user",
-                "sdk/composio/storage/index",
-                "sdk/composio/storage/base"
-              ]
-            },
-            {
-              "group": "Tools",
-              "pages": [
-                "sdk/composio/tools/index",
-                "sdk/composio/tools/schema"
-              ]
-            },
-            {
-              "group": "Utils",
-              "pages": [
-                "sdk/composio/utils/git",
-                "sdk/composio/utils/index",
-                "sdk/composio/utils/shared",
-                "sdk/composio/utils/url",
-                "sdk/composio/utils/decorators"
-              ]
-            },
-            "sdk/composio/constants",
-            "sdk/composio/exceptions"
-          ]
-        }
+        "sdk/python/local_tools"
       ]
     },
     {
@@ -201,15 +158,18 @@
     {
       "group": "Examples",
       "pages": [
-        {"group": "Demo Apps", "pages":[
-        "guides/examples/ResearchAssistant",
-        "guides/examples/CompetitorResearcher",
-        "guides/examples/InvestmentAnalyst",
-        "guides/examples/github-trello",
-        "guides/examples/urlsummary",
-        "guides/examples/news-summary",
-        "guides/examples/todo-to-calendar",
-        "guides/examples/qnasummary"
+        "guides/examples/Example",
+        {
+          "group": "Demo Apps", 
+          "pages":[
+            "guides/examples/ResearchAssistant",
+            "guides/examples/CompetitorResearcher",
+            "guides/examples/InvestmentAnalyst",
+            "guides/examples/github-trello",
+            "guides/examples/urlsummary",
+            "guides/examples/news-summary",
+            "guides/examples/todo-to-calendar",
+            "guides/examples/qnasummary"
 
         ]}
         ]
@@ -229,8 +189,11 @@
     {
       "group": "Tools",
       "pages": [
-        {"group":"Apps","pages":[
-                  "apps/list",
+        "apps/list",
+        {
+          "group":"Apps",
+          "pages":[
+                 
         "apps/accelo",
         "apps/adobe",
         "apps/amazon",

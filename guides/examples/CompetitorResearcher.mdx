@@ -5,6 +5,7 @@ icon: "pen"
 description: "This guide will walk you through setting up a system that scrapes competitor websites
 and automatically adds detailed research notes to your Notion workspace. Let's get started!"
 ---
+
 <Steps>
     <Step title="Install packages and Connect tools">
     First, install the necessary packages and connect your Notion account using composio cli so agents can use it. Run the following commands on your terminal:
@@ -42,8 +43,8 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
         dotenv.load_dotenv()
         llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
 
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(apps=[App.NOTION])
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.NOTION])
         ```
     </CodeGroup>
     </Step>
@@ -61,7 +62,7 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
             content.append(remove_tags(reqs.content))
             cleaned_content = "\n".join(content)
             competitor_info = cleaned_content
-            return jsonify(competitor_info)      
+            return jsonify(competitor_info)
     ```
 
     </CodeGroup>
@@ -95,7 +96,7 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
         async_execution=True,
     )
 
-    task.execute()        
+    task.execute()
     ```
 
     </CodeGroup>
@@ -104,6 +105,7 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
 </Steps>
 
 ## Putting it All Together
+
 <CodeGroup>
     ```python Final Code
     import os, re, time, requests, base64, dotenv
@@ -117,8 +119,8 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
 
     dotenv.load_dotenv()
     llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(apps=[App.NOTION])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.NOTION])
 
     date = datetime.today().strftime('%Y-%m-%d')
     timezone = datetime.now().astimezone().tzinfo
@@ -169,6 +171,7 @@ and automatically adds detailed research notes to your Notion workspace. Let's g
     task.execute()
 
     ```
+
 </CodeGroup>
 ## Information
 - [Github](https://github.com/anonthedev/competitor-researcher)
