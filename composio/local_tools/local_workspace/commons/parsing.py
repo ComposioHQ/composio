@@ -103,7 +103,7 @@ class ParseCommandBash(ParseCommand):
             )
         return commands
 
-    def parse_bash_functions(self, path, contents) -> List[Command]:
+    def parse_bash_functions(self, _path, contents) -> List[Command]:
         """
         Simple logic for parsing a bash file and segmenting it into functions.
 

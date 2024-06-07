@@ -30,7 +30,9 @@ class Calculator(Action):
     ) -> dict:
         operation_str = request_data.dict()["operation"]
         try:
+            # pylint: disable=eval-used
             result = eval(operation_str)
+            # pylint: enable=eval-used
             execution_details = {"executed": True}
             response_data = result
         except Exception as e:
