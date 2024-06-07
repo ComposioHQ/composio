@@ -1,16 +1,14 @@
+import typing as t
 from typing import Optional
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
+from composio.core.local import Action, Tool
+from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
-)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-from composio.local_tools.local_workspace.history_keeper.actions.get_workspace_history import (
-    GetWorkspaceHistory,
-)
-from composio.local_tools.tool import Tool
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
+from .actions import GetWorkspaceHistory
 
 
 logger = get_logger()
@@ -24,7 +22,7 @@ class HistoryKeeper(Tool):
     workspace_factory: Optional[WorkspaceManagerFactory] = None
     history_processor: Optional[HistoryProcessor] = None
 
-    def actions(self) -> list:
+    def actions(self) -> list[t.Type[Action]]:
         return [GetWorkspaceHistory]
 
     def triggers(self) -> list:

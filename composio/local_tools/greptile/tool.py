@@ -1,6 +1,8 @@
-from composio.local_tools.tool import Tool
+import typing as t
 
-from .codequery import CodeQuery
+from composio.core.local import Action, Tool
+
+from .actions import CodeQuery
 
 
 class Greptile(Tool):
@@ -8,7 +10,7 @@ class Greptile(Tool):
     Code understanding tool. Index Code and answer questions about it.
     """
 
-    def actions(self) -> list:
+    def actions(self) -> list[t.Type[Action]]:
         return [CodeQuery]
 
     def triggers(self) -> list:

@@ -4,7 +4,6 @@ from crewai import Agent, Crew, Process, Task
 from crewai.task import TaskOutput
 from langchain_openai import ChatOpenAI
 
-
 CONFIG_FILE_PATH = "./task_config.yaml"
 
 # Path of the current script
@@ -24,7 +23,7 @@ base_role = (
 
 goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
 
-tools = composio_toolset.get_actions(actions=[Action.GREPTILECODEQUERY])
+tools = composio_toolset.get_actions(actions=[Action.GREPTILE_CODEQUERY])
 
 
 if __name__ == "__main__":

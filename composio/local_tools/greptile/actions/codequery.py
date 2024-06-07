@@ -4,11 +4,10 @@ import os
 import requests
 from pydantic import BaseModel, Field
 
-from ..action import Action
+from composio.core.local import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 
-# Greptile query tool. Given the github repo and the question, it will return the answer to the question.
 logger = get_logger()
 
 

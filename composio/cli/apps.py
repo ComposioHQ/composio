@@ -12,8 +12,10 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import ActionModel, AppModel, TriggerModel, enums
 from composio.client.local_handler import LocalToolHandler
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 
@@ -126,7 +128,19 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 """
 
 
-@click.group(name="apps", invoke_without_command=True)
+class AppsExamples(HelpfulCmdBase, DYMGroup):
+    examples = [
+        click.style("composio apps", fg="green")
+        + click.style("            # List all apps\n", fg="black"),
+        click.style("composio apps --enabled", fg="green")
+        + click.style("  # List only enabled apps\n", fg="black"),
+        click.style("composio apps update", fg="green")
+        + click.style("     # Update local Apps database\n", fg="black"),
+    ]
+
+
+@click.group(name="apps", invoke_without_command=True, cls=AppsExamples)
+@click.help_option("--help", "-h", "-help")
 @click.option(
     "--enabled",
     is_flag=True,
@@ -135,7 +149,7 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 )
 @pass_context
 def _apps(context: Context, enabled: bool = False) -> None:
-    """Manage composio apps"""
+    """List composio tools/apps which you have access to"""
     if context.click_ctx.invoked_subcommand:
         return
 
@@ -147,17 +161,25 @@ def _apps(context: Context, enabled: bool = False) -> None:
         else:
             context.console.print("[green]Showing all apps[/green]")
         for app in apps:
-            context.console.print(f"• {app.name}")
+            context.console.print(f"• {app.key}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
 
-@_apps.command(name="update")
+class UpdateExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio apps update", fg="green")
+        + click.style("  # Update local Apps database\n", fg="black"),
+    ]
+
+
+@_apps.command(name="update", cls=UpdateExamples)
 @click.option(
     "--beta",
     is_flag=True,
     help="Include beta apps.",
 )
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _update(context: Context, beta: bool = False) -> None:
     """Updates local Apps database."""
@@ -176,12 +198,13 @@ def _update(context: Context, beta: bool = False) -> None:
         )
         if not beta:
             c = []
+
             def filter_non_beta_items(items):
                 filtered_items = []
                 for item in items:
                     if not item.name.lower().endswith("beta"):
                         filtered_items.append(item)
-                
+
                 seen = set()
                 unique_items = []
                 for item in filtered_items:
@@ -252,7 +275,7 @@ def _get_action_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> st
     local_tool_handler = LocalToolHandler()
     for tool in local_tool_handler.registered_tools:
         for action in tool.actions():
-            enum_name = f"{_get_enum_key(action().action_name)}"
+            enum_name = f"{_get_enum_key(action().get_tool_merged_action_name())}"
             enum_value = f'("{tool.tool_name}", "{tool.tool_name}_{action().action_name}", True, True)'
             action_enums += f"    {enum_name} = {enum_value}\n"
     return ACTION_ENUM_TEMPLATE.format(actions=action_enums)

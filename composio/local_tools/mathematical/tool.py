@@ -1,5 +1,8 @@
-from ..tool import Tool
-from .calculator import Calculator
+import typing as t
+
+from composio.core.local import Action, Tool
+
+from .actions import Calculator
 
 
 class Mathematical(Tool):
@@ -7,7 +10,7 @@ class Mathematical(Tool):
     Mathematical Tools for LLM
     """
 
-    def actions(self) -> list:
+    def actions(self) -> list[t.Type[Action]]:
         return [Calculator]
 
     def triggers(self) -> list:
