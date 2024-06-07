@@ -17,6 +17,7 @@ from composio.cli.triggers import _triggers
 from composio.cli.whoami import _whoami
 from composio.core.cls.did_you_mean import DYMGroup
 
+
 class HelpDYMGroup(DYMGroup):
     def format_help(self, ctx, formatter):
         formatter.write("\n")
@@ -24,17 +25,27 @@ class HelpDYMGroup(DYMGroup):
         super().format_help(ctx, formatter)
 
         formatter.write("\n📙 Examples:\n\n")
-        formatter.write(click.style("composio --help", fg='green') + click.style("          # Display help information\n", fg='black'))
-        formatter.write(click.style("composio add github", fg='green') + click.style("      # Add an integration to your account\n", fg='black'))
-        formatter.write(click.style("composio login", fg='green') + click.style("           # Log in to your Composio account\n", fg='black'))
 
+        formatter.write(
+            click.style("composio --help", fg="green")
+            + click.style("          # Display help information\n", fg="black")
+        )
+        formatter.write(
+            click.style("composio add github", fg="green")
+            + click.style("      # Add an integration to your account\n", fg="black")
+        )
+        formatter.write(
+            click.style("composio login", fg="green")
+            + click.style("           # Log in to your Composio account\n", fg="black")
+        )
 
 @click.group(name="composio",cls=CatchAllExceptions(HelpDYMGroup, handler=handle_exceptions))
 @click.help_option("--help", "-h","-help")
 def composio() -> None:
     """
-    🔗 Composio CLI Tool. 
+    🔗 Composio CLI Tool.
     """
+
 
 composio.add_command(_add)
 composio.add_command(_apps)
