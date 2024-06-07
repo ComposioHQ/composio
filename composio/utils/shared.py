@@ -247,4 +247,3 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
         else:
             optional_parameters.append(param)
     return required_parameters + optional_parameters
-
