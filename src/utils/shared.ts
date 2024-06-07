@@ -4,13 +4,6 @@ type SchemaTypeToTsType = {
     [key: string]: any;
 };
 
-const SCHEMA_TYPE_TO_TS_TYPE: SchemaTypeToTsType = {
-    "string": String,
-    "number": Number,
-    "boolean": Boolean,
-    "integer": Number,
-};
-
 const PYDANTIC_TYPE_TO_TS_TYPE: SchemaTypeToTsType = {
     "string": String,
     "integer": Number,
@@ -19,14 +12,6 @@ const PYDANTIC_TYPE_TO_TS_TYPE: SchemaTypeToTsType = {
     "null": null,
 };
 
-const FALLBACK_VALUES: SchemaTypeToTsType = {
-    "string": "",
-    "number": 0.0,
-    "integer": 0,
-    "boolean": false,
-    "object": {},
-    "array": [],
-};
 
 export function jsonSchemaToTsType(jsonSchema: Record<string, any>): any {
     if (!jsonSchema.type) {
