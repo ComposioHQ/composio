@@ -1,8 +1,10 @@
 <p align="center">
-  <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="172" srcset="./docs/imgs/composio_black_font.svg">
-    <img alt="Composio" width="172" src="./docs/imgs/composio_white_font.svg"/>
-  </picture>
+  <a href="https://composio.dev//#gh-dark-mode-only">
+    <img src="./docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
+  </a>
+  <a href="https://composio.dev//#gh-light-mode-only">
+    <img src="./docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
+  </a>
 </p>
 <p align="center">
   <a href="https://github.com/composiodev/composio/actions/workflows/common.yml">
@@ -17,9 +19,9 @@
   
 </p>
 
-<h2 align="center">
+<h2 align="center"><i>
   Production Ready Toolset for AI Agents
-</h2>
+</i></h2>
 
 <h4 align="center">Equip your agent with high-quality tools & integrations without worrying about authentication, accuracy, and reliability in a single line of code!
 </h4>
