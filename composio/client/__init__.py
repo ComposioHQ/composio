@@ -755,7 +755,7 @@ class Actions(Collection[ActionModel]):
             annotations = action_req_schema.model_fields[param].json_schema_extra
             file_readable = annotations is not None and annotations.get('file_readable', False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
-                with open(value, 'r') as file:
+                with open(value, 'rb') as file:
                     modified_params[param] = file.read()
             else:
                 modified_params[param] = value
