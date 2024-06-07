@@ -43,8 +43,8 @@ You will build a system capable of converting roughly written todo items into Go
         dotenv.load_dotenv()
         llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
 
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(apps=[App.GOOGLECALENDAR])
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
         date = datetime.today().strftime('%Y-%m-%d')
 
         timezone = datetime.now().astimezone().tzinfo
@@ -97,6 +97,7 @@ You will build a system capable of converting roughly written todo items into Go
 </Steps>
 
 ## Putting it All Together
+
 <CodeGroup>
     ```python Final Code
     # Import base packages
@@ -111,8 +112,8 @@ You will build a system capable of converting roughly written todo items into Go
     dotenv.load_dotenv()
     llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4-turbo-preview")
 
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(apps=[App.GOOGLECALENDAR])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
 
     date = datetime.today().strftime('%Y-%m-%d')
     timezone = datetime.now().astimezone().tzinfo
@@ -130,7 +131,7 @@ You will build a system capable of converting roughly written todo items into Go
         gcal_agent = Agent(
             role='Google Calendar Agent',
             goal="""You take action on Google Calendar using Google Calendar APIs""",
-            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
+            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf.
             You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.""",
             verbose=True,
             tools=tools,
@@ -146,7 +147,9 @@ You will build a system capable of converting roughly written todo items into Go
 
     run_crew()
     ```
+
 </CodeGroup>
 
 ## Information
+
 - [Github](https://github.com/anonthedev/composio-todo-to-calendar)

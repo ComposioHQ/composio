@@ -6,7 +6,6 @@ description: "This guide explains how to create an application that extracts con
 Notion page using Composio and Langchain."
 ---
 
-
 <Steps>
     <Step title="Install packages and Connect tools">
     First, we’ll install the necessary packages and connect your Notion account using composio cli so agents can use it. 
@@ -43,8 +42,8 @@ Notion page using Composio and Langchain."
 
         prompt = hub.pull("hwchase17/openai-functions-agent")
 
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(apps=[App.NOTION])
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.NOTION])
         ```
     </CodeGroup>
     </Step>
@@ -81,6 +80,7 @@ Notion page using Composio and Langchain."
 </Steps>
 
 ## Putting It All Together
+
 <CodeGroup>
     ```python Final Code
     from langchain_community.document_loaders import WebBaseLoader
@@ -93,8 +93,8 @@ Notion page using Composio and Langchain."
     # Initialize the language model and toolset
     llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0, api_key="sk-***")
     prompt = hub.pull("hwchase17/openai-functions-agent")
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(apps=[App.NOTION])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.NOTION])
 
     # Define a function to get content from a URL
     def getContent(url):
@@ -122,4 +122,5 @@ Notion page using Composio and Langchain."
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
     agent_executor.invoke({"input": task})
     ```
+
 </CodeGroup>

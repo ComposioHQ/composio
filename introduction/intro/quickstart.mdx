@@ -29,13 +29,13 @@ Modify `OPENAIKEY` before executing it.
 <CodeGroup>
 ```python Import Base Packages & Configure OpenAI Client
 from openai import OpenAI
-from composio_openai import ComposioToolset, App, Action
+from composio_openai import ComposioToolSet, App, Action
 
 openai_client = OpenAI(api_key="**\*\***OPENAIKEY**\*\***")
 
 # Initialise the Composio Tool Set
 
-composio_toolset = ComposioToolset()
+composio_toolset = ComposioToolSet()
 
 ```
 </CodeGroup>
@@ -54,7 +54,7 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO
 
 <CodeGroup>
 ```python Task to Action Selection
-my_task = "Star a repo SamparkAI/composio on GitHub"
+my_task = "Star a repo ComposioDev/composio on GitHub"
 
 # Setup openai assistant
 assistant_instruction = "You are a super intelligent personal assistant"
@@ -132,12 +132,12 @@ Replace `OPENAIKEY`.
 
 ## Step 3
 from openai import OpenAI
-from composio_openai import ComposioToolset, App
+from composio_openai import ComposioToolSet, App
 
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 
 # Initialise the Composio Tool Set
-composio_tools = ComposioToolset()
+composio_toolset = ComposioToolSet()
 
 ## Step 4
 # Get GitHub tools that are pre-configured
@@ -145,7 +145,7 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO
 
 
 ## Step 5
-my_task = "Star a repo SamparkAI/composio on GitHub"
+my_task = "Star a repo ComposioDev/composio on GitHub"
 
 # Create a chat completion request to decide on the action
 response = openai_client.chat.completions.create(
