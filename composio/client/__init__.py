@@ -542,6 +542,7 @@ class ActionParameterPropertyModel(BaseModel):
     description: t.Optional[str] = None
     title: t.Optional[str] = None
     type: t.Optional[str] = None
+    oneOf: t.Optional[t.List["ActionParameterPropertyModel"]] = None
 
 
 class ActionParametersModel(BaseModel):
