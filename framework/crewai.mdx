@@ -28,6 +28,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
     composio apps
 
     ```
+
 </CodeGroup>
 
 ### Goal: Use Crew Agent to Interact with Github using Composio
@@ -58,16 +59,16 @@ These commands prepare your environment for seamless interaction between CrewAI 
 
     # Get All the tools
 
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(apps=[App.GITHUB])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
     ```
+
 </CodeGroup>
 
 </Step>
 
 <Step title="Execute the Agent">
-
 
 <CodeGroup>
     ```python CrewAI Agent Executes Task
@@ -86,7 +87,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
     )
 
     task = Task(
-        description="Star a repo SamparkAI/composio on GitHub",
+        description="Star a repo ComposioDev/composio on GitHub",
         agent=crewai_agent,
         expected_output="if the star happened"
     )
@@ -103,14 +104,14 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <CodeGroup>
     ```bash Executing Agents
     > Entering new CrewAgentExecutor chain...[0m
-    I need to star a repository on GitHub, specifically the repo "SamparkAI/composio".
+    I need to star a repository on GitHub, specifically the repo "ComposioDev/composio".
 
     Action:
     github_star_repo
 
     Action Input:
     {
-    "owner": "SamparkAI",
+    "owner": "ComposioDev",
     "repo": "composio"
     }
 
@@ -121,6 +122,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
     > {'execution_details': {'executed': True}, 'response_data': ''}
 
     ```
+
 </CodeGroup>
 
 </Step>
@@ -129,8 +131,8 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <CodeGroup>
     ```bash Filter Specific Action
     # To restrict agents from using all the actions, filter specific actions
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
     ```
 </CodeGroup>
 
@@ -138,11 +140,8 @@ These commands prepare your environment for seamless interaction between CrewAI 
 
 <CodeGroup>
   ```bash Filter Specific App 
-  # To restrict agents from using all tools, filter
-  specific tools
-  composiotoolset = ComposioToolSet() 
-  tools = composiotoolset.get_tools(apps=[App.GITHUB])
+  # To restrict agents from using all tools, filter specific tools 
+  composio_toolset = ComposioToolSet() 
+  tools = composio_toolset.get_tools(apps=[App.GITHUB]) 
   ```
 </CodeGroup>
-
-

@@ -6,8 +6,6 @@ description: "This guide provides detailed steps to create a research assistant 
 Google Gemma API to perform web searches and compile research reports."
 ---
 
-
-
 <Steps>
     <Step title="Install Required Packages">
     You need to connect your SerpAPI account using the Composio CLI. This allows agents to use SerpAPI for web searches.
@@ -35,7 +33,7 @@ Google Gemma API to perform web searches and compile research reports."
         ```
     </CodeGroup>
     </Step>
-    
+
     <Step title="Initialise tools and agents">
     Initialize the tools and agents required for your research assistant:
     <CodeGroup>
@@ -44,8 +42,8 @@ Google Gemma API to perform web searches and compile research reports."
         model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
         )
         # Composio tool for serpapi
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(actions=[Action.SERPAPI_SEARCH])
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(actions=[Action.SERPAPI_SEARCH])
         ```
 
     </CodeGroup>
@@ -108,9 +106,9 @@ Below is the complete code snippet combining all the steps:
         )
 
         # Composio tool for SerpAPI
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(actions=[Action.SERPAPI_SEARCH])
-        
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(actions=[Action.SERPAPI_SEARCH])
+
         # Define the Agent
         researcher = Agent(
             role='Researcher',
@@ -136,7 +134,9 @@ Below is the complete code snippet combining all the steps:
         task1.execute()
 
     ```
+
 </CodeGroup>
 
 ## Information
+
 - [Colab Notebook](https://colab.research.google.com/drive/17G36slXUAIBbRon0UbsGHEgZcVs1NAcI?usp=sharing)
