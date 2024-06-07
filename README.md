@@ -1,7 +1,7 @@
 <p align="center">
   <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
-    <img alt="Composio" width="172" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
+    <source media="(prefers-color-scheme: dark)" width="172" srcset="./docs/imgs/composio_black_font.svg">
+    <img alt="Composio" width="172" src="./docs/imgs/composio_white_font.svg"/>
   </picture>
 </p>
 <p align="center">
@@ -78,7 +78,7 @@
 We believe AI Based Agents/Workflows are the future.
 Composio is the best toolset to integrate AI Agents to best Agentic Tools and use them to accomplish tasks.
 
-<img alt="Illustration" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
+<img alt="Illustration" src="./docs/imgs/banner.gif" style="border-radius: 5px"/>
 
 ## 🔥 Key Features
 
