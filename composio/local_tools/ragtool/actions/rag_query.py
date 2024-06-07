@@ -25,7 +25,7 @@ class RagToolQuery(Action):
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
 
-    def execute(self, request: RagToolQueryRequest, authorisation_data: dict = None):
+    def execute(self, request: RagToolQueryRequest, authorisation_data: dict) -> dict:
         """Query the knowledge base and return the response"""
         if authorisation_data is None:
             authorisation_data = {}
@@ -49,8 +49,8 @@ class RagToolQuery(Action):
             try:
                 _, sources = embedchain_app.query(query, citations=True)
                 response = "\n\n".join([source[0] for source in sources])
-                return response
+                return {"response": response}
             except Exception as e:
-                return f"Error querying knowledge base: {e}"
+                return {"error": f"Error querying knowledge base: {e}"}
         else:
-            return "App initialization failed, cannot perform query."
+            return {"error": "App initialization failed, cannot perform query."}

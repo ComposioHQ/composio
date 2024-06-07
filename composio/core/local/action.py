@@ -6,6 +6,7 @@ from typing import List
 import inflection
 import jsonref
 from pydantic import BaseModel
+from typing import Union, Any
 
 
 def generate_hashed_appId(input_string):
@@ -71,7 +72,7 @@ class Action(ABC):
         self._response_schema = value
 
     @abstractmethod
-    def execute(self, request_data: type[BaseModel], authorisation_data: dict) -> dict:
+    def execute(self, request_data: Any, authorisation_data: dict) -> Union[dict, BaseModel]: 
         pass
 
     @property
@@ -102,7 +103,7 @@ class Action(ABC):
 
         return action_schema
 
-    def execute_action(self, request_data: dict, metadata: dict):
+    def execute_action(self, request_data: type[BaseModel], metadata: dict)->dict:
         # req = self._request_schema.model_validate_json(json_data=json.dumps(request_data))
 
         # print(f"Executing {self.__class__.__name__} on Tool: {self.tool_name} with request data {request_data} and meta data {metadata}")

@@ -4,6 +4,7 @@ from urllib.request import Request, urlopen
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
+from typing import Dict, Any
 
 
 class ScrapeWebsiteElementToolRequest(BaseModel):
@@ -29,8 +30,8 @@ class ScrapeWebsiteElement(Action):
     _tool_name = "webtool"
 
     def execute(
-        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict = None
-    ):
+        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict
+    ) -> dict:
         """Scrape a specific element from the website and return its content"""
         if authorisation_data is None:
             authorisation_data = {}
@@ -58,7 +59,7 @@ class ScrapeWebsiteElement(Action):
             soup = BeautifulSoup(html, "html.parser")
             element = soup.select_one(selector)
             if element:
-                return str(element)
-            return "Element not found"
+                return {"element_content": str(element)}
+            return {"element_content": "Element not found"}
         except Exception as e:
-            return f"Error scraping element: {e}"
+            return {"error": f"Error scraping element: {e}"}

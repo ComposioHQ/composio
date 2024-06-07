@@ -30,7 +30,7 @@ composio_toolset = ComposioToolSet()
 instructions = "Star a repo SamparkAI/docs on GitHub"
 
 # Get required tool
-(github_tool,) = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_REPO])
+(github_tool,) = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 
 # Define agent
 lyzr_agent = Agent(

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import yaml
+import yaml  # type: ignore
 from simple_parsing.helpers.serialization.serializable import FrozenSerializable
 
 
@@ -39,7 +39,7 @@ class Command(FrozenSerializable):
 
 
 class ParseCommandMeta(type):
-    _registry = {}
+    _registry: dict[str, "ParseCommand"] = {}
 
     def __new__(cls, name, bases, attrs):
         new_cls = super().__new__(cls, name, bases, attrs)

@@ -87,7 +87,7 @@ class LocalDockerWorkspace(gym.Env):
         self._init_container()
         self._init_scripts()
 
-    def _init_container(self) -> None:
+    def _init_container(self):
         """
         Handles container initialization. Defines container name and creates it
         """
