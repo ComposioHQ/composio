@@ -25,8 +25,8 @@ Efficiency can be significantly enhanced by selectively filtering actions rather
 <CodeGroup>
 ```bash Filter Asana actions by tasks tag to only get tasks related actions
 # Use tags to limit the actions available to agents
-tool_set = ComposioToolSet(entity_id="Sam")
-toolsAsanaTasks = tool_set.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
+composio_toolset = ComposioToolSet(entity_id="Sam")
+toolsAsanaTasks = composio_toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
 ```
 </CodeGroup>
 
@@ -44,7 +44,7 @@ To limit agents to only certain actions, you can specifically filter out the des
 <CodeGroup>
 ```bash Filter Github Create Issue action
 # To limit the actions available to agents, apply a specific action filter
-tool_set = ComposioToolSet(entity_id="Melissa")
-toolsGithubCreateIssue = tool_set.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+composio_toolset = ComposioToolSet(entity_id="Melissa")
+toolsGithubCreateIssue = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 </CodeGroup>
