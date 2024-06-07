@@ -362,7 +362,7 @@ class App(str, Enum):
     @property
     def is_local(self) -> bool:
         """If the app is local."""
-        return self.value.lower() in ["mathematical", "localworkspace", "cmdmanagertool", "historykeeper", "ragtool", "webtool", "greptile"]
+        return self.value.lower() in ["mathematical", "localworkspace", "cmdmanagertool", "historykeeper", "ragtool", "webtool", "greptile", "submitpatchtool"]
 
     ABLY = "ably"
     ACCELO = "accelo"
@@ -573,6 +573,8 @@ class App(str, Enum):
     RAGTOOL = "ragtool"
     WEBTOOL = "webtool"
     GREPTILE = "greptile"
+    SUBMITPATCHTOOL = "submitpatchtool"
+
 
 
 class Action(tuple, Enum):
@@ -592,11 +594,12 @@ class Action(tuple, Enum):
     def no_auth(self) -> bool:
         """Name of the action."""
         return self.value[2]
-
+     
     @property
     def is_local(self) -> bool:
         """If the action is local."""
         return len(self.value) > 3 and self.value[3]
+
 
     @classmethod
     def from_app(cls, name: str) -> "Action":
@@ -9969,796 +9972,209 @@ class Action(tuple, Enum):
     YOUTUBE_VIDEO_DETAILS = ("youtube", "youtube_video_details", False)
     YOUTUBE_UPDATE_THUMBNAIL = ("youtube", "youtube_update_thumbnail", False)
     YOUTUBE_UPDATE_VIDEO = ("youtube", "youtube_update_video", False)
-    ZENDESK_CREATE_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_create_zendesk_organization",
-        False,
-    )
-    ZENDESK_DELETE_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_delete_zendesk_organization",
-        False,
-    )
-    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = (
-        "zendesk",
-        "zendesk_count_zendesk_organizations",
-        False,
-    )
-    ZENDESK_GET_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_get_zendesk_organization",
-        False,
-    )
-    ZENDESK_GET_ALL_ZENDESK_ORGANIZATIONS = (
-        "zendesk",
-        "zendesk_get_all_zendesk_organizations",
-        False,
-    )
-    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = (
-        "zendesk",
-        "zendesk_update_zendesk_organization",
-        False,
-    )
+    ZENDESK_CREATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_create_zendesk_organization", False)
+    ZENDESK_DELETE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_delete_zendesk_organization", False)
+    ZENDESK_COUNT_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_count_zendesk_organizations", False)
+    ZENDESK_GET_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_get_zendesk_organization", False)
+    ZENDESK_GET_ALL_ZENDESK_ORGANIZATIONS = ("zendesk", "zendesk_get_all_zendesk_organizations", False)
+    ZENDESK_UPDATE_ZENDESK_ORGANIZATION = ("zendesk", "zendesk_update_zendesk_organization", False)
     ZENDESK_CREATE_ZENDESK_TICKET = ("zendesk", "zendesk_create_zendesk_ticket", False)
     ZENDESK_DELETE_ZENDESK_TICKET = ("zendesk", "zendesk_delete_zendesk_ticket", False)
     ZENDESK_GET_ABOUT_ME = ("zendesk", "zendesk_get_about_me", False)
-    ZOOM_ARCHIVING_MEETING_FILES_LIST = (
-        "zoom",
-        "zoom_archiving_meeting_files_list",
-        False,
-    )
+    ZOOM_ARCHIVING_MEETING_FILES_LIST = ("zoom", "zoom_archiving_meeting_files_list", False)
     ZOOM_ARCHIVING_GET_STATISTICS = ("zoom", "zoom_archiving_get_statistics", False)
-    ZOOM_ARCHIVING_UPDATE_AUTO_DELETE_STATUS = (
-        "zoom",
-        "zoom_archiving_update_auto_delete_status",
-        False,
-    )
-    ZOOM_ARCHIVING_MEETING_FILES_LIST_2 = (
-        "zoom",
-        "zoom_archiving_meeting_files_list_2",
-        False,
-    )
-    ZOOM_ARCHIVING_MEETING_FILES_DELETE = (
-        "zoom",
-        "zoom_archiving_meeting_files_delete",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_GET_MEETING_RECORDINGS = (
-        "zoom",
-        "zoom_cloud_recording_get_meeting_recordings",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_DELETE_MEETING_RECORDINGS = (
-        "zoom",
-        "zoom_cloud_recording_delete_meeting_recordings",
-        False,
-    )
+    ZOOM_ARCHIVING_UPDATE_AUTO_DELETE_STATUS = ("zoom", "zoom_archiving_update_auto_delete_status", False)
+    ZOOM_ARCHIVING_MEETING_FILES_LIST_2 = ("zoom", "zoom_archiving_meeting_files_list_2", False)
+    ZOOM_ARCHIVING_MEETING_FILES_DELETE = ("zoom", "zoom_archiving_meeting_files_delete", False)
+    ZOOM_CLOUD_RECORDING_GET_MEETING_RECORDINGS = ("zoom", "zoom_cloud_recording_get_meeting_recordings", False)
+    ZOOM_CLOUD_RECORDING_DELETE_MEETING_RECORDINGS = ("zoom", "zoom_cloud_recording_delete_meeting_recordings", False)
     ZOOM_ANALYTICS_DETAILS = ("zoom", "zoom_analytics_details", False)
     ZOOM_ANALYTICS_SUMMARY = ("zoom", "zoom_analytics_summary", False)
-    ZOOM_CLOUD_RECORDING_LIST_REGISTRANTS = (
-        "zoom",
-        "zoom_cloud_recording_list_registrants",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_CREATE_REGISTRANT = (
-        "zoom",
-        "zoom_cloud_recording_create_registrant",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_LIST_REGISTRATION_QUESTIONS = (
-        "zoom",
-        "zoom_cloud_recording_list_registration_questions",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_UPDATE_REGISTRATION_QUESTIONS = (
-        "zoom",
-        "zoom_cloud_recording_update_registration_questions",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_UPDATE_REGISTRANT_STATUS = (
-        "zoom",
-        "zoom_cloud_recording_update_registrant_status",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_GET_SETTINGS = (
-        "zoom",
-        "zoom_cloud_recording_get_settings",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_UPDATE_SETTINGS = (
-        "zoom",
-        "zoom_cloud_recording_update_settings",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_DELETE_RECORDING = (
-        "zoom",
-        "zoom_cloud_recording_delete_recording",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_RECOVER_STATUS = (
-        "zoom",
-        "zoom_cloud_recording_recover_status",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_RECOVER_RECORDING_STATUS = (
-        "zoom",
-        "zoom_cloud_recording_recover_recording_status",
-        False,
-    )
-    ZOOM_CLOUD_RECORDING_LIST_RECORDINGS = (
-        "zoom",
-        "zoom_cloud_recording_list_recordings",
-        False,
-    )
+    ZOOM_CLOUD_RECORDING_LIST_REGISTRANTS = ("zoom", "zoom_cloud_recording_list_registrants", False)
+    ZOOM_CLOUD_RECORDING_CREATE_REGISTRANT = ("zoom", "zoom_cloud_recording_create_registrant", False)
+    ZOOM_CLOUD_RECORDING_LIST_REGISTRATION_QUESTIONS = ("zoom", "zoom_cloud_recording_list_registration_questions", False)
+    ZOOM_CLOUD_RECORDING_UPDATE_REGISTRATION_QUESTIONS = ("zoom", "zoom_cloud_recording_update_registration_questions", False)
+    ZOOM_CLOUD_RECORDING_UPDATE_REGISTRANT_STATUS = ("zoom", "zoom_cloud_recording_update_registrant_status", False)
+    ZOOM_CLOUD_RECORDING_GET_SETTINGS = ("zoom", "zoom_cloud_recording_get_settings", False)
+    ZOOM_CLOUD_RECORDING_UPDATE_SETTINGS = ("zoom", "zoom_cloud_recording_update_settings", False)
+    ZOOM_CLOUD_RECORDING_DELETE_RECORDING = ("zoom", "zoom_cloud_recording_delete_recording", False)
+    ZOOM_CLOUD_RECORDING_RECOVER_STATUS = ("zoom", "zoom_cloud_recording_recover_status", False)
+    ZOOM_CLOUD_RECORDING_RECOVER_RECORDING_STATUS = ("zoom", "zoom_cloud_recording_recover_recording_status", False)
+    ZOOM_CLOUD_RECORDING_LIST_RECORDINGS = ("zoom", "zoom_cloud_recording_list_recordings", False)
     ZOOM_DEVICES_LIST = ("zoom", "zoom_devices_list", False)
     ZOOM_DEVICES_CREATE_NEW_DEVICE = ("zoom", "zoom_devices_create_new_device", False)
-    ZOOM_DEVICES_LIST_ZD_M_GROUP_INFO = (
-        "zoom",
-        "zoom_devices_list_zd_m_group_info",
-        False,
-    )
-    ZOOM_DEVICES_ASSIGN_DEVICE_ZP_A_ASSIGNMENT = (
-        "zoom",
-        "zoom_devices_assign_device_zp_a_assignment",
-        False,
-    )
-    ZOOM_DEVICES_UPGRADE_ZP_A_OS_APP = (
-        "zoom",
-        "zoom_devices_upgrade_zp_a_os_app",
-        False,
-    )
-    ZOOM_DEVICES_REMOVE_ZP_A_DEVICE_BY_VENDOR_AND_MAC_ADDRESS = (
-        "zoom",
-        "zoom_devices_remove_zp_a_device_by_vendor_and_mac_address",
-        False,
-    )
-    ZOOM_DEVICES_GET_ZP_A_VERSION_INFO = (
-        "zoom",
-        "zoom_devices_get_zp_a_version_info",
-        False,
-    )
+    ZOOM_DEVICES_LIST_ZD_M_GROUP_INFO = ("zoom", "zoom_devices_list_zd_m_group_info", False)
+    ZOOM_DEVICES_ASSIGN_DEVICE_ZP_A_ASSIGNMENT = ("zoom", "zoom_devices_assign_device_zp_a_assignment", False)
+    ZOOM_DEVICES_UPGRADE_ZP_A_OS_APP = ("zoom", "zoom_devices_upgrade_zp_a_os_app", False)
+    ZOOM_DEVICES_REMOVE_ZP_A_DEVICE_BY_VENDOR_AND_MAC_ADDRESS = ("zoom", "zoom_devices_remove_zp_a_device_by_vendor_and_mac_address", False)
+    ZOOM_DEVICES_GET_ZP_A_VERSION_INFO = ("zoom", "zoom_devices_get_zp_a_version_info", False)
     ZOOM_DEVICES_GET_DETAIL = ("zoom", "zoom_devices_get_detail", False)
     ZOOM_DEVICES_REMOVE_DEVICE_ZM_D = ("zoom", "zoom_devices_remove_device_zm_d", False)
     ZOOM_DEVICES_UPDATE_DEVICE_NAME = ("zoom", "zoom_devices_update_device_name", False)
-    ZOOM_DEVICES_CHANGE_DEVICE_ASSOCIATION = (
-        "zoom",
-        "zoom_devices_change_device_association",
-        False,
-    )
+    ZOOM_DEVICES_CHANGE_DEVICE_ASSOCIATION = ("zoom", "zoom_devices_change_device_association", False)
     ZOOM_H_323_DEVICES_LIST_DEVICES = ("zoom", "zoom_h_323_devices_list_devices", False)
-    ZOOM_H_323_DEVICES_CREATE_DEVICE = (
-        "zoom",
-        "zoom_h_323_devices_create_device",
-        False,
-    )
-    ZOOM_H_323_DEVICES_DELETE_DEVICE = (
-        "zoom",
-        "zoom_h_323_devices_delete_device",
-        False,
-    )
-    ZOOM_H_323_DEVICES_UPDATE_DEVICE_INFO = (
-        "zoom",
-        "zoom_h_323_devices_update_device_info",
-        False,
-    )
-    ZOOM_MEETINGS_DELETE_MEETING_CHAT_MESSAGE = (
-        "zoom",
-        "zoom_meetings_delete_meeting_chat_message",
-        False,
-    )
+    ZOOM_H_323_DEVICES_CREATE_DEVICE = ("zoom", "zoom_h_323_devices_create_device", False)
+    ZOOM_H_323_DEVICES_DELETE_DEVICE = ("zoom", "zoom_h_323_devices_delete_device", False)
+    ZOOM_H_323_DEVICES_UPDATE_DEVICE_INFO = ("zoom", "zoom_h_323_devices_update_device_info", False)
+    ZOOM_MEETINGS_DELETE_MEETING_CHAT_MESSAGE = ("zoom", "zoom_meetings_delete_meeting_chat_message", False)
     ZOOM_MEETINGS_UPDATE_MESSAGE = ("zoom", "zoom_meetings_update_message", False)
-    ZOOM_MEETINGS_CONTROL_IN_MEETING_FEATURES = (
-        "zoom",
-        "zoom_meetings_control_in_meeting_features",
-        False,
-    )
-    ZOOM_MEETINGS_LIST_MEETING_SUMMARIES = (
-        "zoom",
-        "zoom_meetings_list_meeting_summaries",
-        False,
-    )
+    ZOOM_MEETINGS_CONTROL_IN_MEETING_FEATURES = ("zoom", "zoom_meetings_control_in_meeting_features", False)
+    ZOOM_MEETINGS_LIST_MEETING_SUMMARIES = ("zoom", "zoom_meetings_list_meeting_summaries", False)
     ZOOM_MEETINGS_GET_DETAILS = ("zoom", "zoom_meetings_get_details", False)
     ZOOM_MEETINGS_REMOVE_MEETING = ("zoom", "zoom_meetings_remove_meeting", False)
     ZOOM_MEETINGS_UPDATE_DETAILS = ("zoom", "zoom_meetings_update_details", False)
-    ZOOM_MEETINGS_CREATE_BATCH_POLLS = (
-        "zoom",
-        "zoom_meetings_create_batch_polls",
-        False,
-    )
-    ZOOM_MEETINGS_BATCH_REGISTRANTS_CREATE = (
-        "zoom",
-        "zoom_meetings_batch_registrants_create",
-        False,
-    )
-    ZOOM_MEETINGS_GET_INVITATION_NOTE = (
-        "zoom",
-        "zoom_meetings_get_invitation_note",
-        False,
-    )
-    ZOOM_MEETINGS_CREATE_INVITE_LINKS = (
-        "zoom",
-        "zoom_meetings_create_invite_links",
-        False,
-    )
+    ZOOM_MEETINGS_CREATE_BATCH_POLLS = ("zoom", "zoom_meetings_create_batch_polls", False)
+    ZOOM_MEETINGS_BATCH_REGISTRANTS_CREATE = ("zoom", "zoom_meetings_batch_registrants_create", False)
+    ZOOM_MEETINGS_GET_INVITATION_NOTE = ("zoom", "zoom_meetings_get_invitation_note", False)
+    ZOOM_MEETINGS_CREATE_INVITE_LINKS = ("zoom", "zoom_meetings_create_invite_links", False)
     ZOOM_MEETINGS_GET_JOIN_TOKEN = ("zoom", "zoom_meetings_get_join_token", False)
-    ZOOM_MEETINGS_GET_MEETING_ARCHIVE_TOKEN_FOR_LOCAL_ARCHIVING = (
-        "zoom",
-        "zoom_meetings_get_meeting_archive_token_for_local_archiving",
-        False,
-    )
-    ZOOM_MEETINGS_GET_JOIN_TOKEN_LOCAL_RECORDING = (
-        "zoom",
-        "zoom_meetings_get_join_token_local_recording",
-        False,
-    )
-    ZOOM_MEETINGS_GET_LIVE_STREAM_DETAILS = (
-        "zoom",
-        "zoom_meetings_get_live_stream_details",
-        False,
-    )
-    ZOOM_MEETINGS_UPDATE_LIVE_STREAM = (
-        "zoom",
-        "zoom_meetings_update_live_stream",
-        False,
-    )
-    ZOOM_MEETINGS_LIVE_STREAM_STATUS_UPDATE = (
-        "zoom",
-        "zoom_meetings_live_stream_status_update",
-        False,
-    )
-    ZOOM_MEETINGS_GET_MEETING_SUMMARY = (
-        "zoom",
-        "zoom_meetings_get_meeting_summary",
-        False,
-    )
-    ZOOM_MEETINGS_LIST_MEETING_POLLS = (
-        "zoom",
-        "zoom_meetings_list_meeting_polls",
-        False,
-    )
+    ZOOM_MEETINGS_GET_MEETING_ARCHIVE_TOKEN_FOR_LOCAL_ARCHIVING = ("zoom", "zoom_meetings_get_meeting_archive_token_for_local_archiving", False)
+    ZOOM_MEETINGS_GET_JOIN_TOKEN_LOCAL_RECORDING = ("zoom", "zoom_meetings_get_join_token_local_recording", False)
+    ZOOM_MEETINGS_GET_LIVE_STREAM_DETAILS = ("zoom", "zoom_meetings_get_live_stream_details", False)
+    ZOOM_MEETINGS_UPDATE_LIVE_STREAM = ("zoom", "zoom_meetings_update_live_stream", False)
+    ZOOM_MEETINGS_LIVE_STREAM_STATUS_UPDATE = ("zoom", "zoom_meetings_live_stream_status_update", False)
+    ZOOM_MEETINGS_GET_MEETING_SUMMARY = ("zoom", "zoom_meetings_get_meeting_summary", False)
+    ZOOM_MEETINGS_LIST_MEETING_POLLS = ("zoom", "zoom_meetings_list_meeting_polls", False)
     ZOOM_MEETINGS_CREATE_POLL = ("zoom", "zoom_meetings_create_poll", False)
     ZOOM_MEETINGS_GET_POLL = ("zoom", "zoom_meetings_get_poll", False)
-    ZOOM_MEETINGS_UPDATE_MEETING_POLL = (
-        "zoom",
-        "zoom_meetings_update_meeting_poll",
-        False,
-    )
+    ZOOM_MEETINGS_UPDATE_MEETING_POLL = ("zoom", "zoom_meetings_update_meeting_poll", False)
     ZOOM_MEETINGS_POLL_DELETE = ("zoom", "zoom_meetings_poll_delete", False)
     ZOOM_MEETINGS_LIST_REGISTRANTS = ("zoom", "zoom_meetings_list_registrants", False)
     ZOOM_MEETINGS_ADD_REGISTRANT = ("zoom", "zoom_meetings_add_registrant", False)
-    ZOOM_MEETINGS_LIST_REGISTRATION_QUESTIONS = (
-        "zoom",
-        "zoom_meetings_list_registration_questions",
-        False,
-    )
-    ZOOM_MEETINGS_UPDATE_REGISTRATION_QUESTIONS = (
-        "zoom",
-        "zoom_meetings_update_registration_questions",
-        False,
-    )
-    ZOOM_MEETINGS_UPDATE_REGISTRANT_STATUS = (
-        "zoom",
-        "zoom_meetings_update_registrant_status",
-        False,
-    )
-    ZOOM_MEETINGS_GET_REGISTRANT_DETAILS = (
-        "zoom",
-        "zoom_meetings_get_registrant_details",
-        False,
-    )
+    ZOOM_MEETINGS_LIST_REGISTRATION_QUESTIONS = ("zoom", "zoom_meetings_list_registration_questions", False)
+    ZOOM_MEETINGS_UPDATE_REGISTRATION_QUESTIONS = ("zoom", "zoom_meetings_update_registration_questions", False)
+    ZOOM_MEETINGS_UPDATE_REGISTRANT_STATUS = ("zoom", "zoom_meetings_update_registrant_status", False)
+    ZOOM_MEETINGS_GET_REGISTRANT_DETAILS = ("zoom", "zoom_meetings_get_registrant_details", False)
     ZOOM_MEETINGS_DELETE_REGISTRANT = ("zoom", "zoom_meetings_delete_registrant", False)
-    ZOOM_MEETINGS_GETS_IP_URI_WITH_PASS_CODE = (
-        "zoom",
-        "zoom_meetings_gets_ip_uri_with_pass_code",
-        False,
-    )
-    ZOOM_MEETINGS_UPDATE_MEETING_STATUS = (
-        "zoom",
-        "zoom_meetings_update_meeting_status",
-        False,
-    )
-    ZOOM_MEETINGS_GET_MEETING_SURVEY = (
-        "zoom",
-        "zoom_meetings_get_meeting_survey",
-        False,
-    )
-    ZOOM_MEETINGS_DELETE_MEETING_SURVEY = (
-        "zoom",
-        "zoom_meetings_delete_meeting_survey",
-        False,
-    )
+    ZOOM_MEETINGS_GETS_IP_URI_WITH_PASS_CODE = ("zoom", "zoom_meetings_gets_ip_uri_with_pass_code", False)
+    ZOOM_MEETINGS_UPDATE_MEETING_STATUS = ("zoom", "zoom_meetings_update_meeting_status", False)
+    ZOOM_MEETINGS_GET_MEETING_SURVEY = ("zoom", "zoom_meetings_get_meeting_survey", False)
+    ZOOM_MEETINGS_DELETE_MEETING_SURVEY = ("zoom", "zoom_meetings_delete_meeting_survey", False)
     ZOOM_MEETINGS_UPDATE_SURVEY = ("zoom", "zoom_meetings_update_survey", False)
     ZOOM_MEETINGS_GET_MEETING_TOKEN = ("zoom", "zoom_meetings_get_meeting_token", False)
     ZOOM_MEETINGS_GET_DETAILS_2 = ("zoom", "zoom_meetings_get_details_2", False)
-    ZOOM_MEETINGS_LIST_PAST_MEETING_INSTANCES = (
-        "zoom",
-        "zoom_meetings_list_past_meeting_instances",
-        False,
-    )
-    ZOOM_MEETINGS_GET_PAST_MEETING_PARTICIPANTS = (
-        "zoom",
-        "zoom_meetings_get_past_meeting_participants",
-        False,
-    )
-    ZOOM_MEETINGS_LIST_PAST_MEETING_POLLS = (
-        "zoom",
-        "zoom_meetings_list_past_meeting_polls",
-        False,
-    )
-    ZOOM_MEETINGS_LIST_PAST_MEETING_QA = (
-        "zoom",
-        "zoom_meetings_list_past_meeting_qa",
-        False,
-    )
-    ZOOM_MEETINGS_LIST_MEETING_TEMPLATES = (
-        "zoom",
-        "zoom_meetings_list_meeting_templates",
-        False,
-    )
-    ZOOM_MEETINGS_CREATE_TEMPLATE_FROM_MEETING = (
-        "zoom",
-        "zoom_meetings_create_template_from_meeting",
-        False,
-    )
-    ZOOM_MEETINGS_LIST_HOST_SCHEDULED = (
-        "zoom",
-        "zoom_meetings_list_host_scheduled",
-        False,
-    )
+    ZOOM_MEETINGS_LIST_PAST_MEETING_INSTANCES = ("zoom", "zoom_meetings_list_past_meeting_instances", False)
+    ZOOM_MEETINGS_GET_PAST_MEETING_PARTICIPANTS = ("zoom", "zoom_meetings_get_past_meeting_participants", False)
+    ZOOM_MEETINGS_LIST_PAST_MEETING_POLLS = ("zoom", "zoom_meetings_list_past_meeting_polls", False)
+    ZOOM_MEETINGS_LIST_PAST_MEETING_QA = ("zoom", "zoom_meetings_list_past_meeting_qa", False)
+    ZOOM_MEETINGS_LIST_MEETING_TEMPLATES = ("zoom", "zoom_meetings_list_meeting_templates", False)
+    ZOOM_MEETINGS_CREATE_TEMPLATE_FROM_MEETING = ("zoom", "zoom_meetings_create_template_from_meeting", False)
+    ZOOM_MEETINGS_LIST_HOST_SCHEDULED = ("zoom", "zoom_meetings_list_host_scheduled", False)
     ZOOM_MEETINGS_CREATE_MEETING = ("zoom", "zoom_meetings_create_meeting", False)
-    ZOOM_MEETINGS_LIST_UPCOMING_MEETINGS = (
-        "zoom",
-        "zoom_meetings_list_upcoming_meetings",
-        False,
-    )
+    ZOOM_MEETINGS_LIST_UPCOMING_MEETINGS = ("zoom", "zoom_meetings_list_upcoming_meetings", False)
     ZOOM_PAC_LIST_ACCOUNTS = ("zoom", "zoom_pac_list_accounts", False)
-    ZOOM_REPORTS_LIST_SIGN_IN_SIGN_OUT_ACTIVITIES = (
-        "zoom",
-        "zoom_reports_list_sign_in_sign_out_activities",
-        False,
-    )
-    ZOOM_REPORTS_GET_BILLING_DEPARTMENT_REPORTS = (
-        "zoom",
-        "zoom_reports_get_billing_department_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_BILLING_INVOICES = (
-        "zoom",
-        "zoom_reports_get_billing_invoices",
-        False,
-    )
-    ZOOM_REPORTS_GET_CLOUD_RECORDING_USAGE_REPORT = (
-        "zoom",
-        "zoom_reports_get_cloud_recording_usage_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_DAILY_USAGE_REPORT = (
-        "zoom",
-        "zoom_reports_get_daily_usage_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_MEETING_DETAIL_REPORTS = (
-        "zoom",
-        "zoom_reports_get_meeting_detail_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_MEETING_PARTICIPANT_REPORTS = (
-        "zoom",
-        "zoom_reports_get_meeting_participant_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_MEETING_POLL_REPORTS = (
-        "zoom",
-        "zoom_reports_get_meeting_poll_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_MEETING_QA_REPORT = (
-        "zoom",
-        "zoom_reports_get_meeting_qa_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_MEETING_SURVEY_REPORT = (
-        "zoom",
-        "zoom_reports_get_meeting_survey_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_OPERATION_LOGS_REPORT = (
-        "zoom",
-        "zoom_reports_get_operation_logs_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_TELEPHONE_REPORTS = (
-        "zoom",
-        "zoom_reports_get_telephone_reports",
-        False,
-    )
-    ZOOM_REPORTS_LIST_UPCOMING_EVENTS_REPORT = (
-        "zoom",
-        "zoom_reports_list_upcoming_events_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_ACTIVE_INACTIVE_HOST_REPORTS = (
-        "zoom",
-        "zoom_reports_get_active_inactive_host_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_MEETING_REPORTS = (
-        "zoom",
-        "zoom_reports_get_meeting_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_WEB_IN_AR_DETAILS_REPORT = (
-        "zoom",
-        "zoom_reports_get_web_in_ar_details_report",
-        False,
-    )
-    ZOOM_REPORTS_WEB_IN_AR_PARTICIPANTS_LIST = (
-        "zoom",
-        "zoom_reports_web_in_ar_participants_list",
-        False,
-    )
-    ZOOM_REPORTS_GET_WEB_IN_AR_POLL_REPORTS = (
-        "zoom",
-        "zoom_reports_get_web_in_ar_poll_reports",
-        False,
-    )
-    ZOOM_REPORTS_GET_WEB_IN_AR_QA_REPORT = (
-        "zoom",
-        "zoom_reports_get_web_in_ar_qa_report",
-        False,
-    )
-    ZOOM_REPORTS_GET_WEB_IN_AR_SURVEY_REPORT = (
-        "zoom",
-        "zoom_reports_get_web_in_ar_survey_report",
-        False,
-    )
+    ZOOM_REPORTS_LIST_SIGN_IN_SIGN_OUT_ACTIVITIES = ("zoom", "zoom_reports_list_sign_in_sign_out_activities", False)
+    ZOOM_REPORTS_GET_BILLING_DEPARTMENT_REPORTS = ("zoom", "zoom_reports_get_billing_department_reports", False)
+    ZOOM_REPORTS_GET_BILLING_INVOICES = ("zoom", "zoom_reports_get_billing_invoices", False)
+    ZOOM_REPORTS_GET_CLOUD_RECORDING_USAGE_REPORT = ("zoom", "zoom_reports_get_cloud_recording_usage_report", False)
+    ZOOM_REPORTS_GET_DAILY_USAGE_REPORT = ("zoom", "zoom_reports_get_daily_usage_report", False)
+    ZOOM_REPORTS_GET_MEETING_DETAIL_REPORTS = ("zoom", "zoom_reports_get_meeting_detail_reports", False)
+    ZOOM_REPORTS_GET_MEETING_PARTICIPANT_REPORTS = ("zoom", "zoom_reports_get_meeting_participant_reports", False)
+    ZOOM_REPORTS_GET_MEETING_POLL_REPORTS = ("zoom", "zoom_reports_get_meeting_poll_reports", False)
+    ZOOM_REPORTS_GET_MEETING_QA_REPORT = ("zoom", "zoom_reports_get_meeting_qa_report", False)
+    ZOOM_REPORTS_GET_MEETING_SURVEY_REPORT = ("zoom", "zoom_reports_get_meeting_survey_report", False)
+    ZOOM_REPORTS_GET_OPERATION_LOGS_REPORT = ("zoom", "zoom_reports_get_operation_logs_report", False)
+    ZOOM_REPORTS_GET_TELEPHONE_REPORTS = ("zoom", "zoom_reports_get_telephone_reports", False)
+    ZOOM_REPORTS_LIST_UPCOMING_EVENTS_REPORT = ("zoom", "zoom_reports_list_upcoming_events_report", False)
+    ZOOM_REPORTS_GET_ACTIVE_INACTIVE_HOST_REPORTS = ("zoom", "zoom_reports_get_active_inactive_host_reports", False)
+    ZOOM_REPORTS_GET_MEETING_REPORTS = ("zoom", "zoom_reports_get_meeting_reports", False)
+    ZOOM_REPORTS_GET_WEB_IN_AR_DETAILS_REPORT = ("zoom", "zoom_reports_get_web_in_ar_details_report", False)
+    ZOOM_REPORTS_WEB_IN_AR_PARTICIPANTS_LIST = ("zoom", "zoom_reports_web_in_ar_participants_list", False)
+    ZOOM_REPORTS_GET_WEB_IN_AR_POLL_REPORTS = ("zoom", "zoom_reports_get_web_in_ar_poll_reports", False)
+    ZOOM_REPORTS_GET_WEB_IN_AR_QA_REPORT = ("zoom", "zoom_reports_get_web_in_ar_qa_report", False)
+    ZOOM_REPORTS_GET_WEB_IN_AR_SURVEY_REPORT = ("zoom", "zoom_reports_get_web_in_ar_survey_report", False)
     ZOOM_SIP_PHONE_LIST = ("zoom", "zoom_sip_phone_list", False)
-    ZOOM_SIP_PHONE_ENABLE_USERS_IP_PHONE = (
-        "zoom",
-        "zoom_sip_phone_enable_users_ip_phone",
-        False,
-    )
+    ZOOM_SIP_PHONE_ENABLE_USERS_IP_PHONE = ("zoom", "zoom_sip_phone_enable_users_ip_phone", False)
     ZOOM_SIP_PHONE_DELETE_PHONE = ("zoom", "zoom_sip_phone_delete_phone", False)
-    ZOOM_SIP_PHONE_UPDATE_SPECIFIC_PHONE = (
-        "zoom",
-        "zoom_sip_phone_update_specific_phone",
-        False,
-    )
+    ZOOM_SIP_PHONE_UPDATE_SPECIFIC_PHONE = ("zoom", "zoom_sip_phone_update_specific_phone", False)
     ZOOM_TSP_GET_ACCOUNT_INFO = ("zoom", "zoom_tsp_get_account_info", False)
-    ZOOM_TSP_UPDATE_ACCOUNT_TSP_INFORMATION = (
-        "zoom",
-        "zoom_tsp_update_account_tsp_information",
-        False,
-    )
+    ZOOM_TSP_UPDATE_ACCOUNT_TSP_INFORMATION = ("zoom", "zoom_tsp_update_account_tsp_information", False)
     ZOOM_TSP_LIST_USE_RTSP_ACCOUNTS = ("zoom", "zoom_tsp_list_use_rtsp_accounts", False)
     ZOOM_TSP_ADD_USE_RTSP_ACCOUNT = ("zoom", "zoom_tsp_add_use_rtsp_account", False)
     ZOOM_TSP_SET_GLOBAL_DIAL_IN_URL = ("zoom", "zoom_tsp_set_global_dial_in_url", False)
     ZOOM_TSP_GET_USE_RTSP_ACCOUNT = ("zoom", "zoom_tsp_get_use_rtsp_account", False)
-    ZOOM_TSP_DELETE_USE_RTSP_ACCOUNT = (
-        "zoom",
-        "zoom_tsp_delete_use_rtsp_account",
-        False,
-    )
-    ZOOM_TSP_UPDATE_USE_RTSP_ACCOUNT = (
-        "zoom",
-        "zoom_tsp_update_use_rtsp_account",
-        False,
-    )
+    ZOOM_TSP_DELETE_USE_RTSP_ACCOUNT = ("zoom", "zoom_tsp_delete_use_rtsp_account", False)
+    ZOOM_TSP_UPDATE_USE_RTSP_ACCOUNT = ("zoom", "zoom_tsp_update_use_rtsp_account", False)
     ZOOM_TRACKING_FIELD_LIST = ("zoom", "zoom_tracking_field_list", False)
-    ZOOM_TRACKING_FIELD_CREATE_FIELD = (
-        "zoom",
-        "zoom_tracking_field_create_field",
-        False,
-    )
+    ZOOM_TRACKING_FIELD_CREATE_FIELD = ("zoom", "zoom_tracking_field_create_field", False)
     ZOOM_TRACKING_FIELD_GET = ("zoom", "zoom_tracking_field_get", False)
-    ZOOM_TRACKING_FIELD_DELETE_FIELD = (
-        "zoom",
-        "zoom_tracking_field_delete_field",
-        False,
-    )
+    ZOOM_TRACKING_FIELD_DELETE_FIELD = ("zoom", "zoom_tracking_field_delete_field", False)
     ZOOM_TRACKING_FIELD_UPDATE = ("zoom", "zoom_tracking_field_update", False)
-    ZOOM_WEB_IN_ARS_DELETE_MESSAGE_BY_ID = (
-        "zoom",
-        "zoom_web_in_ars_delete_message_by_id",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_DELETE_MESSAGE_BY_ID = ("zoom", "zoom_web_in_ars_delete_message_by_id", False)
     ZOOM_WEB_IN_ARS_LIST_ABSENTEES = ("zoom", "zoom_web_in_ars_list_absentees", False)
-    ZOOM_WEB_IN_ARS_LIST_PAST_INSTANCES = (
-        "zoom",
-        "zoom_web_in_ars_list_past_instances",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_LIST_PARTICIPANTS = (
-        "zoom",
-        "zoom_web_in_ars_list_participants",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_LIST_POLL_RESULTS = (
-        "zoom",
-        "zoom_web_in_ars_list_poll_results",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_LIST_PAST_WEB_IN_AR_QA = (
-        "zoom",
-        "zoom_web_in_ars_list_past_web_in_ar_qa",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_LIST_WEB_IN_AR_TEMPLATES = (
-        "zoom",
-        "zoom_web_in_ars_list_web_in_ar_templates",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_CREATE_WEB_IN_AR_TEMPLATE = (
-        "zoom",
-        "zoom_web_in_ars_create_web_in_ar_template",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_LIST_PAST_INSTANCES = ("zoom", "zoom_web_in_ars_list_past_instances", False)
+    ZOOM_WEB_IN_ARS_LIST_PARTICIPANTS = ("zoom", "zoom_web_in_ars_list_participants", False)
+    ZOOM_WEB_IN_ARS_LIST_POLL_RESULTS = ("zoom", "zoom_web_in_ars_list_poll_results", False)
+    ZOOM_WEB_IN_ARS_LIST_PAST_WEB_IN_AR_QA = ("zoom", "zoom_web_in_ars_list_past_web_in_ar_qa", False)
+    ZOOM_WEB_IN_ARS_LIST_WEB_IN_AR_TEMPLATES = ("zoom", "zoom_web_in_ars_list_web_in_ar_templates", False)
+    ZOOM_WEB_IN_ARS_CREATE_WEB_IN_AR_TEMPLATE = ("zoom", "zoom_web_in_ars_create_web_in_ar_template", False)
     ZOOM_WEB_IN_ARS_LIST_WEB_IN_ARS = ("zoom", "zoom_web_in_ars_list_web_in_ars", False)
-    ZOOM_WEB_IN_ARS_CREATE_WEB_IN_AR = (
-        "zoom",
-        "zoom_web_in_ars_create_web_in_ar",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_CREATE_WEB_IN_AR = ("zoom", "zoom_web_in_ars_create_web_in_ar", False)
     ZOOM_WEB_IN_ARS_GET_DETAILS = ("zoom", "zoom_web_in_ars_get_details", False)
-    ZOOM_WEB_IN_ARS_REMOVE_WEB_IN_AR = (
-        "zoom",
-        "zoom_web_in_ars_remove_web_in_ar",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPDATE_SCHEDULED_WEB_IN_AR = (
-        "zoom",
-        "zoom_web_in_ars_update_scheduled_web_in_ar",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_CREATE_BATCH_REGISTRANTS = (
-        "zoom",
-        "zoom_web_in_ars_create_batch_registrants",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_GET_SESSION_BRANDING = (
-        "zoom",
-        "zoom_web_in_ars_get_session_branding",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_CREATE_BRANDING_NAME_TAG = (
-        "zoom",
-        "zoom_web_in_ars_create_branding_name_tag",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_DELETE_BRANDING_NAME_TAG = (
-        "zoom",
-        "zoom_web_in_ars_delete_branding_name_tag",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPDATE_BRANDING_NAME_TAG = (
-        "zoom",
-        "zoom_web_in_ars_update_branding_name_tag",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_VIRTUAL_BACKGROUND = (
-        "zoom",
-        "zoom_web_in_ars_upload_branding_virtual_background",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_DELETE_BRANDING_VIRTUAL_BACKGROUND = (
-        "zoom",
-        "zoom_web_in_ars_delete_branding_virtual_background",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_SET_DEFAULT_BRANDING_VIRTUAL_BACKGROUND = (
-        "zoom",
-        "zoom_web_in_ars_set_default_branding_virtual_background",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_WALLPAPER = (
-        "zoom",
-        "zoom_web_in_ars_upload_branding_wallpaper",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_DELETE_BRANDING_WALLPAPER = (
-        "zoom",
-        "zoom_web_in_ars_delete_branding_wallpaper",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_CREATE_INVITE_LINKS = (
-        "zoom",
-        "zoom_web_in_ars_create_invite_links",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_JOIN_TOKEN_LIVE_STREAMING = (
-        "zoom",
-        "zoom_web_in_ars_join_token_live_streaming",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_GET_MEETING_ARCHIVE_TOKEN_FOR_LOCAL_ARCHIVING = (
-        "zoom",
-        "zoom_web_in_ars_get_meeting_archive_token_for_local_archiving",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_GET_JOIN_TOKEN_LOCAL_RECORDING = (
-        "zoom",
-        "zoom_web_in_ars_get_join_token_local_recording",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_GET_LIVE_STREAM_DETAILS = (
-        "zoom",
-        "zoom_web_in_ars_get_live_stream_details",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPDATE_LIVE_STREAM = (
-        "zoom",
-        "zoom_web_in_ars_update_live_stream",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPDATE_LIVE_STREAM_STATUS = (
-        "zoom",
-        "zoom_web_in_ars_update_live_stream_status",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_REMOVE_WEB_IN_AR = ("zoom", "zoom_web_in_ars_remove_web_in_ar", False)
+    ZOOM_WEB_IN_ARS_UPDATE_SCHEDULED_WEB_IN_AR = ("zoom", "zoom_web_in_ars_update_scheduled_web_in_ar", False)
+    ZOOM_WEB_IN_ARS_CREATE_BATCH_REGISTRANTS = ("zoom", "zoom_web_in_ars_create_batch_registrants", False)
+    ZOOM_WEB_IN_ARS_GET_SESSION_BRANDING = ("zoom", "zoom_web_in_ars_get_session_branding", False)
+    ZOOM_WEB_IN_ARS_CREATE_BRANDING_NAME_TAG = ("zoom", "zoom_web_in_ars_create_branding_name_tag", False)
+    ZOOM_WEB_IN_ARS_DELETE_BRANDING_NAME_TAG = ("zoom", "zoom_web_in_ars_delete_branding_name_tag", False)
+    ZOOM_WEB_IN_ARS_UPDATE_BRANDING_NAME_TAG = ("zoom", "zoom_web_in_ars_update_branding_name_tag", False)
+    ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_VIRTUAL_BACKGROUND = ("zoom", "zoom_web_in_ars_upload_branding_virtual_background", False)
+    ZOOM_WEB_IN_ARS_DELETE_BRANDING_VIRTUAL_BACKGROUND = ("zoom", "zoom_web_in_ars_delete_branding_virtual_background", False)
+    ZOOM_WEB_IN_ARS_SET_DEFAULT_BRANDING_VIRTUAL_BACKGROUND = ("zoom", "zoom_web_in_ars_set_default_branding_virtual_background", False)
+    ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_WALLPAPER = ("zoom", "zoom_web_in_ars_upload_branding_wallpaper", False)
+    ZOOM_WEB_IN_ARS_DELETE_BRANDING_WALLPAPER = ("zoom", "zoom_web_in_ars_delete_branding_wallpaper", False)
+    ZOOM_WEB_IN_ARS_CREATE_INVITE_LINKS = ("zoom", "zoom_web_in_ars_create_invite_links", False)
+    ZOOM_WEB_IN_ARS_JOIN_TOKEN_LIVE_STREAMING = ("zoom", "zoom_web_in_ars_join_token_live_streaming", False)
+    ZOOM_WEB_IN_ARS_GET_MEETING_ARCHIVE_TOKEN_FOR_LOCAL_ARCHIVING = ("zoom", "zoom_web_in_ars_get_meeting_archive_token_for_local_archiving", False)
+    ZOOM_WEB_IN_ARS_GET_JOIN_TOKEN_LOCAL_RECORDING = ("zoom", "zoom_web_in_ars_get_join_token_local_recording", False)
+    ZOOM_WEB_IN_ARS_GET_LIVE_STREAM_DETAILS = ("zoom", "zoom_web_in_ars_get_live_stream_details", False)
+    ZOOM_WEB_IN_ARS_UPDATE_LIVE_STREAM = ("zoom", "zoom_web_in_ars_update_live_stream", False)
+    ZOOM_WEB_IN_ARS_UPDATE_LIVE_STREAM_STATUS = ("zoom", "zoom_web_in_ars_update_live_stream_status", False)
     ZOOM_WEB_IN_ARS_LIST_PANELISTS = ("zoom", "zoom_web_in_ars_list_panelists", False)
     ZOOM_WEB_IN_ARS_ADD_PANELISTS = ("zoom", "zoom_web_in_ars_add_panelists", False)
-    ZOOM_WEB_IN_ARS_REMOVE_PANELISTS = (
-        "zoom",
-        "zoom_web_in_ars_remove_panelists",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_REMOVE_PANELISTS = ("zoom", "zoom_web_in_ars_remove_panelists", False)
     ZOOM_WEB_IN_ARS_REMOVE_PANELIST = ("zoom", "zoom_web_in_ars_remove_panelist", False)
     ZOOM_WEB_IN_ARS_LIST_POLLS = ("zoom", "zoom_web_in_ars_list_polls", False)
     ZOOM_WEB_IN_ARS_CREATE_POLL = ("zoom", "zoom_web_in_ars_create_poll", False)
-    ZOOM_WEB_IN_ARS_GET_POLL_DETAILS = (
-        "zoom",
-        "zoom_web_in_ars_get_poll_details",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_GET_POLL_DETAILS = ("zoom", "zoom_web_in_ars_get_poll_details", False)
     ZOOM_WEB_IN_ARS_UPDATE_POLL = ("zoom", "zoom_web_in_ars_update_poll", False)
     ZOOM_WEB_IN_ARS_DELETE_POLL = ("zoom", "zoom_web_in_ars_delete_poll", False)
-    ZOOM_WEB_IN_ARS_LIST_REGISTRANTS = (
-        "zoom",
-        "zoom_web_in_ars_list_registrants",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_LIST_REGISTRANTS = ("zoom", "zoom_web_in_ars_list_registrants", False)
     ZOOM_WEB_IN_ARS_ADD_REGISTRANT = ("zoom", "zoom_web_in_ars_add_registrant", False)
-    ZOOM_WEB_IN_ARS_LIST_REGISTRATION_QUESTIONS = (
-        "zoom",
-        "zoom_web_in_ars_list_registration_questions",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPDATE_REGISTRATION_QUESTIONS = (
-        "zoom",
-        "zoom_web_in_ars_update_registration_questions",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_UPDATE_REGISTRANT_STATUS = (
-        "zoom",
-        "zoom_web_in_ars_update_registrant_status",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_REGISTRANT_DETAILS = (
-        "zoom",
-        "zoom_web_in_ars_registrant_details",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_DELETE_REGISTRANT = (
-        "zoom",
-        "zoom_web_in_ars_delete_registrant",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_GETS_IP_URI_WITH_PASS_CODE = (
-        "zoom",
-        "zoom_web_in_ars_gets_ip_uri_with_pass_code",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_LIST_REGISTRATION_QUESTIONS = ("zoom", "zoom_web_in_ars_list_registration_questions", False)
+    ZOOM_WEB_IN_ARS_UPDATE_REGISTRATION_QUESTIONS = ("zoom", "zoom_web_in_ars_update_registration_questions", False)
+    ZOOM_WEB_IN_ARS_UPDATE_REGISTRANT_STATUS = ("zoom", "zoom_web_in_ars_update_registrant_status", False)
+    ZOOM_WEB_IN_ARS_REGISTRANT_DETAILS = ("zoom", "zoom_web_in_ars_registrant_details", False)
+    ZOOM_WEB_IN_ARS_DELETE_REGISTRANT = ("zoom", "zoom_web_in_ars_delete_registrant", False)
+    ZOOM_WEB_IN_ARS_GETS_IP_URI_WITH_PASS_CODE = ("zoom", "zoom_web_in_ars_gets_ip_uri_with_pass_code", False)
     ZOOM_WEB_IN_ARS_UPDATE_STATUS = ("zoom", "zoom_web_in_ars_update_status", False)
     ZOOM_WEB_IN_ARS_GET_SURVEY = ("zoom", "zoom_web_in_ars_get_survey", False)
     ZOOM_WEB_IN_ARS_DELETE_SURVEY = ("zoom", "zoom_web_in_ars_delete_survey", False)
     ZOOM_WEB_IN_ARS_UPDATE_SURVEY = ("zoom", "zoom_web_in_ars_update_survey", False)
-    ZOOM_WEB_IN_ARS_GET_WEB_IN_ART_OKEN = (
-        "zoom",
-        "zoom_web_in_ars_get_web_in_art_oken",
-        False,
-    )
-    ZOOM_WEB_IN_ARS_LIST_TRACKING_SOURCES = (
-        "zoom",
-        "zoom_web_in_ars_list_tracking_sources",
-        False,
-    )
+    ZOOM_WEB_IN_ARS_GET_WEB_IN_ART_OKEN = ("zoom", "zoom_web_in_ars_get_web_in_art_oken", False)
+    ZOOM_WEB_IN_ARS_LIST_TRACKING_SOURCES = ("zoom", "zoom_web_in_ars_list_tracking_sources", False)
     MATHEMATICAL_CALCULATOR = ("mathematical", "mathematical_calculator", True, True)
-    LOCALWORKSPACE_WORKSPACESTATUSACTION = (
-        "localworkspace",
-        "localworkspace_workspacestatusaction",
-        True,
-        True,
-    )
-    LOCALWORKSPACE_CREATEWORKSPACEACTION = (
-        "localworkspace",
-        "localworkspace_createworkspaceaction",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_FINDFILECMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_findfilecmd",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_CREATEFILECMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_createfilecmd",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_GOTOLINENUMINOPENFILE = (
-        "cmdmanagertool",
-        "cmdmanagertool_gotolinenuminopenfile",
-        True,
-        True,
-    )
+    LOCALWORKSPACE_WORKSPACESTATUSACTION = ("localworkspace", "localworkspace_workspacestatusaction", True, True)
+    LOCALWORKSPACE_CREATEWORKSPACEACTION = ("localworkspace", "localworkspace_createworkspaceaction", True, True)
+    CMDMANAGERTOOL_FINDFILECMD = ("cmdmanagertool", "cmdmanagertool_findfilecmd", True, True)
+    CMDMANAGERTOOL_CREATEFILECMD = ("cmdmanagertool", "cmdmanagertool_createfilecmd", True, True)
+    CMDMANAGERTOOL_GOTOLINENUMINOPENFILE = ("cmdmanagertool", "cmdmanagertool_gotolinenuminopenfile", True, True)
     CMDMANAGERTOOL_OPENFILE = ("cmdmanagertool", "cmdmanagertool_openfile", True, True)
     CMDMANAGERTOOL_SCROLL = ("cmdmanagertool", "cmdmanagertool_scroll", True, True)
-    CMDMANAGERTOOL_SEARCHFILECMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_searchfilecmd",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_SEARCHDIRCMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_searchdircmd",
-        True,
-        True,
-    )
+    CMDMANAGERTOOL_SEARCHFILECMD = ("cmdmanagertool", "cmdmanagertool_searchfilecmd", True, True)
+    CMDMANAGERTOOL_SEARCHDIRCMD = ("cmdmanagertool", "cmdmanagertool_searchdircmd", True, True)
     CMDMANAGERTOOL_EDITFILE = ("cmdmanagertool", "cmdmanagertool_editfile", True, True)
-    CMDMANAGERTOOL_RUNCOMMANDONWORKSPACE = (
-        "cmdmanagertool",
-        "cmdmanagertool_runcommandonworkspace",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_GETCURRENTDIRCMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_getcurrentdircmd",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_GITHUBCLONECMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_githubclonecmd",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_GITREPOTREE = (
-        "cmdmanagertool",
-        "cmdmanagertool_gitrepotree",
-        True,
-        True,
-    )
-    CMDMANAGERTOOL_SUBMITPATCHCMD = (
-        "cmdmanagertool",
-        "cmdmanagertool_submitpatchcmd",
-        True,
-        True,
-    )
-    HISTORYKEEPER_GETWORKSPACEHISTORY = (
-        "historykeeper",
-        "historykeeper_getworkspacehistory",
-        True,
-        True,
-    )
+    CMDMANAGERTOOL_RUNCOMMANDONWORKSPACE = ("cmdmanagertool", "cmdmanagertool_runcommandonworkspace", True, True)
+    CMDMANAGERTOOL_GETCURRENTDIRCMD = ("cmdmanagertool", "cmdmanagertool_getcurrentdircmd", True, True)
+    CMDMANAGERTOOL_GITHUBCLONECMD = ("cmdmanagertool", "cmdmanagertool_githubclonecmd", True, True)
+    HISTORYKEEPER_GETWORKSPACEHISTORY = ("historykeeper", "historykeeper_getworkspacehistory", True, True)
     RAGTOOL_RAGTOOLQUERY = ("ragtool", "ragtool_ragtoolquery", True, True)
     RAGTOOL_ADDCONTENTTORAGTOOL = ("ragtool", "ragtool_addcontenttoragtool", True, True)
-    WEBTOOL_SCRAPEWEBSITECONTENT = (
-        "webtool",
-        "webtool_scrapewebsitecontent",
-        True,
-        True,
-    )
-    WEBTOOL_SCRAPEWEBSITEELEMENT = (
-        "webtool",
-        "webtool_scrapewebsiteelement",
-        True,
-        True,
-    )
+    WEBTOOL_SCRAPEWEBSITECONTENT = ("webtool", "webtool_scrapewebsitecontent", True, True)
+    WEBTOOL_SCRAPEWEBSITEELEMENT = ("webtool", "webtool_scrapewebsiteelement", True, True)
     GREPTILE_CODEQUERY = ("greptile", "greptile_codequery", True, True)
+    SUBMITPATCHTOOL_SUBMITPATCH = ("submitpatchtool", "submitpatchtool_submitpatch", True, True)
+
 
 
 class Trigger(tuple, Enum):
