@@ -1,3 +1,1 @@
-from .get_workspace_history import (
-    GetWorkspaceHistory,
-)
+from .get_workspace_history import GetWorkspaceHistory
