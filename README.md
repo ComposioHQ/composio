@@ -28,16 +28,16 @@
 </h4>
 <div align="center">
 <p>
-<a href="https://docs.composio.dev" rel="dofollow"><strong>Explore the docs »</strong></a>
+<a href="https://docs.composio.dev" rel="dofollow"><strong>Explore the Docs »</strong></a>
 </p>
 
 <p>
-<a href="https://app.composio.dev">Dashboard</a> |
-<a href="https://www.composio.dev">Homepage</a> |
-<a href="https://github.com/ComposioDev/composio/tree/master/examples">Examples</a> |
-<a href="https://docs.composio.dev/chat-with-docs">Chat with Docs</a> |
-<a href="https://docs.composio.dev/api-reference/">APIs</a> |
-<a href="https://docs.composio.dev/sdk">SDK</a>
+<a href="https://app.composio.dev">Dashboard</a> <b>|</b>
+<a href="https://www.composio.dev">Homepage</a> <b>|</b>
+<!-- <a href="https://docs.composio.dev/guides/examples">Examples</a> |
+<a href="https://docs.composio.dev/chat-with-docs">Chat with Docs</a> | -->
+<a href="https://docs.composio.dev/sdk">SDK</a> <b>|</b>
+<a href="https://docs.composio.dev/api-reference/">APIs</a> 
 </p>
 </div>
 
@@ -45,16 +45,16 @@
 <div align="center">
 <p >
     <b>✨ Socials >></b>
-    <a href="https://discord.gg/composio">Discord</a> <b>|</b>
-    <a href="https://youtube.com/@composiohq">Youtube</a> <b>|</b>
+    <a href="https://discord.gg/XMa3eWKkH8">Discord</a> <b>|</b>
+    <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
     <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
-    <a href="https://www.linkedin.com/company/composio"> Linkedin </a>
+    <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>
 </p>
 <p align="center">
     <b>⛏️ Contribute >></b>
-    <a href="https://github.com/composiodev/composio/blob/main/CONTRIBUTING.md">Report Bugs</a> <b>|</b>
-    <a href="https://github.com/composiodev/composio/blob/main/CONTRIBUTING.md">Request Feature</a> <b>|</b>
-    <a href="https://github.com/composiodev/composio/blob/main/CONTRIBUTING.md">Contribute</a>
+    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=type%3A+bug&template=bug_report.yml&title=%F0%9F%90%9B+Bug+Report%3A+">Report Bugs</a> <b>|</b>
+    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">Request Feature</a> <b>|</b>
+    <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md">Contribute</a>
 </p>
 </div>
 
@@ -104,7 +104,9 @@ composio add github # Connect your Github - Run this in terminal
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
-openai_client = OpenAI(api_key="**\*\***OPENAIKEY**\*\***")
+openai_client = OpenAI(
+    api_key="**\*\***OPENAIKEY**\*\***"
+)
 
 # Initialise the Composio Tool Set
 
