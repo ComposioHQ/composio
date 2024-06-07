@@ -58,10 +58,10 @@ def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, nu
             print(f"Skipping {issue_id} because no patch was found in path: {predictions_path}")
             continue
         transformed_prediction = [{
-                            KEY_INSTANCE_ID: instance_id,
-                            KEY_MODEL: model,
-                            KEY_PREDICTION: patch_found
-                        }]
+            KEY_INSTANCE_ID: instance_id,
+            KEY_MODEL: model,
+            KEY_PREDICTION: patch_found
+        }]
         all_patches.append(transformed_prediction)
         pred_will_eval += 1
     with open(pred_path_temp, "w") as f_out:
@@ -74,21 +74,21 @@ def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, nu
     # Run evaluation
     try:
         print("🏃 Beginning evaluation...")
-        run_evaluation(
-            predictions_path=pred_path_temp,
-            log_dir=log_dir,
-            swe_bench_tasks=str(swe_bench_path),
-            testbed=testbed,
-            conda_link="",
-            log_suffix="",
-            skip_existing=skip_existing,
-            timeout=timeout,
-            verbose=verbose,
-            num_processes=num_processes
-        )
         print("✅ Finished evaluation")
     except Exception as e:
         print(f"❌ Evaluation failed: {e}\n{traceback.format_exc()}")
+    run_evaluation(
+        predictions_path=pred_path_temp,
+        log_dir=log_dir,
+        swe_bench_tasks=str(swe_bench_path),
+        testbed=testbed,
+        conda_link=None,
+        log_suffix="",
+        skip_existing=skip_existing,
+        timeout=timeout,
+        verbose=verbose,
+        num_processes=num_processes
+    )
 
     # Clean up temporary files
     os.remove(pred_path_temp)
@@ -107,7 +107,8 @@ if __name__ == "__main__":
     # parser.add_argument("--num_processes", type=int, default=-1, help="Num processes")
     # args = parser.parse_args()
     # main(**vars(args))
-    prediction_path = Path("/home/shubhra/work/composio/composio_sdk/examples/swe/evaluation/task_output_2024-06-07_15-08-12/agent_logs.json")
+    script_path = Path(__file__)
+    prediction_path = script_path.parent / Path("task_output_2024-06-07_15-08-12/agent_logs.json")
     testbed_dir = prediction_path.parent / Path("testbed/")
     if not os.path.exists(testbed_dir):
         os.makedirs(testbed_dir)
