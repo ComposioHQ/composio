@@ -60,7 +60,7 @@ openai_client = OpenAI()
 tool_set = ComposioToolSet(entity_id="melissa") 
 actions = tool_set.get_tools(apps=[App.GITHUB])
 
-my_task = "Star a repo SamparkAI/composio on GitHub"
+my_task = "Star a repo ComposioHQ/composio on GitHub"
 
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
