@@ -1,49 +1,197 @@
-
 <p align="center">
   <picture width="200">
     <source media="(prefers-color-scheme: dark)" width="172" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
-    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
+    <img alt="Composio" width="172" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
   </picture>
-  <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
-  <hr/>
-  <p align="center">
-    <img alt="Tests" src="https://github.com/SamparkAI/composio_sdk/actions/workflows/common.yml/badge.svg">
-  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
-    <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
-    <img alt="Twitter" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Ftwitter.com%2Fcomposiohq&label=Follow us">
-    <img alt="Discord" src="https://img.shields.io/discord/1170785031560646836?label=Discord">
-    </p>
 </p>
+<p align="center">
+  <a href="https://github.com/composiodev/composio/actions/workflows/common.yml">
+  <img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/composiodev/composio/common.yml?label=Tests&style=plastic&logo=github&color=blue&cacheSeconds=60">
+  </a>
+  <a href="https://pypi.org/project/composio-core/">
+  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
+  </a>
+  <a href="https://github.com/composiodev/composio/blob/main/LICENSE">
+  <img alt="License" src="https://img.shields.io/github/license/composiodev/composio?label=License&style=plastic&logo=github&color=blue&cacheSeconds=60">
+  </a>
+  <a href="https://pypi.org/project/composio-core/">
+  <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
+  </a>
+  
+</p>
+
+<h2 align="center">
+  Production Ready Toolset for AI Agents
+</h2>
+
+<h4 align="center">Equip your agent with high-quality tools & integrations without worrying about authentication, accuracy, and reliability in a single line of code!
+</h4>
+<div align="center">
+<p>
+<a href="https://docs.composio.dev" rel="dofollow"><strong>Explore the docs »</strong></a>
+</p>
+
+<p>
+<a href="https://app.composio.dev">Dashboard</a> |
+<a href="https://www.composio.dev">Homepage</a> |
+<a href="https://github.com/ComposioDev/composio/tree/master/examples">Examples</a> |
+<a href="https://docs.composio.dev/chat-with-docs">Chat with Docs</a> |
+<a href="https://docs.composio.dev/api-reference/">APIs</a> |
+<a href="https://docs.composio.dev/sdk">SDK</a>
+</p>
+</div>
+
+<hr>
+<div align="center">
+<p >
+    <b>✨ Socials >></b>
+    <a href="https://discord.gg/composio">Discord</a> <b>|</b>
+    <a href="https://youtube.com/@composiohq">Youtube</a> <b>|</b>
+    <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
+    <a href="https://www.linkedin.com/company/composio"> Linkedin </a>
+</p>
+<p align="center">
+    <b>⛏️ Contribute >></b>
+    <a href="https://github.com/composiodev/composio/blob/main/CONTRIBUTING.md">Report Bugs</a> <b>|</b>
+    <a href="https://github.com/composiodev/composio/blob/main/CONTRIBUTING.md">Request Feature</a> <b>|</b>
+    <a href="https://github.com/composiodev/composio/blob/main/CONTRIBUTING.md">Contribute</a>
+</p>
+</div>
+
+## 📋 Table of contents
+
+- [📋 Table of contents](#-table-of-contents)
+- [🤔 Why Composio?](#-why-composio)
+- [🚀 Getting Started](#-getting-started)
+  - [1. Installation](#1-installation)
+  - [2. Testing Composio in Action](#2-testing-composio-in-action)
+- [🔥 Key Features](#-key-features)
+- [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
+- [🤗 Contributions](#-contributions)
+- [🔗 Links](#-links)
+- [🛡️ License](#️-license)
+- [💪 Thanks To All Contributors](#-thanks-to-all-contributors)
+
+## 🤔 Why Composio?
+
+We believe AI Based Agents/Workflows are the future.
+Composio is the best toolset to integrate AI Agents to best Agentic Tools and use them to accomplish tasks.
 
 <img alt="Illustration" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
 
-Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
+## 🚀 Getting Started
 
-- **Compatibility with Major Agent Frameworks**: Autogen, Langchain, CrewAI, Julep, Lyzr, and OpenAI are all compatible with Composio, giving you a simple experience for your workflows.
-- **Full Support for Actions & Triggers**: Composio provides full support for Actions & Triggers, to power your agents with a wide range of functionalities.
-- **Authentication Management**: Composio provides comprehensive management of all authentication types, including `OAuth2`, `OAuth1`, `Basic`, `API_KEY`.
-- **Extensibility**: Don't find a tool you need? Composio is highly extensible, allowing you to add your own set of custom tools.
-- **Secure Environment**: Every user has a secure compute environment, ensuring data protection and privacy.
+### 1. Installation
 
-## Getting started
+To get started, type the following command in your Terminal.
 
-To get started, select a framework and install the corresponding plugin:
+```bash
+pip install composio-core
+```
 
-- **Autogen**: `pip install composio_autogen`
-- **CrewAI**: `pip install composio_crewai`
-- **Claude**: `pip install composio_claude`
-- **Griptape**: `pip install composio_griptape`
-- **Julep**: `pip install composio_julep`
-- **Langchain**: `pip install composio_langchain`
-- **Lyzr**: `pip install composio_lyzr`
-- **OpenAI**: `pip install composio_openai`
+If you want to install the 'composio' package along with its openai plugin: `pip install composio-openai`.
 
-<!-- TODO: Quickstart and point to the relevant documentation/examples -->
+### 2. Testing Composio in Action
 
-## Resources
-- Docs: https://docs.composio.dev/
-- Discord: https://discord.gg/composio
-- Twitter: https://twitter.com/composiohq
+Let's use Composio to create an AI Agent that can star a Github Repo.
 
-## Contributing
-Checkout `CONTRIBUTING.md` to get started with contributing to SDK. Feel free to reach out to us on [Discord](https://discord.gg/composio) for any questions or issues. We value your feedback!
+```bash
+composio add github # Connect your Github - Run this in terminal
+```
+
+```python
+
+from openai import OpenAI
+from composio_openai import ComposioToolSet, App, Action
+
+openai_client = OpenAI(api_key="**\*\***OPENAIKEY**\*\***")
+
+# Initialise the Composio Tool Set
+
+composio_tool_set = ComposioToolSet()
+
+# Get GitHub tools that are pre-configured
+actions = composio_tool_set.get_actions(
+    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+)
+
+my_task = "Star a repo composiodev/composio on GitHub"
+
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo",
+    tools=actions,  # type: ignore
+)
+
+# create a thread
+thread = openai_client.beta.threads.create()
+
+message = openai_client.beta.threads.messages.create(
+    thread_id=thread.id,
+    role="user",
+    content=my_task
+)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(
+    thread_id=thread.id,
+    assistant_id=assistant.id
+)
+
+
+# Execute Function calls
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+```
+
+## 🔥 Key Features
+
+- **100+ Tools**: Support for a range of different categories
+
+  - **Softwares**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
+  - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
+  - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
+  - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
+  - **SWE**: Ngrok, Database, Redis, Vercel, Git, etc.
+  - **RAG**: Agentic RAG for any type of data on the fly!
+
+- **Frameworks**: Use tools with agent frameworks like **OpenAI, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, Julep, Lyzr**, and more in a single line of code.
+- **Managed Authorisation**: Supports six different auth protocols. _Access Token, Refresh token, OAuth, API Keys, JWT, and more_ abstracted out so you can focus on the building agents.
+- **Accuracy**: Get _upto 40% better agentic accuracy_ in your tool calls due to better tool designs.
+- **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
+- **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
+
+## 📋 Read Our Code Of Conduct
+
+As part of our open-source community, we hold ourselves and other contributors to a high standard of communication. As a participant and contributor to this project, you agree to abide by our [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md).
+
+## 🤗 Contributions
+
+Composio is open-source and we welcome contributions. Please fork the repository, create a new branch for your feature, add your feature or improvement, and send a pull request.
+
+Also go through our [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md) before you start.
+
+## 🔗 Links
+
+- [Home page](https://composio.dev?utm_campaign=github-readme)
+- [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)
+- [Docs](https://docs.composio.dev/?utm_campaign=github-readme)
+
+## 🛡️ License
+
+Composio is licensed under the MIT License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
+
+## 💪 Thanks To All Contributors
+
+<a href="https://composio.dev/contributors?utm_source=github">
+  <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
+</a>
