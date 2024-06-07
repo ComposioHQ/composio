@@ -143,13 +143,13 @@ def generate_html(issues_data, output_file):
     print(f"HTML report generated: {output_file}")
 
 
-
 def main(log_file_path, output_html_file):
     issues = load_logs(log_file_path)
     issues_data = {issue: extract_details(logs) for issue, logs in issues.items()}
     generate_html(issues_data, output_html_file)
 
+
 if __name__ == "__main__":
-    log_file_path = "/home/shubhra/work/composio/composio_sdk/examples/swe/evaluation/task_output_2024-06-06_17-21-04/agent_logs.json"  # Update with your actual log file path
+    log_file_path = "/home/shubhra/work/composio/composio_sdk/examples/swe/evaluation/task_output_2024-06-07_15-08-12/agent_logs.json"  # Update with your actual log file path
     output_html_file = "agent_action_report_by_issue.html"  # Desired output HTML file
     main(log_file_path, output_html_file)

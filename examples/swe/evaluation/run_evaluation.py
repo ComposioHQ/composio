@@ -10,6 +10,7 @@ from composio_crewai import ComposioToolSet, App
 from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI
 import logging
+import concurrent.futures
 
 from rich.logging import RichHandler
 
@@ -58,8 +59,8 @@ def filter_from_repo_name(curr_dataset, repo_name):
 
 def get_issues_dataset():
     # Load the SWE-bench dataset
-    dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[:3]")
+    # dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
     # filter by repo-name 
     # test_dataset = filter_from_repo_name(test_dataset, repo_name)
 
@@ -99,7 +100,10 @@ def run():
         "You are the best programmer. You think carefully and step by step take action."
     )
     goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
-    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
+    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE,
+                                             App.CMDMANAGERTOOL,
+                                             App.HISTORYKEEPER,
+                                             App.SUBMITPATCHTOOL])
     issues = get_issues_dataset()
     agent_logs = {}
     for issue in issues:
@@ -119,6 +123,11 @@ def run():
         #           used to store logs of agent actions and responses
         def add_in_logs(step_output):
             # get agent input
+            if isinstance(step_output, langchain_core.agents.AgentFinish):
+                current_logs.append({
+                    "agent_action": "agent_finish",
+                    "agent_output": step_output.return_values,
+                })
             if isinstance(step_output, list):
                 if len(step_output) < 1:
                     return
@@ -171,5 +180,93 @@ def run():
         f.write(json.dumps(agent_logs))
 
 
+def run1():
+    """
+    Main function to load and display entries from the SWE-bench lite dataset, modified to use parallel processing.
+    """
+    azure_llm = AzureChatOpenAI(
+        azure_endpoint=os.environ.get("azure_endpoint"),
+        api_key=os.environ.get("azure_key"),
+        model="test",
+        model_version="1106-Preview",
+        api_version="2024-02-01",
+    )
+    task_output_dir = script_dir / Path(TASK_OUTPUT_PATH + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    task_output_logs = task_output_dir / Path("agent_logs.json")
+    if not os.path.exists(task_output_dir):
+        os.makedirs(task_output_dir)
+    composio_toolset = ComposioToolSet()
+    base_role = "You are the best programmer. You think carefully and step by step take action."
+    goal = "Help fix the given issue / bug in the code. And make sure you get it working."
+    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
+    issues = get_issues_dataset()
+    agent_logs = {}
+
+    def process_issue(issue):
+        issue_description = build_issue_description(issue["hints_text"], issue["problem_statement"])
+        repo_name = issue["repo"]
+        instance_id = issue["instance_id"]
+        patch = issue["patch"]
+        base_commit = issue["base_commit"]
+        install_commit_id = issue["environment_setup_commit"]
+        logger.info(f"starting agent for issue-id: {instance_id}\n"
+                    f"issue-description: {issue_description}\n"
+                    f"repo_name: {repo_name}\n")
+        current_logs = []
+        with open(base_task_config_path) as f:
+            base_config = yaml.safe_load(f.read())
+
+        def add_in_logs(step_output):
+            if isinstance(step_output, langchain_core.agents.AgentFinish):
+                current_logs.append({
+                    "agent_action": "agent_finish",
+                    "agent_output": step_output.return_values,
+                })
+            if isinstance(step_output, list) and len(step_output) > 0:
+                agent_action_with_tool_out = step_output[0]
+                if isinstance(agent_action_with_tool_out[0], langchain_core.agents.AgentAction):
+                    agent_action = agent_action_with_tool_out[0]
+                    tool_out = agent_action_with_tool_out[1] if len(agent_action_with_tool_out) > 1 else None
+                    current_logs.append({"agent_action": agent_action.json(), "tool_output": tool_out})
+
+        issue_added_instruction = base_config["issue_description"].format(issue=issue_description, issue_id=instance_id)
+        backstory_added_instruction = base_config["backstory"].format(repo_name=repo_name, base_commit=base_commit,
+                                                                      git_access_token=os.environ.get("GITHUB_ACCESS_TOKEN"),
+                                                                      install_commit_id=install_commit_id)
+
+        expected_output = "A patch should be generated for the issue"
+        swe_agent = Agent(
+            role=base_role,
+            goal=goal,
+            backstory=backstory_added_instruction,
+            verbose=True,
+            tools=tools,
+            llm=azure_llm,
+            memory=True,
+            cache=False,
+            step_callback=add_in_logs,
+        )
+
+        coding_task = Task(
+            description=issue_added_instruction,
+            agent=swe_agent,
+            expected_output=expected_output,
+        )
+        coding_task.execute()
+        return instance_id, current_logs
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_issue = {executor.submit(process_issue, issue): issue for issue in issues}
+        for future in concurrent.futures.as_completed(future_to_issue):
+            instance_id, logs = future.result()
+            agent_logs[instance_id] = logs
+
+    with open(task_output_logs, "w") as f:
+        f.write(json.dumps(agent_logs))
+
+
 if __name__ == "__main__":
     run()
+
+
+

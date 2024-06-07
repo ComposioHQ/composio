@@ -49,5 +49,5 @@ class SubmitPatch(Action):
 
     def execute(
         self, request_data: SubmitPatchRequest, authorisation_data: dict = {}
-    ) -> dict:
+    ) -> SubmitPatchResponse:
         return SubmitPatchResponse(patch_code=request_data.patch_code)
