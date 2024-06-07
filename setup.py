@@ -50,4 +50,10 @@ setup(
         "sentry-sdk>=2.0.0"
     ],
     include_package_data=True,
+    package_data={
+        "composio": [
+            "local_tools/local_workspace/config/*.yaml",
+            "local_tools/local_workspace/config/commands/*.sh"
+        ]
+    }
 )
