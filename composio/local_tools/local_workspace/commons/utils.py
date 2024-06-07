@@ -70,13 +70,17 @@ class DockerManager:
             )
             raise RuntimeError(msg)
         if len(filtered_images) > 1:
-            logger.warning(f"Multiple images found for {image_name}, that's weird.")
+            logger.warning("Multiple images found for %s, that's weird.", image_name)
 
         attrs = filtered_images[0].attrs
         if attrs:
             logger.info(
-                f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
-                f"for {attrs['Os']} {attrs['Architecture']}."
+                "Found image %s with tags: %s, created: %s " "for %s %s.",
+                image_name,
+                attrs["RepoTags"],
+                attrs["Created"],
+                attrs["Os"],
+                attrs["Architecture"],
             )
 
         if persistent:
@@ -97,12 +101,16 @@ class DockerManager:
             )
             raise RuntimeError(msg)
         if len(filtered_images) > 1:
-            logger.warning(f"Multiple images found for {image_name}, that's weird.")
+            logger.warning("Multiple images found for %s, that's weird.", image_name)
         attrs = filtered_images[0].attrs
         if attrs is not None:
             logger.info(
-                f"Found image {image_name} with tags: {attrs['RepoTags']}, created: {attrs['Created']} "
-                f"for {attrs['Os']} {attrs['Architecture']}."
+                "Found image %s with tags: %s, created: %s " "for %s %s.",
+                image_name,
+                attrs["RepoTags"],
+                attrs["Created"],
+                attrs["Os"],
+                attrs["Architecture"],
             )
         max_attempts = 5
         attempt = 0
@@ -160,7 +168,7 @@ class DockerManager:
             "-l",
             "-m",
         ]
-        logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
+        logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
         container = subprocess.Popen(
             startup_cmd,
             stdin=PIPE,
@@ -175,7 +183,7 @@ class DockerManager:
             container, None, lambda arge1, arg2: [], [], timeout_duration=2
         )
         if output:
-            logger.error(f"Unexpected container setup output: {output}")
+            logger.error("Unexpected container setup output: %s", output)
         # Get the process IDs of the container
         # There should be at least a head process and possibly one child bash process
         bash_pids, other_pids = get_background_pids(container_obj)
@@ -211,7 +219,7 @@ class DockerManager:
             "-l",
             "-m",
         ]
-        logger.debug(f"Starting container with command: {shlex.join(startup_cmd)}")
+        logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
         container = subprocess.Popen(
             startup_cmd,
             stdin=PIPE,
@@ -226,7 +234,7 @@ class DockerManager:
             container, None, lambda arg1, arg2: [], [], timeout_duration=2
         )
         if output:
-            logger.error(f"Unexpected container setup output: {output}")
+            logger.error("Unexpected container setup output: %s", output)
         return container, {
             "1",
         }  # bash PID is always 1 for non-persistent containers
@@ -345,7 +353,7 @@ def copy_file_to_container(container_obj, contents, container_path):
                     )
 
     except Exception as e:
-        logger.error(f"An error occurred: {e}")
+        logger.error("An error occurred: %s", e)
         logger.error(traceback.format_exc())
     finally:
         # Cleanup: Remove the temporary file if it was created
@@ -405,7 +413,7 @@ def communicate_with_handling(
         timeout_duration=timeout_duration,
     )
     if return_code != 0:
-        logger.error(f"{error_msg}: {logs}")
+        logger.error("%s: %s", error_msg, logs)
         # call close container here in future
         # self.close()
         raise RuntimeError(f"{error_msg}: {logs}")
@@ -448,7 +456,7 @@ def _communicate(
             container, container_obj, get_pids, parent_pids, 5
         ).strip()
     except Exception as e:
-        logger.error(f"Read with timeout failed on input:\n---\n{input}\n---")
+        logger.error("Read with timeout failed on input:\n---\n%s\n---", input)
         raise e
     if not exit_code.isdigit():
         raise RuntimeError(
