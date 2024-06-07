@@ -1,15 +1,15 @@
 import os
 import json
 import traceback
-from swebench import run_evaluation
+from swebench import run_evaluation, KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
 from pathlib import Path
 from datasets import load_dataset
 
-SUBMIT_PATCH_CMD = "submit_patch"
+SUBMIT_PATCH_CMD = "submitpatchtool_submitpatch"
 
 
 def download_and_store_dataset(dataset_name, output_file):
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[22:23]")
     # Assuming the dataset is a single dataset, not a dataset dictionary
     with open(output_file, 'w') as file:
         for item in test_dataset:  # Adjust the split if necessary
@@ -28,7 +28,7 @@ def find_patch(prediction_data):
         # Parse the 'agent_action' field which contains JSON string
         agent_action = json.loads(action['agent_action'])
         # Check if the action type is 'AgentAction' and contains a 'tool' that might indicate a patch submission
-        if agent_action['type'] == 'AgentAction' and SUBMIT_PATCH_CMD in agent_action['tool']:
+        if agent_action['tool'] == SUBMIT_PATCH_CMD:
             # Assuming the patch or relevant output is in 'tool_output'
             return action.get('tool_output')
     return None
@@ -57,11 +57,11 @@ def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, nu
         if not patch_found:
             print(f"Skipping {issue_id} because no patch was found in path: {predictions_path}")
             continue
-        transformed_prediction = {
-                            "instance_id": instance_id,
-                            "model": model,
-                            "prediction": patch_found
-                        }
+        transformed_prediction = [{
+                            KEY_INSTANCE_ID: instance_id,
+                            KEY_MODEL: model,
+                            KEY_PREDICTION: patch_found
+                        }]
         all_patches.append(transformed_prediction)
         pred_will_eval += 1
     with open(pred_path_temp, "w") as f_out:
@@ -77,7 +77,7 @@ def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, nu
         run_evaluation(
             predictions_path=pred_path_temp,
             log_dir=log_dir,
-            swe_bench_tasks=swe_bench_path.name,
+            swe_bench_tasks=str(swe_bench_path),
             testbed=testbed,
             conda_link="",
             log_suffix="",
