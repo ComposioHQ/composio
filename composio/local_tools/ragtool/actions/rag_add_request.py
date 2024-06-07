@@ -27,9 +27,9 @@ class AddContentToRagTool(Action):
         if authorisation_data is None:
             authorisation_data = {}
         try:
-            # pylint: disable=import-error
+            # pylint: disable=import-outside-toplevel
             from embedchain import App
-            # pylint: enable=import-error
+            # pylint: enable=import-outside-toplevel
         except ImportError as e:
             raise ImportError(f"Failed to import App from embedchain: {e}") from e
         try:

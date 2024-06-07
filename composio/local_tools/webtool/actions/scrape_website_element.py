@@ -37,9 +37,11 @@ class ScrapeWebsiteElement(Action):
         url = request.website_url
         selector = request.element_selector
         try:
+            # pylint: disable=import-outside-toplevel
             from bs4 import BeautifulSoup
+            # pylint: enable=import-outside-toplevel
         except ImportError as e:
-            raise ImportError("Failed to import BeautifulSoup:", e)
+            raise ImportError("Failed to import BeautifulSoup:", e) from e
         try:
             # Adding headers to mimic a browser request
             headers = {

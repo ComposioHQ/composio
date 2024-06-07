@@ -25,10 +25,14 @@ class RagToolQuery(Action):
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
 
-    def execute(self, request: RagToolQueryRequest, authorisation_data: dict = {}):
+    def execute(self, request: RagToolQueryRequest, authorisation_data: dict = None):
         """Query the knowledge base and return the response"""
+        if authorisation_data is None:
+            authorisation_data = {}
         try:
+            # pylint: disable=import-outside-toplevel
             from embedchain import App
+            # pylint: enable=import-outside-toplevel
         except ImportError as e:
             raise ImportError(f"Failed to import App from embedchain: {e}") from e
         embedchain_app = None
