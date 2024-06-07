@@ -1,6 +1,8 @@
 """
 Composio CLI Tool.
 """
+from composio.core.cls.catch_all_exceptions import CatchAllExceptions, handle_exceptions, init_sentry
+init_sentry()
 
 import click
 
@@ -23,6 +25,7 @@ class HelpDYMGroup(DYMGroup):
         super().format_help(ctx, formatter)
 
         formatter.write("\n📙 Examples:\n\n")
+
         formatter.write(
             click.style("composio --help", fg="green")
             + click.style("          # Display help information\n", fg="black")
@@ -36,9 +39,8 @@ class HelpDYMGroup(DYMGroup):
             + click.style("           # Log in to your Composio account\n", fg="black")
         )
 
-
-@click.group(name="composio", cls=HelpDYMGroup)
-@click.help_option("--help", "-h", "-help")
+@click.group(name="composio",cls=CatchAllExceptions(HelpDYMGroup, handler=handle_exceptions))
+@click.help_option("--help", "-h","-help")
 def composio() -> None:
     """
     🔗 Composio CLI Tool.
