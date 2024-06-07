@@ -170,9 +170,9 @@ class LocalDockerWorkspace(gym.Env):
             timeout_duration=timeout_duration,
         )
         if self.returncode != 0:
-            self.logger.error(f"{error_msg}: {logs}")
+            self.logger.error("%s: %s", error_msg, logs)
             self.close()
-            raise RuntimeError(f"{error_msg}: {logs}")
+            raise RuntimeError("%s: %s", error_msg, logs)
         return logs
 
     def communicate(self, input: str, timeout_duration=25) -> Tuple[str, int]:
@@ -249,7 +249,7 @@ class LocalDockerWorkspace(gym.Env):
             logger.error("handling keyboard interrupt")
             raise
         except Exception as e:
-            logger.error(f"docker close exception: {e}")
+            logger.error("docker close exception: %s", e)
         assert self.container is not None
         assert self.container_obj is not None
         self.container.terminate()
@@ -258,7 +258,7 @@ class LocalDockerWorkspace(gym.Env):
                 self.container_obj.pause()
                 self.logger.info("Agent container paused")
             else:
-                self.logger.info(f"Agent container status: {self.container_obj.status}")
+                self.logger.info("Agent container status: %s", self.container_obj.status)
         else:
             try:
                 self.container_obj.remove(force=True)
@@ -266,7 +266,7 @@ class LocalDockerWorkspace(gym.Env):
                 logger.error("handling keyboard interrupt")
                 raise
             except Exception as e:
-                logger.error(f"docker close exception: {e}")
+                logger.error("docker close exception: %s", e)
             self.logger.info("Agent container stopped")
         # todo: implement these hooks
         for hook in self.hooks:

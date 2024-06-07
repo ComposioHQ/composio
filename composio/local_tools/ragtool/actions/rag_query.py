@@ -30,13 +30,13 @@ class RagToolQuery(Action):
         try:
             from embedchain import App
         except ImportError as e:
-            raise ImportError(f"Failed to import App from embedchain: {e}")
+            raise ImportError(f"Failed to import App from embedchain: {e}") from e
         embedchain_app = None
         try:
             embedchain_app = App()
         except Exception as e:
             print(f"Failed to initialize App: {e}")
-            raise Exception(f"Failed to initialize App: {e}")
+            raise Exception(f"Failed to initialize App: {e}") from e
 
         query = request.query
 
