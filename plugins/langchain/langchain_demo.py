@@ -5,7 +5,7 @@ Langchain demo.
 import os
 
 import dotenv
-from composio_langchain import App, ComposioToolSet
+from composio_langchain import App, Action, ComposioToolSet
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
@@ -23,7 +23,9 @@ openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 composio_toolset = ComposioToolSet()
 
 # Get All the tools
-tools = composio_toolset.get_tools(apps=[App.MATHEMATICAL])
+tools = composio_toolset.get_actions(
+    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+)
 
 # Define task
 task = "Star a repo SamparkAI/docs on GitHub"
