@@ -4,6 +4,7 @@ sidebarTitle: "Github and Trello"
 icon: "trello"
 description: "This guide provides steps to create a pipeline to automatically add or move tasks on your Trello board based on GitHub commits."
 ---
+
 <Steps>
     <Step title="Install packages and Connect tools">
 
@@ -60,8 +61,8 @@ description: "This guide provides steps to create a pipeline to automatically ad
     <CodeGroup>
         ```python CrewAI Agents
         llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-3.5-turbo")
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(apps=[App.TRELLO])        
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.TRELLO])
         crewai_agent = Agent(
                 role="Github-Trello TODO Agent",
                 goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
@@ -122,8 +123,8 @@ description: "This guide provides steps to create a pipeline to automatically ad
     # Initialize agents using CrewAI
     openai_api_key = "your_openai_api_key"  # Replace with your actual OpenAI API key
     llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4-turbo")
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(apps=[App.TRELLO])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.TRELLO])
     crewai_agent = Agent(
         role="Github-Trello TODO Agent",
         goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
@@ -162,7 +163,9 @@ description: "This guide provides steps to create a pipeline to automatically ad
     if __name__ == '__main__':
         app.run(port=2000, debug=True)
     ```
+
 </CodeGroup>
 
 ## Information
+
 - [Github](https://github.com/theyashwanthsai/ComposioCodeTrello)

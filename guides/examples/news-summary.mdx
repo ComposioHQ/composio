@@ -24,7 +24,7 @@ retrieves the latest news articles and generates summaries using Langchain and C
         ```
     </CodeGroup>
     </Step>
-    
+
     <Step title="Import base packages">
     Begin by importing the necessary packages:
     <CodeGroup>
@@ -41,7 +41,7 @@ retrieves the latest news articles and generates summaries using Langchain and C
         )
         from langchain import hub
         from langchain.tools.render import render_text_description
-        #Importing Composio 
+        #Importing Composio
         from composio_langchain import ComposioToolSet, Action, App
         ```
     </CodeGroup>
@@ -54,8 +54,8 @@ retrieves the latest news articles and generates summaries using Langchain and C
         llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta")
         chat_model = ChatHuggingFace(llm=llm)
 
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_tools(apps=[App.SERPAPI])        
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.SERPAPI])
     ```
     </CodeGroup>
     </Step>
@@ -114,6 +114,7 @@ retrieves the latest news articles and generates summaries using Langchain and C
 </Steps>
 
 ## Putting it All Together
+
 <CodeGroup>
     ```python Final Code
     from langchain_community.document_loaders import WebBaseLoader
@@ -129,8 +130,8 @@ retrieves the latest news articles and generates summaries using Langchain and C
     # Initialize the language model and toolset
     llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta")
     chat_model = ChatHuggingFace(llm=llm)
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_tools(apps=[App.SERPAPI])
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.SERPAPI])
     # Setup the ReAct style prompt template
     prompt = hub.pull("hwchase17/react-json")
     prompt = prompt.partial(
@@ -165,7 +166,9 @@ retrieves the latest news articles and generates summaries using Langchain and C
     })
 
     ```
+
 </CodeGroup>
 
 ## Information
+
 - [Colab Notebook](https://colab.research.google.com/drive/1bmCnrHJCzc4YUf2b_ciENIcFWLM3Euq7?usp=sharing)
