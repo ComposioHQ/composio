@@ -35,7 +35,7 @@ openai_client = OpenAI(api_key="**\*\***OPENAIKEY**\*\***")
 
 # Initialise the Composio Tool Set
 
-composiotoolset = ComposioToolSet()
+composio_toolset = ComposioToolSet()
 
 ```
 </CodeGroup>
@@ -45,7 +45,7 @@ composiotoolset = ComposioToolSet()
   <CodeGroup>
     ```python Fetch Actions
 # Get GitHub tools that are pre-configured
-actions = composiotoolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
     ```
   </CodeGroup>
 </Step>
@@ -85,7 +85,7 @@ run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=as
 <CodeGroup>
 ```python Executing Selected Actions!
 # Execute Function calls
-response_after_tool_calls = composiotoolset.wait_and_handle_assistant_tool_calls(
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
     client=openai_client,
     run=run,
     thread=thread,
@@ -137,11 +137,11 @@ from composio_openai import ComposioToolSet, App
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 
 # Initialise the Composio Tool Set
-composiotoolset = ComposioToolSet()
+composio_toolset = ComposioToolSet()
 
 ## Step 4
 # Get GitHub tools that are pre-configured
-actions = composiotoolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 
 
 ## Step 5
@@ -160,7 +160,7 @@ messages=[
 
 ## Step 6
 # Execute Function calls
-response_after_tool_calls = composiotoolset.wait_and_handle_assistant_tool_calls(
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
     client=openai_client,
     run=run,
     thread=thread,
