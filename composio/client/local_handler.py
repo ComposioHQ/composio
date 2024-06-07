@@ -43,7 +43,14 @@ class LocalToolHandler:
             Greptile(),
         ]
 
-    def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
+    def get_list_of_action_schemas(self, apps=None, actions=None, tags=None):
+        if apps is None:
+            apps = []
+        if actions is None:
+            actions = []
+        if tags is None:
+            tags = []
+
         tag_values = [tag if isinstance(tag, str) else tag.value for tag in tags]
 
         all_action_objs = []
@@ -57,11 +64,9 @@ class LocalToolHandler:
             action_obj = tool_obj.get_actions_dict()[action.value[1]]
             all_action_objs.append(action_obj)
 
-        # all_action_objs = list(set(all_action_objs))
         all_action_schemas = [
             action_obj.get_action_schema() for action_obj in all_action_objs
         ]
-        # all_action_schemas = list(set(all_action_schemas))
 
         all_action_schemas = list(
             {
@@ -78,7 +83,6 @@ class LocalToolHandler:
             ]
 
         return all_action_schemas
-
     def execute_local_action(self, action, request_data: dict, metadata: dict = {}):
         tool_obj = self.tool_map[action.value[0]]
         action_obj = tool_obj.get_actions_dict()[action.value[1]]

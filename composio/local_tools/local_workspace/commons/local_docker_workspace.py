@@ -83,7 +83,7 @@ class LocalDockerWorkspace(gym.Env):
                 logger.error("handling keyboard interrupt")
                 raise
             except Exception as e:
-                logger.error(f"reset container exception: {e}")
+                logger.error("reset container exception: %s", e)
         self._init_container()
         self._init_scripts()
 
@@ -205,7 +205,7 @@ class LocalDockerWorkspace(gym.Env):
         except TimeoutError:
             pass
         try:
-            output, return_code = self.communicate(
+            output, _ = self.communicate(
                 input="echo 'interrupted'", timeout_duration=5
             )
             assert output.strip().endswith(
@@ -310,7 +310,7 @@ class WorkspaceManagerFactory:
         container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
         container_obj = get_container_by_container_name(container_name, image_name)
         parent_pids = workspace_meta[KEY_PARENT_PIDS]
-        output, return_code = communicate(
+        output, _ = communicate(
             container_process, container_obj, state_cmd, parent_pids
         )
         return output

@@ -42,7 +42,7 @@ class RagToolQuery(Action):
 
         if embedchain_app:
             try:
-                result, sources = embedchain_app.query(query, citations=True)
+                _, sources = embedchain_app.query(query, citations=True)
                 response = "\n\n".join([source[0] for source in sources])
                 return response
             except Exception as e:

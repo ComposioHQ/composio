@@ -29,9 +29,11 @@ class ScrapeWebsiteElement(Action):
     _tool_name = "webtool"
 
     def execute(
-        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict = {}
+        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict = None
     ):
         """Scrape a specific element from the website and return its content"""
+        if authorisation_data is None:
+            authorisation_data = {}
         url = request.website_url
         selector = request.element_selector
         try:
@@ -54,7 +56,6 @@ class ScrapeWebsiteElement(Action):
             element = soup.select_one(selector)
             if element:
                 return str(element)
-            else:
-                return "Element not found"
+            return "Element not found"
         except Exception as e:
             return f"Error scraping element: {e}"
