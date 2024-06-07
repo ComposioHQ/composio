@@ -1,11 +1,25 @@
 import os
 import json
-import glob
-import argparse
 import traceback
-from swebench import run_evaluation, get_model_report
+from swebench import run_evaluation
+from pathlib import Path
+from datasets import load_dataset
 
 SUBMIT_PATCH_CMD = "submit_patch"
+
+
+def download_and_store_dataset(dataset_name, output_file):
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
+    # Assuming the dataset is a single dataset, not a dataset dictionary
+    with open(output_file, 'w') as file:
+        for item in test_dataset:  # Adjust the split if necessary
+            json.dump(item, file)
+            file.write('\n')
+
+
+def get_dataset():
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
+    return test_dataset
 
 
 def find_patch(prediction_data):
@@ -20,28 +34,32 @@ def find_patch(prediction_data):
     return None
 
 
-def main(predictions_dir, log_dir, swe_bench_tasks, testbed, skip_existing, timeout, verbose, conda_link, log_suffix, num_processes):
+def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, num_processes):
     # Assuming the directory structure and file naming is correct
-    directory_name = os.path.basename(predictions_dir)
-    pred_path_temp = os.path.join(predictions_dir, "filtered_predictions.jsonl")
+    model = "gpt-4-1106"
     all_patches = []
+    predictions_dir = predictions_path.parent
+    pred_path_temp = predictions_dir / Path("patches.json")
+    swe_bench_path = predictions_dir / Path("swe_bench_issues.jsonl")
+    download_and_store_dataset("", swe_bench_path)
     # Walk through the directory and process each file
     pred_total, pred_will_eval = 0, 0
-    for file_path in glob.glob(os.path.join(predictions_dir, "*_instance_*")):
-        instance_id = file_path.split('_instance_')[-1].replace(".json", "")
-        with open(file_path, "r") as f:
-            prediction_data = json.loads(f.read())
+    with open(predictions_path, "r") as f:
+        agent_logs = json.loads(f.read())
+    for issue_id in agent_logs:
+        instance_id = issue_id
+        prediction_data = agent_logs[instance_id]
         if len(prediction_data) == 0:
-            print(f"Skipping {file_path} because it has no predictions")
+            print(f"Skipping {issue_id} because it has no predictions in path: {predictions_path}")
             continue
 
         patch_found = find_patch(prediction_data)
         if not patch_found:
-            print(f"Skipping {file_path} because no patch was found")
+            print(f"Skipping {issue_id} because no patch was found in path: {predictions_path}")
             continue
         transformed_prediction = {
                             "instance_id": instance_id,
-                            "model": directory_name,
+                            "model": model,
                             "prediction": patch_found
                         }
         all_patches.append(transformed_prediction)
@@ -59,13 +77,13 @@ def main(predictions_dir, log_dir, swe_bench_tasks, testbed, skip_existing, time
         run_evaluation(
             predictions_path=pred_path_temp,
             log_dir=log_dir,
-            swe_bench_tasks=swe_bench_tasks,
+            swe_bench_tasks=swe_bench_path.name,
             testbed=testbed,
+            conda_link="",
+            log_suffix="",
             skip_existing=skip_existing,
             timeout=timeout,
             verbose=verbose,
-            conda_link=conda_link,
-            log_suffix=log_suffix,
             num_processes=num_processes
         )
         print("✅ Finished evaluation")
@@ -77,15 +95,22 @@ def main(predictions_dir, log_dir, swe_bench_tasks, testbed, skip_existing, time
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--predictions_dir", type=str, required=True, help="Directory containing prediction files")
-    parser.add_argument("--log_dir", type=str, required=True, help="Path to log directory")
-    parser.add_argument("--swe_bench_tasks", type=str, required=True, help="Path to SWE-bench task instances file")
-    parser.add_argument("--testbed", type=str, required=True, help="Path to testbed directory")
-    parser.add_argument("--skip_existing", action="store_true", help="(Optional) Skip existing logs")
-    parser.add_argument("--timeout", type=int, default=900, help="(Optional) Timeout in seconds")
-    parser.add_argument("--verbose", action="store_true", help="(Optional) Verbose mode")
-    parser.add_argument("--log_suffix", type=str, help="(Optional) Log suffix")
-    parser.add_argument("--num_processes", type=int, default=-1, help="Num processes")
-    args = parser.parse_args()
-    main(**vars(args))
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--predictions_dir", type=str, required=True, help="Directory containing prediction files")
+    # parser.add_argument("--log_dir", type=str, required=True, help="Path to log directory")
+    # parser.add_argument("--swe_bench_tasks", type=str, required=True, help="Path to SWE-bench task instances file")
+    # parser.add_argument("--testbed", type=str, required=True, help="Path to testbed directory")
+    # parser.add_argument("--skip_existing", action="store_true", help="(Optional) Skip existing logs")
+    # parser.add_argument("--timeout", type=int, default=900, help="(Optional) Timeout in seconds")
+    # parser.add_argument("--verbose", action="store_true", help="(Optional) Verbose mode")
+    # parser.add_argument("--log_suffix", type=str, help="(Optional) Log suffix")
+    # parser.add_argument("--num_processes", type=int, default=-1, help="Num processes")
+    # args = parser.parse_args()
+    # main(**vars(args))
+    prediction_path = Path("/home/shubhra/work/composio/composio_sdk/examples/swe/evaluation/task_output_2024-06-07_15-08-12/agent_logs.json")
+    testbed_dir = prediction_path.parent / Path("testbed/")
+    if not os.path.exists(testbed_dir):
+        os.makedirs(testbed_dir)
+    main(prediction_path,
+         "/home/shubhra/work/composio/composio_sdk/examples/swe/evaluation/task_output_2024-06-07_15-08-12/",
+         testbed_dir, True, 300, True, 2)
