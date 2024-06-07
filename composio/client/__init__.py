@@ -6,9 +6,10 @@ import os
 import time
 import typing as t
 import warnings
-from datetime import datetime
-
+import base64
 import requests
+
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from composio.client.endpoints import Endpoint, v1
@@ -756,7 +757,13 @@ class Actions(Collection[ActionModel]):
             file_readable = annotations is not None and annotations.get('file_readable', False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, 'rb') as file:
-                    modified_params[param] = file.read()
+                    file_content = file.read()
+                    try:
+                        file_content.decode('utf-8')  # Try decoding as UTF-8 to check if it's normal text
+                        modified_params[param] = file_content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        # If decoding fails, treat as binary and encode in base64
+                        modified_params[param] = base64.b64encode(file_content).decode('utf-8')
             else:
                 modified_params[param] = value
         if action.no_auth:
