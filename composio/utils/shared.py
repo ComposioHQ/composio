@@ -9,7 +9,7 @@ from pydantic.v1 import BaseModel, Field, create_model
 from pydantic.v1.fields import FieldInfo
 
 
-SCHEMA_TYPE_TO_PYTHON_TYPE = {
+SCHEMA_TYPE_TO_PYTHON_TYPE: t.Dict[str, t.Type] = {
     "string": str,
     "number": float,
     "boolean": bool,
@@ -60,6 +60,18 @@ def json_schema_to_pydantic_type(
             nested_model = json_schema_to_model(json_schema)
             return nested_model
         return t.Dict
+    
+    if type_ is None and "oneOf" in json_schema:
+        one_of_options = json_schema["oneOf"]
+        pydantic_types: t.List[t.Type] = [json_schema_to_pydantic_type(option) for option in one_of_options]
+        if len(pydantic_types) == 1:
+            return pydantic_types[0]
+        elif len(pydantic_types) == 2:
+            return t.Union[t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1])]
+        elif len(pydantic_types) == 3   :
+            return t.Union[t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1]), t.cast(t.Type, pydantic_types[2])]
+        else:
+            raise ValueError("Invalid 'oneOf' schema")
 
     pytype = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_)
     if pytype is not None:
@@ -82,6 +94,10 @@ def json_schema_to_pydantic_field(
     :return: A Pydantic field definition.
     """
     description = json_schema.get("description")
+    if 'oneOf' in json_schema:
+        description = " | ".join([option.get("description", "") for option in json_schema['oneOf']])
+        description = f"Any of the following options(separated by |): {description}"
+    
     examples = json_schema.get("examples", [])
     return (
         t.cast(
@@ -193,13 +209,31 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
     required_params = schema_params.get("required", [])
     schema_params_object = schema_params.get("properties", {})
     for param_name, param_schema in schema_params_object.items():
-        param_type = param_schema["type"]
-        if param_type in SCHEMA_TYPE_TO_PYTHON_TYPE:
+        param_type = param_schema.get("type", None)
+        param_oneOf = param_schema.get("oneOf", None)
+        if param_oneOf is not None:
+            param_types = [ptype.get("type") for ptype in param_oneOf]
+            if len(param_types) == 1:
+                signature_param_type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
+            elif len(param_types) == 2:
+                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
+                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]]
+                signature_param_type = t.Union[t1, t2]
+            elif len(param_types) == 3:
+                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
+                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]]
+                t3: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[2]]
+                signature_param_type = t.Union[t1, t2, t3]
+            else:
+                raise ValueError("Invalid 'oneOf' schema")
+            param_default = param_schema.get("default", '')
+        elif param_type in SCHEMA_TYPE_TO_PYTHON_TYPE:
             signature_param_type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_type]
+            param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
+            param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
 
-        param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
         param_annotation = signature_param_type
         param = Parameter(
             name=param_name,
@@ -213,3 +247,4 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
         else:
             optional_parameters.append(param)
     return required_parameters + optional_parameters
+

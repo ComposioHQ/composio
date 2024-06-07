@@ -92,18 +92,16 @@ class Action(ABC):
         return f"{self._tool_name}_{inflection.underscore(self.action_name)}"
 
     def get_action_schema(self):
-        
         request_schema_json = self.request_schema.model_json_schema(by_alias=False)
-        modified_parameters = request_schema_json.get('properties', {})
-        
-        for param, details in modified_parameters.items():
-            if details.get('json_schema_extra', {}).get('file_readable', False):
+        modified_properties = request_schema_json.get('properties', {})
+        for param, details in modified_properties.items():
+            if details.get('file_readable', False):
                 details['oneOf'] = [
                     {'type': details.get('type'), 'description': details.get('description', '')},
                     {'type': 'string', 'format': 'file-path', 'description': f"File path to {details.get('description', '')}"}
                 ]
                 del details['type']  # Remove original type to avoid conflict in oneOf
-
+        request_schema_json['properties'] = modified_properties
         action_schema = {
             "appKey": self._tool_name,
             "appName": self._tool_name,
@@ -114,7 +112,7 @@ class Action(ABC):
             "tags": self.tags,  # type: ignore
             "enabled": True,
             "description": self.__class__.__doc__ if self.__class__.__doc__ else self.action_name,  # type: ignore
-            "parameters": jsonref.loads(json.dumps(modified_parameters)),
+            "parameters": jsonref.loads(json.dumps(request_schema_json)),
             "response": jsonref.loads(
                 json.dumps(self.response_schema.model_json_schema())
             ),
