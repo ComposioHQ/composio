@@ -521,17 +521,26 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
     def get(  # type: ignore
         self,
         trigger_ids: t.Optional[t.List[str]] = None,
+        connected_account_ids: t.Optional[t.List[str]] = None,
+        integration_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[str]] = None,
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
+        connected_account_ids = connected_account_ids or []
+        integration_ids = integration_ids or []
+        trigger_names = trigger_names or []
+        queries = {}
+        if len(trigger_ids) > 0:
+            queries["triggerIds"] = ",".join(trigger_ids)
+        if len(connected_account_ids) > 0:
+            queries["connectedAccountIds"] = ",".join(connected_account_ids)
+        if len(integration_ids) > 0:
+            queries["integrationIds"] = ",".join(integration_ids)
+        if len(trigger_names) > 0:
+            queries["triggerNames"] = ",".join(trigger_names)
         return self._raise_if_empty(
-            super().get(
-                queries=(
-                    {"triggerIds": ",".join(trigger_ids)}
-                    if len(trigger_ids) > 0
-                    else {}
-                )
-            )
+            super().get(queries=queries)
         )
 
 
@@ -975,13 +984,13 @@ class Entity:
 
     def get_connection(
         self,
-        app: t.Optional[str] = None,
+        app: t.Optional[t.Union[str, App]] = None,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
         Get connected account for an action.
 
-        :param action: Action type enum
+        :param app: App name
         :param connected_account_id: Connected account ID to use as filter
         :return: Connected account object
         :raises: If no connected account found for given entity ID
@@ -1012,6 +1021,42 @@ class Entity:
                 f"entity=`{self.id}`"
             )
         return latest_account
+
+    def get_connections(self) -> t.List[ConnectedAccountModel]:
+        """
+        Get all connections for an entity.
+        """
+        return self.client.connected_accounts.get(entity_ids=[self.id], active=True)
+
+    def enable_trigger(self, app: t.Union[str, App], trigger_name: str, config: t.Dict[str, t.Any]) -> t.Dict:
+        """
+        Enable a trigger for an entity.
+
+        :param app: App name
+        :param trigger_name: Trigger name
+        :param config: Trigger config
+        """
+        connected_account = self.get_connection(app=app)
+        return self.client.triggers.enable(
+            name=trigger_name,
+            connected_account_id=connected_account.id,
+            config=config,
+        )
+
+    def disable_trigger(self, trigger_id: str) -> t.Dict:
+        """
+        Disable a trigger for an entity.
+
+        :param trigger_id: Trigger ID
+        """
+        return self.client.triggers.disable(id=trigger_id)
+
+    def get_active_triggers(self) -> t.List[ActiveTriggerModel]:
+        """
+        Get all active triggers for an entity.
+        """
+        connected_accounts = self.get_connections()
+        return self.client.active_triggers.get(connected_account_ids=[connected_account.id for connected_account in connected_accounts])
 
     def initiate_connection(
         self,
