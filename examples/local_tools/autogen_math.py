@@ -39,7 +39,7 @@ user_proxy = UserProxyAgent(
 composio_toolset.register_tools(tools=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy)
 
 # Define task.
-task = "What is 230 multilpied by 52 and added with 233 devided by 91?"
+task = "What is 230 multiplied by 52 and added with 233 divided by 91?"
 
 # Execute task.
 response = user_proxy.initiate_chat(chatbot, message=task)
