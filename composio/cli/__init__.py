@@ -16,6 +16,7 @@ from composio.cli.logout import _logout
 from composio.cli.triggers import _triggers
 from composio.cli.whoami import _whoami
 from composio.core.cls.did_you_mean import DYMGroup
+from composio.cli.utils import HelpfulCmdBase
 
 
 class HelpDYMGroup(DYMGroup):
