@@ -57,7 +57,7 @@ class GetWorkspaceHistory(Action):
         self.history_processor = history_processor
 
     def execute(
-        self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict = {}
+        self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict
     ) -> dict:
         if self.history_processor is None:
             logger.error("History processor is not set")

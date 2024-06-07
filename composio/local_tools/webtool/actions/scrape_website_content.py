@@ -4,7 +4,7 @@ from urllib.request import Request, urlopen
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-
+from typing import Type, Dict, Any
 
 class ScrapeWebsiteToolRequest(BaseModel):
     website_url: str = Field(
@@ -27,9 +27,9 @@ class ScrapeWebsiteContent(Action):
     _tags = ["Webbrowser"]
     _tool_name = "webtool"
 
-    def execute(self, request: ScrapeWebsiteToolRequest, authorisation_data: dict = {}):
+    def execute(self, request_data: ScrapeWebsiteToolRequest, authorisation_data: dict) -> dict:
         """Scrape the website and return the content"""
-        url = request.website_url
+        url = request_data.website_url
         try:
             # pylint: disable=import-outside-toplevel
             from bs4 import BeautifulSoup
@@ -50,10 +50,9 @@ class ScrapeWebsiteContent(Action):
             response = urlopen(req, context=context)
             html = response.read().decode("utf-8")
             soup = BeautifulSoup(html, "html.parser")
-            print("RESPONSE _________________________", str(soup))
-            result = str(soup)
+            result = {"website_content": str(soup)}
             return result
         except Exception as e:
             print("ERROR __________________", e)
-            result = f"Error scraping website: {e}"
+            result = {"error": f"Error scraping website: {e}"}
             return result
