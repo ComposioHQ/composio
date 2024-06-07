@@ -40,6 +40,7 @@ export const listAllConnections = (data: ListAllConnectionsData = {}, config: ty
     method: 'GET',
     url: '/v1/connectedAccounts',
     query: {
+        user_uuid: data.user_uuid,
         page: data.page,
         pageSize: data.pageSize,
         integrationId: data.integrationId

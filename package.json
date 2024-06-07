@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@hey-api/openapi-ts": "^0.46.3",
     "@types/node": "^20.14.2",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "ts-loader": "^9.5.1",
@@ -21,7 +22,12 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@langchain/core": "^0.2.6",
+    "@langchain/openai": "^0.1.2",
     "axios": "^1.7.2",
-    "clean-webpack-plugin": "^4.0.0"
+    "clean-webpack-plugin": "^4.0.0",
+    "enumify": "^2.0.0",
+    "langchain": "^0.2.5",
+    "zod": "^3.23.8"
   }
 }
