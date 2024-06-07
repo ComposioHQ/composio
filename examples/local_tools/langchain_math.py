@@ -13,10 +13,9 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Get All the tools
 tools = ComposioToolSet().get_tools([App.MATHEMATICAL])
-print(tools)
 
 
-task = "Calculate 5*30*330"
+task = "Calculate the forumula as mentioned in the file /Users/karanvaidya/codes/composio_sdk/eq.txt"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
