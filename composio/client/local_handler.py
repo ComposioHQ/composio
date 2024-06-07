@@ -44,7 +44,6 @@ class LocalToolHandler:
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
-
         tag_values = [tag if isinstance(tag, str) else tag.value for tag in tags]
 
         all_action_objs = []

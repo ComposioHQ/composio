@@ -32,6 +32,7 @@ class RagToolQuery(Action):
         try:
             # pylint: disable=import-outside-toplevel
             from embedchain import App
+
             # pylint: enable=import-outside-toplevel
         except ImportError as e:
             raise ImportError(f"Failed to import App from embedchain: {e}") from e

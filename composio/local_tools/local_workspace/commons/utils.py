@@ -75,9 +75,12 @@ class DockerManager:
         attrs = filtered_images[0].attrs
         if attrs:
             logger.info(
-                "Found image %s with tags: %s, created: %s "
-                "for %s %s.",
-                image_name, attrs["RepoTags"], attrs["Created"], attrs["Os"], attrs["Architecture"]
+                "Found image %s with tags: %s, created: %s " "for %s %s.",
+                image_name,
+                attrs["RepoTags"],
+                attrs["Created"],
+                attrs["Os"],
+                attrs["Architecture"],
             )
 
         if persistent:
@@ -102,9 +105,12 @@ class DockerManager:
         attrs = filtered_images[0].attrs
         if attrs is not None:
             logger.info(
-                "Found image %s with tags: %s, created: %s "
-                "for %s %s.",
-                image_name, attrs["RepoTags"], attrs["Created"], attrs["Os"], attrs["Architecture"]
+                "Found image %s with tags: %s, created: %s " "for %s %s.",
+                image_name,
+                attrs["RepoTags"],
+                attrs["Created"],
+                attrs["Os"],
+                attrs["Architecture"],
             )
         max_attempts = 5
         attempt = 0

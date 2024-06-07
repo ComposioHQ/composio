@@ -39,6 +39,7 @@ class ScrapeWebsiteElement(Action):
         try:
             # pylint: disable=import-outside-toplevel
             from bs4 import BeautifulSoup
+
             # pylint: enable=import-outside-toplevel
         except ImportError as e:
             raise ImportError("Failed to import BeautifulSoup:", e) from e

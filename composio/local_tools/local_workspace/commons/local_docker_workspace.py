@@ -205,9 +205,7 @@ class LocalDockerWorkspace(gym.Env):
         except TimeoutError:
             pass
         try:
-            output, _ = self.communicate(
-                input="echo 'interrupted'", timeout_duration=5
-            )
+            output, _ = self.communicate(input="echo 'interrupted'", timeout_duration=5)
             assert output.strip().endswith(
                 "interrupted"
             ), "container health check failed"
@@ -258,7 +256,9 @@ class LocalDockerWorkspace(gym.Env):
                 self.container_obj.pause()
                 self.logger.info("Agent container paused")
             else:
-                self.logger.info("Agent container status: %s", self.container_obj.status)
+                self.logger.info(
+                    "Agent container status: %s", self.container_obj.status
+                )
         else:
             try:
                 self.container_obj.remove(force=True)

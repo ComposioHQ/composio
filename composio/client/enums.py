@@ -15,6 +15,7 @@ class Tag(tuple, Enum):
     def name(self) -> str:
         """Returns trigger name."""
         return self.value[0]
+
     # pylint: enable=function-redefined,invalid-overridden-method
 
     IMPORTANT = ("default", "important")
