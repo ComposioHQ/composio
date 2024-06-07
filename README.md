@@ -11,9 +11,6 @@
   <a href="https://pypi.org/project/composio-core/">
   <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
   </a>
-  <a href="https://github.com/composiodev/composio/blob/main/LICENSE">
-  <img alt="License" src="https://img.shields.io/github/license/composiodev/composio?label=License&style=plastic&logo=github&color=blue&cacheSeconds=60">
-  </a>
   <a href="https://pypi.org/project/composio-core/">
   <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
   </a>
@@ -109,7 +106,7 @@ from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
 openai_client = OpenAI(
-    api_key="**\*\***OPENAIKEY**\*\***"
+    api_key="{{OPENAIKEY}}"
 )
 
 # Initialise the Composio Tool Set
@@ -130,7 +127,7 @@ assistant = openai_client.beta.assistants.create(
     name="Personal Assistant",
     instructions=assistant_instruction,
     model="gpt-4-turbo",
-    tools=actions,  # type: ignore
+    tools=actions,
 )
 
 # create a thread
@@ -150,7 +147,7 @@ run = openai_client.beta.threads.runs.create(
 
 
 # Execute Function calls
-response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_calls(
     client=openai_client,
     run=run,
     thread=thread,
@@ -202,7 +199,7 @@ Also go through our [Contribution Guidelines](https://github.com/composiodev/com
 
 ## 🛡️ License
 
-Composio is licensed under the MIT License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
+Composio is licensed under the Elastic License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
 
 ## 💪 Thanks To All Contributors
 
