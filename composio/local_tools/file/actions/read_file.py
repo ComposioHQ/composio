@@ -37,7 +37,7 @@ class ReadFile(Action):
     _tags = ["file", "read"]
     _tool_name = "file"
 
-    def execute(self, request: ReadFileRequest) -> ReadFileResponse:
+    def execute(self, request: ReadFileRequest, authorisation_data: dict) -> ReadFileResponse: # type: ignore[override]
         """
         Reads the contents of the file `file_name` and returns the contents
         if successful.

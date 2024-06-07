@@ -30,7 +30,7 @@ class Tool:
         for action_class in self.actions():
             action_instance = action_class()
             if action_class._history_maintains:
-                action_instance.set_workspace_and_history(
+                action_instance.set_workspace_and_history(  # type: ignore
                     self.get_workspace_factory(), self.get_history_processor()
                 )
             action_name = action_instance.get_tool_merged_action_name()

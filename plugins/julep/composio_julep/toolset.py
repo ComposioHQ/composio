@@ -34,7 +34,7 @@ class ComposioToolSet(BaseComposioToolSet):
         )
         self.runtime = "julep"
 
-    def handle_tool_calls(
+    def handle_tool_calls(# type: ignore[override]
         self,
         julep_client: Client,
         session_id: str,
