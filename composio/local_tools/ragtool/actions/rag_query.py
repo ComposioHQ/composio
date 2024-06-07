@@ -1,15 +1,21 @@
 from pydantic import BaseModel, Field
+
 from composio.core.local import Action
+
 
 class RagToolQueryRequest(BaseModel):
     query: str = Field(..., description="The query to search in the knowledge base")
 
+
 class RagToolQueryResponse(BaseModel):
-    response: str = Field(..., description="The response to the query from the knowledge base")
+    response: str = Field(
+        ..., description="The response to the query from the knowledge base"
+    )
+
 
 class RagToolQuery(Action):
     """
-    Tool for querying a knowledge base 
+    Tool for querying a knowledge base
     this can only be performed after AddContentToRagTool
     """
 
@@ -18,7 +24,6 @@ class RagToolQuery(Action):
     _response_schema = RagToolQueryResponse
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
-
 
     def execute(self, request: RagToolQueryRequest, authorisation_data: dict = {}):
         """Query the knowledge base and return the response"""
