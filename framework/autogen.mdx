@@ -9,7 +9,9 @@ description: "Integrate Composio with Autogen agents to let them seamlessly inte
 
 ### Install Packages & Connect a Tool
 
-<Tip>Goal: Star a repository on GitHub with natural language & Autogen Agent</Tip>
+<Tip>
+  Goal: Star a repository on GitHub with natural language & Autogen Agent
+</Tip>
 
 These commands prepare your environment for seamless interaction between Autogen and Github.
 
@@ -18,72 +20,76 @@ These commands prepare your environment for seamless interaction between Autogen
   pip install composio-autogen
 
   #Connect your Github so agents can use it
-  composio add github 
+  composio add github
 
-  #Check all supported apps 
+  #Check all supported apps
   composio apps
-   ```
+
+  ```
 </CodeGroup>
 
 <Steps>
 
 <Step title="Import Base Packages & Create default Autogen Agent">
 <CodeGroup>
-```python Default Imports & Configuration
-from autogen import AssistantAgent, UserProxyAgent
-import os
+  ```python Default Imports & Configuration
+  from autogen import AssistantAgent, UserProxyAgent
+  import os
 
-llm_config = {"config_list": [{"model": "gpt-4-turbo", "api_key": os.environ["OPENAI_API_KEY"]}]}
+  llm_config = {"config_list": [{"model": "gpt-4-turbo", "api_key": os.environ["OPENAI_API_KEY"]}]}
 
-chatbot = AssistantAgent(
-    "chatbot",
-    system_message="Reply TERMINATE when the task is done or when user's content is empty",
-    llm_config=llm_config,
-)
+  chatbot = AssistantAgent(
+   "chatbot",
+   system_message="Reply TERMINATE when the task is done or when user's content is empty",
+   llm_config=llm_config,
+  )
 
-# create a UserProxyAgent instance named "user_proxy"
-user_proxy = UserProxyAgent(
-    "user_proxy",
-    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x.get("content", ""),
-    human_input_mode="NEVER", # Don't take input from User
-    code_execution_config = {"use_docker": False}
-)
-```
+  # create a UserProxyAgent instance named "user_proxy"
+  user_proxy = UserProxyAgent(
+   "user_proxy",
+   is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x.get("content", ""),
+   human_input_mode="NEVER", # Don't take input from User
+   code_execution_config = {"use_docker": False}
+  )
+  ```
+
 </CodeGroup>
 </Step>
 <Step title="Fetch all Github Autogen Tools via Composio">
 <CodeGroup>
-```python Tools For Github
-# Import from composio_autogen
-from composio_autogen import ComposioToolSet, App, Action
+  ```python Tools For Github
+  # Import from composio_autogen
+  from composio_autogen import ComposioToolSet, App, Action
 
-# Initialise the Composio Tool Set
-composiotoolset = ComposioToolSet()
+  # Initialise the Composio Tool Set
 
-# Register the preferred Applications, with right executor. 
-composiotoolset.register_tools(tools=[App.GITHUB],caller=chatbot, executor=user_proxy)
+  composio_toolset = ComposioToolSet()
 
-```
+  # Register the preferred Applications, with right executor.
+
+  composio_toolset.register_tools(tools=[App.GITHUB],caller=chatbot, executor=user_proxy)
+  ```
 </CodeGroup>
 </Step>
-<Step title="Execute the Task via Agent"> 
+<Step title="Execute the Task via Agent">
 <CodeGroup>
-```python Autogen Agent executes the task
+  ```python Autogen Agent executes the task
 
-task = "Star a repo SamparkAI/composio on GitHub"
+  task = "Star a repo ComposioDev/composio on GitHub"
 
-response = user_proxy.initiate_chat(chatbot,message=task)
+  response = user_proxy.initiate_chat(chatbot,message=task)
 
-print(response.chat_history)
-```
+  print(response.chat_history)
+  ```
+
 </CodeGroup>
 </Step>
 <Step title="Check Response">
 <CodeGroup>
-```bash Executing Agents
-[{'content': 'I have starred the repository "docs" for you on GitHub under the account "SamparkAI".', 'role': 'user'}, 
-{'content': '', 'role': 'assistant'}, {'content': 'TERMINATE', 'role': 'user'}]
-```
+  ```bash Executing Agents
+  [{'content': 'I have starred the repository "docs" for you on GitHub under the account "ComposioDev".', 'role': 'user'}, 
+  {'content': '', 'role': 'assistant'}, {'content': 'TERMINATE', 'role': 'user'}]
+  ```
 
 </CodeGroup>
 
@@ -91,26 +97,26 @@ print(response.chat_history)
 </Steps>
 ### Use Specific Actions
 <CodeGroup>
-```bash Filter Specific Action
-# To restrict agents from using all the actions, filter specific actions 
-composiotoolset.register_actions(actions=[Action.GITHUB_CREATE_ISSUE])
-```
+  ```bash Filter Specific Action
+  # To restrict agents from using all the actions, filter specific actions 
+  composio_toolset.register_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+  ```
 </CodeGroup>
 
 ### Use Specific Apps
 
 <CodeGroup>
-  ```bash Filter Specific App
-  # To restrict agents from using all tools, filter specific tools
-  composiotoolset.register_tools(apps=[App.ASANA, App.GITHUB])
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  composio_toolset.register_tools(apps=[App.ASANA, App.GITHUB])
   ```
 </CodeGroup>
 
 ### Filter apps actions by tags
 
 <CodeGroup>
-  ```bash Filter Actions by Tags
-  # To restrict agents from using all actions, filter the actions by tags
-  composiotoolset.register_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS])
+  ```bash Filter Actions by Tags 
+  # To restrict agents from using all actions, filter the actions by tags 
+  composio_toolset.register_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
   ```
 </CodeGroup>

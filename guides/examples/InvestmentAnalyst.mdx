@@ -48,8 +48,8 @@ to perform investment research, analyze stocks, and offer recommendations based 
         )
 
         # Define tools for the agents
-        composiotoolset = ComposioToolSet()
-        tools = composiotoolset.get_actions(actions=[Action.SERPAPI_SEARCH])    
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_actions(actions=[Action.SERPAPI_SEARCH])
 
         ```
 
@@ -153,9 +153,9 @@ to perform investment research, analyze stocks, and offer recommendations based 
     )
 
     # Define tools for the agents
-    composiotoolset = ComposioToolSet()
-    tools = composiotoolset.get_actions(actions=[Action.SERPAPI_SEARCH])
-    
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_actions(actions=[Action.SERPAPI_SEARCH])
+
     # Define the Investment Researcher agent
     researcher = Agent(
         role='Investment Researcher',
@@ -218,7 +218,9 @@ to perform investment research, analyze stocks, and offer recommendations based 
     res = investment_crew.kickoff()
 
     ```
+
 </CodeGroup>
 
 ## Information
+
 - [Colab Notebook](https://colab.research.google.com/drive/1cYyolS8q6GA1VFkqrNO-pi3z5KxrTZ0H?usp=sharing)
