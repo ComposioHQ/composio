@@ -41,9 +41,12 @@ We have already added a number of local tools and are continuously adding more.
 
 In addition to the existing tools, a user can easily create their own tool and use with any of the supported frameworks of composio.
 
+**Pre-requisites:**
+
+* [Clone the Composio repo](https://github.com/ComposioHQ/composio)
+* [Setting up the development environment](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md#development-setup)
 
 Your local tool and its actions should be organized as follows:
-
 <CodeGroup>
 ```bash File Structure of a local tool and its Actions files.
 composio/
@@ -176,6 +179,13 @@ index 9a36573..94dfd1b 100644
 </Step>
 
 <Step title="Add New App and Action Enum value">
+Run the below command to add a new tool and action to the enum values.
+
+```bash
+composio apps update
+```
+
+If this command fails or you still don't see your tool and action in the enum values, then update the enum values manually via below steps:
 **`composio/client/enums.py`:** 
 
 <CodeGroup>
