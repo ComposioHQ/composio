@@ -11,7 +11,7 @@ description: "This guide provides steps to create a pipeline to automatically ad
     You need to connect your GitHub and Trello accounts so agents can use them. Run the following commands on your terminal:
     <CodeGroup>
         ```bash Run Command
-        pip install composio-crewai
+        pip install composio-crewai crewai flask
 
         # Connect your Github and Trello so agents can use it.
 
@@ -35,7 +35,7 @@ description: "This guide provides steps to create a pipeline to automatically ad
         # Set the callback URL (replace the example URL with your actual ngrok URL):
         # Replace your ngrok url
 
-        composio triggers callbacks set "<https://try.ngrok.io/asdfjh2>"
+        composio triggers callbacks set "https://<ngrok-url>/webhook"
 
         # Enable the GitHub commit event trigger
 
@@ -60,9 +60,9 @@ description: "This guide provides steps to create a pipeline to automatically ad
     Initialize the agents and tools:
     <CodeGroup>
         ```python CrewAI Agents
-        llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-3.5-turbo")
+        llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4")
         composio_toolset = ComposioToolSet()
-        tools = composio_toolset.get_tools(apps=[App.TRELLO])
+        tools = composio_toolset.get_actions(actions=[Action.TRELLO_CARD_CREATE_AND_UPDATE])
         crewai_agent = Agent(
                 role="Github-Trello TODO Agent",
                 goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
@@ -76,6 +76,11 @@ description: "This guide provides steps to create a pipeline to automatically ad
     </Step>
     <Step title="Start a web server">
     Create a Flask web server to handle incoming webhooks:
+    Please replace the `your_trello_list_id_for_todos` and `your_trello_list_id_for_done` with your actual Trello list IDs.
+    To get the Trello list ID:
+    - Go to your Trello Board in your browser.
+    - Add ".json" at the end of the URL in the address bar and press Enter.
+    - In the JSON output, find the list with the name you are looking for and extract its "list.id" property.
     <CodeGroup>
         ```python Web Server in flask
         app = Flask(__name__)
@@ -122,9 +127,9 @@ description: "This guide provides steps to create a pipeline to automatically ad
 
     # Initialize agents using CrewAI
     openai_api_key = "your_openai_api_key"  # Replace with your actual OpenAI API key
-    llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4-turbo")
+    llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4")
     composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_tools(apps=[App.TRELLO])
+    tools = composio_toolset.get_actions(actions=[Action.TRELLO_CARD_CREATE_AND_UPDATE])
     crewai_agent = Agent(
         role="Github-Trello TODO Agent",
         goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
