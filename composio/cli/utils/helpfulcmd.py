@@ -22,8 +22,8 @@ class HelpfulCmdBase:
 
     def format_help_text(
         self,
-        ctx: ClickContext,
-        formatter: HelpFormatter,  # pylint: disable=unused-argument
+        ctx: ClickContext,  # pylint: disable=unused-argument
+        formatter: HelpFormatter,
     ) -> None:
         """Writes the help text to the formatter if it exists."""
         if self.help is not None:
