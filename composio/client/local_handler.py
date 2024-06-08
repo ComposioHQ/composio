@@ -11,6 +11,7 @@ from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
 from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.webtool import WebTool
+from composio.local_tools.wikipedia import Wikipedia
 
 
 class LocalToolHandler:
@@ -41,6 +42,7 @@ class LocalToolHandler:
             RagTool(),
             WebTool(),
             Greptile(),
+            Wikipedia(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
