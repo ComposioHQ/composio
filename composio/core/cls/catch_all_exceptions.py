@@ -31,13 +31,13 @@ def CatchAllExceptions(cls, handler):
                 # call the handler
                 should_ignore_error = handler(self, info_name, exc)
                 if should_ignore_error:
-                    return
+                    return None
                 # let the user see the original error
                 raise
 
         def invoke(self, ctx):
             try:
-                return super(Cls, self).invoke(ctx)
+                return super().invoke(ctx)
             except Exception as exc:
                 # call the handler
                 should_ignore_error = handler(self, ctx.info_name, exc)

@@ -92,7 +92,7 @@ class Action(ABC, Generic[RequestType, ResponseType]):
     def get_action_schema(self):
         request_schema_json = self.request_schema.model_json_schema(by_alias=False)
         modified_properties = request_schema_json.get("properties", {})
-        for param, details in modified_properties.items():
+        for _, details in modified_properties.items():
             if details.get("file_readable", False):
                 details["oneOf"] = [
                     {
