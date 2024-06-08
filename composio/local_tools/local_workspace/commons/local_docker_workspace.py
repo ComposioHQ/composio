@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 import docker
-import gymnasium as gym
 from pydantic import BaseModel
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -40,7 +39,7 @@ class LocalDockerArgumentsModel(BaseModel):
     environment_setup: Optional[str] = None
 
 
-class LocalDockerWorkspace(gym.Env):
+class LocalDockerWorkspace():
     """Gym environment for SWE-bench. This class should handle all communication with the docker container."""
 
     name = "swe_main"
@@ -113,13 +112,13 @@ class LocalDockerWorkspace(gym.Env):
         try:
             client = docker.from_env()
             self.container_obj = client.containers.get(self.container_name)
-        except docker.errors.DockerException as e:
+        except docker.errors.DockerException as e:  # pylint: disable=bad-except-order
             if "Error while fetching server API version" in str(e):
                 raise RuntimeError(
                     "Docker is not running. Please start Docker and try again."
                 ) from e
 
-        except docker.errors.NotFound as exc:
+        except docker.errors.NotFound as exc:  # pylint: disable=bad-except-order
             logger.debug("Couldn't find container. Let's wait and retry.")
             time.sleep(3)
             if client is not None:
