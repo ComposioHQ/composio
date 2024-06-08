@@ -1,20 +1,28 @@
+# noqa: F401
+
 import inspect
 
 import click
 from click.core import Context as ClickContext
 from click.formatting import HelpFormatter
 
+# pylint: disable=unused-import
 from composio.cli.context import Context, pass_context  # noqa: F401
 from composio.client import Composio  # noqa: F401
 from composio.exceptions import ComposioSDKError  # noqa: F401
 from composio.utils.url import get_web_url  # noqa: F401
 
 
+# pylint: enable=unused-import
+
+
 class HelpfulCmdBase:
     examples = []
     help = None
 
-    def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
+    def format_help_text(
+        self, ctx: ClickContext, formatter: HelpFormatter
+    ) -> None:  # pylint: disable=unused-argument
         """Writes the help text to the formatter if it exists."""
         if self.help is not None:
             # truncate the help text to the first form feed
@@ -24,7 +32,7 @@ class HelpfulCmdBase:
 
         text = "📄" + text
         if getattr(self, "deprecated", False):
-            text = "(Deprecated) {text}".format(text=text)
+            text = f"(Deprecated) {text}"
 
         if text:
             formatter.write_paragraph()
@@ -44,7 +52,7 @@ class HelpfulCmdBase:
             formatter.write(" 🔗 Options \n\n")
             formatter.write_dl(opts)
 
-    def format_examples(self, ctx, formatter):
+    def format_examples(self, ctx, formatter):  # pylint: disable=unused-argument
         formatter.write("\n📙 Examples:\n\n")
         for example in self.examples:
             formatter.write(example)
