@@ -13,8 +13,8 @@ from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
-    USER_DATA_FILE_NAME,
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
+    USER_DATA_FILE_NAME,
 )
 from composio.exceptions import raise_api_key_missing
 from composio.storage.user import UserData
@@ -78,10 +78,23 @@ class ComposioToolSet:
 
         output = self.client.get_entity(entity_id).execute(action=action, params=params)
         if self.output_in_file:
-            if not os.path.exists(Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME):
-                os.makedirs(Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME)
-            output_file_path = Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME / f"{action.name}_{entity_id}_{time.time()}"
-            with open(output_file_path, 'w') as file:
+            if not os.path.exists(
+                Path.home()
+                / LOCAL_CACHE_DIRECTORY_NAME
+                / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+            ):
+                os.makedirs(
+                    Path.home()
+                    / LOCAL_CACHE_DIRECTORY_NAME
+                    / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+                )
+            output_file_path = (
+                Path.home()
+                / LOCAL_CACHE_DIRECTORY_NAME
+                / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+                / f"{action.name}_{entity_id}_{time.time()}"
+            )
+            with open(output_file_path, "w") as file:
                 file.write(str(output))
                 return {"output_file": f"{output_file_path}"}
         return output

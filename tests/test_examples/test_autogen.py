@@ -1,9 +1,5 @@
-import json
-import sys
-import unittest.mock as mock
-import click
 import os
-
+import sys
 import pytest
 
 from composio.cli import composio as composio_cli
@@ -12,6 +8,7 @@ from composio.exceptions import ApiKeyNotProvidedError
 
 def run_autogen_script():
     from plugins.autogen.autogen_demo import main
+
     main()
 
 
@@ -29,8 +26,8 @@ def pytest_sessionstart_autogen():
     print("")
     try:
         # INSERT_YOUR_CODE
-        if 'COMPOSIO_API_KEY' in os.environ:
-            os.environ.pop('COMPOSIO_API_KEY', None)
+        if "COMPOSIO_API_KEY" in os.environ:
+            os.environ.pop("COMPOSIO_API_KEY", None)
         composio_cli()
     except SystemExit as e:
         print(f"SystemExit ignored: {e}")
@@ -39,14 +36,15 @@ def pytest_sessionstart_autogen():
     finally:
         sys.argv = original_argv  # Restore original arguments
 
+
 def test_autogen_script_not_authorized_error():
     with pytest.raises(ApiKeyNotProvidedError) as exc_info:
         run_autogen_script()
-    assert "API Key not provided" in str(
-        exc_info.value
-    )
+    assert "API Key not provided" in str(exc_info.value)
+
 
 def test_autogen_script_is_working():
     import os
-    os.environ['COMPOSIO_API_KEY'] = 'kwrjjvgedmuw5jt1fet2'
+
+    os.environ["COMPOSIO_API_KEY"] = "kwrjjvgedmuw5jt1fet2"
     run_autogen_script()
