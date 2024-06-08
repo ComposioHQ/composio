@@ -39,7 +39,7 @@ class LocalDockerArgumentsModel(BaseModel):
     environment_setup: Optional[str] = None
 
 
-class LocalDockerWorkspace():
+class LocalDockerWorkspace:
     """Gym environment for SWE-bench. This class should handle all communication with the docker container."""
 
     name = "swe_main"
