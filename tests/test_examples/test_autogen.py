@@ -8,7 +8,7 @@ from composio.exceptions import ApiKeyNotProvidedError
 
 
 def run_autogen_script():
-    from plugins.autogen.autogen_demo import ( # pylint: disable=import-outside-toplevel
+    from plugins.autogen.autogen_demo import (  # pylint: disable=import-outside-toplevel
         main,
     )
 
