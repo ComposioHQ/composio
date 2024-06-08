@@ -49,10 +49,10 @@ class ScrapeWebsiteContent(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolRes
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            response = urlopen(req, context=context)
-            html = response.read().decode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-            result = {"website_content": str(soup)}
+            with urlopen(req, context=context) as response:
+                html = response.read().decode("utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+                result = {"website_content": str(soup)}
             return result
         except Exception as e:
             print("ERROR __________________", e)
