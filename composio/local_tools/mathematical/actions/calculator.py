@@ -7,6 +7,7 @@ class CalculatorRequest(BaseModel):
     operation: str = Field(
         ...,
         description="A mathematical expression, a couple examples are `200*7` or `5000/2*10`",
+        json_schema_extra={"file_readable": True}
     )
 
 
@@ -30,7 +31,9 @@ class Calculator(Action):
     ) -> dict:
         operation_str = request_data.dict()["operation"]
         try:
+            # pylint: disable=eval-used
             result = eval(operation_str)
+            # pylint: enable=eval-used
             execution_details = {"executed": True}
             response_data = result
         except Exception as e:

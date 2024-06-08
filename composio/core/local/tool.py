@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Type
 
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
@@ -15,7 +15,7 @@ class Tool:
     def tool_name(self) -> str:
         return self.__class__.__name__.lower()
 
-    def actions(self) -> List[Action]:
+    def actions(self) -> list[Type[Action]]:
         raise NotImplementedError("This method should be overridden by subclasses.")
 
     def get_workspace_factory(self) -> Optional[WorkspaceManagerFactory]:

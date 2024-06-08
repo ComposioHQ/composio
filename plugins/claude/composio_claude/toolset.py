@@ -5,11 +5,11 @@ from anthropic.types.beta.tools.tool_param import ToolParam
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools import ComposioToolSet
+from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
-class ComposioToolset(ComposioToolSet):
+class ComposioToolset(BaseComposioToolSet):
     """
     Composio toolset for Anthropic Claude platform.
 
@@ -55,6 +55,7 @@ class ComposioToolset(ComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
+        output_in_file: bool = False,
     ) -> None:
         """
         Initialize composio toolset.
@@ -62,12 +63,14 @@ class ComposioToolset(ComposioToolSet):
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param entity_id: Entity ID for making function calls
+        :param output_in_file: Whether to write output to a file
         """
         super().__init__(
             api_key=api_key,
             base_url=base_url,
             runtime="claude",
             entity_id=entity_id,
+            output_in_file=output_in_file,
         )
         self.schema = SchemaType.CLAUDE
 
