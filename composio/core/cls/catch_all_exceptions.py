@@ -51,9 +51,7 @@ def CatchAllExceptions(cls, handler):
 
 def handle_exceptions(cmd, info_name, exc):
     # send error info to rollbar, etc, here
-    if (
-        isinstance(exc, (SystemExit, ValueError))
-    ) and sentry_sdk.is_initialized():
+    if (isinstance(exc, (SystemExit, ValueError))) and sentry_sdk.is_initialized():
         sentry_sdk.capture_exception(exc)
         sentry_sdk.flush()
         print(cmd, info_name)

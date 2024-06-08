@@ -7,7 +7,9 @@ from composio.exceptions import ApiKeyNotProvidedError
 
 
 def run_langchain_script():
-    from plugins.langchain.langchain_demo import main  # pylint: disable=import-outside-toplevel
+    from plugins.langchain.langchain_demo import (
+        main,  # pylint: disable=import-outside-toplevel
+    )
 
     main()
 
