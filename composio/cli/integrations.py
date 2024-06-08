@@ -46,6 +46,6 @@ def _integrations(context: Context) -> None:
         context.console.print("[green]Showing integrations[/green]")
         for integration in integrations:
             context.console.print(f"• App: {integration.appName}")
-            context.console.print(f"  ID : {integration.id}")
+            context.console.print(f"  ID: {integration.id}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e

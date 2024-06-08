@@ -138,9 +138,9 @@ class Action(ABC, Generic[RequestType, ResponseType]):
             request_schema = self.request_schema  # type: ignore
             modified_request_data = {}
 
-            for param, value in request_data.items():
+            for param, value in request_data.items():  # type: ignore
                 annotations = request_schema.model_fields[param].json_schema_extra
-                file_readable = annotations is not None and annotations.get(
+                file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
                 )
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
