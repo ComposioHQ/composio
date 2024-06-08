@@ -76,7 +76,7 @@ class DockerManager:
         attrs = filtered_images[0].attrs
         if attrs:
             logger.info(
-                "Found image %s with tags: %s, created: %s " "for os: %s arch: %s.",
+                "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
                 image_name,
                 attrs["RepoTags"],
                 attrs["Created"],
@@ -106,7 +106,7 @@ class DockerManager:
         attrs = filtered_images[0].attrs
         if attrs is not None:
             logger.info(
-                "Found image %s with tags: %s, created: %s " "for os: %s arch: %s.",
+                "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
                 image_name,
                 attrs["RepoTags"],
                 attrs["Created"],
