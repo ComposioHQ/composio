@@ -34,7 +34,7 @@ class HelpfulCmdBase:
     def format_options(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
         """Writes all the options into the formatter if they exist."""
         opts = []
-        for param in self.get_params(ctx): # type: ignore
+        for param in self.get_params(ctx):  # type: ignore
             rv = param.get_help_record(ctx)
             if rv is not None:
                 if "-h" in rv[0] or "-help" in rv[0] or "--help" in rv[0]:
