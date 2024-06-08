@@ -1,8 +1,9 @@
+from typing import TypeVar
+
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
 
-from typing import TypeVar
 
 class RagToolAddRequest(BaseModel):
     content: str = Field(..., description="Content to add to the knowledge base")
@@ -11,14 +12,15 @@ class RagToolAddRequest(BaseModel):
 class RagToolAddResponse(BaseModel):
     status: str = Field(..., description="Status of the addition to the knowledge base")
 
+
 class AddContentToRagTool(Action[RagToolAddRequest, RagToolAddResponse]):
     """
     Tool for adding content to the knowledge base
     """
 
     _display_name = "Add Content to Rag Tool"
-    _request_schema:type[RagToolAddRequest] = RagToolAddRequest
-    _response_schema:type[RagToolAddResponse]= RagToolAddResponse
+    _request_schema: type[RagToolAddRequest] = RagToolAddRequest
+    _response_schema: type[RagToolAddResponse] = RagToolAddResponse
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
 

@@ -25,7 +25,9 @@ class Calculator(Action[CalculatorRequest, CalculatorResponse]):
     _tags = ["calculation"]
     _tool_name = "mathematical"
 
-    def execute(self, request_data: CalculatorRequest, authorisation_data: dict) -> dict:
+    def execute(
+        self, request_data: CalculatorRequest, authorisation_data: dict
+    ) -> dict:
         if authorisation_data is None:
             authorisation_data = {}
         operation_str = request_data.dict()["operation"]

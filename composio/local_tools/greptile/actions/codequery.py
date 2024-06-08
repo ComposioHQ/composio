@@ -65,7 +65,7 @@ class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
     _tool_name = "greptile"
 
     def execute(
-        self, request_data: CodeQueryRequest, authorisation_data: dict = {} # type: ignore[override]
+        self, request_data: CodeQueryRequest, authorisation_data: dict = {}  # type: ignore[override]
     ) -> dict:
         token = os.getenv("GREPTILE_TOKEN")
         if token is None:
