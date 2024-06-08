@@ -241,6 +241,6 @@ def main(log_file_path, output_html_file):
 
 
 if __name__ == "__main__":
-    log_file_path = "/home/shubhra/work/composio/composio_sdk/examples/swe/evaluation/task_output_2024-06-07_15-49-41/agent_logs.json"  # Update with your actual log file path
+    log_file_path = "</path/to/agent_logs.json>"
     output_html_file = "agent_action_report_by_issue.html"  # Desired output HTML file
     main(log_file_path, output_html_file)
