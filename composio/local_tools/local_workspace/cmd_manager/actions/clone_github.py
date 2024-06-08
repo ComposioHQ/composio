@@ -1,3 +1,5 @@
+import os
+
 from pydantic import Field
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -17,10 +19,17 @@ logger = get_logger()
 
 
 class GithubCloneRequest(BaseRequest):
-    github_token: str = Field(..., description="github token to clone the repository.")
+    workspace_id: str = Field(
+        ..., description="workspace id on which to clone the repo"
+    )
     repo_name: str = Field(
-        default="princeton-nlp/SWE-bench",
-        description="github repository to clone. defaults to princeton-nlp/SWE-bench",
+        ...,
+        description="github repository to clone",
+    )
+    commit_id: str = Field(
+        "",
+        description="after cloning the git repo, repo will be set to this commit-id."
+        "if commit-id is empty, default branch of the repo will be cloned",
     )
 
 
@@ -41,11 +50,12 @@ class GithubCloneCmd(BaseAction):
     @history_recorder()
     def execute(
         self, request_data: GithubCloneRequest, authorisation_data: dict
-    ) -> GithubCloneResponse:
+    ) -> BaseResponse:
         if not request_data.repo_name or not request_data.repo_name.strip():
             raise ValueError("repo_name can not be null. Give a repo_name to clone")
 
-        if not request_data.github_token or not request_data.github_token.strip():
+        git_token = os.environ.get("GITHUB_ACCESS_TOKEN")
+        if not git_token or not git_token.strip():
             raise ValueError("github_token can not be null")
 
         self._setup(request_data)
@@ -53,12 +63,21 @@ class GithubCloneCmd(BaseAction):
         if self.container_process is None:
             raise ValueError("Container process is not set")
 
+        repo_dir = request_data.repo_name.split("/")[-1].strip()
+        command_list = [
+            f"git clone https://{git_token}@github.com/{request_data.repo_name}.git",
+            f"cd {repo_dir}",
+        ]
+        if request_data.commit_id:
+            command_list.append(f"git reset --hard {request_data.commit_id}")
+        self.command = " && ".join(command_list)
+
         output, return_code = communicate(
             self.container_process,
             self.container_obj,
-            f"git clone https://{request_data.github_token}@github.com/{request_data.repo_name}.git",
+            self.command,
             self.parent_pids,
             timeout_duration=LONG_TIMEOUT,
         )
         output, return_code = process_output(output, return_code)
-        return GithubCloneResponse(output=output, return_code=return_code)
+        return BaseResponse(output=output, return_code=return_code)
