@@ -78,8 +78,7 @@ def json_schema_to_pydantic_type(
                 t.cast(t.Type, pydantic_types[1]),
                 t.cast(t.Type, pydantic_types[2]),
             ]
-        else:
-            raise ValueError("Invalid 'oneOf' schema")
+        raise ValueError("Invalid 'oneOf' schema")
 
     pytype = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_)
     if pytype is not None:

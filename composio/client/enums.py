@@ -11,7 +11,7 @@ class Tag(tuple, Enum):
     """App tags."""
 
     @property
-    def name(self) -> str:
+    def name(self) -> str:  # pylint: disable=function-redefined,invalid-overridden-method
         """Returns trigger name."""
         return self.value[0]
 
