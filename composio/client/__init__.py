@@ -553,6 +553,7 @@ class ActionParameterPropertyModel(BaseModel):
     title: t.Optional[str] = None
     type: t.Optional[str] = None
     oneOf: t.Optional[t.List["ActionParameterPropertyModel"]] = None
+    file_readable: t.Optional[bool] = False
 
 
 class ActionParametersModel(BaseModel):
@@ -759,11 +760,10 @@ class Actions(Collection[ActionModel]):
         if len(actionsResp) == 0:
             raise ComposioClientError(f"Action {action} not found")
         action_model = actionsResp[0]
-        action_req_schema = action_model.parameters
+        action_req_schema = action_model.parameters.properties
         modified_params = {}
         for param, value in params.items():
-            annotations = action_req_schema.model_fields[param].json_schema_extra
-            file_readable = annotations is not None and annotations.get('file_readable', False)
+            file_readable = action_req_schema[param].file_readable or False
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, 'rb') as file:
                     file_content = file.read()
