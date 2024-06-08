@@ -1,4 +1,3 @@
-import typing as t  # noqa: F401
 from pathlib import Path
 
 from pydantic import BaseModel, Field
