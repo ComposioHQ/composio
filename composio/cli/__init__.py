@@ -1,6 +1,7 @@
 """
 Composio CLI Tool.
 """
+
 import click
 
 from composio.cli.actions import _actions
