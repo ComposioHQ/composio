@@ -74,6 +74,8 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v1
       - uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
