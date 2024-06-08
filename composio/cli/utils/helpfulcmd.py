@@ -11,8 +11,8 @@ class HelpfulCmdBase:
     help: t.Optional[str] = None
 
     def format_help_text(
-        self, ctx: ClickContext, formatter: HelpFormatter
-    ) -> None:  # pylint: disable=unused-argument
+        self, ctx: ClickContext, formatter: HelpFormatter   # pylint: disable=unused-argument
+    ) -> None:
         """Writes the help text to the formatter if it exists."""
         if self.help is not None:
             # truncate the help text to the first form feed
