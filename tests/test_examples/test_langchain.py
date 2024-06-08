@@ -3,20 +3,19 @@ import sys
 import unittest.mock as mock
 import click
 import os
-
 import pytest
 
-from composio.cli import composio as composio_cli
 from composio.exceptions import ApiKeyNotProvidedError
 
 
-def run_autogen_script():
-    from plugins.autogen.autogen_demo import main
+def run_langchain_script():
+    from plugins.langchain.langchain_demo import main
     main()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def pytest_sessionstart_autogen():
+def pytest_sessionstart_langchain():
+    from composio.cli import composio as composio_cli
     """
     Called after the Session object has been created and
     before performing collection and entering the run test loop.
@@ -26,7 +25,6 @@ def pytest_sessionstart_autogen():
         "composio",
         "logout",
     ]
-    print("")
     try:
         # INSERT_YOUR_CODE
         if 'COMPOSIO_API_KEY' in os.environ:
@@ -39,14 +37,14 @@ def pytest_sessionstart_autogen():
     finally:
         sys.argv = original_argv  # Restore original arguments
 
-def test_autogen_script_not_authorized_error():
+def test_langchain_script_not_authorized_error():
     with pytest.raises(ApiKeyNotProvidedError) as exc_info:
-        run_autogen_script()
+        run_langchain_script()
     assert "API Key not provided" in str(
         exc_info.value
     )
 
-def test_autogen_script_is_working():
+def test_langchain_script_is_working():
     import os
     os.environ['COMPOSIO_API_KEY'] = 'kwrjjvgedmuw5jt1fet2'
-    run_autogen_script()
+    run_langchain_script()
