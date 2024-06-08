@@ -4,7 +4,7 @@ from composio.core.local import Action
 
 
 class RagToolAddRequest(BaseModel):
-    content: str = Field(..., description="Content to add to the knowledge base")
+    content: str = Field(..., description="Content to add to the knowledge base", json_schema_extra={"file_readable": True})
 
 
 class RagToolAddResponse(BaseModel):
