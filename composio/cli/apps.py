@@ -12,11 +12,12 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import ActionModel, AppModel, TriggerModel, enums
 from composio.client.local_handler import LocalToolHandler
-from composio.exceptions import ComposioSDKError
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+from composio.exceptions import ComposioSDKError
+
 
 MODULE_TEMPLATE = """\"\"\"
 Helper Enum classes.
@@ -126,12 +127,18 @@ TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
 {triggers}
 """
 
+
 class AppsExamples(HelpfulCmdBase, DYMGroup):
     examples = [
-        click.style("composio apps", fg='green') + click.style("            # List all apps\n", fg='black'),
-        click.style("composio apps --enabled", fg='green') + click.style("  # List only enabled apps\n", fg='black'),
-        click.style("composio apps update", fg='green') + click.style("     # Update local Apps database\n", fg='black'),
+        click.style("composio apps", fg="green")
+        + click.style("            # List all apps\n", fg="black"),
+        click.style("composio apps --enabled", fg="green")
+        + click.style("  # List only enabled apps\n", fg="black"),
+        click.style("composio apps update", fg="green")
+        + click.style("     # Update local Apps database\n", fg="black"),
     ]
+
+
 @click.group(name="apps", invoke_without_command=True, cls=AppsExamples)
 @click.help_option("--help", "-h", "-help")
 @click.option(
@@ -154,15 +161,17 @@ def _apps(context: Context, enabled: bool = False) -> None:
         else:
             context.console.print("[green]Showing all apps[/green]")
         for app in apps:
-            context.console.print(f"• {app.name}")
+            context.console.print(f"• {app.key}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
 
 class UpdateExamples(HelpfulCmdBase, click.Command):
     examples = [
-        click.style("composio apps update", fg='green') + click.style("  # Update local Apps database\n", fg='black'),
+        click.style("composio apps update", fg="green")
+        + click.style("  # Update local Apps database\n", fg="black"),
     ]
+
 
 @_apps.command(name="update", cls=UpdateExamples)
 @click.option(
@@ -188,13 +197,13 @@ def _update(context: Context, beta: bool = False) -> None:
             key=lambda x: x.appKey,
         )
         if not beta:
-            c = []
+
             def filter_non_beta_items(items):
                 filtered_items = []
                 for item in items:
                     if not item.name.lower().endswith("beta"):
                         filtered_items.append(item)
-                
+
                 seen = set()
                 unique_items = []
                 for item in filtered_items:

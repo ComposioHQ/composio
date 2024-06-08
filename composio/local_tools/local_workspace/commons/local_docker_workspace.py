@@ -15,6 +15,7 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.utils import (
     communicate,
     get_container,
+    get_container_by_container_name,
     process_output,
     read_with_timeout,
 )
@@ -82,7 +83,7 @@ class LocalDockerWorkspace(gym.Env):
                 logger.error("handling keyboard interrupt")
                 raise
             except Exception as e:
-                logger.error(f"reset container exception: {e}")
+                logger.error("reset container exception: %s", e)
         self._init_container()
         self._init_scripts()
 
@@ -169,9 +170,9 @@ class LocalDockerWorkspace(gym.Env):
             timeout_duration=timeout_duration,
         )
         if self.returncode != 0:
-            self.logger.error(f"{error_msg}: {logs}")
+            self.logger.error("%s: %s", error_msg, logs)
             self.close()
-            raise RuntimeError(f"{error_msg}: {logs}")
+            raise RuntimeError("%s: %s", error_msg, logs)
         return logs
 
     def communicate(self, input: str, timeout_duration=25) -> Tuple[str, int]:
@@ -204,9 +205,7 @@ class LocalDockerWorkspace(gym.Env):
         except TimeoutError:
             pass
         try:
-            output, return_code = self.communicate(
-                input="echo 'interrupted'", timeout_duration=5
-            )
+            output, _ = self.communicate(input="echo 'interrupted'", timeout_duration=5)
             assert output.strip().endswith(
                 "interrupted"
             ), "container health check failed"
@@ -248,7 +247,7 @@ class LocalDockerWorkspace(gym.Env):
             logger.error("handling keyboard interrupt")
             raise
         except Exception as e:
-            logger.error(f"docker close exception: {e}")
+            logger.error("docker close exception: %s", e)
         assert self.container is not None
         assert self.container_obj is not None
         self.container.terminate()
@@ -257,7 +256,9 @@ class LocalDockerWorkspace(gym.Env):
                 self.container_obj.pause()
                 self.logger.info("Agent container paused")
             else:
-                self.logger.info(f"Agent container status: {self.container_obj.status}")
+                self.logger.info(
+                    "Agent container status: %s", self.container_obj.status
+                )
         else:
             try:
                 self.container_obj.remove(force=True)
@@ -265,7 +266,7 @@ class LocalDockerWorkspace(gym.Env):
                 logger.error("handling keyboard interrupt")
                 raise
             except Exception as e:
-                logger.error(f"docker close exception: {e}")
+                logger.error("docker close exception: %s", e)
             self.logger.info("Agent container stopped")
         # todo: implement these hooks
         for hook in self.hooks:
@@ -292,6 +293,27 @@ class WorkspaceManagerFactory:
             return workspace_id
 
         raise ValueError(f"Unknown workspace manager type: {workspace_type}")
+
+    def get_workspace_state(self, workspace_id: str):
+        """
+        returns the current working directory in the workspace
+        """
+        state_cmd = "echo '{\"working_dir\": \"'${PWD}'\"}'"
+        workspace_meta = self.get_registered_manager(workspace_id)
+        if not workspace_meta:
+            logger.error(
+                "workspace-manager has no workspace by workspace-id:", workspace_id
+            )
+            return
+        image_name = workspace_meta[KEY_IMAGE_NAME]
+        container_name = workspace_meta[KEY_CONTAINER_NAME]
+        container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])
+        container_obj = get_container_by_container_name(container_name, image_name)
+        parent_pids = workspace_meta[KEY_PARENT_PIDS]
+        output, _ = communicate(
+            container_process, container_obj, state_cmd, parent_pids
+        )
+        return output
 
     def get_registered_manager(self, workspace_id: str) -> Optional[Dict[str, Any]]:
         return self._registry.get(workspace_id)

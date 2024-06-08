@@ -110,6 +110,10 @@ index 9a36573..94dfd1b 100644
          ]
 ```
 
+6. Add respective `App` and `Action` enum values at **`composio/client/enums.py`** respectively.
+
+
+
 **Examples/Sample Code:**
 
 There are lot of local tools available in `composio/local_tools` directory, that you can use as a reference. To get started, you should check out the below two tools:
