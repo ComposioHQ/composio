@@ -6,11 +6,12 @@ from click.core import Context as ClickContext
 from click.formatting import HelpFormatter
 
 
+
 class HelpfulCmdBase:
     examples: list[str] = []
     help: t.Optional[str] = None
 
-    def format_help_text(self, formatter: HelpFormatter) -> None:
+    def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:  # pylint: disable=unused-argument
         """Writes the help text to the formatter if it exists."""
         if self.help is not None:
             # truncate the help text to the first form feed
@@ -40,17 +41,17 @@ class HelpfulCmdBase:
             formatter.write(" 🔗 Options \n\n")
             formatter.write_dl(opts)
 
-    def format_examples(self, formatter):
+    def format_examples(self, ctx: ClickContext, formatter: HelpFormatter):  # pylint: disable=unused-argument
         formatter.write("\n📙 Examples:\n\n")
         for example in self.examples:
             formatter.write(example)
 
-    def format_help(self, ctx, formatter):
+    def format_help(self, ctx: ClickContext, formatter: HelpFormatter):
         formatter.write("\n")
-        self.format_help_text(formatter)
+        self.format_help_text(ctx, formatter)
         formatter.write("\n")
         self.format_options(ctx, formatter)
-        self.format_examples(formatter)
+        self.format_examples(ctx, formatter)
 
 
 class HelpfulCmd(HelpfulCmdBase, click.Command):

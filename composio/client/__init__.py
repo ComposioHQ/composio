@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Composio SDK client.
 """
