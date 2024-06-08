@@ -12,7 +12,8 @@ llm = ChatOpenAI(model="gpt-4-turbo")
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Get All the tools
-tools = ComposioToolSet().get_tools([App.MATHEMATICAL])
+tools = ComposioToolSet(output_in_file=True).get_tools([App.MATHEMATICAL])
+print(tools)
 
 
 task = "Calculate the forumula as mentioned in the file /Users/karanvaidya/codes/composio_sdk/eq.txt"
