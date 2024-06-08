@@ -119,13 +119,13 @@ class LocalDockerWorkspace(gym.Env):
                     "Docker is not running. Please start Docker and try again."
                 ) from e
 
-        except docker.errors.NotFound:
+        except docker.errors.NotFound as exc:
             logger.debug("Couldn't find container. Let's wait and retry.")
             time.sleep(3)
             if client is not None:
                 self.container_obj = client.containers.get(self.container_name)
             else:
-                raise ValueError("Client is None")
+                raise ValueError("Client is None") from exc
 
         self.logger.info("🌱 Environment Initialized")
 
@@ -172,7 +172,7 @@ class LocalDockerWorkspace(gym.Env):
         if self.returncode != 0:
             self.logger.error("%s: %s", error_msg, logs)
             self.close()
-            raise RuntimeError("%s: %s", error_msg, logs)
+            raise RuntimeError(f"{error_msg}: {logs}")
         return logs
 
     def communicate(self, input: str, timeout_duration=25) -> Tuple[str, int]:
@@ -302,9 +302,9 @@ class WorkspaceManagerFactory:
         workspace_meta = self.get_registered_manager(workspace_id)
         if not workspace_meta:
             logger.error(
-                "workspace-manager has no workspace by workspace-id:", workspace_id
+                "workspace-manager has no workspace by workspace-id: %s", workspace_id
             )
-            return
+            return None
         image_name = workspace_meta[KEY_IMAGE_NAME]
         container_name = workspace_meta[KEY_CONTAINER_NAME]
         container_process = get_container_process(workspace_meta[KEY_WORKSPACE_MANAGER])

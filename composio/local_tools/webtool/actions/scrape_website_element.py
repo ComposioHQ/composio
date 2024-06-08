@@ -55,12 +55,12 @@ class ScrapeWebsiteElement(
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            response = urlopen(req, context=context)
-            html = response.read().decode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-            element = soup.select_one(selector)
-            if element:
-                return {"element_content": str(element)}
-            return {"element_content": "Element not found"}
+            with urlopen(req, context=context) as response:
+                html = response.read().decode("utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+                element = soup.select_one(selector)
+                if element:
+                    return {"element_content": str(element)}
+                return {"element_content": "Element not found"}
         except Exception as e:
             return {"error": f"Error scraping element: {e}"}

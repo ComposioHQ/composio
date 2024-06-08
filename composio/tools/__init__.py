@@ -94,7 +94,7 @@ class ComposioToolSet:
                 / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
                 / f"{action.name}_{entity_id}_{time.time()}"
             )
-            with open(output_file_path, "w") as file:
+            with open(output_file_path, "w", encoding="utf-8") as file:
                 file.write(str(output))
                 return {"output_file": f"{output_file_path}"}
         return output
