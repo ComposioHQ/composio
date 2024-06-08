@@ -65,6 +65,17 @@ requestAnimationFrame(handleAddImage);
         }
     }();
 
+        // Your existing code...
+
+    // Create a new script element
+    const script = document.createElement('script');
+    script.src = 'https://opps-widget.getwarmly.com/warmly.js?clientId=a782c02d7f81f1cecd1729551d050774';
+    script.id = 'warmly-script-loader';
+    script.defer = true;
+
+    // Append the script element to the body
+    document.body.appendChild(script);
+
     console.log("init analytics loaded")
 })()
 
