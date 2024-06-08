@@ -7,6 +7,7 @@ class CalculatorRequest(BaseModel):
     operation: str = Field(
         ...,
         description="A mathematical expression, a couple examples are `200*7` or `5000/2*10`",
+        json_schema_extra={"file_readable": True}
     )
 
 

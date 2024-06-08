@@ -6,9 +6,10 @@ import os
 import time
 import typing as t
 import warnings
-from datetime import datetime
-
+import base64
 import requests
+
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from composio.client.endpoints import Endpoint, v1
@@ -549,6 +550,8 @@ class ActionParameterPropertyModel(BaseModel):
     description: t.Optional[str] = None
     title: t.Optional[str] = None
     type: t.Optional[str] = None
+    oneOf: t.Optional[t.List["ActionParameterPropertyModel"]] = None
+    file_readable: t.Optional[bool] = False
 
 
 class ActionParametersModel(BaseModel):
@@ -751,13 +754,32 @@ class Actions(Collection[ActionModel]):
                 action=action,
                 request_data=params,
             )
+        actionsResp = self.client.actions.get(actions=[action])
+        if len(actionsResp) == 0:
+            raise ComposioClientError(f"Action {action} not found")
+        action_model = actionsResp[0]
+        action_req_schema = action_model.parameters.properties
+        modified_params = {}
+        for param, value in params.items():
+            file_readable = action_req_schema[param].file_readable or False
+            if file_readable and isinstance(value, str) and os.path.isfile(value):
+                with open(value, 'rb') as file:
+                    file_content = file.read()
+                    try:
+                        file_content.decode('utf-8')  # Try decoding as UTF-8 to check if it's normal text
+                        modified_params[param] = file_content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        # If decoding fails, treat as binary and encode in base64
+                        modified_params[param] = base64.b64encode(file_content).decode('utf-8')
+            else:
+                modified_params[param] = value
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
                     url=str(self.endpoint / action.action / "execute"),
                     json={
                         "appName": action.app,
-                        "input": params,
+                        "input": modified_params,
                         "entityId": entity_id,
                     },
                 )
@@ -774,7 +796,7 @@ class Actions(Collection[ActionModel]):
                 url=str(self.endpoint / action.action / "execute"),
                 json={
                     "connectedAccountId": connected_account,
-                    "input": params,
+                    "input": modified_params,
                     "entityId": entity_id,
                 },
             )
