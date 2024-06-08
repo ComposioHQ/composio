@@ -106,18 +106,6 @@ def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, nu
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--predictions_dir", type=str, required=True, help="Directory containing prediction files")
-    # parser.add_argument("--log_dir", type=str, required=True, help="Path to log directory")
-    # parser.add_argument("--swe_bench_tasks", type=str, required=True, help="Path to SWE-bench task instances file")
-    # parser.add_argument("--testbed", type=str, required=True, help="Path to testbed directory")
-    # parser.add_argument("--skip_existing", action="store_true", help="(Optional) Skip existing logs")
-    # parser.add_argument("--timeout", type=int, default=900, help="(Optional) Timeout in seconds")
-    # parser.add_argument("--verbose", action="store_true", help="(Optional) Verbose mode")
-    # parser.add_argument("--log_suffix", type=str, help="(Optional) Log suffix")
-    # parser.add_argument("--num_processes", type=int, default=-1, help="Num processes")
-    # args = parser.parse_args()
-    # main(**vars(args))
     script_path = Path(__file__)
     script_dir = script_path.parent
     prediction_path = script_dir / Path("task_output_2024-06-07_15-49-41/agent_logs.json")
