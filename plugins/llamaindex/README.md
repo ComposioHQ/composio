@@ -89,19 +89,3 @@ Validate the execution and response from the agent to ensure the task was comple
 response = agent.chat("Hello! I would like to star a repo SamparkAI/docs on GitHub")
 print("Response:", response)
 ```
-
-### Advanced Configuration
-
-- **Filter Specific Actions:** Limit the actions an agent can execute.
-
-```python
-# Filter to only allow creating issues on GitHub
-toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
-```
-
-- **Filter Specific Apps:** Restrict the tools an agent can use.
-
-```python
-# Allow usage of Asana and GitHub only
-toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB])
-```
