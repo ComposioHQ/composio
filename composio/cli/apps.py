@@ -197,7 +197,6 @@ def _update(context: Context, beta: bool = False) -> None:
             key=lambda x: x.appKey,
         )
         if not beta:
-            c = []
 
             def filter_non_beta_items(items):
                 filtered_items = []

@@ -115,12 +115,11 @@ class CodeQuery(Action):
         # Check if the request was successful
         if response.status_code == 200:
             return response.json()
-        else:
-            logger.error(
-                "Failed to fetch data from Greptile API, status code: %s",
-                response.status_code,
-            )
-            return {
-                "error": "Failed to fetch data from Greptile API",
-                "status_code": response.status_code,
-            }
+        logger.error(
+            "Failed to fetch data from Greptile API, status code: %s",
+            response.status_code,
+        )
+        return {
+            "error": "Failed to fetch data from Greptile API",
+            "status_code": response.status_code,
+        }
