@@ -107,7 +107,8 @@ class RunCommandOnWorkspace(BaseAction):
                 return "\nEXECUTION TIMED OUT", 1
             except RuntimeError as e:
                 logger.warning(
-                    f"Failed to interrupt container: {e}\nRESTARTING PROCESS."
+                    "Failed to interrupt container: %s\nRESTARTING PROCESS.",
+                    e,
                 )
                 self.close_container()
                 return (
@@ -115,15 +116,15 @@ class RunCommandOnWorkspace(BaseAction):
                     1,
                 )
         except RuntimeError as e:
-            logger.warning(f"Failed to execute command: {e}\nRESTARTING PROCESS.")
+            logger.warning("Failed to execute command: %s\nRESTARTING PROCESS.", e)
             self.close_container()
             return "\nCOMMAND FAILED TO EXECUTE. RESTARTING PROCESS.", 1
         except BrokenPipeError as e:
-            logger.error(f"Broken pipe error: {e}\nRESTARTING PROCESS.")
+            logger.error("Broken pipe error: %s\nRESTARTING PROCESS.", e)
             self.close_container()
             return "\nBROKEN PIPE ERROR. RESTARTING PROCESS.", 1
         except Exception as e:
-            logger.error(f"cmd failed with exception: {e}")
+            logger.error("cmd failed with exception: %s", e)
             return "\nEXECUTION FAILED OR COMMAND MALFORMED", 1
 
     def close_container(self) -> None:

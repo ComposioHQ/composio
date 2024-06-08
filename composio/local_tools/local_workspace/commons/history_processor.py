@@ -11,7 +11,6 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 logger = get_logger()
 script_path = Path(__file__)
 script_dir = script_path.parent
-submit_logs_dir = script_dir / Path("../../../examples/swe/submit_logs/")
 
 
 class HistoryProcessor:
