@@ -539,9 +539,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
             queries["triggerNames"] = ",".join(trigger_names)
-        return self._raise_if_empty(
-            super().get(queries=queries)
-        )
+        return self._raise_if_empty(super().get(queries=queries))
 
 
 class ActionParameterPropertyModel(BaseModel):
@@ -1028,7 +1026,9 @@ class Entity:
         """
         return self.client.connected_accounts.get(entity_ids=[self.id], active=True)
 
-    def enable_trigger(self, app: t.Union[str, App], trigger_name: str, config: t.Dict[str, t.Any]) -> t.Dict:
+    def enable_trigger(
+        self, app: t.Union[str, App], trigger_name: str, config: t.Dict[str, t.Any]
+    ) -> t.Dict:
         """
         Enable a trigger for an entity.
 
@@ -1056,7 +1056,11 @@ class Entity:
         Get all active triggers for an entity.
         """
         connected_accounts = self.get_connections()
-        return self.client.active_triggers.get(connected_account_ids=[connected_account.id for connected_account in connected_accounts])
+        return self.client.active_triggers.get(
+            connected_account_ids=[
+                connected_account.id for connected_account in connected_accounts
+            ]
+        )
 
     def initiate_connection(
         self,
