@@ -716,13 +716,16 @@ class Actions(Collection[ActionModel]):
 
         if len(tags) > 0:
             required_tags = [tag.name if isinstance(tag, Tag) else tag for tag in tags]
-            should_not_filter_using_tags = len(items) < 15 and len(required_tags) == 1 and required_tags[0] == "important"
+            only_important_tag = (required_tags == ["important"])
+            should_not_filter_using_tags = (len(items) < 15 and only_important_tag)
             if not should_not_filter_using_tags:
-                items = [
+                filtered_items = [
                     item
                     for item in items
                     if any(tag in required_tags for tag in item.tags)
                 ]
+                if len(filtered_items) > 0 or not only_important_tag:
+                    items = filtered_items
 
         if len(local_apps) > 0 or len(local_actions) > 0:
             local_items = self.local_handler.get_list_of_action_schemas(
