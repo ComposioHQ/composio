@@ -5,7 +5,10 @@ The script `run_on_single_issue.py` is designed to automate the process of debug
 
 ## Prerequisites
 - install packages from requirements.txt
+- [Install Docker](https://docs.docker.com/engine/install/), then start Docker locally.
+-  Run `docker pull sweagent/swe-agent:latest`
 - An Azure account with access to Azure Chat OpenAI services
+
 
 ## Environment Variables
 Set the following environment variables before running the script:
@@ -33,7 +36,10 @@ issue = {
 ## Running the Script
 1. Ensure all prerequisites are installed and environment variables are set.
 2. Modify the `issue` dictionary in the script under the `if __name__ == "__main__":` block to reflect the actual issue you want to address.
-3. Run the script using Python: python run_on_single_issue.py
+3. Run the script using Python: 
+```bash
+python run_on_single_issue.py
+```
 
 
 ## Output
