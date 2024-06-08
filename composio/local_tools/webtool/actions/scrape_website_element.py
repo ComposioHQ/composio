@@ -29,15 +29,20 @@ class ScrapeWebsiteElement(Action):
     _tool_name = "webtool"
 
     def execute(
-        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict = {}
+        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict = None
     ):
         """Scrape a specific element from the website and return its content"""
+        if authorisation_data is None:
+            authorisation_data = {}
         url = request.website_url
         selector = request.element_selector
         try:
+            # pylint: disable=import-outside-toplevel
             from bs4 import BeautifulSoup
+
+            # pylint: enable=import-outside-toplevel
         except ImportError as e:
-            raise ImportError("Failed to import BeautifulSoup:", e)
+            raise ImportError("Failed to import BeautifulSoup:", e) from e
         try:
             # Adding headers to mimic a browser request
             headers = {
@@ -54,7 +59,6 @@ class ScrapeWebsiteElement(Action):
             element = soup.select_one(selector)
             if element:
                 return str(element)
-            else:
-                return "Element not found"
+            return "Element not found"
         except Exception as e:
             return f"Error scraping element: {e}"
