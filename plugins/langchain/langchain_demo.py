@@ -26,7 +26,7 @@ def main():
     composio_toolset = ComposioToolSet()
 
     # Get All the tools
-    tools = composio_toolset.get_actions(apps=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+    tools = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 
     # Define task
     task = "Star a repo SamparkAI/docs on GitHub"
