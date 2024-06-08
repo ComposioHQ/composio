@@ -1,7 +1,7 @@
 import hashlib
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Type, TypeVar, Union
+from typing import Generic, List, Type, TypeVar, Union
 
 import inflection
 import jsonref

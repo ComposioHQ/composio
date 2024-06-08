@@ -1,15 +1,6 @@
 """
 Composio CLI Tool.
 """
-from composio.core.cls.catch_all_exceptions import (
-    CatchAllExceptions,
-    handle_exceptions,
-    init_sentry,
-)
-
-
-init_sentry()
-
 import click
 
 from composio.cli.actions import _actions
@@ -22,7 +13,15 @@ from composio.cli.logout import _logout
 from composio.cli.triggers import _triggers
 from composio.cli.utils import HelpfulCmdBase
 from composio.cli.whoami import _whoami
+from composio.core.cls.catch_all_exceptions import (
+    CatchAllExceptions,
+    handle_exceptions,
+    init_sentry,
+)
 from composio.core.cls.did_you_mean import DYMGroup
+
+
+init_sentry()
 
 
 class HelpDYMGroup(DYMGroup):
