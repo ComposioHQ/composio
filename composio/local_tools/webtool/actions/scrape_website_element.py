@@ -1,5 +1,4 @@
 import ssl
-from typing import Any, Dict
 from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, Field

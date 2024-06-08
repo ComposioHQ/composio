@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional, TypeVar, Union
+from typing import Optional, TypeVar
 
 from pydantic import BaseModel
 
