@@ -20,7 +20,9 @@ class HelpfulCmdBase:
         """Retrieve the list of parameters for the command."""
         return ctx.command.get_params(ctx)
 
-    def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:  # pylint: disable=unused-argument
+    def format_help_text(
+        self, ctx: ClickContext, formatter: HelpFormatter
+    ) -> None:  # pylint: disable=unused-argument
         """Writes the help text to the formatter if it exists."""
         if self.help is not None:
             # truncate the help text to the first form feed
