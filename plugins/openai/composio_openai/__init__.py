@@ -1,6 +1,6 @@
 from composio_openai.toolset import ComposioToolSet
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, App, Tag, Trigger
 
 
 __all__ = (
@@ -8,4 +8,5 @@ __all__ = (
     "App",
     "Tag",
     "ComposioToolSet",
+    "Trigger",
 )

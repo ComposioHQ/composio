@@ -19,6 +19,7 @@ from composio.client.enums import (  # TODO: Fix pseudo-circular dependendcy
     Action,
     App,
     Tag,
+    Trigger,
 )
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.http import HttpClient
@@ -455,19 +456,23 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        trigger_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[t.Union[str, Trigger]]] = None,
         app_names: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
         List active triggers
 
-        :param trigger_ids: Trigger IDs to filter by
+        :param trigger_ids: Trigger IDs to filter by, can be a list of strings or Trigger objects
         :param app_names: App names to filter by
-        :return: List of triggers filtered by provded parameters
+        :return: List of triggers filtered by provided parameters
         """
         queries = {}
-        if trigger_ids is not None and len(trigger_ids) > 0:
-            queries["triggerIds"] = ",".join(trigger_ids)
+        if trigger_names is not None and len(trigger_names) > 0:
+            processed_trigger_ids = [
+                trigger_id.event if isinstance(trigger_id, Trigger) else trigger_id
+                for trigger_id in trigger_names
+            ]
+            queries["triggerIds"] = ",".join(processed_trigger_ids)
         if app_names is not None and len(app_names) > 0:
             queries["appNames"] = ",".join(app_names)
         return super().get(queries=queries)
@@ -526,7 +531,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         trigger_ids: t.Optional[t.List[str]] = None,
         connected_account_ids: t.Optional[t.List[str]] = None,
         integration_ids: t.Optional[t.List[str]] = None,
-        trigger_names: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[t.Union[str, Trigger]]] = None,
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
@@ -541,7 +546,11 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         if len(integration_ids) > 0:
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
-            queries["triggerNames"] = ",".join(trigger_names)
+            processed_trigger_names = [
+                trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
+                for trigger_name in trigger_names
+            ]
+            queries["triggerNames"] = ",".join(processed_trigger_names)
         return self._raise_if_empty(super().get(queries=queries))
 
 
