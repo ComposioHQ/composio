@@ -1,7 +1,7 @@
 import os
 import sys
 
-import pytest
+import pytest  # pylint: disable=import-error
 
 from composio.cli import composio as composio_cli
 from composio.exceptions import ApiKeyNotProvidedError
