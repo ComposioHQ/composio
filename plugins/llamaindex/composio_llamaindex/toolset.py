@@ -1,16 +1,10 @@
-import types
 import typing as t
-from inspect import Signature
 
 from llama_index.core.tools import FunctionTool
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
-from composio.utils.shared import (
-    get_signature_format_from_schema_params,
-    json_schema_to_model,
-)
 
 
 class ComposioToolSet(BaseComposioToolSet):
@@ -71,42 +65,9 @@ class ComposioToolSet(BaseComposioToolSet):
         super().__init__(
             api_key=api_key,
             base_url=base_url,
-            runtime="llamaindex",
             entity_id=entity_id,
         )
-
-    def prepare_python_function(
-        self,
-        app,
-        action,
-        description,
-        schema_params,
-        entity_id
-    ):
-        def function(**kwargs: t.Any) -> t.Dict:
-            """Wrapper function for composio action."""
-            return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=app,
-                    name=action,
-                ),
-                params=kwargs,
-                entity_id=entity_id or self.entity_id,
-            )
-        action_func = types.FunctionType(
-            function.__code__,
-            globals=globals(),
-            name=action,
-            closure=function.__closure__,
-        )
-        action_func.__signature__ = Signature(  # type: ignore
-            parameters=get_signature_format_from_schema_params(
-                schema_params=schema_params
-            )
-        )
-        action_func.__doc__ = description
-
-        return action_func
+        self.runtime = "llamaindex"
 
     def _wrap_tool(
         self,
@@ -126,52 +87,25 @@ class ComposioToolSet(BaseComposioToolSet):
             schema_params=schema_params,
             entity_id=entity_id,
         )
-
-        # parameters = json_schema_to_model(
-        #     json_schema=schema_params,
-        # )
-        print("---------------")
-        print(FunctionTool.from_defaults(action_func))
         return FunctionTool.from_defaults(
             action_func,
-            # name=action,
-            # description=description,
+            name=action,
+            description=description,
         )
 
     def get_actions(
         self,
         actions: t.Sequence[Action],
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[StructuredTool]:
+    ) -> t.Sequence[FunctionTool]:
         """
-        Get composio tools wrapped as Langchain StructuredTool objects.
+        Get composio tools wrapped as LlamaIndex FunctionTool objects.
 
         :param actions: List of actions to wrap
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `StructuredTool` objects
         """
-
-        return [
-            self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for tool in self.client.actions.get(actions=actions)
-        ]
-
-    # def get_actions(
-    #     self,
-    #     actions: t.Sequence[Action],
-    #     entity_id: t.Optional[str] = None,
-    # ) -> t.Sequence[FunctionTool]:
-    #     """
-    #     Get composio tools wrapped as LlamaIndex FunctionTool objects.
-
-    #     :param actions: List of actions to wrap
-    #     :param entity_id: Entity ID to use for executing function calls.
-    #     :return: Composio tools wrapped as `StructuredTool` objects
-    #     """
-    #     return super().get_actions(actions, entity_id)
+        return super().get_actions(actions, entity_id)
 
     def get_tools(
         self,
@@ -188,4 +122,3 @@ class ComposioToolSet(BaseComposioToolSet):
         :return: Composio tools wrapped as `StructuredTool` objects
         """
         return super().get_tools(apps, tags, entity_id)
-
