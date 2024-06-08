@@ -4,7 +4,6 @@ from urllib.request import Request, urlopen
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from typing import Dict, Any
 
 
 class ScrapeWebsiteElementToolRequest(BaseModel):
@@ -18,7 +17,9 @@ class ScrapeWebsiteElementToolResponse(BaseModel):
     element_content: str = Field(..., description="The content of the selected element")
 
 
-class ScrapeWebsiteElement(Action[ScrapeWebsiteElementToolRequest, ScrapeWebsiteElementToolResponse]):
+class ScrapeWebsiteElement(
+    Action[ScrapeWebsiteElementToolRequest, ScrapeWebsiteElementToolResponse]
+):
     """
     Scrame website element
     """

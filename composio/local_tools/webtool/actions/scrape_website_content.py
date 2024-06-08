@@ -4,7 +4,7 @@ from urllib.request import Request, urlopen
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from typing import Type, Dict, Any
+
 
 class ScrapeWebsiteToolRequest(BaseModel):
     website_url: str = Field(
@@ -27,7 +27,9 @@ class ScrapeWebsiteContent(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolRes
     _tags = ["Webbrowser"]
     _tool_name = "webtool"
 
-    def execute(self, request_data: ScrapeWebsiteToolRequest, authorisation_data: dict) -> dict:
+    def execute(
+        self, request_data: ScrapeWebsiteToolRequest, authorisation_data: dict
+    ) -> dict:
         """Scrape the website and return the content"""
         url = request_data.website_url
         try:

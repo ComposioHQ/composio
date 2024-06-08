@@ -1,5 +1,8 @@
 import hashlib
 import json
+from abc import ABC, abstractmethod
+from typing import Generic, List, Type, TypeVar, Union
+
 import inflection
 import jsonref
 import os
@@ -8,8 +11,7 @@ import base64
 from abc import ABC, abstractmethod
 from typing import List
 from pydantic import BaseModel
-from typing import Union, Any
-from typing import TypeVar, Generic, Type
+
 
 def generate_hashed_appId(input_string):
     # Generate a 32-character hash using MD5
@@ -21,9 +23,9 @@ def generate_hashed_appId(input_string):
     return formatted_hash
 
 
+RequestType = TypeVar("RequestType", bound=BaseModel)
+ResponseType = TypeVar("ResponseType", bound=BaseModel)
 
-RequestType = TypeVar('RequestType', bound=BaseModel)
-ResponseType = TypeVar('ResponseType', bound=BaseModel)
 
 class Action(ABC, Generic[RequestType, ResponseType]):
     _history_maintains: bool = False
@@ -78,7 +80,9 @@ class Action(ABC, Generic[RequestType, ResponseType]):
         self._response_schema = value
 
     @abstractmethod
-    def execute(self, request_data: RequestType, authorisation_data: dict) -> Union[dict, ResponseType]: 
+    def execute(
+        self, request_data: RequestType, authorisation_data: dict
+    ) -> Union[dict, ResponseType]:
         pass
 
     @property
@@ -108,15 +112,21 @@ class Action(ABC, Generic[RequestType, ResponseType]):
             "display_name": self.display_name,
             "tags": self.tags,
             "enabled": True,
-            "description": self.__class__.__doc__ if self.__class__.__doc__ else self.action_name,  # type: ignore
-            "parameters": jsonref.loads(json.dumps(request_schema_json)),
+            "description": self.__class__.__doc__
+            if self.__class__.__doc__
+            else self.action_name,
+            "parameters": jsonref.loads(
+                json.dumps(self.request_schema.model_json_schema(by_alias=False))
+            ),
             "response": jsonref.loads(
                 json.dumps(self.response_schema.model_json_schema())
             ),
         }
         return action_schema
 
-    def execute_action(self, request_data: RequestType, metadata: dict) -> Union[dict, ResponseType]:
+    def execute_action(
+        self, request_data: RequestType, metadata: dict
+    ) -> Union[dict, ResponseType]:
         # req = self._request_schema.model_validate_json(json_data=json.dumps(request_data))
 
         # print(f"Executing {self.__class__.__name__} on Tool: {self.tool_name} with request data {request_data} and meta data {metadata}")
@@ -153,5 +163,3 @@ class Action(ABC, Generic[RequestType, ResponseType]):
                 "status": "failure",
                 "details": "Error executing action with error: " + str(e),
             }
-
-
