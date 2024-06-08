@@ -29,8 +29,9 @@ class GetWorkspaceHistoryResponse(BaseModel):
     )
 
 
-
-class GetWorkspaceHistory(Action[GetWorkspaceHistoryRequest, GetWorkspaceHistoryResponse]):
+class GetWorkspaceHistory(
+    Action[GetWorkspaceHistoryRequest, GetWorkspaceHistoryResponse]
+):
     """
     returns history for workspace.
     History includes -

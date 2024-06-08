@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Optional, TypeVar, Union
 
 from pydantic import BaseModel
 
@@ -10,7 +10,6 @@ from composio.local_tools.local_workspace.commons import (
     get_logger,
 )
 
-from typing import Union, Any, TypeVar
 
 logger = get_logger()
 
@@ -23,11 +22,9 @@ class BaseWorkspaceResponse(BaseModel):
     pass
 
 
+RequestType = TypeVar("RequestType", bound=BaseModel)
+ResponseType = TypeVar("ResponseType", bound=BaseModel)
 
-
-
-RequestType = TypeVar('RequestType', bound=BaseModel)
-ResponseType = TypeVar('ResponseType', bound=BaseModel)
 
 class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
     """
@@ -64,5 +61,7 @@ class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
         self.history_processor = history_processor
 
     @abstractmethod
-    def execute(self, request_data: RequestType, authorisation_data: dict) -> ResponseType:
+    def execute(
+        self, request_data: RequestType, authorisation_data: dict
+    ) -> ResponseType:
         pass

@@ -1,4 +1,5 @@
 import inspect
+import typing as t
 
 import click
 from click.core import Context as ClickContext
@@ -9,7 +10,6 @@ from composio.client import Composio  # noqa: F401
 from composio.exceptions import ComposioSDKError  # noqa: F401
 from composio.utils.url import get_web_url  # noqa: F401
 
-import typing as t
 
 class HelpfulCmdBase:
     examples: list[str] = []
@@ -18,7 +18,6 @@ class HelpfulCmdBase:
     def get_params(self, ctx: ClickContext) -> t.List[click.Parameter]:
         """Retrieve the list of parameters for the command."""
         return ctx.command.get_params(ctx)
-
 
     def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
         """Writes the help text to the formatter if it exists."""
