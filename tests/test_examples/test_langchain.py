@@ -4,6 +4,7 @@ import sys
 import pytest
 
 from composio.exceptions import ApiKeyNotProvidedError
+from composio.cli import composio as composio_cli
 
 
 def run_langchain_script():
@@ -16,10 +17,6 @@ def run_langchain_script():
 
 @pytest.fixture(scope="session", autouse=True)
 def pytest_sessionstart_langchain():
-    from composio.cli import (
-        composio as composio_cli,  # pylint: disable=import-outside-toplevel
-    )
-
     # Called after the Session object has been created and
     # before performing collection and entering the run test loop.
     original_argv = sys.argv  # Backup the original arguments
