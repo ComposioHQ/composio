@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
+
 from composio.core.local import Action
+
 
 class CalculatorRequest(BaseModel):
     operation: str = Field(
@@ -7,8 +9,10 @@ class CalculatorRequest(BaseModel):
         description="A mathematical expression, a couple examples are `200*7` or `5000/2*10`",
     )
 
+
 class CalculatorResponse(BaseModel):
     result: str = Field(..., description="Result of the calculation")
+
 
 class Calculator(Action):
     """
@@ -26,7 +30,9 @@ class Calculator(Action):
     ) -> dict:
         operation_str = request_data.dict()["operation"]
         try:
+            # pylint: disable=eval-used
             result = eval(operation_str)
+            # pylint: enable=eval-used
             execution_details = {"executed": True}
             response_data = result
         except Exception as e:

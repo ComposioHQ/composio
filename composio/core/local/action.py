@@ -1,11 +1,12 @@
 import hashlib
 import json
-import inflection
-import jsonref
-
 from abc import ABC, abstractmethod
 from typing import List
+
+import inflection
+import jsonref
 from pydantic import BaseModel
+
 
 def generate_hashed_appId(input_string):
     # Generate a 32-character hash using MD5
@@ -15,6 +16,7 @@ def generate_hashed_appId(input_string):
     formatted_hash = f"{hash_string[:8]}-{hash_string[8:12]}-{hash_string[12:16]}-{hash_string[16:20]}-{hash_string[20:]}"
 
     return formatted_hash
+
 
 class Action(ABC):
     _history_maintains: bool = False

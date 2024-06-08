@@ -1,21 +1,16 @@
-from composio.local_tools.local_workspace.cmd_manager.tool import (
-    CmdManagerTool,
-)
+from composio.local_tools import Mathematical
+from composio.local_tools.greptile.tool import Greptile
+from composio.local_tools.local_workspace.cmd_manager.tool import CmdManagerTool
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     WorkspaceManagerFactory,
 )
-from composio.local_tools.local_workspace.history_keeper import (
-    HistoryKeeper,
-)
+from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
 from composio.local_tools.local_workspace.workspace import LocalWorkspace
-
 from composio.local_tools.ragtool import RagTool
-from composio.local_tools import Mathematical
 from composio.local_tools.webtool import WebTool
-from composio.local_tools.greptile.tool import Greptile
 
 
 class LocalToolHandler:
@@ -62,11 +57,9 @@ class LocalToolHandler:
             action_obj = tool_obj.get_actions_dict()[action.value[1]]
             all_action_objs.append(action_obj)
 
-        # all_action_objs = list(set(all_action_objs))
         all_action_schemas = [
             action_obj.get_action_schema() for action_obj in all_action_objs
         ]
-        # all_action_schemas = list(set(all_action_schemas))
 
         all_action_schemas = list(
             {
