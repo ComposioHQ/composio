@@ -11,29 +11,35 @@ dotenv.load_dotenv()
 llm = OpenAI(model="gpt-4o")
 
 
-# Get All the tools
-composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
-)
-
-prefix_messages = [
-    ChatMessage(
-        role="system",
-        content=(
-            "You are now a integration agent, and what  ever you are requested, you will try to execute utilizing your toools."
-        ),
+def main():
+    # Get All the tools
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_actions(
+        actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
     )
-]
 
-agent = FunctionCallingAgentWorker(
-    tools=tools,
-    llm=llm,
-    prefix_messages=prefix_messages,
-    max_function_calls=10,
-    allow_parallel_tool_calls=False,
-    verbose=True,
-).as_agent()
+    prefix_messages = [
+        ChatMessage(
+            role="system",
+            content=(
+                "You are now a integration agent, and what  ever you are requested, you will try to execute utilizing your toools."
+            ),
+        )
+    ]
 
-response = agent.chat("Hello! I would like to star a repo SamparkAI/docs on GitHub")
-print("Response:", response)
+    agent = FunctionCallingAgentWorker(
+        tools=tools,
+        llm=llm,
+        prefix_messages=prefix_messages,
+        max_function_calls=10,
+        allow_parallel_tool_calls=False,
+        verbose=True,
+    ).as_agent()
+
+    response = agent.chat("Hello! I would like to star a repo SamparkAI/docs on GitHub")
+    print("Response:", response)
+
+
+if __name__ == "__main__":
+    main()
+
