@@ -110,7 +110,10 @@ class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
             data["sessionId"] = request_data.sessionId
         # Send the POST request to the Greptile API
         response = requests.post(
-            "https://api.greptile.com/v2/query", headers=headers, data=json.dumps(data), timeout=20
+            "https://api.greptile.com/v2/query",
+            headers=headers,
+            data=json.dumps(data),
+            timeout=20,
         )
         # Check if the request was successful
         if response.status_code == 200:

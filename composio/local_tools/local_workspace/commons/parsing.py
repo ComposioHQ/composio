@@ -41,7 +41,7 @@ class Command(FrozenSerializable):
 class ParseCommandMeta(type):
     _registry: dict[str, "ParseCommand"] = {}
 
-    def __new__(cls, name, bases, attrs):  #pylint: disable=C0204
+    def __new__(cls, name, bases, attrs):  # pylint: disable=C0204
         new_cls = super().__new__(cls, name, bases, attrs)
         if name != "ParseCommand":
             cls._registry[name] = new_cls
