@@ -20,17 +20,22 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize tools.
 openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
-composio_toolset = ComposioToolSet()
 
-# Get All the tools
-tools = composio_toolset.get_tools(apps=[App.MATHEMATICAL])
+def main():
+    composio_toolset = ComposioToolSet()
 
-# Define task
-task = "Star a repo SamparkAI/docs on GitHub"
+    # Get All the tools
+    tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
-# Define agent
-agent = create_openai_functions_agent(openai_client, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    # Define task
+    task = "Star a repo SamparkAI/docs on GitHub"
 
-# Execute using agent_executor
-agent_executor.invoke({"input": task})
+    # Define agent
+    agent = create_openai_functions_agent(openai_client, tools, prompt)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+    # Execute using agent_executor
+    agent_executor.invoke({"input": task})
+
+if __name__ == "__main__":
+    main()

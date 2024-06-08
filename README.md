@@ -1,8 +1,10 @@
 <p align="center">
-  <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
-    <img alt="Composio" width="172" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
-  </picture>
+  <a href="https://composio.dev//#gh-dark-mode-only">
+    <img src="./docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
+  </a>
+  <a href="https://composio.dev//#gh-light-mode-only">
+    <img src="./docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
+  </a>
 </p>
 <p align="center">
   <a href="https://github.com/composiodev/composio/actions/workflows/common.yml">
@@ -17,9 +19,9 @@
   
 </p>
 
-<h2 align="center">
+<h2 align="center"><i>
   Production Ready Toolset for AI Agents
-</h2>
+</i></h2>
 
 <h4 align="center">Equip your agent with high-quality tools & integrations without worrying about authentication, accuracy, and reliability in a single line of code!
 </h4>
@@ -29,7 +31,7 @@
 </p>
 
 <p>
-<a href="https://app.composio.dev">Dashboard</a> <b>|</b>
+<a href="https://app.composio.dev">Try on Dashboard</a> <b>|</b>
 <a href="https://www.composio.dev">Homepage</a> <b>|</b>
 <!-- <a href="https://docs.composio.dev/guides/examples">Examples</a> |
 <a href="https://docs.composio.dev/chat-with-docs">Chat with Docs</a> | -->
@@ -59,10 +61,10 @@
 
 - [📋 Table of contents](#-table-of-contents)
 - [🤔 Why Composio?](#-why-composio)
+- [🔥 Key Features](#-key-features)
 - [🚀 Getting Started](#-getting-started)
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
-- [🔥 Key Features](#-key-features)
 - [💡 Examples](#-examples)
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
@@ -78,7 +80,24 @@
 We believe AI Based Agents/Workflows are the future.
 Composio is the best toolset to integrate AI Agents to best Agentic Tools and use them to accomplish tasks.
 
-<img alt="Illustration" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
+<img alt="Illustration" src="./docs/imgs/banner.gif" style="border-radius: 5px"/>
+
+## 🔥 Key Features
+
+- **100+ Tools**: Support for a range of different categories
+
+  - **Softwares**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
+  - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
+  - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
+  - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
+  - **SWE**: Ngrok, Database, Redis, Vercel, Git, etc.
+  - **RAG**: Agentic RAG for any type of data on the fly!
+
+- **Frameworks**: Use tools with agent frameworks like **OpenAI, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, Julep, Lyzr**, and more in a single line of code.
+- **Managed Authorisation**: Supports six different auth protocols. _Access Token, Refresh token, OAuth, API Keys, JWT, and more_ abstracted out so you can focus on the building agents.
+- **Accuracy**: Get _upto 40% better agentic accuracy_ in your tool calls due to better tool designs.
+- **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
+- **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
 
 ## 🚀 Getting Started
 
@@ -155,23 +174,6 @@ response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_cal
 
 print(response_after_tool_calls)
 ```
-
-## 🔥 Key Features
-
-- **100+ Tools**: Support for a range of different categories
-
-  - **Softwares**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
-  - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
-  - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
-  - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
-  - **SWE**: Ngrok, Database, Redis, Vercel, Git, etc.
-  - **RAG**: Agentic RAG for any type of data on the fly!
-
-- **Frameworks**: Use tools with agent frameworks like **OpenAI, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, Julep, Lyzr**, and more in a single line of code.
-- **Managed Authorisation**: Supports six different auth protocols. _Access Token, Refresh token, OAuth, API Keys, JWT, and more_ abstracted out so you can focus on the building agents.
-- **Accuracy**: Get _upto 40% better agentic accuracy_ in your tool calls due to better tool designs.
-- **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
-- **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
 
 ## 💡 Examples
 
