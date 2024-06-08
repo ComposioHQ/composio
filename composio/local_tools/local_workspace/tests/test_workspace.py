@@ -1,12 +1,15 @@
 import unittest
 
+from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (
+    GetCurrentDirCmd,
+    GetCurrentDirRequest,
+)
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (GetCurrentDirCmd,
-GetCurrentDirRequest)
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    WorkspaceManagerFactory, LocalDockerArgumentsModel
+    LocalDockerArgumentsModel,
+    WorkspaceManagerFactory,
 )
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceAction,
@@ -36,9 +39,9 @@ class TestCmds(unittest.TestCase):
         # Setup - create an instance of CreateWorkspaceAction
         w = WorkspaceManagerFactory()
         h = HistoryProcessor()
-        workspace_id = w.get_workspace_manager(LocalDockerArgumentsModel(
-            image_name="sweagent/swe-agent:latest"
-        ))
+        workspace_id = w.get_workspace_manager(
+            LocalDockerArgumentsModel(image_name="sweagent/swe-agent:latest")
+        )
         action = GetCurrentDirCmd()
         action.set_workspace_and_history(w, h)
 
