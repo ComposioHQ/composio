@@ -2,14 +2,14 @@
 Composio SDK client.
 """
 
+import base64
 import os
 import time
 import typing as t
 import warnings
-import base64
-import requests
-
 from datetime import datetime
+
+import requests
 from pydantic import BaseModel, ConfigDict
 
 from composio.client.endpoints import Endpoint, v1
@@ -763,14 +763,18 @@ class Actions(Collection[ActionModel]):
         for param, value in params.items():
             file_readable = action_req_schema[param].file_readable or False
             if file_readable and isinstance(value, str) and os.path.isfile(value):
-                with open(value, 'rb') as file:
+                with open(value, "rb") as file:
                     file_content = file.read()
                     try:
-                        file_content.decode('utf-8')  # Try decoding as UTF-8 to check if it's normal text
-                        modified_params[param] = file_content.decode('utf-8')
+                        file_content.decode(
+                            "utf-8"
+                        )  # Try decoding as UTF-8 to check if it's normal text
+                        modified_params[param] = file_content.decode("utf-8")
                     except UnicodeDecodeError:
                         # If decoding fails, treat as binary and encode in base64
-                        modified_params[param] = base64.b64encode(file_content).decode('utf-8')
+                        modified_params[param] = base64.b64encode(file_content).decode(
+                            "utf-8"
+                        )
             else:
                 modified_params[param] = value
         if action.no_auth:
