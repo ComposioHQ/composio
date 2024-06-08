@@ -116,9 +116,9 @@ class Action(ABC, Generic[RequestType, ResponseType]):
             "display_name": self.display_name,
             "tags": self.tags,
             "enabled": True,
-            "description": self.__class__.__doc__
-            if self.__class__.__doc__
-            else self.action_name,
+            "description": (
+                self.__class__.__doc__ if self.__class__.__doc__ else self.action_name
+            ),
             "parameters": jsonref.loads(
                 json.dumps(self.request_schema.model_json_schema(by_alias=False))
             ),
