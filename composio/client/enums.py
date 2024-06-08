@@ -10,13 +10,13 @@ from enum import Enum
 class Tag(tuple, Enum):
     """App tags."""
 
-    # pylint: disable=function-redefined
+    # pylint: disable=function-redefined,invalid-overridden-method
     @property
     def name(self) -> str:
         """Returns trigger name."""
         return self.value[0]
 
-    # pylint: enable=function-redefined
+    # pylint: enable=function-redefined,invalid-overridden-method
 
     IMPORTANT = ("default", "important")
     ASANA_ALLOCATIONS = ("asana", "Allocations")
