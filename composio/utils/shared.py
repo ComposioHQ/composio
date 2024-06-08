@@ -226,14 +226,16 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
             if len(param_types) == 1:
                 signature_param_type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
             elif len(param_types) == 2:
-                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
-                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]]
-                signature_param_type = t.Union[t1, t2]
+                # Check as redefinition and union was incompatible
+                # @karan to check if this is the right way to do it
+                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]] # type: ignore
+                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]] # type: ignore
+                signature_param_type: t.Type = t.Union[t1, t2] # type: ignore
             elif len(param_types) == 3:
-                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
-                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]]
+                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]] # type: ignore
+                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]] # type: ignore
                 t3: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[2]]
-                signature_param_type = t.Union[t1, t2, t3]
+                signature_param_type: t.Type = t.Union[t1, t2, t3]# type: ignore
             else:
                 raise ValueError("Invalid 'oneOf' schema")
             param_default = param_schema.get("default", "")
