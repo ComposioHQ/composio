@@ -1,7 +1,10 @@
-import sentry_sdk
 import traceback
-from composio.utils.url import get_api_url_base
+
 import requests
+import sentry_sdk
+
+from composio.utils.url import get_api_url_base
+
 
 def init_sentry():
     url = f"{get_api_url_base()}/v1/cli/sentry-dns"
@@ -10,25 +13,22 @@ def init_sentry():
         return
     config = response.json()
     sentry_sdk.init(
-        dsn=config.get("dns"),
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0
+        dsn=config.get("dns"), traces_sample_rate=1.0, profiles_sample_rate=1.0
     )
 
+
 def CatchAllExceptions(cls, handler):
-
     class Cls(cls):
-
         _original_args = None
 
         def make_context(self, info_name, args, parent=None, **extra):
-
             # grab the original command line arguments
-            self._original_args = ' '.join(args)
+            self._original_args = " ".join(args)
 
             try:
                 return super(Cls, self).make_context(
-                    info_name, args, parent=parent, **extra)
+                    info_name, args, parent=parent, **extra
+                )
             except Exception as exc:
                 # call the handler
                 should_ignore_error = handler(self, info_name, exc)
@@ -53,10 +53,12 @@ def CatchAllExceptions(cls, handler):
 
 def handle_exceptions(cmd, info_name, exc):
     # send error info to rollbar, etc, here
-    if (isinstance(exc, ValueError) or isinstance(exc, SystemExit)) and sentry_sdk.is_initialized():
+    if (
+        isinstance(exc, ValueError) or isinstance(exc, SystemExit)
+    ) and sentry_sdk.is_initialized():
         sentry_sdk.capture_exception(exc)
         sentry_sdk.flush()
         print(traceback.format_exc())
         return True
-    
+
     return False
