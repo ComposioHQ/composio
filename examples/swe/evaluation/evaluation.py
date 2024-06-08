@@ -95,7 +95,7 @@ def main(predictions_path, log_dir, testbed, skip_existing, timeout, verbose, nu
             skip_existing=skip_existing,
             timeout=timeout,
             verbose=verbose,
-            num_processes=num_processes
+            num_processes=1
         )
         print("✅ Finished evaluation")
     except Exception as e:
