@@ -190,11 +190,11 @@ def _update(context: Context, beta: bool = False) -> None:
         )
         actions = sorted(
             context.client.actions.get(allow_all=True),
-            key=lambda x: x.appKey,
+            key=lambda x: f"{x.appKey}_{x.name}",
         )
         triggers = sorted(
             context.client.triggers.get(),
-            key=lambda x: x.appKey,
+            key=lambda x: f"{x.appKey}_{x.name}",
         )
         if not beta:
 
@@ -240,8 +240,9 @@ def _get_tag_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> str:
             tag_map[app_key].update(action.tags or [])
 
     tag_enums = ""
-    for app_key, tags in tag_map.items():
-        for tag in tags:
+    for app_key in sorted(tag_map.keys()):
+        sorted_tags = sorted(tag_map[app_key])
+        for tag in sorted_tags:
             tag_name = _get_enum_key(f"{app_key}_{tag}")
             tag_enums += f'    {tag_name} = ("{app_key}", "{tag}")\n'
     tag_enums += "\n"
