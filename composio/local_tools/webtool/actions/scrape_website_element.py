@@ -18,7 +18,7 @@ class ScrapeWebsiteElementToolResponse(BaseModel):
     element_content: str = Field(..., description="The content of the selected element")
 
 
-class ScrapeWebsiteElement(Action):
+class ScrapeWebsiteElement(Action[ScrapeWebsiteElementToolRequest, ScrapeWebsiteElementToolResponse]):
     """
     Scrame website element
     """

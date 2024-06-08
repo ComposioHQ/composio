@@ -47,7 +47,7 @@ class CodeQueryResponse(BaseModel):
     response: str = Field(..., description="The response to the question")
 
 
-class CodeQuery(Action):
+class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
     """
     Ask the mentor, any questions on the code and get the answer from the mentor.
     with a list of relevant code references (filepaths, line numbers, etc)

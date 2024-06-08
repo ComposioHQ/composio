@@ -13,7 +13,7 @@ class RagToolQueryResponse(BaseModel):
     )
 
 
-class RagToolQuery(Action):
+class RagToolQuery(Action[RagToolQueryRequest, RagToolQueryResponse]):
     """
     Tool for querying a knowledge base
     this can only be performed after AddContentToRagTool

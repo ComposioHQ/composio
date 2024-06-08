@@ -14,7 +14,7 @@ class CalculatorResponse(BaseModel):
     result: str = Field(..., description="Result of the calculation")
 
 
-class Calculator(Action):
+class Calculator(Action[CalculatorRequest, CalculatorResponse]):
     """
     Useful to perform any mathematical calculations, like sum, minus, multiplication, division, etc.
     """
