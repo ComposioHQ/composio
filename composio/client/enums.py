@@ -480,6 +480,7 @@ class App(str, Enum):
     RAGTOOL = "ragtool"
     WEBTOOL = "webtool"
     GREPTILE = "greptile"
+    SUBMITPATCHTOOL = "submitpatchtool"
 
 
 
@@ -4264,6 +4265,7 @@ class Action(tuple, Enum):
     WEBTOOL_SCRAPEWEBSITECONTENT = ("webtool", "webtool_scrapewebsitecontent", True, True)
     WEBTOOL_SCRAPEWEBSITEELEMENT = ("webtool", "webtool_scrapewebsiteelement", True, True)
     GREPTILE_CODEQUERY = ("greptile", "greptile_codequery", True, True)
+    SUBMITPATCHTOOL_SUBMITPATCH = ("submitpatchtool", "submitpatchtool_submitpatch", True, True)
 
 
 
