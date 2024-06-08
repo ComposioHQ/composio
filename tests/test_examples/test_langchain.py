@@ -3,8 +3,8 @@ import sys
 
 import pytest
 
-from composio.exceptions import ApiKeyNotProvidedError
 from composio.cli import composio as composio_cli
+from composio.exceptions import ApiKeyNotProvidedError
 
 
 def run_langchain_script():
