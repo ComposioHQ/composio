@@ -1,9 +1,9 @@
 from pathlib import Path
+from typing import Type
 
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from typing import Type
 
 
 class ReadFileRequest(BaseModel):
@@ -38,7 +38,9 @@ class ReadFile(Action[ReadFileRequest, ReadFileResponse]):
     _tags = ["file", "read"]
     _tool_name = "file"
 
-    def execute(self, request: ReadFileRequest, authorisation_data: dict) -> ReadFileResponse: 
+    def execute(
+        self, request: ReadFileRequest, authorisation_data: dict
+    ) -> ReadFileResponse:
         """
         Reads the contents of the file `file_name` and returns the contents
         if successful.
