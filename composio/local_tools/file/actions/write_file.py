@@ -35,7 +35,7 @@ class WriteFileResponse(BaseModel):
     )
 
 
-class WriteFile(Action):
+class WriteFile(Action[WriteFileRequest, WriteFileResponse]):
     """Write file tool."""
 
     _display_name = "Write file"

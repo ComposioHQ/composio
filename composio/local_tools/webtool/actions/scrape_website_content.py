@@ -16,7 +16,7 @@ class ScrapeWebsiteToolResponse(BaseModel):
     website_content: str = Field(..., description="The content of the website")
 
 
-class ScrapeWebsiteContent(Action):
+class ScrapeWebsiteContent(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolResponse]):
     """
     Scrape contents of a website
     """

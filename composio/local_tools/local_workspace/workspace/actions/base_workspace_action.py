@@ -10,7 +10,7 @@ from composio.local_tools.local_workspace.commons import (
     get_logger,
 )
 
-from typing import Union, Any
+from typing import Union, Any, TypeVar
 
 logger = get_logger()
 
@@ -23,7 +23,13 @@ class BaseWorkspaceResponse(BaseModel):
     pass
 
 
-class BaseWorkspaceAction(Action, ABC):
+
+
+
+RequestType = TypeVar('RequestType', bound=BaseModel)
+ResponseType = TypeVar('ResponseType', bound=BaseModel)
+
+class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
     """
     Base class for all Workspace actions
     """
@@ -58,5 +64,5 @@ class BaseWorkspaceAction(Action, ABC):
         self.history_processor = history_processor
 
     @abstractmethod
-    def execute(self, request_data: Any, authorisation_data: dict) -> Union[dict, BaseModel]:
+    def execute(self, request_data: RequestType, authorisation_data: dict) -> ResponseType:
         pass
