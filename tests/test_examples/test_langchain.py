@@ -7,7 +7,7 @@ from composio.exceptions import ApiKeyNotProvidedError
 
 
 def run_langchain_script():
-    from plugins.langchain.langchain_demo import main
+    from plugins.langchain.langchain_demo import main  # pylint: disable=import-outside-toplevel
 
     main()
 
@@ -45,7 +45,5 @@ def test_langchain_script_not_authorized_error():
 
 
 def test_langchain_script_is_working():
-    import os
-
-    os.environ["COMPOSIO_API_KEY"] = "kwrjjvgedmuw5jt1fet2"
+    os.environ["COMPOSIO_API_KEY"] = ""
     run_langchain_script()

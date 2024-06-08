@@ -68,11 +68,11 @@ def json_schema_to_pydantic_type(
         ]
         if len(pydantic_types) == 1:
             return pydantic_types[0]
-        elif len(pydantic_types) == 2:
+        if len(pydantic_types) == 2:
             return t.Union[
                 t.cast(t.Type, pydantic_types[0]), t.cast(t.Type, pydantic_types[1])
             ]
-        elif len(pydantic_types) == 3:
+        if len(pydantic_types) == 3:
             return t.Union[
                 t.cast(t.Type, pydantic_types[0]),
                 t.cast(t.Type, pydantic_types[1]),
