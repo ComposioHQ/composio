@@ -480,6 +480,7 @@ class App(str, Enum):
     RAGTOOL = "ragtool"
     WEBTOOL = "webtool"
     GREPTILE = "greptile"
+    WIKIPEDIATOOL = "wikipediatool"
 
 
 
@@ -4264,7 +4265,7 @@ class Action(tuple, Enum):
     WEBTOOL_SCRAPEWEBSITECONTENT = ("webtool", "webtool_scrapewebsitecontent", True, True)
     WEBTOOL_SCRAPEWEBSITEELEMENT = ("webtool", "webtool_scrapewebsiteelement", True, True)
     GREPTILE_CODEQUERY = ("greptile", "greptile_codequery", True, True)
-
+    FETCH_WIKIPEDIA_SUMMARY = ("wikipediatool", "fetch_summary", True, True)
 
 
 class Trigger(tuple, Enum):
