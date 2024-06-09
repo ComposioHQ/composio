@@ -24,6 +24,7 @@ class ComposioToolSet(BaseComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
+        output_in_file: bool = False,
     ) -> None:
         """
         Initialize composio toolset.
@@ -33,12 +34,14 @@ class ComposioToolSet(BaseComposioToolSet):
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param entity_id: Entity ID for making function calls
+        :param output_in_file: Whether to write output to a file
         """
         super().__init__(
             api_key=api_key,
             base_url=base_url,
             runtime="autogen",
             entity_id=entity_id,
+            output_in_file=output_in_file,
         )
         self.caller = caller
         self.executor = executor
@@ -49,6 +52,7 @@ class ComposioToolSet(BaseComposioToolSet):
         caller: t.Optional[ConversableAgent] = None,
         executor: t.Optional[ConversableAgent] = None,
         tags: t.Optional[t.Sequence[Tag]] = None,
+        entity_id: t.Optional[str] = None,
     ) -> None:
         """
         Register tools to the proxy agents.
@@ -57,6 +61,7 @@ class ComposioToolSet(BaseComposioToolSet):
         :param caller: Caller agent.
         :param executor: Executor agent.
         :param tags: Filter by the list of given Tags.
+        :param entity_id: Entity ID to use for executing function calls.
         """
         if isinstance(tools, App):
             tools = [tools]
@@ -79,6 +84,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 ),
                 caller=caller,
                 executor=executor,
+                entity_id=entity_id or self.entity_id,
             )
 
     def register_actions(
@@ -86,6 +92,7 @@ class ComposioToolSet(BaseComposioToolSet):
         actions: t.Sequence[Action],
         caller: t.Optional[ConversableAgent] = None,
         executor: t.Optional[ConversableAgent] = None,
+        entity_id: t.Optional[str] = None,
     ):
         """
         Register tools to the proxy agents.
@@ -93,6 +100,7 @@ class ComposioToolSet(BaseComposioToolSet):
         :param actions: List of tools to register.
         :param caller: Caller agent.
         :param executor: Executor agent.
+        :param entity_id: Entity ID to use for executing function calls.
         """
 
         caller = caller or self.caller
@@ -113,6 +121,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 ),
                 caller=caller,
                 executor=executor,
+                entity_id=entity_id or self.entity_id,
             )
 
     def _process_function_name_for_registration(
@@ -134,7 +143,17 @@ class ComposioToolSet(BaseComposioToolSet):
         schema: t.Dict,
         caller: ConversableAgent,
         executor: ConversableAgent,
-    ):
+        entity_id: t.Optional[str] = None,
+    ) -> None:
+        """
+        Register a schema to the Autogen registry.
+
+        Args:
+            schema (dict[str, any]): The action schema to be registered.
+            caller (ConversableAgent): The agent responsible for initiating the tool registration.
+            executor (ConversableAgent): The agent responsible for executing the registered tools.
+            entity_id (str, optional): The identifier of the entity for which the action is executed. Defaults to None.
+        """
         name = schema["name"]
         appName = schema["appName"]
         description = schema["description"]
@@ -147,7 +166,7 @@ class ComposioToolSet(BaseComposioToolSet):
                     name=name,
                 ),
                 params=kwargs,
-                entity_id=self.entity_id,
+                entity_id=entity_id or self.entity_id,
             )
 
         function = types.FunctionType(

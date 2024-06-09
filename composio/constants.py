@@ -12,6 +12,11 @@ LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 Local cache directory name for composio CLI
 """
 
+LOCAL_OUTPUT_FILE_DIRECTORY_NAME = "output"
+"""
+Local output file directory name for composio tools
+"""
+
 USER_DATA_FILE_NAME = "user_data.json"
 """
 Filename for storing user data.
