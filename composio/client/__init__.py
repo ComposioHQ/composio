@@ -6,9 +6,10 @@ import os
 import time
 import typing as t
 import warnings
-from datetime import datetime
-
+import base64
 import requests
+
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from composio.client.endpoints import Endpoint, v1
@@ -521,17 +522,26 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
     def get(  # type: ignore
         self,
         trigger_ids: t.Optional[t.List[str]] = None,
+        connected_account_ids: t.Optional[t.List[str]] = None,
+        integration_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[str]] = None,
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
+        connected_account_ids = connected_account_ids or []
+        integration_ids = integration_ids or []
+        trigger_names = trigger_names or []
+        queries = {}
+        if len(trigger_ids) > 0:
+            queries["triggerIds"] = ",".join(trigger_ids)
+        if len(connected_account_ids) > 0:
+            queries["connectedAccountIds"] = ",".join(connected_account_ids)
+        if len(integration_ids) > 0:
+            queries["integrationIds"] = ",".join(integration_ids)
+        if len(trigger_names) > 0:
+            queries["triggerNames"] = ",".join(trigger_names)
         return self._raise_if_empty(
-            super().get(
-                queries=(
-                    {"triggerIds": ",".join(trigger_ids)}
-                    if len(trigger_ids) > 0
-                    else {}
-                )
-            )
+            super().get(queries=queries)
         )
 
 
@@ -542,6 +552,8 @@ class ActionParameterPropertyModel(BaseModel):
     description: t.Optional[str] = None
     title: t.Optional[str] = None
     type: t.Optional[str] = None
+    oneOf: t.Optional[t.List["ActionParameterPropertyModel"]] = None
+    file_readable: t.Optional[bool] = False
 
 
 class ActionParametersModel(BaseModel):
@@ -703,14 +715,17 @@ class Actions(Collection[ActionModel]):
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:
-            required_triggers = [
-                tag.app if isinstance(tag, Tag) else tag for tag in tags
-            ]
-            items = [
-                item
-                for item in items
-                if any(tag in required_triggers for tag in item.tags)
-            ]
+            required_tags = [tag.name if isinstance(tag, Tag) else tag for tag in tags]
+            only_important_tag = (required_tags == ["important"])
+            should_not_filter_using_tags = (len(items) < 15 and only_important_tag)
+            if not should_not_filter_using_tags:
+                filtered_items = [
+                    item
+                    for item in items
+                    if any(tag in required_tags for tag in item.tags)
+                ]
+                if len(filtered_items) > 0 or not only_important_tag:
+                    items = filtered_items
 
         if len(local_apps) > 0 or len(local_actions) > 0:
             local_items = self.local_handler.get_list_of_action_schemas(
@@ -726,19 +741,46 @@ class Actions(Collection[ActionModel]):
         entity_id: str,
         connected_account: t.Optional[str] = None,
     ) -> t.Dict:
-        """Execute an action."""
+        """
+        Execute an action on the specified entity with optional connected account.
+
+        :param action: The Action object to be executed.
+        :param params: A dictionary of parameters to be passed to the action.
+        :param entity_id: The unique identifier of the entity on which the action is executed.
+        :param connected_account: Optional connected account ID if required for the action.
+        :return: A dictionary containing the response from the executed action.
+        """
         if action.is_local:
             return self.local_handler.execute_local_action(
                 action=action,
                 request_data=params,
             )
+        actionsResp = self.client.actions.get(actions=[action])
+        if len(actionsResp) == 0:
+            raise ComposioClientError(f"Action {action} not found")
+        action_model = actionsResp[0]
+        action_req_schema = action_model.parameters.properties
+        modified_params = {}
+        for param, value in params.items():
+            file_readable = action_req_schema[param].file_readable or False
+            if file_readable and isinstance(value, str) and os.path.isfile(value):
+                with open(value, 'rb') as file:
+                    file_content = file.read()
+                    try:
+                        file_content.decode('utf-8')  # Try decoding as UTF-8 to check if it's normal text
+                        modified_params[param] = file_content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        # If decoding fails, treat as binary and encode in base64
+                        modified_params[param] = base64.b64encode(file_content).decode('utf-8')
+            else:
+                modified_params[param] = value
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
                     url=str(self.endpoint / action.action / "execute"),
                     json={
                         "appName": action.app,
-                        "input": params,
+                        "input": modified_params,
                         "entityId": entity_id,
                     },
                 )
@@ -755,7 +797,7 @@ class Actions(Collection[ActionModel]):
                 url=str(self.endpoint / action.action / "execute"),
                 json={
                     "connectedAccountId": connected_account,
-                    "input": params,
+                    "input": modified_params,
                     "entityId": entity_id,
                 },
             )
@@ -963,13 +1005,13 @@ class Entity:
 
     def get_connection(
         self,
-        app: t.Optional[str] = None,
+        app: t.Optional[t.Union[str, App]] = None,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
         Get connected account for an action.
 
-        :param action: Action type enum
+        :param app: App name
         :param connected_account_id: Connected account ID to use as filter
         :return: Connected account object
         :raises: If no connected account found for given entity ID
@@ -1001,6 +1043,42 @@ class Entity:
             )
         return latest_account
 
+    def get_connections(self) -> t.List[ConnectedAccountModel]:
+        """
+        Get all connections for an entity.
+        """
+        return self.client.connected_accounts.get(entity_ids=[self.id], active=True)
+
+    def enable_trigger(self, app: t.Union[str, App], trigger_name: str, config: t.Dict[str, t.Any]) -> t.Dict:
+        """
+        Enable a trigger for an entity.
+
+        :param app: App name
+        :param trigger_name: Trigger name
+        :param config: Trigger config
+        """
+        connected_account = self.get_connection(app=app)
+        return self.client.triggers.enable(
+            name=trigger_name,
+            connected_account_id=connected_account.id,
+            config=config,
+        )
+
+    def disable_trigger(self, trigger_id: str) -> t.Dict:
+        """
+        Disable a trigger for an entity.
+
+        :param trigger_id: Trigger ID
+        """
+        return self.client.triggers.disable(id=trigger_id)
+
+    def get_active_triggers(self) -> t.List[ActiveTriggerModel]:
+        """
+        Get all active triggers for an entity.
+        """
+        connected_accounts = self.get_connections()
+        return self.client.active_triggers.get(connected_account_ids=[connected_account.id for connected_account in connected_accounts])
+
     def initiate_connection(
         self,
         app_name: t.Union[str, App],
@@ -1009,7 +1087,16 @@ class Entity:
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
     ) -> ConnectionRequestModel:
-        """Initiate integration connection."""
+        """
+        Initiate an integration connection process for a specified application.
+
+        :param app_name: The name of the application or an App enum instance.
+        :param auth_mode: Optional authentication mode to be used.
+        :param auth_config: Optional dictionary containing authentication configuration details.
+        :param redirect_url: Optional URL to which a user will be redirected after authentication.
+        :param integration: Optional existing IntegrationModel instance to be used.
+        :return: A ConnectionRequestModel instance representing the initiated connection.
+        """
         if isinstance(app_name, App):
             app_name = app_name.value
 

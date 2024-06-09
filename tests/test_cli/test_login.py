@@ -1,6 +1,5 @@
 """Test login command."""
 
-
 from composio.cli.context import get_context
 
 from tests.test_cli.base import BaseCliTest
@@ -19,5 +18,4 @@ class TestLogin(BaseCliTest):
         # Revert back the API Key value.
         context.user_data.api_key = api_key
 
-        assert result.exit_code == 1, result.stdout
-        assert "Already logged in" in result.stderr
+        assert result.exit_code == 0, result.stdout

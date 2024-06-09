@@ -5,11 +5,11 @@ from anthropic.types.beta.tools.tool_param import ToolParam
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools import ComposioToolSet
+from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
-class ComposioToolset(ComposioToolSet):
+class ComposioToolset(BaseComposioToolSet):
     """
     Composio toolset for Anthropic Claude platform.
 
@@ -55,6 +55,7 @@ class ComposioToolset(ComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
+        output_in_file: bool = False,
     ) -> None:
         """
         Initialize composio toolset.
@@ -62,12 +63,14 @@ class ComposioToolset(ComposioToolSet):
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param entity_id: Entity ID for making function calls
+        :param output_in_file: Whether to write output to a file
         """
         super().__init__(
             api_key=api_key,
             base_url=base_url,
             runtime="claude",
             entity_id=entity_id,
+            output_in_file=output_in_file,
         )
         self.schema = SchemaType.CLAUDE
 
@@ -136,42 +139,42 @@ class ComposioToolset(ComposioToolSet):
     def execute_tool_call(
         self,
         tool_call: ToolUseBlock,
-        entity_id: str = DEFAULT_ENTITY_ID,
+        entity_id: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute a tool call.
 
         :param tool_call: Tool call metadata.
-        :param entity_id: Entity ID.
+        :param entity_id: Entity ID to use for executing function calls.
         :return: Object containing output data from the tool call.
         """
         return self.execute_action(
             action=Action.from_action(name=tool_call.name),
             params=t.cast(t.Dict, tool_call.input),
-            entity_id=entity_id,
+            entity_id=entity_id or self.entity_id,
         )
 
     def handle_tool_calls(
         self,
         llm_response: ToolsBetaMessage,
-        entity_id: str = DEFAULT_ENTITY_ID,
+        entity_id: t.Optional[str] = None,
     ) -> t.List[t.Dict]:
         """
         Handle tool calls from OpenAI chat completion object.
 
         :param response: Chat completion object from
                         openai.OpenAI.chat.completions.create function call
-        :param entity_id: Entity ID.
+        :param entity_id: Entity ID to use for executing function calls.
         :return: A list of output objects from the function calls.
         """
-        entity_id = self.validate_entity_id(entity_id)
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
         for content in llm_response.content:
             if isinstance(content, ToolUseBlock):
                 outputs.append(
                     self.execute_tool_call(
                         tool_call=content,
-                        entity_id=entity_id,
+                        entity_id=entity_id or self.entity_id,
                     )
                 )
         return outputs
