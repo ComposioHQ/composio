@@ -11,11 +11,27 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client.exceptions import NoItemsFound
+from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 
 
-@click.group(name="triggers", invoke_without_command=True)
+class TriggersExamples(HelpfulCmdBase, DYMGroup):
+    examples = [
+        click.style("composio triggers", fg="green")
+        + click.style("              # List all triggers\n", fg="black"),
+        click.style("composio triggers --active", fg="green")
+        + click.style("     # List only active triggers\n", fg="black"),
+        click.style("composio triggers --id 12345", fg="green")
+        + click.style("   # List trigger with specific ID\n", fg="black"),
+        click.style("composio triggers --app MyApp", fg="green")
+        + click.style("  # List triggers for a specific app\n", fg="black"),
+    ]
+
+
+@click.group(name="triggers", invoke_without_command=True, cls=TriggersExamples)
+@click.help_option("--help", "-h", "-help")
 @click.option(
     "--active",
     is_flag=True,
@@ -43,7 +59,7 @@ def _triggers(
     app_names: t.Tuple[str, ...],
     active: bool = True,
 ) -> None:
-    """Manage triggers"""
+    """List triggers available for your account"""
     if context.click_ctx.invoked_subcommand:
         return
 
@@ -64,8 +80,16 @@ def _triggers(
         raise click.ClickException(message=e.message) from e
 
 
-@_triggers.command(name="get")
+class GetTriggerExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio triggers get <trigger_id>", fg="green")
+        + click.style("  # Get details of a specific trigger by ID\n", fg="black"),
+    ]
+
+
+@_triggers.command(name="get", cls=GetTriggerExamples)
 @click.argument("id", type=str)
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _get(context: Context, id: str) -> None:
     """Get a specific trigger information."""
@@ -95,14 +119,25 @@ def _get(context: Context, id: str) -> None:
         raise click.ClickException(message=e.message) from e
 
 
-@_triggers.command(name="enable")
+class EnableTriggerExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio triggers enable <trigger_id>", fg="green")
+        + click.style("  # Enable a trigger for an app\n", fg="black"),
+    ]
+
+
+@_triggers.command(name="enable", cls=EnableTriggerExamples)
 @click.argument("id", type=str)
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _enable_trigger(context: Context, id: str) -> None:
     """Enable a trigger for an app"""
     context.console.print(f"Enabling trigger [green]{id}[/green]")
     try:
-        (trigger,) = context.client.triggers.get(trigger_ids=[id])
+        triggers = context.client.triggers.get(trigger_ids=[id])
+        if len(triggers) == 0:
+            raise click.ClickException(f"Trigger with ID {id} not found")
+        trigger = triggers[0]
         connected_account = context.client.get_entity().get_connection(
             app=trigger.appKey
         )
@@ -127,8 +162,16 @@ def _enable_trigger(context: Context, id: str) -> None:
         raise click.ClickException(message=e.message) from e
 
 
-@_triggers.command(name="disable")
+class DisableTriggerExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio triggers disable <trigger_id>", fg="green")
+        + click.style("  # Disable a trigger for an app\n", fg="black"),
+    ]
+
+
+@_triggers.command(name="disable", cls=DisableTriggerExamples)
 @click.argument("id", type=str)
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _disable_trigger(context: Context, id: str) -> None:
     """Disable a trigger for an app"""
@@ -148,8 +191,16 @@ def _callbacks() -> None:
     """Manage trigger callbacks."""
 
 
-@_callbacks.command(name="set")
+class SetCallbackExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio triggers callbacks set <callback_url>", fg="green")
+        + click.style("  # Set callback URL\n", fg="black"),
+    ]
+
+
+@_callbacks.command(name="set", cls=SetCallbackExamples)
 @click.argument("url", type=str)
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _set_callback(context: Context, url: str) -> None:
     """
@@ -164,7 +215,15 @@ def _set_callback(context: Context, url: str) -> None:
         raise click.ClickException(message=e.message)
 
 
-@_callbacks.command(name="get")
+class GetCallbackExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio triggers callbacks get", fg="green")
+        + click.style("  # Get callback URL\n", fg="black"),
+    ]
+
+
+@_callbacks.command(name="get", cls=GetCallbackExamples)
+@click.help_option("--help", "-h", "-help")
 @pass_context
 def _get_callback(context: Context) -> None:
     """

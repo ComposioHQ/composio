@@ -48,6 +48,7 @@ class ComposioToolSet(BaseComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
+        output_in_file: bool = False,
     ) -> None:
         """
         Initialize composio toolset.
@@ -55,15 +56,21 @@ class ComposioToolSet(BaseComposioToolSet):
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param entity_id: Entity ID for making function calls
+        :param output_in_file: Whether to write output to a file
         """
         super().__init__(
             api_key=api_key,
             base_url=base_url,
             runtime="griptape",
             entity_id=entity_id,
+            output_in_file=output_in_file,
         )
 
-    def _wrap_tool(self, schema: t.Dict) -> t.Type[BaseTool]:
+    def _wrap_tool(
+        self,
+        schema: t.Dict,
+        entity_id: t.Optional[str] = None,
+    ) -> BaseTool:
         """Wrap Composio tool as GripTape `BaseTool` object"""
         app = schema["appName"]
         name = schema["name"]
@@ -90,11 +97,11 @@ class ComposioToolSet(BaseComposioToolSet):
             schema_dict[schema_key] = schema_dtype
 
         def _execute_task(params: t.Dict) -> t.Dict:
-            """Auxialiry method for executing task."""
+            """Placeholder method for executing task."""
             return self.execute_action(
                 action=Action.from_app_and_action(app=app, name=name),
                 params=params,
-                entity_id=self.entity_id,
+                entity_id=entity_id or self.entity_id,
             )
 
         class GripTapeTool(BaseTool):
@@ -124,18 +131,27 @@ class ComposioToolSet(BaseComposioToolSet):
                 }
 
         name = "".join(map(lambda x: x.title(), name.split("_"))) + "Client"
-        return type(name, (GripTapeTool,), {})
+        cls = type(name, (GripTapeTool,), {})
+        return cls()
 
-    def get_actions(self, actions: t.Sequence[Action]) -> t.List[BaseTool]:
+    def get_actions(
+        self,
+        actions: t.Sequence[Action],
+        entity_id: t.Optional[str] = None,
+    ) -> t.List[BaseTool]:
         """
         Get composio tools wrapped as GripTape `BaseTool` type objects.
 
         :param actions: List of actions to wrap
+        :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `BaseTool` objects
         """
 
         return [
-            self._wrap_tool(schema=tool.model_dump(exclude_none=True))()
+            self._wrap_tool(
+                schema=tool.model_dump(exclude_none=True),
+                entity_id=entity_id,
+            )
             for tool in self.client.actions.get(actions=actions)
         ]
 
@@ -143,16 +159,21 @@ class ComposioToolSet(BaseComposioToolSet):
         self,
         apps: t.Sequence[App],
         tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """
         Get composio tools wrapped as GripTape `BaseTool` type objects.
 
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
+        :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `BaseTool` objects
         """
 
         return [
-            self._wrap_tool(schema=tool.model_dump(exclude_none=True))()
+            self._wrap_tool(
+                schema=tool.model_dump(exclude_none=True),
+                entity_id=entity_id,
+            )
             for tool in self.client.actions.get(apps=apps, tags=tags)
         ]
