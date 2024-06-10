@@ -8,7 +8,7 @@ This guide provides detailed steps to create a research assistant agent that lev
 You need to connect your SerpAPI account using the Composio CLI. This allows agents to use SerpAPI for web searches. Run the following commands on your terminal:
 
 ```bash
-pip install composio-langchain composio-core langchain-community huggingface_hub google-search-results
+pip install composio-langchain composio-core langchain-community huggingface_hub google-search-results dotenv
 
 # Connect your SerpAPI account so agents can use it.
 composio add serpapi
@@ -22,17 +22,20 @@ Now, import the necessary libraries in your Python script:
 import os
 from crewai import Agent, Task, Crew, Process
 from composio_langchain import ComposioToolSet, Action, App
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 ```
 
-## 3. Initialize Tools and Agents
+## 3. Initialize Tools and LLM
 
-Initialize the tools and agents required for your research assistant:
+Initialize the tools and LLM required for your research assistant:
 
 ```python
+
+dotenv.load_dotenv()
 # Initialize the language model
-llm = ChatGoogleGenerativeAI(
-    model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
+llm = ChatOpenAI(
+    openai_api_key=os.environ["OPENAI_API_KEY"],
+    model_name="gpt-4o"
 )
 
 # Composio tool for SerpAPI
@@ -40,7 +43,7 @@ composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(actions=[Action.SERPAPI_SEARCH])
 ```
 
-Make sure to set the `GOOGLE_API_KEY` environment variable with your Google API key.
+Make sure to set the `OPENAI_API_KEY` environment variable with your Google API key.
 
 ## 4. Defining the Agent
 
@@ -82,12 +85,13 @@ Below is the complete code snippet combining all the steps:
 # Import required libraries
 from crewai import Agent, Task, Crew, Process
 from composio_langchain import ComposioToolSet, Action, App
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 import os
-
+import dotenv
 # Initialize tools and agents
-llm = ChatGoogleGenerativeAI(
-    model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
+llm = ChatOpenAI(
+    openai_api_key=os.environ["OPENAI_API_KEY"],
+    model_name="gpt-4o"
 )
 
 # Composio tool for SerpAPI
