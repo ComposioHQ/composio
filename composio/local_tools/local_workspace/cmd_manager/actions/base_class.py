@@ -39,7 +39,7 @@ class BaseResponse(BaseModel):
     )
 
 
-class BaseAction(Action, ABC):
+class BaseAction(Action[BaseRequest, BaseResponse], ABC):
     """
     Base class for all actions
     """

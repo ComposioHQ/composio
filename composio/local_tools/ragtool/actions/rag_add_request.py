@@ -4,25 +4,29 @@ from composio.core.local import Action
 
 
 class RagToolAddRequest(BaseModel):
-    content: str = Field(..., description="Content to add to the knowledge base", json_schema_extra={"file_readable": True})
+    content: str = Field(
+        ...,
+        description="Content to add to the knowledge base",
+        json_schema_extra={"file_readable": True},
+    )
 
 
 class RagToolAddResponse(BaseModel):
     status: str = Field(..., description="Status of the addition to the knowledge base")
 
 
-class AddContentToRagTool(Action):
+class AddContentToRagTool(Action[RagToolAddRequest, RagToolAddResponse]):
     """
     Tool for adding content to the knowledge base
     """
 
     _display_name = "Add Content to Rag Tool"
-    _request_schema = RagToolAddRequest
-    _response_schema = RagToolAddResponse
+    _request_schema: type[RagToolAddRequest] = RagToolAddRequest
+    _response_schema: type[RagToolAddResponse] = RagToolAddResponse
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
 
-    def execute(self, request: RagToolAddRequest, authorisation_data: dict = None):
+    def execute(self, request: RagToolAddRequest, authorisation_data: dict) -> dict:
         """Add content to the knowledge base"""
         if authorisation_data is None:
             authorisation_data = {}
@@ -32,11 +36,11 @@ class AddContentToRagTool(Action):
 
             # pylint: enable=import-outside-toplevel
         except ImportError as e:
-            raise ImportError(f"Failed to import App from embedchain: {e}") from e
+            return {"error": f"Failed to import App from embedchain: {e}"}
         try:
             embedchain_app = App()
             content = request.content
             embedchain_app.add(content)
-            return "Content added successfully"
+            return {"status": "Content added successfully"}
         except Exception as e:
-            raise Exception(f"Error adding content: {e}") from e
+            return {"error": f"Error adding content: {e}"}
