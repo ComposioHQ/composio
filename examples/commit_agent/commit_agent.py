@@ -12,8 +12,8 @@ from langchain_openai import ChatOpenAI
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
-# Initialize agents using CrewAI
-llm = ChatOpenAI(api_key=openai_api_key, model="gpt-4o")
+# Initialize the language model
+llm=ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
 
 # Define tools for the agents
 composio_toolset = ComposioToolSet()

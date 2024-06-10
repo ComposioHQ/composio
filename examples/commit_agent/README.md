@@ -13,13 +13,18 @@ source ~/.venvs/commit_agent/bin/activate
 ```
 ### 2. Install libraries
 ```shell
-pip install -U composio-crewai crewai flask langchain_openai
+pip install -r requirements.txt
+
+# Or
+
+pip install -U composio-crewai crewai flask langchain_openai python-dotenv
 ```
 ### 3. Expose your local server to the internet using ngrok
 ```shell
 ngrok <port_number>
 ```
 ### 4. Setup and Configure triggers
+> Triggers are a set of predefined conditions. When these conditions are met, a webhook is triggered which has some sort of payload. 
 ```shell
 # Set CallBack URL 
 composio triggers callbacks set "https://<ngrok-url>/webhook"
@@ -35,3 +40,4 @@ Go to your trello board, add `.json` to the end of the url. Search the correspon
 ```shell
 python cookbook/examples/commit_agent/commit_agent.py
 ```
+Create a commit in the configured repo. The trello board should automatically be updates!
