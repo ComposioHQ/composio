@@ -1,0 +1,3 @@
+crewai
+composio-crewai
+langchain-openai
