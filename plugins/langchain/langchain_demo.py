@@ -21,6 +21,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 # Initialize tools.
 openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+
 def main():
     composio_toolset = ComposioToolSet()
 
@@ -36,6 +37,7 @@ def main():
 
     # Execute using agent_executor
     agent_executor.invoke({"input": task})
+
 
 if __name__ == "__main__":
     main()
