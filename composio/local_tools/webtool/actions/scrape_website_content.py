@@ -16,7 +16,7 @@ class ScrapeWebsiteToolResponse(BaseModel):
     website_content: str = Field(..., description="The content of the website")
 
 
-class ScrapeWebsiteContent(Action):
+class ScrapeWebsiteContent(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolResponse]):
     """
     Scrape contents of a website
     """
@@ -27,9 +27,11 @@ class ScrapeWebsiteContent(Action):
     _tags = ["Webbrowser"]
     _tool_name = "webtool"
 
-    def execute(self, request: ScrapeWebsiteToolRequest, authorisation_data: dict = {}):
+    def execute(
+        self, request_data: ScrapeWebsiteToolRequest, authorisation_data: dict
+    ) -> dict:
         """Scrape the website and return the content"""
-        url = request.website_url
+        url = request_data.website_url
         try:
             # pylint: disable=import-outside-toplevel
             from bs4 import BeautifulSoup
@@ -47,13 +49,12 @@ class ScrapeWebsiteContent(Action):
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            response = urlopen(req, context=context)
-            html = response.read().decode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-            print("RESPONSE _________________________", str(soup))
-            result = str(soup)
+            with urlopen(req, context=context) as response:
+                html = response.read().decode("utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+                result = {"website_content": str(soup)}
             return result
         except Exception as e:
             print("ERROR __________________", e)
-            result = f"Error scraping website: {e}"
+            result = {"error": f"Error scraping website: {e}"}
             return result

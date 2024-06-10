@@ -8,6 +8,7 @@ import typing
 
 import click
 
+
 class DYMMixin:
     """
     Mixin class for click MultiCommand inherited classes
