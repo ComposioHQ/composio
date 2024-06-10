@@ -20,6 +20,7 @@ chatbot = AssistantAgent(
     },
 )
 
+
 def is_termination_msg(content: dict) -> bool:
     """Check if a message contains termination message."""
     return "TERMINATE" in (content.get("content", "") or "")
@@ -36,7 +37,9 @@ def main():
     )
 
     # Register the preferred Applications, with right executor.
-    composio_toolset.register_tools(tools=[App.GITHUB], caller=chatbot, executor=user_proxy)
+    composio_toolset.register_tools(
+        tools=[App.GITHUB], caller=chatbot, executor=user_proxy
+    )
 
     # Define task.
     task = "Star a repo SamparkAI/composio on GitHub"
@@ -46,6 +49,7 @@ def main():
 
     # Print response
     print(response.chat_history)
+
 
 if __name__ == "__main__":
     main()

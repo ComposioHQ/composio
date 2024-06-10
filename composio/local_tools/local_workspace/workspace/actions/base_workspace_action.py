@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, TypeVar
 
 from pydantic import BaseModel
 
@@ -22,7 +22,11 @@ class BaseWorkspaceResponse(BaseModel):
     pass
 
 
-class BaseWorkspaceAction(Action, ABC):
+RequestType = TypeVar("RequestType", bound=BaseModel)
+ResponseType = TypeVar("ResponseType", bound=BaseModel)
+
+
+class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
     """
     Base class for all Workspace actions
     """
@@ -58,6 +62,6 @@ class BaseWorkspaceAction(Action, ABC):
 
     @abstractmethod
     def execute(
-        self, request_data: BaseWorkspaceRequest, authorisation_data: dict
-    ) -> BaseWorkspaceResponse:
+        self, request_data: RequestType, authorisation_data: dict
+    ) -> ResponseType:
         pass
