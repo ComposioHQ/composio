@@ -23,6 +23,7 @@ logger = get_logger()
 
 class DockerManager:
     _instance = None
+    docker_client = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -31,11 +32,12 @@ class DockerManager:
         return cls._instance
 
     def get_client(self):
-        if self.docker_client is None:
+        if self.docker_client is None:  # pylint: disable=E0203
             try:
                 self.docker_client = docker.from_env()
             except docker.errors.DockerException as e:
                 self.handle_docker_exception(e)
+                raise
         return self.docker_client
 
     def handle_docker_exception(self, e):
@@ -52,7 +54,6 @@ class DockerManager:
                 "You might need to allow the use of the docker socket "
             )
             raise RuntimeError(msg) from e
-        raise
 
     @classmethod
     def get_container(
@@ -75,7 +76,7 @@ class DockerManager:
         attrs = filtered_images[0].attrs
         if attrs:
             logger.info(
-                "Found image %s with tags: %s, created: %s " "for %s %s.",
+                "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
                 image_name,
                 attrs["RepoTags"],
                 attrs["Created"],
@@ -105,7 +106,7 @@ class DockerManager:
         attrs = filtered_images[0].attrs
         if attrs is not None:
             logger.info(
-                "Found image %s with tags: %s, created: %s " "for %s %s.",
+                "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
                 image_name,
                 attrs["RepoTags"],
                 attrs["Created"],
@@ -169,6 +170,7 @@ class DockerManager:
             "-m",
         ]
         logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
+        # pylint: disable=R1732
         container = subprocess.Popen(
             startup_cmd,
             stdin=PIPE,
@@ -220,7 +222,7 @@ class DockerManager:
             "-m",
         ]
         logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
-        container = subprocess.Popen(
+        container = subprocess.Popen(  # pylint: disable=consider-using-with
             startup_cmd,
             stdin=PIPE,
             stdout=PIPE,
@@ -243,6 +245,7 @@ class DockerManager:
 def get_container(
     ctr_name: str, image_name: str, persistent: bool = False
 ) -> Tuple[subprocess.Popen, Set]:
+    logger.info("is persistent container: %s", persistent)
     return DockerManager.get_container(ctr_name, image_name)
 
 
