@@ -7,8 +7,8 @@ from langchain_openai import ChatOpenAI
 # Initialize agents using CrewAI
 openai_api_key = "your_openai_api_key"  # Replace with your actual OpenAI API key
 llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4-turbo")
-composiotoolset = ComposioToolSet()
-tools = composiotoolset.get_tools(apps=[App.TRELLO])
+composio_toolset = ComposioToolSet()
+tools = composio_toolset.get_tools(apps=[App.TRELLO])
 crewai_agent = Agent(
     role="Github-Trello TODO Agent",
     goal="""Take 'trello_create_trello_card' action on TRELLO via TRELLO APIs based on the Github patch.""",
