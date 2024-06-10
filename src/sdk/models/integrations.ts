@@ -1,5 +1,5 @@
 import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, GetIntegrationResponse, listAllIntegrations, getIntegration, ListAllIntegrationsData } from "../client";
-import { Composio } from "../sdk";
+import { Composio } from "../";
 
 export class Integrations {
     constructor(private readonly client: Composio) {

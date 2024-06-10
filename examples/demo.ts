@@ -5,7 +5,7 @@ import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 
 import { ComposioToolSet } from "../src/frameworks/langchain";
-import { Action } from "../src/enums";
+import { Action } from "../src/sdk/enums";
 
 (async() => {
     const llm = new ChatOpenAI({

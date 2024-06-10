@@ -1,4 +1,4 @@
-import { Composio } from "./sdk";
+import { Composio } from "../sdk";
 import * as path from "path";
 import { Action } from "./enums";
 

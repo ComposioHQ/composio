@@ -1,5 +1,5 @@
 import { CancelablePromise, listAllConnections, createConnection, GetConnectedAccountResponse, GetConnectedAccountData, CreateConnectionData, CreateConnectionResponse, ListAllConnectionsData, ListAllConnectionsResponse, getConnectedAccount } from "../client";
-import { Composio } from "../sdk";
+import { Composio } from "../";
 
 export class ConnectedAccounts {
     constructor(private readonly client: Composio) {
