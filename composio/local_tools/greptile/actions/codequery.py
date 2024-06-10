@@ -47,7 +47,7 @@ class CodeQueryResponse(BaseModel):
     response: str = Field(..., description="The response to the question")
 
 
-class CodeQuery(Action):
+class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
     """
     Ask the mentor, any questions on the code and get the answer from the mentor.
     with a list of relevant code references (filepaths, line numbers, etc)
@@ -65,7 +65,7 @@ class CodeQuery(Action):
     _tool_name = "greptile"
 
     def execute(
-        self, request_data: CodeQueryRequest, authorisation_data: dict = {}
+        self, request_data: CodeQueryRequest, authorisation_data: dict = {}  # type: ignore[override]
     ) -> dict:
         token = os.getenv("GREPTILE_TOKEN")
         if token is None:
@@ -110,7 +110,10 @@ class CodeQuery(Action):
             data["sessionId"] = request_data.sessionId
         # Send the POST request to the Greptile API
         response = requests.post(
-            "https://api.greptile.com/v2/query", headers=headers, data=json.dumps(data)
+            "https://api.greptile.com/v2/query",
+            headers=headers,
+            data=json.dumps(data),
+            timeout=20,
         )
         # Check if the request was successful
         if response.status_code == 200:
