@@ -17,7 +17,9 @@ class ScrapeWebsiteElementToolResponse(BaseModel):
     element_content: str = Field(..., description="The content of the selected element")
 
 
-class ScrapeWebsiteElement(Action):
+class ScrapeWebsiteElement(
+    Action[ScrapeWebsiteElementToolRequest, ScrapeWebsiteElementToolResponse]
+):
     """
     Scrame website element
     """
@@ -29,8 +31,8 @@ class ScrapeWebsiteElement(Action):
     _tool_name = "webtool"
 
     def execute(
-        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict = None
-    ):
+        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict
+    ) -> dict:
         """Scrape a specific element from the website and return its content"""
         if authorisation_data is None:
             authorisation_data = {}
@@ -53,12 +55,12 @@ class ScrapeWebsiteElement(Action):
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            response = urlopen(req, context=context)
-            html = response.read().decode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-            element = soup.select_one(selector)
-            if element:
-                return str(element)
-            return "Element not found"
+            with urlopen(req, context=context) as response:
+                html = response.read().decode("utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+                element = soup.select_one(selector)
+                if element:
+                    return {"element_content": str(element)}
+                return {"element_content": "Element not found"}
         except Exception as e:
-            return f"Error scraping element: {e}"
+            return {"error": f"Error scraping element: {e}"}
