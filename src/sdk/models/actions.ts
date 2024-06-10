@@ -1,5 +1,5 @@
 import { CancelablePromise, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, getAction, getListActions, executeAction } from "../client";
-import { Composio } from "../sdk";
+import { Composio } from "../";
 
 export class Actions {
     constructor(private readonly client: Composio) {
