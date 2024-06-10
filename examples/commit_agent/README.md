@@ -20,10 +20,18 @@ pip install -U composio-crewai crewai flask langchain_openai
 ngrok <port_number>
 ```
 ### 4. Setup and Configure triggers
-```
+```shell
 # Set CallBack URL 
 composio triggers callbacks set "https://<ngrok-url>/webhook"
 
 # Enable Trigger
 composio triggers enable github_commit_event
+```
+### 5. Configure Environment Variable
+Copy `.env.example` and set up the environment variables
+### 6. Retrieve Trello Board List
+Go to your trello board, add `.json` to the end of the url. Search the corresponding list ids for the boards.
+### 7. Run the script
+```shell
+python cookbook/examples/commit_agent/commit_agent.py
 ```
