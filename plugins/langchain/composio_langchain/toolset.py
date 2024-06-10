@@ -8,7 +8,7 @@ from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import (
-    get_signature_format_from_schema_params,
+    get_pydantic_signature_format_from_schema_params,
     json_schema_to_model,
 )
 
@@ -100,10 +100,11 @@ class ComposioToolSet(BaseComposioToolSet):
             closure=function.__closure__,
         )
         action_func.__signature__ = Signature(  # type: ignore
-            parameters=get_signature_format_from_schema_params(
+            parameters=get_pydantic_signature_format_from_schema_params(
                 schema_params=schema_params
             )
         )
+
         action_func.__doc__ = description
 
         return action_func
@@ -130,7 +131,6 @@ class ComposioToolSet(BaseComposioToolSet):
         parameters = json_schema_to_model(
             json_schema=schema_params,
         )
-
         return StructuredTool.from_function(
             name=action,
             description=description,
