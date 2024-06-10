@@ -29,7 +29,9 @@ class GetWorkspaceHistoryResponse(BaseModel):
     )
 
 
-class GetWorkspaceHistory(Action):
+class GetWorkspaceHistory(
+    Action[GetWorkspaceHistoryRequest, GetWorkspaceHistoryResponse]
+):
     """
     returns history for workspace.
     History includes -
@@ -41,7 +43,7 @@ class GetWorkspaceHistory(Action):
     _history_maintains = True
     _display_name = "Get workspace history"
     _request_schema = GetWorkspaceHistoryRequest
-    _response_schema = GetWorkspaceHistoryRequest
+    _response_schema = GetWorkspaceHistoryResponse
     _tags = ["workspace"]
     _tool_name = "historykeeper"
     _history_len = 5
@@ -57,7 +59,7 @@ class GetWorkspaceHistory(Action):
         self.history_processor = history_processor
 
     def execute(
-        self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict = {}
+        self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict
     ) -> dict:
         if self.history_processor is None:
             logger.error("History processor is not set")

@@ -43,7 +43,7 @@ class HistoryProcessor:
         # Define the file path using instance-id and ensure it's unique per workspace
         file_path = self.base_dir / Path(f"{workspace_id}_instance_{instance_id}.json")
         history_logs = self.history.get(workspace_id, [])
-        with open(file_path, "w") as file:
+        with open(file_path, "w", encoding="utf-8") as file:
             json.dump(history_logs, file)
         return file_path.name
 
