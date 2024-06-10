@@ -15,7 +15,7 @@ composio_toolset = ComposioToolSet()
 # Retrieve actions
 actions = composio_toolset.get_actions(
     actions=[
-        Action.NOTION_ADD_NOTION_PAGE_CHILDREN,
+        Action.NOTION_ADD_PAGE_CONTENT,
     ]
 )
 

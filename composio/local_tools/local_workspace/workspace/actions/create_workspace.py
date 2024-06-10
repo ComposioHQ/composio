@@ -132,7 +132,7 @@ class CreateWorkspaceAction(BaseWorkspaceAction):
             full_file_path = script_dir / Path("../../") / Path(file)
             datum = {}
             contents = ""
-            with open(full_file_path, "r") as f:
+            with open(full_file_path, "r", encoding="utf-8") as f:
                 contents = f.read()
             datum["contents"] = contents
             filename = Path(file).name

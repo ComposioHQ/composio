@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Type
 
 from pydantic import BaseModel, Field
 
@@ -27,17 +28,19 @@ class ReadFileResponse(BaseModel):
     )
 
 
-class ReadFile(Action):
+class ReadFile(Action[ReadFileRequest, ReadFileResponse]):
     """Read file tool."""
 
     _display_name = "Read file"
     _description = "Read file from a file."
-    _request = ReadFileRequest
-    _response = ReadFileResponse
+    _request: Type[ReadFileRequest] = ReadFileRequest
+    _response: Type[ReadFileResponse] = ReadFileResponse
     _tags = ["file", "read"]
     _tool_name = "file"
 
-    def execute(self, request: ReadFileRequest) -> ReadFileResponse:
+    def execute(
+        self, request: ReadFileRequest, authorisation_data: dict
+    ) -> ReadFileResponse:
         """
         Reads the contents of the file `file_name` and returns the contents
         if successful.
