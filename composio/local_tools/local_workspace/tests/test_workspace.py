@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
@@ -12,6 +14,7 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 )
 
 
+@pytest.mark.skip(reason="no way of currently testing this in github action")
 class TestCreateWorkspaceAction(unittest.TestCase):
     def test_create_workspace(self):
         # Setup - create an instance of CreateWorkspaceAction

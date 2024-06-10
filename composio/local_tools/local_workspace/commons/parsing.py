@@ -39,9 +39,9 @@ class Command(FrozenSerializable):
 
 
 class ParseCommandMeta(type):
-    _registry = {}
+    _registry: dict[str, "ParseCommand"] = {}
 
-    def __new__(cls, name, bases, attrs):
+    def __new__(cls, name, bases, attrs):  # pylint: disable=C0204
         new_cls = super().__new__(cls, name, bases, attrs)
         if name != "ParseCommand":
             cls._registry[name] = new_cls
@@ -76,7 +76,7 @@ class ParseCommand(metaclass=ParseCommandMeta):
 
 class ParseCommandBash(ParseCommand):
     def parse_command_file(self, path: str) -> List[Command]:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             contents = f.read()
         if contents.strip().startswith("#!"):
             commands = self.parse_script(path, contents)
@@ -114,7 +114,7 @@ class ParseCommandBash(ParseCommand):
         commands = []
         idx = 0
         docs = []
-        while idx < len(lines):
+        while idx < len(lines):  # pylint: disable=too-many-nested-blocks
             line = lines[idx]
             idx += 1
             if line.startswith("# "):
