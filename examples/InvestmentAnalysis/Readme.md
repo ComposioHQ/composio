@@ -30,7 +30,7 @@ In your Python script, import the necessary libraries and set up your environmen
 ```python
 from crewai import Agent, Task, Crew, Process
 from composio_langchain import ComposioToolSet, Action, App
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 import os
 ```
 
@@ -44,8 +44,9 @@ Initialize the tools and agents required for the system. Make sure to set the `S
 os.environ["SERPAPI_API_KEY"] = os.getenv("SERPAPI_API_KEY")
 
 # Initialize the language model
-llm = ChatGoogleGenerativeAI(
-    model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
+llm = ChatOpenAI(
+    openai_api_key=os.environ["OPENAI_API_KEY"],
+    model_name="gpt-4o"
 )
 
 # Define tools for the agents
@@ -137,15 +138,16 @@ res = investment_crew.kickoff()
 ```python
 from crewai import Agent, Task, Crew, Process
 from composio_langchain import ComposioToolSet, Action, App
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 import os
-
+import dotenv
 # Environment Setup
 os.environ["SERPAPI_API_KEY"] = os.getenv("SERPAPI_API_KEY")
 
 # Initialize the language model
-llm = ChatGoogleGenerativeAI(
-    model="gemini-pro", verbose=True, temperature=0.9, google_api_key=os.getenv("GOOGLE_API_KEY")
+llm = ChatOpenAI(
+    openai_api_key=os.environ["OPENAI_API_KEY"],
+    model_name="gpt-4o"
 )
 
 # Define tools for the agents
