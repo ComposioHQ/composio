@@ -1,7 +1,7 @@
 # Commit Agent
 
 ## Introduction
-This project is an example which uses composio to help you keep your GitHub repository and Trello board in sync. 
+This project is an example which uses Composio to help you keep your GitHub repository and Trello board in sync. 
 It automatically creates Trello cards for TODO comments and commit messages from your GitHub patches, ensuring your tasks are always 
 up-to-date and organized.
 
@@ -35,9 +35,9 @@ composio triggers enable github_commit_event
 ### 5. Configure Environment Variable
 Copy `.env.example` and set up the environment variables
 ### 6. Retrieve Trello Board List
-Go to your trello board, add `.json` to the end of the url. Search the corresponding list ids for the boards.
+Go to your trello board, add `.json` to the end of the url. Search the corresponding list ids for the boards. Use this in your `.env` file.
 ### 7. Run the script
 ```shell
-python cookbook/examples/commit_agent/commit_agent.py
+python cookbook/examples/commit_agent/agent.py
 ```
 Create a commit in the configured repo. The trello board should automatically be updates!

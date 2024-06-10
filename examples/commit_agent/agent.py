@@ -8,9 +8,11 @@ from flask import Flask, request
 from langchain_openai import ChatOpenAI
 
 
-# Initialize the language model
+# Load environment variables
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+trello_todo_list_id = os.getenv("TRELLO_TODO_LIST_ID")
+trello_done_list_id = os.getenv("TRELLO_DONE_LIST_ID")
 
 # Initialize the language model
 llm=ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
