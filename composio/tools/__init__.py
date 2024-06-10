@@ -3,6 +3,7 @@ Composio SDK tools.
 """
 
 import os
+import time
 import typing as t
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from composio.constants import (
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
+    LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
 )
 from composio.exceptions import raise_api_key_missing
 from composio.storage.user import UserData
@@ -28,6 +30,7 @@ class ComposioToolSet:
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         runtime: t.Optional[str] = None,
+        output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
     ) -> None:
         """
@@ -53,6 +56,7 @@ class ComposioToolSet:
         )
         self.runtime = runtime
         self.entity_id = entity_id
+        self.output_in_file = output_in_file
         
     @property
     def runtime(self) -> str:
@@ -79,4 +83,13 @@ class ComposioToolSet:
         """
         if isinstance(action, str):
             action = Action(action)
-        return self.client.get_entity(entity_id).execute(action=action, params=params)
+
+        output = self.client.get_entity(entity_id).execute(action=action, params=params)
+        if self.output_in_file:
+            if not os.path.exists(Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME):
+                os.makedirs(Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME)
+            output_file_path = Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME / f"{action.name}_{entity_id}_{time.time()}"
+            with open(output_file_path, 'w') as file:
+                file.write(str(output))
+                return {"output_file": f"{output_file_path}"}
+        return output
