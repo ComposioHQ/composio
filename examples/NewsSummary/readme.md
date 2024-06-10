@@ -1,6 +1,7 @@
 ```markdown
 # AI News Retrieval and Summarization Guide
-
+## Introduction
+This project demonstrates the use of the Langchain and ComposioToolSet frameworks to automate the process of finding and summarizing the latest AI news. The framework orchestrates autonomous AI agents, enabling them to collaborate and execute complex tasks efficiently.
 This guide explains how to create an AI-powered agent using LangChain, Composio, and HuggingFace to retrieve the latest AI news and summarize it. Follow these steps to set up and execute the process.
 
 ## 1. Install Required Packages

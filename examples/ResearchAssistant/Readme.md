@@ -1,7 +1,7 @@
 ```markdown
 # Research Assistant Guide
 
-This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and Google Gemini API to perform web searches and compile research reports.
+This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports.
 
 ## 1. Install Required Packages
 
