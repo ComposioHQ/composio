@@ -2,7 +2,7 @@
 
 ## Introduction
 This project demonstrates the use of the CrewAI framework and Composio Tools to automate the process of conducting investment research and generating investment recommendations. CrewAI orchestrates autonomous AI agents, enabling them to collaborate and execute complex tasks efficiently.
-This guide provides detailed steps to create an Investment Analyst Agent that leverages CrewAI, Composio, and Google Gemini API to perform investment research, analyze stocks, and offer recommendations based on user input.
+This guide provides detailed steps to create an Investment Analyst Agent that leverages CrewAI, Composio, and ChatGPT API to perform investment research, analyze stocks, and offer recommendations based on user input.
 
 ## 1. Install Required Packages
 
