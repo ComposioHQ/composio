@@ -13,9 +13,10 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 trello_todo_list_id = os.getenv("TRELLO_TODO_LIST_ID")
 trello_done_list_id = os.getenv("TRELLO_DONE_LIST_ID")
+model = os.getenv("MODEL")
 
 # Initialize the language model
-llm=ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
+llm = ChatOpenAI(model=model, api_key=openai_api_key)
 
 # Define tools for the agents
 composio_toolset = ComposioToolSet()
