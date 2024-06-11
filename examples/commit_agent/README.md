@@ -1,4 +1,5 @@
 # Commit Agent
+> Fork and Clone this repository if needed!
 
 ## Introduction
 This project is an example which uses Composio to help you keep your GitHub repository and Trello board in sync. 
@@ -6,19 +7,25 @@ It automatically creates Trello cards for TODO comments and commit messages from
 up-to-date and organized.
 
 ## Steps to Run
-### 1. Create a virtual environment
-```shell
-python3 -m venv ~/.venvs/commit_agent
-source ~/.venvs/commit_agent/bin/activate
+**Navigate to the Project Directory:**
+Change to the directory where the `setup.sh`, `main.py`, `requirements.txt`, and `README.md` files are located. For example:
+```sh
+cd path/to/project/directory
 ```
-### 2. Install libraries
+
+### 1. Run the Setup File
+Make the setup.sh Script Executable (if necessary):
+On Linux or macOS, you might need to make the setup.sh script executable:
 ```shell
-pip install -r requirements.txt
-
-# Or
-
-pip install -U composio-crewai crewai flask langchain_openai python-dotenv
+chmod +x setup.sh
 ```
+Execute the setup.sh script to set up the environment and install dependencies:
+```shell
+./setup.sh
+```
+Now, Fill in the .env file with your secrets.
+### 2. Retrieve Trello Board List
+Go to your trello board, add `.json` to the end of the url. Search the corresponding list ids for the boards. Use this in your `.env` file.
 ### 3. Expose your local server to the internet using ngrok
 ```shell
 ngrok <port_number>
@@ -32,12 +39,8 @@ composio triggers callbacks set "https://<ngrok-url>/webhook"
 # Enable Trigger
 composio triggers enable github_commit_event
 ```
-### 5. Configure Environment Variable
-Copy `.env.example` and set up the environment variables
-### 6. Retrieve Trello Board List
-Go to your trello board, add `.json` to the end of the url. Search the corresponding list ids for the boards. Use this in your `.env` file.
-### 7. Run the script
+### 7. Run the python script
 ```shell
-python cookbook/examples/commit_agent/agent.py
+python cookbook/examples/commit_agent/main.py
 ```
 Create a commit in the configured repo. The trello board should automatically be updates!
