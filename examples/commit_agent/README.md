@@ -19,7 +19,8 @@ On Linux or macOS, you might need to make the setup.sh script executable:
 ```shell
 chmod +x setup.sh
 ```
-Execute the setup.sh script to set up the environment and install dependencies:
+Execute the setup.sh script to set up the environment, install dependencies, login to composio and 
+add necessary tools:
 ```shell
 ./setup.sh
 ```
