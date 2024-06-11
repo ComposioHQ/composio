@@ -1,4 +1,3 @@
-import os
 import sys
 
 import pytest  # pylint: disable=import-error
@@ -25,9 +24,6 @@ def pytest_sessionstart_langchain():
         "logout",
     ]
     try:
-        # INSERT_YOUR_CODE
-        if "COMPOSIO_API_KEY" in os.environ:
-            os.environ.pop("COMPOSIO_API_KEY", None)
         composio_cli()
     except SystemExit as e:
         print(f"SystemExit ignored: {e}")
@@ -37,12 +33,12 @@ def pytest_sessionstart_langchain():
         sys.argv = original_argv  # Restore original arguments
 
 
-def test_langchain_script_not_authorized_error():
+def test_langchain_script_not_authorized_error(monkeypatch):
+    monkeypatch.delenv("COMPOSIO_API_KEY", raising=False)
     with pytest.raises(ApiKeyNotProvidedError) as exc_info:
         run_langchain_script()
     assert "API Key not provided" in str(exc_info.value)
 
 
 def test_langchain_script_is_working():
-    os.environ["COMPOSIO_API_KEY"] = ""
     run_langchain_script()
