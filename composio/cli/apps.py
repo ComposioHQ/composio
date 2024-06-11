@@ -41,9 +41,14 @@ TAG_ENUM_TEMPLATE = """class Tag(tuple, Enum):
     \"\"\"App tags.\"\"\"
 
     @property
-    def name(self) -> str:
-        \"\"\"Returns trigger name.\"\"\"
+    def app(self) -> str:
+        \"\"\"Returns app name.\"\"\"
         return self.value[0]
+    
+    @property
+    def val(self) -> str:
+        \"\"\"Returns tag value.\"\"\"
+        return self.value[1]
 
     IMPORTANT = ("default", "important")
 {tags}

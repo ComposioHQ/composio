@@ -715,7 +715,7 @@ class Actions(Collection[ActionModel]):
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:
-            required_tags = [tag.name if isinstance(tag, Tag) else tag for tag in tags]
+            required_tags = [tag.app if isinstance(tag, Tag) else tag for tag in tags]
             only_important_tag = (required_tags == ["important"])
             should_not_filter_using_tags = (len(items) < 15 and only_important_tag)
             if not should_not_filter_using_tags:
