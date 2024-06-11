@@ -16,7 +16,7 @@ dotenv.load_dotenv()
 
 llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
 
-chat_model = ChatHuggingFace(llm=llm)
+chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
 # Import from composio_langchain
 
 
