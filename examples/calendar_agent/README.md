@@ -2,9 +2,8 @@
 > Fork and Clone this repository if needed!
 
 ## Introduction
-This project is an example which uses Composio to help you keep your GitHub repository and Trello board in sync. 
-It automatically creates Trello cards for TODO comments and commit messages from your GitHub patches, ensuring your tasks are always 
-up-to-date and organized.
+This project is an example which uses Composio to seamlessly convert your to-do lists into Google Calendar events. 
+It automatically schedules tasks with specified labels and times, ensuring your calendar is always up-to-date and organized.
 
 ## Steps to Run
 **Navigate to the Project Directory:**
@@ -19,14 +18,14 @@ On Linux or macOS, you might need to make the setup.sh script executable:
 ```shell
 chmod +x setup.sh
 ```
-Execute the setup.sh script to set up the environment and install dependencies:
+Execute the setup.sh script to set up the environment, install dependencies and login to Composio:
 ```shell
 ./setup.sh
 ```
 Now, Fill in the .env file with your secrets.
-```
-### 7. Run the python script
+
+### 2. Run the python script
 ```shell
-python cookbook/examples/commit_agent/main.py
+python cookbook/examples/calendar_agent/main.py
 ```
-Create a commit in the configured repo. The trello board should automatically be updates!
+A new event has been added to our Google calendar!

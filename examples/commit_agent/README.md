@@ -44,4 +44,4 @@ composio triggers enable github_commit_event
 ```shell
 python cookbook/examples/commit_agent/main.py
 ```
-Create a commit in the configured repo. The trello board should automatically be updates!
+Create a commit in the configured repo. The trello board should automatically be updated!
