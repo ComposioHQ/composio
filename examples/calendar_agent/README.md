@@ -1,4 +1,4 @@
-# Commit Agent
+# Calendar Agent
 > Fork and Clone this repository if needed!
 
 ## Introduction
@@ -24,23 +24,8 @@ Execute the setup.sh script to set up the environment and install dependencies:
 ./setup.sh
 ```
 Now, Fill in the .env file with your secrets.
-### 2. Retrieve Trello Board List
-Go to your trello board, add `.json` to the end of the url. Search the corresponding list ids for the boards. Use this in your `.env` file.
-### 3. Expose your local server to the internet using ngrok
-```shell
-ngrok <port_number>
 ```
-Retrieve the ngrok url from here. Use it in the nest step.
-### 4. Setup and Configure triggers
-> Triggers are a set of predefined conditions. When these conditions are met, a webhook is triggered which has some sort of payload. 
-```shell
-# Set CallBack URL 
-composio triggers callbacks set "https://<ngrok-url>/webhook"
-
-# Enable Trigger
-composio triggers enable github_commit_event
-```
-### 5. Run the python script
+### 7. Run the python script
 ```shell
 python cookbook/examples/commit_agent/main.py
 ```

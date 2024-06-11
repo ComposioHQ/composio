@@ -17,6 +17,16 @@ else
     pip install -U composio-crewai crewai flask langchain_openai python-dotenv
 fi
 
+
+# Login to your account
+echo "Login to your Composio acount"
+composio composio login
+
+# Add trello tool
+echo "Add Trello tool. Finish the flow"
+composio add trello
+
+
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
     echo "Copying .env.example to .env..."
