@@ -29,7 +29,6 @@ EXAMPLES = (
     },
 )
 
-
 @pytest.mark.parametrize("example", EXAMPLES)
 def test_example(example: dict) -> None:
     """Test an example with given environment."""
