@@ -1,6 +1,6 @@
 # Research Assistant Guide
 
-This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports.
+This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports. Ensure you have Python 3.8 or higher installed.
 
 ## Setup Instructions
 
@@ -37,6 +37,8 @@ This guide provides detailed steps to create a research assistant agent that lev
    - Open the .env file created in the project directory.
    - Replace `your_openai_api_key_here` with your actual OpenAI API key.
    - Save and close the .env file.
+   - Ensure the `.env` file is not tracked by version control for security reasons.
+
 
 ### Step 3: Run the main.py Script
 

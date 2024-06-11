@@ -8,7 +8,7 @@ import dotenv
 dotenv.load_dotenv()
 
 # Initialize the language model with OpenAI API key and model name
-llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model_name="gpt-4")
+llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY", "default_key"), model_name="gpt-4o")
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
