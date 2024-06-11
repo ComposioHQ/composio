@@ -1,5 +1,3 @@
-# flake8: noqa: W293
-
 """
 Apps manager for Composio SDK.
 
@@ -44,7 +42,7 @@ TAG_ENUM_TEMPLATE = """class Tag(tuple, Enum):
     def app(self) -> str:
         \"\"\"Returns app name.\"\"\"
         return self.value[0]
-    
+
     @property
     def val(self) -> str:
         \"\"\"Returns tag value.\"\"\"
@@ -82,7 +80,7 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
     def no_auth(self) -> bool:
         \"\"\"Name of the action.\"\"\"
         return self.value[2]
-     
+
     @property
     def is_local(self) -> bool:
         \"\"\"If the action is local.\"\"\"

@@ -12,12 +12,13 @@ from composio.cli import composio
 class BaseCliTest:
     """Utility class for writing CLI tests."""
 
-    def run(self, *args: str, env: t.Optional[t.Dict[str, str]] = None) -> Result:
+    def run(
+        self,
+        *args: t.Any,
+        env: t.Optional[t.Dict[str, str]] = None,
+        mix_stderr: bool = False,
+    ) -> Result:
         """Run given command using click's CLI runner."""
-        return CliRunner(
-            env=env,
-            mix_stderr=False,
-        ).invoke(
-            cli=composio,
-            args=args,
+        return CliRunner(env=env, mix_stderr=mix_stderr).invoke(
+            cli=composio, args=tuple(map(str, args))
         )
