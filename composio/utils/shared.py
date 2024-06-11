@@ -128,10 +128,12 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Type[BaseMo
     :return: dict<str, tuple<<class 'type'>, Field>>
 
     Example Output:
+    ```python
     {
         'owner': (<class 'str'>, FieldInfo(default=Ellipsis, description='The account owner of the repository.', extra={'examples': ([],)})), 
         'repo': (<class 'str'>, FieldInfo(default=Ellipsis, description='The name of the repository without the `.git` extension.', extra={'examples': ([],)}))}
     }
+    ```
 
     """
     field_definitions = {
@@ -303,7 +305,8 @@ def get_pydantic_signature_format_from_schema_params(schema_params: t.Dict) -> t
     :param schema_params: A dictionary object containing schema params, with keys [properties, required ect.].
     :return: List of required and optional parameters
 
-    Output Format:
+    Example Output Format:
+    ```python
     [
         <Parameter "owner: str = FieldInfo(
             default=Ellipsis,
@@ -314,6 +317,7 @@ def get_pydantic_signature_format_from_schema_params(schema_params: t.Dict) -> t
             description='The name of the repository without the `.git` extension.',
             extra={'examples': ([],)})">
     ]
+    ```
     """
     all_parameters = []
 
