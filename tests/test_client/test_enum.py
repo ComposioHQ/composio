@@ -2,7 +2,6 @@
 Test the auto-generate Enum
 """
 
-import unittest
 
 from composio.client.enums import Action, App, Tag, Trigger
 

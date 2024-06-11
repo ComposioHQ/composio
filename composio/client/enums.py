@@ -14,7 +14,7 @@ class Tag(tuple, Enum):
     def app(self) -> str:
         """Returns app name."""
         return self.value[0]
-    
+
     @property
     def val(self) -> str:
         """Returns tag value."""
