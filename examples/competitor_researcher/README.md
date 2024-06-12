@@ -9,7 +9,7 @@ This ensures that your competitor information in Notion is always up-to-date and
 ## Steps to Run
 **Navigate to the Project Directory:**
 Change to the directory where the `setup.sh`, `main.py`, `requirements.txt`, and `README.md` files are located. For example:
-```sh
+```shell
 cd path/to/project/directory
 ```
 
