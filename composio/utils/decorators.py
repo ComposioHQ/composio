@@ -26,7 +26,7 @@ def deprecated(
     def wrapper(func: t.Callable[P, T]) -> t.Callable[P, T]:
         def new_func(*args: P.args, **kwargs: P.kwargs) -> T:
             warnings.warn(
-                f"`{func.__name__}` is deprecated and will be removed on v{version}; "
+                f"`{func.__name__}` is deprecated and will be removed on v{version}. "
                 f"Use `{replacement}` method instead.",
                 UserWarning,
             )

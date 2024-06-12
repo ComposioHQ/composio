@@ -112,6 +112,7 @@ def _actions(
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
+
 # TODO: Extract as reusable
 def _get_enum_key(name: str) -> str:
     characters_to_replace = [" ", "-", "/", "(", ")", "\\", ":", '"', "'", "."]
