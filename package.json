@@ -1,13 +1,12 @@
 {
   "name": "composio-core",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
-    "postinstall": "tsc --declaration src/index.ts --outDir types",
-    "publish": "npm run build && npm run postinstall"
+    "build": "tsc --declaration src/index.ts --outDir lib",
+    "publish": "npm publish"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
