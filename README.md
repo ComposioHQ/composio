@@ -1,21 +1,14 @@
 
 <p align="center">
   <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
-    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/light.svg"/>
+    <source media="(prefers-color-scheme: dark)" width="172" srcset="./assets/logo_dark.svg">
+    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="./assets/logo_light.svg"/>
   </picture>
   <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>
-  <p align="center">
-    <img alt="Tests" src="https://github.com/SamparkAI/composio_sdk/actions/workflows/common.yml/badge.svg">
-  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
-    <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
-    <img alt="Twitter" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Ftwitter.com%2Fcomposiohq&label=Follow us">
-    <img alt="Discord" src="https://img.shields.io/discord/1170785031560646836?label=Discord">
-    </p>
 </p>
 
-<img alt="Illustration" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
+<img alt="Illustration" src="./assets/illustration.png" style="border-radius: 5px"/>
 
 Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
 

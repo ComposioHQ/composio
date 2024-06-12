@@ -4,8 +4,8 @@ import type { ChatPromptTemplate } from "@langchain/core/prompts";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 
-import { ComposioToolSet } from "../src/frameworks/langchain";
-import { Action } from "../src/enums";
+import { LangchainToolSet } from "../src/frameworks/langchain";
+import { Action } from "../src/sdk/enums";
 
 (async() => {
     const llm = new ChatOpenAI({
@@ -13,9 +13,11 @@ import { Action } from "../src/enums";
         temperature: 0,
       });
     
-      const toolset= new ComposioToolSet(
+      const toolset= new LangchainToolSet(
         process.env.COMPOSIO_API_KEY!,
       );
+
+
       const tools = await toolset.get_actions([Action.GITHUB_USERS_GET_AUTHENTICATED]);
       
       // Get the prompt to use - you can modify this!\
