@@ -1,0 +1,114 @@
+---
+title: "🦙 Using Composio With LlamaIndex"
+sidebarTitle: "LlamaIndex SDK"
+icon: "dove"
+description: "Integrate Composio with LlamaIndex application to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **LlamaIndex apps** to **connect** with many useful **tools**!
+
+<Tip>
+  Goal: Star a repository on GitHub with natural language & LlamaIndex agent.
+</Tip>
+
+### Install Packages & Connect a Tool
+
+These commands prepare your environment for seamless interaction between LlamaIndex and Github.
+
+<CodeGroup> 
+  ```bash Run Command
+  pip install composio-llamaindex
+
+  #Connect your Github so agents can use it
+  composio add github
+
+  #Check all different apps which you can connect with
+  composio apps
+
+  ```
+</CodeGroup>
+
+<Steps>
+<Step title="Import Base Packages">
+<CodeGroup>
+  ```python Default Imports
+  # Initialise imports
+  import dotenv
+  from llama_index.llms.openai import OpenAI
+  from llama_index.core.llms import ChatMessage
+  from llama_index.core.agent import FunctionCallingAgentWorker
+
+  # Load environment variables from .env
+  dotenv.load_dotenv()
+
+  llm = OpenAI(model="gpt-4o")
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Fetch all Github LlamaIndex Tools via Composio">
+<CodeGroup>
+  ```python Tools For Github
+  # Import from composio_llamaindex
+  from composio_llamaindex import Action, ComposioToolSet
+
+  # Get All the tools
+
+  composio_toolset = ComposioToolSet()
+  tools = composio_toolset.get_tools(apps=[App.GITHUB])
+  ```
+</CodeGroup>
+</Step>
+<Step title="Set up a LlamaIndex agent">
+Create a worker agent, setting it up with proper prefix messages and tools.
+<CodeGroup>
+  ```python Langchain Agent executes the task
+  prefix_messages = [
+      ChatMessage(
+          role="system",
+          content=(
+              "You are now a integration agent, and what  ever you are requested, you will try to execute utilizing your toools."
+          ),
+      )
+  ]
+
+  agent = FunctionCallingAgentWorker(
+      tools=tools,
+      llm=llm,
+      prefix_messages=prefix_messages,
+      max_function_calls=10,
+      allow_parallel_tool_calls=False,
+      verbose=True,
+  ).as_agent()
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Chat with the Agent">
+Converse with your LlamaIndex agent, and it will use the provoded tool(s) as necessary.
+<CodeGroup>
+  ```python Executing Agent
+  response = agent.chat("Hello! I would like to star a repo ComposioHQ/composio on GitHub")
+  print("Response:", response)
+  ```
+</CodeGroup>
+</Step>
+</Steps>
+
+### Use Specific Apps
+
+<CodeGroup>
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  tools = composio_toolset.get_tools(apps=[App.GITHUB])
+  ```
+</CodeGroup>
+
+### Use Specific Actions
+<CodeGroup>
+  ```bash Filter Specific Action
+  # To restrict agents from using all the actions, filter specific actions
+  tools = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]) 
+  ```
+</CodeGroup>
+
