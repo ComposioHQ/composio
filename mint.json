@@ -127,7 +127,8 @@
         "framework/lyzr",
         "framework/openai",
         "framework/julep",
-        "framework/griptape"
+        "framework/griptape",
+        "framework/llamaindex"
       ]
     },
     {
