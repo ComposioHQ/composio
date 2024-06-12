@@ -1,20 +1,21 @@
 import os
 import sys
 
-import pytest
+import pytest  # pylint: disable=import-error
 
+from composio.cli import composio as composio_cli
 from composio.exceptions import ApiKeyNotProvidedError
 
 
 def run_llamaindex_script():
-    from plugins.llamaindex.llamaindex_demo import main
-
+    from plugins.llamaindex.llamaindex_demo import (  # pylint: disable=import-outside-toplevel
+        main,
+    )
     main()
 
 
 @pytest.fixture(scope="session", autouse=True)
 def pytest_sessionstart_llamaindex():
-    from composio.cli import composio as composio_cli
 
     """
     Called after the Session object has been created and
@@ -45,7 +46,5 @@ def test_llamaindex_script_not_authorized_error():
 
 
 def test_llamaindex_script_is_working():
-    import os
-
     os.environ["COMPOSIO_API_KEY"] = "kwrjjvgedmuw5jt1fet2"
     run_llamaindex_script()

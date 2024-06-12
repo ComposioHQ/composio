@@ -1,4 +1,4 @@
-from composio_llamaindex.toolset import ComposioToolSet
+from composio_llamaindex.toolset import ComposioToolSet  # pylint: disable=import-error
 
 from composio.client.enums import Action, App, Tag
 
