@@ -16,7 +16,7 @@ It automatically schedules tasks with specified labels and times, ensuring your 
 * Pass the tools obtained from ComposioToolSet and the initialized language model (llm) to the agent.
 ### 3. Defining the Task and Executing the Agent
 * Task is instantiated with a description that includes the to-do list, current date, and timezone.
-* Call task.execute() to have the agent carry out the task using the provided tools and language model. 
+* Call `task.execute()` to have the agent carry out the task using the provided tools and language model. 
 ## Steps to Run
 **Navigate to the Project Directory:**
 Change to the directory where the `setup.sh`, `main.py`, `requirements.txt`, and `README.md` files are located. For example:
