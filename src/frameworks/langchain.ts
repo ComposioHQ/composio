@@ -1,14 +1,13 @@
-import { Action, App, Tag } from "../enums";
-import { ComposioToolSet as BaseComposioToolSet } from "../base.toolset";
+import { Action, App, Tag } from "../sdk/enums";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import z from "zod";
 
 type Optional<T> = T | null;
 type Dict<T> = { [key: string]: T };
 type Sequence<T> = Array<T>;
 
-export class ComposioToolSet extends BaseComposioToolSet {
+export class LangchainToolSet extends BaseComposioToolSet {
     /**
      * Composio toolset for Langchain framework.
      *
