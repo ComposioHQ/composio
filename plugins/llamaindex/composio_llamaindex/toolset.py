@@ -3,7 +3,7 @@ import typing as t
 from inspect import Signature
 
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
-from llama_index.core.tools import FunctionTool    # pylint: disable=import-error
+from llama_index.core.tools import FunctionTool  # pylint: disable=import-error
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID

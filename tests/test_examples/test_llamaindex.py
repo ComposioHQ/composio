@@ -11,12 +11,12 @@ def run_llamaindex_script():
     from plugins.llamaindex.llamaindex_demo import (  # pylint: disable=import-outside-toplevel
         main,
     )
+
     main()
 
 
 @pytest.fixture(scope="session", autouse=True)
 def pytest_sessionstart_llamaindex():
-
     """
     Called after the Session object has been created and
     before performing collection and entering the run test loop.
