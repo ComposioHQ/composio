@@ -8,7 +8,7 @@ up-to-date and organized.
 ## How it Works
 ### 1. Setup and Initialization
 * Import Packages and Load Environment Variables:
-* Initialize Language Model and Define tools for the agent using Composio. We will be using trello tool.
+* Initialize Language Model and Define tools for the agent using Composio. We will be using trello tool, So that our agent can execute actions using this tool.
 * Initialize the Agent: Create an Agent instance with the role "Github-Trello TODO Agent". Specify its goal, backstory, tools, and language model.
 ### 2. Setting Up the Web Server
 * Initialize a Flask application instance.
