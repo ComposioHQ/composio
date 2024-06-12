@@ -8,8 +8,8 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     WorkspaceManagerFactory,
 )
 from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
-from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.local_workspace.submit_patch import SubmitPatchTool
+from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.webtool import WebTool
 
@@ -42,7 +42,7 @@ class LocalToolHandler:
             RagTool(),
             WebTool(),
             Greptile(),
-            SubmitPatchTool()
+            SubmitPatchTool(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
