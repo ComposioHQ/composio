@@ -1,1 +1,1 @@
-"""Test composio client."""
+"""Test `composio.client` module."""
