@@ -16,8 +16,8 @@ pip install -r requirements.txt
 echo "Login to your Composio acount"
 composio login
 
-# Add trello tool
-echo "Add Trello tool. Finish the flow"
+# Add notion tool
+echo "Add Notion tool. Finish the flow"
 composio add notion 
 
 # Copy env backup to .env file
