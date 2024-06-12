@@ -22,6 +22,8 @@ chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=os.getenv("HUGGI
 
 # setup tools
 composio_toolset = ComposioToolSet()
+#we use composio to add the tools we need
+#this gives agents, the ability to use tools, in this case we need SERPAPI
 tools = composio_toolset.get_tools(apps=[App.SERPAPI])
 
 # setup ReAct style prompt

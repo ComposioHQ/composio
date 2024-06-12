@@ -12,6 +12,8 @@ llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY", "default_key"), mode
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
+#Using .get_tools we are able to add various tools needed by the agents to execute its objective
+#in this case its serpapi, giving the agent access to the internet
 tools = composio_toolset.get_tools(apps=[App.SERPAPI])
 
 # Define the Investment Researcher agent
