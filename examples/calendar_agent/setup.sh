@@ -18,7 +18,7 @@ echo "Login to your Composio acount"
 composio login
 
 # Add calendar tool
-echo "Add Coogle calendar tool. Finish the flow"
+echo "Add Google calendar tool. Finish the flow"
 composio add googlecalendar 
 
 # Copy env backup to .env file
