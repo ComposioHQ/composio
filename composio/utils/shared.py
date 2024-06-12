@@ -120,7 +120,7 @@ def json_schema_to_pydantic_field(
     )
 
 
-def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Type[BaseModel]:
+def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     """
     Converts a JSON schema to a dictionary of param name, and a tuple of type & Field.
 
@@ -265,7 +265,7 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
             elif len(param_types) == 3:
                 t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
                 t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
-                t3: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[2]]
+                t3: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[2]]  # type: ignore
                 signature_param_type: t.Type = t.Union[t1, t2, t3]  # type: ignore
             else:
                 raise ValueError("Invalid 'oneOf' schema")
