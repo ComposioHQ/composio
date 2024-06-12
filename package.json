@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc --declaration src/index.ts --outDir lib",
+    "build": "tsc  --project . --outDir lib",
     "publish": "npm publish"
   },
   "keywords": [],
