@@ -1,8 +1,8 @@
 import dotenv
-from composio_llamaindex import Action, ComposioToolSet
-from llama_index.core.agent import FunctionCallingAgentWorker
-from llama_index.core.llms import ChatMessage
-from llama_index.llms.openai import OpenAI
+from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
+from llama_index.core.agent import FunctionCallingAgentWorker  # pylint: disable=import-error
+from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
+from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
 
 
 # Load environment variables from .env

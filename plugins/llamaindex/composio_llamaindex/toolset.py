@@ -3,7 +3,7 @@ import typing as t
 from inspect import Signature
 
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
-from llama_index.core.tools import FunctionTool
+from llama_index.core.tools import FunctionTool    # pylint: disable=import-error
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
@@ -126,6 +126,7 @@ class ComposioToolSet(BaseComposioToolSet):
             description=description,
         )
 
+    # pylint: disable=useless-super-delegation
     def get_actions(
         self,
         actions: t.Sequence[Action],
@@ -140,6 +141,7 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         return super().get_actions(actions, entity_id)
 
+    # pylint: disable=useless-super-delegation
     def get_tools(
         self,
         apps: t.Sequence[App],
