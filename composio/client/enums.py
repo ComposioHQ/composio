@@ -484,6 +484,7 @@ class App(str, Enum):
     RAGTOOL = "ragtool"
     WEBTOOL = "webtool"
     GREPTILE = "greptile"
+    SUBMITPATCHTOOL = "submitpatchtool"
 
 
 class Action(tuple, Enum):
@@ -13722,6 +13723,12 @@ class Action(tuple, Enum):
         True,
     )
     GREPTILE_CODEQUERY = ("greptile", "greptile_codequery", True, True)
+    SUBMITPATCHTOOL_SUBMITPATCH = (
+        "submitpatchtool",
+        "submitpatchtool_submitpatch",
+        True,
+        True,
+    )
 
 
 class Trigger(tuple, Enum):
