@@ -1,9 +1,9 @@
-from llama_index.llms.openai import OpenAI
-from llama_index.core.llms import ChatMessage
-from llama_index.core.agent import FunctionCallingAgentWorker
-
 import dotenv
 from composio_llamaindex import Action, ComposioToolSet
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+
 
 # Load environment variables from .env
 dotenv.load_dotenv()
