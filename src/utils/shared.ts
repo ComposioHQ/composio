@@ -69,7 +69,6 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
     if (!properties) {
         return z.object({});
     }
-    console.log("Schema", jsonSchema);
 
     const zodSchema: Record<string, any> = {};
     for (const [key, _] of Object.entries(properties)) {
