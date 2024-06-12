@@ -17,18 +17,12 @@ importers:
       axios:
         specifier: ^1.7.2
         version: 1.7.2
-      clean-webpack-plugin:
-        specifier: ^4.0.0
-        version: 4.0.0(webpack@5.91.0(webpack-cli@5.1.4))
       enumify:
         specifier: ^2.0.0
         version: 2.0.0
       langchain:
         specifier: ^0.2.5
         version: 0.2.5(axios@1.7.2)(handlebars@4.7.8)(openai@4.48.3)
-      terser-webpack-plugin:
-        specifier: ^5.3.10
-        version: 5.3.10(webpack@5.91.0(webpack-cli@5.1.4))
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -39,9 +33,15 @@ importers:
       '@types/node':
         specifier: ^20.14.2
         version: 20.14.2
+      clean-webpack-plugin:
+        specifier: ^4.0.0
+        version: 4.0.0(webpack@5.91.0(webpack-cli@5.1.4))
       fork-ts-checker-webpack-plugin:
         specifier: ^9.0.2
         version: 9.0.2(typescript@5.4.5)(webpack@5.91.0(webpack-cli@5.1.4))
+      terser-webpack-plugin:
+        specifier: ^5.3.10
+        version: 5.3.10(webpack@5.91.0(webpack-cli@5.1.4))
       ts-loader:
         specifier: ^9.5.1
         version: 9.5.1(typescript@5.4.5)(webpack@5.91.0(webpack-cli@5.1.4))

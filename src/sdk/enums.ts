@@ -80,6 +80,8 @@ export class Action extends Enumify {
     static GITHUB_GET_REPOS = new Action("github", "github_get_repos", false);
     static GITHUB_REPO_S_LIST_FOR_AUTHENTICATED_USER = new Action("github", "github_repo_s_list_for_authenticated_user", false);
     static GITHUB_USERS_GET_AUTHENTICATED = new Action("github", "github_users_get_authenticated", false);
+    static GITHUB_ISSUES_CREATE = new Action("github", "github_issues_create", false);
+
     constructor(public app: string, public action: string, public no_auth: boolean, public is_local: boolean = false) {
         super();
     }

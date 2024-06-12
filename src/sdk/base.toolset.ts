@@ -3,12 +3,20 @@ import * as path from "path";
 import { Action } from "./enums";
 
 class UserData {
-    apiKey: string;
+    apiKey: string | undefined;
     constructor(public _path: string) {
-        this.apiKey = require(path.join(_path)).apiKey;
     }
 
-    static load(_path: string) {
+    init() {
+       try {
+            const module = require(this._path);
+            this.apiKey = module.apiKey;
+       } catch {
+            return false;
+       }
+    }
+
+    static load(_path: string) { 
         return new UserData(_path);
     }
 }
@@ -25,10 +33,11 @@ export class ComposioToolSet {
         runtime: string | null = null,
         entityId: string = "default"
     ) {
-        this.apiKey = apiKey || process.env["COMPOSIO_API_KEY"] || UserData.load(path.join(process.env.HOME || "", ".composio", "userData.json")).apiKey;
-        if (!this.apiKey) {
-            throw new Error("API key is required");
+        const clientApiKey: string | undefined = apiKey || process.env["COMPOSIO_API_KEY"] || UserData.load(path.join(process.env.HOME || "", ".composio", "userData.json")).apiKey;
+        if (!clientApiKey) {
+            throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
         }
+        this.apiKey = clientApiKey;
         this.client = new Composio(this.apiKey, baseUrl || undefined);
         this.runtime = runtime;
         this.entityId = entityId;
