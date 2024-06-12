@@ -8,7 +8,7 @@ type Optional<T> = T | null;
 type Dict<T> = { [key: string]: T };
 type Sequence<T> = Array<T>;
 
-export class ComposioToolSet extends BaseComposioToolSet {
+export class LangchainToolSet extends BaseComposioToolSet {
     /**
      * Composio toolset for Langchain framework.
      *
