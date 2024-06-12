@@ -15,7 +15,7 @@ pip install -r requirements.txt
 
 # Login to your account
 echo "Login to your Composio acount"
-composio composio login
+composio login
 
 # Add trello tool
 echo "Add Trello tool. Finish the flow"
