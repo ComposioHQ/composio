@@ -12,10 +12,10 @@ up-to-date and organized.
 * Initialize the Agent: Create an Agent instance with the role "Github-Trello TODO Agent". Specify its goal, backstory, tools, and language model.
 ### 2. Setting Up the Web Server
 * Initialize a Flask application instance.
-* Define a webhook endpoint (/webhook) to handle POST requests. This endpoint will process incoming GitHub patches and create Trello cards accordingly.
+* Define a webhook endpoint (`/webhook`) to handle POST requests. This endpoint will process incoming GitHub patches and create Trello cards accordingly.
 ### 3. Defining and Executing Tasks Based on Webhooks
-* Define a task (task1) to create a Trello card in the TODO list based on new TODO comments found in the GitHub patch. The task description includes details on how to handle the GitHub patch and create the Trello card.
-* Define a second task (task2) to create a Trello card in the DONE list based on the commit message from the GitHub patch, indicating completed tasks.
+* Define a task (`task1`) to create a Trello card in the TODO list based on new TODO comments found in the GitHub patch. The task description includes details on how to handle the GitHub patch and create the Trello card.
+* Define a second task (`task2`) to create a Trello card in the DONE list based on the commit message from the GitHub patch, indicating completed tasks.
 * Execute Tasks: Upon receiving a webhook event, both tasks are executed to update the Trello boards accordingly.
 ## Steps to Run
 **Navigate to the Project Directory:**
