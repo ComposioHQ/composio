@@ -1,33 +1,36 @@
 {
-  "name": "typescript-sdk",
-  "version": "1.0.0",
+  "name": "composio-core",
+  "version": "0.1.0-0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
-    "postinstall": "tsc --declaration src/index.ts --outDir types"
+    "build": "tsc  --project . --outDir lib",
+    "publish": "npm publish"
   },
   "keywords": [],
-  "author": "",
+  "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.46.3",
     "@types/node": "^20.14.2",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "ts-loader": "^9.5.1",
-    "tsc": "^2.0.4",
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "clean-webpack-plugin": "^4.0.0",
+    "terser-webpack-plugin": "^5.3.10"
   },
   "dependencies": {
     "@langchain/core": "^0.2.6",
     "@langchain/openai": "^0.1.2",
     "axios": "^1.7.2",
-    "clean-webpack-plugin": "^4.0.0",
     "enumify": "^2.0.0",
     "langchain": "^0.2.5",
     "zod": "^3.23.8"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
