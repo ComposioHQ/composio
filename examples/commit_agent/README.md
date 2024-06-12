@@ -5,7 +5,18 @@
 This project is an example which uses Composio to help you keep your GitHub repository and Trello board in sync. 
 It automatically creates Trello cards for TODO comments and commit messages from your GitHub patches, ensuring your tasks are always 
 up-to-date and organized.
-
+## How it Works
+### 1. Setup and Initialization
+* Import Packages and Load Environment Variables:
+* Initialize Language Model and Define tools for the agent using Composio. We will be using trello tool.
+* Initialize the Agent: Create an Agent instance with the role "Github-Trello TODO Agent". Specify its goal, backstory, tools, and language model.
+### 2. Setting Up the Web Server
+* Initialize a Flask application instance.
+* Define a webhook endpoint (/webhook) to handle POST requests. This endpoint will process incoming GitHub patches and create Trello cards accordingly.
+### 3. Defining and Executing Tasks Based on Webhooks
+* Define a task (task1) to create a Trello card in the TODO list based on new TODO comments found in the GitHub patch. The task description includes details on how to handle the GitHub patch and create the Trello card.
+* Define a second task (task2) to create a Trello card in the DONE list based on the commit message from the GitHub patch, indicating completed tasks.
+* Execute Tasks: Upon receiving a webhook event, both tasks are executed to update the Trello boards accordingly.
 ## Steps to Run
 **Navigate to the Project Directory:**
 Change to the directory where the `setup.sh`, `main.py`, `requirements.txt`, and `README.md` files are located. For example:
