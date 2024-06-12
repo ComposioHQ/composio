@@ -15,7 +15,7 @@ class CalculatorResponse(BaseModel):
     result: str = Field(..., description="Result of the calculation")
 
 
-class Calculator(Action):
+class Calculator(Action[CalculatorRequest, CalculatorResponse]):
     """
     Useful to perform any mathematical calculations, like sum, minus, multiplication, division, etc.
     """
@@ -27,8 +27,10 @@ class Calculator(Action):
     _tool_name = "mathematical"
 
     def execute(
-        self, request_data: CalculatorRequest, authorisation_data: dict = {}
+        self, request_data: CalculatorRequest, authorisation_data: dict
     ) -> dict:
+        if authorisation_data is None:
+            authorisation_data = {}
         operation_str = request_data.dict()["operation"]
         try:
             # pylint: disable=eval-used

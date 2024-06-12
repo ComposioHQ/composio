@@ -1,20 +1,20 @@
 import inspect
+import typing as t
 
 import click
 from click.core import Context as ClickContext
 from click.formatting import HelpFormatter
 
-from composio.cli.context import Context, pass_context  # noqa: F401
-from composio.client import Composio  # noqa: F401
-from composio.exceptions import ComposioSDKError  # noqa: F401
-from composio.utils.url import get_web_url  # noqa: F401
-
 
 class HelpfulCmdBase:
-    examples = []
-    help = None
+    examples: list[str] = []
+    help: t.Optional[str] = None
 
-    def format_help_text(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
+    def format_help_text(
+        self,
+        ctx: ClickContext,  # pylint: disable=unused-argument
+        formatter: HelpFormatter,  # pylint: disable=unused-argument
+    ) -> None:
         """Writes the help text to the formatter if it exists."""
         if self.help is not None:
             # truncate the help text to the first form feed
@@ -24,7 +24,7 @@ class HelpfulCmdBase:
 
         text = "📄" + text
         if getattr(self, "deprecated", False):
-            text = "(Deprecated) {text}".format(text=text)
+            text = f"(Deprecated) {text}"
 
         if text:
             formatter.write_paragraph()
@@ -33,7 +33,7 @@ class HelpfulCmdBase:
     def format_options(self, ctx: ClickContext, formatter: HelpFormatter) -> None:
         """Writes all the options into the formatter if they exist."""
         opts = []
-        for param in self.get_params(ctx):
+        for param in self.get_params(ctx):  # type: ignore
             rv = param.get_help_record(ctx)
             if rv is not None:
                 if "-h" in rv[0] or "-help" in rv[0] or "--help" in rv[0]:
@@ -44,12 +44,14 @@ class HelpfulCmdBase:
             formatter.write(" 🔗 Options \n\n")
             formatter.write_dl(opts)
 
-    def format_examples(self, ctx, formatter):
+    def format_examples(
+        self, ctx: ClickContext, formatter: HelpFormatter
+    ):  # pylint: disable=unused-argument
         formatter.write("\n📙 Examples:\n\n")
         for example in self.examples:
             formatter.write(example)
 
-    def format_help(self, ctx, formatter):
+    def format_help(self, ctx: ClickContext, formatter: HelpFormatter):
         formatter.write("\n")
         self.format_help_text(ctx, formatter)
         formatter.write("\n")
