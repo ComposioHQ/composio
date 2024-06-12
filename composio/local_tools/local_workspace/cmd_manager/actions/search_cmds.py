@@ -178,6 +178,7 @@ class GetCurrentDirCmd(BaseAction):
         self, request_data: GetCurrentDirRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
+        self.command = "pwd"
         full_command = f"{self.command}"
         print(f"Running command: {full_command}")
         if self.container_process is None:
