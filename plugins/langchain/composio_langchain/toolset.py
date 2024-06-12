@@ -79,12 +79,7 @@ class ComposioToolSet(BaseComposioToolSet):
         )
 
     def prepare_python_function(
-        self,
-        app,
-        action,
-        description,
-        schema_params,
-        entity_id
+        self, app, action, description, schema_params, entity_id
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
@@ -96,6 +91,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
+
         action_func = types.FunctionType(
             function.__code__,
             globals=globals(),

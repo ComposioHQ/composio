@@ -133,8 +133,7 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         Process function name for proxy registration under given character length limitation.
         """
-        hash_hex = hashlib.sha256(
-            input_string.encode(encoding="utf-8")).hexdigest()
+        hash_hex = hashlib.sha256(input_string.encode(encoding="utf-8")).hexdigest()
         hash_chars_to_attach = hash_hex[:10]
         num_input_str_char = max_allowed_length - (num_hash_char + 1)
         input_str_to_attach = input_string[-num_input_str_char:]

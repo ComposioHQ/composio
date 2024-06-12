@@ -17,10 +17,10 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "null": t.Optional[t.Any],
 }
 
-# Should be depricated, 
+# Should be depricated,
 # required values will always be provided by users
-# Non-required values are nullable(None) if default value not provided. 
-FALLBACK_VALUES = { 
+# Non-required values are nullable(None) if default value not provided.
+FALLBACK_VALUES = {
     "string": "",
     "number": 0.0,
     "integer": 0,
@@ -130,7 +130,7 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Type[BaseMo
     Example Output:
     ```python
     {
-        'owner': (<class 'str'>, FieldInfo(default=Ellipsis, description='The account owner of the repository.', extra={'examples': ([],)})), 
+        'owner': (<class 'str'>, FieldInfo(default=Ellipsis, description='The account owner of the repository.', extra={'examples': ([],)})),
         'repo': (<class 'str'>, FieldInfo(default=Ellipsis, description='The name of the repository without the `.git` extension.', extra={'examples': ([],)}))}
     }
     ```
@@ -227,7 +227,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
 
 def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Parameter]:
     """
-    Get function paramters signature(with pydantic field definition as default values) 
+    Get function paramters signature(with pydantic field definition as default values)
     from schema parameters. Works like:
 
     def demo_function(
@@ -292,9 +292,11 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
     return required_parameters + optional_parameters
 
 
-def get_pydantic_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Parameter]:
+def get_pydantic_signature_format_from_schema_params(
+    schema_params: t.Dict,
+) -> t.List[Parameter]:
     """
-    Get function paramters signature(with pydantic field definition as default values) 
+    Get function paramters signature(with pydantic field definition as default values)
     from schema parameters. Works like:
 
     def demo_function(
@@ -333,4 +335,3 @@ def get_pydantic_signature_format_from_schema_params(schema_params: t.Dict) -> t
         all_parameters.append(param)
 
     return all_parameters
-
