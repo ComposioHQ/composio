@@ -4,6 +4,8 @@ from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )
+import pytest
+
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
@@ -17,6 +19,7 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 )
 
 
+@pytest.mark.skip(reason="no way of currently testing this in github action")
 class TestCreateWorkspaceAction(unittest.TestCase):
     def test_create_workspace(self):
         # Setup - create an instance of CreateWorkspaceAction
@@ -46,7 +49,7 @@ class TestCmds(unittest.TestCase):
         action.set_workspace_and_history(w, h)
 
         result = action.execute(GetCurrentDirRequest(workspace_id=workspace_id), {})
-        print(result)
+        self.assertIsNotNone(result)
 
 
 if __name__ == "__main__":
