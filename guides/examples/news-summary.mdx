@@ -7,21 +7,18 @@ retrieves the latest news articles and generates summaries using Langchain and C
 ---
 
 <Steps>
-    <Step title="Install required packages">
-    Install the required packages and connect your SerpAPI account so agents can use it to retrieve news articles. 
-    Run the following commands on your terminal:    
+    <Step title="Run the `setup.sh` file">
+    > Fork and Clone this [repository](git.new/composio), Navigate to the Project Directory
+
+    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
     <CodeGroup>
         ```bash Run Command
-        pip install composio-langchain
-        pip install composio-core
-        pip install langchain-community
-        pip install huggingface_hub
-        pip install google-search-results
+       chmod +x setup.sh
 
-        # Connect your serpapi account so agents can use it.
-
-        composio add serpapi
+       # run the setup.sh file
+       ./setup.sh
         ```
+        Fill in the .env file after running the script.
     </CodeGroup>
     </Step>
 
@@ -47,15 +44,25 @@ retrieves the latest news articles and generates summaries using Langchain and C
     </CodeGroup>
     </Step>
 
-    <Step title="Initialise tools and agents">
-    Initialize the language model and toolset:
+    <Step title="Initialise Language Model and Define tools">
+    We'll initialize our language model and set up the necessary tools for our agents.
+    We will be using serpapi tool, So that our agent can execute actions using this tool.      
     <CodeGroup>
-        ```python CrewAI Agents
-        llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta")
-        chat_model = ChatHuggingFace(llm=llm)
+        ```python LLM and Tools 
+        dotenv.load_dotenv()
 
+        llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+
+        chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+        # Import from composio_langchain
+
+
+        # setup tools
         composio_toolset = ComposioToolSet()
+        #we use composio to add the tools we need
+        #this gives agents, the ability to use tools, in this case we need SERPAPI
         tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+
     ```
     </CodeGroup>
     </Step>
