@@ -57,22 +57,25 @@ export function jsonSchemaToTsField(
         {
             description: description,
             examples: examples,
+            required: required.includes(name),
             default: required.includes(name) ? undefined : null,
         },
     ];
 }
 
-
-export function jsonSchemaToModel(jsonSchema: Record<string, any>): any {
+export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<any> {
     const properties = jsonSchema.properties;
+    const requiredFields = jsonSchema.required || [];
     if (!properties) {
         return z.object({});
     }
+    console.log("Schema", jsonSchema);
 
     const zodSchema: Record<string, any> = {};
     for (const [key, _] of Object.entries(properties)) {
         const value = _ as any;
         let zodType;
+    
         switch (value.type) {
             case "string":
                 zodType = z.string().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
@@ -100,7 +103,11 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): any {
             zodType = zodType.describe(value.description);
         }
 
-        zodSchema[key] = zodType;
+        if (requiredFields.includes(key)) {
+            zodSchema[key] = zodType;
+        } else {
+            zodSchema[key] = zodType.optional();
+        }
     }
 
     return z.object(zodSchema);
