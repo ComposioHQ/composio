@@ -15,7 +15,7 @@ class TestList(BaseCliTest):
     def test_list(self) -> None:
         """Test list all apps."""
         result = self.run("apps")
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
         assert "Showing all apps" in result.stdout
         assert "github" in result.stdout
 
@@ -38,7 +38,7 @@ class TestUpdate(BaseCliTest):
     def test_update(self) -> None:
         """Test app enums update."""
         result = self.run("apps", "update")
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
         content = self.file.read_text(encoding="utf-8")
         assert content != self.content
