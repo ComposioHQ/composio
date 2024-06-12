@@ -1,47 +1,35 @@
 #!/bin/bash
 
-# Function to install packages
-install_packages() {
-  pip install crewai composio-langchain langchain-community huggingface_hub python-dotenv langchain
-}
-
 # Create a virtual environment
-python3 -m venv investment_env
+echo "Creating virtual environment..."
+python3 -m venv ~/.venvs/news_summary
 
-# Activate the virtual environment based on the OS
-if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
-  # Linux or macOS
-  source investment_env/bin/activate
-  install_packages
-elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-  # Windows
-  investment_env\Scripts\activate
-  install_packages
-else
-  echo "Unknown OS type: $OSTYPE"
-  exit 1
-fi
+# Activate the virtual environment
+echo "Activating virtual environment..."
+source ~/.venvs/news_summary/bin/activate
 
-# Create a .env file if it doesn't exist and add a placeholder for the OpenAI API key
-if [ ! -f .env ]; then
-  echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
-  echo ".env file created with placeholder for OpenAI API key."
-else
-  echo ".env file already exists."
-fi
+# Install libraries from requirements.txt 
+echo "Installing libraries from requirements.txt..."
+pip install -r requirements.txt
 
-# Prompt the user to fill in the .env file
-echo "Please update the .env file with your actual OpenAI API key before running the main script."
-
-# Run Composio login command
-echo "Please log in to Composio:"
+# Login to your account
+echo "Login to your Composio acount"
 composio login
 
-# Add SERPAPI to Composio
+# Add trello tool
+echo "Add serpapi tool. Finish the flow"
 composio add serpapi
 
-echo "Setup complete. To activate the virtual environment, use the appropriate command for your OS:"
-echo "Linux/macOS: source investment_env/bin/activate"
-echo "Windows (Command Prompt): investment_env\\Scripts\\activate"
-echo "Windows (PowerShell): .\\investment_env\\Scripts\\Activate.ps1"
-echo "Then, you can run 'python main.py' to execute the script."
+# Copy env backup to .env file
+if [ -f ".env.example" ]; then
+    echo "Copying .env.example to .env..."
+    cp .env.example .env
+else
+    echo "No .env.example file found. Creating a new .env file..."
+    touch .env
+fi
+
+# Prompt user to fill the .env file
+echo "Please fill in the .env file with the necessary environment variables."
+
+echo "Setup completed successfully!"

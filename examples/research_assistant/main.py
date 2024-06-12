@@ -15,6 +15,8 @@ llm = ChatOpenAI(
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
+#Using .get_tools we are able to add various tools needed by the agents to execute its objective
+#in this case its serpapi, giving the agent access to the internet
 tools = composio_toolset.get_tools(apps=[App.SERPAPI])
 
 # Define the Researcher agent with its role, goal, and backstory
