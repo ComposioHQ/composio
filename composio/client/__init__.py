@@ -462,17 +462,17 @@ class Triggers(Collection[TriggerModel]):
         """
         List active triggers
 
-        :param trigger_ids: Trigger IDs to filter by, can be a list of strings or Trigger objects
+        :param trigger_names: Trigger names to filter by, can be a list of strings or Trigger objects
         :param app_names: App names to filter by
         :return: List of triggers filtered by provided parameters
         """
         queries = {}
         if trigger_names is not None and len(trigger_names) > 0:
-            processed_trigger_ids = [
-                trigger_id.event if isinstance(trigger_id, Trigger) else trigger_id
-                for trigger_id in trigger_names
+            processed_trigger_names = [
+                trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
+                for trigger_name in trigger_names
             ]
-            queries["triggerIds"] = ",".join(processed_trigger_ids)
+            queries["triggerIds"] = ",".join(processed_trigger_names)
         if app_names is not None and len(app_names) > 0:
             queries["appNames"] = ",".join(app_names)
         return super().get(queries=queries)
