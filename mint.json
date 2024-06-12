@@ -162,15 +162,12 @@
         {
           "group": "Demo Apps", 
           "pages":[
-            "guides/examples/research-assistant",
-            "guides/examples/competitor-researcher",
             "guides/examples/investment-analyst",
+            "guides/examples/research-assistant",
             "guides/examples/commit-agent",
-            "guides/examples/urlsummary",
+            "guides/examples/competitor-researcher",
             "guides/examples/news-summary",
-            "guides/examples/calendar-agent",
-            "guides/examples/qnasummary"
-
+            "guides/examples/calendar-agent"
         ]}
         ]
     },
@@ -178,12 +175,6 @@
       "group": "Gallery",
       "pages":[
         "guides/starterprojects/gallery"
-      ]
-    },
-    {
-      "group": "Customers",
-      "pages":[
-        "guides/casestudy/research-assistant"
       ]
     },
     {
