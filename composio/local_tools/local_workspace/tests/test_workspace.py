@@ -1,11 +1,11 @@
 import unittest
 
+import pytest
+
 from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )
-import pytest
-
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
