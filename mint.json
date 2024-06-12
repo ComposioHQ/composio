@@ -162,13 +162,13 @@
         {
           "group": "Demo Apps", 
           "pages":[
-            "guides/examples/ResearchAssistant",
-            "guides/examples/CompetitorResearcher",
-            "guides/examples/InvestmentAnalyst",
-            "guides/examples/github-trello",
+            "guides/examples/research-assistant",
+            "guides/examples/competitor-researcher",
+            "guides/examples/investment-analyst",
+            "guides/examples/commit-agent",
             "guides/examples/urlsummary",
             "guides/examples/news-summary",
-            "guides/examples/todo-to-calendar",
+            "guides/examples/calendar-agent",
             "guides/examples/qnasummary"
 
         ]}
