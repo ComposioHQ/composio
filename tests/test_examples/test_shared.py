@@ -1,6 +1,6 @@
 from inspect import Parameter
-from pydantic import Field
 from composio.utils import shared
+
 
 def test_get_pydantic_signature_format_from_schema_params():
     # Define a mock schema
@@ -8,14 +8,14 @@ def test_get_pydantic_signature_format_from_schema_params():
         "properties": {
             "owner": {
                 "type": "string",
-                "description": "The account owner of the repository."
+                "description": "The account owner of the repository.",
             },
             "repo": {
                 "type": "string",
-                "description": "The name of the repository without the `.git` extension."
-            }
+                "description": "The name of the repository without the `.git` extension.",
+            },
         },
-        "required": ["owner"]
+        "required": ["owner"],
     }
 
     # Call the function with the mock schema
@@ -28,7 +28,10 @@ def test_get_pydantic_signature_format_from_schema_params():
     assert result[0].name == "owner"
     assert result[1].name == "repo"
     assert result[0].default.description == "The account owner of the repository."
-    assert result[1].default.description == "The name of the repository without the `.git` extension."
+    assert (
+        result[1].default.description
+        == "The name of the repository without the `.git` extension."
+    )
 
 
 def test_json_schema_to_pydantic_field():
@@ -36,7 +39,7 @@ def test_json_schema_to_pydantic_field():
     name = "owner"
     json_schema = {
         "type": "string",
-        "description": "The account owner of the repository."
+        "description": "The account owner of the repository.",
     }
     required = ["owner"]
 
@@ -55,14 +58,14 @@ def test_json_schema_to_fields_dict():
         "properties": {
             "owner": {
                 "type": "string",
-                "description": "The account owner of the repository."
+                "description": "The account owner of the repository.",
             },
             "repo": {
                 "type": "string",
-                "description": "The name of the repository without the `.git` extension."
-            }
+                "description": "The name of the repository without the `.git` extension.",
+            },
         },
-        "required": ["owner"]
+        "required": ["owner"],
     }
 
     # Call the function with the mock schema
@@ -75,6 +78,9 @@ def test_json_schema_to_fields_dict():
     assert result["owner"][0] == str
     assert result["repo"][0] == str
     assert result["owner"][1].description == "The account owner of the repository."
-    assert result["repo"][1].description == "The name of the repository without the `.git` extension."
+    assert (
+        result["repo"][1].description
+        == "The name of the repository without the `.git` extension."
+    )
     assert result["owner"][1].default == ...
     assert result["repo"][1].default is None

@@ -7,10 +7,7 @@ from llama_index.core.tools import FunctionTool
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
-from composio.utils.shared import (
-    get_pydantic_signature_format_from_schema_params,
-    json_schema_to_model,
-)
+from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
 
 class ComposioToolSet(BaseComposioToolSet):
@@ -76,12 +73,7 @@ class ComposioToolSet(BaseComposioToolSet):
         self.runtime = "llamaindex"
 
     def prepare_python_function(
-        self,
-        app,
-        action,
-        description,
-        schema_params,
-        entity_id
+        self, app, action, description, schema_params, entity_id
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
@@ -93,6 +85,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
+
         action_func = types.FunctionType(
             function.__code__,
             globals=globals(),
