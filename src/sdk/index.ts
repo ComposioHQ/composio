@@ -125,6 +125,14 @@ class Entity {
 
             connectedAccount = connectedAccounts.items![0];
         }
+        console.log("Calling action", {
+            actionName: action.action,
+            requestBody: {
+                connectedAccountId: connectedAccount.id,
+                input: params,
+                appName: action.app
+            }
+        });
         return this.client.actions.execute({
             actionName: action.action,
             requestBody: {

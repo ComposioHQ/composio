@@ -76,7 +76,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
         };
 
         const parameters = jsonSchemaToModel(schema["parameters"]);
-
         // @TODO: Add escriiption an othjer stuff here
 
         return new DynamicStructuredTool({
