@@ -160,7 +160,7 @@
       "pages": [
         "guides/examples/Example",
         {
-          "group": "Demo Apps", 
+          "group": "Guides", 
           "pages":[
             "guides/examples/investment-analyst",
             "guides/examples/research-assistant",
