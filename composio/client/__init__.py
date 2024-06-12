@@ -439,6 +439,7 @@ class TriggerModel(BaseModel):
     count: int
     enabled: bool
 
+
 def trigger_names_str(trigger_names: t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]]) -> str:
     """Get trigger names as a string."""
     return ",".join(
