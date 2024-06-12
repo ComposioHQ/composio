@@ -22,7 +22,7 @@ from composio.client.enums import (  # TODO: Fix pseudo-circular dependendcy
     Trigger,
 )
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
-from composio.client.http import HttpClient
+from composio.client.http_client import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import raise_api_key_missing
 from composio.utils.url import get_api_url_base
@@ -439,7 +439,7 @@ class TriggerModel(BaseModel):
     count: int
     enabled: bool
 
-def trigger_names_str(trigger_names: t.Union[t.List[str], t.List[Trigger]]) -> str:
+def trigger_names_str(trigger_names: t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]]) -> str:
     """Get trigger names as a string."""
     return ",".join(
         [
@@ -465,7 +465,7 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        trigger_names: t.Optional[t.Union[t.List[str], t.List[Trigger]]] = None,
+        trigger_names: t.Optional[t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]]] = None,
         app_names: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
@@ -536,7 +536,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         trigger_ids: t.Optional[t.List[str]] = None,
         connected_account_ids: t.Optional[t.List[str]] = None,
         integration_ids: t.Optional[t.List[str]] = None,
-        trigger_names: t.Optional[t.Union[t.List[str], t.List[Trigger]]] = None,
+        trigger_names: t.Optional[t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]]] = None,
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
