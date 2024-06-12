@@ -1,0 +1,5 @@
+composio-crewai
+crewai
+flask
+langchain-openai
+python-dotenv
