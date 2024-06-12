@@ -439,7 +439,7 @@ class TriggerModel(BaseModel):
     count: int
     enabled: bool
 
-def trigger_names_str(trigger_names: t.List[t.Union[str, Trigger]]) -> str:
+def trigger_names_str(trigger_names: t.Union[t.List[str], t.List[Trigger]]) -> str:
     """Get trigger names as a string."""
     return ",".join(
         [
@@ -465,7 +465,7 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        trigger_names: t.Optional[t.List[t.Union[str, Trigger]]] = None,
+        trigger_names: t.Optional[t.Union[t.List[str], t.List[Trigger]]] = None,
         app_names: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
@@ -536,7 +536,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         trigger_ids: t.Optional[t.List[str]] = None,
         connected_account_ids: t.Optional[t.List[str]] = None,
         integration_ids: t.Optional[t.List[str]] = None,
-        trigger_names: t.Optional[t.List[t.Union[str, Trigger]]] = None,
+        trigger_names: t.Optional[t.Union[t.List[str], t.List[Trigger]]] = None,
     ) -> t.List[ActiveTriggerModel]:
         """List active triggers."""
         trigger_ids = trigger_ids or []
