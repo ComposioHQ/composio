@@ -439,6 +439,15 @@ class TriggerModel(BaseModel):
     count: int
     enabled: bool
 
+def trigger_names_str(trigger_names: t.List[t.Union[str, Trigger]]) -> str:
+    """Get trigger names as a string."""
+    return ",".join(
+        [
+            trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
+            for trigger_name in trigger_names
+        ]
+    )
+
 
 class Triggers(Collection[TriggerModel]):
     """Collection of triggers."""
@@ -468,11 +477,7 @@ class Triggers(Collection[TriggerModel]):
         """
         queries = {}
         if trigger_names is not None and len(trigger_names) > 0:
-            processed_trigger_names = [
-                trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
-                for trigger_name in trigger_names
-            ]
-            queries["triggerIds"] = ",".join(processed_trigger_names)
+            queries["triggerIds"] = trigger_names_str(trigger_names)
         if app_names is not None and len(app_names) > 0:
             queries["appNames"] = ",".join(app_names)
         return super().get(queries=queries)
@@ -546,11 +551,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         if len(integration_ids) > 0:
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
-            processed_trigger_names = [
-                trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
-                for trigger_name in trigger_names
-            ]
-            queries["triggerNames"] = ",".join(processed_trigger_names)
+            queries["triggerNames"] = trigger_names_str(trigger_names)
         return self._raise_if_empty(super().get(queries=queries))
 
 
