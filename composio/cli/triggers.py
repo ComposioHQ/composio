@@ -127,16 +127,16 @@ class EnableTriggerExamples(HelpfulCmdBase, click.Command):
 
 
 @_triggers.command(name="enable", cls=EnableTriggerExamples)
-@click.argument("id", type=str)
+@click.argument("name", type=str)
 @click.help_option("--help", "-h", "-help")
 @pass_context
-def _enable_trigger(context: Context, id: str) -> None:
+def _enable_trigger(context: Context, name: str) -> None:
     """Enable a trigger for an app"""
-    context.console.print(f"Enabling trigger [green]{id}[/green]")
+    context.console.print(f"Enabling trigger [green]{name}[/green]")
     try:
-        triggers = context.client.triggers.get(trigger_ids=[id])
+        triggers = context.client.triggers.get(trigger_names=[name])
         if len(triggers) == 0:
-            raise click.ClickException(f"Trigger with ID {id} not found")
+            raise click.ClickException(f"Trigger with name {name} not found")
         trigger = triggers[0]
         connected_account = context.client.get_entity().get_connection(
             app=trigger.appKey
@@ -151,7 +151,7 @@ def _enable_trigger(context: Context, id: str) -> None:
             config[field] = click.prompt(text=f"{field_title} ({field_description})")
 
         response = context.client.triggers.enable(
-            name=id,
+            name=name,
             connected_account_id=connected_account.id,
             config=config,
         )
