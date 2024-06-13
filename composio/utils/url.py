@@ -32,7 +32,7 @@ def get_web_url(path: str) -> str:
             "Format should be on of follwing {"
             f"{BASE_URL_PROD}, "
             f"{BASE_URL_STAGING}, "
-            f"{BASE_URL_LOCAL}, "
+            f"{BASE_URL_LOCAL}"
             "}"
         )
     return f"{web_url}/{path}"

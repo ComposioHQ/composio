@@ -48,6 +48,10 @@ EXAMPLES = (
 )
 
 
+@pytest.mark.skipif(
+    condition=os.environ.get("CI") is not None,
+    reason="Testing in CI will lead to too much LLM API usage",
+)
 @pytest.mark.parametrize("example", EXAMPLES)
 def test_example(example: dict) -> None:
     """Test an example with given environment."""
