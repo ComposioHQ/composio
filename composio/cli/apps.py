@@ -11,7 +11,8 @@ import click
 
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client import ActionModel, AppModel, TriggerModel, enums
+from composio.client import enums
+from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.client.local_handler import LocalToolHandler
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
