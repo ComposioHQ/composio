@@ -25,17 +25,24 @@ class ConnectionsExamples(HelpfulCmdBase, DYMGroup):
 
 
 @click.group(name="connections", invoke_without_command=True, cls=ConnectionsExamples)
+@click.option(
+    "--active",
+    help="Show only active connections",
+    is_flag=True,
+)
 @click.help_option("--help", "-h", "-help")
 @pass_context
-def _connections(context: Context) -> None:
+def _connections(
+    context: Context,
+    active: bool = False,
+) -> None:
     """List composio connections for your account"""
     if context.click_ctx.invoked_subcommand:
         return
 
-    connections = context.client.connected_accounts.get()
-    for connection in connections:
-        print(connection)
-
+    for connection in context.client.connected_accounts.get(active=active):
+        context.console.print(f"• Id : {connection.id}")
+        context.console.print(f"  App: {connection.appUniqueId}")
 
 class GetExamples(HelpfulCmdBase, click.Command):
     examples = [
@@ -54,8 +61,8 @@ def _get(context: Context, id: str) -> None:
         connection = context.client.get_entity().get_connection(
             connected_account_id=id,
         )
-        context.console.print(f"[green]App:[/green] {connection.appUniqueId}")
-        context.console.print(f"[green]Id:[/green] {connection.id}")
+        context.console.print(f"[green]App   :[/green] {connection.appUniqueId}")
+        context.console.print(f"[green]Id    :[/green] {connection.id}")
         context.console.print(f"[green]Status:[/green] {connection.status}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
