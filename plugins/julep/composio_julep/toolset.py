@@ -35,7 +35,7 @@ class ComposioToolSet(BaseComposioToolSet):
             entity_id=entity_id,
             output_in_file=output_in_file,
         )
-        self.runtime = "julep"
+        self._runtime = "julep"
 
     def handle_tool_calls(  # type: ignore[override]
         self,
