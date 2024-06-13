@@ -40,9 +40,7 @@ def _login(
 ) -> None:
     """Login to the Composio SDK"""
 
-    # TODO: Abstract away
-    user_data = context.user_data
-    if user_data.api_key is not None:
+    if context.is_logged_in():
         context.console.print("\n[green]✔ You're already logged in![/green]\n")
         context.console.print(
             "> Use [green]'composio logout'[/green] to log out and then login again"
@@ -60,11 +58,11 @@ def _login(
         if not no_browser:
             webbrowser.open(url)
         code = click.prompt("> Enter authentication code: ")
-        user_data.api_key = Composio.validate_auth_session(
+        context.user_data.api_key = Composio.validate_auth_session(
             key=key,
             code=code,
         )
-        user_data.store()
+        context.user_data.store()
         context.console.print("\n[green]✔ Authenticated successfully![/green]\n")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e

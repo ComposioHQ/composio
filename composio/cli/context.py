@@ -67,6 +67,10 @@ class Context:
             )
         return self._client
 
+    def is_logged_in(self) -> bool:
+        """Check if a user is logged in."""
+        return self.user_data.api_key is not None
+
 
 R = t.TypeVar("R")
 T = t.TypeVar("T")
