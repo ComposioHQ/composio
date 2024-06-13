@@ -44,6 +44,7 @@ def _connections(
         context.console.print(f"• Id : {connection.id}")
         context.console.print(f"  App: {connection.appUniqueId}")
 
+
 class GetExamples(HelpfulCmdBase, click.Command):
     examples = [
         click.style("composio connections get 123", fg="green")

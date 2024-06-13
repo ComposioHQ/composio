@@ -10,7 +10,7 @@ import pytest
 from tests.test_cli.base import BaseCliTest
 
 
-class TestListActions(BaseCliTest):  # pylint: disable=unused-argument
+class TestListActions(BaseCliTest):
     """Test list actions."""
 
     @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ class TestListActions(BaseCliTest):  # pylint: disable=unused-argument
         ),
     )
     @mock.patch("click.prompt", return_value="n")
-    def test_list_all(
+    def test_list_all(  # pylint: disable=unused-argument
         self,
         patch: t.Any,
         arguments: t.Tuple[str, ...],
@@ -45,7 +45,7 @@ class TestListActions(BaseCliTest):  # pylint: disable=unused-argument
 
     @pytest.mark.skip(reason="Limit filter is not working atm!")
     @mock.patch("click.prompt", return_value="n")
-    def test_limit(self, patch: t.Any) -> None:
+    def test_limit(self, patch: t.Any) -> None:  # pylint: disable=unused-argument
         """Test limit flag."""
         result = self.run("actions", "--use-case", "github", "--limit", "5")
 
