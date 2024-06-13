@@ -5,7 +5,7 @@ import { OpenAI } from "openai";
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
 
-export class OpenaiToolSet extends BaseComposioToolSet {
+export class OpenAIToolSet extends BaseComposioToolSet {
     /**
      * Composio toolset for OpenAI framework.
      *
@@ -30,7 +30,7 @@ export class OpenaiToolSet extends BaseComposioToolSet {
     async get_actions(
         _actions: Sequence<Action>,
         entityId: Optional<string> = null
-    ): Promise<Sequence<OpenAI.FunctionDefinition>> {
+    ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         return (await this.client.actions.list({})).items?.filter((a) => {
             return _actions.map(action => action.action).includes(a!.name!);
         }).map(action => {
@@ -39,7 +39,11 @@ export class OpenaiToolSet extends BaseComposioToolSet {
                 description: action.description!,
                 parameters: action.parameters!
             };
-            return formattedSchema;
+            const tool: OpenAI.ChatCompletionTool = {
+                type: "function",
+                function: formattedSchema
+            }
+            return tool;
         }) || [];
     }
 
@@ -47,14 +51,18 @@ export class OpenaiToolSet extends BaseComposioToolSet {
         _apps: Sequence<App>,
         tags: Optional<Array<string | Tag>> = null,
         entityId: Optional<string> = null
-    ): Promise<Sequence<OpenAI.FunctionDefinition>> {
+    ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         return (await this.client.actions.list({appNames: _apps.map(app => app.value).join(",")})).items?.map(action => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
                 description: action.description!,
                 parameters: action.parameters!
             };
-            return formattedSchema;
+            const tool: OpenAI.ChatCompletionTool = {
+                type: "function",
+                function: formattedSchema
+            }
+            return tool;
         }) || [];
     }
 
@@ -83,17 +91,45 @@ export class OpenaiToolSet extends BaseComposioToolSet {
     }
 
     async handle_assistant_message(
-        assistantMessage: OpenAI.ChatCompletionAssistantMessageParam,
+        run: OpenAI.Beta.Threads.Run,
         entityId: Optional<string> = null
-    ): Promise<Sequence<string>> {
-        const outputs = [];
-        for (const toolCall of assistantMessage.tool_calls || []) {
-            if (toolCall) {
-                outputs.push(await this.execute_tool_call(toolCall, entityId));
-            }
+    ): Promise<Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput>> {
+        const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> = [];
+        for (const tool_call of run.required_action?.submit_tool_outputs?.tool_calls || []) {
+            const tool_response = await this.execute_tool_call(
+                tool_call as OpenAI.ChatCompletionMessageToolCall,
+                entityId || this.entityId
+            );
+            const tool_output: OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput = {
+                tool_call_id: tool_call.id,
+                output: JSON.stringify(tool_response),
+            };
+            tool_outputs.push(tool_output);
         }
-        return outputs;
+        return tool_outputs;
     }
 
-
+    async wait_and_handle_assistant_tool_calls(
+        client: OpenAI,
+        run: OpenAI.Beta.Threads.Run,
+        thread: OpenAI.Beta.Threads.Thread,
+        entityId: Optional<string> = null
+    ): Promise<OpenAI.Beta.Threads.Run> {
+        while (["queued", "in_progress", "requires_action"].includes(run.status)) {
+            const tool_outputs = await this.handle_assistant_message(run, entityId || this.entityId);
+            if (run.status === "requires_action") {
+                run = await client.beta.threads.runs.submitToolOutputs(
+                    thread.id,
+                    run.id,
+                    {
+                        tool_outputs: tool_outputs
+                    }
+                );
+            } else {
+                run = await client.beta.threads.runs.retrieve(thread.id, run.id);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        return run;
+    }
 }
