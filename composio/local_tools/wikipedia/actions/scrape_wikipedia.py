@@ -39,10 +39,6 @@ class WikipediaContent(Action):
             # Adding headers to mimic a browser request
             wiki_wiki = wikipediaapi.Wikipedia('Composio (merlin@example.com)', 'en')
             req = wiki_wiki.page(page)
-            print("RESPONSE _________________________", str(req.text))
-            result = str(req)
-            return result
+            return {"execution_details": {"executed": True}, "response_data": str(req)}
         except Exception as e:
-            print("ERROR __________________", e)
-            result = f"Error getting wikipedia page data: {e}"
-            return result
+            return {"execution_details": {"executed": True}, "response_data": f"Error getting wikipedia page data: {e}"}
