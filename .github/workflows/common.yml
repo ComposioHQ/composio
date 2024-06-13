@@ -68,7 +68,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
-    timeout-minutes: 90
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
         with:
