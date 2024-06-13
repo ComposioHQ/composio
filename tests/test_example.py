@@ -25,7 +25,23 @@ EXAMPLES = (
             "type": "stdout",
             "values": ["Task Complete"],
         },
-        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+        },
+    },
+    {
+        "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "Task complete",
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+        },
     },
 )
 
