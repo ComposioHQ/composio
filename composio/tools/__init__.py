@@ -54,9 +54,18 @@ class ComposioToolSet:
             api_key=self.api_key,
             base_url=base_url,
         )
-        self.runtime = runtime
+        if runtime:
+            self.runtime = runtime
         self.entity_id = entity_id
         self.output_in_file = output_in_file
+
+    @property
+    def runtime(self) -> str:
+        return self._runtime
+
+    @runtime.setter
+    def runtime(self, value: str) -> None:
+        self._runtime = value
 
     def execute_action(
         self,
