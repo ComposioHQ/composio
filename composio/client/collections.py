@@ -245,12 +245,12 @@ class AppModel(BaseModel):
 
     name: str
     key: str
-    logo: str
     appId: str
     description: str
     categories: t.List[str]
     meta: t.Dict
 
+    logo: t.Optional[str] = None
     docs: t.Optional[str] = None
     group: t.Optional[str] = None
     status: t.Optional[str] = None
@@ -371,10 +371,11 @@ class TriggerModel(BaseModel):
     instructions: str
     appId: str
     appKey: str
-    logo: str
     appName: str
     count: int
     enabled: bool
+
+    logo: t.Optional[str] = None
 
 
 class Triggers(Collection[TriggerModel]):
@@ -535,10 +536,11 @@ class ActionModel(BaseModel):
     response: ActionResponseModel
     appKey: str
     appId: str
-    logo: str
     tags: t.List[str]
     appName: str
     enabled: bool
+
+    logo: t.Optional[str] = None
 
 
 class Actions(Collection[ActionModel]):
@@ -762,8 +764,8 @@ class IntegrationModel(BaseModel):
     appId: str
     _count: t.Dict
     appName: str
-    logo: str
 
+    logo: t.Optional[str] = None
     defaultConnectorId: t.Optional[str] = None
     connections: t.Optional[t.List[t.Dict]] = None
 
