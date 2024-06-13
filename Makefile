@@ -102,6 +102,7 @@ env: clean
 		pipenv run pip install -e plugins/griptape;\
 		pipenv run pip install -e plugins/julep;\
 		pipenv run pip install -e plugins/langchain;\
+		pipenv run pip install -e plugins/llamaindex;\
 		pipenv run pip install -e plugins/lyzr;\
 		pipenv run pip install -e plugins/openai;\
 		echo "Enter virtual environment with all development dependencies now: 'pipenv shell'.";\
