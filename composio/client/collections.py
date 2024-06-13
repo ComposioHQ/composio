@@ -18,7 +18,7 @@ from composio.client.exceptions import ComposioClientError
 from .local_handler import LocalToolHandler
 
 
-def _trigger_names_str(
+def trigger_names_str(
     trigger_names: t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]],
 ) -> str:
     """Get trigger names as a string."""
@@ -408,7 +408,7 @@ class Triggers(Collection[TriggerModel]):
         """
         queries = {}
         if trigger_names is not None and len(trigger_names) > 0:
-            queries["triggerIds"] = _trigger_names_str(trigger_names)
+            queries["triggerIds"] = trigger_names_str(trigger_names)
         if app_names is not None and len(app_names) > 0:
             queries["appNames"] = ",".join(app_names)
         return super().get(queries=queries)
@@ -482,7 +482,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         if len(integration_ids) > 0:
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
-            queries["triggerNames"] = _trigger_names_str(trigger_names)
+            queries["triggerNames"] = trigger_names_str(trigger_names)
         return self._raise_if_empty(super().get(queries=queries))
 
 
