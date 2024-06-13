@@ -78,16 +78,9 @@ class ComposioToolSet(BaseComposioToolSet):
             output_in_file=output_in_file,
         )
 
-    def _wrap_tool(
-        self,
-        schema: t.Dict[str, t.Any],
-        entity_id: t.Optional[str] = None,
-    ) -> StructuredTool:
-        """Wraps composio tool as Langchain StructuredTool object."""
-        app = schema["appName"]
-        action = schema["name"]
-        description = schema["description"]
-
+    def prepare_python_function(
+        self, app, action, description, schema_params, entity_id
+    ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
             return self.execute_action(
@@ -99,9 +92,6 @@ class ComposioToolSet(BaseComposioToolSet):
                 entity_id=entity_id or self.entity_id,
             )
 
-        parameters = json_schema_to_model(
-            json_schema=schema["parameters"],
-        )
         action_func = types.FunctionType(
             function.__code__,
             globals=globals(),
@@ -110,10 +100,36 @@ class ComposioToolSet(BaseComposioToolSet):
         )
         action_func.__signature__ = Signature(  # type: ignore
             parameters=get_signature_format_from_schema_params(
-                schema_params=schema["parameters"]
+                schema_params=schema_params
             )
         )
+
         action_func.__doc__ = description
+
+        return action_func
+
+    def _wrap_tool(
+        self,
+        schema: t.Dict[str, t.Any],
+        entity_id: t.Optional[str] = None,
+    ) -> StructuredTool:
+        """Wraps composio tool as Langchain StructuredTool object."""
+        app = schema["appName"]
+        action = schema["name"]
+        description = schema["description"]
+        schema_params = schema["parameters"]
+
+        action_func = self.prepare_python_function(
+            app=app,
+            action=action,
+            description=description,
+            schema_params=schema_params,
+            entity_id=entity_id,
+        )
+
+        parameters = json_schema_to_model(
+            json_schema=schema_params,
+        )
         return StructuredTool.from_function(
             name=action,
             description=description,

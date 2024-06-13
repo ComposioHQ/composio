@@ -9,13 +9,6 @@ from pydantic.v1 import BaseModel, Field, create_model
 from pydantic.v1.fields import FieldInfo
 
 
-SCHEMA_TYPE_TO_PYTHON_TYPE: t.Dict[str, t.Type] = {
-    "string": str,
-    "number": float,
-    "boolean": bool,
-    "integer": int,
-}
-
 PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "string": str,
     "integer": int,
@@ -24,6 +17,9 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "null": t.Optional[t.Any],
 }
 
+# Should be depricated,
+# required values will always be provided by users
+# Non-required values are nullable(None) if default value not provided.
 FALLBACK_VALUES = {
     "string": "",
     "number": 0.0,
@@ -108,6 +104,7 @@ def json_schema_to_pydantic_field(
         description = f"Any of the following options(separated by |): {description}"
 
     examples = json_schema.get("examples", [])
+    default = json_schema.get("default")
     return (
         t.cast(
             t.Type,
@@ -118,9 +115,32 @@ def json_schema_to_pydantic_field(
         Field(
             description=description,
             examples=examples,
-            default=... if name in required else None,
+            default=... if name in required else default,
         ),
     )
+
+
+def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    """
+    Converts a JSON schema to a dictionary of param name, and a tuple of type & Field.
+
+    :param json_schema: The JSON schema to convert.
+    :return: dict<str, tuple<<class 'type'>, Field>>
+
+    Example Output:
+    ```python
+    {
+        'owner': (<class 'str'>, FieldInfo(default=Ellipsis, description='The account owner of the repository.', extra={'examples': ([],)})),
+        'repo': (<class 'str'>, FieldInfo(default=Ellipsis, description='The name of the repository without the `.git` extension.', extra={'examples': ([],)}))}
+    }
+    ```
+
+    """
+    field_definitions = {
+        name: json_schema_to_pydantic_field(name, prop, json_schema.get("required", []))
+        for name, prop in json_schema.get("properties", {}).items()
+    }
+    return field_definitions  # type: ignore
 
 
 def json_schema_to_model(json_schema: t.Dict[str, t.Any]) -> t.Type[BaseModel]:
@@ -173,8 +193,8 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         prop_type = prop_info["type"]
         prop_title = prop_info["title"].replace(" ", "")
         prop_default = prop_info.get("default", FALLBACK_VALUES[prop_type])
-        if prop_type in SCHEMA_TYPE_TO_PYTHON_TYPE:
-            signature_prop_type = SCHEMA_TYPE_TO_PYTHON_TYPE[prop_type]
+        if prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
+            signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 
@@ -207,10 +227,22 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
 
 def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Parameter]:
     """
-    Get function paramters signature from schema parameters.
+    Get function paramters signature(with pydantic field definition as default values)
+    from schema parameters. Works like:
 
-    :param schema_params: A dictionary object containing schema params.
+    def demo_function(
+        owner: str,
+        repo: str),
+    )
+
+    :param schema_params: A dictionary object containing schema params, with keys [properties, required ect.].
     :return: List of required and optional parameters
+
+    Output Format:
+    [
+        <Parameter "owner: str">,
+        <Parameter "repo: str">
+    ]
     """
     required_parameters = []
     optional_parameters = []
@@ -223,23 +255,23 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
         if param_oneOf is not None:
             param_types = [ptype.get("type") for ptype in param_oneOf]
             if len(param_types) == 1:
-                signature_param_type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]
+                signature_param_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]
             elif len(param_types) == 2:
                 # Check as redefinition and union was incompatible
                 # @karan to check if this is the right way to do it
-                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
-                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
+                t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
+                t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
                 signature_param_type: t.Type = t.Union[t1, t2]  # type: ignore
             elif len(param_types) == 3:
-                t1: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
-                t2: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
-                t3: t.Type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_types[2]]
+                t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
+                t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
+                t3: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[2]]  # type: ignore
                 signature_param_type: t.Type = t.Union[t1, t2, t3]  # type: ignore
             else:
                 raise ValueError("Invalid 'oneOf' schema")
             param_default = param_schema.get("default", "")
-        elif param_type in SCHEMA_TYPE_TO_PYTHON_TYPE:
-            signature_param_type = SCHEMA_TYPE_TO_PYTHON_TYPE[param_type]
+        elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
+            signature_param_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
@@ -258,3 +290,48 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
         else:
             optional_parameters.append(param)
     return required_parameters + optional_parameters
+
+
+def get_pydantic_signature_format_from_schema_params(
+    schema_params: t.Dict,
+) -> t.List[Parameter]:
+    """
+    Get function paramters signature(with pydantic field definition as default values)
+    from schema parameters. Works like:
+
+    def demo_function(
+        owner: str=Field(..., description='The account owner of the repository.'),
+        repo: str=Field(..., description='The name of the repository without the `.git` extension.'),
+    )
+
+    :param schema_params: A dictionary object containing schema params, with keys [properties, required ect.].
+    :return: List of required and optional parameters
+
+    Example Output Format:
+    ```python
+    [
+        <Parameter "owner: str = FieldInfo(
+            default=Ellipsis,
+            description='The account owner of the repository.',
+            extra={'examples': ([],)})">,
+        <Parameter "repo: str = FieldInfo(
+            default=Ellipsis,
+            description='The name of the repository without the `.git` extension.',
+            extra={'examples': ([],)})">
+    ]
+    ```
+    """
+    all_parameters = []
+
+    field_definitions = json_schema_to_fields_dict(schema_params)
+
+    for param_name, (param_dtype, parame_field) in field_definitions.items():
+        param = Parameter(
+            name=param_name,
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=param_dtype,
+            default=parame_field,
+        )
+        all_parameters.append(param)
+
+    return all_parameters

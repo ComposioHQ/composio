@@ -10,6 +10,7 @@ from composio_crewai import ComposioToolSet, App
 from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI
 import logging
+import concurrent.futures
 
 from rich.logging import RichHandler
 
@@ -58,8 +59,8 @@ def filter_from_repo_name(curr_dataset, repo_name):
 
 def get_issues_dataset():
     # Load the SWE-bench dataset
-    dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[:3]")
+    # dev_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="dev")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
     # filter by repo-name 
     # test_dataset = filter_from_repo_name(test_dataset, repo_name)
 
@@ -99,7 +100,10 @@ def run():
         "You are the best programmer. You think carefully and step by step take action."
     )
     goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
-    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE, App.CMDMANAGERTOOL, App.HISTORYKEEPER])
+    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE,
+                                             App.CMDMANAGERTOOL,
+                                             App.HISTORYKEEPER,
+                                             App.SUBMITPATCHTOOL])
     issues = get_issues_dataset()
     agent_logs = {}
     for issue in issues:
@@ -119,6 +123,11 @@ def run():
         #           used to store logs of agent actions and responses
         def add_in_logs(step_output):
             # get agent input
+            if isinstance(step_output, langchain_core.agents.AgentFinish):
+                current_logs.append({
+                    "agent_action": "agent_finish",
+                    "agent_output": step_output.return_values,
+                })
             if isinstance(step_output, list):
                 if len(step_output) < 1:
                     return
@@ -173,3 +182,6 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+
+
