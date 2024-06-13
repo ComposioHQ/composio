@@ -23,7 +23,9 @@ EXAMPLES = (
         "file": PLUGINS / "autogen" / "autogen_demo.py",
         "match": {
             "type": "stdout",
-            "values": ["Task Complete"],
+            "values": [
+                '{"execution_details": {"executed": true}, "response_data": ""}'
+            ],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
@@ -35,7 +37,7 @@ EXAMPLES = (
         "match": {
             "type": "stdout",
             "values": [
-                "Task complete",
+                "{'execution_details': {'executed': True}, 'response_data': ''}",
             ],
         },
         "env": {
@@ -63,6 +65,9 @@ def test_example(example: dict) -> None:
 
     # Wait for 2 minutes for example to run
     proc.wait(timeout=120)
+
+    # Check if process exited with success
+    assert proc.returncode == 0
 
     # Validate output
     output = (
