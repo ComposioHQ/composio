@@ -8,6 +8,8 @@ Usage:
 """
 
 import typing as t
+import json
+from examples.swe.evaluation.run_on_single_issue import run
 
 import click
 
@@ -166,7 +168,27 @@ def _apps(context: Context, enabled: bool = False) -> None:
         raise click.ClickException(message=e.message) from e
 
 
-class UpdateExamples(HelpfulCmdBase, click.Command):
+class RunSWEAgentExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio run-swe-agent --issue '{\"repo\": \"ComposioHQ/composio\", \"issue_id\": \"123-xyz\", \"description\": \"Fix bug in code\"}'", fg="green")
+        + click.style("  # Run the SWE agent on a given issue\n", fg="black"),
+    ]
+
+@composio.command(name="run-swe-agent", cls=RunSWEAgentExamples)
+@click.option(
+    "--issue",
+    required=True,
+    type=str,
+    help="JSON string representing the issue to be solved by the SWE agent",
+)
+@pass_context
+def run_swe_agent(context: Context, issue: str) -> None:
+    """Run the SWE agent on a given issue."""
+    try:
+        issue_dict = json.loads(issue)
+        run(issue_dict)
+    except json.JSONDecodeError as e:
+        raise click.ClickException(f"Invalid JSON for issue: {e}")
     examples = [
         click.style("composio apps update", fg="green")
         + click.style("  # Update local Apps database\n", fg="black"),
