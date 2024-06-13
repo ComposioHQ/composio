@@ -2,20 +2,17 @@ import types
 import typing as t
 from inspect import Signature
 
-from langchain_core.tools import StructuredTool
+from composio_langchain import ComposioToolSet as BaseComposioToolSet
+from llama_index.core.tools import FunctionTool  # pylint: disable=import-error
 
 from composio.client.enums import Action, App, Tag
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.utils.shared import (
-    get_signature_format_from_schema_params,
-    json_schema_to_model,
-)
+from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
 
 class ComposioToolSet(BaseComposioToolSet):
     """
-    Composio toolset for Langchain framework.
+    Composio toolset for LlamaIndex framework.
 
     Example:
     ```python
@@ -60,7 +57,6 @@ class ComposioToolSet(BaseComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
     ) -> None:
         """
         Initialize composio toolset.
@@ -68,15 +64,13 @@ class ComposioToolSet(BaseComposioToolSet):
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
         """
         super().__init__(
             api_key=api_key,
             base_url=base_url,
-            runtime="langchain",
             entity_id=entity_id,
-            output_in_file=output_in_file,
         )
+        self.runtime = "llamaindex"
 
     def prepare_python_function(
         self, app, action, description, schema_params, entity_id
@@ -99,7 +93,7 @@ class ComposioToolSet(BaseComposioToolSet):
             closure=function.__closure__,
         )
         action_func.__signature__ = Signature(  # type: ignore
-            parameters=get_signature_format_from_schema_params(
+            parameters=get_pydantic_signature_format_from_schema_params(
                 schema_params=schema_params
             )
         )
@@ -112,8 +106,8 @@ class ComposioToolSet(BaseComposioToolSet):
         self,
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
-    ) -> StructuredTool:
-        """Wraps composio tool as Langchain StructuredTool object."""
+    ) -> FunctionTool:
+        """Wraps composio tool as LlamaIndex FunctionTool object."""
         app = schema["appName"]
         action = schema["name"]
         description = schema["description"]
@@ -126,58 +120,40 @@ class ComposioToolSet(BaseComposioToolSet):
             schema_params=schema_params,
             entity_id=entity_id,
         )
-
-        parameters = json_schema_to_model(
-            json_schema=schema_params,
-        )
-        return StructuredTool.from_function(
+        return FunctionTool.from_defaults(
+            action_func,
             name=action,
             description=description,
-            args_schema=parameters,
-            return_schema=True,
-            func=action_func,
         )
 
+    # pylint: disable=useless-super-delegation
     def get_actions(
         self,
         actions: t.Sequence[Action],
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[StructuredTool]:
+    ) -> t.Sequence[FunctionTool]:
         """
-        Get composio tools wrapped as Langchain StructuredTool objects.
+        Get composio tools wrapped as LlamaIndex FunctionTool objects.
 
         :param actions: List of actions to wrap
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `StructuredTool` objects
         """
+        return super().get_actions(actions, entity_id)
 
-        return [
-            self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for tool in self.client.actions.get(actions=actions)
-        ]
-
+    # pylint: disable=useless-super-delegation
     def get_tools(
         self,
         apps: t.Sequence[App],
         tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[StructuredTool]:
+    ) -> t.Sequence[FunctionTool]:
         """
-        Get composio tools wrapped as Langchain StructuredTool objects.
+        Get composio tools wrapped as LlamaIndex FunctionTool objects.
 
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `StructuredTool` objects
         """
-
-        return [
-            self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for tool in self.client.actions.get(apps=apps, tags=tags)
-        ]
+        return super().get_tools(apps, tags, entity_id)
