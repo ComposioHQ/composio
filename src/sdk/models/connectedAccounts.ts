@@ -57,7 +57,7 @@ export class ConnectedAccounts {
         data: CreateConnectionData["requestBody"]
     ): Promise<ConnectionRequest> {
         const response = await createConnection({requestBody: data}, this.client.config);
-        return new ConnectionRequest(response.connectionStatus!, response.connectionId!, response.redirectUrl, this.client);
+        return new ConnectionRequest(response.connectionStatus!, response.connectedAccountId!, response.redirectUrl, this.client);
     }
 }
 
