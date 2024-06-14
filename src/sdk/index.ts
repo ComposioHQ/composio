@@ -142,7 +142,7 @@ class Entity {
         });
     }
 
-    async getConnection(app?: string, connectedAccountId?: string): Promise<GetConnectedAccountResponse> {
+    async getConnection(app?: string, connectedAccountId?: string): Promise<GetConnectedAccountResponse | null> {
         if (connectedAccountId) {
             return await this.client.connectedAccounts.get({
                 connectedAccountId
@@ -156,7 +156,7 @@ class Entity {
         });
 
         if(!connectedAccounts.items || connectedAccounts.items.length === 0) {
-            throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
+            return null;
         }
 
         for (const connectedAccount of connectedAccounts.items!) {
@@ -187,6 +187,9 @@ class Entity {
          * @param config Trigger config
          */
         const connectedAccount = await this.getConnection(app);
+        if (!connectedAccount) {
+            throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
+        }
         return this.client.triggers.setup({
             triggerName: triggerName,
             connectedAccountId: connectedAccount.id!,
