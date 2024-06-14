@@ -427,7 +427,7 @@ class App(str, Enum):
             "webtool",
             "greptile",
             "sqltool",
-            "filetool,
+            "filetool",
         ]
 
     APIFY = "apify"
@@ -491,6 +491,7 @@ class App(str, Enum):
     SUBMITPATCHTOOL = "submitpatchtool"
     SQLTOOL = "sqltool"
     FILETOOL = "filetool"
+
 
 class Action(tuple, Enum):
     """App action."""
@@ -13734,9 +13735,9 @@ class Action(tuple, Enum):
         True,
         True,
     )
-    SQLTOOL_SQLQUERY = ("sqltool","sqltool_sqlquery",True,True)
-    FILETOOL_READFILE = ("filetool","filetool_readfile",True,True)
-    FILETOOL_WRITEFILE = ("filetool", "filetool_writefile",True,True)
+    SQLTOOL_SQLQUERY = ("sqltool", "sqltool_sqlquery", True, True)
+    FILETOOL_READFILE = ("filetool", "filetool_readfile", True, True)
+    FILETOOL_WRITEFILE = ("filetool", "filetool_writefile", True, True)
 
 
 class Trigger(tuple, Enum):
