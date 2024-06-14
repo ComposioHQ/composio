@@ -25,7 +25,10 @@ const toolset = new OpenAIToolSet({
         apiKey: process.env.COMPOSIO_API_KEY,      
 });
 
-const tools = await toolset.get_actions("github_issues_create");
+const tools = await toolset.get_actions({
+            actions: ["github_issues_create"]
+});
+
 
 const client = new OpenAI({
         // set your OpenAI API key here or in your environment variables
