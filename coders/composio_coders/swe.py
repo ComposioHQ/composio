@@ -11,8 +11,9 @@ import logging
 from rich.logging import RichHandler
 from dotenv import load_dotenv
 
+MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
 
-AGENT_BACKSTORY_TMPL='''
+AGENT_BACKSTORY_TMPL = '''
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
   Your mentor gave you following tips.
   1. Always start by initializing the workspace.
@@ -44,7 +45,6 @@ ISSUE_DESC_TMPL = '''
   If you are facing "module not found error", you can install dependencies. Example: in case error is "pandas not found", install pandas like this
   `pip install pandas`
 '''
-
 
 curr_script_path = Path(__file__).resolve()
 script_dir = curr_script_path.parent
@@ -79,7 +79,7 @@ class IssueConfig(BaseModel):
     issue_id: str = Field(..., description="git issue id that agent is solving")
     base_commit_id: str = Field(..., description="base commit id for which issue needs to be fixed")
     issue_description: str = Field(..., description="description of the issue")
-        
+
 
 class CoderAgentArgs(BaseModel):
     repo_name: str = Field(..., description="repo name in which agent has to work")
@@ -99,18 +99,19 @@ class CoderAgent:
     def __init__(self, args: CoderAgentArgs):
         # initialize logs and history logs path
         self.args = args
+        self.model_env = {}
         self.issue_config = args.issue_config
         self.repo_name = args.repo_name
         if not self.issue_config.issue_id:
             raise ValueError("no git-issue configuration is found")
-        
+
         # initialize composio toolset
         tool_set = ComposioToolSet()
-        self.composio_toolset = tool_set.get_tools(apps=[App.LOCALWORKSPACE, 
+        self.composio_toolset = tool_set.get_tools(apps=[App.LOCALWORKSPACE,
                                                          App.CMDMANAGERTOOL,
                                                          App.HISTORYKEEPER,
                                                          App.SUBMITPATCHTOOL])
-        # initialize agent-related different prompts 
+        # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
         self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working."
         self.expected_output = "A patch should be generated which fixes the given issue"
@@ -127,11 +128,12 @@ class CoderAgent:
 
     def setup_logs_path(self, agent_output_dir_path):
 
-        task_output_dir = script_dir / Path(agent_output_dir_path) / Path(LOGS_DIR_NAME_PREFIX + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        task_output_dir = script_dir / Path(agent_output_dir_path) / Path(
+            LOGS_DIR_NAME_PREFIX + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         self.task_output_logs = task_output_dir / Path(AGENT_LOGS_JSON_PATH)
         if not os.path.exists(task_output_dir):
             os.makedirs(task_output_dir)
-        
+
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
         with open(self.task_output_logs, "w") as f:
@@ -154,28 +156,49 @@ class CoderAgent:
         else:
             self.logger.info("type is not list: %s", type(step_output))
 
+    def get_llm(self):
+        # get model_env config from path 
+        try:
+            with open(MODEL_ENV_CONFIG_PATH, "r") as f:
+                self.model_env = json.load(f)
+        except FileNotFoundError:
+            self.logger.info("Model environment configuration file not found.")
+
+        if self.model_env.get("model_env") == "openai":
+            openai_key = self.model_env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+            return OpenAI(api_key=openai_key)
+        elif self.model_env.get("model_env") == "azure":
+            azure_endpoint = self.model_env.get("AZURE_ENDPOINT") or os.environ.get("AZURE_ENDPOINT")
+            azure_key = self.model_env.get("AZURE_KEY") or os.environ.get("AZURE_KEY")
+            azure_llm = AzureChatOpenAI(
+                azure_endpoint=azure_endpoint,
+                api_key=azure_key,
+                model="test",
+                model_version="1106-Preview",
+                api_version="2024-02-01",
+            )
+            return azure_llm
+        else:
+            raise ValueError(f"Invalid model environment: {self.model_env}")
+
     def run(self):
-        azure_llm = AzureChatOpenAI(
-            azure_endpoint=os.environ.get("AZURE_ENDPOINT"),
-            api_key=os.environ.get("AZURE_KEY"),
-            model="test",
-            model_version="1106-Preview",
-            api_version="2024-02-01",
-        )
-       
+        llm = self.get_llm()
+
         self.logger.info(f"starting agent for issue-id: {self.issue_config.issue_id}\n"
                          f"issue-description: {self.issue_config.issue_description}\n"
                          f"repo_name: {self.repo_name}\n")
 
-        issue_added_instruction = self.issue_description_tmpl.format(issue=self.issue_config.issue_description, issue_id=self.issue_config.issue_id)
-        backstory_added_instruction = self.agent_backstory_tmpl.format(repo_name=self.repo_name, base_commit=self.issue_config.base_commit_id)
+        issue_added_instruction = self.issue_description_tmpl.format(issue=self.issue_config.issue_description,
+                                                                     issue_id=self.issue_config.issue_id)
+        backstory_added_instruction = self.agent_backstory_tmpl.format(repo_name=self.repo_name,
+                                                                       base_commit=self.issue_config.base_commit_id)
         swe_agent = Agent(
             role=self.agent_role,
             goal=self.agent_goal,
             backstory=backstory_added_instruction,
             verbose=True,
             tools=self.composio_toolset,
-            llm=azure_llm,
+            llm=llm,
             memory=True,
             cache=False,
             step_callback=self.add_in_logs,
@@ -192,8 +215,8 @@ class CoderAgent:
 
 if __name__ == "__main__":
     load_dotenv('.env.example')
-    args = CoderAgentArgs(repo_name="test_repo", 
-                          agent_role="coder", 
+    args = CoderAgentArgs(repo_name="test_repo",
+                          agent_role="coder",
                           agent_goal="fix bug",
                           agent_output_dir="./",
                           expected_output="fixed code",
@@ -204,4 +227,4 @@ if __name__ == "__main__":
                           })
     c_agent = CoderAgent(args)
     c_agent.run()
-    
+

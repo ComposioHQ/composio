@@ -6,7 +6,6 @@ Usage:
 """
 
 import typing as t
-import json
 
 import click
 
@@ -169,6 +168,13 @@ def _apps(context: Context, enabled: bool = False) -> None:
             context.console.print(f"• {app.key}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
+
+
+class UpdateExamples(HelpfulCmdBase, click.Command):
+    examples = [
+        click.style("composio apps update", fg="green")
+        + click.style("  # Update local Apps database\n", fg="black"),
+    ]
 
 
 @_apps.command(name="update", cls=UpdateExamples)
