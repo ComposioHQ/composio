@@ -5,8 +5,7 @@ import { Actions } from './models/actions';
 import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
-import { AuthScheme, CreateIntegrationData, GetConnectedAccountResponse, OpenAPI } from './client';
-import { Action } from './enums';
+import { AuthScheme, GetConnectedAccountResponse, OpenAPI } from './client';
 
 export class Composio {
     private apiKey: string;
