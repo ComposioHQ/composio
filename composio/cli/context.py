@@ -2,6 +2,7 @@
 CLI Context.
 """
 
+import os
 import typing as t
 from functools import update_wrapper
 from pathlib import Path
@@ -12,7 +13,11 @@ from click.globals import get_current_context as get_click_context
 from rich.console import Console
 
 from composio.client import Composio
-from composio.constants import LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME
+from composio.constants import (
+    ENV_COMPOSIO_API_KEY,
+    LOCAL_CACHE_DIRECTORY_NAME,
+    USER_DATA_FILE_NAME,
+)
 from composio.storage.user import UserData
 
 
@@ -54,8 +59,17 @@ class Context:
         path = self.cache_dir / USER_DATA_FILE_NAME
         if not path.exists():
             self._user_data = UserData(path=path)
+            self._user_data.api_key = os.environ.get(
+                ENV_COMPOSIO_API_KEY,
+                self._user_data.api_key,
+            )
+
         if self._user_data is None:
             self._user_data = UserData.load(path=path)
+            self._user_data.api_key = os.environ.get(
+                ENV_COMPOSIO_API_KEY,
+                self._user_data.api_key,
+            )
         return self._user_data
 
     @property
@@ -66,6 +80,10 @@ class Context:
                 api_key=self.user_data.api_key,
             )
         return self._client
+
+    def is_logged_in(self) -> bool:
+        """Check if a user is logged in."""
+        return self.user_data.api_key is not None
 
 
 R = t.TypeVar("R")
@@ -104,9 +122,9 @@ def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
         _context = Context()
 
     def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        if t.cast(Context, _context).user_data.api_key is None:
+        if not t.cast(Context, _context).is_logged_in():
             raise click.ClickException(
-                message="User not logged in, please login using `composio login` ",
+                message="User not logged in, please login using `composio login`",
             )
         return f(*args, **kwargs)
 

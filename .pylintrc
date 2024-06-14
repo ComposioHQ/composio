@@ -25,5 +25,4 @@ disable=C0114,C0115,C0116,C0301,C0103,W0603,R1715,W0621,R0903,W0237,W0511,W0622,
 # C0302: too-many-lines
 
 [IMPORTS]
-ignored-modules=semver,click,aiohttp,anthropic,autogen,composio,composio_autogen,composio_claude,composio_crewai,composio_griptape,composio_julep,composio_langchain,composio_lyzr,composio_openai,crewai,dotenv,griptape,julep,langchain,langchain_core,langchain_openai,lyzr_automata,schema
-
+ignored-modules=semver,click,aiohttp,anthropic,autogen,composio,composio_autogen,composio_claude,composio_crewai,composio_griptape,composio_julep,composio_langchain,composio_lyzr,composio_openai,crewai,dotenv,griptape,julep,langchain,langchain_core,langchain_openai,lyzr_automata,schema,pytest

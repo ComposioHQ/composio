@@ -41,6 +41,7 @@ def raise_api_key_missing() -> None:
     raise ApiKeyNotProvidedError(
         message=(
             "API Key not provided, either provide API key "
-            f"or export it as `{ENV_COMPOSIO_API_KEY}`"
+            f"or export it as `{ENV_COMPOSIO_API_KEY}` "
+            "or run `composio login`"
         )
     )
