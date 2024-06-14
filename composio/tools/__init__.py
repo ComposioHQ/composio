@@ -41,31 +41,34 @@ class ComposioToolSet:
         :param runtime: Name of the framework runtime, eg. openai, crewai...
         """
         # Check check constructor aegument, environment variables and user data for the key
-        self.api_key = (
-            api_key
-            or os.environ.get(ENV_COMPOSIO_API_KEY)
-            or UserData.load(
-                Path.home() / LOCAL_CACHE_DIRECTORY_NAME / USER_DATA_FILE_NAME
-            ).api_key
-        )
+        try:
+            self.api_key = (
+                api_key
+                or os.environ.get(ENV_COMPOSIO_API_KEY)
+                or UserData.load(
+                    Path.home() / LOCAL_CACHE_DIRECTORY_NAME / USER_DATA_FILE_NAME
+                ).api_key
+            )
+        except FileNotFoundError:
+            raise_api_key_missing()
+
         if self.api_key is None:
             raise_api_key_missing()
+
         self.client = Composio(
             api_key=self.api_key,
             base_url=base_url,
         )
-        if runtime:
-            self.runtime = runtime
+
+        if runtime is not None:
+            self._runtime = runtime
+
         self.entity_id = entity_id
         self.output_in_file = output_in_file
 
     @property
     def runtime(self) -> str:
         return self._runtime
-
-    @runtime.setter
-    def runtime(self, value: str) -> None:
-        self._runtime = value
 
     def execute_action(
         self,
