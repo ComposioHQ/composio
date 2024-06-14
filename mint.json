@@ -147,14 +147,6 @@
         "sdk/python/local_tools"
       ]
     },
-        {
-      "group": "JS SDK",
-      "pages": [
-        "sdk/javascript/introduction",
-        "sdk/javascript/openai",
-        "sdk/javascript/langchain"
-      ]
-    },
     {
       "group": "CLI API",
       "pages": [
