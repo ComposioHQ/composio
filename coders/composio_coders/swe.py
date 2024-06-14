@@ -6,10 +6,11 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from composio_crewai import ComposioToolSet, App
 from crewai import Agent, Task
-from langchain_openai import AzureChatOpenAI
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 import logging
 from rich.logging import RichHandler
 from dotenv import load_dotenv
+import langchain_core
 
 MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
 
@@ -166,10 +167,10 @@ class CoderAgent:
 
         if self.model_env.get("model_env") == "openai":
             openai_key = self.model_env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-            return OpenAI(api_key=openai_key)
+            return ChatOpenAI(model="gpt-4-turbo", OPENAI_API_KEY=openai_key)
         elif self.model_env.get("model_env") == "azure":
-            azure_endpoint = self.model_env.get("AZURE_ENDPOINT") or os.environ.get("AZURE_ENDPOINT")
-            azure_key = self.model_env.get("AZURE_KEY") or os.environ.get("AZURE_KEY")
+            azure_endpoint = self.model_env.get("endpoint_url") or os.environ.get("AZURE_ENDPOINT")
+            azure_key = self.model_env.get("api_key") or os.environ.get("AZURE_KEY")
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,
                 api_key=azure_key,
@@ -214,7 +215,7 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    load_dotenv('.env.example')
+    load_dotenv('.env')
     args = CoderAgentArgs(repo_name="test_repo",
                           agent_role="coder",
                           agent_goal="fix bug",
