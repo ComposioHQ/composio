@@ -9,10 +9,10 @@ from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 import logging
 from rich.logging import RichHandler
-from dotenv import load_dotenv
 import langchain_core
 
-MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
+MODEL_ENV_CONFIG_PATH = "../.composio.coder.model_env"
+ISSUE_CONFIG_PATH = "../.composio.coder.issue_config"
 
 AGENT_BACKSTORY_TMPL = '''
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
@@ -110,8 +110,7 @@ class CoderAgent:
         tool_set = ComposioToolSet()
         self.composio_toolset = tool_set.get_tools(apps=[App.LOCALWORKSPACE,
                                                          App.CMDMANAGERTOOL,
-                                                         App.HISTORYKEEPER,
-                                                         App.SUBMITPATCHTOOL])
+                                                         App.HISTORYKEEPER,])
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
         self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working."
@@ -215,17 +214,19 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    load_dotenv('.env')
-    args = CoderAgentArgs(repo_name="test_repo",
-                          agent_role="coder",
-                          agent_goal="fix bug",
-                          agent_output_dir="./",
-                          expected_output="fixed code",
-                          issue_config={
-                              "issue_id": "123",
-                              "base_commit_id": "abc123",
-                              "issue_description": "This is a test issue"
-                          })
+    config_path = Path(ISSUE_CONFIG_PATH)
+    with config_path.open('r') as f:
+        issue_config = json.load(f)
+
+    args = CoderAgentArgs(
+        repo_name=issue_config['repo_name'],
+        agent_output_dir="./",
+        issue_config={
+            "issue_id": issue_config["issue_id"],
+            "base_commit_id": issue_config["base_commit_id"],
+            "issue_description": issue_config["issue_description"],
+        }
+    )
     c_agent = CoderAgent(args)
     c_agent.run()
 

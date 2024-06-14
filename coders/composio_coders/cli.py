@@ -62,7 +62,7 @@ def solve():
         if not git_access_token or not git_access_token.strip():
             click.echo("GIT_ACCESS_TOKEN is not set --> using it from environment\n") 
 
-    config_path = Path('.composio.coder.issue_config')
+    config_path = Path(ISSUE_CONFIG_PATH)
     with config_path.open('r') as f:
         issue_config = json.load(f)
 
