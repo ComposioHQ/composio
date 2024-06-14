@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse } from './types.gen';
+import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse, GetAppData, GetAppResponse, GetListActionsData } from './types.gen';
 
 /**
  * List All Apps
@@ -19,6 +19,23 @@ import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsRes
 export const listAllApps = (config: typeof OpenAPI): CancelablePromise<ListAllAppsResponse> => { return __request(config, {
     method: 'GET',
     url: '/v1/apps'
+}); };
+
+/**
+ * Get a Specific App
+ * Retrieves details of a specific app in the Composio platform.
+ * @param data The data for the request.
+ * @param data.appKey The unique identifier of the app.
+ * @param config The OpenAPI configuration.
+ * @returns unknown OK
+ * @throws ApiError
+ */
+export const getApp = (data: GetAppData, config: typeof OpenAPI): CancelablePromise<GetAppResponse> => { return __request(config, {
+    method: 'GET',
+    url: '/v1/apps/{appKey}',
+    path: {
+        appKey: data.appKey
+    }
 }); };
 
 /**
@@ -254,7 +271,7 @@ export const getAction = (data: GetActionData, config: typeof OpenAPI): Cancelab
  * @returns unknown OK
  * @throws ApiError
  */
-export const getListActions = (data: ListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { return __request(config, {
+export const getListActions = (data: GetListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { return __request(config, {
     method: 'GET',
     url: '/v2/actions',
     query: {
@@ -262,8 +279,7 @@ export const getListActions = (data: ListActionsData = {}, config: typeof OpenAP
         useCase: data.useCase,
         showEnabledOnly: data.showEnabledOnly,
         limit: data.limit
-    },
-    body: data.requestBody
+    }
 }); };
 
 /**
