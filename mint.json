@@ -81,14 +81,14 @@
   ],
   "anchors": [
     {
-      "name": "SDK",
+      "name": "Python",
       "icon": "terminal",
       "url": "sdk"
     },
-    {
-      "name": "API",
+     {
+      "name": "JS SDK Reference",
       "icon": "code",
-      "url": "api-reference"
+      "url": "https://composiohq.github.io/composio-js/index.html"
     }
   ],
   "navigation": [
@@ -145,6 +145,14 @@
         "sdk/python/configuration",
         "sdk/python/actions",
         "sdk/python/local_tools"
+      ]
+    },
+        {
+      "group": "JS SDK",
+      "pages": [
+        "sdk/javascript/introduction",
+        "sdk/javascript/openai",
+        "sdk/javascript/langchain"
       ]
     },
     {
