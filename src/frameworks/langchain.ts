@@ -87,13 +87,15 @@ export class LangchainToolSet extends BaseComposioToolSet {
     }
 
     async get_actions(
-        _actions: Sequence<Action>,
-        entityId: Optional<string> = null
+        filters: {
+            actions?: Optional<Sequence<Action | string>>
+        } = {},
+        entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
         const actions =  (await this.client.actions.list({
-            limit: "999999"
+            limit: "999999",
         })).items?.filter((a) => {
-            return _actions.map(action => action.action).includes(a!.name!);
+            return filters.actions?.map(action => typeof action === "string" ? action : action.action).includes(a!.name!);
         });
          
          return actions!.map(tool =>
@@ -105,12 +107,14 @@ export class LangchainToolSet extends BaseComposioToolSet {
     }
 
     async get_tools(
-        _apps: Sequence<App>,
-        tags: Optional<Array<string | Tag>> = null,
+        filters: {
+            apps: Sequence<App | string>,
+            tags: Optional<Array<string | Tag>>
+        },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
         const apps =  await this.client.actions.list({
-            appNames: _apps.map(app => app.value).join(","),
+            apps: filters.apps.map(app => typeof app === "string" ? app : app.value).join(","),
             limit: "99999"
          });
         return apps.items!.map(tool =>
