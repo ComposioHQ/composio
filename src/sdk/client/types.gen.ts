@@ -247,7 +247,7 @@ export type CreateConnectionData = {
 
 export type CreateConnectionResponse = {
     connectionStatus?: 'SUCCESS' | 'INITIATED' | 'FAILED';
-    connectionId?: string;
+    connectedAccountId?: string;
     redirectUrl?: string;
 };
 

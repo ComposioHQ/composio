@@ -353,7 +353,7 @@ export const listTriggers = (data: ListTriggersData = {}, config: typeof OpenAPI
  */
 export const setupTrigger = (data: SetupTriggerData, config: typeof OpenAPI): CancelablePromise<SetupTriggerResponse> => { return __request(config, {
     method: 'POST',
-    url: '/triggers/enable/{connectedAccountId}/{triggerName}',
+    url: '/v1/triggers/enable/{connectedAccountId}/{triggerName}',
     path: {
         connectedAccountId: data.connectedAccountId,
         triggerName: data.triggerName
