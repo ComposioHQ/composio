@@ -106,19 +106,18 @@ class Entity {
             throw new Error("Could not find action: " + actionName);
         }
         const app = await this.client.apps.get({
-            appKey: action.appId!
+            appKey: action.appKey!
         });
         if ((app.yaml as any).no_auth) {
             return this.client.actions.execute({
                 actionName: actionName,
                 requestBody: {
                     input: params,
-                    appName: action.appName
+                    appName: action.appKey
                 }
             });
         }
         let connectedAccount = null;
-
         if(connectedAccountId) {
             connectedAccount = await this.client.connectedAccounts.get({
                 connectedAccountId: connectedAccountId
@@ -133,20 +132,12 @@ class Entity {
 
             connectedAccount = connectedAccounts.items![0];
         }
-        console.log("Calling action", {
-            actionName: actionName,
-            requestBody: {
-                connectedAccountId: connectedAccount.id,
-                input: params,
-                appName: action.appId
-            }
-        });
         return this.client.actions.execute({
             actionName: actionName,
             requestBody: {
                 connectedAccountId: connectedAccount.id,
                 input: params,
-                appName: action.appId
+                appName: action.appKey
             }
         });
     }

@@ -592,7 +592,7 @@ export type GetActionData = {
     actionName: string;
 };
 
-export type GetActionResponse = {
+export type GetActionResponse = Array<{
     /**
      * The name of the action.
      */
@@ -665,10 +665,14 @@ export type GetActionResponse = {
      */
     appName?: string;
     /**
+     * The key of the app associated with the action.
+     */
+    appKey?: string;
+    /**
      * A boolean indicating whether the action is enabled or not.
      */
     enabled?: boolean;
-};
+}>;
 
 export type ExecuteActionData = {
     /**

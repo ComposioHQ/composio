@@ -10,11 +10,12 @@ export class Actions {
      * The response includes the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
      * 
      * @param {GetActionData} data The data for the request.
-     * @returns {CancelablePromise<GetActionResponse>} A promise that resolves to the details of the action.
+     * @returns {CancelablePromise<GetActionResponse[0]>} A promise that resolves to the details of the action.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetActionData): CancelablePromise<GetActionResponse> {
-        return getAction(data, this.client.config);
+    async get(data: GetActionData): Promise<GetActionResponse[0]> {
+        const actions = await getAction(data, this.client.config);
+        return actions[0]!;
     }
 
     /**
@@ -40,7 +41,6 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     execute(data: ExecuteActionData): CancelablePromise<ExecuteActionResponse> {
-        console.log("EXEC", data);
         return executeAction(data, this.client.config);
     }
 }
