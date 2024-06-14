@@ -93,7 +93,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
         const actions =  (await this.client.actions.list({
-            limit: "999999",
+            showAll: true
         })).items?.filter((a) => {
             return filters.actions?.map(action => typeof action === "string" ? action : action.action).includes(a!.name!);
         });
@@ -115,7 +115,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
     ): Promise<Sequence<DynamicStructuredTool>> {
         const apps =  await this.client.actions.list({
             apps: filters.apps.map(app => typeof app === "string" ? app : app.value).join(","),
-            limit: "99999"
+            showAll: true
          });
         return apps.items!.map(tool =>
             this._wrap_tool(
