@@ -271,11 +271,14 @@ export const getAction = (data: GetActionData, config: typeof OpenAPI): Cancelab
  * @returns unknown OK
  * @throws ApiError
  */
-export const getListActions = (data: GetListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { return __request(config, {
+export const getListActions = (data: GetListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { 
+    return __request(config, {
     method: 'GET',
     url: '/v2/actions',
     query: {
-        appNames: data.apps,
+        apps: data.apps,
+        actions: data.actions,
+        tags: data.tags,
         useCase: data.useCase,
         showEnabledOnly: data.showEnabledOnly,
         usecaseLimit: data.usecaseLimit
