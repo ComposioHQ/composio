@@ -1,14 +1,14 @@
 
 <p align="center">
   <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="172" srcset="./assets/logo_dark.svg">
-    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="./assets/logo_light.svg"/>
+    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://app.composio.dev/assets/other/js_sdk/assets/logo_dark.svg">
+    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="https://app.composio.dev/assets/other/js_sdk/assets/logo_light.svg"/>
   </picture>
   <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>
 </p>
 
-<img alt="Illustration" src="./assets/illustration.png" style="border-radius: 5px"/>
+<img alt="Illustration" src="https://app.composio.dev/assets/other/js_sdk/assets/illustration.png" style="border-radius: 5px"/>
 
 Composio provides a platform that seamlessly integrates over 200+ apps with your AI agents, enhancing their utility and interactivity. It supports all the features you'll ever need:
 
