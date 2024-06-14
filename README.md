@@ -23,7 +23,7 @@ Composio provides a platform that seamlessly integrates over 200+ apps with your
 To get started, install the Composio SDK using the following command:
 
 ```bash
-npm install -g @composio/sdk
+npm install composio-core
 ```
 
 ## Resources
