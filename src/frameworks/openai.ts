@@ -94,19 +94,19 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         run: OpenAI.Beta.Threads.Run,
         entityId: Optional<string> = null
     ): Promise<Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput>> {
-        const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> = [];
-        for (const tool_call of run.required_action?.submit_tool_outputs?.tool_calls || []) {
-            const tool_response = await this.execute_tool_call(
-                tool_call as OpenAI.ChatCompletionMessageToolCall,
-                entityId || this.entityId
-            );
-            const tool_output: OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput = {
-                tool_call_id: tool_call.id,
-                output: JSON.stringify(tool_response),
-            };
-            tool_outputs.push(tool_output);
-        }
-        return tool_outputs;
+const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
+const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> = await Promise.all(
+    tool_calls.map(async (tool_call) => {
+        const tool_response = await this.execute_tool_call(
+            tool_call as OpenAI.ChatCompletionMessageToolCall,
+            entityId || this.entityId
+        );
+        return {
+            tool_call_id: tool_call.id,
+            output: JSON.stringify(tool_response),
+        };
+    })
+);
     }
 
     async wait_and_handle_assistant_tool_calls(
