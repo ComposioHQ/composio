@@ -5,7 +5,7 @@ import { Actions } from './models/actions';
 import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
-import { AuthScheme, GetConnectedAccountResponse, OpenAPI } from './client';
+import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
 
 export class Composio {
     private apiKey: string;
@@ -176,6 +176,54 @@ class Entity {
         return this.client.connectedAccounts.get({
             connectedAccountId: latestAccount.id!
         });
+    }
+
+    async setupTrigger(app: string, triggerName: string, config: { [key: string]: any }): Promise<SetupTriggerResponse> {
+        /**
+         * Enable a trigger for an entity.
+         *
+         * @param app App name
+         * @param triggerName Trigger name
+         * @param config Trigger config
+         */
+        const connectedAccount = await this.getConnection(app);
+        return this.client.triggers.setup({
+            triggerName: triggerName,
+            connectedAccountId: connectedAccount.id!,
+            requestBody: {
+                triggerConfig: config,
+            }
+        });
+    }
+
+    async disableTrigger(triggerId: string): Promise<PatchUpdateActiveTriggerStatusResponse> {
+        /**
+         * Disable a trigger for an entity.
+         *
+         * @param triggerId Trigger ID
+         */
+        return this.client.activeTriggers.disable({ triggerId: triggerId });
+    }
+
+    async getConnections(): Promise<ListAllConnectionsResponse["items"]> {
+        /**
+         * Get all connections for an entity.
+         */
+        const connectedAccounts = await this.client.connectedAccounts.list({
+            user_uuid: this.id
+        });
+        return connectedAccounts.items!;
+    }
+
+    async getActiveTriggers(): Promise<ListActiveTriggersResponse["triggers"]> {
+        /**
+         * Get all active triggers for an entity.
+         */
+        const connectedAccounts = await this.getConnections();
+        const activeTriggers = await this.client.activeTriggers.list({
+            connectedAccountIds: connectedAccounts!.map(account => account.id!).join(",")
+        });
+        return activeTriggers.triggers!;
     }
 
     async initiateConnection(
