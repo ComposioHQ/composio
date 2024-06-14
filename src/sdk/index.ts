@@ -5,7 +5,7 @@ import { Actions } from './models/actions';
 import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
-import { GetConnectedAccountResponse, OpenAPI } from './client';
+import { AuthScheme, CreateIntegrationData, GetConnectedAccountResponse, OpenAPI } from './client';
 import { Action } from './enums';
 
 export class Composio {
@@ -177,23 +177,23 @@ class Entity {
 
     async initiateConnection(
         appName: string,
-        authMode?: string,
+        authMode?: AuthScheme,
         authConfig?: { [key: string]: any },
         redirectUrl?: string,
         integrationId?: string
     ): Promise<ConnectionRequest> {
 
         // Get the app details from the client
-        const app = await this.client.apps.get({ name: appName });
+        const app = await this.client.apps.get({ appKey: appName });
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-        let integration = integrationId ? await this.client.integrations.get({ id: integrationId }) : null;
+        let integration = integrationId ? await this.client.integrations.get({ integrationId: integrationId }) : null;
         // Create a new integration if not provided
         if (!integration && authMode) {
             integration = await this.client.integrations.create({
                 appId: app.appId!,
                 name: `integration_${timestamp}`,
-                authMode: authMode,
+                authScheme: authMode,
                 authConfig: authConfig,
                 useComposioAuth: false,
             });
@@ -215,5 +215,3 @@ class Entity {
         });
     }
 }
-
-// Define other classes like ConnectedAccounts, Apps, Actions, Triggers, Integrations, ActiveTriggers, Action, ConnectedAccountModel, IntegrationModel, ConnectionRequestModel as needed.
