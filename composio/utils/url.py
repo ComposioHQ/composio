@@ -5,6 +5,9 @@ URL utilities.
 import os
 
 from composio.constants import (
+    BASE_URL_LOCAL,
+    BASE_URL_PROD,
+    BASE_URL_STAGING,
     BASE_URL_TO_PROD_MAPPING,
     DEFAULT_BASE_URL,
     ENV_COMPOSIO_BASE_URL,
@@ -27,9 +30,9 @@ def get_web_url(path: str) -> str:
         raise ValueError(
             f"Incorrect format for base_url: {base_url}. "
             "Format should be on of follwing {"
-            "https://backend.composio.dev/api, "
-            "https://hermes-development.up.railway.app/api, "
-            "http://localhost:9900/api"
+            f"{BASE_URL_PROD}, "
+            f"{BASE_URL_STAGING}, "
+            f"{BASE_URL_LOCAL}"
             "}"
         )
     return f"{web_url}/{path}"

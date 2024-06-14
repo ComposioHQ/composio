@@ -1,9 +1,14 @@
+"""
+Test shared module.
+"""
+
 from inspect import Parameter
 
 from composio.utils import shared
 
 
-def test_get_pydantic_signature_format_from_schema_params():
+def test_get_pydantic_signature_format_from_schema_params() -> None:
+    """Test `get_pydantic_signature_format_from_schema_params` method."""
     # Define a mock schema
     schema_params = {
         "properties": {
@@ -35,7 +40,8 @@ def test_get_pydantic_signature_format_from_schema_params():
     )
 
 
-def test_json_schema_to_pydantic_field():
+def test_json_schema_to_pydantic_field() -> None:
+    """Test `json_schema_to_pydantic_field` method."""
     # Define a mock schema
     name = "owner"
     json_schema = {
@@ -53,7 +59,8 @@ def test_json_schema_to_pydantic_field():
     assert result[1].default == ...
 
 
-def test_json_schema_to_fields_dict():
+def test_json_schema_to_fields_dict() -> None:
+    """Test `json_schema_to_fields_dict` method."""
     # Define a mock schema
     json_schema = {
         "properties": {
