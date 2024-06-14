@@ -29,10 +29,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     }
 
     async get_actions(
-        actions: Sequence<string>,
+        filters: {
+            actions: Sequence<string>
+        }
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         return (await this.client.actions.list({})).items?.filter((a) => {
-            return actions.includes(a!.name!);
+            return filters.actions.includes(a!.name!);
         }).map(action => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
@@ -48,10 +50,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     }
 
     async get_tools(
-        apps: Sequence<string>,
-        tags: Optional<Array<string>> = null
+        filters: {
+            apps: Sequence<string>,
+            tags: Optional<Array<string>>
+        }
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        return (await this.client.actions.list({apps: apps.join(","), tags: tags?.join(",")})).items?.map(action => {
+        return (await this.client.actions.list({apps: filters.apps.join(","), tags: filters.tags?.join(",")})).items?.map(action => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
                 description: action.description!,
