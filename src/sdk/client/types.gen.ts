@@ -727,9 +727,13 @@ export type GetListActionsData = {
      */
     useCase?: string;
     /**
-     * Limit of apis
+     * Limit of use-cases based search
      */
-    limit?: string;
+    usecaseLimit?: string;
+    /**
+     * Show all actions - i.e disable pagination
+     */
+    showAll?: boolean;
     /**
      * Show actions enabled for the API Key
      */
