@@ -1,4 +1,4 @@
-import { CancelablePromise, GetActiveTriggerData, GetActiveTriggerResponse, ListActiveTriggersData, ListActiveTriggersResponse, getActiveTrigger, listActiveTriggers } from "../client";
+import { CancelablePromise, GetActiveTriggerData, GetActiveTriggerResponse, ListActiveTriggersData, ListActiveTriggersResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse, getActiveTrigger, listActiveTriggers, updateActiveTriggerStatus } from "../client";
 import { Composio } from "../";
 
 export class ActiveTriggers {
@@ -30,5 +30,39 @@ export class ActiveTriggers {
      */
     list(data: ListActiveTriggersData = {}): CancelablePromise<ListActiveTriggersResponse> {
         return listActiveTriggers(data, this.client.config);
+    }
+
+    /**
+     * Enables the previously disabled trigger.
+     * 
+     * @param {Object} data The data for the request.
+     * @param {string} data.triggerId Id of the trigger
+     * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
+     * @throws {ApiError} If the request fails.
+     */
+    enable(data: {triggerId: PatchUpdateActiveTriggerStatusData["triggerId"]}): CancelablePromise<PatchUpdateActiveTriggerStatusResponse> {
+        return updateActiveTriggerStatus({
+            triggerId: data.triggerId,
+            requestBody: {
+                enabled: true
+            }
+        }, this.client.config);
+    }
+
+    /**
+     * Disables the previously disabled trigger.
+     * 
+     * @param {Object} data The data for the request.
+     * @param {string} data.triggerId Id of the trigger
+     * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
+     * @throws {ApiError} If the request fails.
+     */
+    disable(data: {triggerId: PatchUpdateActiveTriggerStatusData["triggerId"]}): CancelablePromise<PatchUpdateActiveTriggerStatusResponse> {
+        return updateActiveTriggerStatus({
+            triggerId: data.triggerId,
+            requestBody: {
+                enabled: false
+            }
+        }, this.client.config);
     }
 }

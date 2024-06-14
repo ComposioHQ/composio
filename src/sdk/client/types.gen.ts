@@ -186,6 +186,10 @@ export type ListAllConnectionsResponse = {
 export type CreateConnectionData = {
     requestBody?: {
         integrationId: string;
+        userUuid?: string;
+        data?: {
+            [key: string]: unknown;
+        };
         redirectUri?: string;
     };
 };
@@ -208,7 +212,7 @@ export type GetConnectedAccountResponse = {
      * The unique identifier of the connector associated with the connection.
      *
      */
-    integrationId?: string;
+    integrationId: string;
     /**
      * An object containing the parameters specific to the connection.
      */
@@ -595,25 +599,71 @@ export type GetActionResponse = {
     enabled?: boolean;
 };
 
+export type ExecuteActionData = {
+    /**
+     * The name of the action to execute.
+     */
+    actionName: string;
+    requestBody?: {
+        /**
+         * The unique identifier of the connection to use for executing the action.
+         */
+        connectedAccountId?: string;
+        /**
+         * An object containing the input parameters for the action.
+         */
+        input?: {
+            [key: string]: unknown;
+        };
+        appName?: string;
+    };
+};
+
+export type ExecuteActionResponse = {
+    /**
+     * An object containing the details of the action execution.
+     */
+    execution_details?: {
+        /**
+         * A boolean indicating whether the action was executed successfully.
+         *
+         */
+        executed?: boolean;
+    };
+    /**
+     * An object containing the response data from the action execution.
+     */
+    response_data?: {
+        [key: string]: unknown;
+    };
+};
+
 export type GetListActionsData = {
     /**
-     * Name of the app like "github", "linear"
+     * Name of the apps like "github", "linear" seperated by a comma
      */
-    appNames?: string;
+    apps?: string;
+    /**
+     * Filter by Action names
+     */
+    actions?: string;
+    /**
+     * Filter by Action tags
+     */
+    tags?: string;
+    /**
+     * Filter by use case
+     */
+    useCase?: string;
     /**
      * Limit of apis
      */
     limit?: string;
-    requestBody?: unknown;
     /**
      * Show actions enabled for the API Key
      */
     showEnabledOnly?: boolean;
-    /**
-     * Natural language usecase
-     */
-    useCase?: string;
-};
+}
 
 export type GetListActionsResponse = {
     /**
@@ -696,54 +746,9 @@ export type GetListActionsResponse = {
          */
         enabled?: boolean;
     }>;
-    /**
-     * The current page number of the action list.
-     */
-    page?: number;
-    /**
-     * The total number of pages available for the action list.
-     */
-    totalPages?: number;
-};
-
-export type ExecuteActionData = {
-    /**
-     * The name of the action to execute.
-     */
-    actionName: string;
-    requestBody?: {
-        /**
-         * The unique identifier of the connection to use for executing the action.
-         */
-        connectedAccountId?: string;
-        /**
-         * An object containing the input parameters for the action.
-         */
-        input?: {
-            [key: string]: unknown;
-        };
-        appName?: string;
-    };
-};
-
-export type ExecuteActionResponse = {
-    /**
-     * An object containing the details of the action execution.
-     */
-    execution_details?: {
-        /**
-         * A boolean indicating whether the action was executed successfully.
-         *
-         */
-        executed?: boolean;
-    };
-    /**
-     * An object containing the response data from the action execution.
-     */
-    response_data?: {
-        [key: string]: unknown;
-    };
-};
+    page: number;
+    totalPages: number;
+}
 
 export type ListTriggersData = {
     /**
@@ -930,6 +935,20 @@ export type GetActiveTriggerData = {
      * The ID of the trigger to retrieve.
      */
     triggerId: string;
+};
+
+export type PatchUpdateActiveTriggerStatusData = {
+    /**
+     * The ID of the trigger to enable or disable.
+     */
+    triggerId: string;
+    requestBody: {
+        enabled: boolean;
+    }
+}
+
+export type PatchUpdateActiveTriggerStatusResponse = {
+    status: "success"
 };
 
 export type GetActiveTriggerResponse = {
@@ -1568,7 +1587,7 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/v1/actions': {
+    '/v2/actions': {
         get: {
             req: GetListActionsData;
             res: {

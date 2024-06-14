@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse } from './types.gen';
+import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse } from './types.gen';
 
 /**
  * List All Apps
@@ -254,11 +254,11 @@ export const getAction = (data: GetActionData, config: typeof OpenAPI): Cancelab
  * @returns unknown OK
  * @throws ApiError
  */
-export const getListActions = (data: GetListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { return __request(config, {
+export const getListActions = (data: ListActionsData = {}, config: typeof OpenAPI): CancelablePromise<GetListActionsResponse> => { return __request(config, {
     method: 'GET',
-    url: '/v1/actions',
+    url: '/v2/actions',
     query: {
-        appNames: data.appNames,
+        appNames: data.apps,
         useCase: data.useCase,
         showEnabledOnly: data.showEnabledOnly,
         limit: data.limit
@@ -357,6 +357,31 @@ export const getActiveTrigger = (data: GetActiveTriggerData, config: typeof Open
     path: {
         triggerId: data.triggerId
     },
+    errors: {
+        404: 'Trigger not found',
+        500: 'Internal server error'
+    }
+}); };
+
+
+/**
+ * Update active trigger status
+ * Retrieves details of a specific active trigger in the Composio platform by providing its trigger ID.
+ * @param data The data for the request.
+ * @param data.triggerId The ID of the trigger to retrieve.
+ * @param data.requestBody
+ * @param config The OpenAPI configuration.
+ * @returns unknown A successful response containing the details of the active trigger.
+ * @throws ApiError
+ */
+export const updateActiveTriggerStatus = (data: PatchUpdateActiveTriggerStatusData, config: typeof OpenAPI): CancelablePromise<PatchUpdateActiveTriggerStatusResponse> => { return __request(config, {
+    method: 'POST',
+    url: '/v1/triggers/instance/{triggerId}/status',
+    path: {
+        triggerId: data.triggerId
+    },
+    body: data.requestBody,
+    mediaType: 'application/json',
     errors: {
         404: 'Trigger not found',
         500: 'Internal server error'

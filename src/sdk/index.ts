@@ -1,11 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
-import { ConnectedAccounts } from './models/connectedAccounts';
+import { ConnectedAccounts, ConnectionRequest } from './models/connectedAccounts';
 import { Apps } from './models/apps';
 import { Actions } from './models/actions';
 import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
-import { OpenAPI } from './client';
+import { GetConnectedAccountResponse, OpenAPI } from './client';
 import { Action } from './enums';
 
 export class Composio {
@@ -143,63 +143,77 @@ class Entity {
         });
     }
 
-    // async getConnection(app?: string, connectedAccountId?: string): Promise<ConnectedAccountModel> {
-    //     if (connectedAccountId) {
-    //         return this.client.connectedAccounts.get(connectedAccountId);
-    //     }
+    async getConnection(app?: string, connectedAccountId?: string): Promise<GetConnectedAccountResponse> {
+        if (connectedAccountId) {
+            return await this.client.connectedAccounts.get({
+                connectedAccountId
+            });
+        }
 
-    //     let latestAccount = null;
-    //     let latestCreationDate = new Date(0);
-    //     const connectedAccounts = await this.client.connectedAccounts.get({ entityIds: [this.id], active: true });
+        let latestAccount = null;
+        let latestCreationDate = new Date(0);
+        const connectedAccounts = await this.client.connectedAccounts.list({
+            user_uuid: this.id,
+        });
 
-    //     for (const connectedAccount of connectedAccounts) {
-    //         if (app === connectedAccount.appUniqueId) {
-    //             const creationDate = new Date(connectedAccount.createdAt);
-    //             if (!latestAccount || creationDate > latestCreationDate) {
-    //                 latestCreationDate = creationDate;
-    //                 latestAccount = connectedAccount;
-    //             }
-    //         }
-    //     }
+        for (const connectedAccount of connectedAccounts.items!) {
+            if (app === connectedAccount.appName) {
+                const creationDate = new Date(connectedAccount.createdAt!);
+                if (!latestAccount || creationDate > latestCreationDate) {
+                    latestCreationDate = creationDate;
+                    latestAccount = connectedAccount;
+                }
+            }
+        }
 
-    //     if (!latestAccount) {
-    //         throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
-    //     }
+        if (!latestAccount) {
+            throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
+        }
 
-    //     return latestAccount;
-    // }
+        return this.client.connectedAccounts.get({
+            connectedAccountId: latestAccount.id!
+        });
+    }
 
-    // async initiateConnection(appName: string | App, authMode?: string, authConfig?: Record<string, any>, redirectUrl?: string, integration?: IntegrationModel): Promise<ConnectionRequestModel> {
-    //     if (typeof appName !== 'string') {
-    //         appName = appName.value;
-    //     }
+    async initiateConnection(
+        appName: string,
+        authMode?: string,
+        authConfig?: { [key: string]: any },
+        redirectUrl?: string,
+        integrationId?: string
+    ): Promise<ConnectionRequest> {
 
-    //     const app = await this.client.apps.get(appName);
-    //     const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-    //     if (!integration && authMode) {
-    //         integration = await this.client.integrations.create({
-    //             appId: app.appId,
-    //             name: `integration_${timestamp}`,
-    //             authMode,
-    //             authConfig,
-    //             useComposioAuth: false
-    //         });
-    //     }
+        // Get the app details from the client
+        const app = await this.client.apps.get({ name: appName });
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-    //     if (!integration && !authMode) {
-    //         integration = await this.client.integrations.create({
-    //             appId: app.appId,
-    //             name: `integration_${timestamp}`,
-    //             useComposioAuth: true
-    //         });
-    //     }
+        let integration = integrationId ? await this.client.integrations.get({ id: integrationId }) : null;
+        // Create a new integration if not provided
+        if (!integration && authMode) {
+            integration = await this.client.integrations.create({
+                appId: app.appId!,
+                name: `integration_${timestamp}`,
+                authMode: authMode,
+                authConfig: authConfig,
+                useComposioAuth: false,
+            });
+        }
 
-    //     return this.client.connectedAccounts.initiate({
-    //         integrationId: integration.id,
-    //         entityId: this.id,
-    //         redirectUrl
-    //     });
-    // }
+        if (!integration && !authMode) {
+            integration = await this.client.integrations.create({
+                appId: app.appId!,
+                name: `integration_${timestamp}`,
+                useComposioAuth: true,
+            });
+        }
+
+        // Initiate the connection process
+        return this.client.connectedAccounts.initiate({
+            integrationId: integration!.id!,
+            userUuid: this.id,
+            redirectUri: redirectUrl,
+        });
+    }
 }
 
 // Define other classes like ConnectedAccounts, Apps, Actions, Triggers, Integrations, ActiveTriggers, Action, ConnectedAccountModel, IntegrationModel, ConnectionRequestModel as needed.
