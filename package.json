@@ -5,8 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc  --project . --outDir lib",
-    "publish": "npm publish"
+    "build": "tsc  --project . --outDir lib"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
