@@ -19,14 +19,11 @@ app.get('/webhook', async (req, res) => {
             model: "gpt-4",
         });
 
-        const toolset = new LangchainToolSet(
-            process.env.COMPOSIO_API_KEY,
-        );
+        const toolset = new LangchainToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+        });
 
-        const tools = await toolset.get_actions([
-          Action.GITHUB_USERS_GET_AUTHENTICATED,
-          Action.GITHUB_ISSUES_CREATE
-        ]);
+        const tools = await toolset.get_actions("github_issues_create");
 
         const prompt = await pull(
             "hwchase17/openai-functions-agent"

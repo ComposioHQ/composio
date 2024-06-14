@@ -1,4 +1,4 @@
-import { CancelablePromise, ListTriggersData, ListTriggersResponse, listTriggers } from "../client";
+import { CancelablePromise, ListTriggersData, ListTriggersResponse, SetupTriggerData, SetupTriggerResponse, listTriggers, setupTrigger } from "../client";
 import { Composio } from "../";
 
 export class Triggers {
@@ -16,5 +16,16 @@ export class Triggers {
      */
     list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
         return listTriggers(data, this.client.config);
+    }
+
+    /**
+     * Setup a trigger for a connected account.
+     * 
+     * @param {SetupTriggerData} data The data for the request.
+     * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
+     * @throws {ApiError} If the request fails.
+     */
+    setup(data: SetupTriggerData): CancelablePromise<SetupTriggerResponse> {
+        return setupTrigger(data, this.client.config);
     }
 }
