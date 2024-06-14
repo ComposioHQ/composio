@@ -1,6 +1,5 @@
 import { Composio } from "../sdk";
 import * as path from "path";
-import { Action } from "./enums";
 
 class UserData {
     apiKey: string | undefined;
@@ -44,14 +43,10 @@ export class ComposioToolSet {
     }
 
     async execute_action(
-        action: Action | string,
+        action: string,
         params: Record<string, any>,
         entityId: string = "default"
     ): Promise<Record<string, any>> {
-        if (typeof action === "string") {
-            // @ts-ignore
-            action = Action[action as keyof typeof Action];
-        }
-        return this.client.getEntity(entityId).execute(action as Action, params);
+        return this.client.getEntity(entityId).execute(action, params);
     }
 }

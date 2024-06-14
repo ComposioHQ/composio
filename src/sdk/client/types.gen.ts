@@ -32,6 +32,57 @@ export type ListAllAppsResponse = {
     }>;
 };
 
+export type GetAppData = {
+    appKey: string;
+};
+
+export type GetAppResponse = {
+    name: string;
+    key: string;
+    status: string;
+    documentation_doc_text?: string;
+    configuration_docs_text?: string;
+    docs?: string;
+    description?: string;
+    logo?: string;
+    categories: string[];
+    auth_schemes: Array<{
+        auth_mode: string;
+        authorization_url?: string;
+        default_scopes?: string[];
+        proxy?: {
+            base_url?: string;
+        };
+        scheme_name?: string;
+        token_response_metadata?: string[];
+        token_url?: string;
+        client_id?: string;
+        client_secret?: string;
+        fields?: Array<{
+            name: string;
+            displayName: string;
+            description: string;
+            type: string;
+            required: boolean;
+            expected_from_customer: boolean;
+            default?: string;
+        }>;
+    }>;
+    yaml: any;
+    group: string;
+    appId: string;
+    testConnectors?: Array<{
+        id: string;
+        name: string;
+        authScheme: string;
+    }>;
+    meta: {
+        triggersCount: number;
+        actionsCount: number;
+        is_custom_app: boolean;
+    };
+};
+
 export type ListAllConnectionsData = {
     /**
      * Filter by using specific Integration
@@ -186,6 +237,10 @@ export type ListAllConnectionsResponse = {
 export type CreateConnectionData = {
     requestBody?: {
         integrationId: string;
+        userUuid?: string;
+        data?: {
+            [key: string]: unknown;
+        };
         redirectUri?: string;
     };
 };
@@ -208,7 +263,7 @@ export type GetConnectedAccountResponse = {
      * The unique identifier of the connector associated with the connection.
      *
      */
-    integrationId?: string;
+    integrationId: string;
     /**
      * An object containing the parameters specific to the connection.
      */
@@ -410,6 +465,12 @@ export type ListAllIntegrationsResponse = {
     page?: number;
 };
 
+export enum AuthScheme {
+    OAUTH2 = "OAUTH2",
+    API_KEY = "API_KEY",
+    OAUTH1 = "OAUTH1"
+}
+
 export type CreateIntegrationData = {
     requestBody?: {
         /**
@@ -419,7 +480,7 @@ export type CreateIntegrationData = {
         /**
          * The authentication scheme used by the connector (e.g., "OAUTH2", "API_KEY").
          */
-        authScheme?: 'OAUTH2' | 'API_KEY';
+        authScheme?: AuthScheme;
         /**
          * The unique identifier of the app associated with the connector.
          */
@@ -429,17 +490,31 @@ export type CreateIntegrationData = {
          */
         authConfig?: {
             /**
-             * The client ID used for authentication with the app.
+             * The client ID used for authentication with the app - if authScheme is OAUTH2
              */
             client_id?: string;
             /**
-             * The client secret used for authentication with the app.
+             * The client secret used for authentication with the app - if authScheme is OAUTH2
              */
             client_secret?: string;
+            /**
+             * The API key used for authentication with the app - if authScheme is API_KEY
+             */
+            api_key?: string;
+            /**
+             * The Consumer key used for authentication with the app - if authScheme is OAUTH1
+             */
+            consumer_key?: string;
+            /**
+             * The Consumer secret used for authentication with the app - if authScheme is OAUTH1
+             */
+            consumer_secret?: string;
             /**
              *  The base URL for making API requests to the app.
              */
             base_url?: string;
+
+            [key: string]: unknown;
         };
         /**
          * Use default Composio credentials to proceed. The developer app credentials will be of Composio.
@@ -595,25 +670,75 @@ export type GetActionResponse = {
     enabled?: boolean;
 };
 
+export type ExecuteActionData = {
+    /**
+     * The name of the action to execute.
+     */
+    actionName: string;
+    requestBody?: {
+        /**
+         * The unique identifier of the connection to use for executing the action.
+         */
+        connectedAccountId?: string;
+        /**
+         * An object containing the input parameters for the action.
+         */
+        input?: {
+            [key: string]: unknown;
+        };
+        appName?: string;
+    };
+};
+
+export type ExecuteActionResponse = {
+    /**
+     * An object containing the details of the action execution.
+     */
+    execution_details?: {
+        /**
+         * A boolean indicating whether the action was executed successfully.
+         *
+         */
+        executed?: boolean;
+    };
+    /**
+     * An object containing the response data from the action execution.
+     */
+    response_data?: {
+        [key: string]: unknown;
+    };
+};
+
 export type GetListActionsData = {
     /**
-     * Name of the app like "github", "linear"
+     * Name of the apps like "github", "linear" seperated by a comma
      */
-    appNames?: string;
+    apps?: string;
     /**
-     * Limit of apis
+     * Filter by Action names
      */
-    limit?: string;
-    requestBody?: unknown;
+    actions?: string;
+    /**
+     * Filter by Action tags
+     */
+    tags?: string;
+    /**
+     * Filter by use case
+     */
+    useCase?: string;
+    /**
+     * Limit of use-cases based search
+     */
+    usecaseLimit?: string;
+    /**
+     * Show all actions - i.e disable pagination
+     */
+    showAll?: boolean;
     /**
      * Show actions enabled for the API Key
      */
     showEnabledOnly?: boolean;
-    /**
-     * Natural language usecase
-     */
-    useCase?: string;
-};
+}
 
 export type GetListActionsResponse = {
     /**
@@ -696,54 +821,9 @@ export type GetListActionsResponse = {
          */
         enabled?: boolean;
     }>;
-    /**
-     * The current page number of the action list.
-     */
-    page?: number;
-    /**
-     * The total number of pages available for the action list.
-     */
-    totalPages?: number;
-};
-
-export type ExecuteActionData = {
-    /**
-     * The name of the action to execute.
-     */
-    actionName: string;
-    requestBody?: {
-        /**
-         * The unique identifier of the connection to use for executing the action.
-         */
-        connectedAccountId?: string;
-        /**
-         * An object containing the input parameters for the action.
-         */
-        input?: {
-            [key: string]: unknown;
-        };
-        appName?: string;
-    };
-};
-
-export type ExecuteActionResponse = {
-    /**
-     * An object containing the details of the action execution.
-     */
-    execution_details?: {
-        /**
-         * A boolean indicating whether the action was executed successfully.
-         *
-         */
-        executed?: boolean;
-    };
-    /**
-     * An object containing the response data from the action execution.
-     */
-    response_data?: {
-        [key: string]: unknown;
-    };
-};
+    page: number;
+    totalPages: number;
+}
 
 export type ListTriggersData = {
     /**
@@ -930,6 +1010,20 @@ export type GetActiveTriggerData = {
      * The ID of the trigger to retrieve.
      */
     triggerId: string;
+};
+
+export type PatchUpdateActiveTriggerStatusData = {
+    /**
+     * The ID of the trigger to enable or disable.
+     */
+    triggerId: string;
+    requestBody: {
+        enabled: boolean;
+    }
+}
+
+export type PatchUpdateActiveTriggerStatusResponse = {
+    status: "success"
 };
 
 export type GetActiveTriggerResponse = {
@@ -1568,7 +1662,7 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/v1/actions': {
+    '/v2/actions': {
         get: {
             req: GetListActionsData;
             res: {
