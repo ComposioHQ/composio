@@ -674,6 +674,20 @@ export type GetActionResponse = Array<{
     enabled?: boolean;
 }>;
 
+export type SetupTriggerData = {
+    connectedAccountId: string;
+    triggerName: string;
+    requestBody: {
+        triggerConfig: any;
+        verifyHost?: string;
+    }
+};
+
+export type SetupTriggerResponse = {
+    status: "success";
+    trigger: GetActiveTriggerResponse
+}
+
 export type ExecuteActionData = {
     /**
      * The name of the action to execute.

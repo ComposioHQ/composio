@@ -11,9 +11,9 @@ app.get('/webhook', async (req, res) => {
     try {
         const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
         
-        const toolset = new OpenAIToolSet(
-            process.env.COMPOSIO_API_KEY,
-        );
+        const toolset = new OpenAIToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+        });
         const tools = await toolset.get_actions([
             Action.GITHUB_USERS_GET_AUTHENTICATED,
             Action.GITHUB_ISSUES_CREATE
