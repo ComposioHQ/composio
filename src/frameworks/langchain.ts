@@ -43,15 +43,17 @@ export class LangchainToolSet extends BaseComposioToolSet {
      * ```
      */
     constructor(
-        apiKey: Optional<string> = null,
-        baseUrl: Optional<string> = null,
-        entityId: string = "default"
+        config: {
+            apiKey?: Optional<string>,
+            baseUrl?: Optional<string>,
+            entityId?: string
+        }
     ) {
         super(
-            apiKey,
-            baseUrl,
+            config.apiKey || null,
+            config.baseUrl || null,
             "langchain",
-            entityId
+            config.entityId || "default"
         );
     }
 

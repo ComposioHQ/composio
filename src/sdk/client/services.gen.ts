@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse, GetAppData, GetAppResponse, GetListActionsData } from './types.gen';
+import type { ListAllAppsResponse, ListAllConnectionsData, ListAllConnectionsResponse, CreateConnectionData, CreateConnectionResponse, GetConnectedAccountData, GetConnectedAccountResponse, DeleteConnectionData, DeleteConnectionResponse, GetIntegrationData, GetIntegrationResponse, UpdateIntegrationData, UpdateIntegrationResponse, ListAllIntegrationsData, ListAllIntegrationsResponse, CreateIntegrationData, CreateIntegrationResponse, GetActionData, GetActionResponse, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, ListTriggersData, ListTriggersResponse, ListActiveTriggersData, ListActiveTriggersResponse, GetActiveTriggerData, GetActiveTriggerResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse, GetAppData, GetAppResponse, GetListActionsData, SetupTriggerData, SetupTriggerResponse } from './types.gen';
 
 /**
  * List All Apps
@@ -336,6 +336,33 @@ export const listTriggers = (data: ListTriggersData = {}, config: typeof OpenAPI
         appNames: data.appNames,
         showEnabledOnly: data.showEnabledOnly,
         connectedAccountIds: data.connectedAccountIds
+    }
+}); };
+
+/**
+ * Setup trigger for a connected account
+ * This endpoint allows you to enable a trigger for a specific connected account by providing the connected account ID and the trigger name.
+ * 
+ * @param data The data for the request.
+ * @param data.connectedAccountId The ID of the connected account.
+ * @param data.triggerName The name of the trigger to enable.
+ * @param data.requestBody The request body containing additional configuration for the trigger.
+ * @param config The OpenAPI configuration.
+ * @returns unknown OK
+ * @throws ApiError
+ */
+export const setupTrigger = (data: SetupTriggerData, config: typeof OpenAPI): CancelablePromise<SetupTriggerResponse> => { return __request(config, {
+    method: 'POST',
+    url: '/triggers/enable/{connectedAccountId}/{triggerName}',
+    path: {
+        connectedAccountId: data.connectedAccountId,
+        triggerName: data.triggerName
+    },
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        404: 'Not Found',
+        500: 'Internal server error'
     }
 }); };
 
