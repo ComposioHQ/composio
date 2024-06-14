@@ -162,7 +162,7 @@ class Entity {
         for (const connectedAccount of connectedAccounts.items!) {
             if (app === connectedAccount.appName) {
                 const creationDate = new Date(connectedAccount.createdAt!);
-                if (!latestAccount || (latestCreationDate && creationDate > latestCreationDate) && connectedAccount.status === "ACTIVE") {
+                if ((!latestAccount || (latestCreationDate && creationDate > latestCreationDate)) && connectedAccount.status === "ACTIVE") {
                     latestCreationDate = creationDate;
                     latestAccount = connectedAccount;
                 }
