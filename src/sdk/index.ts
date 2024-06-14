@@ -91,7 +91,7 @@ export class Composio {
 
 class Entity {
     private client: Composio;
-    private id: string;
+    id: string;
 
     constructor(client: Composio, id: string = 'DEFAULT_ENTITY_ID') {
         this.client = client;
