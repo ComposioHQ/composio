@@ -28,4 +28,4 @@ python cookbook/examples/sql_agent/main.py
 ```
 Your database operations should be performed as described by the script, with SQL queries executed and logged accordingly.
 
-### Note: We have a dummy database called company.db with a table named products. Feel free to use this database for reference and execute queries on it to understand the agent's functionality better.
+Note: We have a dummy database called company.db with a table named products. Feel free to use this database for reference and execute queries on it to understand the agent's functionality better.
