@@ -32,6 +32,57 @@ export type ListAllAppsResponse = {
     }>;
 };
 
+export type GetAppData = {
+    appKey: string;
+};
+
+export type GetAppResponse = {
+    name: string;
+    key: string;
+    status: string;
+    documentation_doc_text?: string;
+    configuration_docs_text?: string;
+    docs?: string;
+    description?: string;
+    logo?: string;
+    categories: string[];
+    auth_schemes: Array<{
+        auth_mode: string;
+        authorization_url?: string;
+        default_scopes?: string[];
+        proxy?: {
+            base_url?: string;
+        };
+        scheme_name?: string;
+        token_response_metadata?: string[];
+        token_url?: string;
+        client_id?: string;
+        client_secret?: string;
+        fields?: Array<{
+            name: string;
+            displayName: string;
+            description: string;
+            type: string;
+            required: boolean;
+            expected_from_customer: boolean;
+            default?: string;
+        }>;
+    }>;
+    yaml: any;
+    group: string;
+    appId: string;
+    testConnectors?: Array<{
+        id: string;
+        name: string;
+        authScheme: string;
+    }>;
+    meta: {
+        triggersCount: number;
+        actionsCount: number;
+        is_custom_app: boolean;
+    };
+};
+
 export type ListAllConnectionsData = {
     /**
      * Filter by using specific Integration
@@ -414,6 +465,12 @@ export type ListAllIntegrationsResponse = {
     page?: number;
 };
 
+export enum AuthScheme {
+    OAUTH2 = "OAUTH2",
+    API_KEY = "API_KEY",
+    OAUTH1 = "OAUTH1"
+}
+
 export type CreateIntegrationData = {
     requestBody?: {
         /**
@@ -423,7 +480,7 @@ export type CreateIntegrationData = {
         /**
          * The authentication scheme used by the connector (e.g., "OAUTH2", "API_KEY").
          */
-        authScheme?: 'OAUTH2' | 'API_KEY';
+        authScheme?: AuthScheme;
         /**
          * The unique identifier of the app associated with the connector.
          */
@@ -433,17 +490,31 @@ export type CreateIntegrationData = {
          */
         authConfig?: {
             /**
-             * The client ID used for authentication with the app.
+             * The client ID used for authentication with the app - if authScheme is OAUTH2
              */
             client_id?: string;
             /**
-             * The client secret used for authentication with the app.
+             * The client secret used for authentication with the app - if authScheme is OAUTH2
              */
             client_secret?: string;
+            /**
+             * The API key used for authentication with the app - if authScheme is API_KEY
+             */
+            api_key?: string;
+            /**
+             * The Consumer key used for authentication with the app - if authScheme is OAUTH1
+             */
+            consumer_key?: string;
+            /**
+             * The Consumer secret used for authentication with the app - if authScheme is OAUTH1
+             */
+            consumer_secret?: string;
             /**
              *  The base URL for making API requests to the app.
              */
             base_url?: string;
+
+            [key: string]: unknown;
         };
         /**
          * Use default Composio credentials to proceed. The developer app credentials will be of Composio.
