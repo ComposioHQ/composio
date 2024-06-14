@@ -1,7 +1,6 @@
 import express from 'express';
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
-import { Action } from "composio-core";
 
 const app = express();
 const PORT = process.env.PORT || 2001;
@@ -16,8 +15,7 @@ app.get('/webhook', async (req, res) => {
             process.env.COMPOSIO_API_KEY,
         );
         const tools = await toolset.get_actions([
-            Action.GITHUB_USERS_GET_AUTHENTICATED,
-            Action.GITHUB_ISSUES_CREATE
+            "github_issues_create"
           ]);
 
         const client = new OpenAI({})
