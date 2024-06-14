@@ -1,0 +1,86 @@
+---
+title: "Using Composio JS SDK with Langchain"
+sidebarTitle: "With Langchain"
+icon: "code"
+description: "Use Composio JS SDK with Langchain"
+---
+
+📋 To check the reference for Langchain, visit [here](https://composiohq.github.io/composio-js/classes/frameworks_langchain.LangchainToolSet.html)
+
+
+<Steps>
+<Step title="Installation Steps">
+ <CodeGroup>
+      ```javascript Import OpenAI and OpenAIToolSet
+import { ChatOpenAI } from "@langchain/openai";
+import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+import { pull } from "langchain/hub";
+
+import { LangchainToolSet } from "composio-core";
+      ```
+    </CodeGroup>
+</Step>
+<Step title="Initialize LangchainToolSet and setup agent">
+
+ <CodeGroup>
+      ```typescript Initial setup
+ const llm = new ChatOpenAI({
+    model: "gpt-4",
+    apiKey: process.env.COMPOSIO_API_KEY,
+    });
+
+    const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    });
+
+    const tools = await toolset.get_actions("github_issues_create");
+
+    const prompt = await pull(
+    "hwchase17/openai-functions-agent"
+    );
+
+    const agent = await createOpenAIFunctionsAgent({
+    llm,
+    tools,
+    prompt,
+    });
+
+    const agentExecutor = new AgentExecutor({
+    agent,
+    tools,
+    verbose: true,
+    });
+      ```
+    </CodeGroup>
+
+Make sure you're using actions that are enabled for your project.
+
+</Step>
+
+<Step title="Invoke the agent">
+
+<CodeGroup>
+      ```typescript Add openAI assistant handler
+
+const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
+
+   const result = await agentExecutor.invoke({
+        input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
+    });
+
+    res.json({ output: result.output });
+      ```
+    </CodeGroup>
+
+
+</Step>
+
+<Step title="Complete code snippet">
+
+For complete reference for Langchain, visit [here](https://composiohq.github.io/composio-js/classes/frameworks_langchain.LangchainToolSet.html)
+
+View the full code snippet [here](https://github.com/ComposioHQ/composio-js/blob/main/examples/langchain/demo.ts)
+</Step>
+</Steps>
+
+

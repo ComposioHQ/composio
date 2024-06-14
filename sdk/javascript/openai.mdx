@@ -1,0 +1,72 @@
+---
+title: "Using Composio JS SDK with OpenAI"
+sidebarTitle: "With OpenAI"
+icon: "code"
+description: "Use Composio JS SDK with OpenAI"
+---
+
+📋 To check the reference for OpenAI, visit [here](https://composiohq.github.io/composio-js/classes/frameworks_openai.OpenAIToolSet.html)
+
+<Steps>
+<Step title="Installation Steps">
+ <CodeGroup>
+      ```javascript Import OpenAI and OpenAIToolSet
+      import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+      ```
+    </CodeGroup>
+</Step>
+<Step title="Initialize OpenAIToolSet and OpenAI">
+
+ <CodeGroup>
+      ```typescript Import OpenAI and OpenAIToolSet
+const toolset = new OpenAIToolSet({
+        // Use API key generated in previous guide
+        apiKey: process.env.COMPOSIO_API_KEY,      
+});
+
+const tools = await toolset.get_actions("github_issues_create");
+
+const client = new OpenAI({
+        // set your OpenAI API key here or in your environment variables
+        apiKey: process.env.OPENAI_API_KEY
+})
+      ```
+    </CodeGroup>
+
+Make sure you're using actions that are enabled for your project.
+
+</Step>
+
+<Step title="Add openAI assistant handler">
+
+<CodeGroup>
+      ```typescript Add openAI assistant handler
+        const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
+        
+        const response = await client.chat.completions.create({
+            model: "gpt-4-turbo",
+            messages: [{ 
+                role: "user", 
+                content: body,
+            }],
+            tools: tools,
+            tool_choice: "auto",
+        })
+
+        console.log(response.choices[0].message.tool_calls);
+        await toolset.handle_tool_call(response);
+      ```
+    </CodeGroup>
+
+    You can now
+
+</Step>
+
+<Step title="Complete code snippet">
+
+View the full snippet [here](https://github.com/ComposioHQ/composio-js/blob/main/examples/openai/demo.mjs)
+</Step>
+</Steps>
+
+
