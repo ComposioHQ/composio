@@ -1,5 +1,3 @@
-# flake8: noqa: W293
-
 """
 Apps manager for Composio SDK.
 
@@ -14,7 +12,8 @@ import click
 
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client import ActionModel, AppModel, TriggerModel, enums
+from composio.client import enums
+from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.client.local_handler import LocalToolHandler
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
@@ -42,9 +41,14 @@ TAG_ENUM_TEMPLATE = """class Tag(tuple, Enum):
     \"\"\"App tags.\"\"\"
 
     @property
-    def name(self) -> str:
-        \"\"\"Returns trigger name.\"\"\"
+    def app(self) -> str:
+        \"\"\"Returns app name.\"\"\"
         return self.value[0]
+
+    @property
+    def val(self) -> str:
+        \"\"\"Returns tag value.\"\"\"
+        return self.value[1]
 
     IMPORTANT = ("default", "important")
 {tags}
@@ -78,7 +82,7 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
     def no_auth(self) -> bool:
         \"\"\"Name of the action.\"\"\"
         return self.value[2]
-     
+
     @property
     def is_local(self) -> bool:
         \"\"\"If the action is local.\"\"\"

@@ -14,12 +14,11 @@ from beaupy.spinners import DOTS, Spinner
 from composio.cli.context import Context, login_required, pass_context
 from composio.cli.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
-from composio.client import (
+from composio.client import Composio, Entity
+from composio.client.collections import (
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
-    Composio,
-    Entity,
     IntegrationModel,
 )
 from composio.client.exceptions import ComposioClientError
