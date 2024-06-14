@@ -1,4 +1,3 @@
-import { Action, App, Tag } from "../sdk/enums";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
@@ -66,10 +65,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
         const func = async (...kwargs: any[]): Promise<any> => {
             return JSON.stringify(await this.execute_action(
-                Action.from_app_and_action(
-                    app,
-                    action
-                ),
+                action,
                 kwargs[0],
                 entityId || this.entityId
             ));
@@ -88,14 +84,14 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
     async get_actions(
         filters: {
-            actions?: Optional<Sequence<Action | string>>
+            actions?: Optional<Sequence<string>>
         } = {},
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
         const actions =  (await this.client.actions.list({
             showAll: true
         })).items?.filter((a) => {
-            return filters.actions?.map(action => typeof action === "string" ? action : action.action).includes(a!.name!);
+            return filters.actions
         });
          
          return actions!.map(tool =>
@@ -108,13 +104,13 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
     async get_tools(
         filters: {
-            apps: Sequence<App | string>,
-            tags: Optional<Array<string | Tag>>
+            apps: Sequence<string>,
+            tags: Optional<Array<string>>
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
         const apps =  await this.client.actions.list({
-            apps: filters.apps.map(app => typeof app === "string" ? app : app.value).join(","),
+            apps: filters.apps.join(","),
             showAll: true
          });
         return apps.items!.map(tool =>
