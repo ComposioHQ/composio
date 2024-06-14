@@ -12,6 +12,7 @@ from composio.cli.integrations import _integrations
 from composio.cli.login import _login
 from composio.cli.logout import _logout
 from composio.cli.triggers import _triggers
+from composio.cli.swe_agent import run_swe_agent
 from composio.cli.utils import HelpfulCmdBase
 from composio.cli.whoami import _whoami
 from composio.core.cls.catch_all_exceptions import (
@@ -66,3 +67,5 @@ composio.add_command(_actions)
 composio.add_command(_triggers)
 composio.add_command(_integrations)
 composio.add_command(_connections)
+composio.add_command(run_swe_agent)
+
