@@ -170,7 +170,7 @@ class Entity {
         }
 
         if (!latestAccount) {
-            throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
+            return null;
         }
 
         return this.client.connectedAccounts.get({
