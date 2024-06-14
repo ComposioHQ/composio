@@ -99,13 +99,22 @@ class Entity {
         this.id = id;
     }
 
-    async execute(action: Action, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
-        if (action.no_auth) {
+    async execute(actionName: string, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
+        const action = await this.client.actions.get({
+            actionName: actionName
+        });
+        if (!action) {
+            throw new Error("Could not find action: " + actionName);
+        }
+        const app = await this.client.apps.get({
+            appKey: action.appId!
+        });
+        if ((app.yaml as any).no_auth) {
             return this.client.actions.execute({
-                actionName: action.action,
+                actionName: actionName,
                 requestBody: {
                     input: params,
-                    appName: action.app
+                    appName: action.appName
                 }
             });
         }
@@ -126,19 +135,19 @@ class Entity {
             connectedAccount = connectedAccounts.items![0];
         }
         console.log("Calling action", {
-            actionName: action.action,
+            actionName: actionName,
             requestBody: {
                 connectedAccountId: connectedAccount.id,
                 input: params,
-                appName: action.app
+                appName: action.appId
             }
         });
         return this.client.actions.execute({
-            actionName: action.action,
+            actionName: actionName,
             requestBody: {
                 connectedAccountId: connectedAccount.id,
                 input: params,
-                appName: action.app
+                appName: action.appId
             }
         });
     }
@@ -151,15 +160,19 @@ class Entity {
         }
 
         let latestAccount = null;
-        let latestCreationDate = new Date(0);
+        let latestCreationDate: Date | null = null;
         const connectedAccounts = await this.client.connectedAccounts.list({
             user_uuid: this.id,
         });
 
+        if(!connectedAccounts.items || connectedAccounts.items.length === 0) {
+            throw new Error(`Could not find a connection with app='${app}', connected_account_id='${connectedAccountId}' and entity='${this.id}'`);
+        }
+
         for (const connectedAccount of connectedAccounts.items!) {
             if (app === connectedAccount.appName) {
                 const creationDate = new Date(connectedAccount.createdAt!);
-                if (!latestAccount || creationDate > latestCreationDate) {
+                if (!latestAccount || (latestCreationDate && creationDate > latestCreationDate)) {
                     latestCreationDate = creationDate;
                     latestAccount = connectedAccount;
                 }
