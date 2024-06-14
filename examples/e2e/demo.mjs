@@ -15,7 +15,7 @@ const toolset = new LangchainToolSet({
 async function setupUserConnectionIfNotExists(entityId) {
     const entity = await toolset.client.getEntity(entityId);
     const connection = await entity.getConnection("github");
-    if(!connection) {
+    if(connection) {
         const connection = await entity.initiateConnection(
             "github",
         );
@@ -33,13 +33,8 @@ async function setupUserConnectionIfNotExists(entityId) {
         triggerNames: ["github_issue_added_event"]
     });
     if(!activeGithubTriggerForUser.triggers.length) {
-        const trigger = await toolset.client.triggers.setup({
-            connectedAccountId: connection.id,
-            triggerName: TRIGGER_CONFIGS.GITHUB.triggerName,
-            requestBody: {
-                triggerConfig: TRIGGER_CONFIGS.GITHUB.config
-            }
-        });
+        const trigger = await entity.setupTrigger("github", TRIGGER_CONFIGS.GITHUB.triggerName, TRIGGER_CONFIGS.GITHUB.config);
+
         console.log("Trigger", trigger);
     }
 

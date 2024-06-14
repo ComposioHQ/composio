@@ -421,7 +421,7 @@ export const getActiveTrigger = (data: GetActiveTriggerData, config: typeof Open
  * @throws ApiError
  */
 export const updateActiveTriggerStatus = (data: PatchUpdateActiveTriggerStatusData, config: typeof OpenAPI): CancelablePromise<PatchUpdateActiveTriggerStatusResponse> => { return __request(config, {
-    method: 'POST',
+    method: 'PATCH',
     url: '/v1/triggers/instance/{triggerId}/status',
     path: {
         triggerId: data.triggerId
