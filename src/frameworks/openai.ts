@@ -28,7 +28,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
     async get_actions(
         actions: Sequence<string>,
-        entityId: Optional<string> = null
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         return (await this.client.actions.list({})).items?.filter((a) => {
             return actions.includes(a!.name!);
