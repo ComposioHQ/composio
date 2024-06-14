@@ -70,7 +70,7 @@ class ComposioToolSet(BaseComposioToolSet):
             base_url=base_url,
             entity_id=entity_id,
         )
-        self.runtime = "llamaindex"
+        self._runtime = "llamaindex"
 
     def prepare_python_function(
         self, app, action, description, schema_params, entity_id
