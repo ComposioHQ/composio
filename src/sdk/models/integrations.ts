@@ -1,4 +1,4 @@
-import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, GetIntegrationResponse, listAllIntegrations, getIntegration, ListAllIntegrationsData } from "../client";
+import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, GetIntegrationResponse, listAllIntegrations, getIntegration, ListAllIntegrationsData, createIntegration, CreateIntegrationData, CreateIntegrationResponse } from "../client";
 import { Composio } from "../";
 
 export class Integrations {
@@ -29,5 +29,27 @@ export class Integrations {
      */
     get(data: GetIntegrationData): CancelablePromise<GetIntegrationResponse> {
         return getIntegration(data, this.client.config);
+    }
+
+    /**
+     * Creates a new integration in the Composio platform.
+     * 
+     * This method allows clients to create a new integration by providing the necessary details such as app ID, name, authentication mode, and configuration.
+     * 
+     * @param {CreateIntegrationData["requestBody"]} data The data for the request.
+     * @returns {CancelablePromise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
+     * @throws {ApiError} If the request fails.
+     */
+    create(
+        data: CreateIntegrationData["requestBody"]
+    ): CancelablePromise<CreateIntegrationResponse> {
+
+        if (!data?.authConfig) {
+            data!.authConfig = {};
+        }
+
+        return createIntegration({
+            requestBody: data
+        }, this.client.config);
     }
 }
