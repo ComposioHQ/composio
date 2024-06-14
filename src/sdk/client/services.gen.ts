@@ -278,7 +278,7 @@ export const getListActions = (data: GetListActionsData = {}, config: typeof Ope
         appNames: data.apps,
         useCase: data.useCase,
         showEnabledOnly: data.showEnabledOnly,
-        limit: data.limit
+        usecaseLimit: data.usecaseLimit
     }
 }); };
 
