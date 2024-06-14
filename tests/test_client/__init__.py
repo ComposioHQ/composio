@@ -1,0 +1,1 @@
+"""Test `composio.client` module."""

@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import pytest
@@ -19,7 +20,10 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 )
 
 
-@pytest.mark.skip(reason="no way of currently testing this in github action")
+@pytest.mark.skipif(
+    condition=os.environ.get("CI") is not None,
+    reason="no way of currently testing this in github action",
+)
 class TestCreateWorkspaceAction(unittest.TestCase):
     def test_create_workspace(self):
         # Setup - create an instance of CreateWorkspaceAction
@@ -37,6 +41,10 @@ class TestCreateWorkspaceAction(unittest.TestCase):
         self.assertIsNotNone(result.workspace_id)
 
 
+@pytest.mark.skipif(
+    condition=os.environ.get("CI") is not None,
+    reason="no way of currently testing this in github action",
+)
 class TestCmds(unittest.TestCase):
     def test_create_dir_cmd(self):
         # Setup - create an instance of CreateWorkspaceAction
