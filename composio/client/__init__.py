@@ -351,23 +351,26 @@ class Apps(Collection[AppModel]):
 
         return super().get(queries={})
 
+class TypeModel(BaseModel):
+    type: str
 
 class TriggerPayloadPropertyModel(BaseModel):
     """Trigger payload property data model."""
 
     description: str
     title: str
-    type: str
+    type: t.Optional[str] = None
+    anyOf: t.Optional[t.List[TypeModel]] = None
 
     examples: t.Optional[t.List] = None
-
 
 class TriggerPayloadModel(BaseModel):
     """Trigger payload data model."""
 
     properties: t.Dict[str, TriggerPayloadPropertyModel]
     title: str
-    type: str
+    type: t.Optional[str] = None
+    anyOf: t.Optional[t.List[TypeModel]] = None
 
     required: t.Optional[t.List[str]] = None
 

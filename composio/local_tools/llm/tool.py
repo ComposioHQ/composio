@@ -2,15 +2,16 @@ import typing as t
 
 from composio.core.local import Action, Tool
 
-from .actions import ScreenCapture, Notify
+from .actions import Calculator
 
-class System(Tool):
+
+class Mathematical(Tool):
     """
     Mathematical Tools for LLM
     """
 
     def actions(self) -> list[t.Type[Action]]:
-        return [ScreenCapture, Notify]
+        return [Calculator]
 
     def triggers(self) -> list:
         return []

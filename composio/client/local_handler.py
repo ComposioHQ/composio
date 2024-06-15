@@ -12,6 +12,7 @@ from composio.local_tools.local_workspace.submit_patch import SubmitPatchTool
 from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.webtool import WebTool
+from composio.local_tools.system import System
 
 
 class LocalToolHandler:
@@ -43,6 +44,7 @@ class LocalToolHandler:
             WebTool(),
             Greptile(),
             SubmitPatchTool(),
+            System(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):

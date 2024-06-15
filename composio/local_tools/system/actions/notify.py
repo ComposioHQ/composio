@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from composio.core.local import Action
-from plyer import notification
+import subprocess
 
 
 class NotifyRequest(BaseModel):
@@ -14,7 +14,7 @@ class NotifyResponse(BaseModel):
 
 class Notify(Action[NotifyRequest, NotifyResponse]):
     """
-    Sends a local notification.
+    Sends a local notification. Only works for MacOS.
     """
 
     _display_name = "Notify"
@@ -28,19 +28,13 @@ class Notify(Action[NotifyRequest, NotifyResponse]):
     ) -> dict:
         title = request_data.title
         message = request_data.message
-        try:
-            notification.notify(
-                title=title,
-                message=message,
-                app_name="Composio Notify"
-            )
-            execution_details = {"executed": True}
-            response_data = {}
-        except Exception as e:
-            execution_details = {"executed": False, "error": str(e)}
-            response_data = {}
+        command = f"osascript -e 'display notification \"{message}\" with title \"{title}\"'"
+        subprocess.run(command, shell=True)
+        execution_details = {"executed": True}
+        response_data = {}
 
         return {"execution_details": execution_details, "response_data": response_data}
 
 if __name__ == "__main__":
-    Notify().execute(NotifyRequest(title="Test", message="Test"), {})
+    print("Notifying...")
+    Notify().execute(NotifyRequest(title="Test Title", message="Test Message"), {})
