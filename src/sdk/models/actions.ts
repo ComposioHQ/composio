@@ -46,15 +46,6 @@ export class Actions {
      */
     async list(data: GetListActionsData = {}): Promise<GetListActionsResponse> {
         const out = await getListActions(data, this.client.config);
-        if(data.tags && data.tags.split(",").length === 1 && data.tags === "important") {
-           const appsActions: Record<string, any[]> = out.items!.reduce((prev: Record<string, any[]>, curr) => {
-            if(!prev[curr.appName!]) {
-                prev[curr.appName!] = [];
-            }
-            prev[curr.appName!].push(curr);
-            return prev;
-           }, {} as Record<string, any[]>);
-        }
         return out;
     }
 
