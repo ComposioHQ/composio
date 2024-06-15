@@ -81,14 +81,14 @@
   ],
   "anchors": [
     {
-      "name": "Python",
+      "name": "SDK",
       "icon": "terminal",
       "url": "sdk"
     },
-     {
-      "name": "JS SDK Reference",
+    {
+      "name": "API",
       "icon": "code",
-      "url": "https://composiohq.github.io/composio-js/index.html"
+      "url": "api-reference"
     }
   ],
   "navigation": [
@@ -147,6 +147,14 @@
         "sdk/python/local_tools"
       ]
     },
+        {
+      "group": "JS SDK",
+      "pages": [
+        "sdk/javascript/introduction",
+        "sdk/javascript/langchain",
+        "sdk/javascript/openai"
+      ]
+    },
     {
       "group": "CLI API",
       "pages": [
@@ -160,7 +168,7 @@
       "group": "Examples",
       "pages": [
         "guides/examples/Example",
-        {
+    {
           "group": "Guides", 
           "pages":[
             "guides/examples/investment-analyst",
