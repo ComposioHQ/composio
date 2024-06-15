@@ -756,6 +756,10 @@ export type GetListActionsData = {
      * Show actions enabled for the API Key
      */
     showEnabledOnly?: boolean;
+    /**
+     * Use smart tag filtering
+     */
+    useSmartTagFiltering?: boolean;
 }
 
 export type GetListActionsResponse = {
