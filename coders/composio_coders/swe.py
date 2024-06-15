@@ -14,6 +14,9 @@ import langchain_core
 MODEL_ENV_CONFIG_PATH = "../.composio.coder.model_env"
 ISSUE_CONFIG_PATH = "../.composio.coder.issue_config"
 
+script_path = Path(__file__)
+script_dir = script_path.parent
+
 AGENT_BACKSTORY_TMPL = '''
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
   Your mentor gave you following tips.
@@ -159,7 +162,8 @@ class CoderAgent:
     def get_llm(self):
         # get model_env config from path 
         try:
-            with open(MODEL_ENV_CONFIG_PATH, "r") as f:
+            model_env_path = script_dir / Path(MODEL_ENV_CONFIG_PATH)
+            with open(model_env_path, "r") as f:
                 self.model_env = json.load(f)
         except FileNotFoundError:
             self.logger.info("Model environment configuration file not found.")
@@ -214,7 +218,7 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    config_path = Path(ISSUE_CONFIG_PATH)
+    config_path = script_dir / Path(ISSUE_CONFIG_PATH)
     with config_path.open('r') as f:
         issue_config = json.load(f)
 
