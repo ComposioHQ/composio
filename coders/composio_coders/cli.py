@@ -76,8 +76,8 @@ def add_issue():
 @click.command(name="solve", help="👷 Start solving the configured issue")
 def solve():
     """Start solving the configured issue."""
-    git_access_token = os.getenv('GIT_ACCESS_TOKEN')
-    if not git_access_token:
+    git_access_token = os.environ.get(KEY_GIT_ACCESS_TOKEN)
+    if not git_access_token or not git_access_token.strip():
         click.echo(f"❗ Error: {KEY_GIT_ACCESS_TOKEN} is not set in the environment.\n")
         click.echo(f"🔑 Please export your GIT access token: {KEY_GIT_ACCESS_TOKEN} and try again !")
         return
