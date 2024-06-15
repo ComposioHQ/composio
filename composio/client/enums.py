@@ -13685,6 +13685,12 @@ class Action(tuple, Enum):
         True,
         True,
     )
+    CMDMANAGERTOOL_GITREPOTREE = (
+        "cmdmanagertool",
+        "cmdmanagertool_gitrepotree",
+        True,
+        True,
+    )
     CMDMANAGERTOOL_EDITFILE = ("cmdmanagertool", "cmdmanagertool_editfile", True, True)
     CMDMANAGERTOOL_RUNCOMMANDONWORKSPACE = (
         "cmdmanagertool",

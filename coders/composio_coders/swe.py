@@ -23,19 +23,21 @@ You are an autonomous programmer, your task is to solve the issue given in task 
   Your mentor gave you following tips.
   1. Always start by initializing the workspace.
   2. Use the workspace_id returned to use tools to run commands. The commands are run on shell.
-  3. use clone the git repo {repo_name} from the base_commit {base_commit} in workspace
-  4. After setting up environment - *Always start with try to replicate the bug that the issues discusses*.
+  3. Use clone the git repo {repo_name} from the base_commit {base_commit} in workspace
+  4. PLEASE READ THE CODE AND UNDERSTAND THE FILE STRUCTURE OF THE CODEBASE USING GIT REPO TREE ACTION.
+  5. POST THAT READ ALL THE READMES AND TRY TO LOOK AT THE FILES RELATED TO THE ISSUE.
+  6. AFTER THAT - *ALWAYS START WITH TRY TO REPLICATE THE BUG THAT THE ISSUES DISCUSSES*.
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
      Then start trying to fix it.
      When you think you've fixed the bug, re-run the bug reproduction script to make sure that the bug has indeed been fixed.
      If the bug reproduction script does not print anything when it successfully runs, we recommend adding a print("Script completed successfully, no errors.") command at the end of the file,
      so that you can be sure that the script indeed ran fine all the way through.
-  5. If you run a command and it doesn't work, try running a different command. A command that did not work once will not work the second time unless you modify it!
-  6. If you open a file and need to get to an area around a specific line that is not in the first 100 lines, say line 583, don't just use the scroll_down command multiple times. Instead, use the goto 583 command. It's much quicker.
-  7. If the bug reproduction script requires inputting/reading a specific file, such as buggy-input.png, and you'd like to understand how to input that file, conduct a search in the existing repo code, to see whether someone else has already done that. Do this by running the command: find_file "buggy-input.png" If that doesn't work, use the linux 'find' command.
-  8. Always make sure to look at the currently open file and the current working directory (which appears right after the currently open file). The currently open file might be in a different directory than the working directory! Note that some commands, such as 'create', open files, so they might change the current  open file.
-  9. When editing files, it is easy to accidentally specify a wrong line number or to write code with incorrect indentation. Always check the code after you issue an edit to make sure that it reflects what you wanted to accomplish. If it didn't, issue another command to fix it.
-  10. When you finish working on the issue, use submit patch tool to submit your patch.
+  7. If you run a command and it doesn't work, try running a different command. A command that did not work once will not work the second time unless you modify it!
+  8. If you open a file and need to get to an area around a specific line that is not in the first 100 lines, say line 583, don't just use the scroll_down command multiple times. Instead, use the goto 583 command. It's much quicker.
+  9. If the bug reproduction script requires inputting/reading a specific file, such as buggy-input.png, and you'd like to understand how to input that file, conduct a search in the existing repo code, to see whether someone else has already done that. Do this by running the command: find_file "buggy-input.png" If that doesn't work, use the linux 'find' command.
+  10. Always make sure to look at the currently open file and the current working directory (which appears right after the currently open file). The currently open file might be in a different directory than the working directory! Note that some commands, such as 'create', open files, so they might change the current  open file.
+  11. When editing files, it is easy to accidentally specify a wrong line number or to write code with incorrect indentation. Always check the code after you issue an edit to make sure that it reflects what you wanted to accomplish. If it didn't, issue another command to fix it.
+  12. When you finish working on the issue, use submit patch tool to submit your patch.
 '''
 ISSUE_DESC_TMPL = '''
  We're currently solving the following issue within our repository. Here's the issue text:
@@ -105,6 +107,7 @@ class CoderAgent:
         self.composio_toolset = tool_set.get_tools(apps=[App.LOCALWORKSPACE,
                                                          App.CMDMANAGERTOOL,
                                                          App.HISTORYKEEPER,])
+        print("composio_toolset: ", self.composio_toolset)
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
         self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working."
@@ -161,7 +164,7 @@ class CoderAgent:
 
         if self.model_env.get("model_env") == "openai":
             openai_key = self.model_env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-            return ChatOpenAI(model="gpt-4-turbo", OPENAI_API_KEY=openai_key)
+            return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
         elif self.model_env.get("model_env") == "azure":
             azure_endpoint = self.model_env.get("endpoint_url") or os.environ.get("AZURE_ENDPOINT")
             azure_key = self.model_env.get("api_key") or os.environ.get("AZURE_KEY")
