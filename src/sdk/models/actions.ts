@@ -44,9 +44,8 @@ export class Actions {
      * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    async list(data: GetListActionsData = {}): Promise<GetListActionsResponse> {
-        const out = await getListActions(data, this.client.config);
-        return out;
+    list(data: GetListActionsData = {}): CancelablePromise<GetListActionsResponse> {
+        return getListActions(data, this.client.config);
     }
 
     /**
