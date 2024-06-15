@@ -1,6 +1,23 @@
 import { CancelablePromise, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, getAction, getListActions, executeAction } from "../client";
 import { Composio } from "../";
 
+/**
+ * The `Actions` class provides methods to interact with the Composio platform's actions.
+ * It allows fetching details of specific actions, listing all actions, and executing actions.
+ *
+ * - `get` method retrieves details of a specific action.
+ * - `list` method retrieves a list of all actions.
+ * - `execute` method executes a specific action.
+ *
+ * Each method returns a `CancelablePromise` which can be canceled. If canceled, the promise
+ * will reject with a `Cancellation` object.
+ *
+ * @typeParam Composio The client configuration object type.
+ * @groupDescription Methods
+ * The methods in this class are grouped under 'Actions Methods' and provide functionalities
+ * to interact with actions in the Composio platform. This includes fetching, listing, and
+ * executing actions.
+ */
 export class Actions {
     constructor(private readonly client: Composio) {
     }
