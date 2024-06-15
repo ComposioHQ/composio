@@ -55,11 +55,10 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             tags: Optional<Array<string>>
         }
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        const tags = filters.tags || ["important"];
         return (await this.client.actions.list({
             apps: filters.apps.join(","),
-            tags: tags.join(","),
-            useSmartTagFiltering: true
+            tags: filters.tags?.join(","),
+            filterImportantActions: !filters.tags
         })).items?.map(action => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,

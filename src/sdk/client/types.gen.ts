@@ -759,7 +759,7 @@ export type GetListActionsData = {
     /**
      * Use smart tag filtering
      */
-    useSmartTagFiltering?: boolean;
+    filterImportantActions?: boolean;
 }
 
 export type GetListActionsResponse = {
