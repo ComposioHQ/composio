@@ -11,11 +11,12 @@ import logging
 from rich.logging import RichHandler
 import langchain_core
 
-MODEL_ENV_CONFIG_PATH = "../.composio.coder.model_env"
-ISSUE_CONFIG_PATH = "../.composio.coder.issue_config"
+MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
+ISSUE_CONFIG_PATH = ".composio.coder.issue_config"
 
 script_path = Path(__file__)
 script_dir = script_path.parent
+config_dir = script_dir / Path("../")
 
 AGENT_BACKSTORY_TMPL = '''
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
@@ -67,16 +68,6 @@ def setup_logger():
 
 
 logger = setup_logger()
-
-
-def get_git_root():
-    """Try and guess the git repo, since the conf.yml can be at the repo root"""
-    try:
-        repo = git.Repo(search_parent_directories=True)
-        return repo.working_tree_dir
-    except git.InvalidGitRepositoryError:
-        logger.info("no git repo found")
-        return None
 
 
 class IssueConfig(BaseModel):
@@ -162,7 +153,7 @@ class CoderAgent:
     def get_llm(self):
         # get model_env config from path 
         try:
-            model_env_path = script_dir / Path(MODEL_ENV_CONFIG_PATH)
+            model_env_path = config_dir / Path(MODEL_ENV_CONFIG_PATH)
             with open(model_env_path, "r") as f:
                 self.model_env = json.load(f)
         except FileNotFoundError:
@@ -218,7 +209,7 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    config_path = script_dir / Path(ISSUE_CONFIG_PATH)
+    config_path = config_dir / Path(ISSUE_CONFIG_PATH)
     with config_path.open('r') as f:
         issue_config = json.load(f)
 
