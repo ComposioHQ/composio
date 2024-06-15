@@ -50,7 +50,7 @@ dotenv.load_dotenv()
 <CodeGroup>
 ```python Prepare Griptape Agent
 composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(tools = [App.GITHUB])
+tools = composio_toolset.get_tools(apps = [App.GITHUB])
 
 agent = Agent(
 tools=tools
