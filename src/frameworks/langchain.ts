@@ -112,12 +112,11 @@ export class LangchainToolSet extends BaseComposioToolSet {
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
-        const tags = filters.tags || ["important"];
         const apps =  await this.client.actions.list({
             apps: filters.apps.join(","),
-            tags: tags.join(","),
+            tags: filters.tags?.join(","),
             showAll: true,
-            useSmartTagFiltering: true
+            filterImportantActions: !filters.tags
          });
         return apps.items!.map(tool =>
             this._wrap_tool(

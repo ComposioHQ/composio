@@ -281,7 +281,8 @@ export const getListActions = (data: GetListActionsData = {}, config: typeof Ope
         tags: data.tags,
         useCase: data.useCase,
         showEnabledOnly: data.showEnabledOnly,
-        usecaseLimit: data.usecaseLimit
+        usecaseLimit: data.usecaseLimit,
+        filterImportantActions: data.filterImportantActions
     }
 }); };
 
