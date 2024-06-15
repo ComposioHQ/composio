@@ -5,7 +5,7 @@ import git
 from pathlib import Path
 from pydantic import BaseModel, Field
 from composio_crewai import ComposioToolSet, App
-from crewai import Agent, Task
+from crewai import Agent, Task, Crew
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 import logging
 from rich.logging import RichHandler
@@ -23,21 +23,23 @@ You are an autonomous programmer, your task is to solve the issue given in task 
   Your mentor gave you following tips.
   1. Always start by initializing the workspace.
   2. Use the workspace_id returned to use tools to run commands. The commands are run on shell.
-  3. Use clone the git repo {repo_name} from the base_commit {base_commit} in workspace
+  3. Use clone action to clone the git repo {repo_name} from the base_commit {base_commit} in workspace.
   4. PLEASE READ THE CODE AND UNDERSTAND THE FILE STRUCTURE OF THE CODEBASE USING GIT REPO TREE ACTION.
-  5. POST THAT READ ALL THE READMES AND TRY TO LOOK AT THE FILES RELATED TO THE ISSUE.
-  6. AFTER THAT - *ALWAYS START WITH TRY TO REPLICATE THE BUG THAT THE ISSUES DISCUSSES*.
+  5. POST THAT READ ALL THE RELEVANT READMEs AND TRY TO LOOK AT THE FILES RELATED TO THE ISSUE.
+  6. Form a thesis around the issue and the codebase.
+  7. THEN TRY TO REPLICATE THE BUG THAT THE ISSUES DISCUSSES.
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
      Then start trying to fix it.
      When you think you've fixed the bug, re-run the bug reproduction script to make sure that the bug has indeed been fixed.
      If the bug reproduction script does not print anything when it successfully runs, we recommend adding a print("Script completed successfully, no errors.") command at the end of the file,
      so that you can be sure that the script indeed ran fine all the way through.
-  7. If you run a command and it doesn't work, try running a different command. A command that did not work once will not work the second time unless you modify it!
-  8. If you open a file and need to get to an area around a specific line that is not in the first 100 lines, say line 583, don't just use the scroll_down command multiple times. Instead, use the goto 583 command. It's much quicker.
-  9. If the bug reproduction script requires inputting/reading a specific file, such as buggy-input.png, and you'd like to understand how to input that file, conduct a search in the existing repo code, to see whether someone else has already done that. Do this by running the command: find_file "buggy-input.png" If that doesn't work, use the linux 'find' command.
-  10. Always make sure to look at the currently open file and the current working directory (which appears right after the currently open file). The currently open file might be in a different directory than the working directory! Note that some commands, such as 'create', open files, so they might change the current  open file.
-  11. When editing files, it is easy to accidentally specify a wrong line number or to write code with incorrect indentation. Always check the code after you issue an edit to make sure that it reflects what you wanted to accomplish. If it didn't, issue another command to fix it.
-  12. When you finish working on the issue, use submit patch tool to submit your patch.
+  8. If you run a command and it doesn't work, try running a different command. A command that did not work once will not work the second time unless you modify it!
+  9. If you open a file and need to get to an area around a specific line that is not in the first 100 lines, say line 583, don't just use the scroll_down command multiple times. Instead, use the goto 583 command. It's much quicker.
+  10. If the bug reproduction script requires inputting/reading a specific file, such as buggy-input.png, and you'd like to understand how to input that file, conduct a search in the existing repo code, to see whether someone else has already done that. Do this by running the command: find_file "buggy-input.png" If that doesn't work, use the linux 'find' command.
+  11. Always make sure to look at the currently open file and the current working directory (which appears right after the currently open file). The currently open file might be in a different directory than the working directory! Note that some commands, such as 'create', open files, so they might change the current  open file.
+  12. When editing files, it is easy to accidentally specify a wrong line number or to write code with incorrect indentation. Always check the code after you issue an edit to make sure that it reflects what you wanted to accomplish. If it didn't, issue another command to fix it.
+  13. When you finish working on the issue, use submit patch tool to submit your patch.
+  14. SUBMIT THE PATCH TO THE REVIEWER AGENT AGAIN AND ASK THEM TO REVIEW THE PATCH AND SUBMIT IT ONLY IF THEY APPROVE IT.
 '''
 ISSUE_DESC_TMPL = '''
  We're currently solving the following issue within our repository. Here's the issue text:
@@ -110,7 +112,7 @@ class CoderAgent:
         print("composio_toolset: ", self.composio_toolset)
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
-        self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working."
+        self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working. Ask the reviewer agent to review the patch and submit it once they approve it."
         self.expected_output = "A patch should be generated which fixes the given issue"
         self.agent_backstory_tmpl = args.agent_backstory_tmpl
         self.issue_description_tmpl = args.issue_description_tmpl
@@ -207,7 +209,41 @@ class CoderAgent:
             agent=swe_agent,
             expected_output=self.expected_output,
         )
-        coding_task.execute()
+
+        reviewer_agent = Agent(
+            role="You are the best reviewer. You think carefully and step by step take action.",
+            goal="Review the patch and make sure it fixes the issue.",
+            backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
+                      "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
+                      "It's your job to review the patch and make sure it fixes the issue."
+                      "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
+                      "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
+                      "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
+                      "Once the patch is ready, approve it and ask the AI agent to submit it."
+                      "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
+                      "The are the best reviewer. You think carefully and step by step take action.",
+            verbose=True,
+            llm=llm,
+            tools=self.composio_toolset,
+            memory=True,
+            step_callback=self.add_in_logs,
+            allow_delegation=True,
+        )
+
+        review_task = Task(
+            description="Review the patch and make sure it fixes the issue.",
+            agent=reviewer_agent,
+            context=[coding_task],
+            expected_output="The patch is ready to be submitted to the repo.",
+        )
+
+        crew = Crew(
+            agents=[swe_agent, reviewer_agent],
+            tasks=[coding_task, review_task],
+            memory=True,
+        )
+
+        crew.kickoff()
         self.save_history(self.issue_config.issue_id)
 
 
@@ -226,5 +262,7 @@ if __name__ == "__main__":
         }
     )
     c_agent = CoderAgent(args)
+
+
     c_agent.run()
 

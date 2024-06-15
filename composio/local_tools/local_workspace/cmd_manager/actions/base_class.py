@@ -33,7 +33,9 @@ class BaseRequest(BaseModel):
 
 
 class BaseResponse(BaseModel):
-    output: str = Field(..., description="output of the command")
+    class Config:
+        arbitrary_types_allowed = True
+    output: any = Field(..., description="output of the command")
     return_code: int = Field(
         ..., description="Any output or errors that occurred during the file edit."
     )
