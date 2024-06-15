@@ -82,7 +82,7 @@ def solve():
     print("Issue solving process started.")
 
 
-@click.command(name="reset")
+@click.command(name="reset", help="🔄 Reset the composio coder")
 @click.help_option("--help", "-h", "-help")
 def reset():
     """Reset the composio coder."""
@@ -99,17 +99,29 @@ def reset():
         click.echo("Reset cancelled.")
 
 
-@click.group(name="composio-coder")
+@click.command(name="workflow", help="📋 Run the workflow: setup -> add_issue -> solve -> reset")
 @click.help_option("--help", "-h", "-help")
-def cli() -> None:
-    """Composio Coder CLI for managing the coding workspace and tasks."""
+def show_workflow():
+    # Add the workflow description
+    click.echo('\nWorkflow:\n')
+    click.echo('  1. setup: 🔑 Setup model configuration in the current directory')
+    click.echo('  2. add_issue: ➕ Add an issue configuration to the current directory')
+    click.echo('  3. solve: 👷 Start solving the configured issue')
+    click.echo('  4. reset: Reset the composio coder')
 
 
 # Add commands to the CLI group
+@click.group(name="composio-coder")
+@click.pass_context
+def cli(ctx) -> None:
+    """Composio Coder CLI for managing the coding workspace and tasks."""
+
+
 cli.add_command(setup)
 cli.add_command(add_issue)
 cli.add_command(solve)
 cli.add_command(reset)
+cli.add_command(show_workflow)
 
 if __name__ == '__main__':
     cli()
