@@ -28,7 +28,7 @@ class ScrollResponse(BaseResponse):
 
 class Scroll(BaseAction):
     """
-    Scrolls the view within a shell session down by 100 lines
+    Scrolls the view within a shell session down by 100 lines.
     """
 
     _display_name = "Scroll Action"
