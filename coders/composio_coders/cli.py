@@ -1,12 +1,25 @@
 import click
 import json
 import os
+import git
 from pathlib import Path
 
-from coders.composio_coders.swe import CoderAgentArgs, CoderAgent
+from composio_coders.swe import CoderAgentArgs, CoderAgent
 
 MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
 ISSUE_CONFIG_PATH = ".composio.coder.issue_config"
+KEY_GIT_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
+
+
+def get_git_root():
+    """Try and guess the git repo, since the conf.yml can be at the repo root"""
+    try:
+        repo = git.Repo(search_parent_directories=True)
+        path = Path(repo.git_dir)
+        repo_name = path.parent.name
+        return repo_name
+    except git.InvalidGitRepositoryError:
+        return None
 
 
 @click.command(name="setup", help="🔑 Setup model configuration in the current directory")
@@ -36,9 +49,17 @@ def setup():
 @click.command(name="add_issue", help="➕ Add an issue configuration to the current directory")
 def add_issue():
     """Add an issue configuration to the current directory."""
-    repo_name = click.prompt("Enter the repo name to start solving the issue", type=str, default="")
+    curr_repo_name = get_git_root()
+    repo_name = click.prompt("Enter the repo name to start solving the issue", type=str, default="", show_default=False)
+    if not repo_name or not repo_name.strip():
+        if curr_repo_name:
+            click.echo(f"no git repo-given. Initializing git repo from current directory: {curr_repo_name}")
+            repo_name = curr_repo_name
+        else:
+            click.echo("❗!! Error: no git repo found or given. Exiting setup...")
+            return
     issue_id = click.prompt("Please enter issue id", type=str)
-    base_commit_id = click.prompt("Please enter base commit id", type=str, default="")
+    base_commit_id = click.prompt("Please enter base commit id", type=str, default="", show_default=False)
     issue_description = click.prompt("Please enter issue description", type=str)
     issue_config = {
         'repo_name': repo_name,
@@ -57,10 +78,9 @@ def solve():
     """Start solving the configured issue."""
     git_access_token = os.getenv('GIT_ACCESS_TOKEN')
     if not git_access_token:
-        click.echo("❗ Error: GIT_ACCESS_TOKEN is not set in the environment.\n")
-        git_access_token = click.prompt("🔑 Please enter your GIT access token", type=str, default="")
-        if not git_access_token or not git_access_token.strip():
-            click.echo("GIT_ACCESS_TOKEN is not set --> using it from environment\n") 
+        click.echo(f"❗ Error: {KEY_GIT_ACCESS_TOKEN} is not set in the environment.\n")
+        click.echo(f"🔑 Please export your GIT access token: {KEY_GIT_ACCESS_TOKEN} and try again !")
+        return
 
     config_path = Path(ISSUE_CONFIG_PATH)
     with config_path.open('r') as f:
