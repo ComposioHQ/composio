@@ -36,7 +36,7 @@ class SqlQuery(Action):
         # Example:
         # response_data = {"result": "Processed text: " + request_data.text}
         # Implement logic to process input and return output
-        import sqlite3
+        import sqlite3 #pylint: disable=import-outside-toplevel
 
         # Connect to the database
         connection = sqlite3.connect(request_data.connection_string)
