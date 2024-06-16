@@ -11,7 +11,7 @@ import dotenv
 dotenv.load_dotenv()
 
 # Initialize the ComposioToolSet
-toolset = ComposioToolSet()
+toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 
 # Get the SQL and file tools from the ComposioToolSet
 tools = toolset.get_tools(apps = [App.SQLTOOL,App.FILETOOL])
