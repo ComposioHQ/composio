@@ -12,7 +12,7 @@ import pytest
 
 
 PLUGINS = Path.cwd() / "plugins"
-EXAMPLES = Path.cwd() / "examples"
+EXAMPLES_PATH = Path.cwd() / "examples"
 
 # Require env vars
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -47,7 +47,7 @@ EXAMPLES = (
         },
     },
     {
-        "file": EXAMPLES / "local_tools" / "autogen_math.py",
+        "file": EXAMPLES_PATH / "local_tools" / "autogen_math.py",
         "match": {
             "type": "stdout",
             "values": [
