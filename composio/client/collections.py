@@ -289,8 +289,10 @@ class Apps(Collection[AppModel]):
 
         return super().get(queries={})
 
+
 class TypeModel(BaseModel):
     type: str
+
 
 class TriggerPayloadPropertyModel(BaseModel):
     """Trigger payload property data model."""
