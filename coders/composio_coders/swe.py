@@ -4,8 +4,8 @@ import logging
 from pathlib import Path
 
 import langchain_core
-from composio_coders.config_store import IssueConfig, ModelEnvConfig
-from composio_coders.constants import MODEL_ENV_AZURE, MODEL_ENV_OPENAI
+from composio_coders.config_store import IssueConfig, ModelEnvConfig, AzureModelConfig, OpenAiModelConfig
+from composio_coders.constants import MODEL_ENV_AZURE, MODEL_ENV_OPENAI, KEY_AZURE_ENDPOINT, KEY_API_KEY
 from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -75,11 +75,6 @@ logger = setup_logger()
 
 
 class CoderAgentArgs(BaseModel):
-    agent_output_dir: str = Field(
-        ...,
-        description="task output directory for storing agent-chat logs,"
-        " task-logs, testbed etc",
-    )
     agent_backstory_tmpl: str = Field(
         default=AGENT_BACKSTORY_TMPL,
         description="backstory template for the agent to work on",
@@ -165,11 +160,11 @@ class CoderAgent:
             self.logger.info("type is not list: %s", type(step_output))
 
     def get_llm(self):
-        if self.model_env.model_env == MODEL_ENV_OPENAI:
+        if self.model_env.model_env == MODEL_ENV_OPENAI and isinstance(self.model_env, OpenAiModelConfig):
             openai_key = self.model_env.api_key
             return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
-        elif self.model_env.model_env == MODEL_ENV_AZURE:
-            azure_endpoint = self.model_env.endpoint_url
+        if self.model_env.model_env == MODEL_ENV_AZURE and isinstance(self.model_env, AzureModelConfig):
+            azure_endpoint = self.model_env.azure_endpoint
             azure_key = self.model_env.api_key
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,
@@ -221,19 +216,24 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    pass
-    # config_path = config_dir / Path(ISSUE_CONFIG_PATH)
-    # with config_path.open("r") as f:
-    #     issue_config = json.load(f)
-    #
-    # args = CoderAgentArgs(
-    #     repo_name=issue_config["repo_name"],
-    #     agent_output_dir="./",
-    #     issue_config={
-    #         "issue_id": issue_config["issue_id"],
-    #         "base_commit_id": issue_config["base_commit_id"],
-    #         "issue_description": issue_config["issue_description"],
-    #     },
-    # )
-    # c_agent = CoderAgent(args)
-    # c_agent.run()
+    from composio_coders.context import Context, set_context
+    issue_config = {
+        "repo_name": "test_repo",
+        "issue_id": "123",
+        "base_commit_id": "abc",
+        "issue_desc": "Fix bug",
+    }
+    model_env_config = {KEY_API_KEY: "142b9b40120a4eda89bac0f7b035a2b1",
+                        "azure_endpoint": "https://testingswedencentral.openai.azure.com/",
+                        "model_env": "azure"}
+    ctx = Context()
+    ctx.issue_config = issue_config
+    ctx.model_env = model_env_config
+    set_context(ctx)
+
+    args = CoderAgentArgs(
+        agent_logs_dir=ctx.agent_logs_dir,
+        issue_config=ctx.issue_config,
+        model_env_config=ctx.model_env,)
+    c_agent = CoderAgent(args)
+    c_agent.run()

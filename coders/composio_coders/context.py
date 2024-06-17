@@ -92,7 +92,7 @@ class Context:
                 path=path,
                 model_env=MODEL_ENV_AZURE,
                 api_key=config[KEY_API_KEY],
-                KEY_AZURE_ENDPOINT=config[KEY_AZURE_ENDPOINT],
+                azure_endpoint=config[KEY_AZURE_ENDPOINT],
             )
         else:
             raise ValueError(
