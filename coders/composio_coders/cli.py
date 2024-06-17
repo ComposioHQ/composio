@@ -4,9 +4,14 @@ import os
 import git
 from urllib.parse import urlparse
 from pathlib import Path
+import typing as t
 
+from composio_coders.config_store import OpenAiModelConfig, AzureModelConfig, IssueConfig, ModelEnvConfig
 from composio_coders.swe import CoderAgentArgs, CoderAgent
-from composio_coders.swe import KEY_AZURE_ENDPOINT, KEY_GIT_ACCESS_TOKEN, KEY_API_KEY, MODEL_ENV_AZURE, MODEL_ENV_OPENAI
+from composio.storage import LocalStorage
+from composio_coders.context import get_context
+from composio_coders.constants import (KEY_AZURE_ENDPOINT, KEY_GIT_ACCESS_TOKEN, KEY_API_KEY, KEY_MODEL_ENV,
+                                       MODEL_ENV_AZURE, MODEL_ENV_OPENAI)
 
 MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
 ISSUE_CONFIG_PATH = ".composio.coder.issue_config"
@@ -21,8 +26,6 @@ def get_git_root():
         repo_name = parsed_url.path.strip('/').split('/')[-1]
         if repo_name.endswith('.git'):
             repo_name = repo_name[:-4]
-        # repo_name = path.parent.name
-        # repo_name_2 = os.path.basename(os.path.dirname(repo.git_dir))
         return repo_name
     except git.InvalidGitRepositoryError:
         return None
@@ -33,30 +36,32 @@ def get_git_root():
 @click.command(name="setup", help="🔑 Setup model configuration in the current directory")
 def setup():
     """Setup model configuration in the current directory."""
-    config = {}
     model_env = click.prompt("🔑 Choose the model environment to be used for initiating agent", 
                              type=click.Choice(['openai', 'azure'], case_sensitive=False))
-
+    ctx = get_context()
+    model_config: t.Optional[ModelEnvConfig] = None
     if model_env == MODEL_ENV_OPENAI:
-        config[MODEL_ENV_OPENAI] = MODEL_ENV_OPENAI
         api_key = click.prompt("🔑 Please enter openai API key", type=str)
-        config[KEY_API_KEY] = api_key
+        ctx.model_env = {KEY_MODEL_ENV: MODEL_ENV_OPENAI,
+                         KEY_API_KEY: api_key}
     if model_env == MODEL_ENV_AZURE:
-        config[MODEL_ENV_AZURE] = MODEL_ENV_AZURE
         api_key = click.prompt("🔑 Please enter azure key", type=str)
         endpoint_url = click.prompt("🌐 Please enter Azure endpoint URL", type=str)
-        config[KEY_API_KEY] = api_key
-        config[KEY_AZURE_ENDPOINT] = endpoint_url
+        ctx.model_env = {KEY_MODEL_ENV: MODEL_ENV_AZURE,
+                         KEY_API_KEY: api_key,
+                         KEY_AZURE_ENDPOINT: endpoint_url}
 
-    config_path = Path(MODEL_ENV_CONFIG_PATH)
-    with config_path.open('w') as f:
-        json.dump(config, f)
-    click.echo(f'🍀 Model configuration saved to {MODEL_ENV_CONFIG_PATH}')
+    click.echo(f'🍀 Model configuration saved')
 
 
 @click.command(name="add_issue", help="➕ Add an issue configuration to the current directory")
 def add_issue():
     """Add an issue configuration to the current directory."""
+    git_access_token = os.environ.get(KEY_GIT_ACCESS_TOKEN)
+    if not git_access_token or not git_access_token.strip():
+        click.echo(f"❗ Error: {KEY_GIT_ACCESS_TOKEN} is not set in the environment.\n")
+        click.echo(f"🔑 Please export your GIT access token: {KEY_GIT_ACCESS_TOKEN} and try again !\n")
+        return
     curr_repo_name = get_git_root()
     repo_name = click.prompt("Enter the repo name to start solving the issue", type=str, default="", show_default=False)
     if not repo_name or not repo_name.strip():
@@ -69,41 +74,34 @@ def add_issue():
     issue_id = click.prompt("Please enter issue id", type=str)
     base_commit_id = click.prompt("Please enter base commit id", type=str, default="", show_default=False)
     issue_description = click.prompt("Please enter issue description", type=str)
-    issue_config = {
-        'repo_name': repo_name,
-        'issue_id': issue_id,
-        'base_commit_id': base_commit_id,
-        'issue_description': issue_description
+    issue_config = IssueConfig(repo_name=repo_name, base_commit_id=base_commit_id,
+                               issue_description=issue_description, issue_id=issue_id,
+                               path=ISSUE_CONFIG_PATH)
+    ctx = get_context()
+    ctx.issue_config = {
+        "repo_name": repo_name,
+        "base_commit_id": base_commit_id,
+        "issue_desc": issue_description,
+        "issue_id": issue_id,
     }
-    config_path = Path(ISSUE_CONFIG_PATH)
-    with config_path.open('w') as f:
-        json.dump(issue_config, f)
-    click.echo(f'🍀 Issue configuration saved to {ISSUE_CONFIG_PATH}\n')
+
+    click.echo(f'🍀 Issue configuration saved\n')
 
 
 @click.command(name="solve", help="👷 Start solving the configured issue")
 def solve():
     """Start solving the configured issue."""
-    git_access_token = os.environ.get(KEY_GIT_ACCESS_TOKEN)
-    if not git_access_token or not git_access_token.strip():
-        click.echo(f"❗ Error: {KEY_GIT_ACCESS_TOKEN} is not set in the environment.\n")
-        click.echo(f"🔑 Please export your GIT access token: {KEY_GIT_ACCESS_TOKEN} and try again !\n")
-        return
+    ctx = get_context()
+    issue_config = ctx.issue_config
+    model_env = ctx.model_env
 
-    config_path = Path(ISSUE_CONFIG_PATH)
-    with config_path.open('r') as f:
-        issue_config = json.load(f)
-
-    click.echo(f"ℹ️ Starting issue solving with the following configuration: {json.dumps(issue_config, indent=4)}\n")
+    click.echo(f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n")
 
     args = CoderAgentArgs(
-        repo_name=issue_config['repo_name'],
         agent_output_dir="./",
-        issue_config={
-            "issue_id": issue_config["issue_id"],
-            "base_commit_id": issue_config["base_commit_id"],
-            "issue_description": issue_config["issue_description"],
-        }
+        issue_config=ctx.issue_config,
+        model_env_config=ctx.model_env,
+        agent_logs_dir=ctx.agent_logs_dir,
     )
     coder_agent = CoderAgent(args)
     coder_agent.run()

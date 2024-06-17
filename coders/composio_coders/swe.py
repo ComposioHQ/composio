@@ -11,16 +11,9 @@ import logging
 from rich.logging import RichHandler
 import langchain_core
 
-MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
-ISSUE_CONFIG_PATH = ".composio.coder.issue_config"
+from composio_coders.config_store import IssueConfig, ModelEnvConfig
+from composio_coders.constants import MODEL_ENV_OPENAI, MODEL_ENV_AZURE
 
-# model_env settings
-KEY_AZURE_ENDPOINT = "AZURE_ENDPOINT"
-KEY_ENDPOINT_URL = "endpoint_url"
-KEY_GIT_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
-KEY_API_KEY = "api_key"
-MODEL_ENV_AZURE ="azure"
-MODEL_ENV_OPENAI = "openai"
 
 script_path = Path(__file__)
 script_dir = script_path.parent
@@ -59,8 +52,6 @@ ISSUE_DESC_TMPL = '''
   `pip install pandas`
 '''
 
-curr_script_path = Path(__file__).resolve()
-script_dir = curr_script_path.parent
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
 
@@ -78,33 +69,24 @@ def setup_logger():
 logger = setup_logger()
 
 
-class IssueConfig(BaseModel):
-    issue_id: str = Field(..., description="git issue id that agent is solving")
-    base_commit_id: str = Field(..., description="base commit id for which issue needs to be fixed")
-    issue_description: str = Field(..., description="description of the issue")
-
-
 class CoderAgentArgs(BaseModel):
-    repo_name: str = Field(..., description="repo name in which agent has to work")
     agent_output_dir: str = Field(..., description="task output directory for storing agent-chat logs,"
                                                    " task-logs, testbed etc")
     agent_backstory_tmpl: str = Field(default=AGENT_BACKSTORY_TMPL,
                                       description="backstory template for the agent to work on")
     issue_description_tmpl: str = Field(default=ISSUE_DESC_TMPL)
     issue_config: IssueConfig = Field(..., description="issue config, with issue description, repo-name")
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.issue_config = IssueConfig(**data.get("issue_config", {}))  # Initialize IssueConfig here
+    model_env_config: ModelEnvConfig = Field(..., description="llm configs like api_key, endpoint_url etc to intialize llm")
+    agent_logs_dir: Path = Field(..., description="logs for agent")
 
 
 class CoderAgent:
     def __init__(self, args: CoderAgentArgs):
         # initialize logs and history logs path
         self.args = args
-        self.model_env = {}
+        self.model_env = args.model_env_config
         self.issue_config = args.issue_config
-        self.repo_name = args.repo_name
+        self.repo_name = self.issue_config.repo_name
         if not self.issue_config.issue_id:
             raise ValueError("no git-issue configuration is found")
 
@@ -122,19 +104,11 @@ class CoderAgent:
         # initialize logger
         self.logger = logger
         # initialize agent logs and history dict
-        self.task_output_logs = ""
+        self.agent_logs_dir = args.agent_logs_dir
+        self.task_output_logs = self.agent_logs_dir / Path(AGENT_LOGS_JSON_PATH+datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         self.agent_logs = {}
         self.agent_history = {}
         self.current_logs = []
-        self.setup_logs_path(args.agent_output_dir)
-
-    def setup_logs_path(self, agent_output_dir_path):
-
-        task_output_dir = script_dir / Path(agent_output_dir_path) / Path(
-            LOGS_DIR_NAME_PREFIX + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-        self.task_output_logs = task_output_dir / Path(AGENT_LOGS_JSON_PATH)
-        if not os.path.exists(task_output_dir):
-            os.makedirs(task_output_dir)
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
@@ -159,20 +133,12 @@ class CoderAgent:
             self.logger.info("type is not list: %s", type(step_output))
 
     def get_llm(self):
-        # get model_env config from path 
-        try:
-            model_env_path = config_dir / Path(MODEL_ENV_CONFIG_PATH)
-            with open(model_env_path, "r") as f:
-                self.model_env = json.load(f)
-        except FileNotFoundError:
-            self.logger.info("Model environment configuration file not found.")
-
-        if self.model_env.get("model_env") == "openai":
-            openai_key = self.model_env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if self.model_env.model_env == MODEL_ENV_OPENAI:
+            openai_key = self.model_env.api_key
             return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
-        elif self.model_env.get("model_env") == "azure":
-            azure_endpoint = self.model_env.get("") or os.environ.get(KEY_AZURE_ENDPOINT)
-            azure_key = self.model_env.get("api_key") or os.environ.get("AZURE_KEY")
+        elif self.model_env.model_env == MODEL_ENV_AZURE:
+            azure_endpoint = self.model_env.endpoint_url
+            azure_key = self.model_env.api_key
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,
                 api_key=azure_key,
@@ -188,10 +154,10 @@ class CoderAgent:
         llm = self.get_llm()
 
         self.logger.info(f"starting agent for issue-id: {self.issue_config.issue_id}\n"
-                         f"issue-description: {self.issue_config.issue_description}\n"
+                         f"issue-description: {self.issue_config.issue_desc}\n"
                          f"repo_name: {self.repo_name}\n")
 
-        issue_added_instruction = self.issue_description_tmpl.format(issue=self.issue_config.issue_description,
+        issue_added_instruction = self.issue_description_tmpl.format(issue=self.issue_config.issue_desc,
                                                                      issue_id=self.issue_config.issue_id)
         backstory_added_instruction = self.agent_backstory_tmpl.format(repo_name=self.repo_name,
                                                                        base_commit=self.issue_config.base_commit_id)
