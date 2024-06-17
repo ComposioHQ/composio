@@ -10,17 +10,32 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
+from composio_coders.config_store import (
+    AzureModelConfig,
+    IssueConfig,
+    ModelEnvConfig,
+    OpenAiModelConfig,
+)
+from composio_coders.constants import (
+    ISSUE_CONFIG_PATH,
+    KEY_API_KEY,
+    KEY_AZURE_ENDPOINT,
+    KEY_MODEL_ENV,
+    LOCAL_CACHE_DIRECTORY_NAME,
+    LOGS_DIR,
+    MODEL_ENV_AZURE,
+    MODEL_ENV_OPENAI,
+    MODEL_ENV_PATH,
+)
 from rich.console import Console
 
-from composio_coders.constants import LOCAL_CACHE_DIRECTORY_NAME, MODEL_ENV_PATH, ISSUE_CONFIG_PATH
-from composio_coders.config_store import ModelEnvConfig, IssueConfig, OpenAiModelConfig, AzureModelConfig
-from composio_coders.constants import KEY_MODEL_ENV, MODEL_ENV_AZURE, MODEL_ENV_OPENAI, KEY_AZURE_ENDPOINT, KEY_API_KEY, LOGS_DIR
 
 _context: t.Optional["Context"] = None
 
 
 class Context:
     """Context for composio-coder"""
+
     _cache_dir: t.Optional[Path] = None
     _console: t.Optional[Console] = None
     _model_env: t.Optional[ModelEnvConfig] = None
@@ -66,19 +81,27 @@ class Context:
         return self._model_env
 
     @model_env.setter
-    def model_env(self, config: t.Dict)-> None:
+    def model_env(self, config: t.Dict) -> None:
         path = self.cache_dir / MODEL_ENV_PATH
         model_config: t.Optional[ModelEnvConfig] = None
         if config.get(KEY_MODEL_ENV) == MODEL_ENV_OPENAI:
-            model_config = OpenAiModelConfig(path=path, model_env=MODEL_ENV_OPENAI, api_key=config[KEY_API_KEY])
+            model_config = OpenAiModelConfig(
+                path=path, model_env=MODEL_ENV_OPENAI, api_key=config[KEY_API_KEY]
+            )
         elif config.get(KEY_MODEL_ENV) == MODEL_ENV_AZURE:
-            model_config = AzureModelConfig(path=path, model_env=MODEL_ENV_AZURE, api_key=config[KEY_API_KEY],
-                                            KEY_AZURE_ENDPOINT=config[KEY_AZURE_ENDPOINT])
+            model_config = AzureModelConfig(
+                path=path,
+                model_env=MODEL_ENV_AZURE,
+                api_key=config[KEY_API_KEY],
+                KEY_AZURE_ENDPOINT=config[KEY_AZURE_ENDPOINT],
+            )
         else:
-            raise ValueError(f"only these llms are supported {MODEL_ENV_OPENAI} and {MODEL_ENV_AZURE}")
+            raise ValueError(
+                f"only these llms are supported {MODEL_ENV_OPENAI} and {MODEL_ENV_AZURE}"
+            )
         self._model_env = model_config
         self._model_env.store()
-    
+
     @property
     def issue_config(self) -> IssueConfig:
         """Get the issue configuration, loading it if not already loaded."""
@@ -95,13 +118,16 @@ class Context:
     def issue_config(self, config: t.Dict) -> None:
         """Set Issue configuration."""
         path = self.cache_dir / ISSUE_CONFIG_PATH
-        issue_config = IssueConfig(path=path, repo_name=config["repo_name"],
-                                   repo_init_from="", issue_id=config["issue_id"],
-                                   base_commit_id=config["base_commit_id"],
-                                   issue_desc=config["issue_desc"])
+        issue_config = IssueConfig(
+            path=path,
+            repo_name=config["repo_name"],
+            repo_init_from="",
+            issue_id=config["issue_id"],
+            base_commit_id=config["base_commit_id"],
+            issue_desc=config["issue_desc"],
+        )
         self._issue_config = issue_config
         self._issue_config.store()
-        
 
 
 R = t.TypeVar("R")
