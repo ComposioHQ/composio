@@ -107,7 +107,7 @@ class ComposioToolset(BaseComposioToolSet):
                     ),
                 ).model_dump()
             )
-            for schema in self.client.actions.get(actions=actions)
+            for schema in self.get_action_schemas(actions=actions)
         ]
 
     def get_tools(
@@ -133,7 +133,7 @@ class ComposioToolset(BaseComposioToolSet):
                     ),
                 ).model_dump()
             )
-            for schema in self.client.actions.get(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(apps=apps, tags=tags)
         ]
 
     def execute_tool_call(

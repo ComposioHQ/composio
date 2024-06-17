@@ -365,6 +365,15 @@ class Tag(tuple, Enum):
     SPOTIFY_SHOWS = ("spotify", "Shows")
     SPOTIFY_TRACKS = ("spotify", "Tracks")
     SPOTIFY_USERS = ("spotify", "Users")
+    STRAVA_ACTIVITIES = ("strava", "Activities")
+    STRAVA_ATHLETES = ("strava", "Athletes")
+    STRAVA_CLUBS = ("strava", "Clubs")
+    STRAVA_GEARS = ("strava", "Gears")
+    STRAVA_ROUTES = ("strava", "Routes")
+    STRAVA_SEGMENTEFFORTS = ("strava", "SegmentEfforts")
+    STRAVA_SEGMENTS = ("strava", "Segments")
+    STRAVA_STREAMS = ("strava", "Streams")
+    STRAVA_UPLOADS = ("strava", "Uploads")
     TASKADE_AGENT = ("taskade", "Agent")
     TASKADE_FOLDER = ("taskade", "Folder")
     TASKADE_ME = ("taskade", "Me")
@@ -453,6 +462,7 @@ class App(str, Enum):
     GOOGLEMEET = "googlemeet"
     GOOGLESHEETS = "googlesheets"
     GOOGLETASKS = "googletasks"
+    HACKERNEWS = "hackernews"
     HEROKU = "heroku"
     INDUCEDAI = "inducedai"
     LINEAR = "linear"
@@ -471,6 +481,7 @@ class App(str, Enum):
     SOUNDCLOUD = "soundcloud"
     SPLITWISE = "splitwise"
     SPOTIFY = "spotify"
+    STRAVA = "strava"
     TASKADE = "taskade"
     TAVILY = "tavily"
     TRELLO = "trello"
@@ -479,6 +490,7 @@ class App(str, Enum):
     WEATHERMAP = "weathermap"
     WHATSAPP = "whatsapp"
     WORKABLE = "workable"
+    YOUSEARCH = "yousearch"
     YOUTUBE = "youtube"
     ZENDESK = "zendesk"
     ZOOM = "zoom"
@@ -7190,15 +7202,18 @@ class Action(tuple, Enum):
     GMAIL_ADD_LABEL_TO_EMAIL = ("gmail", "gmail_add_label_to_email", False)
     GMAIL_CREATE_EMAIL_DRAFT = ("gmail", "gmail_create_email_draft", False)
     GMAIL_FETCH_EMAILS_WITH_LABEL = ("gmail", "gmail_fetch_emails_with_label", False)
-    GMAIL_GET_MESSAGE = ("gmail", "gmail_get_message", False)
-    GMAIL_GET_THREAD_DETAILS_WITH_MESSAGES = (
+    GMAIL_FETCH_LAST_THREE_MESSAGES = (
         "gmail",
-        "gmail_get_thread_details_with_messages",
+        "gmail_fetch_last_three_messages",
         False,
     )
+    GMAIL_FETCH_MESSAGE_BY_THREAD_ID = (
+        "gmail",
+        "gmail_fetch_message_by_thread_id",
+        False,
+    )
+    GMAIL_FIND_EMAIL_ID = ("gmail", "gmail_find_email_id", False)
     GMAIL_LIST_LABELS = ("gmail", "gmail_list_labels", False)
-    GMAIL_LIST_MESSAGES_IN_INBOX = ("gmail", "gmail_list_messages_in_inbox", False)
-    GMAIL_LIST_THREADS = ("gmail", "gmail_list_threads", False)
     GMAIL_REPLY_TO_THREAD = ("gmail", "gmail_reply_to_thread", False)
     GMAIL_SEND_EMAIL = ("gmail", "gmail_send_email", False)
     GOOGLECALENDAR_CREATE_GOOGLE_EVENT = (
@@ -7337,6 +7352,8 @@ class Action(tuple, Enum):
     GOOGLETASKS_LIST_TASK_LISTS = ("googletasks", "googletasks_list_task_lists", False)
     GOOGLETASKS_PATCH_TASK = ("googletasks", "googletasks_patch_task", False)
     GOOGLETASKS_PATCH_TASK_LIST = ("googletasks", "googletasks_patch_task_list", False)
+    HACKERNEWS_GET_FRONTPAGE = ("hackernews", "hackernews_get_frontpage", True)
+    HACKERNEWS_GET_TODAYS_POSTS = ("hackernews", "hackernews_get_todays_posts", True)
     HEROKU_CREATE_HEROKU_APP = ("heroku", "heroku_create_heroku_app", False)
     HEROKU_DELETE_HEROKU_APP = ("heroku", "heroku_delete_heroku_app", False)
     HEROKU_GET_ACCOUNT_DELINQUENCY_INFO = (
@@ -11269,50 +11286,167 @@ class Action(tuple, Enum):
         "spotify_upload_custom_playlist_cover",
         False,
     )
-    TASKADE_AGENT_PUBLIC_ACCESS_ENABLE = (
-        "taskade",
-        "taskade_agent_public_access_enable",
+    STRAVA_CREATE_ACTIVITY = ("strava", "strava_create_activity", False)
+    STRAVA_CREATE_UPLOAD = ("strava", "strava_create_upload", False)
+    STRAVA_EXPLORE_SEGMENTS = ("strava", "strava_explore_segments", False)
+    STRAVA_GET_ACTIVITY_BY_ID = ("strava", "strava_get_activity_by_id", False)
+    STRAVA_GET_ACTIVITY_STREAMS = ("strava", "strava_get_activity_streams", False)
+    STRAVA_GET_CLUB_ACTIVITIES_BY_ID = (
+        "strava",
+        "strava_get_club_activities_by_id",
         False,
     )
-    TASKADE_FOLDER_CREATE_AGENT = ("taskade", "taskade_folder_create_agent", False)
-    TASKADE_FOLDER_PROJECTS_GET = ("taskade", "taskade_folder_projects_get", False)
-    TASKADE_ME_PROJECTS_GET = ("taskade", "taskade_me_projects_get", False)
-    TASKADE_PROJECT_COPY = ("taskade", "taskade_project_copy", False)
-    TASKADE_PROJECT_CREATE = ("taskade", "taskade_project_create", False)
-    TASKADE_PROJECT_SHARE_LINK_ENABLE = (
-        "taskade",
-        "taskade_project_share_link_enable",
+    STRAVA_GET_CLUB_ADMINS_BY_ID = ("strava", "strava_get_club_admins_by_id", False)
+    STRAVA_GET_CLUB_BY_ID = ("strava", "strava_get_club_by_id", False)
+    STRAVA_GET_CLUB_MEMBERS_BY_ID = ("strava", "strava_get_club_members_by_id", False)
+    STRAVA_GET_COMMENTS_BY_ACTIVITY_ID = (
+        "strava",
+        "strava_get_comments_by_activity_id",
         False,
     )
-    TASKADE_PROJECT_SHARE_LINK_GET = (
-        "taskade",
-        "taskade_project_share_link_get",
+    STRAVA_GET_EFFORTS_BY_SEGMENT_ID = (
+        "strava",
+        "strava_get_efforts_by_segment_id",
         False,
     )
-    TASKADE_PROJECT_TASKS_GET = ("taskade", "taskade_project_tasks_get", False)
-    TASKADE_TASK_COMPLETE = ("taskade", "taskade_task_complete", False)
-    TASKADE_TASK_CREATE = ("taskade", "taskade_task_create", False)
-    TASKADE_TASK_DELETE = ("taskade", "taskade_task_delete", False)
-    TASKADE_TASK_DELETE_ASSIGN_EES = (
-        "taskade",
-        "taskade_task_delete_assign_ees",
+    STRAVA_GET_GEAR_BY_ID = ("strava", "strava_get_gear_by_id", False)
+    STRAVA_GET_KU_DOERS_BY_ACTIVITY_ID = (
+        "strava",
+        "strava_get_ku_doers_by_activity_id",
         False,
     )
-    TASKADE_TASK_DELETE_DATE = ("taskade", "taskade_task_delete_date", False)
-    TASKADE_TASK_GET = ("taskade", "taskade_task_get", False)
-    TASKADE_TASK_PUT_ASSIGN_EES = ("taskade", "taskade_task_put_assign_ees", False)
-    TASKADE_TASK_PUT_DATE = ("taskade", "taskade_task_put_date", False)
-    TASKADE_WORK_SPACE_CREATE_PROJECT = (
-        "taskade",
-        "taskade_work_space_create_project",
+    STRAVA_GET_LAPS_BY_ACTIVITY_ID = ("strava", "strava_get_laps_by_activity_id", False)
+    STRAVA_GET_LOGGED_IN_ATHLETE = ("strava", "strava_get_logged_in_athlete", False)
+    STRAVA_GET_LOGGED_IN_ATHLETE_ACTIVITIES = (
+        "strava",
+        "strava_get_logged_in_athlete_activities",
         False,
     )
-    TASKADE_WORK_SPACE_FOLDERS_GET = (
-        "taskade",
-        "taskade_work_space_folders_get",
+    STRAVA_GET_LOGGED_IN_ATHLETE_CLUBS = (
+        "strava",
+        "strava_get_logged_in_athlete_clubs",
         False,
     )
-    TASKADE_WORK_SPACES_GET = ("taskade", "taskade_work_spaces_get", False)
+    STRAVA_GET_LOGGED_IN_ATHLETE_STARRED_SEGMENTS = (
+        "strava",
+        "strava_get_logged_in_athlete_starred_segments",
+        False,
+    )
+    STRAVA_GET_LOGGED_IN_ATHLETE_ZONES = (
+        "strava",
+        "strava_get_logged_in_athlete_zones",
+        False,
+    )
+    STRAVA_GET_ROUT_EAST_CX = ("strava", "strava_get_rout_east_cx", False)
+    STRAVA_GET_ROUTE_ASG_PX = ("strava", "strava_get_route_asg_px", False)
+    STRAVA_GET_ROUTE_BY_ID = ("strava", "strava_get_route_by_id", False)
+    STRAVA_GET_ROUTE_STREAMS = ("strava", "strava_get_route_streams", False)
+    STRAVA_GET_ROUTES_BY_ATHLETE_ID = (
+        "strava",
+        "strava_get_routes_by_athlete_id",
+        False,
+    )
+    STRAVA_GET_SEGMENT_BY_ID = ("strava", "strava_get_segment_by_id", False)
+    STRAVA_GET_SEGMENT_EFFORT_BY_ID = (
+        "strava",
+        "strava_get_segment_effort_by_id",
+        False,
+    )
+    STRAVA_GET_SEGMENT_EFFORT_STREAMS = (
+        "strava",
+        "strava_get_segment_effort_streams",
+        False,
+    )
+    STRAVA_GET_SEGMENT_STREAMS = ("strava", "strava_get_segment_streams", False)
+    STRAVA_GET_STATS = ("strava", "strava_get_stats", False)
+    STRAVA_GET_UPLOAD_BY_ID = ("strava", "strava_get_upload_by_id", False)
+    STRAVA_GET_ZONES_BY_ACTIVITY_ID = (
+        "strava",
+        "strava_get_zones_by_activity_id",
+        False,
+    )
+    STRAVA_STAR_SEGMENT = ("strava", "strava_star_segment", False)
+    STRAVA_UPDATE_ACTIVITY_BY_ID = ("strava", "strava_update_activity_by_id", False)
+    STRAVA_UPDATE_LOGGED_IN_ATHLETE = (
+        "strava",
+        "strava_update_logged_in_athlete",
+        False,
+    )
+    TASKADE_COMPLETE_TASK_IN_PROJECT = (
+        "taskade",
+        "taskade_complete_task_in_project",
+        False,
+    )
+    TASKADE_COPY_PROJECT_TO_FOLDER = (
+        "taskade",
+        "taskade_copy_project_to_folder",
+        False,
+    )
+    TASKADE_CREATE_PROJECT_IN_WORKSPACE = (
+        "taskade",
+        "taskade_create_project_in_workspace",
+        False,
+    )
+    TASKADE_CREATE_PROJECTIN_FOLDER = (
+        "taskade",
+        "taskade_create_projectin_folder",
+        False,
+    )
+    TASKADE_CREATE_TASK_IN_PROJECT = (
+        "taskade",
+        "taskade_create_task_in_project",
+        False,
+    )
+    TASKADE_CREATE_UPDATE_DATE_FOR_TASK = (
+        "taskade",
+        "taskade_create_update_date_for_task",
+        False,
+    )
+    TASKADE_DELETE_TASK_OFA_TASK = ("taskade", "taskade_delete_task_ofa_task", False)
+    TASKADE_DELETE_TASK_PROJECT = ("taskade", "taskade_delete_task_project", False)
+    TASKADE_ENABLE_PUBLIC_ACCESS_AGENT = (
+        "taskade",
+        "taskade_enable_public_access_agent",
+        False,
+    )
+    TASKADE_ENABLE_SHARE_LINK_IN_PROJECT = (
+        "taskade",
+        "taskade_enable_share_link_in_project",
+        False,
+    )
+    TASKADE_GET_ALL_FOLDERS_FOR_WORKSPACE = (
+        "taskade",
+        "taskade_get_all_folders_for_workspace",
+        False,
+    )
+    TASKADE_GET_ALL_PROJECTS_MINE = ("taskade", "taskade_get_all_projects_mine", False)
+    TASKADE_GET_ALL_PROJECTSIN_FOLDER = (
+        "taskade",
+        "taskade_get_all_projectsin_folder",
+        False,
+    )
+    TASKADE_GET_ALL_TASKS_FOR_PROJECT = (
+        "taskade",
+        "taskade_get_all_tasks_for_project",
+        False,
+    )
+    TASKADE_GET_ALL_WORKSPACES_FOR_USER = (
+        "taskade",
+        "taskade_get_all_workspaces_for_user",
+        False,
+    )
+    TASKADE_GET_SHARE_LINK_FOR_PROJECT = (
+        "taskade",
+        "taskade_get_share_link_for_project",
+        False,
+    )
+    TASKADE_GET_TASK_WITH_ID = ("taskade", "taskade_get_task_with_id", False)
+    TASKADE_REMOVE_ASSIGNEE_FROM_TASK = (
+        "taskade",
+        "taskade_remove_assignee_from_task",
+        False,
+    )
+    TASKADE_TASK_ASSIGNMENT = ("taskade", "taskade_task_assignment", False)
     TAVILY_TAVILY_SEARCH = ("tavily", "tavily_tavily_search", False)
     TRELLO_ACTION_GET_BOARD_BY_ID_ACTION = (
         "trello",
@@ -12938,6 +13072,7 @@ class Action(tuple, Enum):
         "workable_workable_account_access_action",
         False,
     )
+    YOUSEARCH_SEARCH = ("yousearch", "yousearch_search", True)
     YOUTUBE_LIST_CAPTION_TRACK = ("youtube", "youtube_list_caption_track", False)
     YOUTUBE_LIST_CHANNEL_VIDEOS = ("youtube", "youtube_list_channel_videos", False)
     YOUTUBE_LIST_USER_PLAYLISTS = ("youtube", "youtube_list_user_playlists", False)
