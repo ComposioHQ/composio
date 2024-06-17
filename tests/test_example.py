@@ -54,9 +54,7 @@ EXAMPLES = (
                 '{"execution_details": {"executed": true}, "response_data": 11962.560439560439}'
             ],
         },
-        "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY
-        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
 )
 
@@ -85,7 +83,9 @@ def test_example(example: dict) -> None:
     proc.wait(timeout=120)
 
     # Check if process exited with success
-    assert proc.returncode == 0, t.cast(t.IO[bytes], proc.stderr).read().decode(encoding="utf-8")
+    assert proc.returncode == 0, (
+        t.cast(t.IO[bytes], proc.stderr).read().decode(encoding="utf-8")
+    )
 
     # Validate output
     output = (
