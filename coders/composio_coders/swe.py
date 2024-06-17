@@ -14,6 +14,14 @@ import langchain_core
 MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
 ISSUE_CONFIG_PATH = ".composio.coder.issue_config"
 
+# model_env settings
+KEY_AZURE_ENDPOINT = "AZURE_ENDPOINT"
+KEY_ENDPOINT_URL = "endpoint_url"
+KEY_GIT_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
+KEY_API_KEY = "api_key"
+MODEL_ENV_AZURE ="azure"
+MODEL_ENV_OPENAI = "openai"
+
 script_path = Path(__file__)
 script_dir = script_path.parent
 config_dir = script_dir / Path("../")
@@ -161,9 +169,9 @@ class CoderAgent:
 
         if self.model_env.get("model_env") == "openai":
             openai_key = self.model_env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-            return ChatOpenAI(model="gpt-4-turbo", OPENAI_API_KEY=openai_key)
+            return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
         elif self.model_env.get("model_env") == "azure":
-            azure_endpoint = self.model_env.get("endpoint_url") or os.environ.get("AZURE_ENDPOINT")
+            azure_endpoint = self.model_env.get("") or os.environ.get(KEY_AZURE_ENDPOINT)
             azure_key = self.model_env.get("api_key") or os.environ.get("AZURE_KEY")
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,
