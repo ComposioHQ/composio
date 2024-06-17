@@ -1,25 +1,25 @@
-import os
-import json
 import datetime
-import git
+import json
+import logging
+import os
 from pathlib import Path
-from pydantic import BaseModel, Field
-from composio_crewai import ComposioToolSet, App
+
+import git
+import langchain_core
+from composio_coders.config_store import IssueConfig, ModelEnvConfig
+from composio_coders.constants import MODEL_ENV_AZURE, MODEL_ENV_OPENAI
+from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-import logging
+from pydantic import BaseModel, Field
 from rich.logging import RichHandler
-import langchain_core
-
-from composio_coders.config_store import IssueConfig, ModelEnvConfig
-from composio_coders.constants import MODEL_ENV_OPENAI, MODEL_ENV_AZURE
 
 
 script_path = Path(__file__)
 script_dir = script_path.parent
 config_dir = script_dir / Path("../")
 
-AGENT_BACKSTORY_TMPL = '''
+AGENT_BACKSTORY_TMPL = """
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
   Your mentor gave you following tips.
   1. Always start by initializing the workspace.
@@ -37,8 +37,8 @@ You are an autonomous programmer, your task is to solve the issue given in task 
   8. Always make sure to look at the currently open file and the current working directory (which appears right after the currently open file). The currently open file might be in a different directory than the working directory! Note that some commands, such as 'create', open files, so they might change the current  open file.
   9. When editing files, it is easy to accidentally specify a wrong line number or to write code with incorrect indentation. Always check the code after you issue an edit to make sure that it reflects what you wanted to accomplish. If it didn't, issue another command to fix it.
   10. When you finish working on the issue, use submit patch tool to submit your patch.
-'''
-ISSUE_DESC_TMPL = '''
+"""
+ISSUE_DESC_TMPL = """
  We're currently solving the following issue within our repository. Here's the issue text:
     ISSUE_ID:
     {issue_id}
@@ -50,7 +50,7 @@ ISSUE_DESC_TMPL = '''
 
   If you are facing "module not found error", you can install dependencies. Example: in case error is "pandas not found", install pandas like this
   `pip install pandas`
-'''
+"""
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -70,13 +70,22 @@ logger = setup_logger()
 
 
 class CoderAgentArgs(BaseModel):
-    agent_output_dir: str = Field(..., description="task output directory for storing agent-chat logs,"
-                                                   " task-logs, testbed etc")
-    agent_backstory_tmpl: str = Field(default=AGENT_BACKSTORY_TMPL,
-                                      description="backstory template for the agent to work on")
+    agent_output_dir: str = Field(
+        ...,
+        description="task output directory for storing agent-chat logs,"
+        " task-logs, testbed etc",
+    )
+    agent_backstory_tmpl: str = Field(
+        default=AGENT_BACKSTORY_TMPL,
+        description="backstory template for the agent to work on",
+    )
     issue_description_tmpl: str = Field(default=ISSUE_DESC_TMPL)
-    issue_config: IssueConfig = Field(..., description="issue config, with issue description, repo-name")
-    model_env_config: ModelEnvConfig = Field(..., description="llm configs like api_key, endpoint_url etc to intialize llm")
+    issue_config: IssueConfig = Field(
+        ..., description="issue config, with issue description, repo-name"
+    )
+    model_env_config: ModelEnvConfig = Field(
+        ..., description="llm configs like api_key, endpoint_url etc to intialize llm"
+    )
     agent_logs_dir: Path = Field(..., description="logs for agent")
 
 
@@ -92,9 +101,13 @@ class CoderAgent:
 
         # initialize composio toolset
         tool_set = ComposioToolSet()
-        self.composio_toolset = tool_set.get_tools(apps=[App.LOCALWORKSPACE,
-                                                         App.CMDMANAGERTOOL,
-                                                         App.HISTORYKEEPER,])
+        self.composio_toolset = tool_set.get_tools(
+            apps=[
+                App.LOCALWORKSPACE,
+                App.CMDMANAGERTOOL,
+                App.HISTORYKEEPER,
+            ]
+        )
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
         self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working."
@@ -105,7 +118,9 @@ class CoderAgent:
         self.logger = logger
         # initialize agent logs and history dict
         self.agent_logs_dir = args.agent_logs_dir
-        self.task_output_logs = self.agent_logs_dir / Path(AGENT_LOGS_JSON_PATH+datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
+        self.task_output_logs = self.agent_logs_dir / Path(
+            AGENT_LOGS_JSON_PATH + datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        )
         self.agent_logs = {}
         self.agent_history = {}
         self.current_logs = []
@@ -117,18 +132,30 @@ class CoderAgent:
 
     def add_in_logs(self, step_output):
         if isinstance(step_output, langchain_core.agents.AgentFinish):
-            self.current_logs.append({
-                "agent_action": "agent_finish",
-                "agent_output": step_output.return_values,
-            })
+            self.current_logs.append(
+                {
+                    "agent_action": "agent_finish",
+                    "agent_output": step_output.return_values,
+                }
+            )
         if isinstance(step_output, list) and step_output:
             agent_action_with_tool_out = step_output[0]
-            if isinstance(agent_action_with_tool_out[0], langchain_core.agents.AgentAction):
+            if isinstance(
+                agent_action_with_tool_out[0], langchain_core.agents.AgentAction
+            ):
                 agent_action = agent_action_with_tool_out[0]
-                tool_out = agent_action_with_tool_out[1] if len(agent_action_with_tool_out) > 1 else None
-                self.current_logs.append({"agent_action": agent_action.json(), "tool_output": tool_out})
+                tool_out = (
+                    agent_action_with_tool_out[1]
+                    if len(agent_action_with_tool_out) > 1
+                    else None
+                )
+                self.current_logs.append(
+                    {"agent_action": agent_action.json(), "tool_output": tool_out}
+                )
             else:
-                self.logger.info("type of step_output: %s", type(agent_action_with_tool_out[0]))
+                self.logger.info(
+                    "type of step_output: %s", type(agent_action_with_tool_out[0])
+                )
         else:
             self.logger.info("type is not list: %s", type(step_output))
 
@@ -153,14 +180,18 @@ class CoderAgent:
     def run(self):
         llm = self.get_llm()
 
-        self.logger.info(f"starting agent for issue-id: {self.issue_config.issue_id}\n"
-                         f"issue-description: {self.issue_config.issue_desc}\n"
-                         f"repo_name: {self.repo_name}\n")
+        self.logger.info(
+            f"starting agent for issue-id: {self.issue_config.issue_id}\n"
+            f"issue-description: {self.issue_config.issue_desc}\n"
+            f"repo_name: {self.repo_name}\n"
+        )
 
-        issue_added_instruction = self.issue_description_tmpl.format(issue=self.issue_config.issue_desc,
-                                                                     issue_id=self.issue_config.issue_id)
-        backstory_added_instruction = self.agent_backstory_tmpl.format(repo_name=self.repo_name,
-                                                                       base_commit=self.issue_config.base_commit_id)
+        issue_added_instruction = self.issue_description_tmpl.format(
+            issue=self.issue_config.issue_desc, issue_id=self.issue_config.issue_id
+        )
+        backstory_added_instruction = self.agent_backstory_tmpl.format(
+            repo_name=self.repo_name, base_commit=self.issue_config.base_commit_id
+        )
         swe_agent = Agent(
             role=self.agent_role,
             goal=self.agent_goal,
@@ -184,18 +215,17 @@ class CoderAgent:
 
 if __name__ == "__main__":
     config_path = config_dir / Path(ISSUE_CONFIG_PATH)
-    with config_path.open('r') as f:
+    with config_path.open("r") as f:
         issue_config = json.load(f)
 
     args = CoderAgentArgs(
-        repo_name=issue_config['repo_name'],
+        repo_name=issue_config["repo_name"],
         agent_output_dir="./",
         issue_config={
             "issue_id": issue_config["issue_id"],
             "base_commit_id": issue_config["base_commit_id"],
             "issue_description": issue_config["issue_description"],
-        }
+        },
     )
     c_agent = CoderAgent(args)
     c_agent.run()
-
