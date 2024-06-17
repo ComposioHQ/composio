@@ -5,8 +5,7 @@ ISSUE_CONFIG_PATH = "issue_config"
 LOGS_DIR = "logs"
 
 # model_env settings
-KEY_AZURE_ENDPOINT = "AZURE_ENDPOINT"
-KEY_ENDPOINT_URL = "endpoint_url"
+KEY_AZURE_ENDPOINT = "azure_endpoint"
 KEY_GIT_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
 KEY_API_KEY = "api_key"
 KEY_MODEL_ENV = "model_env"

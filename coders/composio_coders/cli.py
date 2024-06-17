@@ -122,21 +122,19 @@ def solve():
 
 
 @click.command(
-    name="workflow", help="📋 Run the workflow: setup -> add_issue -> solve -> reset"
+    name="workflow", help="📋 Show the workflow: setup -> add_issue -> solve"
 )
 @click.help_option("--help", "-h", "-help")
 def show_workflow():
     # Add the workflow description
-    click.echo("\nWorkflow:\n")
-    click.echo("  1. setup: 🔑 Setup model configuration in the current directory")
-    click.echo("  2. add_issue: ➕ Add an issue configuration to the current directory")
-    click.echo("  3. solve: 👷 Start solving the configured issue")
-    click.echo("  4. reset: Reset the composio coder")
+    click.echo("\nWorkflow:")
+    click.echo("  1. 🔑 setup: Setup model configuration in the current directory")
+    click.echo("  2. ➕ add_issue: Add an issue configuration to the current directory")
+    click.echo("  3. 👷 solve: Start solving the configured issue\n")
 
 
 # Add commands to the CLI group
 @click.group(name="composio-coder")
-@click.pass_context
 def cli(ctx) -> None:
     """Composio Coder CLI for managing the coding workspace and tasks."""
 
