@@ -33,19 +33,19 @@ EXAMPLES = (
             "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
         },
     },
-    # {
-    #     "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
-    #     "match": {
-    #         "type": "stdout",
-    #         "values": [
-    #             "{'execution_details': {'executed': True}, 'response_data': ''}",
-    #         ],
-    #     },
-    #     "env": {
-    #         "OPENAI_API_KEY": OPENAI_API_KEY,
-    #         "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
-    #     },
-    # },
+    {
+        "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}",
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+        },
+    },
     {
         "file": EXAMPLES / "local_tools" / "autogen_math.py",
         "match": {
