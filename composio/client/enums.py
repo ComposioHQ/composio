@@ -428,6 +428,7 @@ class App(str, Enum):
             "greptile",
             "sqltool",
             "filetool",
+            "submitpatchtool",
         ]
 
     APIFY = "apify"
