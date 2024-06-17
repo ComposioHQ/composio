@@ -4,6 +4,7 @@ from composio.core.local import Action, Tool
 
 from .actions.sql_query import SqlQuery
 
+
 class SqlTool(Tool):
     """
     This class enables us to execute sql queries in a database
