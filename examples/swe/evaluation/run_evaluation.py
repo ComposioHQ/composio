@@ -1,18 +1,18 @@
+import concurrent.futures
+import datetime
+import json
+import logging
 import os
+from pathlib import Path
 
 import langchain_core.agents
 import yaml
-import json
-import datetime
-from datasets import load_dataset
-from pathlib import Path
-from composio_crewai import ComposioToolSet, App
+from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
+from datasets import load_dataset
 from langchain_openai import AzureChatOpenAI
-import logging
-import concurrent.futures
-
 from rich.logging import RichHandler
+
 
 CONFIG_FILE_PATH = "./base_task_config.yaml"
 TASK_OUTPUT_PATH = "./task_output"
