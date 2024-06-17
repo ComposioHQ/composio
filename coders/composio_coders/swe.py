@@ -231,15 +231,18 @@ class CoderAgent:
 
 if __name__ == "__main__":
     from composio_coders.context import Context, set_context
+
     issue_config = {
         "repo_name": "test_repo",
         "issue_id": "123",
         "base_commit_id": "abc",
         "issue_desc": "Fix bug",
     }
-    model_env_config = {KEY_API_KEY: "142b9b40120a4eda89bac0f7b035a2b1",
-                        "azure_endpoint": "https://testingswedencentral.openai.azure.com/",
-                        "model_env": "azure"}
+    model_env_config = {
+        KEY_API_KEY: "test-api-key",
+        "azure_endpoint": "azure-end-point",
+        "model_env": "azure",
+    }
     ctx = Context()
     ctx.issue_config = issue_config
     ctx.model_env = model_env_config
