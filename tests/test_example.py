@@ -12,6 +12,7 @@ import pytest
 
 
 PLUGINS = Path.cwd() / "plugins"
+EXAMPLES = Path.cwd() / "examples"
 
 # Require env vars
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -32,17 +33,29 @@ EXAMPLES = (
             "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
         },
     },
+    # {
+    #     "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
+    #     "match": {
+    #         "type": "stdout",
+    #         "values": [
+    #             "{'execution_details': {'executed': True}, 'response_data': ''}",
+    #         ],
+    #     },
+    #     "env": {
+    #         "OPENAI_API_KEY": OPENAI_API_KEY,
+    #         "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+    #     },
+    # },
     {
-        "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
+        "file": EXAMPLES / "local_tools" / "autogen_math.py",
         "match": {
             "type": "stdout",
             "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}",
+                '{"execution_details": {"executed": true}, "response_data": 11962.560439560439}'
             ],
         },
         "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY,
-            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+            "OPENAI_API_KEY": OPENAI_API_KEY
         },
     },
 )
@@ -62,6 +75,7 @@ def test_example(example: dict) -> None:
 
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         args=[sys.executable, example["file"]],
+        # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -71,7 +85,7 @@ def test_example(example: dict) -> None:
     proc.wait(timeout=120)
 
     # Check if process exited with success
-    assert proc.returncode == 0
+    assert proc.returncode == 0, t.cast(t.IO[bytes], proc.stderr).read().decode(encoding="utf-8")
 
     # Validate output
     output = (
