@@ -25,7 +25,7 @@ from composio.storage.user import UserData
 class ComposioToolSet:
     """Composio toolset."""
 
-    _client: Composio
+    _remote_client: Composio
 
     def __init__(
         self,
@@ -41,6 +41,8 @@ class ComposioToolSet:
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param runtime: Name of the framework runtime, eg. openai, crewai...
+        :param output_in_file: Whether to output the result to a file.
+        :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
         """
         self._local_client = LocalToolHandler()
         if runtime is not None:
@@ -48,6 +50,7 @@ class ComposioToolSet:
 
         self.entity_id = entity_id
         self.output_in_file = output_in_file
+        self.base_url = base_url
         # Check check constructor aegument, environment variables and user data for the key
         try:
             self.api_key = (
@@ -58,21 +61,16 @@ class ComposioToolSet:
                 ).api_key
             )
         except FileNotFoundError:
-            return
-
-        if self.api_key is None:
-            return
-
-        self._client = Composio(
-            api_key=self.api_key,
-            base_url=base_url,
-        )
+            pass
 
     @property
     def client(self) -> Composio:
         if self.api_key is None:
             raise_api_key_missing()
-        return self._client
+        return Composio(
+            api_key=self.api_key,
+            base_url=self.base_url,
+        )
     
 
     @property
