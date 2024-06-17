@@ -1,10 +1,9 @@
 # Initialise imports
+# Import from composio_langchain
+from composio_langchain import Action, App, ComposioToolSet
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-
-# Import from composio_langchain
-from composio_langchain import Action, App, ComposioToolSet
 
 
 llm = ChatOpenAI(model="gpt-4-turbo")
