@@ -1,10 +1,8 @@
 import unittest
-from unittest.mock import patch
 
 import click.testing
 from click.testing import CliRunner
-from composio_coders.cli import add_issue, cli, reset, setup, show_workflow, solve
-from composio_coders.constants import KEY_MODEL_ENV, MODEL_ENV_AZURE, MODEL_ENV_OPENAI
+from composio_coders.cli import cli
 from composio_coders.context import Context
 
 
@@ -81,14 +79,6 @@ class TestCLI(unittest.TestCase):
             result = self.runner.invoke(cli, ["solve"])
             self.handle_exception(result)
             self.assertIn("Starting issue solving", result.output)
-            self.assertEqual(result.exit_code, 0)
-
-    def test_reset(self):
-        """Test the reset command."""
-        with self.runner.isolated_filesystem():
-            result = self.runner.invoke(cli, ["reset"], input="reset\n")
-            self.handle_exception(result)
-            self.assertIn("Reset complete", result.output)
             self.assertEqual(result.exit_code, 0)
 
     def test_show_workflow(self):

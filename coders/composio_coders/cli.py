@@ -1,17 +1,8 @@
-import json
 import os
-import typing as t
-from pathlib import Path
 from urllib.parse import urlparse
 
 import click
 import git
-from composio_coders.config_store import (
-    AzureModelConfig,
-    IssueConfig,
-    ModelEnvConfig,
-    OpenAiModelConfig,
-)
 from composio_coders.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
@@ -22,12 +13,6 @@ from composio_coders.constants import (
 )
 from composio_coders.context import get_context
 from composio_coders.swe import CoderAgent, CoderAgentArgs
-
-from composio.storage import LocalStorage
-
-
-MODEL_ENV_CONFIG_PATH = ".composio.coder.model_env"
-ISSUE_CONFIG_PATH = ".composio.coder.issue_config"
 
 
 def get_git_root():
@@ -42,8 +27,8 @@ def get_git_root():
         return repo_name
     except git.InvalidGitRepositoryError:
         return None
-    except AttributeError:
-        raise KeyError("No 'origin' remote found in the repository")
+    except AttributeError as exc:
+        raise KeyError("No 'origin' remote found in the repository") from exc
 
 
 @click.command(
@@ -56,7 +41,6 @@ def setup():
         type=click.Choice(["openai", "azure"], case_sensitive=False),
     )
     ctx = get_context()
-    model_config: t.Optional[ModelEnvConfig] = None
     if model_env == MODEL_ENV_OPENAI:
         api_key = click.prompt("🔑 Please enter openai API key", type=str)
         ctx.model_env = {KEY_MODEL_ENV: MODEL_ENV_OPENAI, KEY_API_KEY: api_key}
@@ -69,7 +53,7 @@ def setup():
             KEY_AZURE_ENDPOINT: endpoint_url,
         }
 
-    click.echo(f"🍀 Model configuration saved")
+    click.echo("🍀 Model configuration saved")
 
 
 @click.command(
@@ -105,13 +89,6 @@ def add_issue():
         "Please enter base commit id", type=str, default="", show_default=False
     )
     issue_description = click.prompt("Please enter issue description", type=str)
-    issue_config = IssueConfig(
-        repo_name=repo_name,
-        base_commit_id=base_commit_id,
-        issue_description=issue_description,
-        issue_id=issue_id,
-        path=ISSUE_CONFIG_PATH,
-    )
     ctx = get_context()
     ctx.issue_config = {
         "repo_name": repo_name,
@@ -120,7 +97,7 @@ def add_issue():
         "issue_id": issue_id,
     }
 
-    click.echo(f"🍀 Issue configuration saved\n")
+    click.echo("🍀 Issue configuration saved\n")
 
 
 @click.command(name="solve", help="👷 Start solving the configured issue")
@@ -128,7 +105,6 @@ def solve():
     """Start solving the configured issue."""
     ctx = get_context()
     issue_config = ctx.issue_config
-    model_env = ctx.model_env
 
     click.echo(
         f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
@@ -142,30 +118,7 @@ def solve():
     )
     coder_agent = CoderAgent(args)
     coder_agent.run()
-    print("Issue solving process started.")
-
-
-@click.command(name="reset", help="🔄 Reset the composio coder")
-@click.help_option("--help", "-h", "-help")
-def reset():
-    """Reset the composio coder."""
-    confirmation = click.prompt(
-        "Are you sure you want to reset the composio coder? Type 'reset' to confirm or 'cancel' to abort",
-        default="cancel",
-        show_default=False,
-    )
-    if confirmation.lower().strip() == "reset":
-        click.echo("Resetting composio coder...\n")
-        click.echo(
-            f"Removing {MODEL_ENV_CONFIG_PATH} and {ISSUE_CONFIG_PATH}_config files...\n"
-        )
-        if os.path.exists(MODEL_ENV_CONFIG_PATH):
-            os.remove(MODEL_ENV_CONFIG_PATH)
-        if os.path.exists(ISSUE_CONFIG_PATH):
-            os.remove(ISSUE_CONFIG_PATH)
-        click.echo("Composio coder reset complete.")
-    else:
-        click.echo("Reset cancelled.")
+    click.echo("Issue solving process started.")
 
 
 @click.command(
@@ -191,7 +144,6 @@ def cli(ctx) -> None:
 cli.add_command(setup)
 cli.add_command(add_issue)
 cli.add_command(solve)
-cli.add_command(reset)
 cli.add_command(show_workflow)
 
 if __name__ == "__main__":
