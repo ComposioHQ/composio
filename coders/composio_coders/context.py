@@ -2,7 +2,6 @@
 composio-coder CLI Context.
 """
 
-import os
 import typing as t
 from functools import update_wrapper
 from pathlib import Path
