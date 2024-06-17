@@ -25,7 +25,7 @@ from composio.storage.user import UserData
 class ComposioToolSet:
     """Composio toolset."""
 
-    client: Composio
+    _client: Composio
 
     def __init__(
         self,
@@ -42,7 +42,7 @@ class ComposioToolSet:
         :param base_url: Base URL for the Composio API server
         :param runtime: Name of the framework runtime, eg. openai, crewai...
         """
-        self.local_client = LocalToolHandler()
+        self._local_client = LocalToolHandler()
         if runtime is not None:
             self._runtime = runtime
 
@@ -63,10 +63,17 @@ class ComposioToolSet:
         if self.api_key is None:
             return
 
-        self.client = Composio(
+        self._client = Composio(
             api_key=self.api_key,
             base_url=base_url,
         )
+
+    @property
+    def client(self) -> Composio:
+        if self.api_key is None:
+            raise_api_key_missing()
+        return self._client
+    
 
     @property
     def runtime(self) -> str:
@@ -91,7 +98,7 @@ class ComposioToolSet:
             action = Action(action)
         
         if action.is_local:
-            return self.local_client.execute_local_action(action=action, request_data=params)
+            return self._local_client.execute_local_action(action=action, request_data=params)
 
         output = self.client.get_entity(entity_id).execute(action=action, params=params)
         if self.output_in_file:
@@ -129,13 +136,13 @@ class ComposioToolSet:
         
         items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
-            local_items = self.local_client.get_list_of_action_schemas(
+            local_items = self._local_client.get_list_of_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             items = items + [ActionModel(**item) for item in local_items] 
         
         if len(remote_actions) > 0 or len(remote_apps) > 0:
-            remote_items = self.client.actions.get(actions=remote_actions)
+            remote_items = self.client.actions.get(apps=remote_apps, actions=remote_actions, tags=tags)
             items = items + remote_items
         
         return items
