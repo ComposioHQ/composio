@@ -1,5 +1,4 @@
 import typing as t
-from abc import abstractmethod
 
 from composio.storage import LocalStorage
 
