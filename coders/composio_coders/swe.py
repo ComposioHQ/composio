@@ -4,8 +4,18 @@ import logging
 from pathlib import Path
 
 import langchain_core
-from composio_coders.config_store import IssueConfig, ModelEnvConfig, AzureModelConfig, OpenAiModelConfig
-from composio_coders.constants import MODEL_ENV_AZURE, MODEL_ENV_OPENAI, KEY_AZURE_ENDPOINT, KEY_API_KEY
+from composio_coders.config_store import (
+    AzureModelConfig,
+    IssueConfig,
+    ModelEnvConfig,
+    OpenAiModelConfig,
+)
+from composio_coders.constants import (
+    KEY_API_KEY,
+    KEY_AZURE_ENDPOINT,
+    MODEL_ENV_AZURE,
+    MODEL_ENV_OPENAI,
+)
 from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -160,10 +170,14 @@ class CoderAgent:
             self.logger.info("type is not list: %s", type(step_output))
 
     def get_llm(self):
-        if self.model_env.model_env == MODEL_ENV_OPENAI and isinstance(self.model_env, OpenAiModelConfig):
+        if self.model_env.model_env == MODEL_ENV_OPENAI and isinstance(
+            self.model_env, OpenAiModelConfig
+        ):
             openai_key = self.model_env.api_key
             return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
-        if self.model_env.model_env == MODEL_ENV_AZURE and isinstance(self.model_env, AzureModelConfig):
+        if self.model_env.model_env == MODEL_ENV_AZURE and isinstance(
+            self.model_env, AzureModelConfig
+        ):
             azure_endpoint = self.model_env.azure_endpoint
             azure_key = self.model_env.api_key
             azure_llm = AzureChatOpenAI(
@@ -234,6 +248,7 @@ if __name__ == "__main__":
     args = CoderAgentArgs(
         agent_logs_dir=ctx.agent_logs_dir,
         issue_config=ctx.issue_config,
-        model_env_config=ctx.model_env,)
+        model_env_config=ctx.model_env,
+    )
     c_agent = CoderAgent(args)
     c_agent.run()
