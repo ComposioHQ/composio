@@ -435,6 +435,8 @@ class App(str, Enum):
             "ragtool",
             "webtool",
             "greptile",
+            "sqltool",
+            "filetool",
             "submitpatchtool",
         ]
 
@@ -500,6 +502,8 @@ class App(str, Enum):
     WEBTOOL = "webtool"
     GREPTILE = "greptile"
     SUBMITPATCHTOOL = "submitpatchtool"
+    SQLTOOL = "sqltool"
+    FILETOOL = "filetool"
 
 
 class Action(tuple, Enum):
@@ -13867,6 +13871,9 @@ class Action(tuple, Enum):
         True,
         True,
     )
+    SQLTOOL_SQLQUERY = ("sqltool", "sqltool_sqlquery", True, True)
+    FILETOOL_READFILE = ("filetool", "filetool_readfile", True, True)
+    FILETOOL_WRITEFILE = ("filetool", "filetool_writefile", True, True)
 
 
 class Trigger(tuple, Enum):
