@@ -22,7 +22,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    packages=find_packages(include=["composio*"]),
+    packages=find_packages(include=["composio_coders"]),
     entry_points={
         'console_scripts': [
              'composio-coder = composio_coders.cli:cli',
@@ -32,7 +32,8 @@ setup(
         "composio_core===0.3.9",
         "gitpython>=3.1.43",
         "composio_crewai>=0.3.9",
-        "crewai>=0.30.11"
+        "crewai>=0.30.11",
+        "datetime"
     ],
     include_package_data=True,
 )
