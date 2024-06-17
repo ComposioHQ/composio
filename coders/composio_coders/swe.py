@@ -187,7 +187,10 @@ class CoderAgent:
         self.logger.info(
             "starting agent for issue-id: %s\n"
             "issue-description: %s\n"
-            "repo_name: %s\n", self.issue_config.issue_id, self.issue_config.issue_desc, self.issue_config.issue_desc
+            "repo_name: %s\n",
+            self.issue_config.issue_id,
+            self.issue_config.issue_desc,
+            self.issue_config.issue_desc,
         )
 
         issue_added_instruction = self.issue_description_tmpl.format(
