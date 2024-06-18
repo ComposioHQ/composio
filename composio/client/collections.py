@@ -386,11 +386,11 @@ class TriggerModel(BaseModel):
 class ExecutionDetailsModel(BaseModel):
     """Execution details data model."""
     executed: bool
-    response_data: t.Dict
 
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
     execution_details: ExecutionDetailsModel
+    response_data: str
 
 class FileModel(BaseModel):
     name: str 

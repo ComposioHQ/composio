@@ -7,6 +7,7 @@ import time
 import typing as t
 import json
 from pathlib import Path
+import base64
 
 from composio.client import Composio
 from composio.client.collections import ActionModel
@@ -124,21 +125,29 @@ class ComposioToolSet:
                 return {"output_file": f"{output_file_path}"}
         
         try:
-            successResponseModel = SuccessExecuteActionResponseModel.model_validate_json(json.loads(str(output)))
-            for key, val in successResponseModel.execution_details.response_data.items():
+            print(f"trying to check file response")
+            successResponseModel = SuccessExecuteActionResponseModel.model_validate(output)
+            resp_data = json.loads(successResponseModel.response_data)
+            for key, val in resp_data.items():
+                print(f"Checking key: {key} is a file")
                 try:
-                    fileModel = FileModel.model_validate_json(val)
+                    fileModel = FileModel.model_validate(val)
                     output_file_path = (
                         Path.home()
                         / LOCAL_CACHE_DIRECTORY_NAME
                         / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-                        / f"{action.name}_{entity_id}_{fileModel.name}_{time.time()}"
+                        / f"{action.name}_{entity_id}_{time.time()}_{fileModel.name.replace('/', '_')}"
                     )
+                    print(f"Saving file to: {output_file_path}")
                     with open(output_file_path, "wb") as file:
-                        file.write(fileModel.content)
+                        file.write(base64.b64decode(fileModel.content))
+                    resp_data[key] = str(output_file_path)
                 except Exception as e:
+                    print(f"Error saving file: {e}")
                     pass
+            output = json.dumps(resp_data)
         except Exception as e:
+            print(f"Error checking file response: {e}")
             pass
         return output
 
