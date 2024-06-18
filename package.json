@@ -30,6 +30,7 @@
     "enumify": "^2.0.0",
     "langchain": "^0.2.5",
     "openai": "^4.50.0",
+    "pusher-js": "8.4.0-rc2",
     "zod": "^3.23.8"
   },
   "publishConfig": {
