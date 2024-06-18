@@ -1,6 +1,6 @@
 import typing as t
 
-from composio.storage import LocalStorage
+from composio.storage.base import LocalStorage
 
 
 class ModelEnv(LocalStorage):
