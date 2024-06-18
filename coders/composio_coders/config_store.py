@@ -12,6 +12,7 @@ class AzureModelConfig(LocalStorage):
     """
     endpoint-url for azure llm
     """
+
     model_env: str
     azure_endpoint: t.Optional[str] = None
     api_key: t.Optional[str] = None
@@ -21,6 +22,7 @@ class OpenAiModelConfig(LocalStorage):
     """
     azure-keys for azure keys
     """
+
     model_env: str
     api_key: t.Optional[str] = None
 
