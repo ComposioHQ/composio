@@ -35,6 +35,7 @@ TO_REPLACE = (
     "composio_griptape===",
 )
 
+
 def _bump(file: Path, bump_type: BumpType) -> None:
     """Bump versions in a file."""
     print("=" * 64)
