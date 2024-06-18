@@ -107,8 +107,9 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
     async get_tools(
         filters: {
-            apps: Sequence<string>,
-            tags: Optional<Array<string>>
+            apps: Sequence<string>;
+            tags: Optional<Array<string>>;
+            useCase: Optional<string>;
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
@@ -116,7 +117,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
             apps: filters.apps.join(","),
             tags: filters.tags?.join(","),
             showAll: true,
-            filterImportantActions: !filters.tags
+            filterImportantActions: !filters.tags && !filters.useCase,
+            useCase: filters.useCase || undefined
          });
         return apps.items!.map(tool =>
             this._wrap_tool(
