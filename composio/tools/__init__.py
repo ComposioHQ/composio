@@ -125,31 +125,32 @@ class ComposioToolSet:
                 return {"output_file": f"{output_file_path}"}
         
         try:
-            print(f"trying to check file response")
-            successResponseModel = SuccessExecuteActionResponseModel.model_validate(output)
-            resp_data = json.loads(successResponseModel.response_data)
-            for key, val in resp_data.items():
-                print(f"Checking key: {key} is a file")
-                try:
-                    fileModel = FileModel.model_validate(val)
-                    output_file_path = (
-                        Path.home()
-                        / LOCAL_CACHE_DIRECTORY_NAME
-                        / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-                        / f"{action.name}_{entity_id}_{time.time()}_{fileModel.name.replace('/', '_')}"
-                    )
-                    print(f"Saving file to: {output_file_path}")
-                    with open(output_file_path, "wb") as file:
-                        file.write(base64.b64decode(fileModel.content))
-                    resp_data[key] = str(output_file_path)
-                except Exception as e:
-                    print(f"Error saving file: {e}")
-                    pass
-            output = json.dumps(resp_data)
+            output = self._save_files(f"{action.name}_{entity_id}_{time.time()}", output)
         except Exception as e:
             print(f"Error checking file response: {e}")
             pass
         return output
+
+    def _save_files(self, file_name_prefix: str, output: dict) -> dict:
+        success_response_model = SuccessExecuteActionResponseModel.model_validate(output)
+        resp_data = json.loads(success_response_model.response_data)
+        for key, val in resp_data.items():
+            try:
+                file_model = FileModel.model_validate(val)
+                output_file_path = (
+                    Path.home()
+                    / LOCAL_CACHE_DIRECTORY_NAME
+                    / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+                )
+                print(f"Saving file to: {output_file_path}")
+                with open(output_file_path, "wb") as file:
+                    file.write(base64.b64decode(file_model.content))
+                resp_data[key] = str(output_file_path)
+            except Exception as e:
+                pass
+        return json.dumps(resp_data)
+
 
     def get_action_schemas(
         self,
