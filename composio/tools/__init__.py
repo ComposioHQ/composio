@@ -126,12 +126,12 @@ class ComposioToolSet:
                 return {"output_file": f"{output_file_path}"}
 
         try:
-            output = self._save_files(
+            output_modified = self._save_files(
                 f"{action.name}_{entity_id}_{time.time()}", output
             )
+            return output_modified
         except Exception as e:
             print(f"Error checking file response: {e}")
-            pass
         return output
 
     def _save_files(self, file_name_prefix: str, output: dict) -> dict:
