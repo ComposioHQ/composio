@@ -19,6 +19,8 @@ class GitRepoTree(BaseAction):
     Generate a tree of the repository. This command lists all files in the current commit across all directories.
     Returns a list of files with their relative paths in the codebase.
     It is useful to understand the file structure of the codebase and to find the relevant files for a given issue.
+    The command writes the result to a file in current directory. Read the file 'git_repo_tree.txt' for getting the
+    git-repo-tree results
     """
 
     _display_name = "Git repo tree action"
@@ -31,7 +33,7 @@ class GitRepoTree(BaseAction):
     ) -> BaseResponse:
         self._setup(request_data)
         self.script_file = SCRIPT_EDIT_LINTING
-        self.command = "git ls-tree -r HEAD --name-only"
+        self.command = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
         if self.container_process is None:
             raise ValueError("Container process is not set")
 
