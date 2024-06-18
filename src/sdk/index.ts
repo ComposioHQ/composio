@@ -89,7 +89,7 @@ export class Composio {
     }
 }
 
-class Entity {
+export class Entity {
     private client: Composio;
     id: string;
 
