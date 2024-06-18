@@ -100,8 +100,8 @@ def run():
         print("--------------------------------------------------")
 
         model_env_config = {
-            KEY_API_KEY: "142b9b40120a4eda89bac0f7b035a2b1",
-            "azure_endpoint": "https://testingswedencentral.openai.azure.com/",
+            KEY_API_KEY: "test-key",
+            "azure_endpoint": "test-endpoint",
             "model_env": "azure",
         }
         ctx = Context()
