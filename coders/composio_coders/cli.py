@@ -109,9 +109,6 @@ def solve(ctx: Context):
     click.echo(
         f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
     )
-    from pprint import pprint
-
-    pprint(ctx.model_env)
     args = CoderAgentArgs(
         issue_config=ctx.issue_config,
         model_env_config=ctx.model_env,
