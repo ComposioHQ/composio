@@ -222,7 +222,6 @@ class CoderAgent:
         backstory_added_instruction = self.agent_backstory_tmpl.format(
             repo_name=self.repo_name, base_commit=self.issue_config.base_commit_id
         )
-        # self.composio_entity.execute(action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={})
         swe_agent = Agent(
             role=self.agent_role,
             goal=self.agent_goal,
