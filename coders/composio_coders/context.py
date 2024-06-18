@@ -69,7 +69,7 @@ class Context:
         return path
 
     @property
-    def model_env(self) -> t.Dict:
+    def model_env(self) -> t.Optional[t.Dict]:
         """Model environment configuration."""
         if self._model_env:
             return self._model_env
@@ -85,6 +85,7 @@ class Context:
             a = OpenAiModelConfig.load(path=path)
             self._model_env = a.to_json()
             return self._model_env
+        return None
 
     @model_env.setter
     def model_env(self, config: t.Dict) -> None:
