@@ -93,7 +93,11 @@ class TestCLI(unittest.TestCase):
                 "base_commit_id": "abc",
                 "issue_desc": "Fix bug",
             }
-            model_env_config = {"api_key": "test-api-key", "model_env": "azure", "azure_endpoint": "https://abc.com"}
+            model_env_config = {
+                "api_key": "test-api-key",
+                "model_env": "azure",
+                "azure_endpoint": "https://abc.com",
+            }
             ctx = Context()
             ctx.issue_config = issue_config
             ctx.model_env = model_env_config
