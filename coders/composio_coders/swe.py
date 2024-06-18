@@ -5,13 +5,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import langchain_core
-from composio_crewai import App, ComposioToolSet, Action
-from composio import Composio
-from crewai import Agent, Task
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from pydantic import BaseModel, Field
-from rich.logging import RichHandler
-
 from composio_coders.config_store import IssueConfig
 from composio_coders.constants import (
     KEY_API_KEY,
@@ -20,6 +13,13 @@ from composio_coders.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
+from composio_crewai import Action, App, ComposioToolSet
+from crewai import Agent, Task
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from pydantic import BaseModel, Field
+from rich.logging import RichHandler
+
+from composio import Composio
 
 
 AGENT_BACKSTORY_TMPL = """
@@ -84,12 +84,18 @@ logger = setup_logger()
 
 
 class CoderAgentArgs(BaseModel):
-    agent_role: str = Field(default="You are the best programmer. You think carefully and step by step take action.",
-                            description="role of the agent")
-    agent_goal: str = Field(default="Help fix the given issue / bug in the code. And make sure you get it working.",
-                            description="goal for the agent")
-    task_expected_output: str = Field(default="A patch should be generated which fixes the given issue",
-                                      description="expected output of the agent task")
+    agent_role: str = Field(
+        default="You are the best programmer. You think carefully and step by step take action.",
+        description="role of the agent",
+    )
+    agent_goal: str = Field(
+        default="Help fix the given issue / bug in the code. And make sure you get it working.",
+        description="goal for the agent",
+    )
+    task_expected_output: str = Field(
+        default="A patch should be generated which fixes the given issue",
+        description="expected output of the agent task",
+    )
     agent_backstory_tmpl: str = Field(
         default=AGENT_BACKSTORY_TMPL,
         description="backstory template for the agent to work on",
