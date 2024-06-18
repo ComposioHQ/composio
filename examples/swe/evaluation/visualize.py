@@ -1,5 +1,6 @@
 import json
 
+
 def load_logs(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)  # Load the entire JSON file containing all issues
