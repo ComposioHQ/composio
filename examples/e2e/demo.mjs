@@ -1,5 +1,5 @@
 
-import { LangchainToolSet } from "composio-core";
+import { Composio } from "composio-core";
 
 const TRIGGER_CONFIGS = {
     GITHUB: {
@@ -8,35 +8,40 @@ const TRIGGER_CONFIGS = {
     }
 };
 
-const toolset = new LangchainToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-});
+const composio = new Composio(process.env.COMPOSIO_API_KEY)
 
 async function setupUserConnectionIfNotExists(entityId) {
-    const entity = await toolset.client.getEntity(entityId);
-    const connection = await entity.getConnection("github");
-    if(connection) {
+    const entity = await composio.getEntity(entityId);
+    const connection = await entity.getConnection("googlecalendar");
+    if(!connection) {
         const connection = await entity.initiateConnection(
-            "github",
+            "googlecalendar",
         );
+
+        console.log("> Please go to the following link and authorize Composio to access your Google Calendar:", connection.redirectUrl);
         return connection.waitUntilActive(60);
     }
     return connection;
 }
 
 (async() => {
-    const entity = await toolset.client.getEntity("default")
-    const connection = await setupUserConnectionIfNotExists(entity.id);
+    const allActions =  await composio.actions.list();
+    console.log(
+        `We have around ${allActions.length} actions available, 
+but we can't pass all of them to our agent. 
+So we are going to filter them down`
+    );
+    
+    const entity = composio.getEntity("utkarsh");
+    const relevantActions = await composio.actions.list({
+        apps: ["googlecalendar"],
+        useCase: "Book a meeting"
+    })
+    await setupUserConnectionIfNotExists(entity.id);
+    const calendarAction = relevantActions.items.find(action => action.name === "googlecalendar_quick_add_google_calendar")
+    console.log("Calendar action", calendarAction);
 
-    const activeGithubTriggerForUser = await toolset.client.activeTriggers.list({
-        connectedAccountIds: [connection.id],
-        triggerNames: ["github_issue_added_event"]
-    });
-    if(!activeGithubTriggerForUser.triggers.length) {
-        const trigger = await entity.setupTrigger("github", TRIGGER_CONFIGS.GITHUB.triggerName, TRIGGER_CONFIGS.GITHUB.config);
-
-        console.log("Trigger", trigger);
-    }
-
+    const result = await entity.execute(calendarAction.name, {}, "Book a meeting for 60 minutes with GUEST = hudixt@gmail.com wih DESCRIPTION = 'Test meeting'");
+    console.log("Result", result);
 })();
 
