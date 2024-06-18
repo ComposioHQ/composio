@@ -1,6 +1,6 @@
-# Research Assistant Guide
+# News Summary Agent guide
 
-This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports.
+This guide provides detailed steps to create a news summarizer agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports.
 
 
 ## Steps to Run

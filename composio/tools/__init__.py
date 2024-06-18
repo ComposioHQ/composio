@@ -8,7 +8,9 @@ import typing as t
 from pathlib import Path
 
 from composio.client import Composio
-from composio.client.enums import Action
+from composio.client.collections import ActionModel
+from composio.client.enums import Action, App, Tag
+from composio.client.local_handler import LocalToolHandler
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -23,7 +25,7 @@ from composio.storage.user import UserData
 class ComposioToolSet:
     """Composio toolset."""
 
-    client: Composio
+    _remote_client: Composio
 
     def __init__(
         self,
@@ -39,7 +41,16 @@ class ComposioToolSet:
         :param api_key: Composio API key
         :param base_url: Base URL for the Composio API server
         :param runtime: Name of the framework runtime, eg. openai, crewai...
+        :param output_in_file: Whether to output the result to a file.
+        :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
         """
+        self._local_client = LocalToolHandler()
+        if runtime is not None:
+            self._runtime = runtime
+
+        self.entity_id = entity_id
+        self.output_in_file = output_in_file
+        self.base_url = base_url
         # Check check constructor aegument, environment variables and user data for the key
         try:
             self.api_key = (
@@ -50,21 +61,16 @@ class ComposioToolSet:
                 ).api_key
             )
         except FileNotFoundError:
-            raise_api_key_missing()
+            pass
 
+    @property
+    def client(self) -> Composio:
         if self.api_key is None:
             raise_api_key_missing()
-
-        self.client = Composio(
+        return Composio(
             api_key=self.api_key,
-            base_url=base_url,
+            base_url=self.base_url,
         )
-
-        if runtime is not None:
-            self._runtime = runtime
-
-        self.entity_id = entity_id
-        self.output_in_file = output_in_file
 
     @property
     def runtime(self) -> str:
@@ -88,6 +94,11 @@ class ComposioToolSet:
         if isinstance(action, str):
             action = Action(action)
 
+        if action.is_local:
+            return self._local_client.execute_local_action(
+                action=action, request_data=params
+            )
+
         output = self.client.get_entity(entity_id).execute(action=action, params=params)
         if self.output_in_file:
             if not os.path.exists(
@@ -110,3 +121,33 @@ class ComposioToolSet:
                 file.write(str(output))
                 return {"output_file": f"{output_file_path}"}
         return output
+
+    def get_action_schemas(
+        self,
+        apps: t.Optional[t.Sequence[App]] = None,
+        actions: t.Optional[t.Sequence[Action]] = None,
+        tags: t.Optional[t.Sequence[t.Union[str, Tag]]] = None,
+    ) -> t.List[ActionModel]:
+        local_actions = (
+            [action for action in actions if action.is_local] if actions else []
+        )
+        remote_actions = (
+            [action for action in actions if not action.is_local] if actions else []
+        )
+        local_apps = [app for app in apps if app.is_local] if apps else []
+        remote_apps = [app for app in apps if not app.is_local] if apps else []
+
+        items: t.List[ActionModel] = []
+        if len(local_actions) > 0 or len(local_apps) > 0:
+            local_items = self._local_client.get_list_of_action_schemas(
+                apps=local_apps, actions=local_actions, tags=tags
+            )
+            items = items + [ActionModel(**item) for item in local_items]
+
+        if len(remote_actions) > 0 or len(remote_apps) > 0:
+            remote_items = self.client.actions.get(
+                apps=remote_apps, actions=remote_actions, tags=tags
+            )
+            items = items + remote_items
+
+        return items

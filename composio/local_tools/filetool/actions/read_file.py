@@ -33,10 +33,10 @@ class ReadFile(Action[ReadFileRequest, ReadFileResponse]):
 
     _display_name = "Read file"
     _description = "Read file from a file."
-    _request: Type[ReadFileRequest] = ReadFileRequest
-    _response: Type[ReadFileResponse] = ReadFileResponse
+    _request_schema: Type[ReadFileRequest] = ReadFileRequest
+    _response_schema: Type[ReadFileResponse] = ReadFileResponse
     _tags = ["file", "read"]
-    _tool_name = "file"
+    _tool_name = "filetool"
 
     def execute(
         self, request: ReadFileRequest, authorisation_data: dict

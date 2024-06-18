@@ -156,7 +156,7 @@ class ComposioToolSet(BaseComposioToolSet):
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.client.actions.get(actions=actions)
+            for tool in self.get_action_schemas(actions=actions)
         ]
 
     def get_tools(
@@ -179,5 +179,5 @@ class ComposioToolSet(BaseComposioToolSet):
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.client.actions.get(apps=apps, tags=tags)
+            for tool in self.get_action_schemas(apps=apps, tags=tags)
         ]
