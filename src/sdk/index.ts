@@ -98,7 +98,7 @@ class Entity {
         this.id = id;
     }
 
-    async execute(actionName: string, params: Record<string, any>, connectedAccountId?: string): Promise<Record<string, any>> {
+    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<Record<string, any>> {
         const action = await this.client.actions.get({
             actionName: actionName
         });
@@ -137,7 +137,8 @@ class Entity {
             requestBody: {
                 connectedAccountId: connectedAccount.id,
                 input: params,
-                appName: action.appKey
+                appName: action.appKey,
+                text: text
             }
         });
     }
