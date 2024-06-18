@@ -4,7 +4,8 @@ import logging
 from pathlib import Path
 from typing import Dict
 import langchain_core
-from composio_crewai import App, ComposioToolSet
+from composio_crewai import App, ComposioToolSet, Action
+from composio import Composio
 from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
@@ -82,6 +83,12 @@ logger = setup_logger()
 
 
 class CoderAgentArgs(BaseModel):
+    agent_role: str = Field(default="You are the best programmer. You think carefully and step by step take action.",
+                            description="role of the agent")
+    agent_goal: str = Field(default="Help fix the given issue / bug in the code. And make sure you get it working.",
+                            description="goal for the agent")
+    task_expected_output: str = Field(default="A patch should be generated which fixes the given issue",
+                                      description="expected output of the agent task")
     agent_backstory_tmpl: str = Field(
         default=AGENT_BACKSTORY_TMPL,
         description="backstory template for the agent to work on",
@@ -115,10 +122,12 @@ class CoderAgent:
                 App.HISTORYKEEPER,
             ]
         )
+        # initialize composio client
+        self.composio_entity = self.get_composio_entity()
         # initialize agent-related different prompts
-        self.agent_role = "You are the best programmer. You think carefully and step by step take action."
-        self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working."
-        self.expected_output = "A patch should be generated which fixes the given issue"
+        self.agent_role = self.args.agent_role
+        self.agent_goal = self.args.agent_goal
+        self.expected_output = self.args.task_expected_output
         self.agent_backstory_tmpl = args.agent_backstory_tmpl
         self.issue_description_tmpl = args.issue_description_tmpl
         # initialize logger
@@ -131,6 +140,11 @@ class CoderAgent:
         self.agent_logs = {}
         self.agent_history = {}
         self.current_logs = []
+
+    def get_composio_entity(self):
+        client = Composio()
+        entity = client.get_entity("SWE-Agent-Client")
+        return entity
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
@@ -202,6 +216,7 @@ class CoderAgent:
         backstory_added_instruction = self.agent_backstory_tmpl.format(
             repo_name=self.repo_name, base_commit=self.issue_config.base_commit_id
         )
+        # self.composio_entity.execute(action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={})
         swe_agent = Agent(
             role=self.agent_role,
             goal=self.agent_goal,
