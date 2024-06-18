@@ -12,8 +12,8 @@ from click.globals import get_current_context as get_click_context
 from composio_coders.config_store import (
     AzureModelConfig,
     IssueConfig,
-    ModelEnvConfig,
     OpenAiModelConfig,
+    ModelEnv
 )
 from composio_coders.constants import (
     ISSUE_CONFIG_PATH,
@@ -37,7 +37,7 @@ class Context:
 
     _cache_dir: t.Optional[Path] = None
     _console: t.Optional[Console] = None
-    _model_env: t.Optional[ModelEnvConfig] = None
+    _model_env = None
     _issue_config: t.Optional[IssueConfig] = None
 
     @property
@@ -69,37 +69,46 @@ class Context:
         return path
 
     @property
-    def model_env(self) -> ModelEnvConfig:
+    def model_env(self) -> t.Dict:
         """Model environment configuration."""
         if self._model_env:
             return self._model_env
         path = self.cache_dir / MODEL_ENV_PATH
-        self._model_env = ModelEnvConfig.load(path=path)
         if not path.exists():
             raise ValueError("model env config path not found !!!")
-        return self._model_env
+        model_env = ModelEnv.load(path=path)
+        if model_env.model_env == MODEL_ENV_AZURE:
+            a = AzureModelConfig.load(path=path)
+            self._model_env = a.to_json()
+            return self._model_env
+        if model_env.model_env == MODEL_ENV_OPENAI:
+            a = OpenAiModelConfig.load(path=path)
+            self._model_env = a.to_json()
+            return self._model_env
 
     @model_env.setter
     def model_env(self, config: t.Dict) -> None:
         path = self.cache_dir / MODEL_ENV_PATH
-        model_config: t.Optional[ModelEnvConfig] = None
         if config.get(KEY_MODEL_ENV) == MODEL_ENV_OPENAI:
             model_config = OpenAiModelConfig(
                 path=path, model_env=MODEL_ENV_OPENAI, api_key=config[KEY_API_KEY]
             )
-        elif config.get(KEY_MODEL_ENV) == MODEL_ENV_AZURE:
+            model_config.store()
+            self._model_env = model_config.to_json()
+            return
+        if config.get(KEY_MODEL_ENV) == MODEL_ENV_AZURE:
             model_config = AzureModelConfig(
                 path=path,
                 model_env=MODEL_ENV_AZURE,
                 api_key=config[KEY_API_KEY],
                 azure_endpoint=config[KEY_AZURE_ENDPOINT],
             )
-        else:
-            raise ValueError(
-                f"only these llms are supported {MODEL_ENV_OPENAI} and {MODEL_ENV_AZURE}"
-            )
-        self._model_env = model_config
-        self._model_env.store()
+            model_config.store()
+            self._model_env = model_config.to_json()
+            return
+        raise ValueError(
+            f"only these llms are supported {MODEL_ENV_OPENAI} and {MODEL_ENV_AZURE}"
+        )
 
     @property
     def issue_config(self) -> IssueConfig:

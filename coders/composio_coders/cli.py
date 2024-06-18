@@ -11,7 +11,7 @@ from composio_coders.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
-from composio_coders.context import get_context
+from composio_coders.context import get_context, pass_context, Context
 from composio_coders.swe import CoderAgent, CoderAgentArgs
 
 
@@ -34,13 +34,13 @@ def get_git_root():
 @click.command(
     name="setup", help="🔑 Setup model configuration in the current directory"
 )
-def setup():
+@pass_context
+def setup(ctx: Context):
     """Setup model configuration in the current directory."""
     model_env = click.prompt(
         "🔑 Choose the model environment to be used for initiating agent",
         type=click.Choice(["openai", "azure"], case_sensitive=False),
     )
-    ctx = get_context()
     if model_env == MODEL_ENV_OPENAI:
         api_key = click.prompt("🔑 Please enter openai API key", type=str)
         ctx.model_env = {KEY_MODEL_ENV: MODEL_ENV_OPENAI, KEY_API_KEY: api_key}
@@ -59,7 +59,8 @@ def setup():
 @click.command(
     name="add_issue", help="➕ Add an issue configuration to the current directory"
 )
-def add_issue():
+@pass_context
+def add_issue(ctx: Context):
     """Add an issue configuration to the current directory."""
     git_access_token = os.environ.get(KEY_GIT_ACCESS_TOKEN)
     if not git_access_token or not git_access_token.strip():
@@ -89,7 +90,6 @@ def add_issue():
         "Please enter base commit id", type=str, default="", show_default=False
     )
     issue_description = click.prompt("Please enter issue description", type=str)
-    ctx = get_context()
     ctx.issue_config = {
         "repo_name": repo_name,
         "base_commit_id": base_commit_id,
@@ -101,17 +101,17 @@ def add_issue():
 
 
 @click.command(name="solve", help="👷 Start solving the configured issue")
-def solve():
+@pass_context
+def solve(ctx: Context):
     """Start solving the configured issue."""
-    ctx = get_context()
     issue_config = ctx.issue_config
 
     click.echo(
         f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
     )
-
+    from pprint import pprint
+    pprint(ctx.model_env)
     args = CoderAgentArgs(
-        agent_output_dir="./",
         issue_config=ctx.issue_config,
         model_env_config=ctx.model_env,
         agent_logs_dir=ctx.agent_logs_dir,
@@ -133,6 +133,7 @@ def show_workflow():
 
 # Add commands to the CLI group
 @click.group(name="composio-coder")
+@pass_context
 def cli(ctx) -> None:
     """Composio Coder CLI for managing the coding workspace and tasks."""
 
@@ -143,4 +144,4 @@ cli.add_command(solve)
 cli.add_command(show_workflow)
 
 if __name__ == "__main__":
-    cli()
+    c = cli()

@@ -3,29 +3,25 @@ import typing as t
 from composio.storage import LocalStorage
 
 
-class ModelEnvConfig(LocalStorage):
-    model_env: t.Optional[str] = None
+class ModelEnv(LocalStorage):
+    model_env: str
 
 
 # todo: change this to litellm model config
-class AzureModelConfig(ModelEnvConfig):
+class AzureModelConfig(LocalStorage):
     """
     endpoint-url for azure llm
     """
-
+    model_env: str
     azure_endpoint: t.Optional[str] = None
-
-    """
-    azure-keys for azure keys
-    """
     api_key: t.Optional[str] = None
 
 
-class OpenAiModelConfig(ModelEnvConfig):
+class OpenAiModelConfig(LocalStorage):
     """
     azure-keys for azure keys
     """
-
+    model_env: str
     api_key: t.Optional[str] = None
 
 
