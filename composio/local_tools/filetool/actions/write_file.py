@@ -40,10 +40,10 @@ class WriteFile(Action[WriteFileRequest, WriteFileResponse]):
 
     _display_name = "Write file"
     _description = "Write file to a file."
-    _request = WriteFileRequest
-    _response = WriteFileResponse
+    _request_schema = WriteFileRequest
+    _response_schema = WriteFileResponse
     _tags = ["file", "write"]
-    _tool_name = "file"
+    _tool_name = "filetool"
 
     def execute(self, request: WriteFileRequest, authorisation_data: dict) -> WriteFileResponse:  # type: ignore[override]
         """

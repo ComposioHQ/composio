@@ -74,7 +74,7 @@ class ComposioToolSet(BaseComposioToolSet):
         if executor is None:
             raise RuntimeError("Please provide `executor` agent")
 
-        schemas = self.client.actions.get(apps=tools, tags=tags)
+        schemas = self.get_action_schemas(apps=tools, tags=tags)
         for schema in schemas:
             self._register_schema_to_autogen(
                 schema=schema.model_dump(
@@ -111,7 +111,7 @@ class ComposioToolSet(BaseComposioToolSet):
         if executor is None:
             raise RuntimeError("Please provide `executor` agent")
 
-        schemas = self.client.actions.get(actions=actions)
+        schemas = self.get_action_schemas(actions=actions)
         for schema in schemas:
             self._register_schema_to_autogen(
                 schema=schema.model_dump(
