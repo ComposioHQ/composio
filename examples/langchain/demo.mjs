@@ -4,7 +4,6 @@ import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 
 import { LangchainToolSet } from "composio-core";
-import { Action } from "composio-core";
 
 const app = express();
 const PORT = process.env.PORT || 2001;
