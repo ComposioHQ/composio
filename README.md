@@ -40,5 +40,5 @@ To get started, select a framework and install the corresponding plugin:
 ## Resources
 
 - Docs: https://docs.composio.dev/
-- Discord: https://discord.gg/composio
+- Discord: https://dub.composio.dev/discord
 - Twitter: https://twitter.com/composiohq
