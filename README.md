@@ -183,6 +183,11 @@ print(response_after_tool_calls)
 
 ### [Github to Trello](https://docs.composio.dev/guides/examples/github-trello)
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
+
+
 ## 📋 Read Our Code Of Conduct
 
 As part of our open-source community, we hold ourselves and other contributors to a high standard of communication. As a participant and contributor to this project, you agree to abide by our [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md).
