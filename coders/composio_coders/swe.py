@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, List
 
 import langchain_core
 from composio_coders.config_store import IssueConfig
@@ -128,9 +128,8 @@ class CoderAgent:
         self.task_output_logs = self.agent_logs_dir / Path(
             AGENT_LOGS_JSON_PATH + datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         )
-        self.agent_logs = {}
-        self.agent_history = {}
-        self.current_logs = []
+        self.agent_logs: Dict[str, Any] = {}
+        self.current_logs: List[Any] = []
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs

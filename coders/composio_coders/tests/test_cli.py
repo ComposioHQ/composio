@@ -1,9 +1,51 @@
 import unittest
+from typing import Any, Dict, List, Optional
+from unittest.mock import patch
 
 import click.testing
 from click.testing import CliRunner
 from composio_coders.cli import cli
 from composio_coders.context import Context
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
+from langchain_core.language_models.llms import LLM
+
+
+class FakeListLLM(LLM):
+    """Fake LLM for testing that outputs elements of a list."""
+
+    responses: List[str]
+    i: int = -1
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Increment counter, and then return response in that index."""
+        self.i += 1
+        if self.i >= len(self.responses):
+            return ""
+        print(f"=== Mock Response #{self.i} ===")  # noqa: T201
+        print(self.responses[self.i])  # noqa: T201
+        return self.responses[self.i]
+
+    def get_num_tokens(self, text: str) -> int:
+        """Return number of tokens in text."""
+        return len(text.split())
+
+    async def _acall(self, *args: Any, **kwargs: Any) -> str:
+        return self._call(*args, **kwargs)
+
+    @property
+    def _identifying_params(self) -> Dict[str, Any]:
+        return {}
+
+    @property
+    def _llm_type(self) -> str:
+        """Return type of llm."""
+        return "fake_list"
 
 
 class TestCLI(unittest.TestCase):
@@ -76,10 +118,12 @@ class TestCLI(unittest.TestCase):
             ctx.model_env = model_env_config
             set_context(ctx)  # Set the context directly without file I/O
 
-            result = self.runner.invoke(cli, ["solve"])
-            self.handle_exception(result)
-            self.assertIn("Starting issue solving", result.output)
-            self.assertEqual(result.exit_code, 0)
+            with patch("composio_coders.swe.CoderAgent.get_llm") as mock_get_llm:
+                mock_get_llm.return_value = FakeListLLM(responses=["Fake Response"])
+                result = self.runner.invoke(cli, ["solve"])
+                self.handle_exception(result)
+                mock_get_llm.assert_called_once()
+                self.assertEqual(result.exit_code, 0)
 
     def test_solve_azure(self):
         """Test the solve command."""
@@ -103,10 +147,12 @@ class TestCLI(unittest.TestCase):
             ctx.model_env = model_env_config
             set_context(ctx)  # Set the context directly without file I/O
 
-            result = self.runner.invoke(cli, ["solve"])
-            self.handle_exception(result)
-            self.assertIn("Starting issue solving", result.output)
-            self.assertEqual(result.exit_code, 0)
+            with patch("composio_coders.swe.CoderAgent.get_llm") as mock_get_llm:
+                mock_get_llm.return_value = FakeListLLM(responses=["Fake Response"])
+                result = self.runner.invoke(cli, ["solve"])
+                self.handle_exception(result)
+                mock_get_llm.assert_called_once()
+                self.assertEqual(result.exit_code, 0)
 
     def test_show_workflow(self):
         """Test the show_workflow command."""
