@@ -743,7 +743,7 @@ export type GetListActionsData = {
     /**
      * Filter by use case
      */
-    useCase?: string;
+    useCase?: string | undefined;
     /**
      * Limit of use-cases based search
      */
