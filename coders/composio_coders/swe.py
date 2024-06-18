@@ -113,7 +113,7 @@ class CoderAgent:
                 App.LOCALWORKSPACE,
                 App.CMDMANAGERTOOL,
                 App.HISTORYKEEPER,
-                App.SUBMITPATCHTOOL
+                App.SUBMITPATCHTOOL,
             ]
         )
         # initialize agent-related different prompts
