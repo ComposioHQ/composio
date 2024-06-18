@@ -435,9 +435,9 @@ class App(str, Enum):
             "ragtool",
             "webtool",
             "greptile",
+            "submitpatchtool",
             "sqltool",
             "filetool",
-            "submitpatchtool",
         ]
 
     APIFY = "apify"
@@ -2777,6 +2777,11 @@ class Action(tuple, Enum):
     CODEINTERPRETER_EXECUTE_CODE = (
         "codeinterpreter",
         "codeinterpreter_execute_code",
+        True,
+    )
+    CODEINTERPRETER_GET_FILE_CMD = (
+        "codeinterpreter",
+        "codeinterpreter_get_file_cmd",
         True,
     )
     CODEINTERPRETER_RUN_TERMINAL_CMD = (
