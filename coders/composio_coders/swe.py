@@ -3,8 +3,13 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict
-
 import langchain_core
+from composio_crewai import App, ComposioToolSet
+from crewai import Agent, Task
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from pydantic import BaseModel, Field
+from rich.logging import RichHandler
+
 from composio_coders.config_store import IssueConfig
 from composio_coders.constants import (
     KEY_API_KEY,
@@ -13,11 +18,6 @@ from composio_coders.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
-from composio_crewai import App, ComposioToolSet
-from crewai import Agent, Task
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from pydantic import BaseModel, Field
-from rich.logging import RichHandler
 
 
 AGENT_BACKSTORY_TMPL = """
