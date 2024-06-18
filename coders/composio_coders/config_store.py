@@ -28,7 +28,7 @@ class OpenAiModelConfig(LocalStorage):
 
 
 class IssueConfig(LocalStorage):
-    repo_name: t.Optional[str] = (None,)
+    repo_name: t.Optional[str] = None
     repo_init_from: t.Optional[str] = None
     issue_id: t.Optional[str] = None
     base_commit_id: t.Optional[str] = None
