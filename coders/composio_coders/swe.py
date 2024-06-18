@@ -2,16 +2,18 @@ import datetime
 import json
 import logging
 from pathlib import Path
+from typing import Dict
 
 import langchain_core
 from composio_coders.config_store import (
     AzureModelConfig,
     IssueConfig,
-    ModelEnvConfig,
     OpenAiModelConfig,
 )
 from composio_coders.constants import (
     KEY_API_KEY,
+    KEY_MODEL_ENV,
+    KEY_AZURE_ENDPOINT,
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
@@ -92,8 +94,8 @@ class CoderAgentArgs(BaseModel):
     issue_config: IssueConfig = Field(
         ..., description="issue config, with issue description, repo-name"
     )
-    model_env_config: ModelEnvConfig = Field(
-        ..., description="llm configs like api_key, endpoint_url etc to intialize llm"
+    model_env_config: Dict = Field(
+        ..., description="llm configs like api_key, endpoint_url etc to initialize llm"
     )
     agent_logs_dir: Path = Field(..., description="logs for agent")
 
@@ -169,16 +171,13 @@ class CoderAgent:
             self.logger.info("type is not list: %s", type(step_output))
 
     def get_llm(self):
-        if self.model_env.model_env == MODEL_ENV_OPENAI and isinstance(
-            self.model_env, OpenAiModelConfig
-        ):
-            openai_key = self.model_env.api_key
+        model_env = self.model_env.get(KEY_MODEL_ENV)
+        if model_env == MODEL_ENV_OPENAI:
+            openai_key = self.model_env.get(KEY_API_KEY)
             return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
-        if self.model_env.model_env == MODEL_ENV_AZURE and isinstance(
-            self.model_env, AzureModelConfig
-        ):
-            azure_endpoint = self.model_env.azure_endpoint
-            azure_key = self.model_env.api_key
+        if model_env == MODEL_ENV_AZURE:
+            azure_endpoint = self.model_env.get(KEY_AZURE_ENDPOINT)
+            azure_key = self.model_env.get(KEY_API_KEY)
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,
                 api_key=azure_key,

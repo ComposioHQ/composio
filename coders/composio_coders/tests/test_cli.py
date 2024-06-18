@@ -58,7 +58,7 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(result.exit_code, 0)
             self.assertIn("🍀 Issue configuration saved\n", result.output)
 
-    def test_solve(self):
+    def test_solve_openai(self):
         """Test the solve command."""
         with self.runner.isolated_filesystem():
             # Assuming 'set_context' is a method to set the context directly
@@ -71,6 +71,29 @@ class TestCLI(unittest.TestCase):
                 "issue_desc": "Fix bug",
             }
             model_env_config = {"api_key": "test-api-key", "model_env": "openai"}
+            ctx = Context()
+            ctx.issue_config = issue_config
+            ctx.model_env = model_env_config
+            set_context(ctx)  # Set the context directly without file I/O
+
+            result = self.runner.invoke(cli, ["solve"])
+            self.handle_exception(result)
+            self.assertIn("Starting issue solving", result.output)
+            self.assertEqual(result.exit_code, 0)
+
+    def test_solve_azure(self):
+        """Test the solve command."""
+        with self.runner.isolated_filesystem():
+            # Assuming 'set_context' is a method to set the context directly
+            from composio_coders.context import set_context
+
+            issue_config = {
+                "repo_name": "test_repo",
+                "issue_id": "123",
+                "base_commit_id": "abc",
+                "issue_desc": "Fix bug",
+            }
+            model_env_config = {"api_key": "test-api-key", "model_env": "azure", "azure_endpoint": "https://abc.com"}
             ctx = Context()
             ctx.issue_config = issue_config
             ctx.model_env = model_env_config
