@@ -1,11 +1,12 @@
-import os
 import json
+import os
 import traceback
-from swebench import run_evaluation, KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
+from codecs import decode, encode
 from pathlib import Path
-from datasets import load_dataset
 
-from codecs import encode, decode
+from datasets import load_dataset
+from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION, run_evaluation
+
 
 SUBMIT_PATCH_CMD = "submitpatchtool_submitpatch"
 
