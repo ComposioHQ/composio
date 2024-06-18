@@ -2,7 +2,8 @@ import datetime
 import json
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, List
+
 import langchain_core
 from composio_crewai import App, ComposioToolSet, Action
 from composio import Composio
@@ -120,6 +121,7 @@ class CoderAgent:
                 App.LOCALWORKSPACE,
                 App.CMDMANAGERTOOL,
                 App.HISTORYKEEPER,
+                App.SUBMITPATCHTOOL,
             ]
         )
         # initialize composio client
@@ -137,9 +139,8 @@ class CoderAgent:
         self.task_output_logs = self.agent_logs_dir / Path(
             AGENT_LOGS_JSON_PATH + datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         )
-        self.agent_logs = {}
-        self.agent_history = {}
-        self.current_logs = []
+        self.agent_logs: Dict[str, Any] = {}
+        self.current_logs: List[Any] = []
 
     def get_composio_entity(self):
         client = Composio()

@@ -131,8 +131,7 @@ def show_workflow():
 
 # Add commands to the CLI group
 @click.group(name="composio-coder")
-@pass_context
-def cli(ctx) -> None:
+def cli() -> None:
     """Composio Coder CLI for managing the coding workspace and tasks."""
 
 
