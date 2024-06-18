@@ -23,6 +23,18 @@ class BumpType(Enum):
     POST = "post"
 
 
+TO_REPLACE = (
+    'version="',
+    "composio_core===",
+    "composio_langchain===",
+    "composio_crewai===",
+    "composio_autogen===",
+    "composio_lyzr===",
+    "composio_openai===",
+    "composio_claude===",
+    "composio_griptape===",
+)
+
 def _bump(file: Path, bump_type: BumpType) -> None:
     """Bump versions in a file."""
     print("=" * 64)
@@ -30,6 +42,7 @@ def _bump(file: Path, bump_type: BumpType) -> None:
     content = file.read_text(encoding="utf-8")
     (version_str,) = re.findall(pattern='version="(.*)",', string=content)
     version = VersionInfo.parse(version=version_str)
+
     print(f"Current version {version}")
     if bump_type == BumpType.MAJOR:
         update = version.bump_major()
@@ -41,44 +54,14 @@ def _bump(file: Path, bump_type: BumpType) -> None:
         update = version.bump_prerelease()
     else:
         update = version.bump_build(token="post")
-    print(f"Next version {update}")
 
-    content = content.replace(
-        f'version="{version}",',
-        f'version="{update}",',
-    )
-    content = content.replace(
-        f'composio_core==={version}"',
-        f'composio_core==={update}"',
-    )
-    content = content.replace(
-        f'composio_langchain==={version}"',
-        f'composio_langchain==={update}"',
-    )
-    content = content.replace(
-        f'composio_crewai==={version}"',
-        f'composio_crewai==={update}"',
-    )
-    content = content.replace(
-        f'composio_autogen==={version}"',
-        f'composio_autogen==={update}"',
-    )
-    content = content.replace(
-        f'composio_lyzr==={version}"',
-        f'composio_lyzr==={update}"',
-    )
-    content = content.replace(
-        f'composio_openai==={version}"',
-        f'composio_openai==={update}"',
-    )
-    content = content.replace(
-        f'composio_claude==={version}"',
-        f'composio_claude==={update}"',
-    )
-    content = content.replace(
-        f'composio_griptape==={version}"',
-        f'composio_griptape==={update}"',
-    )
+    print(f"Next version {update}")
+    for to_replace in TO_REPLACE:
+        content = content.replace(
+            f"{to_replace}{version}",
+            f"{to_replace}{update}",
+        )
+
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
 
