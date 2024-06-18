@@ -2,15 +2,19 @@
 Composio SDK tools.
 """
 
+import base64
+import json
 import os
 import time
 import typing as t
-import json
 from pathlib import Path
-import base64
 
 from composio.client import Composio
-from composio.client.collections import ActionModel
+from composio.client.collections import (
+    ActionModel,
+    FileModel,
+    SuccessExecuteActionResponseModel,
+)
 from composio.client.enums import Action, App, Tag
 from composio.client.local_handler import LocalToolHandler
 from composio.constants import (
@@ -20,7 +24,6 @@ from composio.constants import (
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
-from composio.client.collections import SuccessExecuteActionResponseModel, FileModel
 from composio.exceptions import raise_api_key_missing
 from composio.storage.user import UserData
 
@@ -104,10 +107,8 @@ class ComposioToolSet:
 
         output = self.client.get_entity(entity_id).execute(action=action, params=params)
         if not os.path.exists(
-                Path.home()
-                / LOCAL_CACHE_DIRECTORY_NAME
-                / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-            ):
+            Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+        ):
             os.makedirs(
                 Path.home()
                 / LOCAL_CACHE_DIRECTORY_NAME
@@ -123,16 +124,20 @@ class ComposioToolSet:
             with open(output_file_path, "w", encoding="utf-8") as file:
                 file.write(str(output))
                 return {"output_file": f"{output_file_path}"}
-        
+
         try:
-            output = self._save_files(f"{action.name}_{entity_id}_{time.time()}", output)
+            output = self._save_files(
+                f"{action.name}_{entity_id}_{time.time()}", output
+            )
         except Exception as e:
             print(f"Error checking file response: {e}")
             pass
         return output
 
     def _save_files(self, file_name_prefix: str, output: dict) -> dict:
-        success_response_model = SuccessExecuteActionResponseModel.model_validate(output)
+        success_response_model = SuccessExecuteActionResponseModel.model_validate(
+            output
+        )
         resp_data = json.loads(success_response_model.response_data)
         for key, val in resp_data.items():
             try:
@@ -147,10 +152,9 @@ class ComposioToolSet:
                 with open(output_file_path, "wb") as file:
                     file.write(base64.b64decode(file_model.content))
                 resp_data[key] = str(output_file_path)
-            except Exception as e:
+            except Exception:
                 pass
-        return json.dumps(resp_data)
-
+        return resp_data
 
     def get_action_schemas(
         self,
