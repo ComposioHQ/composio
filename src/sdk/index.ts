@@ -8,8 +8,8 @@ import { ActiveTriggers } from './models/activeTriggers';
 import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
 
 export class Composio {
-    private apiKey: string;
-    private baseUrl: string;
+    public apiKey: string;
+    public baseUrl: string;
     private http: AxiosInstance;
 
 
@@ -48,6 +48,19 @@ export class Composio {
         this.triggers = new Triggers(this);
         this.integrations = new Integrations(this);
         this.activeTriggers = new ActiveTriggers(this);
+
+    }
+
+    public async getClientId(): Promise<string> {
+        const response = await this.http.get('/v1/client/auth/client_info',{
+            headers: {
+                'X-API-KEY': `${this.apiKey}`
+            }
+        });
+        if (response.status !== 200) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return response.data.client.id;
     }
 
     private getApiUrlBase(): string {
