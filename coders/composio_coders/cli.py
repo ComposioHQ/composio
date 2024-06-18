@@ -11,7 +11,7 @@ from composio_coders.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
-from composio_coders.context import get_context, pass_context, Context
+from composio_coders.context import Context, pass_context
 from composio_coders.swe import CoderAgent, CoderAgentArgs
 
 
@@ -110,6 +110,7 @@ def solve(ctx: Context):
         f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
     )
     from pprint import pprint
+
     pprint(ctx.model_env)
     args = CoderAgentArgs(
         issue_config=ctx.issue_config,

@@ -12,8 +12,8 @@ from click.globals import get_current_context as get_click_context
 from composio_coders.config_store import (
     AzureModelConfig,
     IssueConfig,
+    ModelEnv,
     OpenAiModelConfig,
-    ModelEnv
 )
 from composio_coders.constants import (
     ISSUE_CONFIG_PATH,
