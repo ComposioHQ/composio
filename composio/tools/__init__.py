@@ -5,6 +5,7 @@ Composio SDK tools.
 import os
 import time
 import typing as t
+import json
 from pathlib import Path
 
 from composio.client import Composio
@@ -18,6 +19,7 @@ from composio.constants import (
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
+from composio.client.collections import SuccessExecuteActionResponseModel, FileModel
 from composio.exceptions import raise_api_key_missing
 from composio.storage.user import UserData
 
@@ -100,17 +102,17 @@ class ComposioToolSet:
             )
 
         output = self.client.get_entity(entity_id).execute(action=action, params=params)
-        if self.output_in_file:
-            if not os.path.exists(
+        if not os.path.exists(
                 Path.home()
                 / LOCAL_CACHE_DIRECTORY_NAME
                 / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
             ):
-                os.makedirs(
-                    Path.home()
-                    / LOCAL_CACHE_DIRECTORY_NAME
-                    / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-                )
+            os.makedirs(
+                Path.home()
+                / LOCAL_CACHE_DIRECTORY_NAME
+                / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+            )
+        if self.output_in_file:
             output_file_path = (
                 Path.home()
                 / LOCAL_CACHE_DIRECTORY_NAME
@@ -120,6 +122,24 @@ class ComposioToolSet:
             with open(output_file_path, "w", encoding="utf-8") as file:
                 file.write(str(output))
                 return {"output_file": f"{output_file_path}"}
+        
+        try:
+            successResponseModel = SuccessExecuteActionResponseModel.model_validate_json(json.loads(str(output)))
+            for key, val in successResponseModel.execution_details.response_data.items():
+                try:
+                    fileModel = FileModel.model_validate_json(val)
+                    output_file_path = (
+                        Path.home()
+                        / LOCAL_CACHE_DIRECTORY_NAME
+                        / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+                        / f"{action.name}_{entity_id}_{fileModel.name}_{time.time()}"
+                    )
+                    with open(output_file_path, "wb") as file:
+                        file.write(fileModel.content)
+                except Exception as e:
+                    pass
+        except Exception as e:
+            pass
         return output
 
     def get_action_schemas(
