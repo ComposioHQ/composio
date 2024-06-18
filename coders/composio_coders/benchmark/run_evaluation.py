@@ -1,11 +1,8 @@
 import os
-import yaml
 import json
 import datetime
 from datasets import load_dataset
 from pathlib import Path
-from composio_crewai import ComposioToolSet, App
-from langchain_openai import AzureChatOpenAI
 import logging
 from rich.logging import RichHandler
 
@@ -49,8 +46,6 @@ logger.propagate = False
     PASS_TO_PASS: (str) - A json list of strings that represent tests that should pass before and after the PR application.
 '''
 
-repo_name = "pydata/xarray"
-
 
 def filter_from_repo_name(curr_dataset, repo_name):
     filtered_dataset = curr_dataset.filter(lambda x: x["repo"] == repo_name.strip().lower())
@@ -79,33 +74,14 @@ def run():
     """
     Main function to load and display entries from the SWE-bench lite dataset.
     """
-    azure_llm = AzureChatOpenAI(
-        azure_endpoint=os.environ.get("azure_endpoint"),
-        api_key=os.environ.get("azure_key"),
-        model="test",
-        model_version="1106-Preview",
-        api_version="2024-02-01",
-    )
-    task_output_dir = script_dir / Path(TASK_OUTPUT_PATH + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    task_output_logs = task_output_dir / Path("agent_logs.json")
-    if not os.path.exists(task_output_dir):
-        os.makedirs(task_output_dir)
-    composio_toolset = ComposioToolSet()
-    base_role = (
-        "You are the best programmer. You think carefully and step by step take action."
-    )
-    goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
-    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE,
-                                             App.CMDMANAGERTOOL,
-                                             App.HISTORYKEEPER,
-                                             App.SUBMITPATCHTOOL])
+
     issues = get_issues_dataset()
-    agent_logs = {}
     for issue in issues:
         issue_description = build_issue_description(issue["hints_text"],
                                                     issue["problem_statement"])
         patch = issue["patch"]
         install_commit_id = issue["environment_setup_commit"]
+        instance_id = issue["instance_id"]
         issue_config = {
             "repo_name": issue["repo"],
             "issue_id": issue["instance_id"],
@@ -114,16 +90,13 @@ def run():
         }
         logger.info(f"starting agent for issue-id: {issue['instance_id']}\n"
                     f"issue-description: {issue_description}\n"
-                    f"repo_name: {repo_name}\n")
-
-        with open(base_task_config_path) as f:
-            base_config = yaml.safe_load(f.read())
+                    f"repo_name: {issue['repo']}\n")
 
         print("--------------------------------------------------")
 
         model_env_config = {
-            KEY_API_KEY: "test-api-key",
-            "azure_endpoint": "azure-end-point",
+            KEY_API_KEY: "142b9b40120a4eda89bac0f7b035a2b1",
+            "azure_endpoint": "https://testingswedencentral.openai.azure.com/",
             "model_env": "azure",
         }
         ctx = Context()
@@ -136,31 +109,8 @@ def run():
             issue_config=ctx.issue_config,
             model_env_config=ctx.model_env,
         )
-        c_agent = CoderAgent(args)
-        c_agent.run()
-
-        # expected_output = "A patch should be generated which fixes the given issue"
-        # swe_agent = Agent(
-        #     role=base_role,
-        #     goal=goal,
-        #     backstory=backstory_added_instruction,
-        #     verbose=True,
-        #     tools=tools,
-        #     llm=azure_llm,
-        #     memory=True,
-        #     cache=False,
-        #     step_callback=add_in_logs,
-        # )
-        #
-        # coding_task = Task(
-        #     description=issue_added_instruction,
-        #     agent=swe_agent,
-        #     expected_output=expected_output,
-        # )
-        # coding_task.execute()
-        # agent_logs[instance_id] = current_logs
-    with open(task_output_logs, "w") as f:
-        f.write(json.dumps(agent_logs))
+        coder = CoderAgent(args)
+        coder.run()
 
 
 if __name__ == "__main__":
