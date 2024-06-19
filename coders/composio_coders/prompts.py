@@ -66,10 +66,10 @@ linter_task_description = """
         Your task is to review the given code snippet and fix all the linting errors identified by tools such as black, isort, pylint, and flake8. 
         Provide a corrected version of the code with all issues resolved.
         Instructions:
-        1. If tox.ini file exists in the repo-base, run linter commands with tox, Example - `tox -e pylint`
-        2. Check for python linters - isort, black, pylint, flake8, mypy
+        1. Start by checking linting errors in current {repo_name_dir} directory.
+        2. Its possible the repo has a `tox.ini` file, First try to find the config file for the linters and then use that file to run the linter commands.
         3. Formatting linters like - isort, black will produce correct / format the code as well. So you can use that formatted code as fix.
-        4. For othet linters like flake8, pylint and mypy, think step by step and solve the issue
+        4. For other linters like flake8, pylint and mypy, think step by step and solve the linting errors.
 """
 
 linter_expected_output = "Provide a corrected version of the code with all linting errors fixed."

@@ -18,66 +18,68 @@ logger = get_logger()
 
 class LinterRequest(BaseModel):
     workspace_id: str = Field(..., description="workspace-id for the linter to work")
-    file_name: str = Field(default="", description="file_name or directory where linter has to run")
-
 
 class LinterResponse(BaseModel):
     lint_errors: str = Field(..., description="list of lint errors")
 
 
-class Linter(BaseAction):
-    """
-    runs linter commands on the given file-name or directory
-    """
-
-    _history_maintains = True
-    _display_name = "Lint Python code"
+class PylintLinter(BaseAction):
+    _display_name = "Lint Python code with Pylint"
     _request_schema = LinterRequest
     _response_schema = LinterResponse
 
     @history_recorder()
-    def execute(
-            self, request_data: LinterRequest, authorisation_data: dict = {}
-    ) -> BaseResponse:
-        if request_data.file_name:
-            rel_fname = request_data.file_name
-        else:
-            rel_fname = "."
+    def execute(self, request_data: LinterRequest, authorisation_data: dict = {}) -> BaseResponse:
         self._setup(request_data)
-        # is_tox_exists = communicate(self.container_process, self.container_obj, "")
-        black_output, return_code = self.lint_black(rel_fname)
-        isort_out, return_code = self.lint_isort(rel_fname)
-        pylint_out, return_code = self.lint_pylint(rel_fname)
-        flake8_out, return_code = self.lint_flake8(rel_fname)
+        cmd = "tox -e pylint"
+        pylint_out, return_code = communicate(self.container_process, self.container_obj, cmd, self.parent_pids, timeout_duration=200)
+        if return_code == 0:
+            pylint_out = f"No errors detected by pylint. pylint output: {pylint_out}"
+        return BaseResponse(output=pylint_out, return_code=return_code)
 
-        results = [
-            black_output, isort_out, pylint_out, flake8_out
-        ]
-        return BaseResponse(output="\n".join(results), return_code=return_code)
+class Flake8Linter(BaseAction):
+    _display_name = "Lint Python code with Flake8"
+    _request_schema = LinterRequest
+    _response_schema = LinterResponse
 
-    def run_cmd(self, cmd):
-        output, return_code = communicate(
-            self.container_process,
-            self.container_obj,
-            cmd,
-            self.parent_pids,
-        )
-        return output, return_code
+    @history_recorder()
+    def execute(self, request_data: LinterRequest, authorisation_data: dict = {}) -> BaseResponse:
+        self._setup(request_data)
+        cmd = "tox -e flake8"
+        flake8_out, return_code = communicate(self.container_process, self.container_obj, cmd, self.parent_pids, timeout_duration=70)
+        if return_code == 0:
+            flake8_out = f"No errors detected by Flake8. tox output: {flake8_out}"
+        return BaseResponse(output=flake8_out, return_code=return_code)
 
-    def lint_black(self, fname):
-        cmd = f"tox -e black --check {fname}"
-        return self.run_cmd(cmd)
 
-    def lint_isort(self, fname):
-        cmd = f"tox -e isort --check-only {fname}"
-        return self.run_cmd(cmd)
+class BlackLinter(BaseAction):
+    _display_name = "Format Python code with Black"
+    _request_schema = LinterRequest
+    _response_schema = LinterResponse
 
-    def lint_pylint(self, fname):
-        cmd = f"tox -e pylint {fname}"
-        return self.run_cmd(cmd)
+    @history_recorder()
+    def execute(self, request_data: LinterRequest, authorisation_data: dict = {}) -> BaseResponse:
+        self._setup(request_data)
+        cmd = "tox -e black"
+        black_output, return_code =  communicate(self.container_process, self.container_obj, cmd, self.parent_pids, timeout_duration=45)
+        if return_code == 0:
+            black_output = f"No errors detected by black. tox output: {black_output}"
+        return BaseResponse(output=black_output, return_code=return_code)
 
-    def lint_flake8(self, fname):
-        cmd = f"tox -e flake8 {fname}"
-        return self.run_cmd(cmd)
+
+class IsortLinter(BaseAction):
+    _display_name = "Sort imports in Python code with Isort"
+    _request_schema = LinterRequest
+    _response_schema = LinterResponse
+
+    @history_recorder()
+    def execute(self, request_data: LinterRequest, authorisation_data: dict = {}) -> BaseResponse:
+        self._setup(request_data)
+        cmd = "tox -e isort"
+        isort_out, return_code = communicate(self.container_process, self.container_obj, cmd, self.parent_pids, timeout_duration=45)
+        if return_code == 0:
+            isort_out = f"No errors detected by isort. tox output: {isort_out}"
+        return BaseResponse(output=isort_out, return_code=return_code)
+
 
 

@@ -183,7 +183,8 @@ class CoderAgent:
             },
         )
         issue_added_instruction = self.issue_description_tmpl.format(
-            issue=self.issue_config.issue_desc, issue_id=self.issue_config.issue_id
+            issue=self.issue_config.issue_desc, issue_id=self.issue_config.issue_id,
+            repo_name_dir="/" + self.repo_name.split("/")[-1].strip(),
         )
         backstory_added_instruction = self.agent_backstory_tmpl.format(
             workspace_id=workspace_id,
@@ -226,8 +227,8 @@ class CoderAgent:
             verbose=True,
             llm=llm,
             tools=self.composio_toolset,
-            memory=True,
             step_callback=self.add_in_logs,
+            memory=True,
             allow_delegation=True,
         )
 

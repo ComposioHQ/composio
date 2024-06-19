@@ -13855,9 +13855,27 @@ class Action(tuple, Enum):
         True,
         True,
     )
-    CMDMANAGERTOOL_LINTER = (
+    CMDMANAGERTOOL_BLACKLINTER = (
         "cmdmanagertool",
-        "cmdmanagertool_linter",
+        "cmdmanagertool_blacklinter",
+        True,
+        True,
+    )
+    CMDMANAGERTOOL_ISORTLINTER = (
+        "cmdmanagertool",
+        "cmdmanagertool_isortlinter",
+        True,
+        True,
+    )
+    CMDMANAGERTOOL_FLAKE8LINTER = (
+        "cmdmanagertool",
+        "cmdmanagertool_flake8linter",
+        True,
+        True,
+    )
+    CMDMANAGERTOOL_PYLINTLINTER = (
+        "cmdmanagertool",
+        "cmdmanagertool_pylintlinter",
         True,
         True,
     )

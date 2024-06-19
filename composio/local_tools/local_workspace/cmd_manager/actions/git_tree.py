@@ -40,9 +40,11 @@ class GitRepoTree(BaseAction):
         output, return_code = communicate(
             self.container_process, self.container_obj, self.command, self.parent_pids
         )
+        # output is saved in a file in the command, and then is supposed to be read by agent
         output, return_code = process_output(output, return_code)
-        files = output.split("\n")
+        if not return_code:
+            output = "git repo tree is saved in file: git_repo_tree.txt"
         return BaseResponse(
-            output=files,
+            output=output,
             return_code=return_code,
         )
