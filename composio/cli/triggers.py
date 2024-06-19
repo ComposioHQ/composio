@@ -179,7 +179,7 @@ def _disable_trigger(context: Context, id: str) -> None:
     try:
         response = context.client.triggers.disable(id=id)
         if response["status"] == "success":
-            context.console.print(f"Enabled trigger with ID: [green]{id}[/green]")
+            context.console.print(f"Disabled trigger with ID: [green]{id}[/green]")
             return
         raise click.ClickException(f"Could not disable trigger with ID: {id}")
     except ComposioSDKError as e:

@@ -5,6 +5,7 @@ Usage:
     composio logout
 """
 
+
 import click
 
 from composio.cli.context import Context, pass_context
