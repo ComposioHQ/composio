@@ -26,6 +26,8 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
 from rich.logging import RichHandler
 
+from composio import Composio
+
 
 AGENT_BACKSTORY_TMPL = """
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
@@ -84,6 +86,18 @@ logger = setup_logger()
 
 
 class CoderAgentArgs(BaseModel):
+    agent_role: str = Field(
+        default="You are the best programmer. You think carefully and step by step take action.",
+        description="role of the agent",
+    )
+    agent_goal: str = Field(
+        default="Help fix the given issue / bug in the code. And make sure you get it working.",
+        description="goal for the agent",
+    )
+    task_expected_output: str = Field(
+        default="A patch should be generated which fixes the given issue",
+        description="expected output of the agent task",
+    )
     agent_backstory_tmpl: str = Field(
         default=AGENT_BACKSTORY_TMPL,
         description="backstory template for the agent to work on",
@@ -115,6 +129,8 @@ class CoderAgent:
                                                          App.HISTORYKEEPER,])
         composio_client = Composio()
         self.entity = composio_client.get_entity("swe-agent")
+        # initialize composio client
+        self.composio_entity = self.get_composio_entity()
 
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
@@ -131,6 +147,11 @@ class CoderAgent:
         )
         self.agent_logs: Dict[str, Any] = {}
         self.current_logs: List[Any] = []
+
+    def get_composio_entity(self):
+        client = Composio()
+        entity = client.get_entity("SWE-Agent-Client")
+        return entity
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
