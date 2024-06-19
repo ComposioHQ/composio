@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 import click
 import git
-from composio_coders.constants import (
+from composio_swe.config.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
     KEY_GIT_ACCESS_TOKEN,
@@ -11,8 +11,8 @@ from composio_coders.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
-from composio_coders.context import Context, pass_context
-from composio_coders.swe import CoderAgent, CoderAgentArgs
+from composio_swe.config.context import Context, pass_context
+from composio_swe.agent.swe import CoderAgent, CoderAgentArgs
 
 
 def get_git_root():
