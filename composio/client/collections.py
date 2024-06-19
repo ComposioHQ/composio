@@ -555,7 +555,7 @@ class TriggerSubscription:
         """Set `_alive` to True."""
         self._alive = True
 
-    def run(self) -> None:
+    def listen(self) -> None:
         """Wait infinitely."""
         while True:
             time.sleep(1)

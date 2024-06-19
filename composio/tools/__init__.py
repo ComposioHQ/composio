@@ -187,6 +187,6 @@ class ComposioToolSet:
 
         return items
 
-    def create_trigger_subscription(self, timeout: float = 15.0) -> TriggerSubscription:
+    def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
         """Create trigger subscription."""
         return self.client.triggers.subscribe(timeout=timeout)
