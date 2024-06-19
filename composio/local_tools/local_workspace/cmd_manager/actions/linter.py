@@ -43,7 +43,8 @@ class Linter(BaseAction):
             rel_fname = request_data.file_name
         else:
             rel_fname = "."
-
+        self._setup(request_data)
+        # is_tox_exists = communicate(self.container_process, self.container_obj, "")
         black_output, return_code = self.lint_black(rel_fname)
         isort_out, return_code = self.lint_isort(rel_fname)
         pylint_out, return_code = self.lint_pylint(rel_fname)
@@ -64,19 +65,19 @@ class Linter(BaseAction):
         return output, return_code
 
     def lint_black(self, fname):
-        cmd = ["black", "--check", fname]
+        cmd = f"tox -e black --check {fname}"
         return self.run_cmd(cmd)
 
     def lint_isort(self, fname):
-        cmd = ["isort", "--check-only", fname]
+        cmd = f"tox -e isort --check-only {fname}"
         return self.run_cmd(cmd)
 
     def lint_pylint(self, fname):
-        cmd = ["pylint", fname]
+        cmd = f"tox -e pylint {fname}"
         return self.run_cmd(cmd)
 
     def lint_flake8(self, fname):
-        cmd = ["flake8", fname]
+        cmd = f"tox -e flake8 {fname}"
         return self.run_cmd(cmd)
 
 

@@ -21,10 +21,7 @@ from pydantic import BaseModel, Field
 from rich.logging import RichHandler
 
 from composio import Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
-)
-
+from composio_coders.prompts import linter_task_description, linter_backstory, linter_expected_output, linter_agent_goal, linter_agent_role
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -45,22 +42,22 @@ logger = setup_logger()
 
 class CoderAgentArgs(BaseModel):
     agent_role: str = Field(
-        default="You are the best programmer. You think carefully and step by step take action.",
+        default=linter_agent_role,
         description="role of the agent",
     )
     agent_goal: str = Field(
-        default="Help fix the given issue / bug in the code. And make sure you get it working.",
+        default=linter_agent_goal,
         description="goal for the agent",
     )
     task_expected_output: str = Field(
-        default="A patch should be generated which fixes the given issue",
+        default=linter_expected_output,
         description="expected output of the agent task",
     )
     agent_backstory_tmpl: str = Field(
-        default=AGENT_BACKSTORY_TMPL,
+        default=linter_backstory,
         description="backstory template for the agent to work on",
     )
-    issue_description_tmpl: str = Field(default=ISSUE_DESC_TMPL)
+    issue_description_tmpl: str = Field(default=linter_task_description)
     issue_config: IssueConfig = Field(
         ..., description="issue config, with issue description, repo-name"
     )
@@ -96,9 +93,9 @@ class CoderAgent:
         self.composio_entity = self.get_composio_entity()
 
         # initialize agent-related different prompts
-        self.agent_role = "You are the best programmer. You think carefully and step by step take action."
-        self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working. Ask the reviewer agent to review the patch and submit it once they approve it."
-        self.expected_output = "A patch should be generated which fixes the given issue"
+        self.agent_role = self.args.agent_role
+        self.agent_goal = self.args.agent_goal
+        self.expected_output = self.args.task_expected_output
         self.agent_backstory_tmpl = args.agent_backstory_tmpl
         self.issue_description_tmpl = args.issue_description_tmpl
         # initialize logger
@@ -173,7 +170,7 @@ class CoderAgent:
     def run(self):
         llm = self.get_llm()
 
-        workspace_create_resp: CreateWorkspaceResponse = self.entity.execute(
+        workspace_create_resp = self.entity.execute(
             Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {}
         )
         workspace_id = workspace_create_resp.workspace_id
@@ -242,8 +239,8 @@ class CoderAgent:
         )
 
         crew = Crew(
-            agents=[swe_agent, reviewer_agent],
-            tasks=[coding_task, review_task],
+            agents=[swe_agent],
+            tasks=[coding_task],
             memory=True,
         )
 
@@ -255,15 +252,15 @@ if __name__ == "__main__":
     from composio_coders.context import Context, set_context
 
     issue_config = {
-        "repo_name": "test_repo",
+        "repo_name": "ComposioHQ/composio",
         "issue_id": "123",
-        "base_commit_id": "abc",
-        "issue_desc": "Fix bug",
+        "base_commit_id": "kaavee/swe-update",
+        "issue_desc": linter_task_description,
     }
     model_env_config = {
         KEY_API_KEY: "test-api-key",
         "azure_endpoint": "azure-end-point",
-        "model_env": "azure",
+        "model_env": "openai",
     }
     ctx = Context()
     ctx.issue_config = issue_config

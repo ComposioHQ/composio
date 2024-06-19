@@ -7,6 +7,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )
+from composio.local_tools.local_workspace.cmd_manager.actions.linter import Linter, LinterRequest
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
@@ -57,6 +58,19 @@ class TestCmds(unittest.TestCase):
         action.set_workspace_and_history(w, h)
 
         result = action.execute(GetCurrentDirRequest(workspace_id=workspace_id), {})
+        self.assertIsNotNone(result)
+
+    def test_linter_cmd(self):
+        w = WorkspaceManagerFactory()
+        h = HistoryProcessor()
+        workspace_id = w.get_workspace_manager(
+            LocalDockerArgumentsModel(image_name="sweagent/swe-agent:latest")
+        )
+        action = Linter()
+        action.set_workspace_and_history(w, h)
+
+        result = action.execute(LinterRequest(workspace_id=workspace_id, file_name="/home/shubhra/work/composio/composio_sdk/composio/local_tools/local_workspace/cmd_manager/actions/linter.py"), {})
+        print(result)
         self.assertIsNotNone(result)
 
 
