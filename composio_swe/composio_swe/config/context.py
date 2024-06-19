@@ -9,13 +9,13 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from composio_coders.config_store import (
+from composio_swe.config.config_store import (
     AzureModelConfig,
     IssueConfig,
     ModelEnv,
     OpenAiModelConfig,
 )
-from composio_coders.constants import (
+from composio_swe.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
