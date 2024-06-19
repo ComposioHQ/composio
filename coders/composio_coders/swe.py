@@ -30,8 +30,8 @@ from rich.logging import RichHandler
 AGENT_BACKSTORY_TMPL = """
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
   Your mentor gave you following tips.
-  1. A workspace is initialized for you, and you will be working on {workspace_id}. The git repo is cloned in 
-  the path {repo_name}, you need to work in this directory.
+  1. A workspace is initialized for you, and you will be working on workspace, where workspace_id is: {workspace_id}. The git repo is cloned in 
+  the path {repo_name_dir}, you need to work in this directory.
   2. PLEASE READ THE CODE AND UNDERSTAND THE FILE STRUCTURE OF THE CODEBASE USING GIT REPO TREE ACTION.
   3. POST THAT READ ALL THE RELEVANT READMEs AND TRY TO LOOK AT THE FILES RELATED TO THE ISSUE.
   4. Form a thesis around the issue and the codebase.
@@ -199,6 +199,7 @@ class CoderAgent:
         backstory_added_instruction = self.agent_backstory_tmpl.format(
             workspace_id=workspace_id,
             repo_name=self.repo_name,
+            repo_name_dir="/" + self.repo_name.split("/")[-1].strip(),
             base_commit=self.issue_config.base_commit_id
         )
         logger.info(f"git clone response: {git_clone_response}")
