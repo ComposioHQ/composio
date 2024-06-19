@@ -66,7 +66,6 @@ def run():
 
     issues = get_issues_dataset()
     for issue in issues:
-
         issue_description = build_issue_description(
             issue["hints_text"], issue["problem_statement"]
         )
@@ -90,7 +89,6 @@ def run():
         print("--------------------------------------------------")
 
         model_env_config = {
-
             KEY_API_KEY: "test-key",
             "azure_endpoint": "test-endpoint",
             "model_env": "azure",
