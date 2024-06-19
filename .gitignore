@@ -31,4 +31,5 @@ temp
 .test_results
 .trunk
 refactor_debug.ipynb
-
+**/coder_agent_logs_*
+**/.composio.coder.*
