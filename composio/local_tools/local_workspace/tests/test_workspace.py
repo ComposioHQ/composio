@@ -80,15 +80,13 @@ class TestCmds(unittest.TestCase):
 
         edit_file_cmd = ApplyMultipleEditsInFile()
         edit_file_cmd.set_workspace_and_history(w, h)
-        output, return_code = edit_file_cmd.execute(ApplyMultipleEditsInFileRequest(workspace_id=workspace_id, edits=[
+        output, return_code = edit_file_cmd.execute(ApplyMultipleEditsInFileRequest(workspace_id=workspace_id, file_name="coders/composio_coders/linter.py", edits=[
             {
-                    "file_name": "coders/composio_coders/linter.py",
                     "start_line": 13,
                     "end_line": 13,
                     "replacement_text": ""
                 },
                 {
-                    "file_name": "coders/composio_coders/linter.py",
                     "start_line": 150,
                     "end_line": 150,
                     "replacement_text": "        :"
