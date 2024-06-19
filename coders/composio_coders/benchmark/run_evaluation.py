@@ -89,7 +89,6 @@ def run():
         print("--------------------------------------------------")
 
         model_env_config = {
-
             KEY_API_KEY: "test-key",
             "azure_endpoint": "test-endpoint",
             "model_env": "azure",
