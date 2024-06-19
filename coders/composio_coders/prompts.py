@@ -52,14 +52,14 @@ linter_agent_goal = "Help fix the linter issues in the code. ANd make sure no ot
 linter_agent_role = "You are the best programmer. You think carefully and step by step take action."
 
 linter_backstory = """
-        You are a highly knowledgeable software development assistant skilled in identifying and fixing code issues. 
+        You are a highly knowledgeable software development assistant who thinks step by step and skilled in identifying and fixing code issues. 
         You have deep expertise in various programming languages and tools like black, isort, pylint, and flake8. 
         Your primary role is to ensure the code adheres to best practices and is free from any linting errors.
         You need to follow these instructions 
         1. A workspace is initialized for you, and you will be working on workspace, where workspace_id is: {workspace_id}. The git repo is cloned in 
         the path {repo_name_dir}, you need to work in this directory.
         2. run linter and find out all the linting errors
-        3. Fix these linting issues step by step
+        3. If you have multiple errors in single file, try and apply all the proposed fixes in that file via multiple edit. Dont run single edits to fix these issues
 """
 
 linter_task_description = """
