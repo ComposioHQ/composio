@@ -8,13 +8,6 @@ from typing import Any, Dict, List
 
 import langchain_core
 from composio_swe.config.config_store import IssueConfig
-from composio_swe.config.constants import (
-    KEY_API_KEY,
-    KEY_AZURE_ENDPOINT,
-    KEY_MODEL_ENV,
-    MODEL_ENV_AZURE,
-    MODEL_ENV_OPENAI,
-)
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -110,9 +103,6 @@ class CoderAgentArgs(BaseModel):
     issue_config: IssueConfig = Field(
         ..., description="issue config, with issue description, repo-name"
     )
-    model_env_config: Dict = Field(
-        ..., description="llm configs like api_key, endpoint_url etc to initialize llm"
-    )
     agent_logs_dir: Path = Field(..., description="logs for agent")
 
 
@@ -120,7 +110,6 @@ class CoderAgent:
     def __init__(self, args: CoderAgentArgs):
         # initialize logs and history logs path
         self.args = args
-        self.model_env = args.model_env_config
         self.issue_config = args.issue_config
         self.repo_name = self.issue_config.repo_name
         if not self.issue_config.issue_id:
@@ -201,7 +190,6 @@ class CoderAgent:
             return ChatOpenAI(model="gpt-4-turbo")
         if os.environ.get("AZURE_API_KEY"):
             return AzureChatOpenAI(model="test")
-        raise ValueError(f"Invalid model environment: {self.model_env}")
 
     def run(self):
         llm = self.get_llm()
@@ -285,7 +273,7 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    from composio_coders.context import Context, set_context
+    from composio_swe.config.context import Context, set_context
 
     issue_config = {
         "repo_name": "test_repo",
@@ -293,20 +281,13 @@ if __name__ == "__main__":
         "base_commit_id": "abc",
         "issue_desc": "Fix bug",
     }
-    model_env_config = {
-        KEY_API_KEY: "test-api-key",
-        "azure_endpoint": "azure-end-point",
-        "model_env": "azure",
-    }
     ctx = Context()
     ctx.issue_config = issue_config
-    ctx.model_env = model_env_config
     set_context(ctx)
 
     args = CoderAgentArgs(
         agent_logs_dir=ctx.agent_logs_dir,
-        issue_config=ctx.issue_config,
-        model_env_config=ctx.model_env,
+        issue_config=ctx.issue_config
     )
     c_agent = CoderAgent(args)
 
