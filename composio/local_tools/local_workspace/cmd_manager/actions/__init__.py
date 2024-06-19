@@ -1,6 +1,6 @@
 from .clone_github import GithubCloneCmd
 from .cmds import CreateFileCmd, GoToLineNumInOpenFile, OpenFile
-from .edit_cmd import EditFile
+from .edit_cmd import EditFile, ApplyMultipleEditsInFile
 from .git_tree import GitRepoTree
 from .run_cmd import RunCommandOnWorkspace
 from .scroll_cmds import Scroll

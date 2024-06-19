@@ -13879,6 +13879,12 @@ class Action(tuple, Enum):
         True,
         True,
     )
+    CMDMANAGERTOOL_APPLYMULTIPLEEDITSINFILE = (
+        "cmdmanagertool",
+        "cmdmanagertool_applymultipleeditsinfile",
+        True,
+        True,
+    )
     HISTORYKEEPER_GETWORKSPACEHISTORY = (
         "historykeeper",
         "historykeeper_getworkspacehistory",

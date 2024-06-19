@@ -1,4 +1,6 @@
-from pydantic import Field
+from pydantic import Field, BaseModel
+from typing import List
+import json
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
@@ -69,4 +71,76 @@ class EditFile(BaseAction):
         return BaseResponse(
             output=output,
             return_code=return_code,
+        )
+
+
+class SingleEditRequest(BaseModel):
+    start_line: int = Field(
+        ..., description="The line number at which the file edit will start"
+    )
+    end_line: int = Field(
+        ..., description="The line number at which the file edit will end (inclusive)."
+    )
+    replacement_text: str = Field(
+        ...,
+        description="The text that will replace the specified line range in the file.",
+    )
+
+
+class ApplyMultipleEditsInFileRequest(BaseModel):
+    workspace_id: str = Field(
+        ..., description="workspace-id to get the running workspace-manager"
+    )
+    edits: List[SingleEditRequest] = Field(
+        ...,
+        description="A list of edits to apply to the file."
+    )
+
+
+class ApplyMultipleEditsInFile(BaseAction):
+    """
+    Applies multiple edits to a file. Each edit is processed sequentially.
+    Each edit must ensure proper indentation and will be checked for syntax errors.
+    The single edit is explained below
+    Single edit in this list of edits, replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text.
+    Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
+
+    Python files will be checked for syntax errors after the edit.
+    If you'd like to add the line '        print(x)' you must fully write that out,
+    with all those spaces before the code!
+    If the system detects a syntax error, the edit will not be executed.
+    Simply try to edit the file again, but make sure to read the error message and modify the edit command you issue accordingly.
+    Issuing the same command a second time will just lead to the same error message again.
+
+    If any of the single commit fails in the command, the function will return. In case of error, You will get an output like
+    output: <single_edit_request> \n <output of error>
+    If all edits succeeds, return_code will be 0 and output will be a list of all the single-edit outputs
+    """
+
+    _display_name = "Apply multiple edits in the file"
+    _request_schema = ApplyMultipleEditsInFileRequest
+    _response_schema = BaseResponse
+
+    @history_recorder()
+    def execute(
+        self, request_data: ApplyMultipleEditsInFileRequest, authorisation_data: dict
+    ) -> BaseResponse:
+        responses = []
+        return_code = 0
+        self._setup(request_data)
+        for edit_request in request_data.edits:
+            full_command = f"edit {edit_request.start_line}:{edit_request.end_line} << end_of_edit\n{edit_request.replacement_text}\nend_of_edit"
+            output, return_code = communicate(
+                self.container_process, self.container_obj, full_command, self.parent_pids
+            )
+            output, return_code = process_output(output, return_code)
+            if "Your proposed edit has introduced new syntax error(s)" in output:
+                output_with_request = json.dumps(edit_request.json()) + "\n" + output
+                return BaseResponse(output=output_with_request, return_code=return_code)
+            responses.append(output)
+
+        # Combine responses or handle them as needed
+        return BaseResponse(
+            output="\n".join(responses),
+            return_code=return_code
         )

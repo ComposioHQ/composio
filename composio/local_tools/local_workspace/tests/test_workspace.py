@@ -12,6 +12,8 @@ from composio.local_tools.local_workspace.cmd_manager.actions.clone_github impor
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
+from composio.local_tools.local_workspace.cmd_manager.actions.cmds import OpenFile, OpenCmdRequest
+from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import ApplyMultipleEditsInFile, ApplyMultipleEditsInFileRequest
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     LocalDockerArgumentsModel,
     WorkspaceManagerFactory,
@@ -60,6 +62,38 @@ class TestCmds(unittest.TestCase):
 
         result = action.execute(GetCurrentDirRequest(workspace_id=workspace_id), {})
         self.assertIsNotNone(result)
+
+    def test_multi_edit_cmd(self):
+        w = WorkspaceManagerFactory()
+        h = HistoryProcessor()
+        create_action = CreateWorkspaceAction()
+        create_action.set_workspace_and_history(w, h)
+        ca_resp = create_action.execute(CreateWorkspaceRequest(), {})
+        workspace_id = ca_resp.workspace_id
+        git_clone_a = GithubCloneCmd()
+        git_clone_a.set_workspace_and_history(w, h)
+        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio",
+                                               branch_name="shubhra/linter"), {})
+        open_file_cmd = OpenFile()
+        open_file_cmd.set_workspace_and_history(w, h)
+        open_file_cmd.execute(OpenCmdRequest(workspace_id=workspace_id, file_name="coders/composio_coders/linter.py"), {})
+
+        edit_file_cmd = ApplyMultipleEditsInFile()
+        edit_file_cmd.set_workspace_and_history(w, h)
+        output, return_code = edit_file_cmd.execute(ApplyMultipleEditsInFileRequest(workspace_id=workspace_id, edits=[
+            {
+                    "file_name": "coders/composio_coders/linter.py",
+                    "start_line": 13,
+                    "end_line": 13,
+                    "replacement_text": ""
+                },
+                {
+                    "file_name": "coders/composio_coders/linter.py",
+                    "start_line": 150,
+                    "end_line": 150,
+                    "replacement_text": "        :"
+                }]), {})
+        print(output)
 
     def test_pylinter_cmd(self):
         w = WorkspaceManagerFactory()

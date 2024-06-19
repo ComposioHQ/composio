@@ -4,6 +4,7 @@ from composio.core.local import Tool
 from composio.local_tools.local_workspace.cmd_manager.actions import (
     CreateFileCmd,
     EditFile,
+    ApplyMultipleEditsInFile,
     FindFileCmd,
     GetCurrentDirCmd,
     GitRepoTree,
@@ -44,6 +45,7 @@ class CmdManagerTool(Tool):
             SearchFileCmd,
             SearchDirCmd,
             EditFile,
+            ApplyMultipleEditsInFile,
             RunCommandOnWorkspace,
             GetCurrentDirCmd,
             GithubCloneCmd,
