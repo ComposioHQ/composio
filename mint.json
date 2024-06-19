@@ -115,10 +115,9 @@
             "introduction/foundations/components/actions/local-code",
             "introduction/foundations/components/integrations/custom-integration"
           ]
-        }
-      ]
-    },
-    {
+        },
+        "introduction/foundations/tools/tools-intro",
+        {
       "group": "Frameworks",
       "pages": [
         "framework/langchain",
@@ -128,6 +127,8 @@
         "framework/openai",
         "framework/julep",
         "framework/griptape"
+      ]
+    }
       ]
     },
     {
@@ -164,6 +165,7 @@
           "pages":[
             "guides/examples/investment-analyst",
             "guides/examples/research-assistant",
+            "guides/examples/sql-agent",
             "guides/examples/commit-agent",
             "guides/examples/competitor-researcher",
             "guides/examples/news-summary",
