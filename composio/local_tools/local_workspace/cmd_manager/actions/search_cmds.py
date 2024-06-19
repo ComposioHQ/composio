@@ -164,7 +164,7 @@ class GetCurrentDirResponse(BaseResponse):
 
 class GetCurrentDirCmd(BaseAction):
     """
-    Gets the current directory.
+    Gets the current directory. This is equivalent to running 'pwd' in the terminal.
     """
 
     _display_name = "Get Current Directory Action"
