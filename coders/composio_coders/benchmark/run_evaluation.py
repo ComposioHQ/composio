@@ -51,8 +51,9 @@ def build_issue_description(hints, problem_statement):
     tmpl = ""
     if hints:
         tmpl = f"Here are few hints to solve the issue described in problem_statement {hints}"
+
     tmpl += f"""\n\n
-    Here is the issue, that you have to solve all ob your own 
+    Here is the issue, that you have to solve all on your own 
     {problem_statement}
     """
     return tmpl
