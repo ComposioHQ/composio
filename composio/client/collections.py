@@ -384,6 +384,24 @@ class TriggerModel(BaseModel):
     logo: t.Optional[str] = None
 
 
+class ExecutionDetailsModel(BaseModel):
+    """Execution details data model."""
+
+    executed: bool
+
+
+class SuccessExecuteActionResponseModel(BaseModel):
+    """Success execute action response data model."""
+
+    execution_details: ExecutionDetailsModel
+    response_data: str
+
+
+class FileModel(BaseModel):
+    name: str
+    content: bytes
+
+
 class Triggers(Collection[TriggerModel]):
     """Collection of triggers."""
 
