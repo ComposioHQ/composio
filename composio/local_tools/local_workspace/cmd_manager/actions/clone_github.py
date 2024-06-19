@@ -39,7 +39,7 @@ class GithubCloneResponse(BaseResponse):
 
 class GithubCloneCmd(BaseAction):
     """
-    Clones a github repository
+    Clones a github repository at a given commit-id.
     """
 
     _history_maintains: bool = True

@@ -75,3 +75,13 @@ BASE_URL_TO_PROD_MAPPING = {
 """
 Composio API server base url -> web url mappings.
 """
+
+PUSHER_KEY = "ff9f18c208855d77a152"
+"""
+API Key for Pusher subscriptions.
+"""
+
+PUSHER_CLUSTER = "mt1"
+"""
+Name of the pusher cluster.
+"""

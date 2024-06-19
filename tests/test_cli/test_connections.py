@@ -2,7 +2,6 @@
 Test connections command group.
 """
 
-
 from tests.test_cli.base import BaseCliTest
 
 
