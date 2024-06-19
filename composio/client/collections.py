@@ -454,33 +454,69 @@ class _TriggerEventFilters(te.TypedDict):
     integration_id: te.NotRequired[str]
 
 
-class _TriggerSubscription:
+TriggerCallback = t.Callable[[TriggerEventData], None]
+
+
+class TriggerSubscription:
     """Trigger subscription."""
 
     _channel: Channel
     _alive: bool
 
-    def __init__(
-        self,
-        callback: t.Callable[[TriggerEventData], None],
-        filters: t.Optional[_TriggerEventFilters] = None,
-    ) -> None:
+    def __init__(self) -> None:
         """Initialize subscription object."""
-        self.callback = callback
-        self.filters = filters or {}
-
         self._alive = False
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
+        self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
 
-    def _validate_filter(self, name: str, check: t.Any) -> None:
+    def callback(
+        self,
+        filters: t.Optional[_TriggerEventFilters] = None,
+    ) -> t.Callable[[TriggerCallback], TriggerCallback]:
+        """Register a trigger callaback."""
+
+        def _wrap(f: TriggerCallback) -> TriggerCallback:
+            self._callbacks.append((f, filters or {}))
+            return f
+
+        return _wrap
+
+    def _validate_filter(
+        self,
+        check: t.Any,
+        name: str,
+        filters: _TriggerEventFilters,
+    ) -> None:
         """Check if filter is provided and raise if the values does not match."""
-        value = self.filters.get(name)
+        value = filters.get(name)
         if value is None:
             return
         if value != check:
             raise ValueError(
                 f"Skipping since `{name}` filter does not match the event",
             )
+
+    def _handle_callback(
+        self,
+        callback: TriggerCallback,
+        data: TriggerEventData,
+        filters: _TriggerEventFilters,
+    ) -> None:
+        """Handle callback."""
+        for name, check in (
+            ("app_name", data.appName),
+            ("trigger_id", data.metadata.id),
+            ("connection_id", data.metadata.connectionId),
+            ("trigger_name", data.metadata.triggerName),
+            ("entity_id", data.metadata.connection.clientUniqueUserId),
+            ("integration_id", data.metadata.connection.integrationId),
+        ):
+            self._validate_filter(
+                check=check,
+                name=name,
+                filters=filters,
+            )
+        callback(data)
 
     def handle_event(self, event: str) -> None:
         """Filter events and call the callback function."""
@@ -489,16 +525,12 @@ class _TriggerSubscription:
         except Exception as e:
             print(f"Error decoding payload: {e}")
         try:
-            for name, check in (
-                ("app_name", data.appName),
-                ("trigger_id", data.metadata.id),
-                ("connection_id", data.metadata.connectionId),
-                ("trigger_name", data.metadata.triggerName),
-                ("entity_id", data.metadata.connection.clientUniqueUserId),
-                ("integration_id", data.metadata.connection.integrationId),
-            ):
-                self._validate_filter(name=name, check=check)
-            self.callback(data)
+            for callback, filters in self._callbacks:
+                self._handle_callback(
+                    callback=callback,
+                    data=data,
+                    filters=filters,
+                )
         except BaseException as e:
             print(f"Erorr handling event `{data.metadata.id}`: {e}")
 
@@ -532,28 +564,18 @@ class _TriggerSubscription:
 class _PusherClient:
     """Pusher client for Composio SDK."""
 
-    def __init__(
-        self,
-        client_id: str,
-        base_url: str,
-        api_key: str,
-        callback: t.Callable[[TriggerEventData], None],
-        filters: t.Optional[_TriggerEventFilters] = None,
-    ) -> None:
+    def __init__(self, client_id: str, base_url: str, api_key: str) -> None:
         """Initialize pusher client."""
         self.client_id = client_id
         self.base_url = base_url
         self.api_key = api_key
-        self.subscription = _TriggerSubscription(
-            callback=callback,
-            filters=filters,
-        )
+        self.subscription = TriggerSubscription()
 
     def _get_connection_handler(
         self,
         client_id: str,
         pusher: pysher.Pusher,
-        subscription: _TriggerSubscription,
+        subscription: TriggerSubscription,
     ) -> t.Callable[[str], None]:
         def _connection_handler(_: str) -> None:
             channel = t.cast(
@@ -574,7 +596,7 @@ class _PusherClient:
 
         return _connection_handler
 
-    def connect(self, timeout: float = 15.0) -> _TriggerSubscription:
+    def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
         pusher = pysher.Pusher(
             key=PUSHER_KEY,
@@ -674,23 +696,8 @@ class Triggers(Collection[TriggerModel]):
         )
         return response.json()
 
-    def subscribe(
-        self,
-        callback: t.Callable[[TriggerEventData], None],
-        filters: t.Optional[_TriggerEventFilters] = None,
-        timeout: float = 15.0,
-    ) -> _TriggerSubscription:
-        """
-        Subscribe to a trigger and receive trigger events.
-        :param callback: A callable function that will be invoked
-                         when a trigger event occurs. It should accept
-                         a single parameter of type TriggerEventData.
-        :type callback: Callable[[TriggerEventData], None]
-        :param filters: Filter the events by given parameters.
-        :type filters: _TriggerEventFilters
-        :return: None
-        :rtype: None
-        """
+    def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
+        """Subscribe to a trigger and receive trigger events."""
         response = self._raise_if_required(
             response=self.client.http.get(
                 url="/v1/client/auth/client_info",
@@ -704,10 +711,7 @@ class Triggers(Collection[TriggerModel]):
             client_id=client_id,
             base_url=self.client.http.base_url,
             api_key=self.client.api_key,
-            callback=callback,
-            filters=filters,
         )
-
         return pusher.connect(
             timeout=timeout,
         )

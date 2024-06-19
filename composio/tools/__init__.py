@@ -14,6 +14,7 @@ from composio.client.collections import (
     ActionModel,
     FileModel,
     SuccessExecuteActionResponseModel,
+    TriggerSubscription,
 )
 from composio.client.enums import Action, App, Tag
 from composio.client.local_handler import LocalToolHandler
@@ -185,3 +186,7 @@ class ComposioToolSet:
             items = items + remote_items
 
         return items
+
+    def create_trigger_subscription(self, timeout: float = 15.0) -> TriggerSubscription:
+        """Create trigger subscription."""
+        return self.client.triggers.subscribe(timeout=timeout)
