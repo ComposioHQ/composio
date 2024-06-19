@@ -108,17 +108,16 @@
           "group": "Components",
           "pages": [
             "introduction/foundations/components/integrations/integration-guide",
+            "introduction/foundations/components/entity/entity-guide",
+            "introduction/foundations/components/integrations/connected-account",
             "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/actions/local-code",
-            "introduction/foundations/components/integrations/connected-account",
             "introduction/foundations/components/integrations/custom-integration"
           ]
-        }
-      ]
-    },
-    {
+        },
+        "introduction/foundations/tools/tools-intro",
+        {
       "group": "Frameworks",
       "pages": [
         "framework/langchain",
@@ -129,6 +128,8 @@
         "framework/julep",
         "framework/griptape",
         "framework/llamaindex"
+      ]
+    }
       ]
     },
     {
@@ -173,6 +174,7 @@
           "pages":[
             "guides/examples/investment-analyst",
             "guides/examples/research-assistant",
+            "guides/examples/sql-agent",
             "guides/examples/commit-agent",
             "guides/examples/competitor-researcher",
             "guides/examples/news-summary",
