@@ -222,7 +222,7 @@ class CoderAgent:
             Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {}
         )
         workspace_id = workspace_create_resp.workspace_id
-        logger.info(f"workspace is created, workspace-id is: {workspace_id}")
+        logger.info("workspace is created, workspace-id is: %s", workspace_id)
         git_clone_response = self.entity.execute(
             Action.CMDMANAGERTOOL_GITHUBCLONECMD,
             params={
@@ -239,7 +239,7 @@ class CoderAgent:
             repo_name_dir="/" + self.repo_name.split("/")[-1].strip(),
             base_commit=self.issue_config.base_commit_id,
         )
-        logger.info(f"git clone response: {git_clone_response}")
+        logger.info("git clone response: %s", git_clone_response)
 
         swe_agent = Agent(
             role=self.agent_role,
