@@ -13855,6 +13855,12 @@ class Action(tuple, Enum):
         True,
         True,
     )
+    CMDMANAGERTOOL_LINTER = (
+        "cmdmanagertool",
+        "cmdmanagertool_linter",
+        True,
+        True,
+    )
     HISTORYKEEPER_GETWORKSPACEHISTORY = (
         "historykeeper",
         "historykeeper_getworkspacehistory",

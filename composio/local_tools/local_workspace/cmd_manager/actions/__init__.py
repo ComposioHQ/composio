@@ -5,3 +5,4 @@ from .git_tree import GitRepoTree
 from .run_cmd import RunCommandOnWorkspace
 from .scroll_cmds import Scroll
 from .search_cmds import FindFileCmd, GetCurrentDirCmd, SearchDirCmd, SearchFileCmd
+from .linter import Linter

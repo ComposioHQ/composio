@@ -3,12 +3,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from pydantic import BaseModel, Field
 from composio_crewai import ComposioToolSet, App, Action
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import CreateWorkspaceResponse
-from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import GithubCloneRequest, GithubCloneResponse
-from composio import Composio
-from crewai import Agent, Task, Crew
+from crewai import Crew
 from typing import Any, Dict, List
 
 import langchain_core
