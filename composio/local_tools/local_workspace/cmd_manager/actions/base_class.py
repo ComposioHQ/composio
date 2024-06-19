@@ -1,6 +1,6 @@
+import typing as t
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -33,7 +33,10 @@ class BaseRequest(BaseModel):
 
 
 class BaseResponse(BaseModel):
-    output: str = Field(..., description="output of the command")
+    class Config:
+        arbitrary_types_allowed = True
+
+    output: t.Any = Field(..., description="output of the command")
     return_code: int = Field(
         ..., description="Any output or errors that occurred during the file edit."
     )
@@ -50,8 +53,8 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
     _tool_name = "cmdmanagertool"
     script_file = ""
     command = ""
-    workspace_factory: Optional[WorkspaceManagerFactory] = None
-    history_processor: Optional[HistoryProcessor] = None
+    workspace_factory: t.Optional[WorkspaceManagerFactory] = None
+    history_processor: t.Optional[HistoryProcessor] = None
 
     def __init__(self):
         super().__init__()
