@@ -78,8 +78,8 @@ class PylintLinter(BaseAction):
         if return_code == 0:
             pylint_out = f"No errors detected by pylint. pylint output: {pylint_out}"
         else:
-            pylint_out = "\n".join(get_errors(pylint_out))
-        return BaseResponse(output=json.dumps(pylint_out, indent=2), return_code=return_code)
+            pylint_out = json.dumps(get_errors(pylint_out))
+        return BaseResponse(output=pylint_out, return_code=return_code)
 
 class Flake8Linter(BaseAction):
     _display_name = "Lint Python code with Flake8"
@@ -94,8 +94,8 @@ class Flake8Linter(BaseAction):
         if return_code == 0:
             flake8_out = f"No errors detected by Flake8. tox output: {flake8_out}"
         else:
-            flake8_out = "\n".join(get_flake8_errors(flake8_out))
-        return BaseResponse(output=json.dumps(flake8_out, indent=2), return_code=return_code)
+            flake8_out = json.dumps(get_flake8_errors(flake8_out))
+        return BaseResponse(output=flake8_out, return_code=return_code)
 
 
 class BlackLinter(BaseAction):

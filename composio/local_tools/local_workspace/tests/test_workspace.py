@@ -61,7 +61,7 @@ class TestCmds(unittest.TestCase):
         result = action.execute(GetCurrentDirRequest(workspace_id=workspace_id), {})
         self.assertIsNotNone(result)
 
-    def test_linter_cmd(self):
+    def test_pylinter_cmd(self):
         w = WorkspaceManagerFactory()
         h = HistoryProcessor()
         create_action = CreateWorkspaceAction()
@@ -73,7 +73,23 @@ class TestCmds(unittest.TestCase):
         git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio", branch_name="shubhra/linter") ,{})
         action = PylintLinter()
         action.set_workspace_and_history(w, h)
+        result = action.execute(LinterRequest(workspace_id=workspace_id), {})
+        print(result)
+        self.assertIsNotNone(result)
 
+    def test_flak8linter_cmd(self):
+        w = WorkspaceManagerFactory()
+        h = HistoryProcessor()
+        create_action = CreateWorkspaceAction()
+        create_action.set_workspace_and_history(w, h)
+        ca_resp = create_action.execute(CreateWorkspaceRequest(), {})
+        workspace_id = ca_resp.workspace_id
+        git_clone_a = GithubCloneCmd()
+        git_clone_a.set_workspace_and_history(w, h)
+        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio",
+                                               branch_name="shubhra/linter"), {})
+        action = Flake8Linter()
+        action.set_workspace_and_history(w, h)
         result = action.execute(LinterRequest(workspace_id=workspace_id), {})
         print(result)
         self.assertIsNotNone(result)
