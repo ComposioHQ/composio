@@ -180,6 +180,7 @@ class CoderAgent:
             params={
                 "workspace_id": workspace_id,
                 "repo_name": self.issue_config.repo_name,
+                "branch_name": self.issue_config.base_commit_id,
             },
         )
         issue_added_instruction = self.issue_description_tmpl.format(
