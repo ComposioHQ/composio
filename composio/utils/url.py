@@ -16,10 +16,7 @@ from composio.constants import (
 
 def get_api_url_base() -> str:
     """Get URL for composio API Server."""
-    return os.environ.get(
-        ENV_COMPOSIO_BASE_URL,
-        DEFAULT_BASE_URL,
-    )
+    return os.environ.get(ENV_COMPOSIO_BASE_URL) or DEFAULT_BASE_URL
 
 
 def get_web_url(path: str) -> str:

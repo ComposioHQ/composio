@@ -2,7 +2,6 @@
 CLI Context.
 """
 
-import os
 import typing as t
 from functools import update_wrapper
 from pathlib import Path
@@ -13,11 +12,7 @@ from click.globals import get_current_context as get_click_context
 from rich.console import Console
 
 from composio.client import Composio
-from composio.constants import (
-    ENV_COMPOSIO_API_KEY,
-    LOCAL_CACHE_DIRECTORY_NAME,
-    USER_DATA_FILE_NAME,
-)
+from composio.constants import LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME
 from composio.storage.user import UserData
 
 
@@ -31,6 +26,8 @@ class Context:
     _user_data: t.Optional[UserData] = None
     _cache_dir: t.Optional[Path] = None
     _console: t.Optional[Console] = None
+
+    using_api_key_from_env: bool = False
 
     @property
     def click_ctx(self) -> click.Context:
@@ -59,17 +56,10 @@ class Context:
         path = self.cache_dir / USER_DATA_FILE_NAME
         if not path.exists():
             self._user_data = UserData(path=path)
-            self._user_data.api_key = os.environ.get(
-                ENV_COMPOSIO_API_KEY,
-                self._user_data.api_key,
-            )
+            self._user_data.store()
 
         if self._user_data is None:
             self._user_data = UserData.load(path=path)
-            self._user_data.api_key = os.environ.get(
-                ENV_COMPOSIO_API_KEY,
-                self._user_data.api_key,
-            )
         return self._user_data
 
     @property
