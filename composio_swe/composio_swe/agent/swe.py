@@ -1,4 +1,5 @@
 import datetime
+import os
 import json
 import logging
 import os
@@ -6,8 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import langchain_core
-from composio_coders.config_store import IssueConfig
-from composio_coders.constants import (
+from composio_swe.config.config_store import IssueConfig
+from composio_swe.config.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
     KEY_MODEL_ENV,
@@ -196,23 +197,10 @@ class CoderAgent:
             self.logger.info("type is not list: %s", type(step_output))
 
     def get_llm(self):
-        model_env = self.model_env.get(KEY_MODEL_ENV)
-        if model_env == MODEL_ENV_OPENAI:
-            openai_key = os.environ.get(("OPANAI_API_KEY"))
-            return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
-        if model_env == MODEL_ENV_AZURE:
-            azure_endpoint = self.model_env.get(KEY_AZURE_ENDPOINT)
-            azure_key = self.model_env.get(KEY_API_KEY)
-            os.environ["AZURE_OPENAI_API_KEY"] = self.model_env[KEY_AZURE_ENDPOINT]
-            os.environ["AZURE_OPENAI_API_KEY"] = self.model_env[KEY_API_KEY]
-            azure_llm = AzureChatOpenAI(
-                azure_endpoint=azure_endpoint,
-                api_key=azure_key,
-                model="test",
-                model_version="1106-Preview",
-                api_version="2024-02-01",
-            )
-            return azure_llm
+        if os.environ.get("OPENAI_API_KEY"):
+            return ChatOpenAI(model="gpt-4-turbo")
+        if os.environ.get("AZURE_API_KEY"):
+            return AzureChatOpenAI(model="test")
         raise ValueError(f"Invalid model environment: {self.model_env}")
 
     def run(self):
