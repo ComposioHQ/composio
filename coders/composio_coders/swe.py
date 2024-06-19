@@ -39,8 +39,7 @@ You are an autonomous programmer, your task is to solve the issue given in task 
   4. Form a thesis around the issue and the codebase.
   5. THEN TRY TO REPLICATE THE BUG THAT THE ISSUES DISCUSSES.
      If the issue includes code for reproducing the bug, we recommend that you re-implement that in your environment, and run it to make sure you can reproduce the bug.
-     Before running the bug-reproduction script, make sure all the dependencies are installed to run that script.
-  6. Once bug-reproduction script has run successfully, move on to start trying to fix it.
+     Then start trying to fix it.
      When you think you've fixed the bug, re-run the bug reproduction script to make sure that the bug has indeed been fixed.
      If the bug reproduction script does not print anything when it successfully runs, 
      we recommend adding a print("Script completed successfully, no errors.") command at the end of the file,
@@ -126,7 +125,8 @@ class CoderAgent:
         tool_set = ComposioToolSet()
         self.composio_toolset = tool_set.get_tools(apps=[App.LOCALWORKSPACE,
                                                          App.CMDMANAGERTOOL,
-                                                         App.HISTORYKEEPER,])
+                                                         App.HISTORYKEEPER,
+                                                         App.SUBMITPATCHTOOL])
         composio_client = Composio()
         self.entity = composio_client.get_entity("swe-agent")
         # initialize composio client
@@ -190,7 +190,7 @@ class CoderAgent:
     def get_llm(self):
         model_env = self.model_env.get(KEY_MODEL_ENV)
         if model_env == MODEL_ENV_OPENAI:
-            openai_key = self.model_env.get(KEY_API_KEY)
+            openai_key = os.environ.get(("OPANAI_API_KEY"))
             return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
         if model_env == MODEL_ENV_AZURE:
             azure_endpoint = self.model_env.get(KEY_AZURE_ENDPOINT)
