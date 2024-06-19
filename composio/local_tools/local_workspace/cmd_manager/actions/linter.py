@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 from pydantic import BaseModel
 
@@ -18,31 +19,41 @@ logger = get_logger()
 import re
 
 def get_errors(output):
-    # Regular expression to extract file names and error messages
-    file_pattern = re.compile(r"^\*{13} Module (?P<file>.*?)$", re.MULTILINE)
-    error_pattern = re.compile(r"^(?P<file>[\w/.]+):(?P<line>\d+):(?P<col>\d+): (?P<type>[A-Z]\d+): (?P<message>.+)$",
-                               re.MULTILINE)
+    # Regex pattern to find filenames and errors
+    pattern = r"([^\s:]+\.py):(\d+):\d+: (\w+): (.+)"
+    matches = re.findall(pattern, output)
+    file_errors = {}
 
-    # Parse the pylint output
-    files = file_pattern.findall(output)
-    detailed_matches = error_pattern.findall(output)
+    # Print the results
+    for filename, line_number, error_code, error_message in matches:
+        file_errors.setdefault(filename, [])
+        file_errors[filename].append(f"line_number: {line_number}, error: {error_message}")
 
-    # Initialize the dictionary to store file errors
-    file_errors = {file: [] for file in files}
+    return file_errors
 
-    # Extract detailed errors and populate the dictionary
-    for match in detailed_matches:
-        file = match.group("file")
-        line = match.group("line")
-        col = match.group("col")
-        error_type = match.group("type")
-        message = match.group("message")
-        file_errors[file].append({
-            "line": line,
-            "col": col,
-            "type": error_type,
-            "message": message
-        })
+def get_mypy_errors(output):
+    # Regex pattern to find filenames and errors
+    pattern = r"([^\s:]+\.py):(\d+): error: (.+)"
+    matches = re.findall(pattern, output)
+    file_errors = {}
+
+    # Print the results
+    for filename, line_number, error_message in matches:
+        file_errors.setdefault(filename, [])
+        file_errors[filename].append(f"line_number: {line_number}, error: {error_message}")
+
+    return file_errors
+
+def get_flake8_errors(output):
+    pattern = r"([^\s:]+\.py):(\d+):(\d+): (\w+) (.+)"
+    matches = re.findall(pattern, output)
+    file_errors = {}
+
+    # Print the results
+    for filename, line_number, column_number, error_code, error_message in matches:
+        file_errors.setdefault(filename, [])
+        print(error_message)
+        file_errors[filename].append(f"line_number: {line_number}, error: {error_message}")
 
     return file_errors
 
@@ -68,7 +79,7 @@ class PylintLinter(BaseAction):
             pylint_out = f"No errors detected by pylint. pylint output: {pylint_out}"
         else:
             pylint_out = "\n".join(get_errors(pylint_out))
-        return BaseResponse(output=pylint_out, return_code=return_code)
+        return BaseResponse(output=json.dumps(pylint_out, indent=2), return_code=return_code)
 
 class Flake8Linter(BaseAction):
     _display_name = "Lint Python code with Flake8"
@@ -83,8 +94,8 @@ class Flake8Linter(BaseAction):
         if return_code == 0:
             flake8_out = f"No errors detected by Flake8. tox output: {flake8_out}"
         else:
-            flake8_out = "\n".join(get_errors(flake8_out))
-        return BaseResponse(output=flake8_out, return_code=return_code)
+            flake8_out = "\n".join(get_flake8_errors(flake8_out))
+        return BaseResponse(output=json.dumps(flake8_out, indent=2), return_code=return_code)
 
 
 class BlackLinter(BaseAction):
@@ -100,7 +111,7 @@ class BlackLinter(BaseAction):
         if return_code == 0:
             black_output = f"No errors detected by black. tox output: {black_output}"
         else:
-            black_output = "\n".join(get_errors(black_output))
+            black_output = "\n".join(black_output)
         return BaseResponse(output=black_output, return_code=return_code)
 
 
@@ -117,7 +128,7 @@ class IsortLinter(BaseAction):
         if return_code == 0:
             isort_out = f"No errors detected by isort. tox output: {isort_out}"
         else:
-            isort_out = "\n".join(get_errors(isort_out))
+            isort_out = "\n".join(isort_out)
         return BaseResponse(output=isort_out, return_code=return_code)
 
 

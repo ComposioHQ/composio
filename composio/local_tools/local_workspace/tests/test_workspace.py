@@ -78,22 +78,17 @@ class TestCmds(unittest.TestCase):
         print(result)
         self.assertIsNotNone(result)
 
-    def test_get_errors(self):
-        out = '''pylint: install_deps> python -I -m pip install pylint==3.2.3
-.pkg: install_requires> python -I -m pip install 'setuptools>=40.8.0' wheel
-.pkg: _optional_hooks> python /root/miniconda3/lib/python3.9/site-packages/pyproject_api/_backend.py True setuptools.build_meta __legacy__
-.pkg: get_requires_for_build_sdist> python /root/miniconda3/lib/python3.9/site-packages/pyproject_api/_backend.py True setuptools.build_meta __legacy__
-.pkg: get_requires_for_build_wheel> python /root/miniconda3/lib/python3.9/site-packages/pyproject_api/_backend.py True setuptools.build_meta __legacy__
-.pkg: install_requires_for_build_wheel> python -I -m pip install wheel
-.pkg: prepare_metadata_for_build_wheel> python /root/miniconda3/lib/python3.9/site-packages/pyproject_api/_backend.py True setuptools.build_meta __legacy__
-.pkg: build_sdist> python /root/miniconda3/lib/python3.9/site-packages/pyproject_api/_backend.py True setuptools.build_meta __legacy__
-pylint: install_package_deps> python -I -m pip install aiohttp 'beaupy<4,>=3.7.2' click 'docker>=7.1.0' 'gymnasium>=0.29.1' 'importlib-metadata>=4.8.1' 'inflection>=0.5.1' 'jsonref>=1.1.0' 'jsonschema<5,>=4.21.1' 'openai>=1.3.0' 'pydantic<3,>=2.6.4' 'pyperclip<2,>=1.8.2' 'pyyaml>=6.0.1' 'requests<3,>=2.31.0' 'rich<14,>=13.7.1' 'sentry-sdk>=2.0.0' 'simple-parsing>=0.1.5' 'termcolor<3,>=2.4.0'
-pylint: install_package> python -I -m pip install --force-reinstall --no-deps /composio/.tox/.tmp/package/1/composio_core-0.3.11.tar.gz
-pylint: commands[0]> pylint -j 2 composio/ tests/ scripts/ coders/
+    def test_parse_pylint_errors(self):
+        out = '''GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
+pylint inst-nodeps: /home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip
+pylint installed: aiohttp==3.9.5,aiosignal==1.3.1,annotated-types==0.7.0,anyio==4.4.0,astroid==3.2.2,async-timeout==4.0.3,attrs==23.2.0,beaupy==3.8.2,certifi==2024.6.2,charset-normalizer==3.3.2,click==8.1.7,cloudpickle==3.0.0,composio_core @ file:///home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip#sha256=71c1f52e4343589a76722a33d098ba37d9128b056764e36c6e69c330a6e5db03,dill==0.3.8,distro==1.9.0,docker==7.1.0,docstring_parser==0.16,emoji==2.12.1,exceptiongroup==1.2.1,Farama-Notifications==0.0.4,frozenlist==1.4.1,gymnasium==0.29.1,h11==0.14.0,httpcore==1.0.5,httpx==0.27.0,idna==3.7,importlib_metadata==7.1.0,inflection==0.5.1,isort==5.13.2,jsonref==1.1.0,jsonschema==4.22.0,jsonschema-specifications==2023.12.1,markdown-it-py==3.0.0,mccabe==0.7.0,mdurl==0.1.2,multidict==6.0.5,numpy==1.26.4,openai==1.33.0,platformdirs==4.2.2,pydantic==2.7.3,pydantic_core==2.18.4,Pygments==2.18.0,pylint==3.2.3,pyperclip==1.8.2,python-yakh==0.3.2,PyYAML==6.0.1,questo==0.2.3,referencing==0.35.1,requests==2.32.3,rich==13.7.1,rpds-py==0.18.1,sentry-sdk==2.5.1,simple_parsing==0.1.5,sniffio==1.3.1,termcolor==2.4.0,tomli==2.0.1,tomlkit==0.12.5,tqdm==4.66.4,typing_extensions==4.12.2,urllib3==2.2.1,yarl==1.9.4,zipp==3.19.2
+pylint run-test-pre: PYTHONHASHSEED='3789068287'
+pylint run-test: commands[0] | pylint -j 2 composio/ tests/ scripts/ coders/
 ************* Module composio.local_tools.local_workspace.cmd_manager.tool
 composio/local_tools/local_workspace/cmd_manager/tool.py:4:0: W0404: Reimport 'GitRepoTree' (imported line 4) (reimported)
 ************* Module composio.local_tools.local_workspace.cmd_manager.actions.linter
-composio/local_tools/local_workspace/cmd_manager/actions/linter.py:85:0: C0305: Trailing newlines (trailing-newlines)
+composio/local_tools/local_workspace/cmd_manager/actions/linter.py:140:0: C0305: Trailing newlines (trailing-newlines)
+composio/local_tools/local_workspace/cmd_manager/actions/linter.py:18:0: C0413: Import "import re" should be placed at the top of the module (wrong-import-position)
 composio/local_tools/local_workspace/cmd_manager/actions/linter.py:1:0: W0611: Unused Optional imported from typing (unused-import)
 ************* Module composio.local_tools.local_workspace.cmd_manager.actions.clone_github
 composio/local_tools/local_workspace/cmd_manager/actions/clone_github.py:71:0: W0311: Bad indentation. Found 11 spaces, expected 12 (bad-indentation)
@@ -119,17 +114,67 @@ coders/composio_coders/swe.py:236:8: W0612: Unused variable 'review_task' (unuse
 ************* Module coders.composio_coders.prompts
 coders/composio_coders/prompts.py:75:0: C0304: Final newline missing (missing-final-newline)
 
------------------------------------
-Your code has been rated at 9.96/10
+------------------------------------------------------------------
+Your code has been rated at 9.96/10 (previous run: 9.96/10, +0.00)
 
-pylint: exit 30 (22.47 seconds) /composio> pylint -j 2 composio/ tests/ scripts/ coders/ pid=2695
-.pkg: _exit> python /root/miniconda3/lib/python3.9/site-packages/pyproject_api/_backend.py True setuptools.build_meta __legacy__
-  pylint: FAIL code 30 (47.70=setup[25.23]+cmd[22.47] seconds)
-  evaluation failed :( (47.83 seconds)
+ERROR: InvocationError for command /home/shubhra/work/composio/composio_sdk/.tox/pylint/bin/pylint -j 2 composio/ tests/ scripts/ coders/ (exited with code 30)
+______________________________________________________________________________________________ summary _______________________________________________________________________________________________
+ERROR:   pylint: commands failed
         '''
         from composio.local_tools.local_workspace.cmd_manager.actions.linter import get_errors
         from pprint import pprint
-        get_errors(output=out)
+        pprint(get_errors(out))
+
+    def test_mypy_parse_errors(self):
+        out = '''GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
+mypy inst-nodeps: /home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip
+mypy installed: WARNING: Ignoring invalid distribution -omposio-core (/home/shubhra/work/composio/composio_sdk/.tox/mypy/lib/python3.10/site-packages),aiohttp==3.9.5,aiosignal==1.3.1,annotated-types==0.7.0,anyio==4.4.0,async-timeout==4.0.3,attrs==23.2.0,beaupy==3.8.2,certifi==2024.2.2,charset-normalizer==3.3.2,click==8.1.7,composio_core @ file:///home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip#sha256=dd5a10b37056ef01453c6a320f259ec69c0a9562ebf48148211d55d3ecbdff14,distro==1.9.0,emoji==2.12.1,exceptiongroup==1.2.1,frozenlist==1.4.1,h11==0.14.0,httpcore==1.0.5,httpx==0.27.0,idna==3.7,importlib-metadata==4.13.0,inflection==0.5.1,jsonref==1.1.0,jsonschema==4.22.0,jsonschema-specifications==2023.12.1,markdown-it-py==3.0.0,mdurl==0.1.2,multidict==6.0.5,mypy==1.3.0,mypy-extensions==1.0.0,openai==1.30.4,pydantic==2.7.2,pydantic_core==2.18.3,Pygments==2.18.0,pyperclip==1.8.2,python-yakh==0.3.2,questo==0.2.3,referencing==0.35.1,requests==2.32.2,rich==13.7.1,rpds-py==0.18.1,sniffio==1.3.1,termcolor==2.4.0,tomli==2.0.1,tqdm==4.66.4,typing_extensions==4.12.0,urllib3==2.2.1,yarl==1.9.4,zipp==3.19.0
+mypy run-test-pre: PYTHONHASHSEED='1471921678'
+mypy run-test: commands[0] | mypy composio/ scripts/ tests/ coders/ --config-file tox.ini
+composio/local_tools/local_workspace/tests/test_workspace.py:132: error: expected an indented block after function definition on line 128  [syntax]
+Found 1 error in 1 file (errors prevented further checking)
+ERROR: InvocationError for command /home/shubhra/work/composio/composio_sdk/.tox/mypy/bin/mypy composio/ scripts/ tests/ coders/ --config-file tox.ini (exited with code 2)
+______________________________________________________________________________________________ summary _______________________________________________________________________________________________
+ERROR:   mypy: commands failed
+        '''
+        from composio.local_tools.local_workspace.cmd_manager.actions.linter import get_mypy_errors
+        from pprint import pprint
+        print(get_mypy_errors(out))
+
+    def test_flake8_parse(self):
+        out = '''GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
+    flake8 inst-nodeps: /home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip
+    flake8 installed: aiohttp==3.9.5,aiosignal==1.3.1,annotated-types==0.7.0,anyio==4.4.0,async-timeout==4.0.3,attrs==23.2.0,beaupy==3.8.2,certifi==2024.2.2,charset-normalizer==3.3.2,click==8.1.7,composio_core @ file:///home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip#sha256=c9b6c53feb53002cc7a5ac4eab433e226ff4c300f60aac9d60707399e00b1f65,distro==1.9.0,emoji==2.12.1,exceptiongroup==1.2.1,flake8==6.0.0,frozenlist==1.4.1,h11==0.14.0,httpcore==1.0.5,httpx==0.27.0,idna==3.7,importlib-metadata==4.13.0,inflection==0.5.1,jsonref==1.1.0,jsonschema==4.22.0,jsonschema-specifications==2023.12.1,markdown-it-py==3.0.0,mccabe==0.7.0,mdurl==0.1.2,multidict==6.0.5,openai==1.30.4,pycodestyle==2.10.0,pydantic==2.7.2,pydantic_core==2.18.3,pyflakes==3.0.1,Pygments==2.18.0,pyperclip==1.8.2,python-yakh==0.3.2,questo==0.2.3,referencing==0.35.1,requests==2.32.2,rich==13.7.1,rpds-py==0.18.1,sniffio==1.3.1,termcolor==2.4.0,tqdm==4.66.4,typing_extensions==4.12.0,urllib3==2.2.1,yarl==1.9.4,zipp==3.19.0
+    flake8 run-test-pre: PYTHONHASHSEED='2931598528'
+    flake8 run-test: commands[0] | flake8 composio/ scripts/ tests/ coders/ --config tox.ini
+    coders/composio_coders/linter.py:13:1: F401 'composio.local_tools.local_workspace.commons.local_docker_workspace.communicate' imported but unused
+    coders/composio_coders/linter.py:149:59: E203 whitespace before ':'
+    coders/composio_coders/prompts.py:75:98: W292 no newline at end of file
+    coders/composio_coders/swe.py:236:9: F841 local variable 'review_task' is assigned to but never used
+    composio/local_tools/local_workspace/cmd_manager/actions/clone_github.py:71:12: E111 indentation is not a multiple of 4
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:1:1: F401 'typing.Optional' imported but unused
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:18:1: E402 module level import not at top of file
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:20:1: E302 expected 2 blank lines, found 1
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:33:1: E302 expected 2 blank lines, found 1
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:50:1: E302 expected 2 blank lines, found 1
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:70:1: E302 expected 2 blank lines, found 1
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:96:36: E222 multiple spaces after operator
+    composio/local_tools/local_workspace/cmd_manager/actions/linter.py:121:1: W391 blank line at end of file
+    composio/local_tools/local_workspace/cmd_manager/tool.py:4:1: F811 redefinition of unused 'GitRepoTree' from line 4
+    composio/local_tools/local_workspace/tests/test_workspace.py:10:1: F401 'composio.local_tools.local_workspace.cmd_manager.actions.linter.BlackLinter' imported but unused
+    composio/local_tools/local_workspace/tests/test_workspace.py:10:1: F401 'composio.local_tools.local_workspace.cmd_manager.actions.linter.IsortLinter' imported but unused
+    composio/local_tools/local_workspace/tests/test_workspace.py:10:1: F401 'composio.local_tools.local_workspace.cmd_manager.actions.linter.Flake8Linter' imported but unused
+    composio/local_tools/local_workspace/tests/test_workspace.py:73:137: E203 whitespace before ','
+    composio/local_tools/local_workspace/tests/test_workspace.py:84:201: E501 line too long (1244 > 200 characters)
+    composio/local_tools/local_workspace/tests/test_workspace.py:131:201: E501 line too long (1138 > 200 characters)
+    composio/local_tools/local_workspace/tests/test_workspace.py:141:9: F401 'pprint.pprint' imported but unused
+    ERROR: InvocationError for command /home/shubhra/work/composio/composio_sdk/.tox/flake8/bin/flake8 composio/ scripts/ tests/ coders/ --config tox.ini (exited with code 1)
+    ______________________________________________________________________________________________ summary _______________________________________________________________________________________________
+    ERROR:   flake8: commands failed
+        '''
+        from composio.local_tools.local_workspace.cmd_manager.actions.linter import get_flake8_errors
+        from pprint import pprint
+        pprint(get_flake8_errors(out))
 
 
 if __name__ == "__main__":
