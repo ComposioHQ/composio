@@ -52,7 +52,6 @@ def get_flake8_errors(output):
     # Print the results
     for filename, line_number, column_number, error_code, error_message in matches:
         file_errors.setdefault(filename, [])
-        print(error_message)
         file_errors[filename].append(f"line_number: {line_number}, error: {error_message}")
 
     return file_errors
@@ -62,10 +61,14 @@ class LinterRequest(BaseModel):
     workspace_id: str = Field(..., description="workspace-id for the linter to work")
 
 class LinterResponse(BaseModel):
-    lint_errors: str = Field(..., description="list of lint errors")
+    lint_errors: str = Field(..., description="its a json dump of errors in the format of {file_name: <list_of_errors>}")
 
 
 class PylintLinter(BaseAction):
+    """
+    Runs pylint command on the code, and returns output in format like this
+    {<file_name>: ["line_number": <>, "error": ""]}
+    """
     _display_name = "Lint Python code with Pylint"
     _request_schema = LinterRequest
     _response_schema = LinterResponse
@@ -82,6 +85,10 @@ class PylintLinter(BaseAction):
         return BaseResponse(output=pylint_out, return_code=return_code)
 
 class Flake8Linter(BaseAction):
+    """
+       Runs flake8 command on the code, and returns output in format like this
+       {<file_name>: ["line_number": <>, "error": ""]}
+       """
     _display_name = "Lint Python code with Flake8"
     _request_schema = LinterRequest
     _response_schema = LinterResponse
@@ -99,6 +106,9 @@ class Flake8Linter(BaseAction):
 
 
 class BlackLinter(BaseAction):
+    """
+       Runs black command on the code, and also formats the file
+    """
     _display_name = "Format Python code with Black"
     _request_schema = LinterRequest
     _response_schema = LinterResponse
@@ -116,6 +126,9 @@ class BlackLinter(BaseAction):
 
 
 class IsortLinter(BaseAction):
+    """
+    Runs isort command on the code, and also formats the file
+    """
     _display_name = "Sort imports in Python code with Isort"
     _request_schema = LinterRequest
     _response_schema = LinterResponse
