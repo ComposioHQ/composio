@@ -78,3 +78,4 @@ class BaseClient:
     """Composio client abstraction."""
 
     http: HttpClient
+    api_key: str
