@@ -67,6 +67,6 @@ class HttpClient(SyncSession):
         return request
 
     def __getattribute__(self, name: str) -> t.Any:
-        if name in ("get", "post", "put", "delete"):
+        if name in ("get", "post", "put", "delete", "patch"):
             return self._wrap(super().__getattribute__(name))
         return super().__getattribute__(name)
