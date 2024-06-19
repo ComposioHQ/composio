@@ -1,5 +1,4 @@
 composio-core
 composio-langchain
-composio-llamaindex
 dotenv
 langchain-openai
