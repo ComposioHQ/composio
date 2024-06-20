@@ -190,3 +190,33 @@ class ComposioToolSet:
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
         """Create trigger subscription."""
         return self.client.triggers.subscribe(timeout=timeout)
+
+    def find_actions_by_use_case(
+        self,
+        *apps: t.Union[str, App],
+        use_case: str,
+    ) -> t.List[Action]:
+        """
+        Find actions by specified use case.
+
+        :param apps: List of apps to search.
+        :param use_case: String describing the use case.
+        :return: A list of actions matching the relevant use case.
+        """
+        actions = self.client.actions.get(
+            apps=[App(app) for app in apps],
+            use_case=use_case,
+            allow_all=True,
+        )
+        return [
+            Action.from_action(name=_get_enum_key(action.name).lower())
+            for action in actions
+        ]
+
+
+# TODO: Extract as reusable
+def _get_enum_key(name: str) -> str:
+    characters_to_replace = [" ", "-", "/", "(", ")", "\\", ":", '"', "'", "."]
+    for char in characters_to_replace:
+        name = name.replace(char, "_")
+    return name.upper()
