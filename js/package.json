@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "playwright test tests/*",
     "build": "tsc  --project . --outDir lib",
     "type-docs": "typedoc"
   },
@@ -26,6 +26,7 @@
   "dependencies": {
     "@langchain/core": "^0.2.6",
     "@langchain/openai": "^0.1.2",
+    "@playwright/test": "^1.44.1",
     "axios": "^1.7.2",
     "enumify": "^2.0.0",
     "langchain": "^0.2.5",
