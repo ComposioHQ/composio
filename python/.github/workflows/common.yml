@@ -1,0 +1,141 @@
+name: main_workflow
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+
+jobs:
+  lock_check:
+    continue-on-error: False
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@master
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Pipenv install requirements and check it can be locked
+        run: |
+          pip install pipenv
+          pipenv --clear
+          time pipenv install --verbose --dev --skip-lock
+          time pipenv run pip install -e .[all]
+          time pipenv lock
+
+  linter_checks:
+    continue-on-error: False
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@master
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          pip install --user --upgrade setuptools
+          pip install tox==4.6.3
+      - name: Code style check
+        run: |
+          tox -e black-check
+          tox -e isort-check
+          tox -e flake8
+      - name: Pylint check
+        run: tox -e pylint
+      - name: Static type check
+        run: tox -e mypy
+
+  test:
+    continue-on-error: True
+    needs:
+      - lock_check
+      - linter_checks
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.9", "3.10", "3.11"]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install Docker Engine without containerd
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - uses: actions/setup-python@master
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          pip install --user --upgrade setuptools
+          pip install tox==4.6.3
+      - name: Unittests
+        run: |
+          COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} tox -e unittests
+      - if: matrix.python-version == '3.10'
+        name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: SamparkAI/composio_sdk
+  
+  # Needs fixing
+  # integration_tests:
+  #   needs:
+  #     - lock_check
+  #     - linter_checks
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: [ubuntu-latest, macos-latest]
+  #       python-version: ['3.9', '3.10', '3.11', '3.12']
+  #   runs-on: ${{ matrix.os }}
+
+  #   steps:
+  #   - uses: actions/checkout@v2
+
+  #   - name: Set up Node.js
+  #     uses: actions/setup-node@v2
+  #     with:
+  #       node-version: '20'
+
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+    
+  #   - name: Go core and run pip install
+  #     run: pip3 install -e .
+
+  #   - name: Install dependencies
+  #     run: npm install -g pnpm && pnpm install && pnpm exec playwright install
+
+  #   - name: Run tests
+  #     run: pnpm test
