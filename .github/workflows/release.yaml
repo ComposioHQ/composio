@@ -6,6 +6,9 @@ on:
 jobs:
   publish-core:
     name: Create Framework & Plugin Releases
+    defaults:
+      run:
+        working-directory: ./python
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -36,6 +39,10 @@ jobs:
 
   publish-plugins:
     needs: publish-core
+    name: Create Plugin Releases
+    defaults:
+      run:
+        working-directory: ./python
     strategy:
       max-parallel: 1
       matrix:
@@ -67,5 +74,3 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
           packages-dir: plugins/${{ matrix.package }}/dist/
-
-

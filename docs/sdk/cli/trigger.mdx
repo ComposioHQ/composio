@@ -1,0 +1,54 @@
+---
+title: "🧑🏻‍💻 Manage Triggers using CLI"
+sidebarTitle: "Triggers"
+icon: "lasso"
+description: "Learn how to enable, disable, list, and manage triggers using the CLI."
+---
+
+### Managing Triggers
+
+<Steps>
+<Step title="Set Global Trigger Callback URL">
+Set a global callback URL to which all triggers from Composio will be sent.
+  <CodeGroup>
+  ```bash Set Global Callback
+  composio triggers callbacks set https://31-*****-163.ngrok.app
+  ```
+  </CodeGroup>
+  This step is crucial for receiving triggers. 
+</Step>
+<Step title="List All Triggers for Slack">
+Identify which triggers are available for `slack` and explore potential activations.
+  <CodeGroup>
+  ```bash List Slack Triggers
+  composio triggers --app slack
+  ```
+  </CodeGroup>
+</Step>
+<Step title="Enable a Specific Trigger">
+**Activate** a Slack trigger to **obtain a unique `Trigger_ID`**.
+  <CodeGroup>
+  ```bash Enable a Trigger
+  composio triggers enable slack_receive_message # Replace 'slack_receive_message' with your desired trigger name
+  ```
+  </CodeGroup>
+  In the output, you should get a `Trigger_ID`. This is **crucial for distinguishing** your triggers.
+</Step>
+
+<Step title="Disable a Specific Trigger">
+Deactivate a trigger if it no longer meets your needs after testing.
+  <CodeGroup>
+  ```bash Disable a Trigger
+  composio triggers disable <trigger_id>
+  ```
+  </CodeGroup>
+</Step>
+<Step title="List All Active Triggers">
+Review all triggers that are currently active within your account.
+  <CodeGroup>
+  ```bash List all Active Triggers
+  composio triggers --active
+  ```
+  </CodeGroup>
+</Step>
+</Steps>
