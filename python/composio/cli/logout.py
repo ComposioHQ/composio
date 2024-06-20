@@ -26,7 +26,8 @@ class Examples(HelpfulCmdBase, click.Command):
 def _logout(context: Context) -> None:
     """Logout from the Composio SDK"""
     try:
-        context.user_data.api_key = None
-        context.user_data.store()
+        user_data = context.user_data
+        user_data.api_key = None
+        user_data.store()
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e

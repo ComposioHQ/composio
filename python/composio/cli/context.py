@@ -2,6 +2,7 @@
 CLI Context.
 """
 
+import os
 import typing as t
 from functools import update_wrapper
 from pathlib import Path
@@ -12,7 +13,11 @@ from click.globals import get_current_context as get_click_context
 from rich.console import Console
 
 from composio.client import Composio
-from composio.constants import LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME
+from composio.constants import (
+    ENV_COMPOSIO_API_KEY,
+    LOCAL_CACHE_DIRECTORY_NAME,
+    USER_DATA_FILE_NAME,
+)
 from composio.storage.user import UserData
 
 
@@ -27,7 +32,8 @@ class Context:
     _cache_dir: t.Optional[Path] = None
     _console: t.Optional[Console] = None
 
-    using_api_key_from_env: bool = False
+    _is_logged_in: t.Optional[bool] = None
+    _using_api_key_from_env: bool = False
 
     @property
     def click_ctx(self) -> click.Context:
@@ -53,13 +59,25 @@ class Context:
     @property
     def user_data(self) -> UserData:
         """User data."""
+        if self._user_data is not None:
+            return self._user_data
+
         path = self.cache_dir / USER_DATA_FILE_NAME
         if not path.exists():
             self._user_data = UserData(path=path)
             self._user_data.store()
 
+        self._is_logged_in = False
         if self._user_data is None:
             self._user_data = UserData.load(path=path)
+            if self._user_data.api_key is not None:
+                self._is_logged_in = True
+
+        api_key_from_env = os.environ.get(ENV_COMPOSIO_API_KEY)
+        if api_key_from_env is not None:
+            self._using_api_key_from_env = True
+            self._user_data.api_key = api_key_from_env
+
         return self._user_data
 
     @property
@@ -71,9 +89,15 @@ class Context:
             )
         return self._client
 
+    def using_api_key_from_env(self) -> bool:
+        """Check if API Key being used was parsed from the environment"""
+        return self._using_api_key_from_env
+
     def is_logged_in(self) -> bool:
         """Check if a user is logged in."""
-        return self.user_data.api_key is not None
+        if self._is_logged_in is None:
+            _ = self.user_data
+        return t.cast(bool, self._is_logged_in)
 
 
 R = t.TypeVar("R")
@@ -112,7 +136,10 @@ def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
         _context = Context()
 
     def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        if not t.cast(Context, _context).is_logged_in():
+        if (
+            not t.cast(Context, _context).is_logged_in()
+            and not t.cast(Context, _context).using_api_key_from_env()
+        ):
             raise click.ClickException(
                 message="User not logged in, please login using `composio login`",
             )

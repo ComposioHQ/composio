@@ -47,22 +47,35 @@ def _login(
         )
         return
 
-    context.console.print("\n[green]> Authenticating...[/green]\n")
+    if context.using_api_key_from_env():
+        context.console.print(
+            "[yellow]WARNING: `COMPOSIO_API_KEY` Environment variable is set[/yellow]"
+        )
+
+    context.console.print("\n> [green]Authenticating...[/green]")
     try:
         key = Composio.generate_auth_key()
         url = get_web_url(path=f"?cliKey={key}")
         context.console.print(
-            "> Redirecting you to the login page. Please login using the following link:\n"
+            "> Please login using the following link"
+            if no_browser
+            else "> Redirecting you to the login page"
         )
-        context.console.print(f"[green]{url}[/green]\n")
+        context.console.print(f"> [green]{url}[/green]")
         if not no_browser:
             webbrowser.open(url)
-        code = click.prompt("> Enter authentication code: ")
-        context.user_data.api_key = Composio.validate_auth_session(
+        code = click.prompt("> Enter authentication code")
+        api_key = Composio.validate_auth_session(
             key=key,
             code=code,
         )
+        if context.using_api_key_from_env() and api_key != context.user_data.api_key:
+            context.console.print(
+                "> [yellow]WARNING: API Key from environment does not match "
+                "with the one retrieved from login[/yellow]"
+            )
+        context.user_data.api_key = api_key
         context.user_data.store()
-        context.console.print("\n[green]✔ Authenticated successfully![/green]\n")
+        context.console.print("✔ [green]Authenticated successfully![/green]")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
