@@ -135,6 +135,7 @@ class Entity:
         action: Action,
         params: t.Dict,
         connected_account_id: t.Optional[str] = None,
+        text: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute an action.
@@ -150,6 +151,7 @@ class Entity:
                 action=action,
                 params=params,
                 entity_id=self.id,
+                text=text,
             )
 
         connected_account = self.get_connection(
@@ -161,6 +163,7 @@ class Entity:
             params=params,
             entity_id=t.cast(str, connected_account.clientUniqueUserId),
             connected_account=connected_account.id,
+            text=text,
         )
 
     def get_connection(
