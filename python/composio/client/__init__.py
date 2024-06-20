@@ -34,6 +34,7 @@ from composio.utils.url import get_api_url_base
 
 _valid_keys: t.Set[str] = set()
 
+
 class Composio(BaseClient):
     """Composio SDK Client."""
 
@@ -77,7 +78,7 @@ class Composio(BaseClient):
 
         base_url = base_url or get_api_url_base()
         response = requests.get(
-            url= base_url + str(v1 / "client" / "auth" / "client_info"),
+            url=base_url + str(v1 / "client" / "auth" / "client_info"),
             headers={
                 "x-api-key": key,
             },
