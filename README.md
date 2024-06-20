@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
-    <img src="./docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
+    <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
   </a>
   <a href="https://composio.dev//#gh-light-mode-only">
-    <img src="./docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
+    <img src="./python/docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
   </a>
 </p>
 <p align="center">
