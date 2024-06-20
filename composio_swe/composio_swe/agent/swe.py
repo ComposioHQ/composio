@@ -1,5 +1,4 @@
 import datetime
-import os
 import json
 import logging
 import os
@@ -7,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import langchain_core
-from composio_swe.config.config_store import IssueConfig
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -18,6 +16,7 @@ from composio import Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
+from composio_swe.composio_swe.config.config_store import IssueConfig
 
 
 AGENT_BACKSTORY_TMPL = """
@@ -190,12 +189,13 @@ class CoderAgent:
             return ChatOpenAI(model="gpt-4-turbo")
         if os.environ.get("AZURE_API_KEY"):
             return AzureChatOpenAI(model="test")
+        raise ValueError("no model is found")
 
     def run(self):
         llm = self.get_llm()
 
-        workspace_create_resp: CreateWorkspaceResponse = self.entity.execute(
-            Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {}
+        workspace_create_resp = CreateWorkspaceResponse.model_validate(
+            self.entity.execute(Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {})
         )
         workspace_id = workspace_create_resp.workspace_id
         logger.info("workspace is created, workspace-id is: %s", workspace_id)
@@ -273,7 +273,7 @@ class CoderAgent:
 
 
 if __name__ == "__main__":
-    from composio_swe.config.context import Context, set_context
+    from composio_swe.composio_swe.config.context import Context, set_context
 
     issue_config = {
         "repo_name": "test_repo",
@@ -282,12 +282,11 @@ if __name__ == "__main__":
         "issue_desc": "Fix bug",
     }
     ctx = Context()
-    ctx.issue_config = issue_config
+    ctx.issue_config = IssueConfig.model_validate(issue_config)
     set_context(ctx)
 
     args = CoderAgentArgs(
-        agent_logs_dir=ctx.agent_logs_dir,
-        issue_config=ctx.issue_config
+        agent_logs_dir=ctx.agent_logs_dir, issue_config=ctx.issue_config
     )
     c_agent = CoderAgent(args)
 
