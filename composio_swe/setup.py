@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 
 
 setup(
-    name="composio_coder",
+    name="composio_swe",
     version="0.0.1",
     author="Shubhra",
     author_email="shubhra@composio.dev",
@@ -22,14 +22,14 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    packages=find_packages(include=["composio_coders"]),
+    packages=find_packages(include=["composio_swe/*"]),
     entry_points={
         "console_scripts": [
-            "composio-coder = composio_coders.cli:cli",
+            "composio-swe=composio_swe.cli:cli",
         ],
     },
     install_requires=[
-        "composio_core===0.3.9",
+        "composio_core>=0.3.9",
         "gitpython>=3.1.43",
         "composio_crewai>=0.3.9",
         "crewai>=0.30.11",
