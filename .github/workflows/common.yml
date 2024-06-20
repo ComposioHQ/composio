@@ -8,6 +8,9 @@ on:
 
 jobs:
   lock_check:
+    defaults:
+      run:
+        working-directory: ./python
     continue-on-error: False
     runs-on: ${{ matrix.os }}
     strategy:
@@ -29,6 +32,9 @@ jobs:
           time pipenv lock
 
   linter_checks:
+    defaults:
+      run:
+        working-directory: ./python
     continue-on-error: False
     runs-on: ${{ matrix.os }}
     strategy:
@@ -59,6 +65,9 @@ jobs:
         run: tox -e mypy
 
   test:
+    defaults:
+      run:
+        working-directory: ./python
     continue-on-error: True
     needs:
       - lock_check
