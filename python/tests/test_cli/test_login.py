@@ -13,5 +13,6 @@ class TestLogin(BaseCliTest):
     def test_user_already_logged_in(self) -> None:
         """Test login successful."""
         with mock.patch.object(Context, "is_logged_in", return_value=True):
-            result = self.run("login", "--no-browser")
-        assert result.exit_code == 0, result.stdout
+            self.run("login", "--no-browser")
+            self.assert_exit_code(code=0)
+            self.assert_stdout(match="You're already logged in!")
