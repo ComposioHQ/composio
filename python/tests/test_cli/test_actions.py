@@ -36,7 +36,7 @@ class TestListActions(BaseCliTest):
         """Test list all actions."""
         result = self.run("actions", *arguments)
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
         for output in exptected_outputs:
             assert output in result.stdout
 
