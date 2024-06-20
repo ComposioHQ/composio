@@ -47,7 +47,7 @@ def _login(
         )
         return
 
-    if context.using_api_key_from_env:
+    if context.using_api_key_from_env():
         context.console.print(
             "[yellow]WARNING: `COMPOSIO_API_KEY` Environment variable is set[/yellow]"
         )
@@ -69,7 +69,7 @@ def _login(
             key=key,
             code=code,
         )
-        if context.using_api_key_from_env and api_key != context.user_data.api_key:
+        if context.using_api_key_from_env() and api_key != context.user_data.api_key:
             context.console.print(
                 "> [yellow]WARNING: API Key from environment does not match "
                 "with the one retrieved from login[/yellow]"
