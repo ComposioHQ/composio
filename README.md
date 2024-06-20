@@ -66,6 +66,8 @@
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
 - [🚀 Getting Started with Javascript ](#-getting-started-with-javascript)
+  - [1. Install the Composio SDK](#1-install-the-composio-sdk)
+  - [2. Setup the OpenAI and Composio Tool Set](#2-setup-the-openai-and-composio-tool-set)
 - [💡 Examples](#-examples)
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
