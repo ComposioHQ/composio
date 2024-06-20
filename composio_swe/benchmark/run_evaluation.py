@@ -1,10 +1,11 @@
 import logging
 
-from composio_swe.config.constants import KEY_API_KEY
-from composio_swe.cli.context import Context, set_context
-from composio_swe.swe import CoderAgent, CoderAgentArgs
 from datasets import load_dataset
 from rich.logging import RichHandler
+
+from composio_swe.cli.context import Context, set_context
+from composio_swe.config.constants import KEY_API_KEY
+from composio_swe.swe import CoderAgent, CoderAgentArgs
 
 
 # get logger
