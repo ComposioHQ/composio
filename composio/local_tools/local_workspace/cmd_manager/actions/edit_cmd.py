@@ -129,24 +129,33 @@ class ApplyMultipleEditsInFile(BaseAction):
         responses = []
         return_code = 0
         self._setup(request_data)
+        errors = {}
+        successful_edits = {}
         for edit_request in request_data.edits:
             open_file_cmd = f"open {edit_request.file_name}"
             output, ret_code = communicate(self.container_process, self.container_obj, open_file_cmd, self.parent_pids)
             if ret_code != 0:
-                output, ret_code = process_output(output, ret_code)
-                return BaseResponse(output=output, return_code=ret_code)
+                errors.setdefault(edit_request.file_name, [])
+                errors[edit_request.file_name].append(output)
+                continue
             full_command = f"edit {edit_request.start_line}:{edit_request.end_line} << end_of_edit\n{edit_request.replacement_text}\nend_of_edit"
             output, return_code = communicate(
                 self.container_process, self.container_obj, full_command, self.parent_pids
             )
             output, return_code = process_output(output, return_code)
             if "Your proposed edit has introduced new syntax error(s)" in output:
-                output_with_request = json.dumps(edit_request.json()) + "\n" + output
-                return BaseResponse(output=output_with_request, return_code=return_code)
-            responses.append(output)
+                errors.setdefault(edit_request.file_name, [])
+                errors[edit_request.file_name].append(output)
+                continue
+            successful_edits.setdefault(edit_request.file_name, [])
+            successful_edits[edit_request.file_name].append(output)
+        responses = {
+            "errors": errors,
+            "successful_edits": successful_edits
+        }
 
         # Combine responses or handle them as needed
         return BaseResponse(
-            output="\n".join(responses),
+            output=json.dumps(responses),
             return_code=return_code
         )
