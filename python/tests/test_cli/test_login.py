@@ -3,7 +3,6 @@
 from unittest import mock
 
 from composio.cli.context import Context
-from composio.client import Composio
 
 from tests.test_cli.base import BaseCliTest
 
