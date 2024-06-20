@@ -176,7 +176,7 @@ def add_integration(
     )
     app = t.cast(AppModel, context.client.apps.get(name=name))
     if app.no_auth:
-        raise click.ClickException(f"{app.name} is does not require authentication")
+        raise click.ClickException(f"{app.name} does not require authentication")
 
     auth_schemes = app.auth_schemes or []
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
