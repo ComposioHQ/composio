@@ -4,6 +4,7 @@
   "description": "",
   "main": "demo.mjs",
   "scripts": {
+    "start": "node demo.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
