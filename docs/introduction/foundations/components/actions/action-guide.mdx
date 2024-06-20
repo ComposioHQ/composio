@@ -1,0 +1,120 @@
+---
+title: "🛠️ How to Use Actions"
+sidebarTitle: "Actions"
+icon: "wand-magic-sparkles"
+description: "Learn how to perform actions with a connected account."
+---
+
+## Using Actions
+
+**Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
+
+Actions are tasks which your agent can perform. Actions can be performed on the tools which are integrated. Some examples of actions: 
+* Create a Google Calendar Event 
+* Fetch all the Subtitles of a Youtube Video 
+* Send an email
+* Star a github repo, etc.
+
+Check out the coding guides provided in the examples section to have a better understanding.
+
+## **Types of Actions**
+
+<Tabs>
+  <Tab title="Default Actions">
+    Composio supports a variety of default actions for each supported
+    application.
+  </Tab>
+  <Tab title="Custom Actions">
+    Our platform offers an extensible interface for defining custom actions for
+    both custom and default applications. [Learn
+    more.](https://app.composio.dev/apps/custom)
+  </Tab>
+  <Tab title="Local Code/Local Actions">
+    Composio enables fetching authentication parameters for any connection,
+    allowing you to execute code remotely and interact with API endpoints.
+    Example: Use the `getConnection` endpoint to call GitHub, create an issue on
+    your server, and fetch the access token. [Learn
+    more](https://docs.composio.dev/actions/local-code)
+  </Tab>
+</Tabs>
+
+## Working with Actions
+
+<Steps>
+<Step title="Fetch Actions">
+
+<CodeGroup>
+```python Get Action/s Input Schema
+
+from composio_openai import ComposioToolSet, Action
+
+tool_set = ComposioToolSet()
+
+tools = tool_set.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+
+print(tools)
+```
+</CodeGroup>
+
+The response will include the **Action's ID, Name and Input/Output schema** in **JSON Def**
+
+<CodeGroup>
+```JSON Sample Response
+[
+  {
+    "name": "github_create_issue",
+    "display_name": "Create Issue",
+    "description": "Create a new issue in a repository.",
+    "parameters": {
+      "properties": {
+        "owner": {
+          "description": "Owner of the repository",
+          "examples": [
+            "openai",
+            "facebook"
+          ],
+          "title": "Owner",
+          "type": "string"
+        }...
+      },
+      "required": [
+        "owner"...
+      ],
+      "title": "CreateIssueRequest",
+      "type": "object"
+    },
+    "response": {
+      "properties": {
+        ...
+      }
+    },
+    "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
+    "appKey": "github",
+    "logo": "https://i.imgur.com/FAXkSDq.png",
+    "appName": "Github",
+    "enabled": true
+  }
+]
+```
+
+</CodeGroup>
+</Step>
+
+<Step title="Execute the action">
+<CodeGroup>
+```python Execute Action
+
+from composio import ComposioToolSet, Action
+
+tool_set = ComposioToolSet(api_key="COMPOSIO_API_KEY")
+
+tool_set.execute_action(
+    action=Action.SLACK_CHAT_POST_MESSAGE,
+    params={"text": "Hello, world!", "channel": "D04N8SVQKKU"},
+    entity_id="melissa",
+)
+```
+</CodeGroup>
+When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
+</Step>
+</Steps>
