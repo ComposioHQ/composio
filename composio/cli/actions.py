@@ -79,6 +79,10 @@ def _actions(
     copy_enums: bool = False,
 ) -> None:
     """List composio actions"""
+    if use_case is None and len(apps) == 0:
+        raise click.ClickException(
+            "To search by a use case you need to specify atleast one app name."
+        )
     try:
         actions = context.client.actions.get(
             apps=[App(app) for app in apps],
