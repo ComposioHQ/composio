@@ -87,7 +87,8 @@ class ComposioToolSet:
         self,
         action: t.Union[Action, str],
         params: dict,
-        entity_id: str = "default",
+        entity_id: str = DEFAULT_ENTITY_ID,
+        text: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -106,7 +107,13 @@ class ComposioToolSet:
                 action=action, request_data=params
             )
 
-        output = self.client.get_entity(entity_id).execute(action=action, params=params)
+        output = self.client.get_entity(
+            id=entity_id,
+        ).execute(
+            action=action,
+            params=params,
+            text=text,
+        )
         if not os.path.exists(
             Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         ):
@@ -128,7 +135,8 @@ class ComposioToolSet:
 
         try:
             output_modified = self._save_files(
-                f"{action.name}_{entity_id}_{time.time()}", output
+                f"{action.name}_{entity_id}_{time.time()}",
+                output,
             )
             return output_modified
         except Exception as e:

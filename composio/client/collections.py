@@ -954,6 +954,7 @@ class Actions(Collection[ActionModel]):
         params: t.Dict,
         entity_id: str,
         connected_account: t.Optional[str] = None,
+        text: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute an action on the specified entity with optional connected account.
@@ -969,7 +970,7 @@ class Actions(Collection[ActionModel]):
                 action=action,
                 request_data=params,
             )
-        actions = self.client.actions.get(  # type: ignore
+        actions = self.get(
             actions=[action],
         )
         if len(actions) == 0:
@@ -1001,6 +1002,7 @@ class Actions(Collection[ActionModel]):
                         "appName": action.app,
                         "input": modified_params,
                         "entityId": entity_id,
+                        "text": text,
                     },
                 )
             ).json()
@@ -1018,6 +1020,7 @@ class Actions(Collection[ActionModel]):
                     "connectedAccountId": connected_account,
                     "input": modified_params,
                     "entityId": entity_id,
+                    "text": text,
                 },
             )
         ).json()
