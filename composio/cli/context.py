@@ -33,7 +33,7 @@ class Context:
     _console: t.Optional[Console] = None
 
     _is_logged_in: t.Optional[bool] = None
-    using_api_key_from_env: bool = False
+    _using_api_key_from_env: bool = False
 
     @property
     def click_ctx(self) -> click.Context:
@@ -75,7 +75,7 @@ class Context:
 
         api_key_from_env = os.environ.get(ENV_COMPOSIO_API_KEY)
         if api_key_from_env is not None:
-            self.using_api_key_from_env = True
+            self._using_api_key_from_env = True
             self._user_data.api_key = api_key_from_env
 
         return self._user_data
@@ -88,6 +88,10 @@ class Context:
                 api_key=self.user_data.api_key,
             )
         return self._client
+
+    def using_api_key_from_env(self) -> bool:
+        """Check if API Key being used was parsed from the environment"""
+        return self._using_api_key_from_env
 
     def is_logged_in(self) -> bool:
         """Check if a user is logged in."""
@@ -132,7 +136,10 @@ def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
         _context = Context()
 
     def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        if not t.cast(Context, _context).is_logged_in():
+        if (
+            not t.cast(Context, _context).is_logged_in()
+            and not t.cast(Context, _context).using_api_key_from_env()
+        ):
             raise click.ClickException(
                 message="User not logged in, please login using `composio login`",
             )
