@@ -57,7 +57,7 @@ def _login(
         context.console.print(f"[green]{url}[/green]\n")
         if not no_browser:
             webbrowser.open(url)
-        code = click.prompt("> Enter authentication code: ")
+        code = click.prompt("> Enter authentication code")
         context.user_data.api_key = Composio.validate_auth_session(
             key=key,
             code=code,
