@@ -3,7 +3,10 @@ from urllib.parse import urlparse
 
 import click
 import git
-from composio_coders.constants import (
+
+from composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
+from composio_swe.composio_swe.config.config_store import IssueConfig
+from composio_swe.composio_swe.config.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
     KEY_GIT_ACCESS_TOKEN,
@@ -11,8 +14,7 @@ from composio_coders.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
-from composio_coders.context import Context, pass_context
-from composio_coders.swe import CoderAgent, CoderAgentArgs
+from composio_swe.composio_swe.config.context import Context, pass_context
 
 
 def get_git_root():
@@ -90,12 +92,14 @@ def add_issue(ctx: Context):
         "Please enter base commit id", type=str, default="", show_default=False
     )
     issue_description = click.prompt("Please enter issue description", type=str)
-    ctx.issue_config = {
-        "repo_name": repo_name,
-        "base_commit_id": base_commit_id,
-        "issue_desc": issue_description,
-        "issue_id": issue_id,
-    }
+    ctx.issue_config = IssueConfig.model_validate(
+        {
+            "repo_name": repo_name,
+            "base_commit_id": base_commit_id,
+            "issue_desc": issue_description,
+            "issue_id": issue_id,
+        }
+    )
 
     click.echo("🍀 Issue configuration saved\n")
 
@@ -111,7 +115,6 @@ def solve(ctx: Context):
     )
     args = CoderAgentArgs(
         issue_config=ctx.issue_config,
-        model_env_config=ctx.model_env,
         agent_logs_dir=ctx.agent_logs_dir,
     )
     coder_agent = CoderAgent(args)
