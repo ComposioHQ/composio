@@ -8,6 +8,8 @@ import os
 import typing as t
 from datetime import datetime
 
+import requests
+
 from composio.client.base import BaseClient
 from composio.client.collections import (
     Actions,
@@ -30,6 +32,8 @@ from composio.exceptions import raise_api_key_missing
 from composio.utils.url import get_api_url_base
 
 
+_valid_keys: t.Set[str] = set()
+
 class Composio(BaseClient):
     """Composio SDK Client."""
 
@@ -49,7 +53,10 @@ class Composio(BaseClient):
             raise_api_key_missing()
 
         self.base_url = base_url or get_api_url_base()
-        self.api_key = t.cast(str, api_key)
+        self.api_key = self.validate_api_key(
+            key=t.cast(str, api_key),
+            base_url=self.base_url,
+        )
         self.http = HttpClient(
             base_url=self.base_url,
             api_key=self.api_key,
@@ -61,6 +68,26 @@ class Composio(BaseClient):
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
+
+    @staticmethod
+    def validate_api_key(key: str, base_url: t.Optional[str] = None) -> str:
+        """Validate given API key."""
+        if key in _valid_keys:
+            return key
+
+        base_url = base_url or get_api_url_base()
+        response = requests.get(
+            url= base_url + str(v1 / "client" / "auth" / "client_info"),
+            headers={
+                "x-api-key": key,
+            },
+            timeout=60,
+        )
+        if response.status_code != 200:
+            raise ComposioClientError("API Key is not valid!")
+
+        _valid_keys.add(key)
+        return key
 
     @staticmethod
     def generate_auth_key(base_url: t.Optional[str] = None) -> str:
