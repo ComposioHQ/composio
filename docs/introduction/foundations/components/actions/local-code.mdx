@@ -1,0 +1,51 @@
+---
+title: "🛠️ How to Use Custom Local Actions"
+sidebarTitle: "Custom Actions"
+icon: "code"
+description: "Learn how to perform local actions with a connected account."
+---
+
+**Prerequisite**: Successfully **Connecting an Account** & then having `connectedAccountId`.
+
+Local actions utilize credentials from a connected account to securely call specific API endpoints as part of a custom operation.
+
+<Steps>
+<Step title="Get Connected Account">
+**Use this connected account** to run your **local code** to make **API calls**.
+<CodeGroup>
+```python Get Authentication Parameters
+print(connected_account)
+```
+</CodeGroup>
+Let's Check out Response
+<CodeGroup>
+```python Sample Response
+{
+  "integrationId": "5e8584e4-723c-44ae-907d-20db982b1797",
+  "connectionParams": {
+    "scope": "admin:org,gist,repo,user",
+    "base_url": "https://api.github.com",
+    "token_type": "bearer",
+    "access_token": "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",
+    "headers": {
+      "Authorization": "Bearer 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"
+    },
+    "queryParams": {}
+  },
+  "appUniqueId": "github",
+  "id": "1f090d08-3741-4e20-ae47-431be119a664",
+  "status": "ACTIVE",
+  "createdAt": "2024-03-19T17:26:21.463Z",
+  "updatedAt": "2024-03-19T17:26:24.134Z"
+}
+
+```
+</CodeGroup>
+</Step>
+
+<Step title="Execute Local Code">
+**Connected Account** will **contain** all **authentication parameters**.
+
+`Base URL`, `Auth header` can be injected in an API request.
+</Step>
+</Steps>
