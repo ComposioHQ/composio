@@ -124,6 +124,14 @@ class Flake8Linter(BaseAction):
         if return_code == 0:
             flake8_out = f"No errors detected by Flake8. tox output: {flake8_out}"
         else:
+            flake8_errors = get_flake8_errors(flake8_out)
+            for each_file in flake8_errors:
+                autoflake_cmd = f"autoflake --in-place --remove-all-unused-imports --remove-unused-variables {each_file}"
+                communicate(self.container_process, self.container_obj, autoflake_cmd, self.parent_pids, timeout_duration=40)
+            flake8_out, return_code = communicate(self.container_process, self.container_obj, cmd, self.parent_pids,
+                                                  timeout_duration=70)
+            if return_code == 0:
+                flake8_out = f"No errors detected by Flake8. tox output: {flake8_out}"
             flake8_out = json.dumps(get_flake8_errors(flake8_out))
         return BaseResponse(output=flake8_out, return_code=return_code)
 
