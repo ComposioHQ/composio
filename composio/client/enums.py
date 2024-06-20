@@ -13879,6 +13879,12 @@ class Action(tuple, Enum):
         True,
         True,
     )
+    CMDMANAGERTOOL_AUTOFLAKELINTER = (
+        "cmdmanagertool",
+        "cmdmanagertool_autoflakelinter",
+        True,
+        True,
+    )
     CMDMANAGERTOOL_APPLYMULTIPLEEDITSINFILE = (
         "cmdmanagertool",
         "cmdmanagertool_applymultipleeditsinfile",

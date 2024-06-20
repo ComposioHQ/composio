@@ -75,6 +75,7 @@ class EditFile(BaseAction):
 
 
 class SingleEditRequest(BaseModel):
+    file_name: str = Field(..., description="file-name in which edit has to be applied")
     start_line: int = Field(
         ..., description="The line number at which the file edit will start"
     )
@@ -95,7 +96,6 @@ class ApplyMultipleEditsInFileRequest(BaseModel):
         ...,
         description="A list of edits to apply to the file."
     )
-    file_name: str = Field(..., description="file-name in which edits have to be applied")
 
 
 class ApplyMultipleEditsInFile(BaseAction):
@@ -129,12 +129,12 @@ class ApplyMultipleEditsInFile(BaseAction):
         responses = []
         return_code = 0
         self._setup(request_data)
-        open_file_cmd = f"open {request_data.file_name}"
-        output, ret_code = communicate(self.container_process, self.container_obj, open_file_cmd, self.parent_pids)
-        if ret_code != 0:
-            output, ret_code = process_output(output, ret_code)
-            return BaseResponse(output=output, return_code=ret_code)
         for edit_request in request_data.edits:
+            open_file_cmd = f"open {edit_request.file_name}"
+            output, ret_code = communicate(self.container_process, self.container_obj, open_file_cmd, self.parent_pids)
+            if ret_code != 0:
+                output, ret_code = process_output(output, ret_code)
+                return BaseResponse(output=output, return_code=ret_code)
             full_command = f"edit {edit_request.start_line}:{edit_request.end_line} << end_of_edit\n{edit_request.replacement_text}\nend_of_edit"
             output, return_code = communicate(
                 self.container_process, self.container_obj, full_command, self.parent_pids

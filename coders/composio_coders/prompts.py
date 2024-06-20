@@ -59,7 +59,6 @@ linter_backstory = """
         1. A workspace is initialized for you, and you will be working on workspace, where workspace_id is: {workspace_id}. The git repo is cloned in 
         the path {repo_name_dir}, you need to work in this directory.
         2. run linter and find out all the linting errors
-        3. If you have multiple errors in single file, try and apply all the proposed fixes in that file via multiple edit. Dont run single edits to fix these issues
 """
 
 linter_task_description = """
@@ -70,6 +69,7 @@ linter_task_description = """
         2. Its possible the repo has a `tox.ini` file, First try to find the config file for the linters and then use that file to run the linter commands.
         3. Formatting linters like - isort, black will produce correct / format the code as well. So you can use that formatted code as fix.
         4. For other linters like flake8, pylint and mypy, think step by step and solve the linting errors.
+        5. You can use autoflake to remove unused variables and unused imports error
 """
 
-linter_expected_output = "Provide a corrected version of the code with all linting errors fixed."
+linter_expected_output = "Generate a patch for all the fixes applied"

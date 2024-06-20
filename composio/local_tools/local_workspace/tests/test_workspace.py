@@ -7,7 +7,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.linter import PylintLinter, LinterRequest, BlackLinter, IsortLinter, Flake8Linter
+from composio.local_tools.local_workspace.cmd_manager.actions.linter import PylintLinter, LinterRequest, BlackLinter, IsortLinter, Flake8Linter, AutoflakeLinter, AutoFlakeLinterRequest
 from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import GithubCloneCmd, GithubCloneRequest
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
@@ -123,6 +123,23 @@ class TestCmds(unittest.TestCase):
         action = Flake8Linter()
         action.set_workspace_and_history(w, h)
         result = action.execute(LinterRequest(workspace_id=workspace_id), {})
+        print(result)
+        self.assertIsNotNone(result)
+
+    def test_autoflake_cmd(self):
+        w = WorkspaceManagerFactory()
+        h = HistoryProcessor()
+        create_action = CreateWorkspaceAction()
+        create_action.set_workspace_and_history(w, h)
+        ca_resp = create_action.execute(CreateWorkspaceRequest(), {})
+        workspace_id = ca_resp.workspace_id
+        git_clone_a = GithubCloneCmd()
+        git_clone_a.set_workspace_and_history(w, h)
+        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio",
+                                               branch_name="shubhra/linter"), {})
+        action = AutoflakeLinter()
+        action.set_workspace_and_history(w, h)
+        result = action.execute(AutoFlakeLinterRequest(workspace_id=workspace_id, file_name="composio/local_tools/local_workspace/cmd_manager/actions/linter.py"), {})
         print(result)
         self.assertIsNotNone(result)
 

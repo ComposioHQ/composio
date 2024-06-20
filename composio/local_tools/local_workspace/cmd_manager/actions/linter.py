@@ -64,6 +64,29 @@ class LinterResponse(BaseModel):
     lint_errors: str = Field(..., description="its a json dump of errors in the format of {file_name: <list_of_errors>}")
 
 
+class AutoFlakeLinterRequest(BaseModel):
+    workspace_id: str = Field(..., description="workspace-id for the linter to work")
+    file_name: str = Field(..., description="full path of the file, in which unused imports and unused varaibles have to be removed")
+
+class AutoflakeLinter(BaseAction):
+    """
+    Runs autoflake command on the code to remove unused imports and variables.
+    """
+    _display_name = "Remove unused imports and variables with Autoflake"
+    _request_schema = AutoFlakeLinterRequest
+    _response_schema = LinterResponse
+
+    @history_recorder()
+    def execute(self, request_data: AutoFlakeLinterRequest, authorisation_data: dict = {}) -> BaseResponse:
+        self._setup(request_data)
+        # Construct the command with autoflake
+        cmd = f"autoflake --in-place --remove-all-unused-imports --remove-unused-variables {request_data.file_name}"
+        autoflake_output, return_code = communicate(self.container_process, self.container_obj, cmd, self.parent_pids, timeout_duration=45)
+        if return_code == 0:
+            autoflake_output = f"No issues detected by autoflake. autoflake output: {autoflake_output}"
+        return BaseResponse(output=autoflake_output, return_code=return_code)
+
+
 class PylintLinter(BaseAction):
     """
     Runs pylint command on the code, and returns output in format like this

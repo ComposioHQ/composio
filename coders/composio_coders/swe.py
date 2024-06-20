@@ -155,7 +155,7 @@ class CoderAgent:
         if model_env == MODEL_ENV_AZURE:
             azure_endpoint = self.model_env.get(KEY_AZURE_ENDPOINT)
             azure_key = self.model_env.get(KEY_API_KEY)
-            os.environ["AZURE_OPENAI_API_KEY"] = self.model_env[KEY_AZURE_ENDPOINT]
+            os.environ["AZURE_OPENAI_ENDPOINT"] = self.model_env[KEY_AZURE_ENDPOINT]
             os.environ["AZURE_OPENAI_API_KEY"] = self.model_env[KEY_API_KEY]
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,

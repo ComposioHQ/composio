@@ -19,7 +19,8 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     Flake8Linter,
     PylintLinter,
     IsortLinter,
-    BlackLinter
+    BlackLinter,
+    AutoflakeLinter,
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
@@ -53,7 +54,8 @@ class CmdManagerTool(Tool):
             Flake8Linter,
             PylintLinter,
             IsortLinter,
-            BlackLinter
+            BlackLinter,
+            AutoflakeLinter,
         ]
 
     def triggers(self) -> list:
