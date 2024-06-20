@@ -9,13 +9,15 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from composio_coders.config_store import (
+from rich.console import Console
+
+from composio_swe.composio_swe.config.config_store import (
     AzureModelConfig,
     IssueConfig,
     ModelEnv,
     OpenAiModelConfig,
 )
-from composio_coders.constants import (
+from composio_swe.composio_swe.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
@@ -26,7 +28,6 @@ from composio_coders.constants import (
     MODEL_ENV_OPENAI,
     MODEL_ENV_PATH,
 )
-from rich.console import Console
 
 
 _context: t.Optional["Context"] = None
@@ -82,8 +83,8 @@ class Context:
             self._model_env = a.to_json()
             return self._model_env
         if model_env.model_env == MODEL_ENV_OPENAI:
-            a = OpenAiModelConfig.load(path=path)
-            self._model_env = a.to_json()
+            o = OpenAiModelConfig.load(path=path)
+            self._model_env = o.to_json()
             return self._model_env
         return None
 
@@ -98,14 +99,14 @@ class Context:
             self._model_env = model_config.to_json()
             return
         if config.get(KEY_MODEL_ENV) == MODEL_ENV_AZURE:
-            model_config = AzureModelConfig(
+            model_config_azure = AzureModelConfig(
                 path=path,
                 model_env=MODEL_ENV_AZURE,
                 api_key=config[KEY_API_KEY],
                 azure_endpoint=config[KEY_AZURE_ENDPOINT],
             )
-            model_config.store()
-            self._model_env = model_config.to_json()
+            model_config_azure.store()
+            self._model_env = model_config_azure.to_json()
             return
         raise ValueError(
             f"only these llms are supported {MODEL_ENV_OPENAI} and {MODEL_ENV_AZURE}"
