@@ -62,9 +62,10 @@
 - [📋 Table of contents](#-table-of-contents)
 - [🤔 Why Composio?](#-why-composio)
 - [🔥 Key Features](#-key-features)
-- [🚀 Getting Started](#-getting-started)
+- [🚀 Getting Started with Python](#-getting-started-with-python)
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
+- [🚀 Getting Started with Javascript ](#-getting-started-with-javascript)
 - [💡 Examples](#-examples)
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
@@ -179,12 +180,12 @@ print(response_after_tool_calls)
 
 To get started with the Composio SDK in Javascript, follow these steps:
 
-1. **Install the Composio SDK**:
+### 1. **Install the Composio SDK**:
    ```bash
    npm install composio-core
    ```
 
-2. **Setup the OpenAI and Composio Tool Set**:
+### 2. **Setup the OpenAI and Composio Tool Set**:
    ```javascript
    import { OpenAI } from "openai";
    import { OpenAIToolSet } from "composio-core";
@@ -232,7 +233,7 @@ To get started with the Composio SDK in Javascript, follow these steps:
    executeAgent("your-entity-name");
    ```
 
-3. **Run your script**:
+### 3. **Run your script**:
    ```bash
    node your_script.js
    ```
