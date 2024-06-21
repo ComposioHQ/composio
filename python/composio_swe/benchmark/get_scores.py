@@ -39,6 +39,8 @@ def find_patch(prediction_data):
             if agent_action["tool"] == SUBMIT_PATCH_CMD:
                 # Assuming the patch or relevant output is in 'tool_output'
                 patch = action.get("tool_output")
+                patch_lines = patch.split("\n")
+                patch = patch_lines[0]
                 patch = patch.replace("patch_code=", "")
                 patch_formatted = decode(
                     encode(patch, "latin-1", "backslashreplace"), "unicode-escape"
