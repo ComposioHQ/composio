@@ -35,7 +35,7 @@ setup(
         "crewai==0.30.11",
         "argsparse",
         "datasets>=2.20.0",
-        "swebench==1.1.5"
+        "swebench==1.1.5",
     ],
     include_package_data=True,
 )
