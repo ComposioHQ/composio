@@ -2,6 +2,7 @@
 Test collections module.
 """
 
+from logging import DEBUG
 from unittest import mock
 
 from composio.client.collections import (
@@ -10,6 +11,7 @@ from composio.client.collections import (
     TriggerSubscription,
     trigger_names_str,
 )
+from composio.utils import logging
 
 
 class TestTriggerNamesSerialization:
@@ -52,9 +54,9 @@ class TestTriggerNamesSerialization:
         )
 
 
-def test_trigger_subscription(capsys) -> None:
+def test_trigger_subscription(capsys, caplog) -> None:
     """Test trigger subscription multiplexing."""
-
+    logging.setup(logging.Level.DEBUG)
     subscription = TriggerSubscription()
     subscription.set_alive()
 
@@ -78,14 +80,17 @@ def test_trigger_subscription(capsys) -> None:
                 id="trigger_1",
             )
         ),
-    ):
+    ), caplog.at_level(DEBUG):
         subscription.handle_event(event="")
 
     assert (
         "Trigger 1 called from callback 1\n"
-        "Trigger 1 called from callback 2\n"
-        "Skipping `_callback_3` since `trigger_id` filter does not match the event metadata\n"
-        in capsys.readouterr().out
+        "Trigger 1 called from callback 2\n" in capsys.readouterr().out
+    )
+
+    assert (
+        "Skipping `_callback_3` since `trigger_id` filter does not match the event metadata"
+        in caplog.text
     )
 
     with mock.patch.object(
@@ -96,11 +101,15 @@ def test_trigger_subscription(capsys) -> None:
                 id="trigger_2",
             )
         ),
-    ):
+    ), caplog.at_level(DEBUG):
         subscription.handle_event(event="")
 
     assert (
-        "Skipping `_callback_1` since `trigger_id` filter does not match the event metadata\n"
-        "Skipping `_callback_2` since `trigger_id` filter does not match the event metadata\n"
-        "Trigger 2 called from callback 3\n" in capsys.readouterr().out
+        "Skipping `_callback_1` since `trigger_id` filter does not match the event metadata"
+        in caplog.text
     )
+    assert (
+        "Skipping `_callback_2` since `trigger_id` filter does not match the event metadata"
+        in caplog.text
+    )
+    assert "Trigger 2 called from callback 3\n" in capsys.readouterr().out
