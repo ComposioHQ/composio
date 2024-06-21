@@ -1,0 +1,125 @@
+Guide for Creating a Slack Bot App with Composio and Setting Up Triggers
+
+
+This guide will walk you through creating a Slack bot app using Composio and setting up triggers for specific events or commands.
+
+Prerequisites
+
+1:Slack Workspace: You need to have a Slack workspace where you have administrative privileges.
+2:Composio Account: Sign up for an account on Composio (if required).
+3:Basic Programming Knowledge: Familiarity with JavaScript and Node.js is beneficial.
+
+
+Step 1: Create a Slack App
+
+1:Go to the Slack API: Navigate to the Slack API apps page and click on Create New App.
+2:Name Your App: Enter a name for your app and select the Slack workspace you want to install it to.
+3:Configure App: After creating the app, you’ll be taken to the app’s settings page.
+
+
+Step 2: Add Bot User
+
+1:Bot User: In the Slack app settings, go to the Bot Users tab.
+2:Add Bot User: Click on Add a Bot User and configure the username for your bot.
+3:Save Changes: Make sure to save your changes.
+
+
+Step 3: Set Up OAuth & Permissions
+
+1:OAuth & Permissions: Go to the OAuth & Permissions tab.
+
+2:Scopes: Add the necessary bot scopes. At a minimum, you might need:
+
+ *chat:write
+ *chat:write.public
+ *channels:read
+ *groups:read
+ *im:read
+ *mpim:read
+
+3:Install App: Scroll up to the OAuth Tokens & Redirect URLs section and click Install App to Workspace. This will generate an OAuth access token which will be used to authenticate your bot.
+
+Step 4: Create a Project with Composio
+
+1:Log In to Composio: Go to Composio and log in to your account.
+2:Create a New Project: Click on New Project and give it a name.
+3:Add Slack Integration: In the project settings, add Slack integration. You will need to provide the OAuth access token generated from Slack.
+
+Step 5: Develop Your Bot
+
+1:Set Up Your Environment: Ensure you have Node.js installed on your system.
+
+2:Install Required Packages: Initialize your project and install the necessary packages:
+
+
+npm init -y
+npm install @slack/bolt
+npm install composio-sdk
+
+Create Your Bot Code:
+Create an index.js file and add the following code:
+
+
+const { App } = require('@slack/bolt');
+const composio = require('composio-sdk');
+
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  signingSecret: process.env.SLACK_SIGNING_SECRET
+});
+
+// Initialize Composio client
+const composioClient = new composio.Client({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+
+// Respond to a message
+app.message('hello', async ({ message, say }) => {
+  await say(`Hey there <@${message.user}>!`);
+});
+
+// Example trigger using Composio
+app.event('message', async ({ event }) => {
+  if (event.text.includes('trigger')) {
+    const response = await composioClient.triggerEvent('your_trigger_id', { userId: event.user });
+    console.log(response);
+  }
+});
+
+(async () => {
+  // Start the app
+  await app.start(process.env.PORT || 3000);
+  console.log('⚡️ Bolt app is running!');
+})();
+
+4:Set Environment Variables:
+Create a .env file in your project directory and add:
+
+
+
+SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
+SLACK_SIGNING_SECRET=your-slack-signing-secret
+COMPOSIO_API_KEY=your-composio-api-key
+PORT=3000
+
+5:Run Your Bot:
+
+
+node index.js
+
+Step 6: Set Up Triggers in Composio
+1:Log In to Composio: Navigate to your project dashboard.
+2:Create a New Trigger: Go to the triggers section and create a new trigger. Provide necessary details such as trigger name, type, and any parameters needed.
+3:Link Trigger to Slack Event: Configure the trigger to be activated based on Slack events. This might involve providing event IDs or conditions based on the Slack message content.
+
+Step 7: Test Your Bot
+
+1:Invite Bot to Channels: Make sure your bot is invited to the channels where you want it to operate.
+2:Test Commands: Send messages in Slack that should trigger the bot and observe the responses.
+3:Check Logs: Monitor the console output and Composio dashboard for any logs or errors.
+
+
+
+
+
+
