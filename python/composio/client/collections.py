@@ -6,8 +6,10 @@ import base64
 import json
 import os
 import time
+import traceback
 import typing as t
 import warnings
+from concurrent.futures import Future, ThreadPoolExecutor
 
 import pysher
 import typing_extensions as te
@@ -326,7 +328,8 @@ class TriggerConfigPropertyModel(BaseModel):
 
     description: str
     title: str
-    type: str
+
+    type: t.Optional[str] = None
 
 
 class TriggerConfigModel(BaseModel):
@@ -334,8 +337,8 @@ class TriggerConfigModel(BaseModel):
 
     properties: t.Dict[str, TriggerConfigPropertyModel]
     title: str
-    type: str
 
+    type: t.Optional[str] = None
     required: t.Optional[t.List[str]] = None
 
 
@@ -481,21 +484,6 @@ class TriggerSubscription:
 
         return _wrap
 
-    def _validate_filter(
-        self,
-        check: t.Any,
-        name: str,
-        filters: _TriggerEventFilters,
-    ) -> None:
-        """Check if filter is provided and raise if the values does not match."""
-        value = filters.get(name)
-        if value is None:
-            return
-        if value != check:
-            raise ValueError(
-                f"Skipping since `{name}` filter does not match the event",
-            )
-
     def _handle_callback(
         self,
         callback: TriggerCallback,
@@ -511,28 +499,51 @@ class TriggerSubscription:
             ("entity_id", data.metadata.connection.clientUniqueUserId),
             ("integration_id", data.metadata.connection.integrationId),
         ):
-            self._validate_filter(
-                check=check,
-                name=name,
-                filters=filters,
+            value = filters.get(name)
+            if value is None or value == check:
+                continue
+
+            print(
+                f"Skipping `{callback.__name__}` since "
+                f"`{name}` filter does not match the event metadata",
             )
-        callback(data)
+            return
+
+        try:
+            callback(data)
+        except BaseException:
+            print(
+                f"Erorr executing `{callback.__name__}` for "
+                f"event `{data.metadata.triggerName}` "
+                f"with error:\n {traceback.format_exc()}"
+            )
+
+    def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
+        """Parse event payload."""
+        try:
+            return TriggerEventData(**json.loads(event))
+        except Exception as e:
+            print(f"Error decoding payload: {e}")
+            return None
 
     def handle_event(self, event: str) -> None:
         """Filter events and call the callback function."""
-        try:
-            data = TriggerEventData(**json.loads(event))
-        except Exception as e:
-            print(f"Error decoding payload: {e}")
-        try:
+        data = self._parse_payload(event=event)
+        if data is None:
+            return
+
+        awaitables: t.List[Future] = []
+        with ThreadPoolExecutor() as executor:
             for callback, filters in self._callbacks:
-                self._handle_callback(
-                    callback=callback,
-                    data=data,
-                    filters=filters,
+                awaitables.append(
+                    executor.submit(
+                        self._handle_callback,
+                        callback,
+                        data,
+                        filters,
+                    )
                 )
-        except BaseException as e:
-            print(f"Erorr handling event `{data.metadata.id}`: {e}")
+        _ = [future.result() for future in awaitables]
 
     def handle_chunked_events(self, event: str) -> None:
         """Handle chunked events."""
