@@ -32,7 +32,9 @@ setup(
         "composio_core>=0.3.9",
         "gitpython>=3.1.43",
         "composio_crewai>=0.3.9",
-        "crewai>=0.30.11",
+        "crewai==0.30.11",
+        "argsparse",
+        "datasets>=2.20.0",
     ],
     include_package_data=True,
 )
