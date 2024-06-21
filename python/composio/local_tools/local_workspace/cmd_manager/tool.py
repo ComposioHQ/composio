@@ -46,7 +46,6 @@ class CmdManagerTool(Tool):
             SearchFileCmd,
             SearchDirCmd,
             EditFile,
-            ApplyMultipleEditsInFile,
             RunCommandOnWorkspace,
             GetCurrentDirCmd,
             GithubCloneCmd,

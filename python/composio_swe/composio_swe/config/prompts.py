@@ -49,6 +49,7 @@ swe_agent_goal = (
 swe_agent_role = (
     "You are the best programmer. You think carefully and step by step take action."
 )
+swe_expected_output = "A patch should be generated which fixes the given issue"
 
 linter_agent_goal = (
     "Help fix the linter issues in the code. ANd make sure no other linter errors exist"

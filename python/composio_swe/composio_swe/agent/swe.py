@@ -8,11 +8,7 @@ from typing import Any, Dict, List
 import langchain_core
 
 from composio_swe.composio_swe.config.prompts import (
-    linter_agent_goal,
-    linter_agent_role,
-    linter_backstory,
-    linter_expected_output,
-    linter_task_description,
+    swe_agent_goal, swe_agent_role, AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL, swe_expected_output
 )
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Task
@@ -47,22 +43,22 @@ logger = setup_logger()
 
 class CoderAgentArgs(BaseModel):
     agent_role: str = Field(
-        default=linter_agent_role,
+        default=swe_agent_role,
         description="role of the agent",
     )
     agent_goal: str = Field(
-        default=linter_agent_goal,
+        default=swe_agent_goal,
         description="goal for the agent",
     )
     task_expected_output: str = Field(
-        default=linter_expected_output,
+        default=swe_expected_output,
         description="expected output of the agent task",
     )
     agent_backstory_tmpl: str = Field(
-        default=linter_backstory,
+        default=AGENT_BACKSTORY_TMPL,
         description="backstory template for the agent to work on",
     )
-    issue_description_tmpl: str = Field(default=linter_task_description)
+    issue_description_tmpl: str = Field(default=ISSUE_DESC_TMPL)
     issue_config: IssueConfig = Field(
         ..., description="issue config, with issue description, repo-name"
     )
@@ -249,7 +245,7 @@ if __name__ == "__main__":
         "repo_name": "ComposioHQ/composio",
         "issue_id": "123",
         "base_commit_id": "shubhra/linter",
-        "issue_desc": linter_task_description,
+        "issue_desc": ISSUE_DESC_TMPL,
     }
     ctx = Context()
     ctx.issue_config = issue_config
