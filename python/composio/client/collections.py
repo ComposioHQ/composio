@@ -518,12 +518,19 @@ class TriggerSubscription:
                 f"with error:\n {traceback.format_exc()}"
             )
 
-    def handle_event(self, event: str) -> None:
-        """Filter events and call the callback function."""
+    def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
+        """Parse event payload."""
         try:
-            data = TriggerEventData(**json.loads(event))
+            return TriggerEventData(**json.loads(event))
         except Exception as e:
             print(f"Error decoding payload: {e}")
+            return None
+
+    def handle_event(self, event: str) -> None:
+        """Filter events and call the callback function."""
+        data = self._parse_payload(event=event)
+        if data is None:
+            return
 
         awaitables: t.List[Future] = []
         with ThreadPoolExecutor() as executor:
