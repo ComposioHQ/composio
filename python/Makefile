@@ -85,6 +85,10 @@ check-code:
 	tox -e mypy
 	tox -e pylint
 
+.PHONY: check-and-format
+check-and-format:
+	make check-code
+	make format-code
 
 .PHONY: env
 env: clean
