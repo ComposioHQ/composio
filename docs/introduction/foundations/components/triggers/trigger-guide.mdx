@@ -1,0 +1,101 @@
+---
+title: "🛠️ How to Use Triggers"
+sidebarTitle: "Triggers"
+icon: "webhook"
+description: "Learn, how to use triggers in Connected Apps"
+---
+
+## Using Triggers
+
+**Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
+
+Triggers are predefined conditions that, when met, initiate webhooks to your agents. 
+These webhooks usually contain payload which cn be used to our advantage. Some of the examples:
+* Github Commit Event: Triggers a webhook whenever there is a new commit made to a particular repository.
+* Youtube New Item In Playlist: Triggers a webhook whenever a new video has been added to a youtube playlist.
+
+
+Check out the coding guides provided in the examples section to have a better understanding.
+
+## **Types of Triggers**
+
+<Tabs>
+  <Tab title="Default Triggers (Preferred)">
+    Composio supports a variety of default triggers for each supported
+    application. Check them out by going to the app page.
+  </Tab>
+  <Tab title="Custom Triggers (Build your Own)">
+    Our platform offers an extensible interface for defining custom triggers for
+    both custom and default applications. [**Coming Soon**](#)
+  </Tab>
+</Tabs>
+
+## Listing Default Triggers
+
+<CodeGroup>
+``` Bash Get List of Triggers
+# In CLI
+composio triggers
+```
+</CodeGroup>
+
+The response will be a list of all triggers.
+
+<CodeGroup>
+```Bash List of all Triggers 
+github_issue_added_event
+• slackbot_receive_message
+• slackbot_receive_thread_reply
+• slackbot_reaction_removed
+• slackbot_reaction_added
+....
+```
+</CodeGroup>
+
+## Setting Up Triggers
+
+To set up triggers, follow these steps:
+
+1. **Set Universal Callback URL**: Define a universal callback URL to receive payloads for all your triggers. You can set this URL through the [settings](https://app.composio.dev/settings) or by using the API endpoint `api/v1/triggers/setCallbackURL`.
+
+2. **Review Trigger Instructions**: Each trigger may have specific instructions. For example, in Slack, you need to configure our webhook URL in the OAuth app settings.
+
+3. **Enable Trigger for Connected Account**: Use the trigger's configuration schema to enable the webhook URL for a specific connected account. This is done via the API endpoint `api/v1/triggers/enable/{connected_account_id}/{trigger_id}`. The request body should include `{"triggerConfig": {} }`, with all the necessary values as per the trigger's configuration schema. For example, for a GitHub repository webhook, the configuration might look like this:
+
+<CodeGroup>
+``` JSON API to get required trigger parameters
+"triggerConfig": {
+	  "owner": "kaavee315",
+	  "repo": "ML_assignment"
+}
+```
+</CodeGroup>
+
+## Handling Triggers 
+
+After completing the setup, the specified webhook URL will begin to receive data. 
+
+This data includes the `connected_account_id` for account identification, `trigger_id` for trigger identification, and the `payload`, which adheres to the trigger's specified payload schema.
+<CodeGroup>
+``` JSON Sample Trigger Webhook, Received on Callback URL
+{
+	"trigger_name":"github_commit_event",
+    "trigger_id":"12310-sadas-12ad-sa",
+	"connected_account_id":"64184e1a-76bf-404b-bf8e-e9ce04fd7c9c",
+	"payload":{
+		"id":"ae4926ca23488ef488e76c8b39e2ad3ae9e58786",
+		"message":"Update README.md",
+		"timestamp":"2024-03-26T19:36:58+05:30",
+		"author":"kaavee315",
+		"url":"https://github.com/kaavee315/ML_assignment/commit/ae4926ca23488ef488e76c8b39e2ad3ae9e58786"
+	}
+}
+
+```
+</CodeGroup>
+
+
+
+
+
+
