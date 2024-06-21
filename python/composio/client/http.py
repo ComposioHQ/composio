@@ -12,6 +12,7 @@ from composio.utils import logging
 
 
 DEFAULT_RUNTIME = "composio"
+RUNTIME_HEADER = "sdk-python-{}"
 
 
 class AsyncHttpClient(AsyncSession, logging.WithLogger):
@@ -37,7 +38,7 @@ class AsyncHttpClient(AsyncSession, logging.WithLogger):
             loop=loop,
             headers={
                 "x-api-key": api_key,
-                "x-runtime": f"sdk-{runtime or DEFAULT_RUNTIME}",
+                "x-runtime": RUNTIME_HEADER.format(runtime or DEFAULT_RUNTIME),
             },
         )
         logging.WithLogger.__init__(self)
@@ -83,7 +84,7 @@ class HttpClient(SyncSession, logging.WithLogger):
         self.headers.update(
             {
                 "x-api-key": api_key,
-                "x-runtime": f"sdk-{runtime or DEFAULT_RUNTIME}",
+                "x-runtime": RUNTIME_HEADER.format(runtime or DEFAULT_RUNTIME),
             }
         )
 
