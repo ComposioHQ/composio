@@ -132,10 +132,16 @@ if __name__ == "__main__":
 
     script_path = Path(__file__)
     script_dir = script_path.parent
-    prediction_path_dir = Path(
-        args.prediction_path_dir
-    )
+    prediction_path_dir = Path(args.prediction_path_dir)
     testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
     if not os.path.exists(testbed_dir):
         os.makedirs(testbed_dir)
-    main(predictions_dir=prediction_path_dir, log_dir=str(prediction_path_dir), testbed=testbed_dir, skip_existing=True, timeout=300, verbose=True, num_processes=2)
+    main(
+        predictions_dir=prediction_path_dir,
+        log_dir=str(prediction_path_dir),
+        testbed=testbed_dir,
+        skip_existing=True,
+        timeout=300,
+        verbose=True,
+        num_processes=2,
+    )
