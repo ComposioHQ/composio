@@ -8,8 +8,10 @@ from asyncio import AbstractEventLoop
 from aiohttp import ClientSession as AsyncSession
 from requests import Session as SyncSession
 
+from composio.utils import logging
 
-class AsyncHttpClient(AsyncSession):
+
+class AsyncHttpClient(AsyncSession, logging.WithLogger):
     """Async HTTP client for Composio"""
 
     def __init__(
@@ -25,7 +27,8 @@ class AsyncHttpClient(AsyncSession):
         :param api_key: API key for Composio API
         :param loop: Event for execution requests
         """
-        super().__init__(loop=loop, headers={"x-api-key": api_key})
+        AsyncSession.__init__(self, loop=loop, headers={"x-api-key": api_key})
+        logging.WithLogger.__init__(self)
         self.base_url = base_url
 
     def _wrap(self, method: t.Callable) -> t.Callable:
@@ -33,17 +36,20 @@ class AsyncHttpClient(AsyncSession):
 
         def request(url: str, **kwargs: t.Any) -> t.Any:
             """Perform HTTP request."""
+            self._logger.debug(
+                f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
+            )
             return method(url=f"{self.base_url}{url}", **kwargs)
 
         return request
 
     def __getattribute__(self, name: str) -> t.Any:
-        if name in ("get", "post", "put", "delete"):
+        if name in ("get", "post", "put", "delete", "patch"):
             return self._wrap(super().__getattribute__(name))
         return super().__getattribute__(name)
 
 
-class HttpClient(SyncSession):
+class HttpClient(SyncSession, logging.WithLogger):
     """Async HTTP client for Composio"""
 
     def __init__(self, base_url: str, api_key: str) -> None:
@@ -53,7 +59,8 @@ class HttpClient(SyncSession):
         :param base_url: Base URL for Composio API
         :param api_key: API key for Composio API
         """
-        super().__init__()
+        SyncSession.__init__(self)
+        logging.WithLogger.__init__(self)
         self.base_url = base_url
         self.headers.update({"x-api-key": api_key})
 
@@ -62,6 +69,9 @@ class HttpClient(SyncSession):
 
         def request(url: str, **kwargs: t.Any) -> t.Any:
             """Perform HTTP request."""
+            self._logger.debug(
+                f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
+            )
             return method(url=f"{self.base_url}{url}", **kwargs)
 
         return request
