@@ -223,9 +223,10 @@ class AuthSchemeField(BaseModel):
     """Auth scheme field."""
 
     name: str
-    displayName: str
     description: str
     type: str
+
+    displayName: t.Optional[str] = None
 
     required: bool = False
     expected_from_customer: bool = True
@@ -236,9 +237,9 @@ class AppAuthScheme(BaseModel):
 
     scheme_name: str
     auth_mode: str
-    proxy: t.Dict
     fields: t.List[AuthSchemeField]
 
+    proxy: t.Optional[t.Dict] = None
     authorization_url: t.Optional[str] = None
     token_url: t.Optional[str] = None
     default_scopes: t.Optional[t.List] = None
