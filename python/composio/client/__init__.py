@@ -42,12 +42,14 @@ class Composio(BaseClient):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
+        runtime: t.Optional[str] = None,
     ) -> None:
         """
         Initialize Composio SDK client
 
         :param api_key: Authentication key for Composio server
         :param base_url: Base URL for Composio server
+        :param runtime: Runtime specifier
         """
         api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
         if api_key is None:
@@ -61,6 +63,7 @@ class Composio(BaseClient):
         self.http = HttpClient(
             base_url=self.base_url,
             api_key=self.api_key,
+            runtime=runtime,
         )
 
         self.connected_accounts = ConnectedAccounts(client=self)
