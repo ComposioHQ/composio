@@ -1,41 +1,31 @@
 import datetime
 import json
-import logging
-import os
 from pathlib import Path
 from typing import Any, Dict, List
+import typing as t
 
 import langchain_core
 from composio_crewai import Action, App, ComposioToolSet
-from crewai import Agent, Task
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from crewai import Agent, Task, Crew
 from pydantic import BaseModel, Field
-from rich.logging import RichHandler
+
 
 from composio import Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from composio_swe.composio_swe.config.config_store import IssueConfig
+from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import (
+    GetPatchResponse,
+)
+from python.composio_swe.composio_swe.config.config_store import IssueConfig
 
-from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+from .base_swe_agent import BaseSWEAgent
+from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL, REVIEWER_BACKSTORY_TMPL
+from .utils import get_llm, logger
 
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
-
-
-def setup_logger():
-    handler = RichHandler(show_time=False, show_path=False)
-    handler.setLevel(logging.DEBUG)
-    logger = logging.getLogger("local_workspace")
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(handler)
-    logger.propagate = False
-    return logger
-
-
-logger = setup_logger()
 
 
 class CoderAgentArgs(BaseModel):
@@ -55,21 +45,18 @@ class CoderAgentArgs(BaseModel):
         default=AGENT_BACKSTORY_TMPL,
         description="backstory template for the agent to work on",
     )
-    issue_description_tmpl: str = Field(default=ISSUE_DESC_TMPL)
-    issue_config: IssueConfig = Field(
-        ..., description="issue config, with issue description, repo-name"
+    reviewer_backstory_tmpl: str = Field(
+        default=REVIEWER_BACKSTORY_TMPL,
+        description="backstory template for the reviewer agent to work on",
     )
+    issue_description_tmpl: str = Field(default=ISSUE_DESC_TMPL)
     agent_logs_dir: Path = Field(..., description="logs for agent")
 
 
-class CoderAgent:
+class CoderAgent(BaseSWEAgent):
     def __init__(self, args: CoderAgentArgs):
         # initialize logs and history logs path
         self.args = args
-        self.issue_config = args.issue_config
-        self.repo_name = self.issue_config.repo_name
-        if not self.issue_config.issue_id:
-            raise ValueError("no git-issue configuration is found")
 
         # initialize composio toolset
         tool_set = ComposioToolSet()
@@ -78,7 +65,6 @@ class CoderAgent:
                 App.LOCALWORKSPACE,
                 App.CMDMANAGERTOOL,
                 App.HISTORYKEEPER,
-                App.SUBMITPATCHTOOL,
             ]
         )
         self.composio_client = Composio()
@@ -88,9 +74,9 @@ class CoderAgent:
         self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working. Ask the reviewer agent to review the patch and submit it once they approve it."
         self.expected_output = "A patch should be generated which fixes the given issue"
         self.agent_backstory_tmpl = args.agent_backstory_tmpl
+        self.reviewer_backstory_tmpl = args.reviewer_backstory_tmpl
         self.issue_description_tmpl = args.issue_description_tmpl
-        # initialize logger
-        self.logger = logger
+
         # initialize agent logs and history dict
         self.agent_logs_dir = args.agent_logs_dir
         self.task_output_logs = self.agent_logs_dir / Path(
@@ -127,46 +113,68 @@ class CoderAgent:
                     {"agent_action": agent_action.json(), "tool_output": tool_out}
                 )
             else:
-                self.logger.info(
+                logger.info(
                     "type of step_output: %s", type(agent_action_with_tool_out[0])
                 )
         else:
-            self.logger.info("type is not list: %s", type(step_output))
+            logger.info("type is not list: %s", type(step_output))
 
-    def get_llm(self):
-        if os.environ.get("OPENAI_API_KEY"):
-            return ChatOpenAI(model="gpt-4-turbo")
-        if os.environ.get("AZURE_API_KEY"):
-            return AzureChatOpenAI(model="test")
-        raise ValueError("no model is found")
+    def run(self, issue_config: IssueConfig, workspace_id: t.Optional[str] = None):
+        llm = get_llm()
+        repo_name = issue_config.repo_name
+        if not repo_name:
+            raise ValueError("no repo-name configuration is found")
+        if not issue_config.issue_id:
+            raise ValueError("no git-issue configuration is found")
 
-    def run(self):
-        llm = self.get_llm()
-
-        workspace_create_resp = CreateWorkspaceResponse.model_validate(
-            self.composio_client.actions.execute(
-                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
+        if not workspace_id:
+            start_time = datetime.datetime.now()
+            workspace_create_resp = CreateWorkspaceResponse.model_validate(
+                self.composio_client.actions.execute(
+                    action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
+                )
             )
+            workspace_id = workspace_create_resp.workspace_id
+            workspace_creation_time = datetime.datetime.now() - start_time
+            print(
+                "workspace is created, workspace-id is: %s, creation time: %s",
+                workspace_id,
+                workspace_creation_time,
+            )
+
+            start_time = datetime.datetime.now()
+            git_clone_response = self.composio_client.actions.execute(
+                action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+                params={
+                    "workspace_id": workspace_id,
+                    "repo_name": issue_config.repo_name,
+                    "base_commit": issue_config.base_commit_id,
+                },
+            )
+            git_clone_time = datetime.datetime.now() - start_time
+            print("git clone completed, time taken: %s", git_clone_time)
+
+        workspace_create_resp = self.composio_client.actions.execute(
+            action=Action.CMDMANAGERTOOL_GETPATCHCMD,
+            params={"workspace_id": workspace_id},
         )
-        workspace_id = workspace_create_resp.workspace_id
-        logger.info("workspace is created, workspace-id is: %s", workspace_id)
-        git_clone_response = self.composio_client.actions.execute(
-            action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
-            params={
-                "workspace_id": workspace_id,
-                "repo_name": self.issue_config.repo_name,
-            },
-        )
+        print("workspace_created_resp: ", workspace_create_resp)
+
         issue_added_instruction = self.issue_description_tmpl.format(
-            issue=self.issue_config.issue_desc, issue_id=self.issue_config.issue_id
+            issue=issue_config.issue_desc, issue_id=issue_config.issue_id
         )
         backstory_added_instruction = self.agent_backstory_tmpl.format(
             workspace_id=workspace_id,
-            repo_name=self.repo_name,
-            repo_name_dir="/" + self.repo_name.split("/")[-1].strip(),
-            base_commit=self.issue_config.base_commit_id,
+            repo_name=repo_name,
+            repo_name_dir="/" + repo_name.split("/")[-1].strip(),
+            base_commit=issue_config.base_commit_id,
         )
-        logger.info("git clone response: %s", git_clone_response)
+        reviewer_backstory_added_instruction = self.reviewer_backstory_tmpl.format(
+            issue_id=issue_config.issue_id,
+            issue=issue_config.issue_desc,
+            repo_name=repo_name,
+            repo_name_dir="/" + repo_name.split("/")[-1].strip(),
+        )
 
         swe_agent = Agent(
             role=self.agent_role,
@@ -186,39 +194,41 @@ class CoderAgent:
             expected_output=self.expected_output,
         )
 
-        # reviewer_agent = Agent(
-        #     role="You are the best reviewer. You think carefully and step by step take action.",
-        #     goal="Review the patch and make sure it fixes the issue.",
-        #     backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
-        #     "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
-        #     "It's your job to review the patch and make sure it fixes the issue."
-        #     "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
-        #     "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
-        #     "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
-        #     "Once the patch is ready, approve it and ask the AI agent to submit it."
-        #     "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
-        #     "The are the best reviewer. You think carefully and step by step take action.",
-        #     verbose=True,
-        #     llm=llm,
-        #     tools=self.composio_toolset,
-        #     memory=True,
-        #     step_callback=self.add_in_logs,
-        #     allow_delegation=True,
-        # )
+        reviewer_agent = Agent(
+            role="You are the best reviewer. You think carefully and step by step take action.",
+            goal="Review the patch and make sure it fixes the issue.",
+            backstory=reviewer_backstory_added_instruction,
+            verbose=True,
+            llm=llm,
+            memory=True,
+            step_callback=self.add_in_logs,
+            allow_delegation=True,
+        )
 
-        # review_task = Task(
-        #     description="Review the patch and make sure it fixes the issue.",
-        #     agent=reviewer_agent,
-        #     context=[coding_task],
-        #     expected_output="The patch is ready to be submitted to the repo.",
-        # )
+        review_task = Task(
+            description="Review the patch and make sure it fixes the issue.",
+            agent=reviewer_agent,
+            context=[coding_task],
+            expected_output="The patch is ready to be submitted to the repo.",
+        )
 
-        # crew = Crew(
-        #     agents=[swe_agent, reviewer_agent],
-        #     tasks=[coding_task, review_task],
-        #     memory=True,
-        # )
+        crew = Crew(
+            agents=[swe_agent, reviewer_agent],
+            tasks=[coding_task, review_task],
+            memory=True,
+        )
         # crew.kickoff()
-
         coding_task.execute()
-        self.save_history(self.issue_config.issue_id)
+        print("Getting patch")
+        workspace_create_resp = self.composio_client.actions.execute(
+            action=Action.CMDMANAGERTOOL_GETPATCHCMD,
+            params={"workspace_id": workspace_id},
+        )
+        print(f"Final Patch: {workspace_create_resp[0][1]}")
+        self.current_logs.append(
+            {
+                "agent_action": "final_patch",
+                "agent_output": workspace_create_resp[0][1],
+            }
+        )
+        self.save_history(issue_config.issue_id)
