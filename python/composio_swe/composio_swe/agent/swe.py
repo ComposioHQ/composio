@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 import langchain_core
 from composio_crewai import Action, App, ComposioToolSet
-from crewai import Agent, Crew, Task
+from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
 from rich.logging import RichHandler
@@ -81,10 +81,7 @@ class CoderAgent:
                 App.SUBMITPATCHTOOL,
             ]
         )
-        composio_client = Composio()
-        self.entity = composio_client.get_entity("swe-agent")
-        # initialize composio client
-        self.composio_entity = self.get_composio_entity()
+        self.composio_client = Composio()
 
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
@@ -101,11 +98,6 @@ class CoderAgent:
         )
         self.agent_logs: Dict[str, Any] = {}
         self.current_logs: List[Any] = []
-
-    def get_composio_entity(self):
-        client = Composio()
-        entity = client.get_entity("SWE-Agent-Client")
-        return entity
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
@@ -152,12 +144,14 @@ class CoderAgent:
         llm = self.get_llm()
 
         workspace_create_resp = CreateWorkspaceResponse.model_validate(
-            self.entity.execute(Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {})
+            self.composio_client.actions.execute(
+                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
+            )
         )
         workspace_id = workspace_create_resp.workspace_id
         logger.info("workspace is created, workspace-id is: %s", workspace_id)
-        git_clone_response = self.entity.execute(
-            Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        git_clone_response = self.composio_client.actions.execute(
+            action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": self.issue_config.repo_name,
@@ -192,38 +186,39 @@ class CoderAgent:
             expected_output=self.expected_output,
         )
 
-        reviewer_agent = Agent(
-            role="You are the best reviewer. You think carefully and step by step take action.",
-            goal="Review the patch and make sure it fixes the issue.",
-            backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
-            "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
-            "It's your job to review the patch and make sure it fixes the issue."
-            "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
-            "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
-            "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
-            "Once the patch is ready, approve it and ask the AI agent to submit it."
-            "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
-            "The are the best reviewer. You think carefully and step by step take action.",
-            verbose=True,
-            llm=llm,
-            tools=self.composio_toolset,
-            memory=True,
-            step_callback=self.add_in_logs,
-            allow_delegation=True,
-        )
+        # reviewer_agent = Agent(
+        #     role="You are the best reviewer. You think carefully and step by step take action.",
+        #     goal="Review the patch and make sure it fixes the issue.",
+        #     backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
+        #     "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
+        #     "It's your job to review the patch and make sure it fixes the issue."
+        #     "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
+        #     "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
+        #     "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
+        #     "Once the patch is ready, approve it and ask the AI agent to submit it."
+        #     "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
+        #     "The are the best reviewer. You think carefully and step by step take action.",
+        #     verbose=True,
+        #     llm=llm,
+        #     tools=self.composio_toolset,
+        #     memory=True,
+        #     step_callback=self.add_in_logs,
+        #     allow_delegation=True,
+        # )
 
-        review_task = Task(
-            description="Review the patch and make sure it fixes the issue.",
-            agent=reviewer_agent,
-            context=[coding_task],
-            expected_output="The patch is ready to be submitted to the repo.",
-        )
+        # review_task = Task(
+        #     description="Review the patch and make sure it fixes the issue.",
+        #     agent=reviewer_agent,
+        #     context=[coding_task],
+        #     expected_output="The patch is ready to be submitted to the repo.",
+        # )
 
-        crew = Crew(
-            agents=[swe_agent, reviewer_agent],
-            tasks=[coding_task, review_task],
-            memory=True,
-        )
+        # crew = Crew(
+        #     agents=[swe_agent, reviewer_agent],
+        #     tasks=[coding_task, review_task],
+        #     memory=True,
+        # )
+        # crew.kickoff()
 
-        crew.kickoff()
+        coding_task.execute()
         self.save_history(self.issue_config.issue_id)
