@@ -962,7 +962,7 @@ class Actions(Collection[ActionModel]):
         for param, value in params.items():
             file_readable = False
             if isinstance(action_req_schema[param], dict):
-                file_readable = action_req_schema[param].get('file_readable', False)
+                file_readable = action_req_schema[param].get("file_readable", False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
                     file_content = file.read()
