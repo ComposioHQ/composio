@@ -10,20 +10,19 @@ from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION, run_evaluation
 
 
 SUBMIT_PATCH_CMD = "submitpatchtool_submitpatch"
+MODEL_GPT4 = "gpt-4-1106"
+PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
+PATH_PATCHES = "patches.jsonl"
+PATH_TESTBED = "testbed/"
 
 
 def download_and_store_dataset(dataset_name, output_file):
     test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:28]")
     # Assuming the dataset is a single dataset, not a dataset dictionary
     with open(output_file, "w") as file:
-        for item in test_dataset:  # Adjust the split if necessary
+        for item in test_dataset:
             json.dump(item, file)
             file.write("\n")
-
-
-def get_dataset():
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
-    return test_dataset
 
 
 def find_patch(prediction_data):
@@ -52,12 +51,12 @@ def find_patch(prediction_data):
 def main(
     predictions_dir, log_dir, testbed, skip_existing, timeout, verbose, num_processes
 ):
-    model = "gpt-4-1106"
+    model = MODEL_GPT4
     all_patches = []
     pred_total, pred_will_eval = 0, 0
-    swe_bench_path = predictions_dir / Path("swe_bench_issues.jsonl")
+    swe_bench_path = predictions_dir / Path(PATH_SWE_BENCH_ISSUES)
     download_and_store_dataset("", swe_bench_path)
-    pred_path_temp = predictions_dir / Path("patches.jsonl")
+    pred_path_temp = predictions_dir / Path(PATH_PATCHES)
 
     # Iterate over each file in the directory
     for file_name in os.listdir(predictions_dir):
@@ -135,8 +134,8 @@ if __name__ == "__main__":
     script_dir = script_path.parent
     prediction_path_dir = Path(
         args.prediction_path_dir
-    )  # Use the argument for prediction path
-    testbed_dir = prediction_path_dir / Path("testbed/")
+    )
+    testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
     if not os.path.exists(testbed_dir):
         os.makedirs(testbed_dir)
-    main(prediction_path_dir, str(prediction_path_dir), testbed_dir, True, 300, True, 2)
+    main(predictions_dir=prediction_path_dir, log_dir=str(prediction_path_dir), testbed=testbed_dir, skip_existing=True, timeout=300, verbose=True, num_processes=2)
