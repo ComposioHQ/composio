@@ -3,9 +3,9 @@ import logging
 from datasets import load_dataset
 from rich.logging import RichHandler
 
-from composio_swe.composio_swe.config.context import Context, set_context
-from composio_swe.composio_swe.config.constants import KEY_API_KEY
 from composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
+from composio_swe.composio_swe.config.constants import KEY_API_KEY
+from composio_swe.composio_swe.config.context import Context, set_context
 
 
 # get logger
