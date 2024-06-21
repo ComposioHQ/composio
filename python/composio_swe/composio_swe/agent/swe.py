@@ -186,25 +186,25 @@ class CoderAgent:
             expected_output=self.expected_output,
         )
 
-        reviewer_agent = Agent(
-            role="You are the best reviewer. You think carefully and step by step take action.",
-            goal="Review the patch and make sure it fixes the issue.",
-            backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
-            "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
-            "It's your job to review the patch and make sure it fixes the issue."
-            "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
-            "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
-            "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
-            "Once the patch is ready, approve it and ask the AI agent to submit it."
-            "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
-            "The are the best reviewer. You think carefully and step by step take action.",
-            verbose=True,
-            llm=llm,
-            tools=self.composio_toolset,
-            memory=True,
-            step_callback=self.add_in_logs,
-            allow_delegation=True,
-        )
+        # reviewer_agent = Agent(
+        #     role="You are the best reviewer. You think carefully and step by step take action.",
+        #     goal="Review the patch and make sure it fixes the issue.",
+        #     backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
+        #     "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
+        #     "It's your job to review the patch and make sure it fixes the issue."
+        #     "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
+        #     "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
+        #     "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
+        #     "Once the patch is ready, approve it and ask the AI agent to submit it."
+        #     "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
+        #     "The are the best reviewer. You think carefully and step by step take action.",
+        #     verbose=True,
+        #     llm=llm,
+        #     tools=self.composio_toolset,
+        #     memory=True,
+        #     step_callback=self.add_in_logs,
+        #     allow_delegation=True,
+        # )
 
         # review_task = Task(
         #     description="Review the patch and make sure it fixes the issue.",
