@@ -160,13 +160,11 @@ class CoderAgent:
     def get_llm(self, callbacks=None):
         model_env = self.model_env.get(KEY_MODEL_ENV)
         if model_env == MODEL_ENV_OPENAI:
-            openai_key = os.environ.get(("OPANAI_API_KEY"))
+            openai_key = os.environ.get("OPENAI_API_KEY")
             return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key, callbacks=callbacks)
         if model_env == MODEL_ENV_AZURE:
-            azure_endpoint = self.model_env.get(KEY_AZURE_ENDPOINT)
-            azure_key = self.model_env.get(KEY_API_KEY)
-            os.environ["AZURE_OPENAI_ENDPOINT"] = self.model_env[KEY_AZURE_ENDPOINT]
-            os.environ["AZURE_OPENAI_API_KEY"] = self.model_env[KEY_API_KEY]
+            azure_endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
+            azure_key = os.environ["AZURE_OPENAI_API_KEY"]
             azure_llm = AzureChatOpenAI(
                 azure_endpoint=azure_endpoint,
                 api_key=azure_key,

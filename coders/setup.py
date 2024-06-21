@@ -29,7 +29,7 @@ setup(
         ],
     },
     install_requires=[
-        "composio_core===0.3.9",
+        "composio_core>=0.3.12",
         "gitpython>=3.1.43",
         "composio_crewai>=0.3.9",
         "crewai>=0.30.11",

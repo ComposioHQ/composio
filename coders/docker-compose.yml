@@ -7,15 +7,16 @@ services:
       dockerfile: eval.Dockerfile
     environment:
       - GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN}
-      - AZURE_ENDPOINT=${AZURE_ENDPOINT}
-      - AZURE_KEY=${AZURE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - COMPOSIO_API_KEY=${COMPOSIO_API_KEY}
       - AIM_REPO=/aim_repo  # Aim repository path inside the container
     volumes:
       - aim_repo:/aim_repo  # Mount the Aim repository as a volume
       - agent_logs:/app/logs  # Mount the agent logs directory as a volume
-    depends_on:
-      - aim
-    command: python3 ./coders/composio_coders/benchmark/run_evaluation.py
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: python3 ./composio_coders/benchmark/run_evaluation.py
 
   aim:
     image: aimstack/aim:latest
