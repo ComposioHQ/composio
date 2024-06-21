@@ -23,6 +23,7 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 )
 from composio_swe.composio_swe.config.config_store import IssueConfig
 
+from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -236,24 +237,3 @@ class CoderAgent:
         # crew.kickoff()
         coding_task.execute()
         self.save_history(self.issue_config.issue_id)
-
-
-if __name__ == "__main__":
-    from composio_swe.composio_swe.config.context import Context, set_context
-
-    issue_config = {
-        "repo_name": "ComposioHQ/composio",
-        "issue_id": "123",
-        "base_commit_id": "shubhra/linter",
-        "issue_desc": ISSUE_DESC_TMPL,
-    }
-    ctx = Context()
-    ctx.issue_config = issue_config
-    set_context(ctx)
-
-    args = CoderAgentArgs(
-        agent_logs_dir=ctx.agent_logs_dir, issue_config=ctx.issue_config
-    )
-    c_agent = CoderAgent(args)
-
-    c_agent.run()

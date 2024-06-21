@@ -25,14 +25,14 @@ class BumpType(Enum):
 
 TO_REPLACE = (
     'version="',
-    "composio_core===",
-    "composio_langchain===",
-    "composio_crewai===",
-    "composio_autogen===",
-    "composio_lyzr===",
-    "composio_openai===",
-    "composio_claude===",
-    "composio_griptape===",
+    "composio_core==",
+    "composio_langchain==",
+    "composio_crewai==",
+    "composio_autogen==",
+    "composio_lyzr==",
+    "composio_openai==",
+    "composio_claude==",
+    "composio_griptape==",
 )
 
 

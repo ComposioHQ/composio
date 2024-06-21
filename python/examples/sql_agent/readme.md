@@ -1,6 +1,6 @@
 # SQL Agent Guide
 
-This guide provides detailed steps to create a SQL agent that leverages CrewAI, Composio, and ChatGPT to execute SQL queries and document them. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a SQL agent that leverages Composio, agentic frameworks such as Langchain, LlamaIndex, CrewAI and ChatGPT to execute SQL queries and document them. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 
