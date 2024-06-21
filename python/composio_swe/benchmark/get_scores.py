@@ -27,6 +27,7 @@ def download_and_store_dataset(dataset_name, output_file):
 
 def find_patch(prediction_data):
     # Iterate through each action in the prediction data
+    patch_formatted = None
     for action in prediction_data:
         if action["agent_action"] == "agent_finish":
             print(
@@ -40,14 +41,16 @@ def find_patch(prediction_data):
                 # Assuming the patch or relevant output is in 'tool_output'
                 patch = action.get("tool_output")
                 patch_lines = patch.split("\n")
+                if not patch_lines:
+                    print(f"no patch found here for - skipping...")
+                    continue
                 patch = patch_lines[0]
                 patch = patch.replace("patch_code=", "")
                 patch_formatted = decode(
                     encode(patch, "latin-1", "backslashreplace"), "unicode-escape"
                 )
                 patch_formatted = patch_formatted.replace("'", "")
-                return patch_formatted
-    return None
+    return patch_formatted
 
 
 def main(
