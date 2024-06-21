@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 import langchain_core
 from composio_crewai import Action, App, ComposioToolSet
-from crewai import Agent, Crew, Task
+from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
 from rich.logging import RichHandler
@@ -206,12 +206,19 @@ class CoderAgent:
             allow_delegation=True,
         )
 
-        review_task = Task(
-            description="Review the patch and make sure it fixes the issue.",
-            agent=reviewer_agent,
-            context=[coding_task],
-            expected_output="The patch is ready to be submitted to the repo.",
-        )
+        # review_task = Task(
+        #     description="Review the patch and make sure it fixes the issue.",
+        #     agent=reviewer_agent,
+        #     context=[coding_task],
+        #     expected_output="The patch is ready to be submitted to the repo.",
+        # )
+        
+        # crew = Crew(
+        #     agents=[swe_agent, reviewer_agent],	
+        #     tasks=[coding_task, review_task],	
+        #     memory=True,	
+        # )
+        # crew.kickoff()
 
         coding_task.execute()
         self.save_history(self.issue_config.issue_id)
