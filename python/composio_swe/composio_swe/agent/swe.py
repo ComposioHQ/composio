@@ -99,7 +99,6 @@ class CoderAgent:
         self.agent_logs: Dict[str, Any] = {}
         self.current_logs: List[Any] = []
 
-
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
         with open(self.task_output_logs, "w", encoding="utf-8") as f:
@@ -145,7 +144,9 @@ class CoderAgent:
         llm = self.get_llm()
 
         workspace_create_resp = CreateWorkspaceResponse.model_validate(
-            self.composio_client.actions.execute(action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={})
+            self.composio_client.actions.execute(
+                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
+            )
         )
         workspace_id = workspace_create_resp.workspace_id
         logger.info("workspace is created, workspace-id is: %s", workspace_id)
