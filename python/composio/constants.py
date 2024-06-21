@@ -2,6 +2,11 @@
 Global constants for Composio SDK
 """
 
+ENV_COMPOSIO_LOGGING_LEVEL = "COMPOSIO_LOGGING_LEVEL"
+"""
+Environment variable for specifying logging level
+"""
+
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
 """
 Environment variable for Composio API key
