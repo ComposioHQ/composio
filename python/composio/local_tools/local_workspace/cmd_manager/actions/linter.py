@@ -1,5 +1,5 @@
-import re
 import json
+import re
 
 from pydantic import BaseModel, Field
 
@@ -77,7 +77,9 @@ class LinterResponse(BaseModel):
 
 class LinterFileRequest(BaseRequest):
     workspace_id: str = Field(..., description="workspace-id for the linter to work")
-    path: str = Field(..., description="path of file or directory where linter has to run")
+    path: str = Field(
+        ..., description="path of file or directory where linter has to run"
+    )
 
 
 class Autopep8Linter(BaseAction):
@@ -105,7 +107,9 @@ class Autopep8Linter(BaseAction):
             timeout_duration=45,
         )
         if return_code == 0:
-            autopep8_output = f"No issues detected by autopep8. autopep8 output: {autopep8_output}"
+            autopep8_output = (
+                f"No issues detected by autopep8. autopep8 output: {autopep8_output}"
+            )
         else:
             autopep8_output = autopep8_output
         return BaseResponse(output=autopep8_output, return_code=return_code)

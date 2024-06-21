@@ -110,7 +110,12 @@ class TestCmds(unittest.TestCase):
             ApplyMultipleEditsInFileRequest(
                 workspace_id=workspace_id,
                 edits=[
-                    {"file_name":"coders/composio_coders/linter.py", "start_line": 13, "end_line": 13, "replacement_text": ""},
+                    {
+                        "file_name": "coders/composio_coders/linter.py",
+                        "start_line": 13,
+                        "end_line": 13,
+                        "replacement_text": "",
+                    },
                     {
                         "file_name": "coders/composio_coders/linter.py",
                         "start_line": 150,

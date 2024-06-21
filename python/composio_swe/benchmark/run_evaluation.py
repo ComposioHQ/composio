@@ -2,11 +2,10 @@ import logging
 
 from datasets import load_dataset
 from rich.logging import RichHandler
-from langchain_community.callbacks import AimCallbackHandler
 
-from composio_swe.composio_swe.config.context import Context, set_context
-from composio_swe.composio_swe.config.constants import KEY_API_KEY
 from composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
+from composio_swe.composio_swe.config.constants import KEY_API_KEY
+from composio_swe.composio_swe.config.context import Context, set_context
 
 
 # get logger
@@ -43,7 +42,7 @@ def filter_from_repo_name(curr_dataset, repo_name):
 
 
 def get_issues_dataset():
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:33]")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[23:28]")
     return test_dataset
 
 

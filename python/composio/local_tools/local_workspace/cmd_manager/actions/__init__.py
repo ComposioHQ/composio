@@ -4,11 +4,11 @@ from .edit_cmd import ApplyMultipleEditsInFile, EditFile
 from .git_tree import GitRepoTree
 from .linter import (
     AutoflakeLinter,
+    Autopep8Linter,
     BlackLinter,
     Flake8Linter,
     IsortLinter,
     PylintLinter,
-    Autopep8Linter,
 )
 from .run_cmd import RunCommandOnWorkspace
 from .scroll_cmds import Scroll

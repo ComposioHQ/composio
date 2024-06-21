@@ -6,24 +6,25 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import langchain_core
-
-from composio_swe.composio_swe.config.prompts import (
-    swe_agent_goal, swe_agent_role, AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL, swe_expected_output
-)
 from composio_crewai import Action, App, ComposioToolSet
-from crewai import Agent, Crew, Task
+from crewai import Agent, Task
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
 from rich.logging import RichHandler
 
 from composio import Composio
-
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
 from composio_swe.composio_swe.config.config_store import IssueConfig
+from composio_swe.composio_swe.config.prompts import (
+    swe_agent_goal,
+    swe_agent_role,
+    swe_expected_output,
+)
 
 from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -201,32 +202,32 @@ class CoderAgent:
             expected_output=self.expected_output,
         )
 
-        reviewer_agent = Agent(
-            role="You are the best reviewer. You think carefully and step by step take action.",
-            goal="Review the patch and make sure it fixes the issue.",
-            backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
-            "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
-            "It's your job to review the patch and make sure it fixes the issue."
-            "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
-            "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
-            "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
-            "Once the patch is ready, approve it and ask the AI agent to submit it."
-            "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
-            "The are the best reviewer. You think carefully and step by step take action.",
-            verbose=True,
-            llm=llm,
-            tools=self.composio_toolset,
-            step_callback=self.add_in_logs,
-            memory=True,
-            allow_delegation=True,
-        )
+        # reviewer_agent = Agent(
+        #     role="You are the best reviewer. You think carefully and step by step take action.",
+        #     goal="Review the patch and make sure it fixes the issue.",
+        #     backstory="An AI Agent tries to solve an issue and submits a patch to the repo. "
+        #     "You can assume the AI agent operates as a junior developer and has limited knowledge of the codebase."
+        #     "It's your job to review the patch and make sure it fixes the issue."
+        #     "The patch might be incomplete. In that case point out the missing parts and ask the AI agent to add them."
+        #     "The patch might have some compilation issues/typo. Point out those and ask the AI agent to fix them."
+        #     "The patch might have some logical issues. Point out those and ask the AI agent to fix them."
+        #     "Once the patch is ready, approve it and ask the AI agent to submit it."
+        #     "It is fine to have multiple iterations of the review. Keep iterating until the patch is ready to be submitted."
+        #     "The are the best reviewer. You think carefully and step by step take action.",
+        #     verbose=True,
+        #     llm=llm,
+        #     tools=self.composio_toolset,
+        #     step_callback=self.add_in_logs,
+        #     memory=True,
+        #     allow_delegation=True,
+        # )
 
-        review_task = Task(
-            description="Review the patch and make sure it fixes the issue.",
-            agent=reviewer_agent,
-            context=[coding_task],
-            expected_output="The patch is ready to be submitted to the repo.",
-        )
+        # review_task = Task(
+        #     description="Review the patch and make sure it fixes the issue.",
+        #     agent=reviewer_agent,
+        #     context=[coding_task],
+        #     expected_output="The patch is ready to be submitted to the repo.",
+        # )
 
         # crew = Crew(
         #     agents=[swe_agent],

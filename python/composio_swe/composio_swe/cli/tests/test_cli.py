@@ -4,10 +4,11 @@ from unittest.mock import patch
 
 import click.testing
 from click.testing import CliRunner
-from composio_swe.composio_swe.cli import cli
-from composio_swe.composio_swe.config.context import Context, set_context
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
+
+from composio_swe.composio_swe.cli import cli
+from composio_swe.composio_swe.config.context import Context, set_context
 
 
 class FakeListLLM(LLM):
