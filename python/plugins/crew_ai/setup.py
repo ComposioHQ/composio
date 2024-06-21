@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_langchain===0.3.12"],
+    install_requires=["composio_langchain==0.3.12"],
     include_package_data=True,
 )
