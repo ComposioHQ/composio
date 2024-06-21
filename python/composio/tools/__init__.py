@@ -139,7 +139,7 @@ class ComposioToolSet:
                 output,
             )
             return output_modified
-        except Exception as e:
+        except Exception:
             pass
         return output
 
