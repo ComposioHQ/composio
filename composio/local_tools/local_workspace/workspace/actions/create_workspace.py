@@ -108,7 +108,16 @@ class CreateWorkspaceAction(BaseWorkspaceAction):
     def set_env_variables(self):
         commands_to_execute = (
             [self.config.state_command.code]
-            + ["pip install autoflake", "pip install tox==4.6.3", "pip install flake8", "pip install isort", "pip install pylint", "pip install black", "pip install mypy", "pip install tox"]
+            + [
+                "pip install autoflake",
+                "pip install tox==4.6.3",
+                "pip install flake8",
+                "pip install isort",
+                "pip install pylint",
+                "pip install black",
+                "pip install mypy",
+                "pip install tox",
+            ]
             + [f"{k}={v}" for k, v in self.config.env_variables.items()]
         )
         commands = "\n".join(commands_to_execute)
@@ -116,7 +125,11 @@ class CreateWorkspaceAction(BaseWorkspaceAction):
         output = None
         try:
             output, return_code = communicate(
-                self.container_process, self.container_obj, commands, self.parent_pids, timeout_duration=70
+                self.container_process,
+                self.container_obj,
+                commands,
+                self.parent_pids,
+                timeout_duration=70,
             )
         except KeyboardInterrupt as exc:
             if return_code != 0:

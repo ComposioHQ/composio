@@ -31,7 +31,9 @@ class GithubCloneRequest(BaseRequest):
         description="after cloning the git repo, repo will be set to this commit-id."
         "if commit-id is empty, default branch of the repo will be cloned",
     )
-    branch_name: str = Field(default="", description="if git repo needs to be cloned from a specific branch")
+    branch_name: str = Field(
+        default="", description="if git repo needs to be cloned from a specific branch"
+    )
 
 
 class GithubCloneResponse(BaseResponse):
@@ -68,7 +70,7 @@ class GithubCloneCmd(BaseAction):
         repo_dir = repo_name.split("/")[-1].strip()
         git_clone_cmd = f"git clone https://{git_token}@github.com/{repo_name}.git"
         if request_data.branch_name and request_data.branch_name.strip():
-           git_clone_cmd = f"git clone -b {request_data.branch_name}  https://{git_token}@github.com/{repo_name}.git"
+            git_clone_cmd = f"git clone -b {request_data.branch_name}  https://{git_token}@github.com/{repo_name}.git"
         command_list = [
             git_clone_cmd,
             f"cd {repo_dir}",

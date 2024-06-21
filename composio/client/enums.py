@@ -13885,6 +13885,12 @@ class Action(tuple, Enum):
         True,
         True,
     )
+    CMDMANAGERTOOL_AUTOPEP8LINTER = (
+        "cmdmanagertool",
+        "cmdmanagertool_autopep8linter",
+        True,
+        True,
+    )
     CMDMANAGERTOOL_APPLYMULTIPLEEDITSINFILE = (
         "cmdmanagertool",
         "cmdmanagertool_applymultipleeditsinfile",

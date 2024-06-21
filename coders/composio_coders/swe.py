@@ -13,6 +13,14 @@ from composio_coders.constants import (
     KEY_MODEL_ENV,
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
+    AIM_REPO_PATH
+)
+from composio_coders.prompts import (
+    linter_agent_goal,
+    linter_agent_role,
+    linter_backstory,
+    linter_expected_output,
+    linter_task_description,
 )
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Task
@@ -21,7 +29,7 @@ from pydantic import BaseModel, Field
 from rich.logging import RichHandler
 
 from composio import Composio
-from composio_coders.prompts import linter_task_description, linter_backstory, linter_expected_output, linter_agent_goal, linter_agent_role
+
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -65,6 +73,7 @@ class CoderAgentArgs(BaseModel):
         ..., description="llm configs like api_key, endpoint_url etc to initialize llm"
     )
     agent_logs_dir: Path = Field(..., description="logs for agent")
+    is_benchmark: bool = Field(default=False, description="is running for benchmark")
 
 
 class CoderAgent:
@@ -107,6 +116,7 @@ class CoderAgent:
         )
         self.agent_logs: Dict[str, Any] = {}
         self.current_logs: List[Any] = []
+        self.is_benchmark = args.is_benchmark
 
     def get_composio_entity(self):
         client = Composio()
@@ -147,11 +157,11 @@ class CoderAgent:
         else:
             self.logger.info("type is not list: %s", type(step_output))
 
-    def get_llm(self):
+    def get_llm(self, callbacks=None):
         model_env = self.model_env.get(KEY_MODEL_ENV)
         if model_env == MODEL_ENV_OPENAI:
             openai_key = os.environ.get(("OPANAI_API_KEY"))
-            return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key)
+            return ChatOpenAI(model="gpt-4-turbo", api_key=openai_key, callbacks=callbacks)
         if model_env == MODEL_ENV_AZURE:
             azure_endpoint = self.model_env.get(KEY_AZURE_ENDPOINT)
             azure_key = self.model_env.get(KEY_API_KEY)
@@ -163,13 +173,20 @@ class CoderAgent:
                 model="test",
                 model_version="1106-Preview",
                 api_version="2024-02-01",
+                callbacks=callbacks,
             )
             return azure_llm
         raise ValueError(f"Invalid model environment: {self.model_env}")
 
     def run(self):
         llm = self.get_llm()
-
+        callbacks = None
+        aim_callback = None
+        # if self.is_benchmark:
+        #     aim_callback = AimCallbackHandler(
+        #     repo=AIM_REPO_PATH,
+        #     experiment_name=f"SWE_issue: {self.issue_config.issue_id}",)
+        #     callbacks = [aim_callback]
         workspace_create_resp = self.entity.execute(
             Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {}
         )
@@ -184,7 +201,8 @@ class CoderAgent:
             },
         )
         issue_added_instruction = self.issue_description_tmpl.format(
-            issue=self.issue_config.issue_desc, issue_id=self.issue_config.issue_id,
+            issue=self.issue_config.issue_desc,
+            issue_id=self.issue_config.issue_id,
             repo_name_dir="/" + self.repo_name.split("/")[-1].strip(),
         )
         backstory_added_instruction = self.agent_backstory_tmpl.format(
@@ -205,6 +223,7 @@ class CoderAgent:
             memory=True,
             cache=False,
             step_callback=self.add_in_logs,
+            callbacks=callbacks,
         )
 
         coding_task = Task(
@@ -231,6 +250,7 @@ class CoderAgent:
             step_callback=self.add_in_logs,
             memory=True,
             allow_delegation=True,
+            callbacks=callbacks,
         )
 
         review_task = Task(
@@ -247,6 +267,8 @@ class CoderAgent:
         )
 
         crew.kickoff()
+        # if self.is_benchmark:
+        #     aim_callback.flush_tracker(langchain_asset=[swe_agent, reviewer_agent], reset=False, finish=True)
         self.save_history(self.issue_config.issue_id)
 
 
@@ -256,7 +278,7 @@ if __name__ == "__main__":
     issue_config = {
         "repo_name": "ComposioHQ/composio",
         "issue_id": "123",
-        "base_commit_id": "kaavee/swe-update",
+        "base_commit_id": "shubhra/linter",
         "issue_desc": linter_task_description,
     }
     model_env_config = {

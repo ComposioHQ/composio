@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  swe-agent:
+    build:
+      context: .
+      dockerfile: eval.Dockerfile
+    environment:
+      - GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN}
+      - AZURE_ENDPOINT=${AZURE_ENDPOINT}
+      - AZURE_KEY=${AZURE_KEY}
+      - AIM_REPO=/aim_repo  # Aim repository path inside the container
+    volumes:
+      - aim_repo:/aim_repo  # Mount the Aim repository as a volume
+      - agent_logs:/app/logs  # Mount the agent logs directory as a volume
+    depends_on:
+      - aim
+    command: python3 ./coders/composio_coders/benchmark/run_evaluation.py
+
+  aim:
+    image: aimstack/aim:latest
+    ports:
+      - "43800:43800"
+    volumes:
+      - aim_repo:/root/.aim  # Mount the Aim repository as a volume
+
+volumes:
+  aim_repo:
+  agent_logs:

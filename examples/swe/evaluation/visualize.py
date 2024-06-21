@@ -1,9 +1,24 @@
 import json
+import glob
+import os
 
 
 def load_logs(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)  # Load the entire JSON file containing all issues
+
+
+def load_logs_from_dir(directory_path):
+    issues = {}
+    # Assuming all log files follow the pattern 'agent_logs*.json'
+    for file_path in glob.glob(os.path.join(directory_path, 'agent_logs.json06_20_*')):
+        with open(file_path, 'r') as file:
+            logs = json.load(file)
+            issue_id = list(logs.keys())[0]
+            if issue_id in issues:
+                print("!!!!! duplicate issue-id entry found !!!!!")
+            issues[issue_id] = logs[issue_id]
+    return issues
 
 
 def extract_details(agent_logs):
@@ -235,13 +250,13 @@ def generate_html(issues_data, output_file):
     print(f"HTML report generated: {output_file}")
 
 
-def main(log_file_path, output_html_file):
-    issues = load_logs(log_file_path)
+def main(log_file_dir, output_html_file):
+    issues = load_logs_from_dir(log_file_dir)
     issues_data = {issue: extract_details(logs) for issue, logs in issues.items()}
     generate_html1(issues_data, output_html_file)
 
 
 if __name__ == "__main__":
-    log_file_path = "</path/to/agent_logs.json>"
+    log_file_path = "/home/shubhra/.composio_coder/logs/"
     output_html_file = "agent_action_report_by_issue.html"  # Desired output HTML file
     main(log_file_path, output_html_file)

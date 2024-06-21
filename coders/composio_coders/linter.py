@@ -10,22 +10,16 @@ from pathlib import Path
 from grep_ast import TreeContext, filename_to_lang
 from tree_sitter_languages import get_parser  # noqa: E402
 
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    communicate,
-)
-
 # tree_sitter is throwing a FutureWarning
 warnings.simplefilter("ignore", category=FutureWarning)
 
 
 class Linter:
+
     def __init__(self, encoding="utf-8", root=None):
         self.encoding = encoding
         self.root = root
-
-        self.languages = dict(
-            python=self.py_lint,
-        )
+        self.languages = dict(python=self.py_lint, )
         self.all_lint_cmd = None
 
     def set_linter(self, lang, cmd):
@@ -45,9 +39,10 @@ class Linter:
         cmd += " " + rel_fname
         cmd = cmd.split()
 
-        process = subprocess.Popen(
-            cmd, cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
+        process = subprocess.Popen(cmd,
+                                   cwd=self.root,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
         stdout, _ = process.communicate()
         errors = stdout.decode()
         if process.returncode == 0:
@@ -136,7 +131,8 @@ def lint_python_compile(fname, code):
     except Exception as err:
         line_numbers = list(range(err.lineno - 1, err.end_lineno))
 
-        tb_lines = traceback.format_exception(type(err), err, err.__traceback__)
+        tb_lines = traceback.format_exception(type(err), err,
+                                              err.__traceback__)
         last_file_i = 0
 
         target = "# USE TRACEBACK"
@@ -146,7 +142,7 @@ def lint_python_compile(fname, code):
                 last_file_i = i
                 break
 
-        tb_lines = tb_lines[:1] + tb_lines[last_file_i + 1 :]
+        tb_lines = tb_lines[:1] + tb_lines[last_file_i + 1:]
 
     res = "".join(tb_lines)
     return LintResult(text=res, lines=line_numbers)
@@ -214,7 +210,9 @@ def find_filenames_and_linenums(text, fnames):
     Search text for all occurrences of <filename>:\\d+ and make a list of them
     where <filename> is one of the filenames in the list `fnames`.
     """
-    pattern = re.compile(r"(\b(?:" + "|".join(re.escape(fname) for fname in fnames) + r"):\d+\b)")
+    pattern = re.compile(r"(\b(?:" +
+                         "|".join(re.escape(fname)
+                                  for fname in fnames) + r"):\d+\b)")
     matches = pattern.findall(text)
     result = {}
     for match in matches:

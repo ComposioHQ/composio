@@ -3,17 +3,32 @@ import unittest
 
 import pytest
 
+from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
+    GithubCloneCmd,
+    GithubCloneRequest,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.cmds import (
+    OpenCmdRequest,
+    OpenFile,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import (
+    ApplyMultipleEditsInFile,
+    ApplyMultipleEditsInFileRequest,
+)
+from composio.local_tools.local_workspace.cmd_manager.actions.linter import (
+    AutoFlakeLinterRequest,
+    AutoflakeLinter,
+    Flake8Linter,
+    LinterRequest,
+    PylintLinter,
+)
 from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.linter import PylintLinter, LinterRequest, BlackLinter, IsortLinter, Flake8Linter, AutoflakeLinter, AutoFlakeLinterRequest
-from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import GithubCloneCmd, GithubCloneRequest
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.cmds import OpenFile, OpenCmdRequest
-from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import ApplyMultipleEditsInFile, ApplyMultipleEditsInFileRequest
 from composio.local_tools.local_workspace.commons.local_docker_workspace import (
     LocalDockerArgumentsModel,
     WorkspaceManagerFactory,
@@ -72,25 +87,40 @@ class TestCmds(unittest.TestCase):
         workspace_id = ca_resp.workspace_id
         git_clone_a = GithubCloneCmd()
         git_clone_a.set_workspace_and_history(w, h)
-        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio",
-                                               branch_name="shubhra/linter"), {})
+        git_clone_a.execute(
+            GithubCloneRequest(
+                workspace_id=workspace_id,
+                repo_name="ComposioHQ/composio",
+                branch_name="shubhra/linter",
+            ),
+            {},
+        )
         open_file_cmd = OpenFile()
         open_file_cmd.set_workspace_and_history(w, h)
-        open_file_cmd.execute(OpenCmdRequest(workspace_id=workspace_id, file_name="coders/composio_coders/linter.py"), {})
+        open_file_cmd.execute(
+            OpenCmdRequest(
+                workspace_id=workspace_id, file_name="coders/composio_coders/linter.py"
+            ),
+            {},
+        )
 
         edit_file_cmd = ApplyMultipleEditsInFile()
         edit_file_cmd.set_workspace_and_history(w, h)
-        output, return_code = edit_file_cmd.execute(ApplyMultipleEditsInFileRequest(workspace_id=workspace_id, file_name="coders/composio_coders/linter.py", edits=[
-            {
-                    "start_line": 13,
-                    "end_line": 13,
-                    "replacement_text": ""
-                },
-                {
-                    "start_line": 150,
-                    "end_line": 150,
-                    "replacement_text": "        :"
-                }]), {})
+        output, return_code = edit_file_cmd.execute(
+            ApplyMultipleEditsInFileRequest(
+                workspace_id=workspace_id,
+                edits=[
+                    {"file_name":"coders/composio_coders/linter.py", "start_line": 13, "end_line": 13, "replacement_text": ""},
+                    {
+                        "file_name": "coders/composio_coders/linter.py",
+                        "start_line": 150,
+                        "end_line": 150,
+                        "replacement_text": "        :",
+                    },
+                ],
+            ),
+            {},
+        )
         print(output)
 
     def test_pylinter_cmd(self):
@@ -102,7 +132,14 @@ class TestCmds(unittest.TestCase):
         workspace_id = ca_resp.workspace_id
         git_clone_a = GithubCloneCmd()
         git_clone_a.set_workspace_and_history(w, h)
-        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio", branch_name="shubhra/linter") ,{})
+        git_clone_a.execute(
+            GithubCloneRequest(
+                workspace_id=workspace_id,
+                repo_name="ComposioHQ/composio",
+                branch_name="shubhra/linter",
+            ),
+            {},
+        )
         action = PylintLinter()
         action.set_workspace_and_history(w, h)
         result = action.execute(LinterRequest(workspace_id=workspace_id), {})
@@ -118,8 +155,14 @@ class TestCmds(unittest.TestCase):
         workspace_id = ca_resp.workspace_id
         git_clone_a = GithubCloneCmd()
         git_clone_a.set_workspace_and_history(w, h)
-        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio",
-                                               branch_name="shubhra/linter"), {})
+        git_clone_a.execute(
+            GithubCloneRequest(
+                workspace_id=workspace_id,
+                repo_name="ComposioHQ/composio",
+                branch_name="shubhra/linter",
+            ),
+            {},
+        )
         action = Flake8Linter()
         action.set_workspace_and_history(w, h)
         result = action.execute(LinterRequest(workspace_id=workspace_id), {})
@@ -135,16 +178,28 @@ class TestCmds(unittest.TestCase):
         workspace_id = ca_resp.workspace_id
         git_clone_a = GithubCloneCmd()
         git_clone_a.set_workspace_and_history(w, h)
-        git_clone_a.execute(GithubCloneRequest(workspace_id=workspace_id, repo_name="ComposioHQ/composio",
-                                               branch_name="shubhra/linter"), {})
+        git_clone_a.execute(
+            GithubCloneRequest(
+                workspace_id=workspace_id,
+                repo_name="ComposioHQ/composio",
+                branch_name="shubhra/linter",
+            ),
+            {},
+        )
         action = AutoflakeLinter()
         action.set_workspace_and_history(w, h)
-        result = action.execute(AutoFlakeLinterRequest(workspace_id=workspace_id, file_name="composio/local_tools/local_workspace/cmd_manager/actions/linter.py"), {})
+        result = action.execute(
+            AutoFlakeLinterRequest(
+                workspace_id=workspace_id,
+                file_name="composio/local_tools/local_workspace/cmd_manager/actions/linter.py",
+            ),
+            {},
+        )
         print(result)
         self.assertIsNotNone(result)
 
     def test_parse_pylint_errors(self):
-        out = '''GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
+        out = """GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
 pylint inst-nodeps: /home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip
 pylint installed: aiohttp==3.9.5,aiosignal==1.3.1,annotated-types==0.7.0,anyio==4.4.0,astroid==3.2.2,async-timeout==4.0.3,attrs==23.2.0,beaupy==3.8.2,certifi==2024.6.2,charset-normalizer==3.3.2,click==8.1.7,cloudpickle==3.0.0,composio_core @ file:///home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip#sha256=71c1f52e4343589a76722a33d098ba37d9128b056764e36c6e69c330a6e5db03,dill==0.3.8,distro==1.9.0,docker==7.1.0,docstring_parser==0.16,emoji==2.12.1,exceptiongroup==1.2.1,Farama-Notifications==0.0.4,frozenlist==1.4.1,gymnasium==0.29.1,h11==0.14.0,httpcore==1.0.5,httpx==0.27.0,idna==3.7,importlib_metadata==7.1.0,inflection==0.5.1,isort==5.13.2,jsonref==1.1.0,jsonschema==4.22.0,jsonschema-specifications==2023.12.1,markdown-it-py==3.0.0,mccabe==0.7.0,mdurl==0.1.2,multidict==6.0.5,numpy==1.26.4,openai==1.33.0,platformdirs==4.2.2,pydantic==2.7.3,pydantic_core==2.18.4,Pygments==2.18.0,pylint==3.2.3,pyperclip==1.8.2,python-yakh==0.3.2,PyYAML==6.0.1,questo==0.2.3,referencing==0.35.1,requests==2.32.3,rich==13.7.1,rpds-py==0.18.1,sentry-sdk==2.5.1,simple_parsing==0.1.5,sniffio==1.3.1,termcolor==2.4.0,tomli==2.0.1,tomlkit==0.12.5,tqdm==4.66.4,typing_extensions==4.12.2,urllib3==2.2.1,yarl==1.9.4,zipp==3.19.2
 pylint run-test-pre: PYTHONHASHSEED='3789068287'
@@ -185,13 +240,17 @@ Your code has been rated at 9.96/10 (previous run: 9.96/10, +0.00)
 ERROR: InvocationError for command /home/shubhra/work/composio/composio_sdk/.tox/pylint/bin/pylint -j 2 composio/ tests/ scripts/ coders/ (exited with code 30)
 ______________________________________________________________________________________________ summary _______________________________________________________________________________________________
 ERROR:   pylint: commands failed
-        '''
-        from composio.local_tools.local_workspace.cmd_manager.actions.linter import get_errors
+        """
         from pprint import pprint
+
+        from composio.local_tools.local_workspace.cmd_manager.actions.linter import (
+            get_errors,
+        )
+
         pprint(get_errors(out))
 
     def test_mypy_parse_errors(self):
-        out = '''GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
+        out = """GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
 mypy inst-nodeps: /home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip
 mypy installed: WARNING: Ignoring invalid distribution -omposio-core (/home/shubhra/work/composio/composio_sdk/.tox/mypy/lib/python3.10/site-packages),aiohttp==3.9.5,aiosignal==1.3.1,annotated-types==0.7.0,anyio==4.4.0,async-timeout==4.0.3,attrs==23.2.0,beaupy==3.8.2,certifi==2024.2.2,charset-normalizer==3.3.2,click==8.1.7,composio_core @ file:///home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip#sha256=dd5a10b37056ef01453c6a320f259ec69c0a9562ebf48148211d55d3ecbdff14,distro==1.9.0,emoji==2.12.1,exceptiongroup==1.2.1,frozenlist==1.4.1,h11==0.14.0,httpcore==1.0.5,httpx==0.27.0,idna==3.7,importlib-metadata==4.13.0,inflection==0.5.1,jsonref==1.1.0,jsonschema==4.22.0,jsonschema-specifications==2023.12.1,markdown-it-py==3.0.0,mdurl==0.1.2,multidict==6.0.5,mypy==1.3.0,mypy-extensions==1.0.0,openai==1.30.4,pydantic==2.7.2,pydantic_core==2.18.3,Pygments==2.18.0,pyperclip==1.8.2,python-yakh==0.3.2,questo==0.2.3,referencing==0.35.1,requests==2.32.2,rich==13.7.1,rpds-py==0.18.1,sniffio==1.3.1,termcolor==2.4.0,tomli==2.0.1,tqdm==4.66.4,typing_extensions==4.12.0,urllib3==2.2.1,yarl==1.9.4,zipp==3.19.0
 mypy run-test-pre: PYTHONHASHSEED='1471921678'
@@ -201,13 +260,16 @@ Found 1 error in 1 file (errors prevented further checking)
 ERROR: InvocationError for command /home/shubhra/work/composio/composio_sdk/.tox/mypy/bin/mypy composio/ scripts/ tests/ coders/ --config-file tox.ini (exited with code 2)
 ______________________________________________________________________________________________ summary _______________________________________________________________________________________________
 ERROR:   mypy: commands failed
-        '''
-        from composio.local_tools.local_workspace.cmd_manager.actions.linter import get_mypy_errors
-        from pprint import pprint
+        """
+
+        from composio.local_tools.local_workspace.cmd_manager.actions.linter import (
+            get_mypy_errors,
+        )
+
         print(get_mypy_errors(out))
 
     def test_flake8_parse(self):
-        out = '''GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
+        out = """GLOB sdist-make: /home/shubhra/work/composio/composio_sdk/setup.py
     flake8 inst-nodeps: /home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip
     flake8 installed: aiohttp==3.9.5,aiosignal==1.3.1,annotated-types==0.7.0,anyio==4.4.0,async-timeout==4.0.3,attrs==23.2.0,beaupy==3.8.2,certifi==2024.2.2,charset-normalizer==3.3.2,click==8.1.7,composio_core @ file:///home/shubhra/work/composio/composio_sdk/.tox/.tmp/package/1/composio_core-0.3.11.zip#sha256=c9b6c53feb53002cc7a5ac4eab433e226ff4c300f60aac9d60707399e00b1f65,distro==1.9.0,emoji==2.12.1,exceptiongroup==1.2.1,flake8==6.0.0,frozenlist==1.4.1,h11==0.14.0,httpcore==1.0.5,httpx==0.27.0,idna==3.7,importlib-metadata==4.13.0,inflection==0.5.1,jsonref==1.1.0,jsonschema==4.22.0,jsonschema-specifications==2023.12.1,markdown-it-py==3.0.0,mccabe==0.7.0,mdurl==0.1.2,multidict==6.0.5,openai==1.30.4,pycodestyle==2.10.0,pydantic==2.7.2,pydantic_core==2.18.3,pyflakes==3.0.1,Pygments==2.18.0,pyperclip==1.8.2,python-yakh==0.3.2,questo==0.2.3,referencing==0.35.1,requests==2.32.2,rich==13.7.1,rpds-py==0.18.1,sniffio==1.3.1,termcolor==2.4.0,tqdm==4.66.4,typing_extensions==4.12.0,urllib3==2.2.1,yarl==1.9.4,zipp==3.19.0
     flake8 run-test-pre: PYTHONHASHSEED='2931598528'
@@ -236,9 +298,13 @@ ERROR:   mypy: commands failed
     ERROR: InvocationError for command /home/shubhra/work/composio/composio_sdk/.tox/flake8/bin/flake8 composio/ scripts/ tests/ coders/ --config tox.ini (exited with code 1)
     ______________________________________________________________________________________________ summary _______________________________________________________________________________________________
     ERROR:   flake8: commands failed
-        '''
-        from composio.local_tools.local_workspace.cmd_manager.actions.linter import get_flake8_errors
+        """
         from pprint import pprint
+
+        from composio.local_tools.local_workspace.cmd_manager.actions.linter import (
+            get_flake8_errors,
+        )
+
         pprint(get_flake8_errors(out))
 
 

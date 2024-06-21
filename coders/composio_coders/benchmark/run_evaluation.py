@@ -5,6 +5,7 @@ from composio_coders.context import Context, set_context
 from composio_coders.swe import CoderAgent, CoderAgentArgs
 from datasets import load_dataset
 from rich.logging import RichHandler
+from langchain_community.callbacks import AimCallbackHandler
 
 
 # get logger

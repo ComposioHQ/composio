@@ -2,25 +2,25 @@ from typing import Optional
 
 from composio.core.local import Tool
 from composio.local_tools.local_workspace.cmd_manager.actions import (
+    ApplyMultipleEditsInFile,
+    AutoflakeLinter,
+    BlackLinter,
     CreateFileCmd,
     EditFile,
-    ApplyMultipleEditsInFile,
     FindFileCmd,
+    Flake8Linter,
     GetCurrentDirCmd,
     GitRepoTree,
     GithubCloneCmd,
     GoToLineNumInOpenFile,
+    IsortLinter,
     OpenFile,
+    PylintLinter,
     RunCommandOnWorkspace,
     Scroll,
     SearchDirCmd,
     SearchFileCmd,
-    GitRepoTree,
-    Flake8Linter,
-    PylintLinter,
-    IsortLinter,
-    BlackLinter,
-    AutoflakeLinter,
+    Autopep8Linter,
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
@@ -56,6 +56,7 @@ class CmdManagerTool(Tool):
             IsortLinter,
             BlackLinter,
             AutoflakeLinter,
+            Autopep8Linter,
         ]
 
     def triggers(self) -> list:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +36,7 @@ class BaseResponse(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    output: any = Field(..., description="output of the command")
+    output: Any = Field(..., description="output of the command")
     return_code: int = Field(
         ..., description="Any output or errors that occurred during the file edit."
     )

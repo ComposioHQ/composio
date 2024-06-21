@@ -1,3 +1,5 @@
+import os
+
 LOCAL_CACHE_DIRECTORY_NAME = ".composio_coder"
 
 MODEL_ENV_PATH = "model_env"
@@ -11,3 +13,6 @@ KEY_API_KEY = "api_key"
 KEY_MODEL_ENV = "model_env"
 MODEL_ENV_AZURE = "azure"
 MODEL_ENV_OPENAI = "openai"
+
+# aim dashboard related settings
+AIM_REPO_PATH = os.environ.get("AIM_REPO_PATH", ".")
