@@ -944,7 +944,7 @@ class Actions(Collection[ActionModel]):
         self,
         action: Action,
         params: t.Dict,
-        entity_id: str,
+        entity_id: str = "default",
         connected_account: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:

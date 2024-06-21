@@ -81,10 +81,7 @@ class CoderAgent:
                 App.SUBMITPATCHTOOL,
             ]
         )
-        composio_client = Composio()
-        self.entity = composio_client.get_entity("swe-agent")
-        # initialize composio client
-        self.composio_entity = self.get_composio_entity()
+        self.composio_client = Composio()
 
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
@@ -102,10 +99,6 @@ class CoderAgent:
         self.agent_logs: Dict[str, Any] = {}
         self.current_logs: List[Any] = []
 
-    def get_composio_entity(self):
-        client = Composio()
-        entity = client.get_entity("SWE-Agent-Client")
-        return entity
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
@@ -152,12 +145,12 @@ class CoderAgent:
         llm = self.get_llm()
 
         workspace_create_resp = CreateWorkspaceResponse.model_validate(
-            self.entity.execute(Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, {})
+            self.composio_client.actions.execute(action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={})
         )
         workspace_id = workspace_create_resp.workspace_id
         logger.info("workspace is created, workspace-id is: %s", workspace_id)
-        git_clone_response = self.entity.execute(
-            Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        git_clone_response = self.composio_client.actions.execute(
+            action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": self.issue_config.repo_name,
