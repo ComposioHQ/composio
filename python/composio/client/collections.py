@@ -758,40 +758,20 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return self._raise_if_empty(super().get(queries=queries))
 
 
-class ActionParameterPropertyModel(BaseModel):
-    """Action parameter data model."""
-
-    examples: t.Optional[t.List] = None
-    description: t.Optional[str] = None
-    title: t.Optional[str] = None
-    type: t.Optional[str] = None
-    oneOf: t.Optional[t.List["ActionParameterPropertyModel"]] = None
-    file_readable: t.Optional[bool] = False
-
-
 class ActionParametersModel(BaseModel):
     """Action parameter data models."""
 
-    properties: t.Dict[str, ActionParameterPropertyModel]
+    properties: t.Dict[str, t.Any]
     title: str
     type: str
 
     required: t.Optional[t.List[str]] = None
 
 
-class ActionResponsePropertyModel(BaseModel):
-    """Action response data model."""
-
-    description: t.Optional[str] = None
-    examples: t.Optional[t.List] = None
-    title: t.Optional[str] = None
-    type: t.Optional[str] = None
-
-
 class ActionResponseModel(BaseModel):
     """Action response data model."""
 
-    properties: t.Dict[str, ActionResponsePropertyModel]
+    properties: t.Dict[str, t.Any]
     title: str
     type: str
 
@@ -980,7 +960,9 @@ class Actions(Collection[ActionModel]):
         action_req_schema = action_model.parameters.properties
         modified_params = {}
         for param, value in params.items():
-            file_readable = action_req_schema[param].file_readable or False
+            file_readable = False
+            if isinstance(action_req_schema[param], dict):
+                file_readable = action_req_schema[param].get('file_readable', False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
                     file_content = file.read()
