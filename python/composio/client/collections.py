@@ -21,6 +21,7 @@ from composio.client.endpoints import v1
 from composio.client.enums import Action, App, Tag, Trigger
 from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
+from composio.utils import logging
 
 from .local_handler import LocalToolHandler
 
@@ -461,7 +462,7 @@ class _TriggerEventFilters(te.TypedDict):
 TriggerCallback = t.Callable[[TriggerEventData], None]
 
 
-class TriggerSubscription:
+class TriggerSubscription(logging.WithLogger):
     """Trigger subscription."""
 
     _channel: Channel
@@ -469,6 +470,7 @@ class TriggerSubscription:
 
     def __init__(self) -> None:
         """Initialize subscription object."""
+        logging.WithLogger.__init__(self)
         self._alive = False
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
@@ -504,7 +506,7 @@ class TriggerSubscription:
             if value is None or value == check:
                 continue
 
-            print(
+            self.logger.debug(
                 f"Skipping `{callback.__name__}` since "
                 f"`{name}` filter does not match the event metadata",
             )
@@ -513,7 +515,7 @@ class TriggerSubscription:
         try:
             callback(data)
         except BaseException:
-            print(
+            self.logger.info(
                 f"Erorr executing `{callback.__name__}` for "
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
@@ -524,7 +526,7 @@ class TriggerSubscription:
         try:
             return TriggerEventData(**json.loads(event))
         except Exception as e:
-            print(f"Error decoding payload: {e}")
+            self.logger.warning(f"Error decoding payload: {e}")
             return None
 
     def handle_event(self, event: str) -> None:
