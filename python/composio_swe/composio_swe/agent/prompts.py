@@ -1,4 +1,3 @@
-
 AGENT_BACKSTORY_TMPL = """
 You are an autonomous programmer, your task is to solve the issue given in task with the tools in hand.
   Your mentor gave you following tips.

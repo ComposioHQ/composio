@@ -16,8 +16,10 @@ from composio import Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 from composio_swe.composio_swe.config.config_store import IssueConfig
+
+from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+
 
 LOGS_DIR_NAME_PREFIX = "coder_agent_logs"
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
