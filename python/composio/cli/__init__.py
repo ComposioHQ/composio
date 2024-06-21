@@ -2,6 +2,8 @@
 Composio CLI Tool.
 """
 
+import typing as t
+
 import click
 
 from composio.cli.actions import _actions
@@ -12,17 +14,11 @@ from composio.cli.integrations import _integrations
 from composio.cli.login import _login
 from composio.cli.logout import _logout
 from composio.cli.triggers import _triggers
-from composio.cli.utils import HelpfulCmdBase
+from composio.cli.utils.params import EnumParam
 from composio.cli.whoami import _whoami
-from composio.core.cls.catch_all_exceptions import (
-    CatchAllExceptions,
-    handle_exceptions,
-    init_sentry,
-)
+from composio.core.cls.catch_all_exceptions import CatchAllExceptions, handle_exceptions
 from composio.core.cls.did_you_mean import DYMGroup
-
-
-init_sentry()
+from composio.utils import logging
 
 
 class HelpDYMGroup(DYMGroup):
@@ -48,13 +44,25 @@ class HelpDYMGroup(DYMGroup):
 
 
 @click.group(
-    name="composio", cls=CatchAllExceptions(HelpDYMGroup, handler=handle_exceptions)
+    name="composio",
+    cls=CatchAllExceptions(
+        HelpDYMGroup,
+        handler=handle_exceptions,
+    ),
 )
-@click.help_option("--help", "-h", "-help")
-def composio() -> None:
+@click.help_option("--help", "-help", "-h")
+@click.option(
+    "-v",
+    "level",
+    help="Specify logging verbosity level.",
+    type=EnumParam(cls=logging.Level),
+)
+def composio(level: t.Optional[logging.Level] = None) -> None:
     """
     🔗 Composio CLI Tool.
     """
+    if level is not None:
+        logging.setup(level=level)
 
 
 composio.add_command(_add)
