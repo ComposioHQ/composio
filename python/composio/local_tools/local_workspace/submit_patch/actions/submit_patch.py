@@ -19,7 +19,7 @@ class SubmitPatchRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id for which patch is generated"
     )
-    patch_code: str = Field(..., description="patch code that needs to bu submitted")
+    patch_code: str = Field(..., description="patch code that needs to be submitted")
 
 
 class SubmitPatchResponse(BaseModel):
@@ -28,7 +28,7 @@ class SubmitPatchResponse(BaseModel):
 
 class SubmitPatch(Action):
     """
-    submits generated patch for the workspace
+    Submits generated patch for the workspace that should work
     """
 
     _history_maintains = True

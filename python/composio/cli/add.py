@@ -12,7 +12,7 @@ import click
 from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, login_required, pass_context
-from composio.cli.decorators import pass_entity_id
+from composio.cli.utils.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity
 from composio.client.collections import (
@@ -175,6 +175,9 @@ def add_integration(
         f"\n[green]> Adding integration: {name.capitalize()}...[/green]\n"
     )
     app = t.cast(AppModel, context.client.apps.get(name=name))
+    if app.no_auth:
+        raise click.ClickException(f"{app.name} does not require authentication")
+
     auth_schemes = app.auth_schemes or []
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
     if "API_KEY" in auth_modes:

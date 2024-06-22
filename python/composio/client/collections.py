@@ -6,8 +6,10 @@ import base64
 import json
 import os
 import time
+import traceback
 import typing as t
 import warnings
+from concurrent.futures import Future, ThreadPoolExecutor
 
 import pysher
 import typing_extensions as te
@@ -19,6 +21,7 @@ from composio.client.endpoints import v1
 from composio.client.enums import Action, App, Tag, Trigger
 from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
+from composio.utils import logging
 
 from .local_handler import LocalToolHandler
 
@@ -221,9 +224,10 @@ class AuthSchemeField(BaseModel):
     """Auth scheme field."""
 
     name: str
-    displayName: str
     description: str
     type: str
+
+    displayName: t.Optional[str] = None
 
     required: bool = False
     expected_from_customer: bool = True
@@ -234,9 +238,9 @@ class AppAuthScheme(BaseModel):
 
     scheme_name: str
     auth_mode: str
-    proxy: t.Dict
     fields: t.List[AuthSchemeField]
 
+    proxy: t.Optional[t.Dict] = None
     authorization_url: t.Optional[str] = None
     token_url: t.Optional[str] = None
     default_scopes: t.Optional[t.List] = None
@@ -326,7 +330,8 @@ class TriggerConfigPropertyModel(BaseModel):
 
     description: str
     title: str
-    type: str
+
+    type: t.Optional[str] = None
 
 
 class TriggerConfigModel(BaseModel):
@@ -334,8 +339,8 @@ class TriggerConfigModel(BaseModel):
 
     properties: t.Dict[str, TriggerConfigPropertyModel]
     title: str
-    type: str
 
+    type: t.Optional[str] = None
     required: t.Optional[t.List[str]] = None
 
 
@@ -457,7 +462,7 @@ class _TriggerEventFilters(te.TypedDict):
 TriggerCallback = t.Callable[[TriggerEventData], None]
 
 
-class TriggerSubscription:
+class TriggerSubscription(logging.WithLogger):
     """Trigger subscription."""
 
     _channel: Channel
@@ -465,6 +470,7 @@ class TriggerSubscription:
 
     def __init__(self) -> None:
         """Initialize subscription object."""
+        logging.WithLogger.__init__(self)
         self._alive = False
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
@@ -481,21 +487,6 @@ class TriggerSubscription:
 
         return _wrap
 
-    def _validate_filter(
-        self,
-        check: t.Any,
-        name: str,
-        filters: _TriggerEventFilters,
-    ) -> None:
-        """Check if filter is provided and raise if the values does not match."""
-        value = filters.get(name)
-        if value is None:
-            return
-        if value != check:
-            raise ValueError(
-                f"Skipping since `{name}` filter does not match the event",
-            )
-
     def _handle_callback(
         self,
         callback: TriggerCallback,
@@ -511,28 +502,51 @@ class TriggerSubscription:
             ("entity_id", data.metadata.connection.clientUniqueUserId),
             ("integration_id", data.metadata.connection.integrationId),
         ):
-            self._validate_filter(
-                check=check,
-                name=name,
-                filters=filters,
+            value = filters.get(name)
+            if value is None or value == check:
+                continue
+
+            self.logger.debug(
+                f"Skipping `{callback.__name__}` since "
+                f"`{name}` filter does not match the event metadata",
             )
-        callback(data)
+            return
+
+        try:
+            callback(data)
+        except BaseException:
+            self.logger.info(
+                f"Erorr executing `{callback.__name__}` for "
+                f"event `{data.metadata.triggerName}` "
+                f"with error:\n {traceback.format_exc()}"
+            )
+
+    def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
+        """Parse event payload."""
+        try:
+            return TriggerEventData(**json.loads(event))
+        except Exception as e:
+            self.logger.warning(f"Error decoding payload: {e}")
+            return None
 
     def handle_event(self, event: str) -> None:
         """Filter events and call the callback function."""
-        try:
-            data = TriggerEventData(**json.loads(event))
-        except Exception as e:
-            print(f"Error decoding payload: {e}")
-        try:
+        data = self._parse_payload(event=event)
+        if data is None:
+            return
+
+        awaitables: t.List[Future] = []
+        with ThreadPoolExecutor() as executor:
             for callback, filters in self._callbacks:
-                self._handle_callback(
-                    callback=callback,
-                    data=data,
-                    filters=filters,
+                awaitables.append(
+                    executor.submit(
+                        self._handle_callback,
+                        callback,
+                        data,
+                        filters,
+                    )
                 )
-        except BaseException as e:
-            print(f"Erorr handling event `{data.metadata.id}`: {e}")
+        _ = [future.result() for future in awaitables]
 
     def handle_chunked_events(self, event: str) -> None:
         """Handle chunked events."""
@@ -758,40 +772,20 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return self._raise_if_empty(super().get(queries=queries))
 
 
-class ActionParameterPropertyModel(BaseModel):
-    """Action parameter data model."""
-
-    examples: t.Optional[t.List] = None
-    description: t.Optional[str] = None
-    title: t.Optional[str] = None
-    type: t.Optional[str] = None
-    oneOf: t.Optional[t.List["ActionParameterPropertyModel"]] = None
-    file_readable: t.Optional[bool] = False
-
-
 class ActionParametersModel(BaseModel):
     """Action parameter data models."""
 
-    properties: t.Dict[str, ActionParameterPropertyModel]
+    properties: t.Dict[str, t.Any]
     title: str
     type: str
 
     required: t.Optional[t.List[str]] = None
 
 
-class ActionResponsePropertyModel(BaseModel):
-    """Action response data model."""
-
-    description: t.Optional[str] = None
-    examples: t.Optional[t.List] = None
-    title: t.Optional[str] = None
-    type: t.Optional[str] = None
-
-
 class ActionResponseModel(BaseModel):
     """Action response data model."""
 
-    properties: t.Dict[str, ActionResponsePropertyModel]
+    properties: t.Dict[str, t.Any]
     title: str
     type: str
 
@@ -952,7 +946,7 @@ class Actions(Collection[ActionModel]):
         self,
         action: Action,
         params: t.Dict,
-        entity_id: str,
+        entity_id: str = "default",
         connected_account: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
@@ -980,7 +974,9 @@ class Actions(Collection[ActionModel]):
         action_req_schema = action_model.parameters.properties
         modified_params = {}
         for param, value in params.items():
-            file_readable = action_req_schema[param].file_readable or False
+            file_readable = False
+            if isinstance(action_req_schema[param], dict):
+                file_readable = action_req_schema[param].get("file_readable", False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
                     file_content = file.read()

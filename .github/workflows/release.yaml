@@ -35,7 +35,7 @@ jobs:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
-          packages-dir: dist/
+          packages-dir: python/dist/
 
   publish-plugins:
     needs: publish-core
@@ -73,4 +73,4 @@ jobs:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
-          packages-dir: plugins/${{ matrix.package }}/dist/
+          packages-dir: python/plugins/${{ matrix.package }}/dist/

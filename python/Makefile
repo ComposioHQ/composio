@@ -85,6 +85,10 @@ check-code:
 	tox -e mypy
 	tox -e pylint
 
+.PHONY: format-and-check
+format-and-check:
+	make format-code
+	make check-code
 
 .PHONY: env
 env: clean
@@ -109,6 +113,19 @@ env: clean
 	else\
 		echo "In a virtual environment! Exit first: 'exit'.";\
 	fi
+
+.PHONY: login
+login:
+	@composio logout
+	@composio login
+
+.PHONY: login-staging
+login-staging:
+	@COMPOSIO_BASE_URL=https://staging-backend.composio.dev/api make login
+
+.PHONY: login-prod
+login-prod:
+	@COMPOSIO_BASE_URL=https://backend.composio.dev/api make login
 
 test-demo:
 	for dir in plugins/*; do \

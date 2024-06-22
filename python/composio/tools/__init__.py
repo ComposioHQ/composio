@@ -52,12 +52,12 @@ class ComposioToolSet:
         :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
         """
         self._local_client = LocalToolHandler()
-        if runtime is not None:
-            self._runtime = runtime
+        self._runtime = runtime
 
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
+
         # Check check constructor aegument, environment variables and user data for the key
         try:
             self.api_key = (
@@ -77,10 +77,11 @@ class ComposioToolSet:
         return Composio(
             api_key=self.api_key,
             base_url=self.base_url,
+            runtime=self.runtime,
         )
 
     @property
-    def runtime(self) -> str:
+    def runtime(self) -> t.Optional[str]:
         return self._runtime
 
     def execute_action(
@@ -139,8 +140,8 @@ class ComposioToolSet:
                 output,
             )
             return output_modified
-        except Exception as e:
-            print(f"Error checking file response: {e}")
+        except Exception:
+            pass
         return output
 
     def _save_files(self, file_name_prefix: str, output: dict) -> dict:

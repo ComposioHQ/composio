@@ -9,13 +9,14 @@ import requests
 from composio.client.endpoints import Endpoint
 from composio.client.exceptions import HTTPError, NoItemsFound
 from composio.client.http import HttpClient
+from composio.utils import logging
 
 
 ModelType = t.TypeVar("ModelType")
 CollectionType = t.TypeVar("CollectionType", list, dict)
 
 
-class Collection(t.Generic[ModelType]):
+class Collection(t.Generic[ModelType], logging.WithLogger):
     """Data model collection for representing server objects."""
 
     endpoint: Endpoint
@@ -25,6 +26,7 @@ class Collection(t.Generic[ModelType]):
 
     def __init__(self, client: "BaseClient") -> None:
         """Initialize conntected accounts models namespace."""
+        logging.WithLogger.__init__(self)
         self.client = client
 
     def _raise_if_required(
