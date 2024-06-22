@@ -110,7 +110,7 @@ class ComposioToolSet(BaseComposioToolSet):
         """Wraps composio tool as LlamaIndex FunctionTool object."""
         app = schema["appName"]
         action = schema["name"]
-        description = schema["description"]
+        description = schema.get("description", schema["name"])
         schema_params = schema["parameters"]
 
         action_func = self.prepare_python_function(
