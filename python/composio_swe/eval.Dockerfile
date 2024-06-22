@@ -16,4 +16,7 @@ COPY . /evaluation
 WORKDIR /evaluation
 RUN pip install -e .
 #CMD ["python", "coders/composio_coders/benchmark/run_evaluation.py"]
+# Download the datase
+RUN python3 -c "from datasets import load_dataset; load_dataset('princeton-nlp/SWE-bench_Lite').save_to_disk('/evaluation/local_dataset')"
+
 CMD ["/bin/bash"]
