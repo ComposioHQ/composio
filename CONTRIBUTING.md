@@ -50,4 +50,4 @@ We have various commands which are helpful during development.
   - Use `tox -e flake8` and `tox -e pylint` to run code linters
   - Use `tox -e mypy` for type checking
 
-Read more detailed guides on development [here](docs/development.md).
+Read more detailed guides on development [here](python/docs/development.md).
