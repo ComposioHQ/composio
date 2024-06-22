@@ -204,6 +204,7 @@ class ComposioToolSet:
         self,
         *apps: t.Union[str, App],
         use_case: str,
+        limit: t.Optional[int] = None,
     ) -> t.List[Action]:
         """
         Find actions by specified use case.
@@ -216,6 +217,7 @@ class ComposioToolSet:
             apps=[App(app) for app in apps],
             use_case=use_case,
             allow_all=True,
+            limit=limit,
         )
         return [
             Action.from_action(name=_get_enum_key(action.name).lower())
