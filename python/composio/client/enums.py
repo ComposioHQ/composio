@@ -7,6 +7,7 @@ Helper Enum classes.
 from enum import Enum
 from typing import List
 
+
 class Tag(tuple, Enum):
     """App tags."""
 
