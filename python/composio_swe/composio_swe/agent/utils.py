@@ -1,9 +1,10 @@
+import logging
 import os
 import typing as t
-from langchain_openai import ChatOpenAI, AzureChatOpenAI
+
 from langchain_anthropic import ChatAnthropic
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from rich.logging import RichHandler
-import logging
 
 
 def setup_logger():

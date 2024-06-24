@@ -18,8 +18,6 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
     CreateWorkspaceAction,
     CreateWorkspaceRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import GetPatchCmd, GetPatchRequest
-
 
 
 @pytest.mark.skipif(

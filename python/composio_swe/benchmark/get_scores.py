@@ -10,16 +10,14 @@ from swebench import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
+    get_eval_refs,
     get_eval_report,
     get_logs_eval,
     get_model_report,
     get_resolution_status,
     run_evaluation,
-    get_eval_refs,
 )
-from swebench.harness.constants import (
-    INSTALL_FAIL,
-)
+from swebench.harness.constants import INSTALL_FAIL
 from unidiff import PatchSet
 
 
@@ -61,7 +59,7 @@ def find_patch(prediction_data):
                 patch = action.get("tool_output")
                 patch_lines = patch.split("\n")
                 if not patch_lines:
-                    print(f"no patch found here for - skipping...")
+                    print("no patch found here for - skipping...")
                     continue
                 patch = patch_lines[0]
                 patch = patch.replace("patch_code=", "")
@@ -233,7 +231,7 @@ def main(
     print(f"- Wrote per-instance scorecards to {path_scorecards}")
 
     # Get results and write to file
-    print(f"Reference Report:")
+    print("Reference Report:")
     report = get_model_report(
         str(predictions_dir), str(pred_path_temp), str(swe_bench_path), str(log_dir)
     )

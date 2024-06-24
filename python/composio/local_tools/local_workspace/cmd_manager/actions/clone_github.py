@@ -98,7 +98,7 @@ class GithubCloneCmd(BaseAction):
         """
         print("Resetting repository to base commit inside reset_to_base_commit")
         self._setup(request_data)
-        repo_dir = request_data.repo_name.split("/")[-1].strip()
+        # repo_dir = request_data.repo_name.split("/")[-1].strip()
         reset_commands = [
             "git fetch --all",
             f"git reset --hard {request_data.commit_id}",

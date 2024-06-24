@@ -119,9 +119,7 @@ def solve(ctx: Context):
     click.echo("Issue solving process started.")
 
 
-@click.command(
-    name="workflow", help="📋 Show the workflow: setup -> add_issue -> solve"
-)
+@click.command(name="workflow", help="📋 Show the workflow: setup -> add_issue -> solve")
 @click.help_option("--help", "-h", "-help")
 def show_workflow():
     # Add the workflow description

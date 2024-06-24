@@ -6,6 +6,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     EditFile,
     FindFileCmd,
     GetCurrentDirCmd,
+    GetPatchCmd,
     GitRepoTree,
     GithubCloneCmd,
     GoToLineNumInOpenFile,
@@ -14,7 +15,6 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     Scroll,
     SearchDirCmd,
     SearchFileCmd,
-    GetPatchCmd,
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,

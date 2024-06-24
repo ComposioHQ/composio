@@ -1,7 +1,6 @@
-import os
+import typing as t
 
 from pydantic import Field
-import typing as t
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (

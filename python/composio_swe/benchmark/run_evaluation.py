@@ -3,15 +3,10 @@ import logging
 
 from datasets import load_dataset
 from rich.logging import RichHandler
+
 from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
-)
-from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import (
-    GetPatchResponse,
-)
-from python.composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
-    GithubCloneRequest,
 )
 from python.composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
 from python.composio_swe.composio_swe.config.constants import KEY_API_KEY
@@ -101,7 +96,7 @@ def run():
                 )
 
                 start_time = datetime.datetime.now()
-                git_clone_response = composio_client.actions.execute(
+                composio_client.actions.execute(
                     action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
                     params={
                         "workspace_id": workspace_id,

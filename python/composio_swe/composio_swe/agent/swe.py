@@ -1,21 +1,17 @@
 import datetime
 import json
+import typing as t
 from pathlib import Path
 from typing import Any, Dict, List
-import typing as t
 
 import langchain_core
 from composio_crewai import Action, App, ComposioToolSet
-from crewai import Agent, Task, Crew
+from crewai import Agent, Task
 from pydantic import BaseModel, Field
-
 
 from composio import Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
-)
-from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import (
-    GetPatchResponse,
 )
 from python.composio_swe.composio_swe.config.config_store import IssueConfig
 
@@ -143,7 +139,7 @@ class CoderAgent(BaseSWEAgent):
             )
 
             start_time = datetime.datetime.now()
-            git_clone_response = self.composio_client.actions.execute(
+            self.composio_client.actions.execute(
                 action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
                 params={
                     "workspace_id": workspace_id,
@@ -154,12 +150,6 @@ class CoderAgent(BaseSWEAgent):
             git_clone_time = datetime.datetime.now() - start_time
             print("git clone completed, time taken: %s", git_clone_time)
 
-        workspace_create_resp = self.composio_client.actions.execute(
-            action=Action.CMDMANAGERTOOL_GETPATCHCMD,
-            params={"workspace_id": workspace_id},
-        )
-        print("workspace_created_resp: ", workspace_create_resp)
-
         issue_added_instruction = self.issue_description_tmpl.format(
             issue=issue_config.issue_desc, issue_id=issue_config.issue_id
         )
@@ -169,12 +159,12 @@ class CoderAgent(BaseSWEAgent):
             repo_name_dir="/" + repo_name.split("/")[-1].strip(),
             base_commit=issue_config.base_commit_id,
         )
-        reviewer_backstory_added_instruction = self.reviewer_backstory_tmpl.format(
-            issue_id=issue_config.issue_id,
-            issue=issue_config.issue_desc,
-            repo_name=repo_name,
-            repo_name_dir="/" + repo_name.split("/")[-1].strip(),
-        )
+        # reviewer_backstory_added_instruction = self.reviewer_backstory_tmpl.format(
+        #     issue_id=issue_config.issue_id,
+        #     issue=issue_config.issue_desc,
+        #     repo_name=repo_name,
+        #     repo_name_dir="/" + repo_name.split("/")[-1].strip(),
+        # )
 
         swe_agent = Agent(
             role=self.agent_role,
@@ -194,41 +184,41 @@ class CoderAgent(BaseSWEAgent):
             expected_output=self.expected_output,
         )
 
-        reviewer_agent = Agent(
-            role="You are the best reviewer. You think carefully and step by step take action.",
-            goal="Review the patch and make sure it fixes the issue.",
-            backstory=reviewer_backstory_added_instruction,
-            verbose=True,
-            llm=llm,
-            memory=True,
-            step_callback=self.add_in_logs,
-            allow_delegation=True,
-        )
+        # reviewer_agent = Agent(
+        #     role="You are the best reviewer. You think carefully and step by step take action.",
+        #     goal="Review the patch and make sure it fixes the issue.",
+        #     backstory=reviewer_backstory_added_instruction,
+        #     verbose=True,
+        #     llm=llm,
+        #     memory=True,
+        #     step_callback=self.add_in_logs,
+        #     allow_delegation=True,
+        # )
 
-        review_task = Task(
-            description="Review the patch and make sure it fixes the issue.",
-            agent=reviewer_agent,
-            context=[coding_task],
-            expected_output="The patch is ready to be submitted to the repo.",
-        )
+        # review_task = Task(
+        #     description="Review the patch and make sure it fixes the issue.",
+        #     agent=reviewer_agent,
+        #     context=[coding_task],
+        #     expected_output="The patch is ready to be submitted to the repo.",
+        # )
 
-        crew = Crew(
-            agents=[swe_agent, reviewer_agent],
-            tasks=[coding_task, review_task],
-            memory=True,
-        )
+        # crew = Crew(
+        #     agents=[swe_agent, reviewer_agent],
+        #     tasks=[coding_task, review_task],
+        #     memory=True,
+        # )
         # crew.kickoff()
         coding_task.execute()
         print("Getting patch")
-        workspace_create_resp = self.composio_client.actions.execute(
+        get_patch_resp = self.composio_client.actions.execute(
             action=Action.CMDMANAGERTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
-        print(f"Final Patch: {workspace_create_resp[0][1]}")
+        print(f"Final Patch: {get_patch_resp[0][1]}")
         self.current_logs.append(
             {
                 "agent_action": "final_patch",
-                "agent_output": workspace_create_resp[0][1],
+                "agent_output": get_patch_resp[0][1],
             }
         )
         self.save_history(issue_config.issue_id)
