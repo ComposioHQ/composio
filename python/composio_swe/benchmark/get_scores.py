@@ -44,6 +44,10 @@ def find_patch(prediction_data):
     # Iterate through each action in the prediction data
     patch_formatted = None
     for action in prediction_data:
+        # final_patch action is not added by llm langchain --> added manually to keep track of patch
+        if action["agent_action"] == "final_patch":
+            patch = action["agent_output"]
+            return patch
         if action["agent_action"] == "agent_finish":
             print(
                 f"agent finish action found: agent_finish, output: {action['agent_output']}"
@@ -66,6 +70,7 @@ def find_patch(prediction_data):
                 )
                 patch_formatted = patch_formatted.replace("'", "")
     return patch_formatted
+
 
 def log_file(f_name):
     if f_name.startswith("agent_logs.json"):
