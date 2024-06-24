@@ -55,13 +55,13 @@ class CoderAgent(BaseSWEAgent):
         self.args = args
 
         # initialize composio toolset
-        tool_set = ComposioToolSet()
-        self.composio_toolset = tool_set.get_tools(
-            apps=[
-                App.LOCALWORKSPACE,
-                App.CMDMANAGERTOOL,
-                App.HISTORYKEEPER,
-            ]
+        local_workspace_tool_set = ComposioToolSet().get_actions(
+            actions=[Action.LOCALWORKSPACE_WORKSPACESTATUSACTION]
+        )
+        cmd_manager_tool_set = ComposioToolSet().get_tools(apps=[App.CMDMANAGERTOOL])
+        history_keeper_tool_set = ComposioToolSet().get_tools(apps=[App.HISTORYKEEPER])
+        self.composio_toolset = (
+            local_workspace_tool_set + cmd_manager_tool_set + history_keeper_tool_set
         )
         self.composio_client = Composio()
 
