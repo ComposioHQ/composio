@@ -226,6 +226,11 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
                 path=enums.base.TAGS_CACHE / tag_name,
             ).store()
 
+    enums.base.TagData(
+        app="default",
+        value="important",
+        path=enums.base.TAGS_CACHE / "DEFAULT",
+    )
     _update_annotations(
         cls=enums.Tag,
         attributes=tag_names,
@@ -284,7 +289,7 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
             continue
-        if node.name != cls:
+        if node.name != cls.__name__:
             continue
         node.body = (
             node.body[:1]

@@ -8,6 +8,7 @@ from composio.client.enums.base import TAGS_CACHE, TagData, _AnnotatedEnum, enum
 class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     """Tag object."""
 
+    DEFAULT: "Tag"
     ASANA_ALLOCATIONS: "Tag"
     ASANA_ATTACHMENTS: "Tag"
     ASANA_AUDIT_LOG_API: "Tag"

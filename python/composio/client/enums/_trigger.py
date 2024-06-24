@@ -12,6 +12,8 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     GITHUB_ISSUE_ADDED_EVENT: "Trigger"
     GITHUB_LABEL_ADDED_EVENT: "Trigger"
     GITHUB_PULL_REQUEST_EVENT: "Trigger"
+    GITHUB_STAR_ADDED_EVENT: "Trigger"
+    GMAIL_NEW_GMAIL_MESSAGE: "Trigger"
     GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES: "Trigger"
     NOTION_NEW_PAGE: "Trigger"
     SLACK_NEW_CHANNEL_CREATED: "Trigger"

@@ -70,6 +70,8 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     WEBTOOL: "App"
     GREPTILE: "App"
     SUBMITPATCHTOOL: "App"
+    SQLTOOL: "App"
+    FILETOOL: "App"
 
     @property
     def is_local(self) -> bool:
