@@ -1,7 +1,6 @@
 """
 Action enums.
 """
-
 from composio.client.enums.base import ACTIONS_CACHE, ActionData, _AnnotatedEnum, enum
 
 

@@ -1,7 +1,6 @@
 """
 App enums.
 """
-
 from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
 
 
