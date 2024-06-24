@@ -41,8 +41,7 @@ class GitRepoTree(BaseAction):
             self.container_process, self.container_obj, self.command, self.parent_pids
         )
         output, return_code = process_output(output, return_code)
-        files = output.split("\n")
         return BaseResponse(
-            output=files,
+            output="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
             return_code=return_code,
         )
