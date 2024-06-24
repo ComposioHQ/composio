@@ -11,14 +11,8 @@ from swebench import (
     KEY_MODEL,
     KEY_PREDICTION,
     get_eval_refs,
-    get_eval_report,
-    get_logs_eval,
-    get_model_report,
-    get_resolution_status,
     run_evaluation,
 )
-from swebench.harness.constants import INSTALL_FAIL
-from unidiff import PatchSet
 
 
 SUBMIT_PATCH_CMD = "submitpatchtool_submitpatch"
@@ -154,94 +148,6 @@ def main(
         print("✅ Finished evaluation")
     except Exception as e:
         print(f"❌ Evaluation failed: {e}\n{traceback.format_exc()}")
-
-    # Get predictions, define log_dir
-    # Iterate over each file in the directory
-    with open(pred_path_orig, encoding="utf-8") as f:
-        predictions = json.loads(f.read())
-    scorecards = []
-    for p in predictions:
-        scorecard = {KEY_INSTANCE_ID: p[KEY_INSTANCE_ID], "statuses": [], "stats": {}}
-        # Check that a prediction was generated
-        if p[KEY_PREDICTION] is None or p[KEY_PREDICTION].strip() == "":
-            scorecard["statuses"].append("not_generated")
-            scorecards.append(scorecard)
-            continue
-        scorecard["statuses"].append("generated")
-
-        # Get log file
-        log_path = os.path.join(
-            log_dir, f"{model}/{p[KEY_INSTANCE_ID]}.{model}.eval.log"
-        )
-
-        if not os.path.exists(log_path):
-            scorecard["statuses"].append("build_failure")
-            scorecards.append(scorecard)
-            continue
-
-        # Get evaluation logs
-        eval_sm, found = get_logs_eval(log_path)
-
-        # Check that the prediction generated
-        if not found:
-            scorecards.append(scorecard)
-            continue
-        scorecard["statuses"].append("applied")
-
-        with open(log_path, "r") as f:
-            log_contents = f.read()
-            if INSTALL_FAIL in log_contents:
-                scorecard["statuses"].append("install_fail")
-        # Get resolution status
-        report = get_eval_report(eval_sm, eval_refs[p[KEY_INSTANCE_ID]])
-        scorecard["test_results"] = {
-            "failure": {
-                "FAIL_TO_PASS": report["FAIL_TO_PASS"]["failure"],
-                "PASS_TO_PASS": report["PASS_TO_PASS"]["failure"],
-            },
-            "success": {
-                "PASS_TO_PASS": report["PASS_TO_PASS"]["success"],
-                "FAIL_TO_PASS": report["FAIL_TO_PASS"]["success"],
-            },
-        }
-        resolution_status = get_resolution_status(report)
-        scorecard["statuses"].append(resolution_status)
-
-        try:
-            diff_obj = PatchSet(p[KEY_PREDICTION])
-            scorecard["patch_files"] = [
-                x.path
-                for x in diff_obj.modified_files
-                + diff_obj.added_files
-                + diff_obj.removed_files
-            ]
-            scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])
-            scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])
-        except Exception as e:
-            print(f"[{p[KEY_INSTANCE_ID]}] Error parsing prediction diff: {e}")
-            scorecard["patch_files"] = []
-            scorecard["patch_lines_add"] = 0
-            scorecard["patch_lines_del"] = 0
-        scorecards.append(scorecard)
-
-    # Save to summary, scorecard json
-    path_scorecards = os.path.join(predictions_dir, "scorecards.json")
-    with open(path_scorecards, "w") as f:
-        json.dump(scorecards, fp=f, indent=2)
-    print(f"- Wrote per-instance scorecards to {path_scorecards}")
-
-    # Get results and write to file
-    print("Reference Report:")
-    report = get_model_report(
-        str(predictions_dir), str(pred_path_temp), str(swe_bench_path), str(log_dir)
-    )
-    for k, v in report.items():
-        print(f"- {k}: {len(v)}")
-
-    path_results = os.path.join(predictions_dir, "results.json")
-    with open(path_results, "w") as f:
-        json.dump(report, f, indent=2)
-    print(f"- Wrote summary of run to {path_results}")
 
 
 if __name__ == "__main__":
