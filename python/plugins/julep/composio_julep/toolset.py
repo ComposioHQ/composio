@@ -61,7 +61,7 @@ class ComposioToolSet(BaseComposioToolSet):
                         tool_function = json.loads(_response.content)
                         outputs.append(
                             self.execute_action(
-                                action=Action.from_action(name=tool_function["name"]),
+                                action=Action(value=tool_function["name"]),
                                 params=json.loads(tool_function["arguments"]),
                                 entity_id=entity_id or self.entity_id,
                             )

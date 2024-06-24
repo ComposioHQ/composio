@@ -54,16 +54,12 @@ class ComposioToolSet(BaseComposioToolSet):
         Wrap composio tool as Lyzr `Tool` object.
         """
         name = schema["name"]
-        app = schema["appName"]
         description = schema["description"]
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool wrapped as Lyzr tool."""
             return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=app,
-                    name=name,
-                ),
+                action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )

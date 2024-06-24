@@ -218,8 +218,7 @@ class ComposioToolSet:
             allow_all=True,
         )
         return [
-            Action.from_action(name=_get_enum_key(action.name).lower())
-            for action in actions
+            Action(value=_get_enum_key(name=action.name).lower()) for action in actions
         ]
 
 

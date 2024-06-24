@@ -72,7 +72,6 @@ class ComposioToolSet(BaseComposioToolSet):
         entity_id: t.Optional[str] = None,
     ) -> BaseTool:
         """Wrap Composio tool as GripTape `BaseTool` object"""
-        app = schema["appName"]
         name = schema["name"]
         description = schema["description"]
 
@@ -99,7 +98,7 @@ class ComposioToolSet(BaseComposioToolSet):
         def _execute_task(params: t.Dict) -> t.Dict:
             """Placeholder method for executing task."""
             return self.execute_action(
-                action=Action.from_app_and_action(app=app, name=name),
+                action=Action(value=name),
                 params=params,
                 entity_id=entity_id or self.entity_id,
             )

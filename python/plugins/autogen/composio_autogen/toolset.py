@@ -163,10 +163,7 @@ class ComposioToolSet(BaseComposioToolSet):
         def execute_action(**kwargs: t.Any) -> t.Dict:
             """Placeholder function for executing action."""
             return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=appName,
-                    name=name,
-                ),
+                action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )

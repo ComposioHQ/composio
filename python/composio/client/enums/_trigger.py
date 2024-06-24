@@ -1,3 +1,7 @@
+"""
+Trigger enums.
+"""
+
 from composio.client.enums.base import TRIGGERS_CACHE, TriggerData, _AnnotatedEnum, enum
 
 

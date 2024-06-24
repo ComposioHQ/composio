@@ -78,16 +78,17 @@ class ComposioToolSet(BaseComposioToolSet):
             output_in_file=output_in_file,
         )
 
-    def prepare_python_function(
-        self, app, action, description, schema_params, entity_id
+    def _wrap_action(
+        self,
+        action: str,
+        description: str,
+        schema_params: t.Dict,
+        entity_id: t.Optional[str] = None,
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
             return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=app,
-                    name=action,
-                ),
+                action=Action(value=action),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
@@ -114,13 +115,11 @@ class ComposioToolSet(BaseComposioToolSet):
         entity_id: t.Optional[str] = None,
     ) -> StructuredTool:
         """Wraps composio tool as Langchain StructuredTool object."""
-        app = schema["appName"]
         action = schema["name"]
         description = schema["description"]
         schema_params = schema["parameters"]
 
-        action_func = self.prepare_python_function(
-            app=app,
+        action_func = self._wrap_action(
             action=action,
             description=description,
             schema_params=schema_params,

@@ -72,11 +72,11 @@ class TriggerData(LocalStorage):
 class _AnnotatedEnum(t.Generic[EntityType]):
     """Enum class that uses class annotations as values."""
 
-    _name: str
+    _slug: str
     _model: t.Type[EntityType]
     _path: Path
 
-    def __new__(cls, name: t.Any):
+    def __new__(cls, value: t.Any):
         (base,) = t.cast(t.Tuple[t.Any], getattr(cls, "__orig_bases__"))
         (model,) = t.get_args(base)
         instance = super().__new__(cls)
@@ -87,25 +87,30 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         cls._path = path
         return super().__init_subclass__()
 
-    def __init__(self, name: t.Union[str, te.Self]) -> None:
+    def __init__(self, value: t.Union[str, te.Self]) -> None:
         """Create an Enum"""
-        if isinstance(name, _AnnotatedEnum):
-            name = name._name
+        if isinstance(value, _AnnotatedEnum):
+            value = value._slug
 
-        name = t.cast(str, name).upper()
-        if name not in self.__annotations__:
-            raise ValueError(f"Invalid value `{name}` for `{self.__class__.__name__}`")
-        self._name = name
+        value = t.cast(str, value).upper()
+        if value not in self.__annotations__:
+            raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
+        self._slug = value
+
+    @property
+    def slug(self) -> str:
+        """Enum slug value."""
+        return self._slug
 
     def load(self) -> EntityType:
         """Load action data."""
-        if self._name is None:
+        if self._slug is None:
             raise ValueError(
                 "Cannot load `AppData` object without initializing object."
             )
-        if self._name not in _model_cache:
-            _model_cache[self._name] = self._model.load(self._path / self._name)
-        return t.cast(EntityType, _model_cache[self._name])
+        if self._slug not in _model_cache:
+            _model_cache[self._slug] = self._model.load(self._path / self._slug)
+        return t.cast(EntityType, _model_cache[self._slug])
 
     @classmethod
     def all(cls) -> t.Iterator[te.Self]:
@@ -120,7 +125,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
     def __str__(self) -> str:
         """String representation."""
-        return t.cast(str, self._name)
+        return t.cast(str, self._slug)
 
     def __eq__(self, other: object) -> bool:
         """Check equivilance of two objects."""

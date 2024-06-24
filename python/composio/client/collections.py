@@ -18,7 +18,7 @@ from pysher.channel import Channel
 
 from composio.client.base import BaseClient, Collection
 from composio.client.endpoints import v1
-from composio.client.enums import Action, App, Tag, Trigger
+from composio.client.enums import Action, App, Tag, Trigger, TriggerType
 from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
@@ -26,16 +26,9 @@ from composio.utils import logging
 from .local_handler import LocalToolHandler
 
 
-def trigger_names_str(
-    trigger_names: t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]],
-) -> str:
+def to_trigger_names(triggers: t.List[TriggerType]) -> str:
     """Get trigger names as a string."""
-    return ",".join(
-        [
-            trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
-            for trigger_name in trigger_names
-        ]
-    )
+    return ",".join([Trigger(trigger).name for trigger in triggers])
 
 
 class AuthConnectionParamsModel(BaseModel):
@@ -657,10 +650,8 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        trigger_names: t.Optional[
-            t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]]
-        ] = None,
-        app_names: t.Optional[t.List[str]] = None,
+        triggers: t.Optional[t.List[TriggerType]] = None,
+        apps: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
         List active triggers
@@ -670,10 +661,10 @@ class Triggers(Collection[TriggerModel]):
         :return: List of triggers filtered by provided parameters
         """
         queries = {}
-        if trigger_names is not None and len(trigger_names) > 0:
-            queries["triggerIds"] = trigger_names_str(trigger_names)
-        if app_names is not None and len(app_names) > 0:
-            queries["appNames"] = ",".join(app_names)
+        if triggers is not None and len(triggers) > 0:
+            queries["triggerIds"] = to_trigger_names(triggers)
+        if apps is not None and len(apps) > 0:
+            queries["appNames"] = ",".join(apps)
         return super().get(queries=queries)
 
     def enable(
@@ -768,7 +759,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         if len(integration_ids) > 0:
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
-            queries["triggerNames"] = trigger_names_str(trigger_names)
+            queries["triggerNames"] = to_trigger_names(trigger_names)
         return self._raise_if_empty(super().get(queries=queries))
 
 
@@ -904,7 +895,7 @@ class Actions(Collection[ActionModel]):
             queries["useCase"] = use_case
 
         if len(apps) > 0:
-            queries["appNames"] = ",".join(list(map(lambda x: x.value, apps)))
+            queries["appNames"] = ",".join(list(map(lambda x: x.slug, apps)))
 
         if len(actions) > 0:
             queries["appNames"] = ",".join(set(map(lambda x: x.app, actions)))
@@ -919,7 +910,7 @@ class Actions(Collection[ActionModel]):
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required_triggers = [action.action for action in actions]
+            required_triggers = [action.name for action in actions]
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:
@@ -993,7 +984,7 @@ class Actions(Collection[ActionModel]):
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
-                    url=str(self.endpoint / action.action / "execute"),
+                    url=str(self.endpoint / action.name / "execute"),
                     json={
                         "appName": action.app,
                         "input": modified_params,
@@ -1011,7 +1002,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.action / "execute"),
+                url=str(self.endpoint / action.name / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "input": modified_params,
