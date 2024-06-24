@@ -21,7 +21,7 @@ export class Composio {
     activeTriggers: ActiveTriggers;
     config: typeof OpenAPI;
 
-    constructor(apiKey?: string, baseUrl?: string) {
+    constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
         this.apiKey = apiKey || process.env.ENV_COMPOSIO_API_KEY || '';
         if (!this.apiKey) {
             throw new Error('API key is missing');
@@ -31,7 +31,9 @@ export class Composio {
         this.http = axios.create({
             baseURL: this.baseUrl,
             headers: {
-                'X-API-KEY': `${this.apiKey}`
+                'X-API-KEY': `${this.apiKey}`,
+                'X-SOURCE': 'js_sdk',
+                'X-RUNTIME': runtime
             }
         });
 
