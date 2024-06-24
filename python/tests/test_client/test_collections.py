@@ -9,7 +9,7 @@ from composio.client.collections import (
     Trigger,
     TriggerEventData,
     TriggerSubscription,
-    trigger_names_str,
+    to_trigger_names,
 )
 from composio.utils import logging
 
@@ -23,7 +23,7 @@ class TestTriggerNamesSerialization:
             Trigger.SLACK_NEW_MESSAGE,
             Trigger.YOUTUBE_NEW_YOUTUBE_ACTIVITY,
         ]
-        result = trigger_names_str(trigger_list)
+        result = to_trigger_names(trigger_list)
         assert (
             result
             == "github_commit_event,slack_receive_message,youtube_new_activity_trigger"
@@ -32,10 +32,10 @@ class TestTriggerNamesSerialization:
     def test_converts_trigger_strings_to_comma_separated_string(self):
         trigger_list = [
             "github_commit_event",
-            "slack_receive_message",
-            "youtube_new_activity_trigger",
+            "slack_new_message",
+            "youtube_new_youtube_activity",
         ]
-        result = trigger_names_str(trigger_list)
+        result = to_trigger_names(trigger_list)
         assert (
             result
             == "github_commit_event,slack_receive_message,youtube_new_activity_trigger"
@@ -44,10 +44,10 @@ class TestTriggerNamesSerialization:
     def test_converts_mix_of_trigger_objects_and_strings(self):
         trigger_list = [
             Trigger.GITHUB_COMMIT_EVENT,
-            "slack_receive_message",
+            "slack_new_message",
             Trigger.YOUTUBE_NEW_YOUTUBE_ACTIVITY,
         ]
-        result = trigger_names_str(trigger_list)
+        result = to_trigger_names(trigger_list)
         assert (
             result
             == "github_commit_event,slack_receive_message,youtube_new_activity_trigger"

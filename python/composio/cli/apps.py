@@ -113,6 +113,7 @@ def _update(context: Context, beta: bool = False) -> None:
         _update_tags(apps=apps, actions=actions)
         _update_actions(apps=apps, actions=actions)
         _update_triggers(apps=apps, triggers=triggers)
+        context.console.print("[green]App database updated successfully[/green]")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
@@ -210,7 +211,7 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
                 tag_map[app_name] = set()
             tag_map[app_name].update(action.tags or [])
 
-    tag_names = []
+    tag_names = ["DEFAULT"]
     for app_name in sorted(tag_map):
         for tag in sorted(tag_map[app_name]):
             tag_name = _get_enum_key(
