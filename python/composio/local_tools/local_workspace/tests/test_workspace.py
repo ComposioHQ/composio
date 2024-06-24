@@ -1,5 +1,8 @@
 import os
 import unittest
+
+import pytest
+
 from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
     GithubCloneCmd,
     GithubCloneRequest,
@@ -16,9 +19,6 @@ from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import (
     GetPatchCmd,
     GetPatchRequest,
 )
-
-import pytest
-
 from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (
     GetCurrentDirCmd,
     GetCurrentDirRequest,
@@ -152,6 +152,7 @@ class TestWorkspaceGitWorkflow(unittest.TestCase):
             ),
             {},
         )
+        print("Github Reset result: ", github_reset_result)
         self.assertIsNotNone(github_reset_result)
 
         action = OpenFile()
