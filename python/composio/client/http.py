@@ -12,7 +12,7 @@ from composio.utils import logging
 
 
 DEFAULT_RUNTIME = "composio"
-SOURCE_HEADER = "sdk-python"
+SOURCE_HEADER = "python_sdk"
 
 
 class AsyncHttpClient(AsyncSession, logging.WithLogger):
