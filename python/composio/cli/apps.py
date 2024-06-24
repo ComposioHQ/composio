@@ -12,7 +12,7 @@ from pathlib import Path
 
 import click
 
-from composio.cli.context import Context, pass_context
+from composio.cli.context import Context, get_context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
@@ -113,7 +113,6 @@ def _update(context: Context, beta: bool = False) -> None:
         _update_tags(apps=apps, actions=actions)
         _update_actions(apps=apps, actions=actions)
         _update_triggers(apps=apps, triggers=triggers)
-        context.console.print("[green]App database updated successfully[/green]")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
@@ -270,7 +269,9 @@ def _update_triggers(
 
 def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
     """Update annontations for `cls`"""
+    console = get_context().console
     file = Path(inspect.getmodule(cls).__file__)  # type: ignore
+
     annotations = []
     for attribute in attributes:
         annotations.append(
@@ -291,6 +292,18 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             continue
         if node.name != cls.__name__:
             continue
+
+        cls_attributes = [
+            child.target.id  # type: ignore
+            for child in node.body[1:]
+            if isinstance(child, ast.AnnAssign)
+        ]
+        if cls_attributes == attributes:
+            console.print(
+                f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]"
+            )
+            return
+
         node.body = (
             node.body[:1]
             + annotations
@@ -300,6 +313,7 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
 
     with file.open("w", encoding="utf-8") as fp:
         fp.write(ast.unparse(tree))
+    console.print(f"[green]✔ {cls.__name__}s updated[/green]")
 
 
 def _get_enum_key(name: str) -> str:
