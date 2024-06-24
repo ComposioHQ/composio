@@ -100,6 +100,7 @@ class GithubCloneCmd(BaseAction):
         self._setup(request_data)
         # repo_dir = request_data.repo_name.split("/")[-1].strip()
         reset_commands = [
+            "git remote get-url origin",
             "git fetch --all",
             f"git reset --hard {request_data.commit_id}",
             "git clean -fdx",
