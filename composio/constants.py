@@ -2,6 +2,9 @@
 Global constants for Composio SDK
 """
 
+from pathlib import Path
+
+
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
 """
 Environment variable for Composio API key
@@ -10,6 +13,11 @@ Environment variable for Composio API key
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 """
 Local cache directory name for composio CLI
+"""
+
+LOCAL_CACHE_DIRECTORY = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
+"""
+Path to local caching directory.
 """
 
 LOCAL_OUTPUT_FILE_DIRECTORY_NAME = "output"
