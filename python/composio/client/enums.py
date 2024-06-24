@@ -7,6 +7,7 @@ Helper Enum classes.
 from enum import Enum
 
 
+
 class Tag(tuple, Enum):
     """App tags."""
 
@@ -504,7 +505,6 @@ class App(str, Enum):
     SUBMITPATCHTOOL = "submitpatchtool"
     SQLTOOL = "sqltool"
     FILETOOL = "filetool"
-
 
 class Action(tuple, Enum):
     """App action."""

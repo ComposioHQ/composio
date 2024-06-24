@@ -1,0 +1,9 @@
+llama-index
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma
+llama-index 
+chromadb
+sentence-transformers
+open-clip-torch
+composio-langchain
+langchain-openai

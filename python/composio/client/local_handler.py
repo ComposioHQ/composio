@@ -14,7 +14,7 @@ from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
 from composio.local_tools.webtool import WebTool
-
+from composio.local_tools.embedtool import EmbedTool
 
 class LocalToolHandler:
     def __init__(self):
@@ -47,6 +47,7 @@ class LocalToolHandler:
             SubmitPatchTool(),
             SqlTool(),
             FileTool(),
+            EmbedTool(),
         ]
 
     def get_list_of_action_schemas(self, apps=[], actions=[], tags=[]):
