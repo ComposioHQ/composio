@@ -7,7 +7,7 @@ from pathlib import Path
 from datasets import load_dataset
 from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
 
-from composio_swe.composio_swe.benchmark.constants import (
+from python.composio_swe.benchmark.constants import (
     DATASET_ON_DISK,
     MODEL_GPT4,
     PATH_PATCHES_JSON,

@@ -11,13 +11,13 @@ import typing_extensions as te
 from click.globals import get_current_context as get_click_context
 from rich.console import Console
 
-from composio_swe.composio_swe.config.config_store import (
+from python.composio_swe.composio_swe.config.config_store import (
     AzureModelConfig,
     IssueConfig,
     ModelEnv,
     OpenAiModelConfig,
 )
-from composio_swe.composio_swe.config.constants import (
+from python.composio_swe.composio_swe.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
