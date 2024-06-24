@@ -1,6 +1,7 @@
 import datetime
 import json
 import typing as t
+from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -60,8 +61,10 @@ class CoderAgent(BaseSWEAgent):
         )
         cmd_manager_tool_set = ComposioToolSet().get_tools(apps=[App.CMDMANAGERTOOL])
         history_keeper_tool_set = ComposioToolSet().get_tools(apps=[App.HISTORYKEEPER])
-        self.composio_toolset = (
-            local_workspace_tool_set + cmd_manager_tool_set + history_keeper_tool_set
+        self.composio_toolset = list(
+            chain(
+                local_workspace_tool_set, cmd_manager_tool_set, history_keeper_tool_set
+            )
         )
         self.composio_client = Composio()
 
