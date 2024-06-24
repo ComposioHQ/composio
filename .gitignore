@@ -11,7 +11,7 @@ venv*
 **/composio_llamaindex.egg-info
 **/__pycache__
 **/*.egg-info
-
+*.pyc
 .tox/
 .mypy_cache/
 
@@ -31,4 +31,5 @@ temp
 .test_results
 .trunk
 refactor_debug.ipynb
-
+**/coder_agent_logs_*
+**/.composio.coder.*

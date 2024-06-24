@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
-    <img src="./docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
+    <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
   </a>
   <a href="https://composio.dev//#gh-light-mode-only">
-    <img src="./docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
+    <img src="./python/docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
   </a>
 </p>
 <p align="center">
@@ -62,9 +62,12 @@
 - [📋 Table of contents](#-table-of-contents)
 - [🤔 Why Composio?](#-why-composio)
 - [🔥 Key Features](#-key-features)
-- [🚀 Getting Started](#-getting-started)
+- [🚀 Getting Started with Python](#-getting-started-with-python)
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
+- [🚀 Getting Started with Javascript ](#-getting-started-with-javascript)
+  - [1. Install the Composio SDK](#1-install-the-composio-sdk)
+  - [2. Setup the OpenAI and Composio Tool Set](#2-setup-the-openai-and-composio-tool-set)
 - [💡 Examples](#-examples)
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
@@ -99,7 +102,7 @@ Composio is the best toolset to integrate AI Agents to best Agentic Tools and us
 - **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
 - **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
 
-## 🚀 Getting Started
+## 🚀 Getting Started with Python
 
 ### 1. Installation
 
@@ -175,13 +178,85 @@ response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_cal
 print(response_after_tool_calls)
 ```
 
+## 🚀 Getting Started with Javascript
+
+To get started with the Composio SDK in Javascript, follow these steps:
+
+### 1. **Install the Composio SDK**:
+   ```bash
+   npm install composio-core
+   ```
+
+### 2. **Setup the OpenAI and Composio Tool Set**:
+   ```javascript
+   import { OpenAI } from "openai";
+   import { OpenAIToolSet } from "composio-core";
+
+   const toolset = new OpenAIToolSet({
+       apiKey: process.env.COMPOSIO_API_KEY,
+   });
+
+   async function setupUserConnectionIfNotExists(entityId) {
+       const entity = await toolset.client.getEntity(entityId);
+       const connection = await entity.getConnection('github');
+
+       if (!connection) {
+           // If this entity/user hasn't already connected the account
+           const connection = await entity.initiateConnection(appName);
+           console.log("Log in via: ", connection.redirectUrl);
+           return connection.waitUntilActive(60);
+       }
+
+       return connection;
+   }
+
+   async function executeAgent(entityName) {
+       const entity = await toolset.client.getEntity(entityName)
+       await setupUserConnectionIfNotExists(entity.id);
+
+       const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
+       const instruction = "Make an issue with sample title in the repo - himanshu-dixit/custom-repo-breaking"
+
+       const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
+       const response = await client.chat.completions.create({
+           model: "gpt-4-turbo",
+           messages: [{
+               role: "user",
+               content: instruction,
+           }],
+           tools: tools,
+           tool_choice: "auto",
+       })
+
+       console.log(response.choices[0].message.tool_calls);
+       await toolset.handle_tool_call(response, entity.id);
+   }
+
+   executeAgent("your-entity-name");
+   ```
+
+### 3. **Run your script**:
+   ```bash
+   node your_script.js
+   ```
+
+This will set up the Composio SDK and execute an agent that creates a GitHub issue using the provided instructions.
+
+For more details, refer to the [Composio SDK Documentation](https://docs.composio.dev/).
+
+
 ## 💡 Examples
 
 ### [Competitor Researcher](https://docs.composio.dev/guides/examples/CompetitorResearcher)
 
 ### [Todolist to Calendar](https://docs.composio.dev/guides/examples/todo-to-calendar)
 
-### [Github to Trello](https://docs.composio.dev/guides/examples/github-trello)
+### [Github to Trellox](https://docs.composio.dev/guides/examples/github-trello)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
+
 
 ## 📋 Read Our Code Of Conduct
 
