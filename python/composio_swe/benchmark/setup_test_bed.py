@@ -13,18 +13,12 @@ from swebench import (
     get_eval_refs,
     run_evaluation,
 )
-
-
-SUBMIT_PATCH_CMD = "submitpatchtool_submitpatch"
-MODEL_GPT4 = "gpt-4-1106"
-PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
-PATH_PATCHES = "patches.jsonl"
-PATH_PATCHES_JSON = "patches.json"
-PATH_TESTBED = "testbed/"
+from composio_swe.composio_swe.benchmark.constants import DATASET_ON_DISK, TEST_SPLIT, PATH_PATCHES_JSON, PATH_SWE_BENCH_ISSUES, MODEL_GPT4, SUBMIT_PATCH_CMD
 
 
 def download_and_store_dataset(dataset_name, output_file):
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[1:50]")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split=f"test{TEST_SPLIT}")
+    test_dataset.save_to_disk(DATASET_ON_DISK)
     # Assuming the dataset is a single dataset, not a dataset dictionary
     with open(output_file, "w") as file:
         for item in test_dataset:
@@ -71,20 +65,13 @@ def log_file(f_name):
 
 
 def main(
-    predictions_dir, log_dir, testbed, skip_existing, timeout, verbose, num_processes
+    predictions_dir,
 ):
-    model = MODEL_GPT4
     all_patches = []
     pred_total, pred_will_eval = 0, 0
     swe_bench_path = predictions_dir / Path(PATH_SWE_BENCH_ISSUES)
     download_and_store_dataset("", swe_bench_path)
-    pred_path_temp = predictions_dir / Path(PATH_PATCHES)
     pred_path_orig = predictions_dir / Path(PATH_PATCHES_JSON)
-    eval_refs = get_eval_refs(str(swe_bench_path))
-    for k, v in eval_refs.items():
-        eval_refs[k] = {
-            key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]
-        }
 
     # Iterate over each file in the directory
     for file_name in os.listdir(predictions_dir):
@@ -113,41 +100,18 @@ def main(
                 continue
             transformed_prediction = {
                 KEY_INSTANCE_ID: issue_id,
-                KEY_MODEL: model,
+                KEY_MODEL: MODEL_GPT4,
                 KEY_PREDICTION: patch_found,
             }
             all_patches.append(transformed_prediction)
             pred_will_eval += 1
 
-    with open(pred_path_temp, "w") as f_out:
-        for patch in all_patches:
-            json.dump(patch, f_out)
-            f_out.write("\n")
     with open(pred_path_orig, "w") as f_out:
         f_out.write(json.dumps(all_patches))
 
     print(
         f"Found {pred_total} total predictions, will evaluate {pred_will_eval} ({pred_total-pred_will_eval} are empty)"
     )
-
-    # Run evaluation
-    try:
-        print("🏃 Beginning evaluation...")
-        run_evaluation(
-            predictions_path=pred_path_temp,
-            log_dir=log_dir,
-            swe_bench_tasks=str(swe_bench_path),
-            testbed=testbed,
-            conda_link=None,
-            log_suffix="",
-            skip_existing=skip_existing,
-            timeout=timeout,
-            verbose=verbose,
-            num_processes=num_processes,
-        )
-        print("✅ Finished evaluation")
-    except Exception as e:
-        print(f"❌ Evaluation failed: {e}\n{traceback.format_exc()}")
 
 
 if __name__ == "__main__":
@@ -165,15 +129,6 @@ if __name__ == "__main__":
     script_path = Path(__file__)
     script_dir = script_path.parent
     prediction_path_dir = Path(args.prediction_path_dir)
-    testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
-    if not os.path.exists(testbed_dir):
-        os.makedirs(testbed_dir)
     main(
         predictions_dir=prediction_path_dir,
-        log_dir=str(prediction_path_dir),
-        testbed=testbed_dir,
-        skip_existing=True,
-        timeout=300,
-        verbose=True,
-        num_processes=6,
     )
