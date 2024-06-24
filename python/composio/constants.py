@@ -10,6 +10,11 @@ ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
 Environment variable for Composio API key
 """
 
+ENV_COMPOSIO_LOGGING_LEVEL = "COMPOSIO_LOGGING_LEVEL"
+"""
+Environment variable for specifying logging level
+"""
+
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 """
 Local cache directory name for composio CLI
@@ -82,4 +87,14 @@ BASE_URL_TO_PROD_MAPPING = {
 }
 """
 Composio API server base url -> web url mappings.
+"""
+
+PUSHER_KEY = "ff9f18c208855d77a152"
+"""
+API Key for Pusher subscriptions.
+"""
+
+PUSHER_CLUSTER = "mt1"
+"""
+Name of the pusher cluster.
 """

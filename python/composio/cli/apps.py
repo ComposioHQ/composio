@@ -8,12 +8,13 @@ Usage:
 import ast
 import inspect
 import typing as t
+from pathlib import Path
 
 import click
 
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client import _enums
+from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.client.local_handler import LocalToolHandler
 from composio.core.cls.did_you_mean import DYMGroup
@@ -119,7 +120,7 @@ def _update(context: Context, beta: bool = False) -> None:
 def _update_apps(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
     app_names = []
-    _enums.APPS_CACHE.mkdir(
+    enums.base.APPS_CACHE.mkdir(
         exist_ok=True,
     )
     for app in apps:
@@ -128,9 +129,9 @@ def _update_apps(apps: t.List[AppModel]) -> None:
                 name=app.key.lower().replace(" ", "_").replace("-", "_"),
             )
         )
-        _enums.AppData(
+        enums.base.AppData(
             name=app.name,
-            path=_enums.APPS_CACHE / app.name,
+            path=enums.base.APPS_CACHE / app.name,
             is_local=False,
         ).store()
 
@@ -140,14 +141,14 @@ def _update_apps(apps: t.List[AppModel]) -> None:
                 name=tool.tool_name.lower().replace(" ", "_").replace("-", "_"),
             )
         )
-        _enums.AppData(
+        enums.base.AppData(
             name=tool.tool_name,
-            path=_enums.APPS_CACHE / tool.tool_name,
+            path=enums.base.APPS_CACHE / tool.tool_name,
             is_local=True,
         ).store()
 
     _update_annotations(
-        cls="App",
+        cls=enums.App,
         attributes=app_names,
     )
 
@@ -155,7 +156,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
 def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
     action_names = []
-    _enums.ACTIONS_CACHE.mkdir(
+    enums.base.ACTIONS_CACHE.mkdir(
         exist_ok=True,
     )
     for app in sorted(apps, key=lambda x: x.key):
@@ -167,12 +168,12 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                     name=action.name,
                 )
             )
-            _enums.ActionData(
+            enums.base.ActionData(
                 name=action.name,
                 app=app.key,
                 no_auth=app.no_auth,
                 is_local=False,
-                path=_enums.ACTIONS_CACHE / action.name,
+                path=enums.base.ACTIONS_CACHE / action.name,
             ).store()
 
     local_tool_handler = LocalToolHandler()
@@ -184,23 +185,23 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                     name=name,
                 )
             )
-            _enums.ActionData(
+            enums.base.ActionData(
                 name=name,
                 app=tool.tool_name,
                 no_auth=True,
                 is_local=True,
-                path=_enums.ACTIONS_CACHE / name,
+                path=enums.base.ACTIONS_CACHE / name,
             ).store()
 
     _update_annotations(
-        cls="Action",
+        cls=enums.Action,
         attributes=action_names,
     )
 
 
 def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Create Tag enum class."""
-    _enums.TAGS_CACHE.mkdir(exist_ok=True)
+    enums.base.TAGS_CACHE.mkdir(exist_ok=True)
     tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_name = app.key
@@ -218,14 +219,14 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
             tag_names.append(
                 tag_name,
             )
-            _enums.TagData(
+            enums.base.TagData(
                 app=app_name,
                 value=tag,
-                path=_enums.TAGS_CACHE / tag_name,
+                path=enums.base.TAGS_CACHE / tag_name,
             ).store()
 
     _update_annotations(
-        cls="Tag",
+        cls=enums.Tag,
         attributes=tag_names,
     )
 
@@ -236,7 +237,7 @@ def _update_triggers(
 ) -> None:
     """Get Trigger enum."""
     trigger_names = []
-    _enums.TRIGGERS_CACHE.mkdir(
+    enums.base.TRIGGERS_CACHE.mkdir(
         exist_ok=True,
     )
     for app in apps:
@@ -249,21 +250,21 @@ def _update_triggers(
             trigger_names.append(
                 trigger_name,
             )
-            _enums.TriggerData(
+            enums.base.TriggerData(
                 name=trigger.name,
                 app=app.key,
-                path=_enums.TRIGGERS_CACHE / trigger_name,
+                path=enums.base.TRIGGERS_CACHE / trigger_name,
             ).store()
 
     _update_annotations(
-        cls="Trigger",
+        cls=enums.Trigger,
         attributes=trigger_names,
     )
 
 
-def _update_annotations(cls: str, attributes: t.List[str]) -> None:
+def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
     """Update annontations for `cls`"""
-
+    file = Path(inspect.getmodule(cls).__file__)  # type: ignore
     annotations = []
     for attribute in attributes:
         annotations.append(
@@ -272,17 +273,13 @@ def _update_annotations(cls: str, attributes: t.List[str]) -> None:
                     id=attribute,
                 ),
                 annotation=ast.Constant(
-                    value=f"{cls}",
+                    value=f"{cls.__name__}",
                 ),
                 simple=1,
             ),
         )
 
-    tree = ast.parse(
-        inspect.getsource(
-            object=_enums,
-        )
-    )
+    tree = ast.parse(file.read_text(encoding="utf-8"))
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
             continue
@@ -295,7 +292,7 @@ def _update_annotations(cls: str, attributes: t.List[str]) -> None:
         )
         break
 
-    with open(_enums.__file__, "w", encoding="utf-8") as fp:
+    with file.open("w", encoding="utf-8") as fp:
         fp.write(ast.unparse(tree))
 
 
