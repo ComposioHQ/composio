@@ -1,0 +1,157 @@
+import argparse
+import json
+import os
+from pathlib import Path
+
+from swebench import (
+    KEY_INSTANCE_ID,
+    KEY_PREDICTION,
+    get_eval_report,
+    get_logs_eval,
+    get_model_report,
+    get_resolution_status,
+    get_eval_refs,
+)
+from swebench.harness.constants import (
+    INSTALL_FAIL,
+)
+from unidiff import PatchSet
+
+MODEL_GPT4 = "gpt-4-1106"
+PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
+PATH_PATCHES_JSON = "patches.json"
+PATH_TESTBED = "testbed/"
+
+
+def format_report(report):
+    new_report ={}
+    for key in report:
+        val = report[key]
+        new_report[key] = {}
+        for sub_key in val:
+            sub_val = "".join(val[sub_key])
+            val[sub_key] = sub_val
+    return report
+
+
+def main(predictions_dir, log_dir, swe_bench_path, model):
+    eval_refs = get_eval_refs(str(swe_bench_path))
+    for k, v in eval_refs.items():
+        eval_refs[k] = {key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]}
+    predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
+    # Get predictions, define log_dir
+    # Iterate over each file in the directory
+    with open(predictions_path, encoding="utf-8") as f:
+        predictions = json.loads(f.read())
+    scorecards = []
+    for p in predictions:
+        scorecard = {KEY_INSTANCE_ID: p[KEY_INSTANCE_ID], "statuses": [], "stats": {}}
+        # Check that a prediction was generated
+        if p[KEY_PREDICTION] is None or p[KEY_PREDICTION].strip() == "":
+            scorecard["statuses"].append("not_generated")
+            scorecards.append(scorecard)
+            continue
+        scorecard["statuses"].append("generated")
+
+        # Get log file
+        log_path = os.path.join(
+            log_dir, f"{p[KEY_INSTANCE_ID]}.{model}.eval.log"
+        )
+
+        if not os.path.exists(log_path):
+            scorecard["statuses"].append("build_failure")
+            scorecards.append(scorecard)
+            continue
+
+        # Get evaluation logs
+        eval_sm, found = get_logs_eval(log_path)
+
+        # Check that the prediction generated
+        if not found:
+            scorecards.append(scorecard)
+            continue
+        scorecard["statuses"].append("applied")
+
+        with open(log_path, "r") as f:
+            log_contents = f.read()
+            if INSTALL_FAIL in log_contents:
+                scorecard["statuses"].append("install_fail")
+        # Get resolution status
+        report = get_eval_report(eval_sm, eval_refs[p[KEY_INSTANCE_ID]])
+        report = format_report(report)
+        scorecard["test_results"] = {
+            "failure": {
+                "FAIL_TO_PASS": report["FAIL_TO_PASS"]["failure"],
+                "PASS_TO_PASS": report["PASS_TO_PASS"]["failure"],
+            },
+            "success": {
+                "FAIL_TO_PASS": report["FAIL_TO_PASS"]["success"],
+                "PASS_TO_PASS": report["PASS_TO_PASS"]["success"],
+            }
+        }
+        resolution_status = get_resolution_status(report)
+        scorecard["statuses"].append(resolution_status)
+
+        try:
+            diff_obj = PatchSet(p[KEY_PREDICTION])
+            scorecard["patch_files"] = [
+                x.path
+                for x in diff_obj.modified_files
+                         + diff_obj.added_files
+                         + diff_obj.removed_files
+            ]
+            scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])
+            scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])
+        except Exception as e:
+            print(f"[{p[KEY_INSTANCE_ID]}] Error parsing prediction diff: {e}")
+            scorecard["patch_files"] = []
+            scorecard["patch_lines_add"] = 0
+            scorecard["patch_lines_del"] = 0
+        scorecards.append(scorecard)
+
+    # Save to summary, scorecard json
+    path_scorecards = os.path.join(predictions_dir, "scorecards.json")
+    with open(path_scorecards, "w") as f:
+        json.dump(scorecards, fp=f, indent=2)
+    print(f"- Wrote per-instance scorecards to {path_scorecards}")
+
+    # Get results and write to file
+    print(f"Reference Report:")
+    report = get_model_report(str(predictions_dir), str(predictions_path), str(swe_bench_path), str(log_dir))
+    for k, v in report.items():
+        print(f"- {k}: {len(v)}")
+
+    path_results = os.path.join(predictions_dir, "results.json")
+    with open(path_results, "w") as f:
+        json.dump(report, f, indent=2)
+    print(f"- Wrote summary of run to {path_results}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Run predictions and evaluations for software engineering tasks."
+    )
+    parser.add_argument(
+        "--prediction_path_dir",
+        type=str,
+        required=True,
+        help="Path to the directory where predictions are stored.",
+    )
+    parser.add_argument("--swe_bench_path", type=str, required=True, help="Path to the swe bench tasks")
+    parser.add_argument("--log_dir", type=str, required=True, help="dir where logs are generated after running evaluation")
+    args = parser.parse_args()
+
+    script_path = Path(__file__)
+    script_dir = script_path.parent
+    prediction_path_dir = Path(args.prediction_path_dir)
+    testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
+    if not os.path.exists(testbed_dir):
+        os.makedirs(testbed_dir)
+    main(
+        predictions_dir=prediction_path_dir,
+        log_dir=str(args.log_dir),
+        swe_bench_path=args.swe_bench_path,
+        model=MODEL_GPT4,
+    )
+
+
