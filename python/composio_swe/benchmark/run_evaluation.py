@@ -47,7 +47,7 @@ def filter_from_repo_name(curr_dataset, repo_name):
 
 
 def get_issues_dataset():
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[1:50]")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[45:46]")
     return test_dataset
 
 
@@ -58,9 +58,9 @@ def build_issue_description(hints, problem_statement):
     tmpl += f"""Here is the issue, that you have to solve all on your own:
 {problem_statement}
 """
-    if hints:
-        tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: 
-{hints}"""
+    #     if hints:
+    #         tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement:
+    # {hints}"""
 
     return tmpl
 
@@ -79,7 +79,9 @@ def run():
             repo = issue["repo"]
             print(f"Processing {count}th issue with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
-            print(f"Issue description: {issue['hints_text']}")
+            print(f"Issue id: {issue['instance_id']}")
+            print(f"Issue description: {issue['problem_statement']}")
+            # continue
             if repo not in repo_to_workspace_map:
                 start_time = datetime.datetime.now()
                 workspace_create_resp = CreateWorkspaceResponse.model_validate(
