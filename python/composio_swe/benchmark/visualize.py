@@ -1,34 +1,37 @@
-import json
-import glob
 import argparse
+import glob
+import json
 
 
 def extract_details(agent_logs):
     data = []
     for log in agent_logs:
         from pprint import pprint
-        pprint(log)
-        if log['agent_action'] in ['agent_finish', 'final_patch']:
-            agent_action = "agent_finish"
-            agent_output = log['agent_output']
-        else:
-            agent_action = json.loads(log['agent_action'])
-            tool_name = agent_action.get('tool', 'N/A')
-            tool_input = agent_action.get('tool_input', 'N/A')
-            tool_output = log.get('tool_output', 'N/A')
-            agent_thought = agent_action.get('log', 'No thoughts recorded')
 
-        data.append({
-            'tool_name': tool_name or agent_action,
-            'tool_input': tool_input,
-            'tool_output': tool_output or agent_output,
-            'agent_thought': agent_thought
-        })
+        pprint(log)
+        if log["agent_action"] in ["agent_finish", "final_patch"]:
+            agent_action = "agent_finish"
+            agent_output = log["agent_output"]
+        else:
+            agent_action = json.loads(log["agent_action"])
+            tool_name = agent_action.get("tool", "N/A")
+            tool_input = agent_action.get("tool_input", "N/A")
+            tool_output = log.get("tool_output", "N/A")
+            agent_thought = agent_action.get("log", "No thoughts recorded")
+
+        data.append(
+            {
+                "tool_name": tool_name or agent_action,
+                "tool_input": tool_input,
+                "tool_output": tool_output or agent_output,
+                "agent_thought": agent_thought,
+            }
+        )
     return data
 
 
 def generate_html_1(issues_data, output_file):
-    html_content = '''
+    html_content = """
     <html>
     <head>
         <title>Agent Action Report by Issue</title>
@@ -41,10 +44,10 @@ def generate_html_1(issues_data, output_file):
     </head>
     <body>
         <h1>Agent Action Report by Issue</h1>
-    '''
+    """
     for issue, data in issues_data.items():
-        html_content += f'<h2>{issue}</h2>'
-        html_content += '''
+        html_content += f"<h2>{issue}</h2>"
+        html_content += """
         <table>
             <tr>
                 <th>Tool Name</th>
@@ -52,23 +55,23 @@ def generate_html_1(issues_data, output_file):
                 <th>Tool Output</th>
                 <th>Agent Thought</th>
             </tr>
-        '''
+        """
         for entry in data:
-            html_content += f'''
+            html_content += f"""
                 <tr>
                     <td>{entry['tool_name']}</td>
                     <td>{entry['tool_input']}</td>
                     <td>{entry['tool_output']}</td>
                     <td>{entry['agent_thought']}</td>
                 </tr>
-            '''
-        html_content += '</table>'
-    html_content += '''
+            """
+        html_content += "</table>"
+    html_content += """
     </body>
     </html>
-    '''
+    """
 
-    with open(output_file, 'w') as file:
+    with open(output_file, "w") as file:
         file.write(html_content)
     print(f"HTML report generated: {output_file}")
 
@@ -89,7 +92,7 @@ def format_thought(thought):
     # Extracting "Action Input"
     if "Action Input: " in thought:
         input_start = thought.find("Action Input:") + len("Action Input:")
-        input_end = thought.find("Thought:")
+        # input_end = thought.find("Thought:")
         action_input = thought[input_start:].strip()
 
     # Extracting "Thought"
@@ -102,7 +105,7 @@ def format_thought(thought):
 
 
 def generate_html(issues_data, output_file):
-    html_content = '''
+    html_content = """
     <html>
     <head>
         <title>Agent Action Report by Issue</title>
@@ -130,28 +133,38 @@ def generate_html(issues_data, output_file):
     </head>
     <body>
         <h1>Agent Action Report by Issue</h1>
-    '''
+    """
     for issue_idx, (issue, data) in enumerate(issues_data.items()):
-        html_content += f'<h2>{issue}</h2><table><tr><th>Tool Name</th><th>Tool Input</th><th>Tool Output</th><th>Agent Thought</th></tr>'
+        html_content += f"<h2>{issue}</h2><table><tr><th>Tool Name</th><th>Tool Input</th><th>Tool Output</th><th>Agent Thought</th></tr>"
         for entry_idx, entry in enumerate(data):
             content_id = f"content-{issue_idx}-{entry_idx}"
-            short_output = (entry['tool_output'][:75] + '...') if len(entry['tool_output']) > 78 else entry['tool_output']
-            formatted_thought = format_thought(entry['agent_thought'])
-            html_content += f'<tr><td>{entry["tool_name"]}</td><td>{entry["tool_input"]}</td><td><span class="collapsible" onclick="toggleVisibility(\'{content_id}\')">{short_output}</span><div id="{content_id}" class="content">{entry["tool_output"]}</div></td><td>{formatted_thought}</td></tr>'
-        html_content += '</table>'
-    html_content += '</body></html>'
+            short_output = (
+                (entry["tool_output"][:75] + "...")
+                if len(entry["tool_output"]) > 78
+                else entry["tool_output"]
+            )
+            formatted_thought = format_thought(entry["agent_thought"])
+            html_content += (
+                f'<tr><td>{entry["tool_name"]}</td><td>{entry["tool_input"]}</td>'
+                f'<td><span class="collapsible" onclick="toggleVisibility(\'{content_id}\')">{short_output}</span>'
+                f'<div id="{content_id}" class="content">{entry["tool_output"]}</div></td><td>{formatted_thought}</td></tr>'
+            )
+        html_content += "</table>"
+    html_content += "</body></html>"
 
-    with open(output_file, 'w') as file:
+    with open(output_file, "w") as file:
         file.write(html_content)
     print(f"HTML report generated: {output_file}")
 
 
 def load_logs(directory_path):
     all_issues = {}
-    for file_path in glob.glob(f"{directory_path}/agent_logs.json*"):  # Adjust the pattern as needed
-        with open(file_path, 'r') as file:
+    for file_path in glob.glob(
+        f"{directory_path}/agent_logs.json*"
+    ):  # Adjust the pattern as needed
+        with open(file_path, "r") as file:
             issue_log = json.load(file)
-            all_issues.update(issue_log)# Load and combine logs from each file
+            all_issues.update(issue_log)  # Load and combine logs from each file
     return all_issues
 
 
@@ -163,7 +176,14 @@ def main(log_dir, output_html_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log_dir', type=str, required=True, help='Directory path for the logs')
-    parser.add_argument('--output_html_file', type=str, default="agent_action_report_by_issue.html", help='Desired output HTML file')
+    parser.add_argument(
+        "--log_dir", type=str, required=True, help="Directory path for the logs"
+    )
+    parser.add_argument(
+        "--output_html_file",
+        type=str,
+        default="agent_action_report_by_issue.html",
+        help="Desired output HTML file",
+    )
     args = parser.parse_args()
     main(args.log_dir, args.output_html_file)

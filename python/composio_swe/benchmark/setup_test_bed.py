@@ -1,23 +1,26 @@
 import argparse
 import json
 import os
-import traceback
 from codecs import decode, encode
 from pathlib import Path
 
 from datasets import load_dataset
-from swebench import (
-    KEY_INSTANCE_ID,
-    KEY_MODEL,
-    KEY_PREDICTION,
-    get_eval_refs,
-    run_evaluation,
+from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
+
+from composio_swe.composio_swe.benchmark.constants import (
+    DATASET_ON_DISK,
+    MODEL_GPT4,
+    PATH_PATCHES_JSON,
+    PATH_SWE_BENCH_ISSUES,
+    SUBMIT_PATCH_CMD,
+    TEST_SPLIT,
 )
-from composio_swe.composio_swe.benchmark.constants import DATASET_ON_DISK, TEST_SPLIT, PATH_PATCHES_JSON, PATH_SWE_BENCH_ISSUES, MODEL_GPT4, SUBMIT_PATCH_CMD
 
 
 def download_and_store_dataset(dataset_name, output_file):
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split=f"test{TEST_SPLIT}")
+    test_dataset = load_dataset(
+        "princeton-nlp/SWE-bench_Lite", split=f"test{TEST_SPLIT}"
+    )
     test_dataset.save_to_disk(DATASET_ON_DISK)
     # Assuming the dataset is a single dataset, not a dataset dictionary
     with open(output_file, "w") as file:

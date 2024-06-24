@@ -6,16 +6,15 @@ from pathlib import Path
 from swebench import (
     KEY_INSTANCE_ID,
     KEY_PREDICTION,
+    get_eval_refs,
     get_eval_report,
     get_logs_eval,
     get_model_report,
     get_resolution_status,
-    get_eval_refs,
 )
-from swebench.harness.constants import (
-    INSTALL_FAIL,
-)
+from swebench.harness.constants import INSTALL_FAIL
 from unidiff import PatchSet
+
 
 MODEL_GPT4 = "gpt-4-1106"
 PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
@@ -24,7 +23,7 @@ PATH_TESTBED = "testbed/"
 
 
 def format_report(report):
-    new_report ={}
+    new_report = {}
     for key in report:
         val = report[key]
         new_report[key] = {}
@@ -37,7 +36,9 @@ def format_report(report):
 def main(predictions_dir, log_dir, swe_bench_path, model):
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
-        eval_refs[k] = {key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]}
+        eval_refs[k] = {
+            key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]
+        }
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
     # Get predictions, define log_dir
     # Iterate over each file in the directory
@@ -54,9 +55,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
         scorecard["statuses"].append("generated")
 
         # Get log file
-        log_path = os.path.join(
-            log_dir, f"{p[KEY_INSTANCE_ID]}.{model}.eval.log"
-        )
+        log_path = os.path.join(log_dir, f"{p[KEY_INSTANCE_ID]}.{model}.eval.log")
 
         if not os.path.exists(log_path):
             scorecard["statuses"].append("build_failure")
@@ -87,7 +86,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
             "success": {
                 "FAIL_TO_PASS": report["FAIL_TO_PASS"]["success"],
                 "PASS_TO_PASS": report["PASS_TO_PASS"]["success"],
-            }
+            },
         }
         resolution_status = get_resolution_status(report)
         scorecard["statuses"].append(resolution_status)
@@ -97,8 +96,8 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
             scorecard["patch_files"] = [
                 x.path
                 for x in diff_obj.modified_files
-                         + diff_obj.added_files
-                         + diff_obj.removed_files
+                + diff_obj.added_files
+                + diff_obj.removed_files
             ]
             scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])
             scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])
@@ -116,8 +115,10 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
     print(f"- Wrote per-instance scorecards to {path_scorecards}")
 
     # Get results and write to file
-    print(f"Reference Report:")
-    report = get_model_report(str(predictions_dir), str(predictions_path), str(swe_bench_path), str(log_dir))
+    print("Reference Report:")
+    report = get_model_report(
+        str(predictions_dir), str(predictions_path), str(swe_bench_path), str(log_dir)
+    )
     for k, v in report.items():
         print(f"- {k}: {len(v)}")
 
@@ -137,8 +138,15 @@ if __name__ == "__main__":
         required=True,
         help="Path to the directory where predictions are stored.",
     )
-    parser.add_argument("--swe_bench_path", type=str, required=True, help="Path to the swe bench tasks")
-    parser.add_argument("--log_dir", type=str, required=True, help="dir where logs are generated after running evaluation")
+    parser.add_argument(
+        "--swe_bench_path", type=str, required=True, help="Path to the swe bench tasks"
+    )
+    parser.add_argument(
+        "--log_dir",
+        type=str,
+        required=True,
+        help="dir where logs are generated after running evaluation",
+    )
     args = parser.parse_args()
 
     script_path = Path(__file__)
@@ -153,5 +161,3 @@ if __name__ == "__main__":
         swe_bench_path=args.swe_bench_path,
         model=MODEL_GPT4,
     )
-
-
