@@ -7,7 +7,7 @@ git clone https://github.com/aorwall/SWE-bench-docker.git
 
 ### generate related files 
 ```bash
-python ./setup_test_bed.md --prediction_path_dir /path/to/generated_predictions
+python ./setup_test_bed.py --prediction_path_dir /path/to/generated_predictions
 ```
 
 This repository contains the Docker-based solution for the SWE-bench evaluation framework. It allows for isolated and reproducible benchmarking of software engineering tools.
