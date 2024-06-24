@@ -1,7 +1,9 @@
-from composio.core.local import Tool, Action
-from .actions import CreateVectorstore, QueryVectorstore # Import your action class
+from composio.core.local import Action, Tool
 
-class EmbedTool(Tool): 
+from .actions import CreateVectorstore, QueryVectorstore  # Import your action class
+
+
+class EmbedTool(Tool):
     """
     This tool is useful in embedding images and finding images with text
     """
@@ -11,5 +13,3 @@ class EmbedTool(Tool):
 
     def triggers(self) -> list:
         return []
-
-

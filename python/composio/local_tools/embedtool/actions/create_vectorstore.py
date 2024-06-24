@@ -1,28 +1,30 @@
-from pydantic import BaseModel, Field
-from composio.core.local import Action
+import os
 from pathlib import Path
 
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.core import StorageContext
-from IPython.display import Markdown, display
 import chromadb
-from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
-from llama_index.core import SimpleDirectoryReader, StorageContext
+from IPython.display import Markdown, display
 from chromadb.utils.data_loaders import ImageLoader
-import os
+from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
+from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
+from llama_index.vector_stores.chroma import ChromaVectorStore
+from pydantic import BaseModel, Field
+
+from composio.core.local import Action
+
 
 class VectorStoreInputSchema(BaseModel):
     # Define input schema for your action
     # Example:
     # text: str = Field(..., description="Input text for the action")
     images_path: str = Field(..., description="Path to the saved image folder")
-    collection_name: str = Field(..., description = "Name of the Chroma VectorStore")
+    collection_name: str = Field(..., description="Name of the Chroma VectorStore")
+
 
 class VectorStoreOutputSchema(BaseModel):
     # Define output schema for your action
     # Example:
     result: str = Field(..., description="Result of the action")
+
 
 class CreateVectorstore(Action):
     """
@@ -52,7 +54,6 @@ class CreateVectorstore(Action):
             data_loader=image_loader,
         )
 
-
         # load documents
         documents = SimpleDirectoryReader(request_data.images_path).load_data()
 
@@ -63,4 +64,8 @@ class CreateVectorstore(Action):
             documents,
             storage_context=storage_context,
         )
-        return {"execution_details": {"executed": True}, "result": "Vector Store was created with the name:"+request_data.collection_name }
+        return {
+            "execution_details": {"executed": True},
+            "result": "Vector Store was created with the name:"
+            + request_data.collection_name,
+        }
