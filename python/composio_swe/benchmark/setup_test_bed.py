@@ -77,7 +77,7 @@ def main(predictions_dir, dataset_path_or_name):
             print(f"skipping file {file_name}")
             continue
         file_path = predictions_dir / Path(file_name)
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             agent_logs = json.load(f)
         for issue_id, prediction_data in agent_logs.items():
             if issue_id == "123":
@@ -104,7 +104,7 @@ def main(predictions_dir, dataset_path_or_name):
             all_patches.append(transformed_prediction)
             pred_will_eval += 1
 
-    with open(pred_path_orig, "w") as f_out:
+    with open(pred_path_orig, "w", encoding="utf-8") as f_out:
         f_out.write(json.dumps(all_patches))
 
     print(

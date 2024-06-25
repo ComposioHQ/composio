@@ -6,24 +6,25 @@ import json
 def extract_details(agent_logs):
     data = []
     for log in agent_logs:
-        from pprint import pprint
-
-        pprint(log)
+        tool_name_or_agent_action = ""
+        tool_input = ""
+        tool_output_or_agent_output = ""
+        agent_thought = ""
         if log["agent_action"] in ["agent_finish", "final_patch"]:
-            agent_action = "agent_finish"
-            agent_output = log["agent_output"]
+            tool_name_or_agent_action = "agent_finish"
+            tool_output_or_agent_output = log["agent_output"]
         else:
             agent_action = json.loads(log["agent_action"])
-            tool_name = agent_action.get("tool", "N/A")
+            tool_name_or_agent_action = agent_action.get("tool", "N/A")
             tool_input = agent_action.get("tool_input", "N/A")
-            tool_output = log.get("tool_output", "N/A")
+            tool_output_or_agent_output = log.get("tool_output", "N/A")
             agent_thought = agent_action.get("log", "No thoughts recorded")
 
         data.append(
             {
-                "tool_name": tool_name or agent_action,
+                "tool_name": tool_name_or_agent_action,
                 "tool_input": tool_input,
-                "tool_output": tool_output or agent_output,
+                "tool_output": tool_output_or_agent_output,
                 "agent_thought": agent_thought,
             }
         )
@@ -71,7 +72,7 @@ def generate_html_1(issues_data, output_file):
     </html>
     """
 
-    with open(output_file, "w") as file:
+    with open(output_file, "w", encoding="utf-8") as file:
         file.write(html_content)
     print(f"HTML report generated: {output_file}")
 
@@ -152,7 +153,7 @@ def generate_html(issues_data, output_file):
         html_content += "</table>"
     html_content += "</body></html>"
 
-    with open(output_file, "w") as file:
+    with open(output_file, "w", encoding="utf-8") as file:
         file.write(html_content)
     print(f"HTML report generated: {output_file}")
 
@@ -162,7 +163,7 @@ def load_logs(directory_path):
     for file_path in glob.glob(
         f"{directory_path}/agent_logs.json*"
     ):  # Adjust the pattern as needed
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             issue_log = json.load(file)
             all_issues.update(issue_log)  # Load and combine logs from each file
     return all_issues

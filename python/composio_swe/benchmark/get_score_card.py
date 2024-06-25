@@ -2,6 +2,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+import logging
+
 
 from swebench import (
     KEY_INSTANCE_ID,
@@ -21,6 +23,16 @@ PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
 PATH_PATCHES_JSON = "patches.json"
 PATH_TESTBED = "testbed/"
 EVAL_REFS_JSON_PATH = "eval_refs.jsonl"
+SCORECARDS_JSON_PATH = "scorecards.json"
+RESULTS_JSON_PATH = "results.json"
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[
+                        logging.FileHandler("debug.log"),
+                        logging.StreamHandler()
+                    ])
 
 
 def format_report(report):
@@ -34,7 +46,7 @@ def format_report(report):
     return report
 
 
-def main(predictions_dir, log_dir, swe_bench_path, model):
+def get_cur_eval_refs(predictions_dir, swe_bench_path):
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
         eval_refs[k] = {
@@ -43,11 +55,40 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
             "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"]),
         }
     eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
-    with open(eval_refs_json_path, "w") as f:
+    with open(eval_refs_json_path, "w", encoding="utf-8") as f:
         for key in eval_refs:
             f.write(json.dumps(eval_refs[key]))
             f.write("\n")
+    return eval_refs, eval_refs_json_path
+
+
+def save_summaries_to_file(predictions_dir, predictions_path, log_dir, scorecards):
+    path_scorecards = os.path.join(predictions_dir, SCORECARDS_JSON_PATH)
+    with open(path_scorecards, "w", encoding="utf-8") as f:
+        json.dump(scorecards, fp=f, indent=2)
+    logging.info("- Wrote per-instance scorecards to: %s", path_scorecards)
+
+    # Get results and write to file
+    eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
+    logging.info("Reference Report:")
+    report = get_model_report(
+        MODEL_GPT4, str(predictions_path), str(eval_refs_json_path), str(log_dir)
+    )
+    for k, v in report.items():
+        logging.info("- %s: %s", k, len(v))
+
+    results_path = predictions_dir / Path(RESULTS_JSON_PATH)
+    with open(results_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2)
+    logging.info("- Wrote summary of run to: %s", results_path)
+
+
+def main(predictions_dir, log_dir, swe_bench_path, model):
+    logging.info("Starting main function")
+    eval_refs = get_cur_eval_refs(predictions_dir, swe_bench_path)
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
+    logging.debug("Predictions path: %s", predictions_path)
+
     # Get predictions, define log_dir
     # Iterate over each file in the directory
     with open(predictions_path, encoding="utf-8") as f:
@@ -59,6 +100,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
         if p[KEY_PREDICTION] is None or p[KEY_PREDICTION].strip() == "":
             scorecard["statuses"].append("not_generated")
             scorecards.append(scorecard)
+            logging.info("no prediction_key is found: %s. Skipping...", p[KEY_INSTANCE_ID])
             continue
         scorecard["statuses"].append("generated")
 
@@ -68,6 +110,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
         if not os.path.exists(log_path):
             scorecard["statuses"].append("build_failure")
             scorecards.append(scorecard)
+            logging.info("no log file is found: %s. Skipping...", log_path)
             continue
 
         # Get evaluation logs
@@ -76,10 +119,11 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
         # Check that the prediction generated
         if not found:
             scorecards.append(scorecard)
+            logging.info("no eval_sm is found: %s. Skipping...", log_path)
             continue
         scorecard["statuses"].append("applied")
 
-        with open(log_path, "r") as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             log_contents = f.read()
             if INSTALL_FAIL in log_contents:
                 scorecard["statuses"].append("install_fail")
@@ -107,33 +151,17 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
                 + diff_obj.added_files
                 + diff_obj.removed_files
             ]
-            scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])
-            scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])
+            scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])  # pylint: disable=consider-using-generator
+            scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])  # pylint: disable=consider-using-generator
         except Exception as e:
-            print(f"[{p[KEY_INSTANCE_ID]}] Error parsing prediction diff: {e}")
+            logging.error("[%s] Error parsing prediction diff: %s", {p[KEY_INSTANCE_ID]}, e)
             scorecard["patch_files"] = []
             scorecard["patch_lines_add"] = 0
             scorecard["patch_lines_del"] = 0
         scorecards.append(scorecard)
 
     # Save to summary, scorecard json
-    path_scorecards = os.path.join(predictions_dir, "scorecards.json")
-    with open(path_scorecards, "w") as f:
-        json.dump(scorecards, fp=f, indent=2)
-    print(f"- Wrote per-instance scorecards to {path_scorecards}")
-
-    # Get results and write to file
-    print("Reference Report:")
-    report = get_model_report(
-        MODEL_GPT4, str(predictions_path), str(eval_refs_json_path), str(log_dir)
-    )
-    for k, v in report.items():
-        print(f"- {k}: {len(v)}")
-
-    path_results = os.path.join(predictions_dir, "results.json")
-    with open(path_results, "w") as f:
-        json.dump(report, f, indent=2)
-    print(f"- Wrote summary of run to {path_results}")
+    save_summaries_to_file(predictions_dir, predictions_path, log_dir, scorecards)
 
 
 if __name__ == "__main__":
