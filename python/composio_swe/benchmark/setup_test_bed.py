@@ -7,26 +7,24 @@ from pathlib import Path
 from datasets import load_dataset
 from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
 
-from composio_swe.composio_swe.benchmark.constants import (
-    DATASET_ON_DISK,
+from python.composio_swe.benchmark.constants import (
     MODEL_GPT4,
     PATH_PATCHES_JSON,
-    PATH_SWE_BENCH_ISSUES,
     SUBMIT_PATCH_CMD,
     TEST_SPLIT,
 )
 
 
-def download_and_store_dataset(dataset_name, output_file):
+def download_and_store_dataset(dataset_path_or_name, path_on_disk):
     test_dataset = load_dataset(
-        "princeton-nlp/SWE-bench_Lite", split=f"test{TEST_SPLIT}"
+        dataset_path_or_name, split=f"test{TEST_SPLIT}"
     )
-    test_dataset.save_to_disk(DATASET_ON_DISK)
+    test_dataset.save_to_disk(path_on_disk)
     # Assuming the dataset is a single dataset, not a dataset dictionary
-    with open(output_file, "w") as file:
-        for item in test_dataset:
-            json.dump(item, file)
-            file.write("\n")
+    # with open(output_file, "w") as file:
+    #     for item in test_dataset:
+    #         json.dump(item, file)
+    #         file.write("\n")
 
 
 def find_patch(prediction_data):
@@ -68,12 +66,11 @@ def log_file(f_name):
 
 
 def main(
-    predictions_dir,
+    predictions_dir, dataset_path_or_name
 ):
     all_patches = []
     pred_total, pred_will_eval = 0, 0
-    swe_bench_path = predictions_dir / Path(PATH_SWE_BENCH_ISSUES)
-    download_and_store_dataset("", swe_bench_path)
+    download_and_store_dataset(dataset_path_or_name, str(Path(predictions_dir) / Path("dataset")))
     pred_path_orig = predictions_dir / Path(PATH_PATCHES_JSON)
 
     # Iterate over each file in the directory
@@ -127,6 +124,7 @@ if __name__ == "__main__":
         required=True,
         help="Path to the directory where predictions are stored.",
     )
+    parser.add_argument("--dataset_path_or_name", type=str, default="princeton-nlp/SWE-bench_Lite", help="give local path or dataset or name of dataset")
     args = parser.parse_args()
 
     script_path = Path(__file__)
@@ -134,4 +132,5 @@ if __name__ == "__main__":
     prediction_path_dir = Path(args.prediction_path_dir)
     main(
         predictions_dir=prediction_path_dir,
+        dataset_path_or_name=args.dataset_path_or_name,
     )
