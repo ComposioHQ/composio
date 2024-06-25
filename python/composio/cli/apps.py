@@ -61,6 +61,13 @@ APP_ENUM_TEMPLATE = """class App(str, Enum):
         \"\"\"If the app is local.\"\"\"
         return self.value.lower() in [{local_tools}]
 
+    @property
+    def actions(self) -> t.Iterator["Action"]:
+        \"\"\"Iterate over actions for this app.\"\"\"
+        for action in Action:
+            if action.name.startswith(self.value):
+                yield action
+
 {apps}
 """
 
