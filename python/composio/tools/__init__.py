@@ -3,6 +3,7 @@ Composio SDK tools.
 """
 
 import base64
+import itertools
 import json
 import os
 import time
@@ -16,7 +17,8 @@ from composio.client.collections import (
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, App, Tag, AppType
+from composio.client.exceptions import ComposioClientError
 from composio.client.local_handler import LocalToolHandler
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -202,7 +204,7 @@ class ComposioToolSet:
 
     def find_actions_by_use_case(
         self,
-        *apps: t.Union[str, App],
+        *apps: AppType,
         use_case: str,
     ) -> t.List[Action]:
         """
@@ -220,6 +222,34 @@ class ComposioToolSet:
         return [
             Action(value=_get_enum_key(name=action.name).lower()) for action in actions
         ]
+
+    def find_actions_by_tags(
+        self,
+        *apps: AppType,
+        tags: t.List[str],
+    ) -> t.List[Action]:
+        """
+        Find actions by specified use case.
+
+        :param apps: List of apps to search.
+        :param use_case: String describing the use case.
+        :return: A list of actions matching the relevant use case.
+        """
+        if len(tags) == 0:
+            raise ComposioClientError(
+                "Please provide at least one tag to perform search"
+            )
+
+        if len(apps) > 0:
+            return list(
+                itertools.chain(*[list(App(app).get_actions(tags=tags)) for app in apps])
+            )
+
+        actions = []
+        for action in Action.all():
+            if any(tag in action.tags for tag in tags):
+                actions.append(action)
+        return actions
 
 
 # TODO: Extract as reusable
