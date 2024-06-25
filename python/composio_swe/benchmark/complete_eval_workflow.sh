@@ -35,10 +35,10 @@ run_evaluation() {
     #git clone https://github.com/aorwall/SWE-bench-docker.git
     #
     ## Navigate into the cloned directory
-    #cd SWE-bench-docker
+    cd ~/codes/SWE-bench-docker/
     #
     ## Run the evaluation
-    #python run_evaluation.py --predictions_path "{$predictions_json_path}" --log_dir "{$log_dir_path}" --swe_bench_tasks "{$dataset_on_disk_path}" --namespace aorwall
+    python run_evaluation.py --predictions_path "{$predictions_json_path}" --log_dir "{$log_dir_path}" --swe_bench_tasks "{$dataset_on_disk_path}" --namespace aorwall
     #popd
 }
 

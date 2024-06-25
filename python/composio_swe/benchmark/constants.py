@@ -6,4 +6,4 @@ PATH_PATCHES_JSON = "patches.json"
 PATH_TESTBED = "testbed/"
 
 DATASET_ON_DISK = "./swe_lite_dataset"
-TEST_SPLIT = "[1:50]"
+TEST_SPLIT = "[1:300]"
