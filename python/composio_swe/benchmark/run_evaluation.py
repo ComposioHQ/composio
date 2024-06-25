@@ -1,6 +1,7 @@
 # pylint: disable=logging-fstring-interpolation
 import datetime
 import logging
+from dotenv import load_dotenv
 
 from datasets import load_dataset
 from rich.logging import RichHandler
@@ -48,7 +49,7 @@ def filter_from_repo_name(curr_dataset, repo_name):
 
 
 def get_issues_dataset():
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[210:300]")
+    test_dataset = load_dataset("/home/shubhra/work/composio/swe-data/SWE-bench_Lite/data/", split="test[210:300]")
     return test_dataset
 
 
@@ -63,8 +64,14 @@ def build_issue_description(hints, problem_statement):
     return tmpl
 
 
+def get_or_create_workspace_id(repo_to_workspace_map, repo_name):
+    if repo_to_workspace_map and repo_to_workspace_map.get(repo_name):
+        return repo_to_workspace_map[repo_name]
+
+
 def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
     composio_client = Composio()
+    workspace_id = get_or_create_workspace_id()
     try:
         if repo in repo_to_workspace_map:
             print("Resetting repository to base commit")
@@ -112,7 +119,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
         start_time = datetime.datetime.now()
         workspace_create_resp = CreateWorkspaceResponse.model_validate(
             composio_client.actions.execute(
-                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
+                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}, entity_id="123",
             )
         )
         workspace_id = workspace_create_resp.workspace_id
@@ -125,6 +132,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
 
         start_time = datetime.datetime.now()
         composio_client.actions.execute(
+            entity_id="123",
             action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
             params={
                 "workspace_id": workspace_id,
@@ -202,4 +210,5 @@ def run():
 
 if __name__ == "__main__":
     print("Starting evaluation")
+    load_dotenv("./.env1")
     run()
