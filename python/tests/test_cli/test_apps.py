@@ -53,6 +53,8 @@ class TestUpdate(BaseCliTest):
     def test_update(self) -> None:
         """Test app enums update."""
         to_update = random.choice(ENUM_CLS)
+        self.logger.debug(f"Testing update with `{to_update}`")
+
         file = Path(enums.__file__).parent / f"_{to_update.lower()}.py"
         content = file.read_text(encoding="utf-8")
         annotations = []
