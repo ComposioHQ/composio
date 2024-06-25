@@ -56,6 +56,9 @@ class ActionData(LocalStorage):
     app: str
     "App name where the actions belongs to."
 
+    tags: t.List[str]
+    "Tag string for the action."
+
     no_auth: bool = False
     "If set `True` the action does not require authentication."
 

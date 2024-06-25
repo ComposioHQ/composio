@@ -1,6 +1,9 @@
 """
 Action enums.
 """
+
+import typing as t
+
 from composio.client.enums.base import ACTIONS_CACHE, ActionData, _AnnotatedEnum, enum
 
 
@@ -3748,6 +3751,11 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     def app(self) -> str:
         """App name where the actions belongs to."""
         return self.load().app
+
+    @property
+    def tags(self) -> t.List[str]:
+        """List of tags for action."""
+        return self.load().tags
 
     @property
     def no_auth(self) -> bool:

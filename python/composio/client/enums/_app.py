@@ -1,6 +1,10 @@
 """
 App enums.
 """
+
+import typing as t
+
+from composio.client.enums._action import Action
 from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
 
 
@@ -82,3 +86,19 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     def name(self) -> str:
         """Name of the app."""
         return self.load().name
+
+    def get_actions(self, tags: t.Optional[t.List[str]] = None) -> t.Iterator[Action]:
+        """
+        Get actions for the given app filtered by the `tags`
+
+        :param tags: List of tags to filter the actions
+        :return: Iterator object which yields `Action`
+        """
+        tags = tags or []
+        for action in Action.all():
+            if not action.slug.lower().startswith(self.slug.lower()):
+                continue
+            if len(tags) == 0:
+                yield action
+            if any(tag in action.tags for tag in tags):
+                yield action

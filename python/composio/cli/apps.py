@@ -171,6 +171,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             enums.base.ActionData(
                 name=action.name,
                 app=app.key,
+                tags=action.tags,
                 no_auth=app.no_auth,
                 is_local=False,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
@@ -188,6 +189,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             enums.base.ActionData(
                 name=name,
                 app=tool.tool_name,
+                tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
