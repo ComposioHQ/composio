@@ -1,9 +1,8 @@
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
-import logging
-
 
 from swebench import (
     KEY_INSTANCE_ID,
@@ -27,12 +26,11 @@ SCORECARDS_JSON_PATH = "scorecards.json"
 RESULTS_JSON_PATH = "results.json"
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    handlers=[
-                        logging.FileHandler("debug.log"),
-                        logging.StreamHandler()
-                    ])
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
+)
 
 
 def format_report(report):
@@ -100,7 +98,9 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
         if p[KEY_PREDICTION] is None or p[KEY_PREDICTION].strip() == "":
             scorecard["statuses"].append("not_generated")
             scorecards.append(scorecard)
-            logging.info("no prediction_key is found: %s. Skipping...", p[KEY_INSTANCE_ID])
+            logging.info(
+                "no prediction_key is found: %s. Skipping...", p[KEY_INSTANCE_ID]
+            )
             continue
         scorecard["statuses"].append("generated")
 
@@ -151,10 +151,16 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
                 + diff_obj.added_files
                 + diff_obj.removed_files
             ]
-            scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])  # pylint: disable=consider-using-generator
-            scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])  # pylint: disable=consider-using-generator
+            scorecard["patch_lines_add"] = sum(
+                [f.added for f in diff_obj]
+            )  # pylint: disable=consider-using-generator
+            scorecard["patch_lines_del"] = sum(
+                [f.removed for f in diff_obj]
+            )  # pylint: disable=consider-using-generator
         except Exception as e:
-            logging.error("[%s] Error parsing prediction diff: %s", {p[KEY_INSTANCE_ID]}, e)
+            logging.error(
+                "[%s] Error parsing prediction diff: %s", {p[KEY_INSTANCE_ID]}, e
+            )
             scorecard["patch_files"] = []
             scorecard["patch_lines_add"] = 0
             scorecard["patch_lines_del"] = 0
