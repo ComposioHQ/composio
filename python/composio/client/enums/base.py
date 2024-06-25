@@ -108,6 +108,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             raise ValueError(
                 "Cannot load `AppData` object without initializing object."
             )
+        if not (self._path / self._slug).exists():
+            raise FileNotFoundError(
+                f"Metadata file for `{self._slug}` not found"
+                "Please run `composio apps update` to fix this"
+            )
         if self._slug not in _model_cache:
             _model_cache[self._slug] = self._model.load(self._path / self._slug)
         return t.cast(EntityType, _model_cache[self._slug])
