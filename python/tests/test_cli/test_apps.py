@@ -3,7 +3,6 @@ Test `composio apps` command group.
 """
 
 import random
-import sys
 import typing as t
 from pathlib import Path
 
