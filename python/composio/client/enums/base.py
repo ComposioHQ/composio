@@ -8,6 +8,7 @@ from pathlib import Path
 import typing_extensions as te
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
+from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
 
 
@@ -20,6 +21,10 @@ TAGS_CACHE = LOCAL_CACHE_DIRECTORY / "tags"
 APPS_CACHE = LOCAL_CACHE_DIRECTORY / "apps"
 ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
+
+
+class MetadataFileNotFound(ComposioSDKError):
+    """Raise when matadata file is missing."""
 
 
 class TagData(LocalStorage):
@@ -109,8 +114,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 "Cannot load `AppData` object without initializing object."
             )
         if not (self._path / self._slug).exists():
-            raise FileNotFoundError(
-                f"Metadata file for `{self._slug}` not found"
+            raise MetadataFileNotFound(
+                f"Metadata file for `{self._slug}` not found, "
                 "Please run `composio apps update` to fix this"
             )
         if self._slug not in _model_cache:
