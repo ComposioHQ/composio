@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -ex
-
 # Capture the directory where the script is located
 script_dir=$(dirname "$0")
 current_dir=$(pwd)
@@ -25,6 +23,15 @@ action=${3:-all}  # Default to running all steps if no specific action is provid
 dataset_on_disk_path="$prediction_path_dir/dataset"
 predictions_json_path="$prediction_path_dir/patches.json"
 log_dir_path="$prediction_path_dir/logs"
+
+show_banner() {
+    # Banner displaying script usage
+    echo "========================================"
+    echo "Complete Evaluation Workflow Script"
+    echo "Usage: $0 <prediction_path_dir> <dataset_path_or_name>"
+    echo "Example: $0 /path/to/prediction/dir princeton-nlp/SWE-bench_Lite"
+    echo "========================================"
+}
 
 # Generate related files
 setup_test_bed() {
@@ -65,6 +72,8 @@ generate_score_card() {
 }
 
 main() {
+    show_banner
+    set -ex
     case "$action" in
         setup)
             setup_test_bed
