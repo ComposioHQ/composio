@@ -37,7 +37,9 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
         eval_refs[k] = {
-            key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]
+            KEY_INSTANCE_ID: v[KEY_INSTANCE_ID],
+            "FAIL_TO_PASS": json.loads(v["FAIL_TO_PASS"]),
+            "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"])
         }
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
     # Get predictions, define log_dir
@@ -77,7 +79,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
                 scorecard["statuses"].append("install_fail")
         # Get resolution status
         report = get_eval_report(eval_sm, eval_refs[p[KEY_INSTANCE_ID]])
-        report = format_report(report)
+        # report = format_report(report)
         scorecard["test_results"] = {
             "failure": {
                 "FAIL_TO_PASS": report["FAIL_TO_PASS"]["failure"],
