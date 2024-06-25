@@ -17,7 +17,7 @@ from composio.client.collections import (
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
-from composio.client.enums import Action, App, Tag, AppType
+from composio.client.enums import Action, App, AppType, Tag
 from composio.client.exceptions import ComposioClientError
 from composio.client.local_handler import LocalToolHandler
 from composio.constants import (
@@ -242,7 +242,9 @@ class ComposioToolSet:
 
         if len(apps) > 0:
             return list(
-                itertools.chain(*[list(App(app).get_actions(tags=tags)) for app in apps])
+                itertools.chain(
+                    *[list(App(app).get_actions(tags=tags)) for app in apps]
+                )
             )
 
         actions = []

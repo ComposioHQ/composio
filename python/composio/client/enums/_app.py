@@ -95,8 +95,9 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
         :return: Iterator object which yields `Action`
         """
         tags = tags or []
+        app = f"{self.slug.lower()}_"
         for action in Action.all():
-            if not action.slug.lower().startswith(self.slug.lower()):
+            if not action.slug.lower().startswith(app):
                 continue
             if len(tags) == 0:
                 yield action
