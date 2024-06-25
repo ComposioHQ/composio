@@ -4,6 +4,7 @@ Helper Enum classes.
 - TODO: Replace Enums with something lightweight
 """
 
+import typing as t
 from enum import Enum
 
 
@@ -423,6 +424,13 @@ class Tag(tuple, Enum):
 
 class App(str, Enum):
     """Composio App."""
+
+    @property
+    def actions(self) -> t.Iterator["Action"]:
+        """Iterate over actions for this app."""
+        for action in Action:
+            if action.name.startswith(self.value):
+                yield action
 
     @property
     def is_local(self) -> bool:
