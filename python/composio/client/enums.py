@@ -13853,7 +13853,6 @@ class Action(tuple, Enum):
         True,
         True,
     )
-<<<<<<< HEAD
     CMDMANAGERTOOL_BLACKLINTER = (
         "cmdmanagertool",
         "cmdmanagertool_blacklinter",
@@ -13887,7 +13886,9 @@ class Action(tuple, Enum):
     CMDMANAGERTOOL_AUTOPEP8LINTER = (
         "cmdmanagertool",
         "cmdmanagertool_autopep8linter",
-=======
+        True,
+        True,
+    )
     CMDMANAGERTOOL_GITREPOTREE = (
         "cmdmanagertool",
         "cmdmanagertool_gitrepotree",
@@ -13897,7 +13898,6 @@ class Action(tuple, Enum):
     CMDMANAGERTOOL_GETPATCHCMD = (
         "cmdmanagertool",
         "cmdmanagertool_getpatchcmd",
->>>>>>> master
         True,
         True,
     )

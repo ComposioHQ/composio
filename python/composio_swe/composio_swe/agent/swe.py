@@ -14,13 +14,11 @@ from composio import Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-
 from composio_swe.composio_swe.config.prompts import (
     swe_agent_goal,
     swe_agent_role,
     swe_expected_output,
 )
-
 from python.composio_swe.composio_swe.config.config_store import IssueConfig
 
 from .base_swe_agent import BaseSWEAgent

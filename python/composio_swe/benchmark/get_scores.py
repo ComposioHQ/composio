@@ -10,16 +10,14 @@ from swebench import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
+    get_eval_refs,
     get_eval_report,
     get_logs_eval,
     get_model_report,
     get_resolution_status,
     run_evaluation,
-    get_eval_refs,
 )
-from swebench.harness.constants import (
-    INSTALL_FAIL,
-)
+from swebench.harness.constants import INSTALL_FAIL
 from unidiff import PatchSet
 
 
@@ -32,7 +30,9 @@ PATH_TESTBED = "testbed/"
 
 
 def download_and_store_dataset(dataset_name, output_file):
-    test_dataset = load_dataset("/home/shubhra/work/composio/swe-data/SWE-bench_Lite/data", split="test[1:50]")
+    test_dataset = load_dataset(
+        "/home/shubhra/work/composio/swe-data/SWE-bench_Lite/data", split="test[1:50]"
+    )
     # Assuming the dataset is a single dataset, not a dataset dictionary
     with open(output_file, "w") as file:
         for item in test_dataset:
@@ -90,7 +90,9 @@ def main(
     pred_path_orig = predictions_dir / Path(PATH_PATCHES_JSON)
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
-        eval_refs[k] = {key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]}
+        eval_refs[k] = {
+            key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]
+        }
 
     # Iterate over each file in the directory
     for file_name in os.listdir(predictions_dir):
@@ -202,7 +204,7 @@ def main(
             "success": {
                 "FAIL_TO_PASS": report["FAIL_TO_PASS"]["success"],
                 "PASS_TO_PASS": report["PASS_TO_PASS"]["success"],
-            }
+            },
         }
         resolution_status = get_resolution_status(report)
         scorecard["statuses"].append(resolution_status)
@@ -212,8 +214,8 @@ def main(
             scorecard["patch_files"] = [
                 x.path
                 for x in diff_obj.modified_files
-                         + diff_obj.added_files
-                         + diff_obj.removed_files
+                + diff_obj.added_files
+                + diff_obj.removed_files
             ]
             scorecard["patch_lines_add"] = sum([f.added for f in diff_obj])
             scorecard["patch_lines_del"] = sum([f.removed for f in diff_obj])
@@ -232,7 +234,9 @@ def main(
 
     # Get results and write to file
     print(f"Reference Report:")
-    report = get_model_report(str(predictions_dir), str(pred_path_temp), str(swe_bench_path), str(log_dir))
+    report = get_model_report(
+        str(predictions_dir), str(pred_path_temp), str(swe_bench_path), str(log_dir)
+    )
     for k, v in report.items():
         print(f"- {k}: {len(v)}")
 

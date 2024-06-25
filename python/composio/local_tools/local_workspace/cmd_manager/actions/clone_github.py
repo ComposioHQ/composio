@@ -34,7 +34,7 @@ class GithubCloneRequest(BaseRequest):
     just_reset: bool = Field(
         False,
         description="If true, the repo will not be cloned. It will be assumed to exist."
-                    " The repo will be cleaned and reset to the given commit-id",
+        " The repo will be cleaned and reset to the given commit-id",
     )
 
 
