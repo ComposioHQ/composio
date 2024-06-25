@@ -135,6 +135,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
         git_clone_time = datetime.datetime.now() - start_time
         print("git clone completed, time taken: %s", git_clone_time)
         repo_to_workspace_map[repo] = workspace_id
+    return workspace_id
 
 
 def run():
@@ -154,7 +155,7 @@ def run():
             print(f"Issue id: {issue['instance_id']}")
             print(f"Issue description: {issue['problem_statement']}")
 
-            setup_workspace(
+            workspace_id = setup_workspace(
                 repo, repo_to_workspace_map, repo_to_image_id_map, issue["base_commit"]
             )
 
@@ -193,9 +194,7 @@ def run():
 
             args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)
             coder = CoderAgent(args)
-            coder.run(
-                issue_config=ctx.issue_config, workspace_id=repo_to_workspace_map[repo]
-            )
+            coder.run(issue_config=ctx.issue_config, workspace_id=workspace_id)
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
 
