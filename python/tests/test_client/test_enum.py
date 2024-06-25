@@ -32,3 +32,10 @@ def test_trigger_enum() -> None:
     trigger = Trigger(("slack", "slack_receive_message"))
     assert trigger.app == "slack"
     assert trigger.event == "slack_receive_message"
+
+
+def test_actions_list() -> None:
+    """Test action list from an app enum."""
+    app = App.GITHUB
+    for action in app.actions:
+        assert action.name.startswith(app.value)
