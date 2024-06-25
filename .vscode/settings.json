@@ -1,7 +1,4 @@
 {
-  "terminal.integrated.persist": true,
-  "terminal.integrated.persistentLogging": true,
-  "terminal.integrated.logPath": "/Users/karanvaidya/cursor_logs",
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true
 }

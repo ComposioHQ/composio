@@ -107,6 +107,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
         else:
             raise Exception("Repository not found in workspace or image maps")
     except Exception as e:
+        # TODO: remove this fallback logic from exception.
         print(f"Error occurred: {e}. Falling back to creating new workspace.")
         start_time = datetime.datetime.now()
         workspace_create_resp = CreateWorkspaceResponse.model_validate(
