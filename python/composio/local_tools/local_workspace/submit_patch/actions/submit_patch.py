@@ -19,7 +19,10 @@ class SubmitPatchRequest(BaseModel):
     workspace_id: str = Field(
         ..., description="workspace-id for which patch is generated"
     )
-    patch_code: str = Field(..., description="patch code that needs to be submitted")
+    patch_code: str = Field(
+        ...,
+        description="patch code that needs to be submitted - this should be a valid patch in diff format for the workspace.",
+    )
 
 
 class SubmitPatchResponse(BaseModel):
@@ -28,7 +31,13 @@ class SubmitPatchResponse(BaseModel):
 
 class SubmitPatch(Action):
     """
-    Submits generated patch for the workspace that should work
+    Submits generated patch for the workspace that should work This should be in diff format.
+    Example:
+    --- a/file.txt
+    +++ b/file.txt
+    @@ -1,3 +1,3 @@
+    -Hello, World!
+    +Hello, Python!
     """
 
     _history_maintains = True

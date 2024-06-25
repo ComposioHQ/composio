@@ -113,12 +113,9 @@ def solve(ctx: Context):
     click.echo(
         f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
     )
-    args = CoderAgentArgs(
-        issue_config=ctx.issue_config,
-        agent_logs_dir=ctx.agent_logs_dir,
-    )
+    args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)
     coder_agent = CoderAgent(args)
-    coder_agent.run()
+    coder_agent.run(issue_config=issue_config)
     click.echo("Issue solving process started.")
 
 
