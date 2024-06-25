@@ -1,3 +1,4 @@
+# pylint: disable=logging-fstring-interpolation
 import datetime
 import logging
 
@@ -55,12 +56,9 @@ def build_issue_description(hints, problem_statement):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
     tmpl = ""
-    tmpl += f"""Here is the issue, that you have to solve all on your own:
-{problem_statement}
-"""
+    tmpl += f"""Here is the issue, that you have to solve all on your own:\n{problem_statement}"""
     if hints:
-        tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: 
-{hints}"""
+        tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
     return tmpl
 
