@@ -32,3 +32,13 @@ def test_trigger_enum() -> None:
     trigger = Trigger("slack_new_message")
     assert trigger.app == "slack"
     assert trigger.name == "slack_receive_message"
+
+
+def test_get_actions() -> None:
+    """Test `App.get_actions` method."""
+    for action in App.GITHUB.get_actions():
+        assert action.app == "github"
+
+    for action in App.GITHUB.get_actions(tags=["repo"]):
+        assert action.app == "github"
+        assert "repo" in action.tags
