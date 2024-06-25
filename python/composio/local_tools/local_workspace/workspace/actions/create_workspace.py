@@ -74,7 +74,9 @@ class CreateWorkspaceAction(BaseWorkspaceAction):
         args: LocalDockerArgumentsModel = LocalDockerArgumentsModel(
             image_name=request_data.image_name
         )
+        print(f"Creating workspace with image name: {request_data.image_name}")
         workspace_id = self.workspace_factory.get_workspace_manager(args)
+        print(f"workspace-id: {workspace_id}")
         self.workspace_id = workspace_id
         workspace_meta = get_workspace_meta_from_manager(
             self.workspace_factory, self.workspace_id
