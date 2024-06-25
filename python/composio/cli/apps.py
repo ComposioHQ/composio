@@ -131,7 +131,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
         )
         enums.base.AppData(
             name=app.name,
-            path=enums.base.APPS_CACHE / app.name,
+            path=enums.base.APPS_CACHE / app_names[-1],
             is_local=False,
         ).store()
 
@@ -143,7 +143,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
         )
         enums.base.AppData(
             name=tool.tool_name,
-            path=enums.base.APPS_CACHE / tool.tool_name,
+            path=enums.base.APPS_CACHE / app_names[-1],
             is_local=True,
         ).store()
 
@@ -173,7 +173,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 app=app.key,
                 no_auth=app.no_auth,
                 is_local=False,
-                path=enums.base.ACTIONS_CACHE / action.name,
+                path=enums.base.ACTIONS_CACHE / action_names[-1],
             ).store()
 
     local_tool_handler = LocalToolHandler()
@@ -190,7 +190,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 app=tool.tool_name,
                 no_auth=True,
                 is_local=True,
-                path=enums.base.ACTIONS_CACHE / name,
+                path=enums.base.ACTIONS_CACHE / action_names[-1],
             ).store()
 
     _update_annotations(
@@ -222,7 +222,7 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
             enums.base.TagData(
                 app=app_name,
                 value=tag,
-                path=enums.base.TAGS_CACHE / tag_name,
+                path=enums.base.TAGS_CACHE / tag_names[-1],
             ).store()
 
     enums.base.TagData(
@@ -247,18 +247,17 @@ def _update_triggers(
     )
     for app in apps:
         for trigger in [trigger for trigger in triggers if trigger.appKey == app.key]:
-            trigger_name = (
-                _get_enum_key(name=app.key)
-                + "_"
-                + _get_enum_key(name=trigger.display_name)
-            ).upper()
             trigger_names.append(
-                trigger_name,
+                (
+                    _get_enum_key(name=app.key)
+                    + "_"
+                    + _get_enum_key(name=trigger.display_name)
+                ).upper()
             )
             enums.base.TriggerData(
                 name=trigger.name,
                 app=app.key,
-                path=enums.base.TRIGGERS_CACHE / trigger_name,
+                path=enums.base.TRIGGERS_CACHE / trigger_names[-1],
             ).store()
 
     _update_annotations(
