@@ -7,7 +7,7 @@ import { LangchainToolSet } from "composio-core";
 // Create an instance of LangchainToolSet
 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
 
-// Subscribe to triggers and execute the agent if the trigger is a Slack mention
+// Subscribe to triggers and execute the agent
 toolset.client.triggers.subscribe((data) => {
     console.log("trigger received", data);
     executeAgent("default", data.payload.event);
@@ -33,6 +33,7 @@ async function executeAgent(entityName, eventBody) {
 
     // Step 6: Create an instance of the AgentExecutor and invoke the agent
     const agentExecutor = new AgentExecutor({ agent, tools, verbose: true, });
+    // Step 7: Invoke the agent
     await agentExecutor.invoke({ input: "Reply to message on slack, to answer question, use exa_search to answer question and use emoji to reply and links of " + JSON.stringify(body) });
 }
 
