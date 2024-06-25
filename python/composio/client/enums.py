@@ -4,6 +4,7 @@ Helper Enum classes.
 - TODO: Replace Enums with something lightweight
 """
 
+import typing as t
 from enum import Enum
 
 
@@ -423,6 +424,13 @@ class Tag(tuple, Enum):
 
 class App(str, Enum):
     """Composio App."""
+
+    @property
+    def actions(self) -> t.Iterator["Action"]:
+        """Iterate over actions for this app."""
+        for action in Action:
+            if action.name.startswith(self.value):
+                yield action
 
     @property
     def is_local(self) -> bool:
@@ -7221,19 +7229,19 @@ class Action(tuple, Enum):
     GMAIL_LIST_LABELS = ("gmail", "gmail_list_labels", False)
     GMAIL_REPLY_TO_THREAD = ("gmail", "gmail_reply_to_thread", False)
     GMAIL_SEND_EMAIL = ("gmail", "gmail_send_email", False)
-    GOOGLECALENDAR_CREATE_GOOGLE_EVENT = (
+    GOOGLECALENDAR_CREATE_EVENT = (
         "googlecalendar",
-        "googlecalendar_create_google_event",
+        "googlecalendar_create_event",
         False,
     )
-    GOOGLECALENDAR_DELETE_GOOGLE_EVENT = (
+    GOOGLECALENDAR_DELETE_EVENT = (
         "googlecalendar",
-        "googlecalendar_delete_google_event",
+        "googlecalendar_delete_event",
         False,
     )
-    GOOGLECALENDAR_DUPLICATE_GOOGLE_CALENDAR = (
+    GOOGLECALENDAR_DUPLICATE_CALENDAR = (
         "googlecalendar",
-        "googlecalendar_duplicate_google_calendar",
+        "googlecalendar_duplicate_calendar",
         False,
     )
     GOOGLECALENDAR_FIND_EVENT = ("googlecalendar", "googlecalendar_find_event", False)
@@ -7247,29 +7255,25 @@ class Action(tuple, Enum):
         "googlecalendar_get_current_date_time",
         False,
     )
-    GOOGLECALENDAR_LIST_GOOGLE_CALENDARS = (
+    GOOGLECALENDAR_LIST_CALENDARS = (
         "googlecalendar",
-        "googlecalendar_list_google_calendars",
+        "googlecalendar_list_calendars",
         False,
     )
-    GOOGLECALENDAR_PATCH_GOOGLE_CALENDAR = (
+    GOOGLECALENDAR_PATCH_CALENDAR = (
         "googlecalendar",
-        "googlecalendar_patch_google_calendar",
+        "googlecalendar_patch_calendar",
         False,
     )
-    GOOGLECALENDAR_QUICK_ADD_GOOGLE_CALENDAR = (
-        "googlecalendar",
-        "googlecalendar_quick_add_google_calendar",
-        False,
-    )
+    GOOGLECALENDAR_QUICK_ADD = ("googlecalendar", "googlecalendar_quick_add", False)
     GOOGLECALENDAR_REMOVE_ATTENDEE = (
         "googlecalendar",
         "googlecalendar_remove_attendee",
         False,
     )
-    GOOGLECALENDAR_UPDATE_GOOGLE_EVENT = (
+    GOOGLECALENDAR_UPDATE_EVENT = (
         "googlecalendar",
-        "googlecalendar_update_google_event",
+        "googlecalendar_update_event",
         False,
     )
     GOOGLEDOCS_CREATE_DOCUMENT = ("googledocs", "googledocs_create_document", False)
@@ -13830,12 +13834,6 @@ class Action(tuple, Enum):
         True,
         True,
     )
-    CMDMANAGERTOOL_GITREPOTREE = (
-        "cmdmanagertool",
-        "cmdmanagertool_gitrepotree",
-        True,
-        True,
-    )
     CMDMANAGERTOOL_EDITFILE = ("cmdmanagertool", "cmdmanagertool_editfile", True, True)
     CMDMANAGERTOOL_RUNCOMMANDONWORKSPACE = (
         "cmdmanagertool",
@@ -13855,6 +13853,7 @@ class Action(tuple, Enum):
         True,
         True,
     )
+<<<<<<< HEAD
     CMDMANAGERTOOL_BLACKLINTER = (
         "cmdmanagertool",
         "cmdmanagertool_blacklinter",
@@ -13888,6 +13887,17 @@ class Action(tuple, Enum):
     CMDMANAGERTOOL_AUTOPEP8LINTER = (
         "cmdmanagertool",
         "cmdmanagertool_autopep8linter",
+=======
+    CMDMANAGERTOOL_GITREPOTREE = (
+        "cmdmanagertool",
+        "cmdmanagertool_gitrepotree",
+        True,
+        True,
+    )
+    CMDMANAGERTOOL_GETPATCHCMD = (
+        "cmdmanagertool",
+        "cmdmanagertool_getpatchcmd",
+>>>>>>> master
         True,
         True,
     )
@@ -13940,6 +13950,8 @@ class Trigger(tuple, Enum):
     GITHUB_ISSUE_ADDED_EVENT = ("github", "github_issue_added_event")
     GITHUB_LABEL_ADDED_EVENT = ("github", "github_label_added_event")
     GITHUB_PULL_REQUEST_EVENT = ("github", "github_pull_request_event")
+    GITHUB_STAR_ADDED_EVENT = ("github", "github_star_added_event")
+    GMAIL_NEW_GMAIL_MESSAGE = ("gmail", "gmail_new_gmail_message")
     GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES = (
         "googledrive",
         "googledrive_google_drive_changes",

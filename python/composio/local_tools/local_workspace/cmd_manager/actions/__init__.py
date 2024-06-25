@@ -1,6 +1,7 @@
 from .clone_github import GithubCloneCmd
 from .cmds import CreateFileCmd, GoToLineNumInOpenFile, OpenFile
 from .edit_cmd import ApplyMultipleEditsInFile, EditFile
+from .get_patch import GetPatchCmd
 from .git_tree import GitRepoTree
 from .linter import (
     AutoflakeLinter,

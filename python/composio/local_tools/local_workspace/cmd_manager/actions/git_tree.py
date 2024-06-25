@@ -42,9 +42,7 @@ class GitRepoTree(BaseAction):
         )
         # output is saved in a file in the command, and then is supposed to be read by agent
         output, return_code = process_output(output, return_code)
-        if not return_code:
-            output = "git repo tree is saved in file: git_repo_tree.txt"
         return BaseResponse(
-            output=output,
+            output="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
             return_code=return_code,
         )

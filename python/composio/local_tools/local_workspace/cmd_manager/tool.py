@@ -10,6 +10,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     FindFileCmd,
     Flake8Linter,
     GetCurrentDirCmd,
+    GetPatchCmd,
     GitRepoTree,
     GithubCloneCmd,
     GoToLineNumInOpenFile,
@@ -55,6 +56,7 @@ class CmdManagerTool(Tool):
             BlackLinter,
             AutoflakeLinter,
             Autopep8Linter,
+            GetPatchCmd,
         ]
 
     def triggers(self) -> list:
