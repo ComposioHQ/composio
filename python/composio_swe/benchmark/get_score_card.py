@@ -40,12 +40,12 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
         eval_refs[k] = {
             KEY_INSTANCE_ID: v[KEY_INSTANCE_ID],
             "FAIL_TO_PASS": json.loads(v["FAIL_TO_PASS"]),
-            "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"])
+            "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"]),
         }
     eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
     with open(eval_refs_json_path, "w") as f:
         for key in eval_refs:
-            f.write(json.dumps( eval_refs[key]))
+            f.write(json.dumps(eval_refs[key]))
             f.write("\n")
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
     # Get predictions, define log_dir

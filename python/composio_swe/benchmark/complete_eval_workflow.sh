@@ -2,6 +2,11 @@
 
 set -ex
 
+# Capture the directory where the script is located
+script_dir=$(dirname "$0")
+current_dir=$(pwd)
+
+
 # Function to display usage instructions
 show_usage() {
     echo "Usage: $0 <prediction_path_dir> <dataset_path_or_name>"
@@ -23,34 +28,40 @@ log_dir_path="$prediction_path_dir/logs"
 
 # Generate related files
 setup_test_bed() {
+    cd "$script_dir"
     python ./setup_test_bed.py --prediction_path_dir "$prediction_path_dir" --dataset_path_or_name "$dataset_path_or_name"
+    cd "$current_dir"
 }
 
 
 run_evaluation() {
+    cd "$script_dir"
     echo "still brewing"
-#    # Save current directory and change to home directory
-#    pushd ~
-#   # Check if the SWE-bench-docker directory already exists
-#    if [ -d "SWE-bench-docker" ]; then
-#        echo "SWE-bench-docker already exists, pulling latest changes."
-#        cd ~/SWE-bench-docker
-#        git pull
-#    else
-#        # Clone the SWE-bench-docker repository
-#        git clone https://github.com/aorwall/SWE-bench-docker.git
-#        # Navigate into the cloned directory
-#        cd ~/SWE-bench-docker
-#    fi
-#
-#    mkdir -p "$log_dir_path"
-#    # Run the evaluation
-#    python run_evaluation.py --predictions_path "$predictions_json_path" --log_dir "$log_dir_path" --swe_bench_tasks "$dataset_on_disk_path" --namespace aorwall
-#    #popd
+    # Save current directory and change to home directory
+    pushd ~
+   # Check if the SWE-bench-docker directory already exists
+    if [ -d "SWE-bench-docker" ]; then
+        echo "SWE-bench-docker already exists, pulling latest changes."
+        cd ~/SWE-bench-docker
+        git pull
+    else
+        # Clone the SWE-bench-docker repository
+        git clone https://github.com/aorwall/SWE-bench-docker.git
+        # Navigate into the cloned directory
+        cd ~/SWE-bench-docker
+    fi
+
+    mkdir -p "$log_dir_path"
+    # Run the evaluation
+    python run_evaluation.py --predictions_path "$predictions_json_path" --log_dir "$log_dir_path" --swe_bench_tasks "$dataset_on_disk_path" --namespace aorwall --skip_existing
+    popd
+    cd "$current_dir"
 }
 
 generate_score_card() {
+    cd "$script_dir"
     python ./get_score_card.py --log_dir "$log_dir_path" --prediction_path_dir "$prediction_path_dir" --swe_bench_path "$dataset_on_disk_path"
+    cd "$current_dir"
 }
 
 main() {

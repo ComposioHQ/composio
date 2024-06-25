@@ -16,9 +16,7 @@ from python.composio_swe.benchmark.constants import (
 
 
 def download_and_store_dataset(dataset_path_or_name, path_on_disk):
-    test_dataset = load_dataset(
-        dataset_path_or_name, split=f"test{TEST_SPLIT}"
-    )
+    test_dataset = load_dataset(dataset_path_or_name, split=f"test{TEST_SPLIT}")
     test_dataset.save_to_disk(path_on_disk)
     # Assuming the dataset is a single dataset, not a dataset dictionary
     # with open(output_file, "w") as file:
@@ -65,12 +63,12 @@ def log_file(f_name):
     return False
 
 
-def main(
-    predictions_dir, dataset_path_or_name
-):
+def main(predictions_dir, dataset_path_or_name):
     all_patches = []
     pred_total, pred_will_eval = 0, 0
-    download_and_store_dataset(dataset_path_or_name, str(Path(predictions_dir) / Path("dataset")))
+    download_and_store_dataset(
+        dataset_path_or_name, str(Path(predictions_dir) / Path("dataset"))
+    )
     pred_path_orig = predictions_dir / Path(PATH_PATCHES_JSON)
 
     # Iterate over each file in the directory
@@ -124,7 +122,12 @@ if __name__ == "__main__":
         required=True,
         help="Path to the directory where predictions are stored.",
     )
-    parser.add_argument("--dataset_path_or_name", type=str, default="princeton-nlp/SWE-bench_Lite", help="give local path or dataset or name of dataset")
+    parser.add_argument(
+        "--dataset_path_or_name",
+        type=str,
+        default="princeton-nlp/SWE-bench_Lite",
+        help="give local path or dataset or name of dataset",
+    )
     args = parser.parse_args()
 
     script_path = Path(__file__)
