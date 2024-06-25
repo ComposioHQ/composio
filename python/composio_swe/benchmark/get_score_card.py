@@ -20,6 +20,7 @@ MODEL_GPT4 = "gpt-4-1106"
 PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
 PATH_PATCHES_JSON = "patches.json"
 PATH_TESTBED = "testbed/"
+EVAL_REFS_JSON_PATH = "eval_refs.jsonl"
 
 
 def format_report(report):
@@ -37,8 +38,15 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
         eval_refs[k] = {
-            key: v[key] for key in [KEY_INSTANCE_ID, "FAIL_TO_PASS", "PASS_TO_PASS"]
+            KEY_INSTANCE_ID: v[KEY_INSTANCE_ID],
+            "FAIL_TO_PASS": json.loads(v["FAIL_TO_PASS"]),
+            "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"])
         }
+    eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
+    with open(eval_refs_json_path, "w") as f:
+        for key in eval_refs:
+            f.write(json.dumps( eval_refs[key]))
+            f.write("\n")
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
     # Get predictions, define log_dir
     # Iterate over each file in the directory
@@ -77,7 +85,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
                 scorecard["statuses"].append("install_fail")
         # Get resolution status
         report = get_eval_report(eval_sm, eval_refs[p[KEY_INSTANCE_ID]])
-        report = format_report(report)
+        # report = format_report(report)
         scorecard["test_results"] = {
             "failure": {
                 "FAIL_TO_PASS": report["FAIL_TO_PASS"]["failure"],
@@ -117,7 +125,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
     # Get results and write to file
     print("Reference Report:")
     report = get_model_report(
-        str(predictions_dir), str(predictions_path), str(swe_bench_path), str(log_dir)
+        MODEL_GPT4, str(predictions_path), str(eval_refs_json_path), str(log_dir)
     )
     for k, v in report.items():
         print(f"- {k}: {len(v)}")
