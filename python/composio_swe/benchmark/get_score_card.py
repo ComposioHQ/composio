@@ -20,6 +20,7 @@ MODEL_GPT4 = "gpt-4-1106"
 PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
 PATH_PATCHES_JSON = "patches.json"
 PATH_TESTBED = "testbed/"
+EVAL_REFS_JSON_PATH = "eval_refs.jsonl"
 
 
 def format_report(report):
@@ -41,6 +42,11 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
             "FAIL_TO_PASS": json.loads(v["FAIL_TO_PASS"]),
             "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"])
         }
+    eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
+    with open(eval_refs_json_path, "w") as f:
+        for key in eval_refs:
+            f.write(json.dumps( eval_refs[key]))
+            f.write("\n")
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
     # Get predictions, define log_dir
     # Iterate over each file in the directory
@@ -119,7 +125,7 @@ def main(predictions_dir, log_dir, swe_bench_path, model):
     # Get results and write to file
     print("Reference Report:")
     report = get_model_report(
-        str(predictions_dir), str(predictions_path), str(swe_bench_path), str(log_dir)
+        MODEL_GPT4, str(predictions_path), str(eval_refs_json_path), str(log_dir)
     )
     for k, v in report.items():
         print(f"- {k}: {len(v)}")

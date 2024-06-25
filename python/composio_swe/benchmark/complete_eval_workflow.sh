@@ -28,6 +28,7 @@ setup_test_bed() {
 
 
 run_evaluation() {
+    echo "still brewing"
     # Save current directory and change to home directory
     #pushd ~
     ## Clone the SWE-bench-docker repository
