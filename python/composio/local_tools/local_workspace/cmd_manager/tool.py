@@ -6,6 +6,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     EditFile,
     FindFileCmd,
     GetCurrentDirCmd,
+    GetPatchCmd,
     GitRepoTree,
     GithubCloneCmd,
     GoToLineNumInOpenFile,
@@ -43,6 +44,7 @@ class CmdManagerTool(Tool):
             GetCurrentDirCmd,
             GithubCloneCmd,
             GitRepoTree,
+            GetPatchCmd,
         ]
 
     def triggers(self) -> list:
