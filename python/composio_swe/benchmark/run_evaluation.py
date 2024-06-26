@@ -168,7 +168,9 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     )
     if workspace_id:
         return workspace_id
-    return build_image_and_container(composio_client, repo, repo_to_workspace_map, base_commit)
+    return build_image_and_container(
+        composio_client, repo, repo_to_workspace_map, base_commit
+    )
 
 
 def run():
