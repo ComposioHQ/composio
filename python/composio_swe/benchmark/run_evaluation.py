@@ -1,3 +1,4 @@
+# pylint: disable=logging-fstring-interpolation
 import datetime
 import logging
 
@@ -47,7 +48,7 @@ def filter_from_repo_name(curr_dataset, repo_name):
 
 
 def get_issues_dataset():
-    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[1:50]")
+    test_dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split="test[210:300]")
     return test_dataset
 
 
@@ -55,14 +56,86 @@ def build_issue_description(hints, problem_statement):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
     tmpl = ""
-    tmpl += f"""Here is the issue, that you have to solve all on your own:
-{problem_statement}
-"""
+    tmpl += f"""Here is the issue, that you have to solve all on your own:\n{problem_statement}"""
     if hints:
-        tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: 
-{hints}"""
+        tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
     return tmpl
+
+
+def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
+    composio_client = Composio()
+    try:
+        if repo in repo_to_workspace_map:
+            print("Resetting repository to base commit")
+            workspace_id = repo_to_workspace_map[repo]
+            composio_client.actions.execute(
+                action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+                params={
+                    "workspace_id": workspace_id,
+                    "repo_name": repo,
+                    "just_reset": True,
+                    "commit_id": base_commit,
+                },
+            )
+        elif repo in repo_to_image_id_map:
+            print("Using saved image")
+            start_time = datetime.datetime.now()
+            workspace_create_resp = CreateWorkspaceResponse.model_validate(
+                composio_client.actions.execute(
+                    action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
+                    params={"image_name": repo_to_image_id_map[repo]},
+                )
+            )
+            workspace_id = workspace_create_resp.workspace_id
+            workspace_creation_time = datetime.datetime.now() - start_time
+            print(
+                "workspace is created, workspace-id is: %s, creation time: %s",
+                workspace_id,
+                workspace_creation_time,
+            )
+            print("Resetting repository to base commit")
+            composio_client.actions.execute(
+                action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+                params={
+                    "workspace_id": workspace_id,
+                    "repo_name": repo,
+                    "just_reset": True,
+                    "commit_id": base_commit,
+                },
+            )
+        else:
+            raise Exception("Repository not found in workspace or image maps")
+    except Exception as e:
+        # TODO: remove this fallback logic from exception.
+        print(f"Error occurred: {e}. Falling back to creating new workspace.")
+        start_time = datetime.datetime.now()
+        workspace_create_resp = CreateWorkspaceResponse.model_validate(
+            composio_client.actions.execute(
+                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
+            )
+        )
+        workspace_id = workspace_create_resp.workspace_id
+        workspace_creation_time = datetime.datetime.now() - start_time
+        print(
+            "workspace is created, workspace-id is: %s, creation time: %s",
+            workspace_id,
+            workspace_creation_time,
+        )
+
+        start_time = datetime.datetime.now()
+        composio_client.actions.execute(
+            action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+            params={
+                "workspace_id": workspace_id,
+                "repo_name": repo,
+                "commit_id": base_commit,
+            },
+        )
+        git_clone_time = datetime.datetime.now() - start_time
+        print("git clone completed, time taken: %s", git_clone_time)
+        repo_to_workspace_map[repo] = workspace_id
+    return workspace_id
 
 
 def run():
@@ -72,51 +145,19 @@ def run():
 
     issues = get_issues_dataset()
 
-    composio_client = Composio()
     repo_to_workspace_map = {}
+    repo_to_image_id_map = {}
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]
             print(f"Processing {count}th issue with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
-            print(f"Issue description: {issue['hints_text']}")
-            if repo not in repo_to_workspace_map:
-                start_time = datetime.datetime.now()
-                workspace_create_resp = CreateWorkspaceResponse.model_validate(
-                    composio_client.actions.execute(
-                        action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
-                    )
-                )
-                workspace_id = workspace_create_resp.workspace_id
-                workspace_creation_time = datetime.datetime.now() - start_time
-                print(
-                    "workspace is created, workspace-id is: %s, creation time: %s",
-                    workspace_id,
-                    workspace_creation_time,
-                )
+            print(f"Issue id: {issue['instance_id']}")
+            print(f"Issue description: {issue['problem_statement']}")
 
-                start_time = datetime.datetime.now()
-                composio_client.actions.execute(
-                    action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
-                    params={
-                        "workspace_id": workspace_id,
-                        "repo_name": repo,
-                    },
-                )
-                git_clone_time = datetime.datetime.now() - start_time
-                print("git clone completed, time taken: %s", git_clone_time)
-                repo_to_workspace_map[repo] = workspace_id
-            else:
-                print("Resetting repository to base commit")
-                workspace_id = repo_to_workspace_map[repo]
-                composio_client.actions.execute(
-                    action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
-                    params={
-                        "workspace_id": workspace_id,
-                        "repo_name": repo,
-                        "just_reset": True,
-                    },
-                )
+            workspace_id = setup_workspace(
+                repo, repo_to_workspace_map, repo_to_image_id_map, issue["base_commit"]
+            )
 
             issue_description = build_issue_description(
                 issue["hints_text"], issue["problem_statement"]
@@ -153,12 +194,11 @@ def run():
 
             args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)
             coder = CoderAgent(args)
-            coder.run(
-                issue_config=ctx.issue_config, workspace_id=repo_to_workspace_map[repo]
-            )
+            coder.run(issue_config=ctx.issue_config, workspace_id=workspace_id)
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
 
 
 if __name__ == "__main__":
+    print("Starting evaluation")
     run()
