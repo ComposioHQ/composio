@@ -1,6 +1,7 @@
 # pylint: disable=logging-fstring-interpolation
 import datetime
 import logging
+import traceback
 from dotenv import load_dotenv
 
 from datasets import load_dataset
@@ -13,6 +14,7 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 from python.composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
 from python.composio_swe.composio_swe.config.constants import KEY_API_KEY
 from python.composio_swe.composio_swe.config.context import Context, set_context
+from python.composio_swe.composio_swe.agent.utils import get_llm
 
 
 # get logger
@@ -114,7 +116,7 @@ def create_workspace_from_image(composio_client, repo, repo_to_image_id_map, bas
     return workspace_id
 
 
-def build_image_and_container(composio_client, repo, repo_to_workspace_map, base_commit):
+def build_image_and_container(composio_client, repo, repo_to_image_id_map, repo_to_workspace_map, base_commit):
     logger.info(f"Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
     workspace_create_resp = CreateWorkspaceResponse.model_validate(
@@ -155,7 +157,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     if workspace_id:
         return repo_to_workspace_map, repo_to_image_id_map
 
-    build_image_and_container(composio_client, repo, repo_to_image_id_map, base_commit)
+    build_image_and_container(composio_client, repo, repo_to_image_id_map, repo_to_workspace_map, base_commit)
     return repo_to_workspace_map, repo_to_image_id_map
 
 
@@ -175,7 +177,6 @@ def run():
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
             print(f"Issue description: {issue['problem_statement']}")
-
             repo_to_workspace_map, repo_to_image_id_map = setup_workspace(
                 repo, repo_to_workspace_map, repo_to_image_id_map, issue["base_commit"]
             )
