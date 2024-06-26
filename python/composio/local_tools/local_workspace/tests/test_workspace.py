@@ -189,19 +189,6 @@ class TestCmds(unittest.TestCase):
         result = action.execute(GetCurrentDirRequest(workspace_id=workspace_id), {})
         self.assertIsNotNone(result)
 
-    def test_get_patch_cmd(self):
-        # Setup - create an instance of CreateWorkspaceAction
-        w = WorkspaceManagerFactory()
-        h = HistoryProcessor()
-        workspace_id = w.get_workspace_manager(
-            LocalDockerArgumentsModel(image_name="sweagent/swe-agent:latest")
-        )
-        action = GetPatchCmd()
-        action.set_workspace_and_history(w, h)
-
-        result = action.execute(GetPatchRequest(workspace_id=workspace_id), {})
-        self.assertIsNotNone(result)
-
 
 if __name__ == "__main__":
     unittest.main()

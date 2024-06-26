@@ -71,7 +71,7 @@ def get_workspace_from_repo_map(
 ):
     workspace_id = repo_to_workspace_map.get(repo)
     if not workspace_id or not workspace_id.strip():
-        return
+        return None
     print("Resetting repository to base commit")
     workspace_id = repo_to_workspace_map[repo]
     composio_client.actions.execute(
