@@ -170,7 +170,6 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     )
     if workspace_id:
         return repo_to_workspace_map, repo_to_image_id_map
-
     build_image_and_container(composio_client, repo, repo_to_workspace_map, base_commit)
     return repo_to_workspace_map, repo_to_image_id_map
 
@@ -230,14 +229,11 @@ def run():
 
             args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)
             coder = CoderAgent(args)
-            coder.run(
-                issue_config=ctx.issue_config, workspace_id=repo_to_workspace_map[repo]
-            )
+            coder.run(issue_config=ctx.issue_config, workspace_id=workspace_id)
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
 
 
 if __name__ == "__main__":
     print("Starting evaluation")
-    load_dotenv("./.env1")
     run()
