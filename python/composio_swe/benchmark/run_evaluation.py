@@ -1,8 +1,6 @@
 # pylint: disable=logging-fstring-interpolation
 import datetime
 import logging
-import traceback
-from dotenv import load_dotenv
 
 from datasets import load_dataset
 from rich.logging import RichHandler
