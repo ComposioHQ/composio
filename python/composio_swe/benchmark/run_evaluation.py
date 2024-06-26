@@ -162,14 +162,13 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
         composio_client, repo, repo_to_workspace_map, base_commit
     )
     if workspace_id:
-        return repo_to_workspace_map, repo_to_image_id_map
+        return workspace_id
     workspace_id = create_workspace_from_image(
         composio_client, repo, repo_to_image_id_map, base_commit
     )
     if workspace_id:
-        return repo_to_workspace_map, repo_to_image_id_map
-    build_image_and_container(composio_client, repo, repo_to_workspace_map, base_commit)
-    return repo_to_workspace_map, repo_to_image_id_map
+        return workspace_id
+    return build_image_and_container(composio_client, repo, repo_to_workspace_map, base_commit)
 
 
 def run():
@@ -188,7 +187,7 @@ def run():
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
             print(f"Issue description: {issue['problem_statement']}")
-            repo_to_workspace_map, repo_to_image_id_map = setup_workspace(
+            workspace_id = setup_workspace(
                 repo, repo_to_workspace_map, repo_to_image_id_map, issue["base_commit"]
             )
 
