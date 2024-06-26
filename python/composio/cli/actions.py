@@ -44,6 +44,13 @@ class ActionsExamples(HelpfulCmdBase, DYMGroup):
     help="Filter by app name",
 )
 @click.option(
+    "--tag",
+    "tags",
+    type=str,
+    multiple=True,
+    help="Filter by given tag",
+)
+@click.option(
     "--use-case",
     "use_case",
     type=str,
@@ -73,6 +80,7 @@ class ActionsExamples(HelpfulCmdBase, DYMGroup):
 def _actions(
     context: Context,
     apps: t.Sequence[str],
+    tags: t.Sequence[str],
     use_case: t.Optional[str] = None,
     limit: int = 10,
     enabled: bool = False,
@@ -98,8 +106,15 @@ def _actions(
 
         enum_strs = []
         for action in actions:
+            if len(tags) > 0 and all(tag not in action.tags for tag in tags):
+                continue
             enum_strs.append(f"Action.{_get_enum_key(name=action.name)}")
             context.console.print(f"• {action.name} ({enum_strs[-1]})")
+
+        if len(tags) > 0 and len(enum_strs) == 0:
+            raise click.ClickException(
+                f"Could not find actions with following tags {set(tags)}"
+            )
 
         if copy_enums or (
             click.prompt(
