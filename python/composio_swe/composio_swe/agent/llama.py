@@ -1,11 +1,10 @@
+import typing as t
 from itertools import chain
 
 from composio_llamaindex import Action, App, ComposioToolSet
 from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.tools import BaseTool
-from llama_index.core.llms import ChatMessage
-from llama_index.core.llms import MessageRole
-import typing as t
 
 from python.composio_swe.composio_swe.config.config_store import IssueConfig
 

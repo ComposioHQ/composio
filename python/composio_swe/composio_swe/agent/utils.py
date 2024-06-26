@@ -4,10 +4,10 @@ import typing as t
 
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from rich.logging import RichHandler
 from llama_index.core.llms.function_calling import FunctionCallingLLM
-from llama_index.llms.openai import OpenAI
 from llama_index.llms.anthropic import Anthropic
+from llama_index.llms.openai import OpenAI
+from rich.logging import RichHandler
 
 
 def setup_logger():
