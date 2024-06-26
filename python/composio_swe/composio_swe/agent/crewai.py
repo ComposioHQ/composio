@@ -8,13 +8,12 @@ from python.composio_swe.composio_swe.config.config_store import IssueConfig
 
 from .base_swe_agent import BaseSWEAgent, SWEArgs
 from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
-from .utils import get_llm, logger
+from .utils import get_langchain_llm, logger
 
 
 class CrewaiAgent(BaseSWEAgent):
     def __init__(self, args: SWEArgs):
         super().__init__(args)
-
         # initialize composio toolset
         local_workspace_tool_set = ComposioToolSet().get_actions(
             actions=[Action.LOCALWORKSPACE_WORKSPACESTATUSACTION]
@@ -55,7 +54,7 @@ class CrewaiAgent(BaseSWEAgent):
             logger.info("type is not list: %s", type(step_output))
 
     def solve_issue(self, workspace_id: str, issue_config: IssueConfig):
-        llm = get_llm()
+        llm = get_langchain_llm()
         repo_name = issue_config.repo_name
         if not repo_name:
             raise ValueError("no repo-name configuration is found")
