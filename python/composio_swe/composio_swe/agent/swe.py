@@ -5,9 +5,9 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, List
 
-import langchain_core
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Task
+from langchain_core.agents import AgentAction, AgentFinish
 from pydantic import BaseModel, Field
 
 from composio import Composio
@@ -70,8 +70,10 @@ class CoderAgent(BaseSWEAgent):
 
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
-        self.agent_goal = ("Help fix the given issue / bug in the code. And make sure you get it working. "
-                           "Ask the reviewer agent to review the patch and submit it once they approve it.")
+        self.agent_goal = (
+            "Help fix the given issue / bug in the code. And make sure you get it working. "
+            "Ask the reviewer agent to review the patch and submit it once they approve it."
+        )
         self.expected_output = "A patch should be generated which fixes the given issue"
         self.agent_backstory_tmpl = args.agent_backstory_tmpl
         self.reviewer_backstory_tmpl = args.reviewer_backstory_tmpl
@@ -91,7 +93,7 @@ class CoderAgent(BaseSWEAgent):
             f.write(json.dumps(self.agent_logs))
 
     def add_in_logs(self, step_output):
-        if isinstance(step_output, langchain_core.agents.AgentFinish):
+        if isinstance(step_output, AgentFinish):
             self.current_logs.append(
                 {
                     "agent_action": "agent_finish",
@@ -100,9 +102,7 @@ class CoderAgent(BaseSWEAgent):
             )
         if isinstance(step_output, list) and step_output:
             agent_action_with_tool_out = step_output[0]
-            if isinstance(
-                agent_action_with_tool_out[0], langchain_core.agents.AgentAction
-            ):
+            if isinstance(agent_action_with_tool_out[0], AgentAction):
                 agent_action = agent_action_with_tool_out[0]
                 tool_out = (
                     agent_action_with_tool_out[1]

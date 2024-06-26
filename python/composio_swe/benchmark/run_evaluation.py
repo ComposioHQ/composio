@@ -14,7 +14,6 @@ from composio.local_tools.local_workspace.workspace.actions.create_workspace imp
 from python.composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
 from python.composio_swe.composio_swe.config.constants import KEY_API_KEY
 from python.composio_swe.composio_swe.config.context import Context, set_context
-from python.composio_swe.composio_swe.agent.utils import get_llm
 
 
 # get logger
@@ -66,7 +65,9 @@ def build_issue_description(hints, problem_statement):
     return tmpl
 
 
-def get_workspace_from_repo_map(composio_client, repo, repo_to_workspace_map, base_commit):
+def get_workspace_from_repo_map(
+    composio_client, repo, repo_to_workspace_map, base_commit
+):
     workspace_id = repo_to_workspace_map.get(repo)
     if not workspace_id or not workspace_id.strip():
         return
@@ -84,7 +85,9 @@ def get_workspace_from_repo_map(composio_client, repo, repo_to_workspace_map, ba
     return workspace_id
 
 
-def create_workspace_from_image(composio_client, repo, repo_to_image_id_map, base_commit):
+def create_workspace_from_image(
+    composio_client, repo, repo_to_image_id_map, base_commit
+):
     if not repo_to_image_id_map.get(repo):
         logger.info("repo: %s not found in repo-to-image-map", repo)
         return ""
@@ -116,12 +119,16 @@ def create_workspace_from_image(composio_client, repo, repo_to_image_id_map, bas
     return workspace_id
 
 
-def build_image_and_container(composio_client, repo, repo_to_image_id_map, repo_to_workspace_map, base_commit):
-    logger.info(f"Falling back to creating new workspace.")
+def build_image_and_container(
+    composio_client, repo, repo_to_workspace_map, base_commit
+):
+    logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
     workspace_create_resp = CreateWorkspaceResponse.model_validate(
         composio_client.actions.execute(
-            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}, entity_id="123",
+            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
+            params={},
+            entity_id="123",
         )
     )
     workspace_id = workspace_create_resp.workspace_id
@@ -150,14 +157,18 @@ def build_image_and_container(composio_client, repo, repo_to_image_id_map, repo_
 
 def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
     composio_client = Composio()
-    workspace_id = get_workspace_from_repo_map(composio_client, repo, repo_to_workspace_map, base_commit)
+    workspace_id = get_workspace_from_repo_map(
+        composio_client, repo, repo_to_workspace_map, base_commit
+    )
     if workspace_id:
         return repo_to_workspace_map, repo_to_image_id_map
-    workspace_id = create_workspace_from_image(composio_client, repo, repo_to_image_id_map, base_commit)
+    workspace_id = create_workspace_from_image(
+        composio_client, repo, repo_to_image_id_map, base_commit
+    )
     if workspace_id:
         return repo_to_workspace_map, repo_to_image_id_map
 
-    build_image_and_container(composio_client, repo, repo_to_image_id_map, repo_to_workspace_map, base_commit)
+    build_image_and_container(composio_client, repo, repo_to_workspace_map, base_commit)
     return repo_to_workspace_map, repo_to_image_id_map
 
 
