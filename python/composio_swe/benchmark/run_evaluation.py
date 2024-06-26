@@ -9,7 +9,7 @@ from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from python.composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
+from composio_swe.composio_swe.agent.crewai import CrewaiAgent, SWEArgs
 from python.composio_swe.composio_swe.config.constants import KEY_API_KEY
 from python.composio_swe.composio_swe.config.context import Context, set_context
 
@@ -226,9 +226,11 @@ def run():
             ctx.model_env = model_env_config
             set_context(ctx)
 
-            args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)
-            coder = CoderAgent(args)
-            coder.run(issue_config=ctx.issue_config, workspace_id=workspace_id)
+            args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
+            coder = CrewaiAgent(args)
+            coder.setup_and_solve(
+                issue_config=ctx.issue_config, workspace_id=workspace_id
+            )
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
 

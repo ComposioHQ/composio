@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import click
 import git
 
-from composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
+from composio_swe.composio_swe.agent.crewai import CrewaiAgent, SWEArgs
 from composio_swe.composio_swe.config.config_store import IssueConfig
 from composio_swe.composio_swe.config.constants import (
     KEY_API_KEY,
@@ -113,9 +113,9 @@ def solve(ctx: Context):
     click.echo(
         f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
     )
-    args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)
-    coder_agent = CoderAgent(args)
-    coder_agent.run(issue_config=issue_config)
+    args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
+    coder_agent = CrewaiAgent(args)
+    coder_agent.setup_and_solve(issue_config=issue_config)
     click.echo("Issue solving process started.")
 
 
