@@ -194,7 +194,7 @@ def run():
 
             args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
             coder = CrewaiAgent(args)
-            coder.setup_solve_and_get_patch(
+            coder.setup_and_solve(
                 issue_config=ctx.issue_config, workspace_id=workspace_id
             )
         except Exception as e:

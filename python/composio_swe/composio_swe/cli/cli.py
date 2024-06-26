@@ -115,7 +115,7 @@ def solve(ctx: Context):
     )
     args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
     coder_agent = CrewaiAgent(args)
-    coder_agent.setup_solve_and_get_patch(issue_config=issue_config)
+    coder_agent.setup_and_solve(issue_config=issue_config)
     click.echo("Issue solving process started.")
 
 

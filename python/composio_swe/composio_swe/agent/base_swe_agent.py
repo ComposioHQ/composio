@@ -70,7 +70,7 @@ class BaseSWEAgent(ABC):
         with open(self.task_output_logs, "w", encoding="utf-8") as f:
             f.write(json.dumps(self.agent_logs))
 
-    def setup_solve_and_get_patch(
+    def setup_and_solve(
         self, issue_config: IssueConfig, workspace_id: t.Optional[str] = None
     ) -> str:
         if workspace_id is None:
