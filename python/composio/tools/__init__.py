@@ -106,9 +106,7 @@ class ComposioToolSet:
             action = Action(action)
 
         if action.is_local:
-            return self._local_client.execute_local_action(
-                action=action, request_data=params
-            )
+            return self._local_client.execute_action(action=action, request_data=params)
 
         output = self.client.get_entity(
             id=entity_id,
@@ -183,7 +181,7 @@ class ComposioToolSet:
 
         items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
-            local_items = self._local_client.get_list_of_action_schemas(
+            local_items = self._local_client.get_action_schemas(
                 apps=local_apps,
                 actions=local_actions,
                 tags=tags,

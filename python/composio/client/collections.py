@@ -855,7 +855,7 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            local_items = self.local_handler.get_list_of_action_schemas(
+            local_items = self.local_handler.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             return [self.model(**item) for item in local_items]
@@ -943,7 +943,7 @@ class Actions(Collection[ActionModel]):
                     items = filtered_items
 
         if len(local_apps) > 0 or len(local_actions) > 0:
-            local_items = self.local_handler.get_list_of_action_schemas(
+            local_items = self.local_handler.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             items = [self.model(**item) for item in local_items] + items
@@ -967,7 +967,7 @@ class Actions(Collection[ActionModel]):
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
-            return self.local_handler.execute_local_action(
+            return self.local_handler.execute_action(
                 action=action,
                 request_data=params,
             )
