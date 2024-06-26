@@ -1,5 +1,6 @@
-from python.composio_swe.composio_swe.agent.swe import CoderAgent, CoderAgentArgs
-from python.composio_swe.composio_swe.config.context import Context, set_context
+from composio_swe.composio_swe.agent.base_swe_agent import SWEArgs
+from composio_swe.composio_swe.agent.crewai import CrewaiAgent
+from composio_swe.composio_swe.config.context import Context, set_context
 
 
 if __name__ == "__main__":
@@ -13,7 +14,8 @@ if __name__ == "__main__":
     ctx.issue_config = issue_config  # type: ignore
     set_context(ctx)
 
-    args = CoderAgentArgs(agent_logs_dir=ctx.agent_logs_dir)  # type: ignore
-    c_agent = CoderAgent(args)
+    args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)  # type: ignore
+    c_agent = CrewaiAgent(args)
 
-    c_agent.run(ctx.issue_config)
+    patch = c_agent.setup_solve_and_get_patch(issue_config=ctx.issue_config)
+    print(patch)

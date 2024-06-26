@@ -30,8 +30,8 @@ def get_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
                 default_headers={
                     "Helicone-Auth": f"Bearer {helicone_api_key}",
                 },
-            )
-        return ChatAnthropic(model_name="claude-3-5-sonnet-20240620")
+            )  # type: ignore
+        return ChatAnthropic(model_name="claude-3-5-sonnet-20240620")  # type: ignore
     if os.environ.get("OPENAI_API_KEY"):
         if helicone_api_key:
             return ChatOpenAI(
