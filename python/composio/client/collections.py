@@ -18,7 +18,16 @@ from pysher.channel import Channel
 
 from composio.client.base import BaseClient, Collection
 from composio.client.endpoints import v1
-from composio.client.enums import Action, App, Tag, Trigger, TriggerType
+from composio.client.enums import (
+    Action,
+    ActionType,
+    App,
+    AppType,
+    Tag,
+    TagType,
+    Trigger,
+    TriggerType,
+)
 from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
@@ -812,9 +821,9 @@ class Actions(Collection[ActionModel]):
     # TODO: Overload
     def get(  # type: ignore
         self,
-        actions: t.Optional[t.Sequence[Action]] = None,
-        apps: t.Optional[t.Sequence[App]] = None,
-        tags: t.Optional[t.Sequence[t.Union[str, Tag]]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
         limit: t.Optional[int] = None,
         use_case: t.Optional[str] = None,
         allow_all: bool = False,
@@ -831,9 +840,10 @@ class Actions(Collection[ActionModel]):
                         app
         :return: List of actions
         """
-        actions = actions or []
-        apps = apps or []
-        tags = tags or []
+        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+        apps = t.cast(t.List[App], [App(app) for app in apps or []])
+        tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
+
         # Filter out local apps and actions
         local_apps = [app for app in apps if app.is_local]
         local_actions = [action for action in actions if action.is_local]
@@ -897,10 +907,14 @@ class Actions(Collection[ActionModel]):
             queries["useCase"] = use_case
 
         if len(apps) > 0:
-            queries["appNames"] = ",".join(list(map(lambda x: x.slug, apps)))
+            queries["appNames"] = ",".join(
+                list(map(lambda x: t.cast(App, x).slug, apps))
+            )
 
         if len(actions) > 0:
-            queries["appNames"] = ",".join(set(map(lambda x: x.app, actions)))
+            queries["appNames"] = ",".join(
+                set(map(lambda x: t.cast(Action, x).app, actions))
+            )
 
         if limit is not None:
             queries["limit"] = str(limit)
@@ -912,7 +926,7 @@ class Actions(Collection[ActionModel]):
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required_triggers = [action.name for action in actions]
+            required_triggers = [t.cast(Action, action).name for action in actions]
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:

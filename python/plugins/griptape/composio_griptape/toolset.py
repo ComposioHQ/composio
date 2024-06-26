@@ -5,7 +5,7 @@ from griptape.tools import BaseTool
 from griptape.utils.decorators import activity
 from schema import Literal, Schema
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
@@ -135,7 +135,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """
@@ -156,8 +156,8 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """

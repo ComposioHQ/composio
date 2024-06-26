@@ -17,7 +17,7 @@ from composio.client.collections import (
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
-from composio.client.enums import Action, App, AppType, Tag
+from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
 from composio.client.exceptions import ComposioClientError
 from composio.client.local_handler import LocalToolHandler
 from composio.constants import (
@@ -170,29 +170,31 @@ class ComposioToolSet:
 
     def get_action_schemas(
         self,
-        apps: t.Optional[t.Sequence[App]] = None,
-        actions: t.Optional[t.Sequence[Action]] = None,
-        tags: t.Optional[t.Sequence[t.Union[str, Tag]]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
     ) -> t.List[ActionModel]:
-        local_actions = (
-            [action for action in actions if action.is_local] if actions else []
-        )
-        remote_actions = (
-            [action for action in actions if not action.is_local] if actions else []
-        )
-        local_apps = [app for app in apps if app.is_local] if apps else []
-        remote_apps = [app for app in apps if not app.is_local] if apps else []
+        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+        apps = t.cast(t.List[App], [App(app) for app in apps or []])
+        local_actions = [action for action in actions if action.is_local]
+        remote_actions = [action for action in actions if not action.is_local]
+        local_apps = [app for app in apps if app.is_local]
+        remote_apps = [app for app in apps if not app.is_local]
 
         items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
             local_items = self._local_client.get_list_of_action_schemas(
-                apps=local_apps, actions=local_actions, tags=tags
+                apps=local_apps,
+                actions=local_actions,
+                tags=tags,
             )
             items = items + [ActionModel(**item) for item in local_items]
 
         if len(remote_actions) > 0 or len(remote_apps) > 0:
             remote_items = self.client.actions.get(
-                apps=remote_apps, actions=remote_actions, tags=tags
+                apps=remote_apps,
+                actions=remote_actions,
+                tags=tags,
             )
             items = items + remote_items
 

@@ -4,7 +4,7 @@ from inspect import Signature
 
 from langchain_core.tools import StructuredTool
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import (
@@ -139,7 +139,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[StructuredTool]:
         """
@@ -160,8 +160,8 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[StructuredTool]:
         """

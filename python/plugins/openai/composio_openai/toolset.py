@@ -15,7 +15,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
@@ -102,7 +102,7 @@ class ComposioToolSet(BaseComposioToolSet):
         return entity_id
 
     def get_actions(
-        self, actions: t.Sequence[Action]
+        self, actions: t.Sequence[ActionType]
     ) -> t.List[ChatCompletionToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
@@ -126,8 +126,8 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
     ) -> t.List[ChatCompletionToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.

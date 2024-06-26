@@ -5,7 +5,7 @@ from inspect import Signature
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
 from llama_index.core.tools import FunctionTool
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
@@ -127,7 +127,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[FunctionTool]:
         """
@@ -141,8 +141,8 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[FunctionTool]:
         """
