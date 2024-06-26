@@ -70,7 +70,8 @@ class CoderAgent(BaseSWEAgent):
 
         # initialize agent-related different prompts
         self.agent_role = "You are the best programmer. You think carefully and step by step take action."
-        self.agent_goal = "Help fix the given issue / bug in the code. And make sure you get it working. Ask the reviewer agent to review the patch and submit it once they approve it."
+        self.agent_goal = ("Help fix the given issue / bug in the code. And make sure you get it working. "
+                           "Ask the reviewer agent to review the patch and submit it once they approve it.")
         self.expected_output = "A patch should be generated which fixes the given issue"
         self.agent_backstory_tmpl = args.agent_backstory_tmpl
         self.reviewer_backstory_tmpl = args.reviewer_backstory_tmpl
