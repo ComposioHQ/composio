@@ -4,6 +4,8 @@ import dotenv
 from autogen import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 
+from composio.local_tools import filetool, sqltool
+
 
 llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]
