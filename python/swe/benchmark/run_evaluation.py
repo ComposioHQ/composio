@@ -2,6 +2,9 @@
 import datetime
 import logging
 
+from composio_swe.agent.crewai import CrewaiAgent, SWEArgs
+from composio_swe.config.constants import KEY_API_KEY
+from composio_swe.config.context import Context, set_context
 from datasets import load_dataset
 from rich.logging import RichHandler
 
@@ -9,9 +12,6 @@ from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from composio_swe.composio_swe.agent.crewai import CrewaiAgent, SWEArgs
-from python.composio_swe.composio_swe.config.constants import KEY_API_KEY
-from python.composio_swe.composio_swe.config.context import Context, set_context
 
 
 # get logger

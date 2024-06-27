@@ -1,13 +1,17 @@
+import traceback
 import unittest
 from typing import Any, Dict, List, Optional
 from unittest.mock import patch
 
 import click.testing
 from click.testing import CliRunner
-from composio_coders.cli import cli
-from composio_coders.context import Context
+from composio_swe.cli import cli
+from composio_swe.config.context import Context, set_context
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
+
+
+# pylint: disable=unused-argument
 
 
 class FakeListLLM(LLM):
@@ -58,8 +62,6 @@ class TestCLI(unittest.TestCase):
             exception_message = f"An exception occurred: {result.exception}\n"
             # Extract traceback details
             if result.exc_info:
-                import traceback
-
                 tb = traceback.format_exception(*result.exc_info)
                 exception_message += "".join(tb)
 
@@ -104,7 +106,6 @@ class TestCLI(unittest.TestCase):
         """Test the solve command."""
         with self.runner.isolated_filesystem():
             # Assuming 'set_context' is a method to set the context directly
-            from composio_coders.context import set_context
 
             issue_config = {
                 "repo_name": "test_repo",
@@ -129,7 +130,6 @@ class TestCLI(unittest.TestCase):
         """Test the solve command."""
         with self.runner.isolated_filesystem():
             # Assuming 'set_context' is a method to set the context directly
-            from composio_coders.context import set_context
 
             issue_config = {
                 "repo_name": "test_repo",
