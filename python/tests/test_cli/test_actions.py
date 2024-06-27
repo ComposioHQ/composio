@@ -23,6 +23,11 @@ class TestListActions(BaseCliTest):
                 ("slack_",),
                 ("strava_", "github_"),
             ),  # Filter by a specific app
+            (
+                ("--tag", "repos"),
+                ("github_",),
+                ("strava_",),
+            ),  # Filter by a specific app
         ),
     )
     @mock.patch("click.prompt", return_value="n")
@@ -42,6 +47,12 @@ class TestListActions(BaseCliTest):
 
         for output in unexptected_outputs:
             assert output not in result.stdout
+
+    def test_tag_not_found(self) -> None:
+        """Test list all actions."""
+        self.run("actions", "--tag", "repo")
+        self.assert_exit_code(code=1)
+        self.assert_stderr("Could not find actions with following tags {'repo'}")
 
     @pytest.mark.skip(reason="Limit filter is not working atm!")
     @mock.patch("click.prompt", return_value="n")

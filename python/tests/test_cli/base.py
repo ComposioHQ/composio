@@ -3,16 +3,19 @@ CLI Test helper.
 """
 
 import typing as t
+from logging import Logger
 
 from click.testing import CliRunner, Result
 
 from composio.cli import composio
+from composio.utils import logging
 
 
 class BaseCliTest:
     """Utility class for writing CLI tests."""
 
     result: Result
+    logger: Logger = logging.get(name="tests")
 
     def run(
         self,

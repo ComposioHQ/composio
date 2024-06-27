@@ -6,7 +6,7 @@ from inspect import Signature
 import autogen
 from autogen.agentchat.conversable_agent import ConversableAgent
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import get_signature_format_from_schema_params
@@ -48,10 +48,10 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def register_tools(
         self,
-        tools: t.Sequence[App],
+        tools: t.Sequence[AppType],
         caller: t.Optional[ConversableAgent] = None,
         executor: t.Optional[ConversableAgent] = None,
-        tags: t.Optional[t.Sequence[Tag]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> None:
         """
@@ -63,9 +63,6 @@ class ComposioToolSet(BaseComposioToolSet):
         :param tags: Filter by the list of given Tags.
         :param entity_id: Entity ID to use for executing function calls.
         """
-        if isinstance(tools, App):
-            tools = [tools]
-
         caller = caller or self.caller
         if caller is None:
             raise RuntimeError("Please provide `caller` agent")
@@ -89,7 +86,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def register_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         caller: t.Optional[ConversableAgent] = None,
         executor: t.Optional[ConversableAgent] = None,
         entity_id: t.Optional[str] = None,
@@ -163,10 +160,7 @@ class ComposioToolSet(BaseComposioToolSet):
         def execute_action(**kwargs: t.Any) -> t.Dict:
             """Placeholder function for executing action."""
             return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=appName,
-                    name=name,
-                ),
+                action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
