@@ -71,7 +71,6 @@ jobs:
     continue-on-error: True
     needs:
       - lock_check
-      - linter_checks
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

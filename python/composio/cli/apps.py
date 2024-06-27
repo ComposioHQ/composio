@@ -5,138 +5,20 @@ Usage:
     composio apps [command] [options]
 """
 
+import ast
+import inspect
 import typing as t
+from pathlib import Path
 
 import click
 
-from composio.cli.context import Context, pass_context
+from composio.cli.context import Context, get_context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.client.local_handler import LocalToolHandler
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
-
-
-MODULE_TEMPLATE = """\"\"\"
-Helper Enum classes.
-
-- TODO: Replace Enums with something lightweight
-\"\"\"
-
-from enum import Enum
-
-
-{tag_enum}
-
-{app_enum}
-
-{action_enum}
-
-{trigger_enum}
-"""
-
-TAG_ENUM_TEMPLATE = """class Tag(tuple, Enum):
-    \"\"\"App tags.\"\"\"
-
-    @property
-    def app(self) -> str:
-        \"\"\"Returns app name.\"\"\"
-        return self.value[0]
-
-    @property
-    def val(self) -> str:
-        \"\"\"Returns tag value.\"\"\"
-        return self.value[1]
-
-    IMPORTANT = ("default", "important")
-{tags}
-"""
-
-APP_ENUM_TEMPLATE = """class App(str, Enum):
-    \"\"\"Composio App.\"\"\"
-
-    @property
-    def is_local(self) -> bool:
-        \"\"\"If the app is local.\"\"\"
-        return self.value.lower() in [{local_tools}]
-
-    @property
-    def actions(self) -> t.Iterator["Action"]:
-        \"\"\"Iterate over actions for this app.\"\"\"
-        for action in Action:
-            if action.name.startswith(self.value):
-                yield action
-
-{apps}
-"""
-
-ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
-    \"\"\"App action.\"\"\"
-
-    @property
-    def app(self) -> str:
-        \"\"\"Name of the app where this actions belongs.\"\"\"
-        return self.value[0]
-
-    @property
-    def action(self) -> str:
-        \"\"\"Name of the action.\"\"\"
-        return self.value[1]
-
-    @property
-    def no_auth(self) -> bool:
-        \"\"\"Name of the action.\"\"\"
-        return self.value[2]
-
-    @property
-    def is_local(self) -> bool:
-        \"\"\"If the action is local.\"\"\"
-        return len(self.value) > 3 and self.value[3]
-
-
-    @classmethod
-    def from_app(cls, name: str) -> "Action":
-        \"\"\"Create Action type enum from app name.\"\"\"
-        for action in cls:
-            if name == action.app:
-                return action
-        raise ValueError(f"No action type found for name `{{name}}`")
-
-    @classmethod
-    def from_action(cls, name: str) -> "Action":
-        \"\"\"Create Action type enum from action name.\"\"\"
-        for action in cls:
-            if name == action.action:
-                return action
-        raise ValueError(f"No action type found for name `{{name}}`")
-
-    @classmethod
-    def from_app_and_action(cls, app: str, name: str) -> "Action":
-        \"\"\"From name and action params.\"\"\"
-        for action in cls:
-            if app == action.app and name == action.action:
-                return action
-        raise ValueError("No action type found for app " f"`{{app}}` and action `{{name}}`")
-
-{actions}
-"""
-
-TRIGGER_ENUM_TEMPLATE = """class Trigger(tuple, Enum):
-    \"\"\"App trigger.\"\"\"
-
-    @property
-    def app(self) -> str:
-        \"\"\"App name.\"\"\"
-        return self.value[0]
-
-    @property
-    def event(self) -> str:
-        \"\"\"Event name.\"\"\"
-        return self.value[1]
-
-{triggers}
-"""
 
 
 class AppsExamples(HelpfulCmdBase, DYMGroup):
@@ -227,84 +109,212 @@ def _update(context: Context, beta: bool = False) -> None:
             actions = filter_non_beta_items(actions)
             triggers = filter_non_beta_items(triggers)
 
-        enum_module = MODULE_TEMPLATE.format(
-            tag_enum=_get_tag_enum(apps=apps, actions=actions),
-            app_enum=_get_app_enum(apps=apps),
-            action_enum=_get_action_enum(apps=apps, actions=actions),
-            trigger_enum=_get_trigger_enum(apps=apps, triggers=triggers),
-        )
-        with open(enums.__file__, "w", encoding="utf-8") as file:
-            file.write(enum_module)
+        _update_apps(apps=apps)
+        _update_tags(apps=apps, actions=actions)
+        _update_actions(apps=apps, actions=actions)
+        _update_triggers(apps=apps, triggers=triggers)
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
 
 
-def _get_tag_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> str:
-    """Create Tag enum class."""
-    tag_map: t.Dict[str, t.Set[str]] = {}
-    for app in apps:
-        app_key = app.key
-        app_actions = [action for action in actions if action.appKey == app_key]
-        for action in app_actions:
-            if app_key not in tag_map:
-                tag_map[app_key] = set()
-            tag_map[app_key].update(action.tags or [])
-
-    tag_enums = ""
-    for app_key in sorted(tag_map.keys()):
-        sorted_tags = sorted(tag_map[app_key])
-        for tag in sorted_tags:
-            tag_name = _get_enum_key(f"{app_key}_{tag}")
-            tag_enums += f'    {tag_name} = ("{app_key}", "{tag}")\n'
-    tag_enums += "\n"
-    return TAG_ENUM_TEMPLATE.format(tags=tag_enums)
-
-
-def _get_app_enum(apps: t.List[AppModel]) -> str:
+def _update_apps(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
-    app_enums = ""
+    app_names = []
+    enums.base.APPS_CACHE.mkdir(
+        exist_ok=True,
+    )
     for app in apps:
-        app_name = app.key.upper().replace(" ", "_").replace("-", "_")
-        app_enums += f'    {_get_enum_key(app_name)} = "{app.key}"\n'
-    local_tools = LocalToolHandler().registered_tools
-    local_tools_concat = ", ".join([f'"{tool.tool_name}"' for tool in local_tools])
-    for tool in local_tools:
-        app_enums += f'    {_get_enum_key(tool.tool_name)} = "{tool.tool_name}"\n'
+        app_names.append(
+            _get_enum_key(
+                name=app.key.lower().replace(" ", "_").replace("-", "_"),
+            )
+        )
+        enums.base.AppData(
+            name=app.name,
+            path=enums.base.APPS_CACHE / app_names[-1],
+            is_local=False,
+        ).store()
 
-    return APP_ENUM_TEMPLATE.format(apps=app_enums, local_tools=local_tools_concat)
+    for tool in LocalToolHandler().registered_tools:
+        app_names.append(
+            _get_enum_key(
+                name=tool.tool_name.lower().replace(" ", "_").replace("-", "_"),
+            )
+        )
+        enums.base.AppData(
+            name=tool.tool_name,
+            path=enums.base.APPS_CACHE / app_names[-1],
+            is_local=True,
+        ).store()
+
+    _update_annotations(
+        cls=enums.App,
+        attributes=app_names,
+    )
 
 
-def _get_action_enum(apps: t.List[AppModel], actions: t.List[ActionModel]) -> str:
+def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
-    action_enums = ""
-    for app in apps:
-        app_actions = [action for action in actions if action.appKey == app.key]
-        for action in app_actions:
-            enum_name = f"{_get_enum_key(action.name)}"
-            enum_value = f'("{app.key}", "{action.name}", {app.no_auth})'
-            action_enums += f"    {enum_name} = {enum_value}\n"
+    action_names = []
+    enums.base.ACTIONS_CACHE.mkdir(
+        exist_ok=True,
+    )
+    for app in sorted(apps, key=lambda x: x.key):
+        for action in actions:
+            if action.appKey != app.key:
+                continue
+            action_names.append(
+                _get_enum_key(
+                    name=action.name,
+                )
+            )
+            enums.base.ActionData(
+                name=action.name,
+                app=app.key,
+                tags=action.tags,
+                no_auth=app.no_auth,
+                is_local=False,
+                path=enums.base.ACTIONS_CACHE / action_names[-1],
+            ).store()
+
     local_tool_handler = LocalToolHandler()
     for tool in local_tool_handler.registered_tools:
-        for action in tool.actions():
-            enum_name = f"{_get_enum_key(action().get_tool_merged_action_name())}"  # type: ignore
-            enum_value = f'("{tool.tool_name}", "{tool.tool_name}_{action().action_name}", True, True)'  # type: ignore
-            action_enums += f"    {enum_name} = {enum_value}\n"
-    return ACTION_ENUM_TEMPLATE.format(actions=action_enums)
+        for tool_action in tool.actions():
+            name = tool_action().get_tool_merged_action_name()
+            action_names.append(
+                _get_enum_key(
+                    name=name,
+                )
+            )
+            enums.base.ActionData(
+                name=name,
+                app=tool.tool_name,
+                tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
+                no_auth=True,
+                is_local=True,
+                path=enums.base.ACTIONS_CACHE / action_names[-1],
+            ).store()
+
+    _update_annotations(
+        cls=enums.Action,
+        attributes=action_names,
+    )
 
 
-def _get_trigger_enum(
+def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
+    """Create Tag enum class."""
+    enums.base.TAGS_CACHE.mkdir(exist_ok=True)
+    tag_map: t.Dict[str, t.Set[str]] = {}
+    for app in apps:
+        app_name = app.key
+        for action in [action for action in actions if action.appKey == app_name]:
+            if app_name not in tag_map:
+                tag_map[app_name] = set()
+            tag_map[app_name].update(action.tags or [])
+
+    tag_names = ["DEFAULT"]
+    for app_name in sorted(tag_map):
+        for tag in sorted(tag_map[app_name]):
+            tag_name = _get_enum_key(
+                name=f"{app_name}_{tag}",
+            )
+            tag_names.append(
+                tag_name,
+            )
+            enums.base.TagData(
+                app=app_name,
+                value=tag,
+                path=enums.base.TAGS_CACHE / tag_names[-1],
+            ).store()
+
+    enums.base.TagData(
+        app="default",
+        value="important",
+        path=enums.base.TAGS_CACHE / "DEFAULT",
+    )
+    _update_annotations(
+        cls=enums.Tag,
+        attributes=tag_names,
+    )
+
+
+def _update_triggers(
     apps: t.List[AppModel],
     triggers: t.List[TriggerModel],
-) -> str:
+) -> None:
     """Get Trigger enum."""
-    trigger_enums = ""
+    trigger_names = []
+    enums.base.TRIGGERS_CACHE.mkdir(
+        exist_ok=True,
+    )
     for app in apps:
-        app_triggers = [trigger for trigger in triggers if trigger.appKey == app.key]
-        for trigger in app_triggers:
-            enum_name = f"{_get_enum_key(app.key.upper())}_{_get_enum_key(trigger.display_name)}"
-            enum_value = f'("{app.key}", "{trigger.name}")'
-            trigger_enums += f"    {enum_name} = {enum_value}\n"
-    return TRIGGER_ENUM_TEMPLATE.format(triggers=trigger_enums)
+        for trigger in [trigger for trigger in triggers if trigger.appKey == app.key]:
+            trigger_names.append(
+                (
+                    _get_enum_key(name=app.key)
+                    + "_"
+                    + _get_enum_key(name=trigger.display_name)
+                ).upper()
+            )
+            enums.base.TriggerData(
+                name=trigger.name,
+                app=app.key,
+                path=enums.base.TRIGGERS_CACHE / trigger_names[-1],
+            ).store()
+
+    _update_annotations(
+        cls=enums.Trigger,
+        attributes=trigger_names,
+    )
+
+
+def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
+    """Update annontations for `cls`"""
+    console = get_context().console
+    file = Path(inspect.getmodule(cls).__file__)  # type: ignore
+
+    annotations = []
+    for attribute in attributes:
+        annotations.append(
+            ast.AnnAssign(
+                target=ast.Name(
+                    id=attribute,
+                ),
+                annotation=ast.Constant(
+                    value=f"{cls.__name__}",
+                ),
+                simple=1,
+            ),
+        )
+
+    tree = ast.parse(file.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if node.name != cls.__name__:
+            continue
+
+        cls_attributes = [
+            child.target.id  # type: ignore
+            for child in node.body[1:]
+            if isinstance(child, ast.AnnAssign)
+        ]
+        if cls_attributes == attributes:
+            console.print(
+                f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]"
+            )
+            return
+
+        node.body = (
+            node.body[:1]
+            + annotations
+            + [child for child in node.body[1:] if not isinstance(child, ast.AnnAssign)]
+        )
+        break
+
+    with file.open("w", encoding="utf-8") as fp:
+        fp.write(ast.unparse(tree))
+    console.print(f"[green]✔ {cls.__name__}s updated[/green]")
 
 
 def _get_enum_key(name: str) -> str:
