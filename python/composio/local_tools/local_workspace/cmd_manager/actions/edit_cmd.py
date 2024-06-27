@@ -8,6 +8,8 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     communicate,
 )
 from composio.local_tools.local_workspace.commons.utils import process_output
+from composio.workspace import utils as workspace_utils
+from composio.workspace.base_workspace import BaseCmdResponse, Command
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_EDIT_LINTING
@@ -54,18 +56,15 @@ class EditFile(BaseAction):
     def execute(
         self, request_data: EditFileRequest, authorisation_data: dict
     ) -> BaseResponse:
-        self._setup(request_data)
+        workspace = workspace_utils.get_workspace_by_id(self.workspace_id)
         self.script_file = SCRIPT_EDIT_LINTING
         self.command = "edit"
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
 
-        if self.container_process is None:
-            raise ValueError("Container process is not set")
-
-        output, return_code = communicate(
-            self.container_process, self.container_obj, full_command, self.parent_pids
+        workspace_response: BaseCmdResponse = workspace.communicate(
+            Command(command=full_command)
         )
-        output, return_code = process_output(output, return_code)
+        output, return_code = process_output(workspace_response.output, workspace_response.return_code)
         return BaseResponse(
             output=output,
             return_code=return_code,
