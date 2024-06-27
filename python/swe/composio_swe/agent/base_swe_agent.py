@@ -4,13 +4,13 @@ import typing as t
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from composio_swe.config.config_store import IssueConfig
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from composio_swe.config.config_store import IssueConfig
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"

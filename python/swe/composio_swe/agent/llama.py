@@ -2,11 +2,10 @@ import typing as t
 from itertools import chain
 
 from composio_llamaindex import Action, App, ComposioToolSet
+from composio_swe.config.config_store import IssueConfig
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.tools import BaseTool
-
-from composio_swe.config.config_store import IssueConfig
 
 from .base_swe_agent import BaseSWEAgent, SWEArgs
 from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL

@@ -9,8 +9,6 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from rich.console import Console
-
 from composio_swe.config.config_store import (
     AzureModelConfig,
     IssueConfig,
@@ -28,6 +26,7 @@ from composio_swe.config.constants import (
     MODEL_ENV_OPENAI,
     MODEL_ENV_PATH,
 )
+from rich.console import Console
 
 
 _context: t.Optional["Context"] = None
