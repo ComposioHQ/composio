@@ -1,6 +1,7 @@
 # Import necessary libraries for handling images and environment variables
-from email.mime import image  # Likely unused in this context
 import os  # For accessing environment variables
+from email.mime import image  # Likely unused in this context
+
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from ComposioCrewAI and LangChain
@@ -10,6 +11,7 @@ from langchain_openai import ChatOpenAI
 
 # Import embedtool from composio.local_tools
 from composio.local_tools import embedtool
+
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
@@ -40,17 +42,25 @@ image_search_agent = Agent(
 )
 
 # Define the images path, collection name, and query string
-images_path = "./images/"
-collection_name = "animals"
-query_string = "horse"
+collection_name = "animals2"#this collection is stored in the path ./animals
+collection_path = "/path/to/the/chromadb/folder/in/your/working/directory"
+images_path = "/path/to/the/images"
+prompt = "horse"
+create_task_description = (
+    "Create a vector store of the images in the "+images_path
+    "collection name:"+ collection_name
+    "folder_path:"+collection_path
+)
+query_task_description = (
+    "Query the vector store for prompt:"+prompt
+    "with store name:"+collection_name
+    "collection_path at:"+collection_path
+)
+
 
 # Define a task for the image search agent
 image_search_task = Task(
-    description=(
-        "Create a vector store with name:" + collection_name +
-        " Using images in the path:" + images_path +
-        " and query the word:" + query_string
-    ),
+    description=query_task_description,
     expected_output='A collection of retrieved images.',  # Expected result from the task
     agent=image_search_agent,  # Agent assigned to perform the task
     human_input=True  # Indicates that human input is allowed/required

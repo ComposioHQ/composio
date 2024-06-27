@@ -43,7 +43,9 @@ def run(issue: dict):
         model_version="1106-Preview",
         api_version="2024-02-01",
     )
-    task_output_dir = script_dir / Path(TASK_OUTPUT_PATH + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    task_output_dir = script_dir / Path(
+        TASK_OUTPUT_PATH + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    )
     task_output_logs = task_output_dir / Path("agent_logs.json")
     if not os.path.exists(task_output_dir):
         os.makedirs(task_output_dir)
@@ -51,19 +53,27 @@ def run(issue: dict):
     base_role = (
         "You are the best programmer. You think carefully and step by step take action."
     )
-    goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
-    tools = composio_toolset.get_tools(apps=[App.LOCALWORKSPACE,
-                                             App.CMDMANAGERTOOL,
-                                             App.HISTORYKEEPER,
-                                             App.SUBMITPATCHTOOL])
+    goal = (
+        "Help fix the given issue / bug in the code. And make sure you get it working. "
+    )
+    tools = composio_toolset.get_tools(
+        apps=[
+            App.LOCALWORKSPACE,
+            App.CMDMANAGERTOOL,
+            App.HISTORYKEEPER,
+            App.SUBMITPATCHTOOL,
+        ]
+    )
     agent_logs = {}
     issue_description = issue["description"]
     repo_name = issue["repo"]
     instance_id = issue["issue_id"]
     base_commit = issue.get("base_commit")
-    logger.info(f"starting agent for issue-id: {instance_id}\n"
-                f"issue-description: {issue_description}\n"
-                f"repo_name: {repo_name}\n")
+    logger.info(
+        f"starting agent for issue-id: {instance_id}\n"
+        f"issue-description: {issue_description}\n"
+        f"repo_name: {repo_name}\n"
+    )
     current_logs = []
 
     # this is a step_callback function -->
@@ -71,21 +81,26 @@ def run(issue: dict):
     def add_in_logs(step_output):
         # get agent input
         if isinstance(step_output, langchain_core.agents.AgentFinish):
-            current_logs.append({
-                "agent_action": "agent_finish",
-                "agent_output": step_output.return_values,
-            })
+            current_logs.append(
+                {
+                    "agent_action": "agent_finish",
+                    "agent_output": step_output.return_values,
+                }
+            )
         if isinstance(step_output, list):
             if len(step_output) < 1:
                 return
             agent_action_with_tool_out = step_output[0]
-            if isinstance(agent_action_with_tool_out[0], langchain_core.agents.AgentAction):
+            if isinstance(
+                agent_action_with_tool_out[0], langchain_core.agents.AgentAction
+            ):
                 agent_action = agent_action_with_tool_out[0]
                 tool_out = None
                 if len(agent_action_with_tool_out) > 1:
                     tool_out = agent_action_with_tool_out[1]
-                current_logs.append({"agent_action": agent_action.json(),
-                                     "tool_output": tool_out})
+                current_logs.append(
+                    {"agent_action": agent_action.json(), "tool_output": tool_out}
+                )
             else:
                 print(type(agent_action_with_tool_out[0]))
         else:
@@ -94,12 +109,16 @@ def run(issue: dict):
     with open(base_task_config_path) as f:
         base_config = yaml.safe_load(f.read())
 
-    issue_added_instruction = base_config["issue_description"].format(issue=issue_description,
-                                                                      issue_id=instance_id,)
-    backstory_added_instruction = base_config["backstory"].format(repo_name=repo_name,
-                                                                  base_commit=base_commit,
-                                                                  git_access_token=os.environ.get("GITHUB_ACCESS_TOKEN"),
-                                                                  install_commit_id="")
+    issue_added_instruction = base_config["issue_description"].format(
+        issue=issue_description,
+        issue_id=instance_id,
+    )
+    backstory_added_instruction = base_config["backstory"].format(
+        repo_name=repo_name,
+        base_commit=base_commit,
+        git_access_token=os.environ.get("GITHUB_ACCESS_TOKEN"),
+        install_commit_id="",
+    )
 
     print("--------------------------------------------------")
 
@@ -129,19 +148,12 @@ def run(issue: dict):
 
 if __name__ == "__main__":
     # set your issue here
-    '''
-    repo_name: set to the repo, you are solving for, 
-        currently set to composio-sdk repo, set 
+    """
+    repo_name: set to the repo, you are solving for,
+        currently set to composio-sdk repo, set
     issue_id: used for logging purpose
     description: actual description of the issue, this will
-        be solved by agent 
-    '''
-    issue = {
-        "repo": "ComposioHQ/composio",
-        "issue_id": "123-xyz",
-        "description": ""
-    }
+        be solved by agent
+    """
+    issue = {"repo": "ComposioHQ/composio", "issue_id": "123-xyz", "description": ""}
     run(issue)
-
-
-

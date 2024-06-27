@@ -108,9 +108,7 @@ class ComposioToolSet:
                 action=action, request_data=params
             )
 
-        output = self.client.get_entity(
-            id=entity_id,
-        ).execute(
+        output = self.client.get_entity(id=entity_id,).execute(
             action=action,
             params=params,
             text=text,

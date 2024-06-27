@@ -23,8 +23,8 @@ def evaluate_accuracy_and_check_files(base_path="submit_logs", days_back=1):
 
             # Check each command
             for entry in history_data:
-                command = entry['command']
-                output = entry['output'][1] if len(entry['output']) > 1 else ""
+                command = entry["command"]
+                output = entry["output"][1] if len(entry["output"]) > 1 else ""
                 if SUBMIT_CMD in command:
                     total_submissions += 1
                     if output:
@@ -45,4 +45,5 @@ if __name__ == "__main__":
     submit_path_dir = ""
     results = evaluate_accuracy_and_check_files(base_path=submit_path_dir)
     from pprint import pprint
+
     pprint(results)

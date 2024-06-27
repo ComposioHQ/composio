@@ -5,7 +5,13 @@ import chromadb
 from IPython.display import Markdown, display
 from chromadb.utils.data_loaders import ImageLoader
 from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
-from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
+from llama_index.core import (
+    Settings,
+    SimpleDirectoryReader,
+    StorageContext,
+    VectorStoreIndex,
+)
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from pydantic import BaseModel, Field
 
@@ -18,6 +24,7 @@ class VectorStoreInputSchema(BaseModel):
     # text: str = Field(..., description="Input text for the action")
     images_path: str = Field(..., description="Path to the saved image folder")
     collection_name: str = Field(..., description="Name of the Chroma VectorStore")
+    folder_path: str = Field(..., description="Directory where it should be stored")
 
 
 class VectorStoreOutputSchema(BaseModel):
@@ -45,9 +52,8 @@ class CreateVectorstore(Action):
         # response_data = {"result": "Processed text: " + request_data.text}
         embedding_function = OpenCLIPEmbeddingFunction()
         image_loader = ImageLoader()
-
         # create client and a new collection
-        chroma_client = chromadb.EphemeralClient()
+        chroma_client = chromadb.PersistentClient(path=request_data.folder_path)
         chroma_collection = chroma_client.create_collection(
             request_data.collection_name,
             embedding_function=embedding_function,
@@ -62,8 +68,10 @@ class CreateVectorstore(Action):
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
         index = VectorStoreIndex.from_documents(
             documents,
+            embed_model=HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5"),
             storage_context=storage_context,
         )
+        index.storage_context.persist(request_data.folder_path)
         return {
             "execution_details": {"executed": True},
             "result": "Vector Store was created with the name:"

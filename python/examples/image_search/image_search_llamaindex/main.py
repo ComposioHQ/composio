@@ -1,5 +1,6 @@
 # Import necessary libraries
 import os  # For accessing environment variables
+
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from Composio and LlamaIndex
@@ -11,11 +12,12 @@ from llama_index.llms.openai import OpenAI
 # Import embedtool from composio.local_tools
 from composio.local_tools import embedtool
 
+
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
 # Initialize a ComposioToolSet with the API key from environment variables
-toolset = ComposioToolSet(api_key=os.environ['COMPOSIO_API_KEY'])
+toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
 tools = toolset.get_tools(apps=[App.EMBEDTOOL])
@@ -44,13 +46,19 @@ agent = FunctionCallingAgentWorker(
 ).as_agent()
 
 # Define the images path and collection name
-images_path = "./images/"
 collection_name = "animals"
-query_string = "horse"
+collection_path = "/path/to/the/chromadb/folder/in/your/working/directory"
+images_path = "/path/to/the/images"
+prompt = "horse"
 
 # Execute the task using the agent
 response = agent.chat(
-    "Create a vectorstore of name:" + collection_name + " using images in path:" + images_path + " and query the string:" + query_string
+    "Create a vectorstore of name:"
+    + collection_name
+    + " using images in path:"
+    + images_path
+    + " and query the string:"
+    + query_string
 )
 
 # Print the response

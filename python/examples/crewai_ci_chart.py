@@ -1,13 +1,15 @@
-from crewai import Agent, Task, Crew
 from composio_crewai import ComposioToolSet
-from composio import App, Action
+from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
+
+from composio import Action, App
+
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
 while True:
     main_task = input("Enter the task you want to perform (or type 'exit' to quit): ")
-    if main_task.lower() == 'exit':
+    if main_task.lower() == "exit":
         break
 
     code_interpreter_tools = ComposioToolSet().get_tools([App.CODEINTERPRETER])
@@ -24,7 +26,7 @@ while True:
 
     code_interpreter_task = Task(
         description=f"""Run Python code to get acheive a task - {main_task}""",
-        expected_output=f"""Python code executed successfully. The result of the task is returned - {main_task}""", 
+        expected_output=f"""Python code executed successfully. The result of the task is returned - {main_task}""",
         agent=code_interpreter_agent,
     )
 
@@ -36,5 +38,3 @@ while True:
 
     result = crew.kickoff()
     print(result)
-                     
-

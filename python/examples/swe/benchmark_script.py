@@ -44,7 +44,9 @@ def main():
     base_role = (
         "You are the best programmer. You think carefully and step by step take action."
     )
-    goal = "Help fix the given issue / bug in the code. And make sure you get it working. "
+    goal = (
+        "Help fix the given issue / bug in the code. And make sure you get it working. "
+    )
     tools = composio_toolset.get_actions(actions=[Action.GREPTILE_CODEQUERY])
     issues = get_issues_dataset()
 
@@ -62,7 +64,7 @@ def main():
         print(f"Instance ID: {instance_id}")
         print("--------------------------------------------------")
 
-        #todo: change this from the issue
+        # todo: change this from the issue
         expected_output = "Name of the file"
         agent_1 = Agent(
             role=base_role,

@@ -1,4 +1,5 @@
 import os
+
 import dotenv
 from composio_llamaindex import App, ComposioToolSet
 from llama_index.core.agent import FunctionCallingAgentWorker
@@ -6,9 +7,11 @@ from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
 from composio.local_tools import filetool, sqltool
+
+
 dotenv.load_dotenv()
 
-toolset = ComposioToolSet(api_key=os.environ['COMPOSIO_API_KEY'])
+toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 sql_tool = toolset.get_tools(apps=[App.SQLTOOL])
 file_tool = toolset.get_tools(apps=[App.FILETOOL])
 code_interpretor_tool = toolset.get_tools(apps=[App.CODEINTERPRETER])
@@ -37,6 +40,6 @@ agent = FunctionCallingAgentWorker(
 human_description = "The database to use is company.db"
 human_input = "Query the table MOCK_DATA for all rows and plot a graph between first names and salary by using code interpretor"
 response = agent.chat(
-    "Database description ="+ human_description +"Task to perform:" + human_input
+    "Database description =" + human_description + "Task to perform:" + human_input
 )
 print("Response:", response)
