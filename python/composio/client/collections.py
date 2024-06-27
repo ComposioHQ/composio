@@ -18,7 +18,16 @@ from pysher.channel import Channel
 
 from composio.client.base import BaseClient, Collection
 from composio.client.endpoints import v1
-from composio.client.enums import Action, App, Tag, Trigger
+from composio.client.enums import (
+    Action,
+    ActionType,
+    App,
+    AppType,
+    Tag,
+    TagType,
+    Trigger,
+    TriggerType,
+)
 from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
@@ -26,16 +35,11 @@ from composio.utils import logging
 from .local_handler import LocalToolHandler
 
 
-def trigger_names_str(
-    trigger_names: t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]],
+def to_trigger_names(
+    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]]
 ) -> str:
     """Get trigger names as a string."""
-    return ",".join(
-        [
-            trigger_name.event if isinstance(trigger_name, Trigger) else trigger_name
-            for trigger_name in trigger_names
-        ]
-    )
+    return ",".join([Trigger(trigger).name for trigger in triggers])
 
 
 class AuthConnectionParamsModel(BaseModel):
@@ -657,10 +661,8 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        trigger_names: t.Optional[
-            t.Union[t.List[str], t.List[Trigger], t.List[t.Union[str, Trigger]]]
-        ] = None,
-        app_names: t.Optional[t.List[str]] = None,
+        triggers: t.Optional[t.List[TriggerType]] = None,
+        apps: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
         List active triggers
@@ -670,10 +672,10 @@ class Triggers(Collection[TriggerModel]):
         :return: List of triggers filtered by provided parameters
         """
         queries = {}
-        if trigger_names is not None and len(trigger_names) > 0:
-            queries["triggerIds"] = trigger_names_str(trigger_names)
-        if app_names is not None and len(app_names) > 0:
-            queries["appNames"] = ",".join(app_names)
+        if triggers is not None and len(triggers) > 0:
+            queries["triggerIds"] = to_trigger_names(triggers)
+        if apps is not None and len(apps) > 0:
+            queries["appNames"] = ",".join(apps)
         return super().get(queries=queries)
 
     def enable(
@@ -768,7 +770,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         if len(integration_ids) > 0:
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
-            queries["triggerNames"] = trigger_names_str(trigger_names)
+            queries["triggerNames"] = to_trigger_names(trigger_names)
         return self._raise_if_empty(super().get(queries=queries))
 
 
@@ -819,9 +821,9 @@ class Actions(Collection[ActionModel]):
     # TODO: Overload
     def get(  # type: ignore
         self,
-        actions: t.Optional[t.Sequence[Action]] = None,
-        apps: t.Optional[t.Sequence[App]] = None,
-        tags: t.Optional[t.Sequence[t.Union[str, Tag]]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
         limit: t.Optional[int] = None,
         use_case: t.Optional[str] = None,
         allow_all: bool = False,
@@ -838,9 +840,10 @@ class Actions(Collection[ActionModel]):
                         app
         :return: List of actions
         """
-        actions = actions or []
-        apps = apps or []
-        tags = tags or []
+        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+        apps = t.cast(t.List[App], [App(app) for app in apps or []])
+        tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
+
         # Filter out local apps and actions
         local_apps = [app for app in apps if app.is_local]
         local_actions = [action for action in actions if action.is_local]
@@ -852,7 +855,7 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            local_items = self.local_handler.get_list_of_action_schemas(
+            local_items = self.local_handler.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             return [self.model(**item) for item in local_items]
@@ -904,10 +907,14 @@ class Actions(Collection[ActionModel]):
             queries["useCase"] = use_case
 
         if len(apps) > 0:
-            queries["appNames"] = ",".join(list(map(lambda x: x.value, apps)))
+            queries["appNames"] = ",".join(
+                list(map(lambda x: t.cast(App, x).slug, apps))
+            )
 
         if len(actions) > 0:
-            queries["appNames"] = ",".join(set(map(lambda x: x.app, actions)))
+            queries["appNames"] = ",".join(
+                set(map(lambda x: t.cast(Action, x).app, actions))
+            )
 
         if limit is not None:
             queries["limit"] = str(limit)
@@ -919,7 +926,7 @@ class Actions(Collection[ActionModel]):
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required_triggers = [action.action for action in actions]
+            required_triggers = [t.cast(Action, action).name for action in actions]
             items = [item for item in items if item.name in required_triggers]
 
         if len(tags) > 0:
@@ -936,7 +943,7 @@ class Actions(Collection[ActionModel]):
                     items = filtered_items
 
         if len(local_apps) > 0 or len(local_actions) > 0:
-            local_items = self.local_handler.get_list_of_action_schemas(
+            local_items = self.local_handler.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             items = [self.model(**item) for item in local_items] + items
@@ -960,7 +967,7 @@ class Actions(Collection[ActionModel]):
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
-            return self.local_handler.execute_local_action(
+            return self.local_handler.execute_action(
                 action=action,
                 request_data=params,
             )
@@ -993,7 +1000,7 @@ class Actions(Collection[ActionModel]):
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
-                    url=str(self.endpoint / action.action / "execute"),
+                    url=str(self.endpoint / action.name / "execute"),
                     json={
                         "appName": action.app,
                         "input": modified_params,
@@ -1011,7 +1018,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.action / "execute"),
+                url=str(self.endpoint / action.name / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "input": modified_params,

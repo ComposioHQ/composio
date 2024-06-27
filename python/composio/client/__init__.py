@@ -298,7 +298,7 @@ class Entity:
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
         if isinstance(app_name, App):
-            app_name = app_name.value
+            app_name = app_name.slug
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")

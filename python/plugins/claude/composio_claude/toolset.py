@@ -3,7 +3,7 @@ import typing as t
 from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
 from anthropic.types.beta.tools.tool_param import ToolParam
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
@@ -89,7 +89,7 @@ class ComposioToolset(BaseComposioToolSet):
             entity_id = self.entity_id
         return entity_id
 
-    def get_actions(self, actions: t.Sequence[Action]) -> t.List[ToolParam]:
+    def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as `ToolParam` objects.
 
@@ -112,8 +112,8 @@ class ComposioToolset(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
     ) -> t.Sequence[ToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
@@ -149,7 +149,7 @@ class ComposioToolset(BaseComposioToolSet):
         :return: Object containing output data from the tool call.
         """
         return self.execute_action(
-            action=Action.from_action(name=tool_call.name),
+            action=Action(value=tool_call.name),
             params=t.cast(t.Dict, tool_call.input),
             entity_id=entity_id or self.entity_id,
         )

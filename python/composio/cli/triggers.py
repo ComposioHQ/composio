@@ -74,7 +74,7 @@ def _triggers(
             return
 
         context.console.print("[green]Showing all triggers[/green]")
-        for _trigger in context.client.triggers.get(app_names=list(app_names)):
+        for _trigger in context.client.triggers.get(apps=list(app_names)):
             context.console.print(f"• {_trigger.name}")
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
@@ -134,7 +134,7 @@ def _enable_trigger(context: Context, name: str) -> None:
     """Enable a trigger for an app"""
     context.console.print(f"Enabling trigger [green]{name}[/green]")
     try:
-        triggers = context.client.triggers.get(trigger_names=[name])
+        triggers = context.client.triggers.get(triggers=[name])
         if len(triggers) == 0:
             raise click.ClickException(f"Trigger with name {name} not found")
         trigger = triggers[0]
