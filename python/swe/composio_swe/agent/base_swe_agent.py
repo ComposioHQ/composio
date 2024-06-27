@@ -4,13 +4,13 @@ import typing as t
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from composio_swe.config.config_store import IssueConfig
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from python.composio_swe.composio_swe.config.config_store import IssueConfig
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -35,11 +35,14 @@ class BaseSWEAgent(ABC):
 
     def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
         start_time = datetime.datetime.now()
-        workspace_create_resp = CreateWorkspaceResponse.model_validate(
-            self.composio_client.actions.execute(
-                action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION, params={}
-            )
+        action_response = self.composio_client.actions.execute(
+            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
+            params={},
         )
+        if isinstance(action_response, dict) and action_response["status"] == "failure":
+            raise RuntimeError(action_response["details"])
+
+        workspace_create_resp = CreateWorkspaceResponse.model_validate(action_response)
         workspace_id = workspace_create_resp.workspace_id
         workspace_creation_time = datetime.datetime.now() - start_time
         print(
