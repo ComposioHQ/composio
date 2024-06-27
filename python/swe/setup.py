@@ -22,7 +22,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    packages=find_packages(include=["composio_swe/*"]),
+    packages=find_packages(include=["composio_swe*"]),
     entry_points={
         "console_scripts": [
             "composio-swe=composio_swe.cli:cli",
@@ -35,6 +35,8 @@ setup(
         "crewai==0.30.11",
         "datasets>=2.20.0",
         "swebench>=1.1.0",
+        "langchain_anthropic",
+        "llama-index-llms-anthropic",
         "swe_bench_docker @ git+https://github.com/ComposioHQ/SWE-bench-docker.git",
     ],
     dependency_links=[

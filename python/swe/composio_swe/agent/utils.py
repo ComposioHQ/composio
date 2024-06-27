@@ -47,7 +47,12 @@ def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         return ChatOpenAI(model="gpt-4-turbo")
     if os.environ.get("AZURE_OPENAI_API_KEY"):
         return AzureChatOpenAI(model="test")
-    raise ValueError("no model is found")
+
+    raise RuntimeError(
+        "Could not find API key for any supported LLM models, "
+        "please export either `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` "
+        "or `AZURE_OPENAI_API_KEY`"
+    )
 
 
 def get_llama_llm() -> FunctionCallingLLM:
@@ -75,4 +80,7 @@ def get_llama_llm() -> FunctionCallingLLM:
                 },
             )
         return OpenAI(model="gpt-4-turbo")
-    raise ValueError("no model is found")
+    raise RuntimeError(
+        "Could not find API key for any supported LLM models, "
+        "please export either `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` "
+    )
