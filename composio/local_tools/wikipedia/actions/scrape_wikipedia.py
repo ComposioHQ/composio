@@ -7,9 +7,7 @@ from composio.core.local import Action
 
 
 class WikipediaToolRequest(BaseModel):
-    page: str = Field(
-        ..., description="Mandatory page name to read contents from"
-    )
+    page: str = Field(..., description="Mandatory page name to read contents from")
 
 
 class WikipediaToolResponse(BaseModel):
@@ -32,13 +30,17 @@ class WikipediaContent(Action):
         try:
             # pylint: disable=import-outside-toplevel
             import wikipediaapi
+
             # pylint: enable=import-outside-toplevel
         except ImportError as e:
             raise ImportError("Failed to import wikipediaapi:", e) from e
         try:
             # Adding headers to mimic a browser request
-            wiki_wiki = wikipediaapi.Wikipedia('Composio (merlin@example.com)', 'en')
+            wiki_wiki = wikipediaapi.Wikipedia("Composio (merlin@example.com)", "en")
             req = wiki_wiki.page(page)
             return {"execution_details": {"executed": True}, "response_data": str(req)}
         except Exception as e:
-            return {"execution_details": {"executed": True}, "response_data": f"Error getting wikipedia page data: {e}"}
+            return {
+                "execution_details": {"executed": True},
+                "response_data": f"Error getting wikipedia page data: {e}",
+            }
