@@ -93,7 +93,7 @@ ACTION_ENUM_TEMPLATE = """class Action(tuple, Enum):
         \"\"\"Create list of Action type enums from app name.\"\"\"
         app_actions = [action for action in cls if action.app == name]
         if not app_actions:
-            raise ValueError(f"No action type found for name `{name}`")
+            raise ValueError(f"No action type found for name `{{name}}`")
         return app_actions
 
     @classmethod
