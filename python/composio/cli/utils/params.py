@@ -15,6 +15,10 @@ class EnumParam(click.ParamType):
         """Initialize"""
         self.cls = cls
 
+    def get_metavar(self, param: click.Parameter) -> str:
+        """Get metavar representation."""
+        return t.cast(str, param.name).upper()
+
     def convert(
         self,
         value: str,
