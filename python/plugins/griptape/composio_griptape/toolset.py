@@ -5,7 +5,7 @@ from griptape.tools import BaseTool
 from griptape.utils.decorators import activity
 from schema import Literal, Schema
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
@@ -72,7 +72,6 @@ class ComposioToolSet(BaseComposioToolSet):
         entity_id: t.Optional[str] = None,
     ) -> BaseTool:
         """Wrap Composio tool as GripTape `BaseTool` object"""
-        app = schema["appName"]
         name = schema["name"]
         description = schema["description"]
 
@@ -99,7 +98,7 @@ class ComposioToolSet(BaseComposioToolSet):
         def _execute_task(params: t.Dict) -> t.Dict:
             """Placeholder method for executing task."""
             return self.execute_action(
-                action=Action.from_app_and_action(app=app, name=name),
+                action=Action(value=name),
                 params=params,
                 entity_id=entity_id or self.entity_id,
             )
@@ -136,7 +135,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """
@@ -157,8 +156,8 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """

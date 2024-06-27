@@ -3,9 +3,9 @@ import typing as t
 from inspect import Signature
 
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
-from llama_index.core.tools import FunctionTool  # pylint: disable=import-error
+from llama_index.core.tools import FunctionTool
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
@@ -72,16 +72,17 @@ class ComposioToolSet(BaseComposioToolSet):
         )
         self._runtime = "llamaindex"
 
-    def prepare_python_function(
-        self, app, action, description, schema_params, entity_id
+    def _wrap_action(
+        self,
+        action: str,
+        description: str,
+        schema_params: t.Dict,
+        entity_id: t.Optional[str] = None,
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
             return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=app,
-                    name=action,
-                ),
+                action=Action(value=action),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
@@ -108,13 +109,11 @@ class ComposioToolSet(BaseComposioToolSet):
         entity_id: t.Optional[str] = None,
     ) -> FunctionTool:
         """Wraps composio tool as LlamaIndex FunctionTool object."""
-        app = schema["appName"]
         action = schema["name"]
         description = schema.get("description", schema["name"])
         schema_params = schema["parameters"]
 
-        action_func = self.prepare_python_function(
-            app=app,
+        action_func = self._wrap_action(
             action=action,
             description=description,
             schema_params=schema_params,
@@ -126,10 +125,9 @@ class ComposioToolSet(BaseComposioToolSet):
             description=description,
         )
 
-    # pylint: disable=useless-super-delegation
     def get_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[FunctionTool]:
         """
@@ -141,11 +139,10 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         return super().get_actions(actions, entity_id)
 
-    # pylint: disable=useless-super-delegation
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[FunctionTool]:
         """

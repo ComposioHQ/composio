@@ -8,7 +8,7 @@ from inspect import Signature
 
 from lyzr_automata import Tool
 
-from composio.client.enums import Action, App, Tag
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import (
@@ -54,16 +54,12 @@ class ComposioToolSet(BaseComposioToolSet):
         Wrap composio tool as Lyzr `Tool` object.
         """
         name = schema["name"]
-        app = schema["appName"]
         description = schema["description"]
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool wrapped as Lyzr tool."""
             return self.execute_action(
-                action=Action.from_app_and_action(
-                    app=app,
-                    name=name,
-                ),
+                action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
@@ -95,7 +91,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_actions(
         self,
-        actions: t.Sequence[Action],
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ) -> t.List[Tool]:
         """
@@ -115,8 +111,8 @@ class ComposioToolSet(BaseComposioToolSet):
 
     def get_tools(
         self,
-        apps: t.Sequence[App],
-        tags: t.Optional[t.List[t.Union[str, Tag]]] = None,
+        apps: t.Sequence[AppType],
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[Tool]:
         """
