@@ -11,13 +11,13 @@ import typing_extensions as te
 from click.globals import get_current_context as get_click_context
 from rich.console import Console
 
-from python.composio_swe.composio_swe.config.config_store import (
+from composio_swe.config.config_store import (
     AzureModelConfig,
     IssueConfig,
     ModelEnv,
     OpenAiModelConfig,
 )
-from python.composio_swe.composio_swe.config.constants import (
+from composio_swe.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
@@ -125,18 +125,17 @@ class Context:
         raise ValueError("issue config not set")
 
     @issue_config.setter
-    def issue_config(self, config: t.Dict) -> None:
+    def issue_config(self, config: IssueConfig) -> None:
         """Set Issue configuration."""
         path = self.cache_dir / ISSUE_CONFIG_PATH
-        issue_config = IssueConfig(
-            path=path,
-            repo_name=config["repo_name"],
+        self._issue_config = IssueConfig(
+            repo_name=config.repo_name,
             repo_init_from="",
-            issue_id=config["issue_id"],
-            base_commit_id=config["base_commit_id"],
-            issue_desc=config["issue_desc"],
+            issue_id=config.issue_id,
+            base_commit_id=config.base_commit_id,
+            issue_desc=config.issue_desc,
+            path=path,
         )
-        self._issue_config = issue_config
         self._issue_config.store()
 
 

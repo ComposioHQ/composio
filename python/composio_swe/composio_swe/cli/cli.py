@@ -4,9 +4,9 @@ from urllib.parse import urlparse
 import click
 import git
 
-from composio_swe.composio_swe.agent.crewai import CrewaiAgent, SWEArgs
-from composio_swe.composio_swe.config.config_store import IssueConfig
-from composio_swe.composio_swe.config.constants import (
+from composio_swe.agent.crewai import CrewaiAgent, SWEArgs
+from composio_swe.config.config_store import IssueConfig
+from composio_swe.config.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
     KEY_GIT_ACCESS_TOKEN,
@@ -14,7 +14,7 @@ from composio_swe.composio_swe.config.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
 )
-from composio_swe.composio_swe.config.context import Context, pass_context
+from composio_swe.config.context import Context, pass_context
 
 
 def get_git_root():
