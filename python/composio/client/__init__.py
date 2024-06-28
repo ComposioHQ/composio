@@ -37,10 +37,36 @@ _valid_keys: t.Set[str] = set()
 
 class Composio(BaseClient):
     """Composio SDK Client."""
-    _api_key: t.Optional[str]
+    _api_key: t.Optional[str] = None
     _api_key_validated: bool = False
-    _http: t.Optional[HttpClient]
+    _http: t.Optional[HttpClient] = None
 
+    def __init__(
+        self,
+        api_key: t.Optional[str] = None,
+        base_url: t.Optional[str] = None,
+        runtime: t.Optional[str] = None,
+    ) -> None:
+        """
+        Initialize Composio SDK client
+
+        :param api_key: Authentication key for Composio server
+        :param base_url: Base URL for Composio server
+        :param runtime: Runtime specifier
+        """
+        self._api_key = api_key
+        self.runtime = runtime
+
+        self.base_url = base_url or get_api_url_base()
+
+        self.connected_accounts = ConnectedAccounts(client=self)
+        self.apps = Apps(client=self)
+        self.actions = Actions(client=self)
+        self.triggers = Triggers(client=self)
+        self.integrations = Integrations(client=self)
+        self.active_triggers = ActiveTriggers(client=self)
+        
+    
     @property
     def api_key(self) -> str:
         if self._api_key is None:
@@ -75,31 +101,6 @@ class Composio(BaseClient):
     @http.setter
     def http(self, value: HttpClient) -> None:
         self._http = value
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None,
-    ) -> None:
-        """
-        Initialize Composio SDK client
-
-        :param api_key: Authentication key for Composio server
-        :param base_url: Base URL for Composio server
-        :param runtime: Runtime specifier
-        """
-        self._api_key = api_key
-        self.runtime = runtime
-
-        self.base_url = base_url or get_api_url_base()
-
-        self.connected_accounts = ConnectedAccounts(client=self)
-        self.apps = Apps(client=self)
-        self.actions = Actions(client=self)
-        self.triggers = Triggers(client=self)
-        self.integrations = Integrations(client=self)
-        self.active_triggers = ActiveTriggers(client=self)
 
     @staticmethod
     def validate_api_key(key: str, base_url: t.Optional[str] = None) -> str:
