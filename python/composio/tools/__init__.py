@@ -13,11 +13,12 @@ from pathlib import Path
 from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
+    ConnectedAccountModel,
     FileModel,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
-from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
+from composio.client.enums import Action, ActionType, App, AppType, TagType
 from composio.client.exceptions import ComposioClientError
 from composio.client.local_handler import LocalToolHandler
 from composio.constants import (
@@ -28,6 +29,7 @@ from composio.constants import (
     USER_DATA_FILE_NAME,
 )
 from composio.exceptions import ApiKeyNotProvidedError
+from composio.exceptions import ComposioSDKError
 from composio.storage.user import UserData
 
 
@@ -35,6 +37,7 @@ class ComposioToolSet:
     """Composio toolset."""
 
     _remote_client: Composio
+    _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
 
     def __init__(
         self,
@@ -86,6 +89,26 @@ class ComposioToolSet:
     def runtime(self) -> t.Optional[str]:
         return self._runtime
 
+    def check_connected_account(self, action: ActionType) -> None:
+        """Check if connected account is required and if required it exists or not."""
+        action = Action(action)
+        if action.no_auth:
+            return
+
+        if self._connected_accounts is None:
+            self._connected_accounts = t.cast(
+                t.List[ConnectedAccountModel],
+                self.client.connected_accounts.get(),
+            )
+
+        if action.app not in [
+            connection.appUniqueId for connection in self._connected_accounts
+        ]:
+            raise ComposioSDKError(
+                f"No connected account found for app `{action.app}`; "
+                f"Run `composio add {action.app}` to fix this"
+            )
+
     def execute_action(
         self,
         action: t.Union[Action, str],
@@ -102,12 +125,14 @@ class ComposioToolSet:
             Any: The output of the action execution.
         :return: Output object from the function call.
         """
-        if isinstance(action, str):
-            action = Action(action)
-
+        action = Action(action)
         if action.is_local:
-            return self._local_client.execute_action(action=action, request_data=params)
+            return self._local_client.execute_action(
+                action=action,
+                request_data=params,
+            )
 
+        self.check_connected_account(action=action)
         output = self.client.get_entity(
             id=entity_id,
         ).execute(
@@ -196,6 +221,8 @@ class ComposioToolSet:
             )
             items = items + remote_items
 
+        for item in items:
+            self.check_connected_account(action=item.name)
         return items
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
