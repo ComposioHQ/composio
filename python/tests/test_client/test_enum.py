@@ -29,7 +29,7 @@ def test_action_enum() -> None:
 
 def test_trigger_enum() -> None:
     """Test `Trigger` enum."""
-    trigger = Trigger("slack_new_message")
+    trigger = Trigger("slack_receive_message")
     assert trigger.app == "slack"
     assert trigger.name == "slack_receive_message"
 
