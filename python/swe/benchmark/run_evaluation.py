@@ -2,7 +2,8 @@
 import datetime
 import logging
 
-from composio_swe.agent.crewai import CrewaiAgent, SWEArgs
+from composio_swe.agent.crewai_agent import CrewaiAgent, SWEArgs
+from composio_swe.config.config_store import IssueConfig
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context
 from datasets import load_dataset
@@ -202,12 +203,12 @@ def run():
             logger.info(
                 "found patch-id: %s and install_commit_id: %s", patch, install_commit_id
             )
-            issue_config = {
-                "repo_name": issue["repo"],
-                "issue_id": issue["instance_id"],
-                "base_commit_id": issue["base_commit"],
-                "issue_desc": issue_description,
-            }
+            issue_config = IssueConfig(
+                repo_name=issue["repo"],
+                issue_id=issue["instance_id"],
+                base_commit_id=issue["base_commit"],
+                issue_desc=issue_description,
+            )
             logger.info(
                 f"starting agent for issue-id: {issue['instance_id']}\n"
                 f"issue-description: {issue_description}\n"

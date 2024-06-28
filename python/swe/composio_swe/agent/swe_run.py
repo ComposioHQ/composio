@@ -1,23 +1,20 @@
-
-
-from swe.composio_swe.agent.base_swe_agent import SWEArgs
-from swe.composio_swe.config.config_store import IssueConfig
-from swe.composio_swe.agent.crewai_agent import CrewaiAgent
-from swe.composio_swe.config.context import Context, set_context
+from composio_swe.agent.base_swe_agent import SWEArgs
+from composio_swe.agent.crewai_agent import CrewaiAgent
+from composio_swe.config.config_store import IssueConfig
+from composio_swe.config.context import Context, set_context
 
 
 if __name__ == "__main__":
-    issue = IssueConfig(
+    issue_config = IssueConfig(
         repo_name="ComposioHQ/composio",
         issue_id="123",
-        issue_desc="we have a workspace concept, you can check code in python/composio/workspace folder. Currently it supports"
-                  "local docker container. The actions that are supported by on container is defined in python/composio/local_tools/local_workspace."
-                  "Can you generate code to handle a simple workspace which runs on current machine with "
-                  "a given path as workspace-path and starts the environment there and is able to perform all actions that can be performed on "
-                  "local docker container.",
+        base_commit_id="abc",
+        issue_desc="""Composio Client should be able to run without API Key. It should err to the user only if local tools are not used.
+        In case of local tools are being used, then it should not err if the API Key is not provided.
+        Main change should happen only in python/composio/client/__init__.py""",
     )
     ctx = Context()
-    ctx.issue_config = issue
+    ctx.issue_config = issue_config
     set_context(ctx)
 
     args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)  # type: ignore
