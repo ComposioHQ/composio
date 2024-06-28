@@ -1,16 +1,18 @@
 # Import necessary libraries
 import os
-import dotenv 
+from dotenv import load_dotenv
 from composio_llamaindex import Action, App, ComposioToolSet
 from composio.client.collections import TriggerEventData
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
+load_dotenv()
+
 llm = OpenAI(model="gpt-4o")
 
 # Bot configuration constants
-BOT_USER_ID = "U06P2JKQN5B"  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
+BOT_USER_ID = "U075WAF46BE"  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
@@ -73,7 +75,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         action=Action.SLACKBOT_CHAT_POST_MESSAGE,
         params={
             "channel": channel_id,
-            "text": result,
+            "text": result.response,
             "thread_ts": thread_ts,
         },
     )

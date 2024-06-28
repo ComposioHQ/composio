@@ -1,5 +1,6 @@
 # Step 1: Import necessary libraries
 import os
+from dotenv import load_dotenv
 from typing import Dict
 
 from composio_openai import Action, App, ComposioToolSet
@@ -7,6 +8,7 @@ from openai import OpenAI
 
 from composio.client.collections import TriggerEventData
 
+load_dotenv()
 
 # api_key for OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

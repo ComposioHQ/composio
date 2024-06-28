@@ -1,29 +1,16 @@
 import os
-
+from dotenv import load_dotenv
 from composio_openai import Action, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
+load_dotenv()
 
 
 # Initialize the ComposioToolSet
 composio_toolset = ComposioToolSet()
 
-# Define the code review assistant prompt
-code_review_assistant_prompt = """
-You are an experienced code reviewer.
-Your task is to review the provided file diff and give constructive feedback.
-
-Follow these steps:
-1. Identify if the file contains significant logic changes.
-2. Summarize the changes in the diff in clear and concise English, within 100 words.
-3. Provide actionable suggestions if there are any issues in the code.
-
-Once you have decided on the changes, for any TODOs, create a Github issue.
-And send the summary of the PR review to #ram channel on slack. Slack doesn't have markdown and so send a plain text message.
-Also add the comprehensive review to the PR as a comment.
-"""
 
 # Define the tools
 pr_agent_tools = composio_toolset.get_actions(

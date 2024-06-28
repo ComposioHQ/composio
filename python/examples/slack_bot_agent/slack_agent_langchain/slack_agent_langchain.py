@@ -1,10 +1,14 @@
 # Import necessary libraries
+import os
+from dotenv import load_dotenv
 from composio_langchain import Action, App, ComposioToolSet
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 from composio.client.collections import TriggerEventData
 from langchain_openai import ChatOpenAI
+
+load_dotenv()
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
@@ -56,7 +60,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         action=Action.SLACKBOT_CHAT_POST_MESSAGE,
         params={
             "channel": channel_id,
-            "text": result,
+            "text": result['output'],
             "thread_ts": thread_ts,
         },
     )

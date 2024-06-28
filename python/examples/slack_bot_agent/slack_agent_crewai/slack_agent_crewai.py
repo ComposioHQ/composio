@@ -1,8 +1,12 @@
 # Import necessary libraries
+import os
+from dotenv import load_dotenv
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Task
 from composio.client.collections import TriggerEventData
 from langchain_openai import ChatOpenAI
+
+load_dotenv()
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 

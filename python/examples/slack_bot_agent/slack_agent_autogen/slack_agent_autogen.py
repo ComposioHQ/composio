@@ -1,9 +1,10 @@
 # Import necessary libraries
 import os
-import dotenv
+from dotenv import load_dotenv
 from autogen import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 from composio.client.collections import TriggerEventData
+load_dotenv()
 
 
 llm_config = {
@@ -68,7 +69,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         action=Action.SLACKBOT_CHAT_POST_MESSAGE,
         params={
             "channel": channel_id,
-            "text": result,
+            "text": result.summary,
             "thread_ts": thread_ts,
         },
     )

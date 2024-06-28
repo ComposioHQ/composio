@@ -1,12 +1,13 @@
 import os
-
-from composio_openai import Action, ComposioToolSet
+from dotenv import load_dotenv
+from composio_langchain import Action, ComposioToolSet
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
 
+load_dotenv()
 
 # Initialize the ComposioToolSet
 composio_toolset = ComposioToolSet()
@@ -58,7 +59,7 @@ def review_new_pr(event: TriggerEventData) -> None:
     query_task = f"Review the following code changes: {code_to_review}"
     # Execute the agent
     res = agent_executor.invoke({"input": query_task})
-
+    print(res)
 
 print("Listener started!")
 listener.listen()

@@ -29,5 +29,4 @@ Now, fill in the `.env` file with your secrets.
 ```shell
 python cookbook/examples/slack_agent_langchain/slack_agent_langchain.py
 ```
-Your database operations should be performed as described by the script, with SQL queries executed and logged accordingly.
 

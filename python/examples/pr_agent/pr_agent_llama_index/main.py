@@ -1,10 +1,8 @@
 # Import necessary libraries
 import os  # For accessing environment variables
-
 import dotenv  # For loading environment variables from a .env file
-
 # Import modules from Composio and LlamaIndex
-from composio_llamaindex import App, ComposioToolSet
+from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
@@ -16,7 +14,7 @@ from composio.client.collections import TriggerEventData
 dotenv.load_dotenv()
 
 # Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+composio_toolset = ComposioToolSet()
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
 # Define the tools
@@ -64,8 +62,8 @@ agent = FunctionCallingAgentWorker(
     allow_parallel_tool_calls=False,  # Disallow parallel tool calls
     verbose=True,  # Enable verbose output
 ).as_agent()
-# Define the code review assistant prompt
-code_review_assistant_prompt = 
+
+
 # Define the tools
 pr_agent_tools = composio_toolset.get_actions(
     actions=[
@@ -83,7 +81,7 @@ def review_new_pr(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     code_to_review = str(event.payload)
     response = agent.chat("Review the following pr:"+code_to_review)
-    return response
+    print(response)
 
 print("Listener started!")
 listener.listen()
