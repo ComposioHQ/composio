@@ -28,7 +28,7 @@ from composio.client.enums import Action, App
 from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
-from composio.exceptions import raise_api_key_missing
+from composio.exceptions import ApiKeyNotProvidedError
 from composio.utils.url import get_api_url_base
 from composio.workspace.workspace_factory import WorkspaceFactory
 
@@ -38,6 +38,9 @@ _valid_keys: t.Set[str] = set()
 
 class Composio(BaseClient):
     """Composio SDK Client."""
+
+    _api_key: t.Optional[str] = None
+    _http: t.Optional[HttpClient] = None
 
     def __init__(
         self,
@@ -52,20 +55,9 @@ class Composio(BaseClient):
         :param base_url: Base URL for Composio server
         :param runtime: Runtime specifier
         """
-        api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
-        if api_key is None:
-            raise_api_key_missing()
-
+        self._api_key = api_key
+        self.runtime = runtime
         self.base_url = base_url or get_api_url_base()
-        self.api_key = self.validate_api_key(
-            key=t.cast(str, api_key),
-            base_url=self.base_url,
-        )
-        self.http = HttpClient(
-            base_url=self.base_url,
-            api_key=self.api_key,
-            runtime=runtime,
-        )
 
         self.connected_accounts = ConnectedAccounts(client=self)
         self.apps = Apps(client=self)
@@ -73,6 +65,38 @@ class Composio(BaseClient):
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
+
+    @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            env_api_key = os.environ.get(ENV_COMPOSIO_API_KEY)
+            if env_api_key:
+                self._api_key = env_api_key
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        self._api_key = self.validate_api_key(
+            key=t.cast(str, self._api_key),
+            base_url=self.base_url,
+        )
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, value: str) -> None:
+        self._api_key = value
+
+    @property
+    def http(self) -> HttpClient:
+        if not self._http:
+            self._http = HttpClient(
+                base_url=self.base_url,
+                api_key=self.api_key,
+                runtime=self.runtime,
+            )
+        return self._http
+
+    @http.setter
+    def http(self, value: HttpClient) -> None:
+        self._http = value
 
     @staticmethod
     def validate_api_key(key: str, base_url: t.Optional[str] = None) -> str:
