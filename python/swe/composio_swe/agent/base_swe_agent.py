@@ -11,6 +11,7 @@ from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
+from composio.utils.logging import WithLogger
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -21,8 +22,9 @@ class SWEArgs(BaseModel):
     agent_logs_dir: Path = Field(..., description="logs for agent")
 
 
-class BaseSWEAgent(ABC):
+class BaseSWEAgent(ABC, WithLogger):
     def __init__(self, args: SWEArgs):
+        super().__init__()
         self.agent_logs_dir = args.agent_logs_dir
         self.composio_client = Composio()
         # initialize agent logs and history dict
@@ -52,16 +54,19 @@ class BaseSWEAgent(ABC):
         )
 
         start_time = datetime.datetime.now()
-        self.composio_client.actions.execute(
+        action_response = self.composio_client.actions.execute(
             action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": repo_name,
-                "base_commit": base_commit_id,
+                "commit_id": base_commit_id,
             },
         )
+        if isinstance(action_response, dict) and action_response["status"] == "failure":
+            raise RuntimeError(action_response["details"])
+        self.logger.info("git clone completed, response: %s", action_response)
         git_clone_time = datetime.datetime.now() - start_time
-        print("git clone completed, time taken: %s", git_clone_time)
+        self.logger.info("git clone completed, time taken: %s", git_clone_time)
         return workspace_id
 
     @abstractmethod
