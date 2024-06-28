@@ -1,7 +1,10 @@
 from abc import abstractmethod, ABC
+
 from pydantic import BaseModel, Field
 import typing as t
-from composio.local_tools.local_workspace.commons.utils import communicate, process_output
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
+
+logger = get_logger("workspace")
 
 
 class Command:
@@ -12,6 +15,12 @@ class Command:
         return self.command
 
 
+class CommandFile(BaseModel):
+    datum: t.AnyStr = Field(..., description="file content for the command file")
+    cmd_type: str = Field(..., description="command type one of - source_file, script,")
+    name: str = Field(..., description="name of the command file on the workspace")
+
+
 class WorkspaceEnv(BaseModel):
     '''
     state of the workspace environment, will be used to specify
@@ -20,6 +29,9 @@ class WorkspaceEnv(BaseModel):
     '''
     env_variables: t.Dict[str, t.Any] = Field(..., description="env-variables needed to set")
     init_scripts: t.List[str] = Field(..., description="init scripts needs to run on the workspace")
+    copy_file_to_workspace: t.List[CommandFile] = Field(..., description="list of command files to copy on workspace")
+    commands_to_execute: t.List[str] = Field(..., description="commands to execute to setup the env")
+    setup_cmd: str = Field(..., description="setup command for the workspace")
 
 
 class BaseCmdResponse(BaseModel):
@@ -35,7 +47,7 @@ class Workspace(ABC):
         pass
 
     @abstractmethod
-    def communicate(self, cmd: Command, timeout: int=25) -> BaseCmdResponse:
+    def communicate(self, cmd: Command, timeout: int = 25) -> BaseCmdResponse:
         pass
 
     @abstractmethod

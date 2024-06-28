@@ -20,7 +20,7 @@ from composio.local_tools.local_workspace.commons.utils import (
 )
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 COMMANDS_CONFIG_PATH = "../config/commands.yaml"
 TYPE_WORKSPACE_LOCAL_DOCKER = "local_docker"

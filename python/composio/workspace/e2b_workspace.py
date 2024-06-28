@@ -1,10 +1,11 @@
 import subprocess
 from .base_workspace import *
+from workspace_clients import E2BClient
 
 
 class E2BWorkspace(Workspace):
-    def __init__(self, workspace_id: str):
-        self.sandbox_id = workspace_id
+    def __init__(self, args, client: E2BClient):
+        self.sandbox_id = None
         self.sandbox = None  # Assuming a sandbox object needs to be managed
 
     def setup(self, env: WorkspaceEnv, **kwargs):
@@ -15,7 +16,7 @@ class E2BWorkspace(Workspace):
         # Reset the sandbox to its initial state
         pass
 
-    def communicate(self, cmd: Command, timeout: int) -> BaseCmdResponse:
+    def communicate(self, cmd: Command, timeout: int = 25) -> BaseCmdResponse:
         if self.sandbox is None:
             raise ValueError("Sandbox is None")
         result = subprocess.run(
