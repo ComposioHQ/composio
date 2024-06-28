@@ -7,20 +7,9 @@ from swe.composio_swe.config.context import Context, set_context
 
 
 if __name__ == "__main__":
-    issue_config = {
-        "repo_name": "ComposioHQ/composio",
-        "issue_id": "123",
-        "base_commit_id": "abc",
-        "issue_desc": "we have a workspace concept, you can check code in python/composio/workspace folder. Currently it supports"
-                      "local docker container. The actions that are supported by on container is defined in python/composio/local_tools/local_workspace."
-                      "Can you generate code to handle a simple workspace which runs on current machine with "
-                      "a given path as workspace-path and starts the environment there and is able to perform all actions that can be performed on "
-                      "local docker container.",
-    }
     issue = IssueConfig(
         repo_name="ComposioHQ/composio",
         issue_id="123",
-        base_commit_id="abc",
         issue_desc="we have a workspace concept, you can check code in python/composio/workspace folder. Currently it supports"
                   "local docker container. The actions that are supported by on container is defined in python/composio/local_tools/local_workspace."
                   "Can you generate code to handle a simple workspace which runs on current machine with "

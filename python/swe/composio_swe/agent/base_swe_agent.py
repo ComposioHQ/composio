@@ -71,8 +71,7 @@ class BaseSWEAgent(ABC):
         if workspace_id is None:
             assert (
                 issue_config.repo_name is not None
-                and issue_config.base_commit_id is not None
-            ), "Both repo_name and base_commit_id must be provided in issue_config"
+            ), "repo_name should be provided"
             workspace_id = self.create_and_setup_workspace(
                 issue_config.repo_name, issue_config.base_commit_id
             )
