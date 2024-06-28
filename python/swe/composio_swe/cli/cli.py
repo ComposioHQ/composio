@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 import click
 import git
-from composio_swe.agent.crewai import CrewaiAgent, SWEArgs
+from composio_swe.agent.crewai_agent import CrewaiAgent, SWEArgs
 from composio_swe.config.config_store import IssueConfig
 from composio_swe.config.constants import (
     KEY_API_KEY,
