@@ -1,6 +1,8 @@
 # Import necessary libraries
-from composio_crewai import Action, App, ComposioToolSet
-from crewai import Agent, Crew, Task
+from composio_langchain import Action, App, ComposioToolSet
+from langchain import hub
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain_openai import ChatOpenAI
 from composio.client.collections import TriggerEventData
 from langchain_openai import ChatOpenAI
 
@@ -17,27 +19,12 @@ composio_toolset = ComposioToolSet()
 composio_tools = composio_toolset.get_tools(
     apps=[App.CODEINTERPRETER, App.EXA, App.FIRECRAWL, App.TAVILY]
 )
-
+prompt = hub.pull("hwchase17/openai-functions-agent")
 # Create a listener to handle Slack events and triggers for Composio
 listener = composio_toolset.create_trigger_listener()
 
-# Define the Crew AI agent with specific role, goal, and backstory
-crewai_agent = Agent(
-    role="Assistant Agent",
-    goal="Assist users by answering questions and performing tasks using integrated tools",
-    backstory=("As an AI assistant, I am equipped with a suite of tools to help users"),
-    verbose=True,
-    tools=composio_tools,
-    llm=llm,
-)
-
-task = Task(
-    description="Respond to user queries and perform actions as requested. The question is: {message}",
-    agent=crewai_agent,
-    expected_output="Confirmation of the completed action or a well-informed response",
-)
-
-crew = Crew(agents=[crewai_agent], tasks=[task], verbose=2)
+query_agent = create_openai_functions_agent(llm, composio_tools, prompt)
+agent_executor = AgentExecutor(agent=query_agent, tools=composio_tools, verbose=True)
 
 
 # Callback function for handling new messages in a Slack channel
@@ -63,7 +50,7 @@ def callback_new_message(event: TriggerEventData) -> None:
     thread_ts = payload.get("event", {}).get("thread_ts", ts)
 
     # Process the message and post the response in the same channel or thread
-    result = crew.kickoff(inputs={"message": message})
+    result = agent_executor.invoke({"input": message})
     print(result)
     composio_toolset.execute_action(
         action=Action.SLACKBOT_CHAT_POST_MESSAGE,
