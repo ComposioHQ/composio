@@ -2,6 +2,7 @@ import typing as t
 from uuid import uuid4
 
 from composio.workspace import DockerWorkspace, E2BWorkspace, LocalDockerArgumentsModel
+from composio.workspace.base_workspace import Workspace
 from composio.workspace.workspace_clients import DockerIoClient, E2BClient, WorkspaceType
 
 import composio.workspace.constants as workspace_const
@@ -64,6 +65,11 @@ class WorkspaceFactory:
 
     def get_registered_manager(self, workspace_id: str) -> t.Optional[t.Dict[str, t.Any]]:
         return self._registry.get(workspace_id)
+
+    def get_workspace_by_id(self, workspace_id: str) -> Workspace:
+        workspace_meta = self._registry.get(workspace_id)
+        workspace = workspace_meta[KEY_WORKSPACE_MANAGER]
+        return workspace
 
     def remove_workspace_manager(self, workspace_id: str) -> None:
         if workspace_id in self._registry:

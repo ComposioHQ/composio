@@ -44,8 +44,6 @@ from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 class TestWorkspaceGitWorkflow(unittest.TestCase):
     def test_git_workflow(self):
         # Setup - create an instance of CreateWorkspaceAction
-        w = WorkspaceFactory()
-
         workspace_id = WorkspaceFactory.get_instance().create_workspace(workspace_type=WorkspaceType.DOCKER,
                                                          local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"))
 
