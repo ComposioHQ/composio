@@ -11,7 +11,7 @@ from composio import Action, Composio
 from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
     CreateWorkspaceResponse,
 )
-from composio.utils.logging import get as get_logger, WithLogger
+from composio.utils.logging import WithLogger
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
