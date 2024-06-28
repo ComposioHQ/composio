@@ -8,7 +8,7 @@ if __name__ == "__main__":
     issue_config = IssueConfig(
         repo_name="ComposioHQ/composio",
         issue_id="123",
-        base_commit_id="abc",
+        base_commit_id="",
         issue_desc="""Composio Client should be able to run without API Key. It should err to the user only if local tools are not used.
         In case of local tools are being used, then it should not err if the API Key is not provided.
         Main change should happen only in python/composio/client/__init__.py""",
