@@ -65,8 +65,7 @@ class Composio(BaseClient):
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
-        
-    
+
     @property
     def api_key(self) -> str:
         if self._api_key is None:
