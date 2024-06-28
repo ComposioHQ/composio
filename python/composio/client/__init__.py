@@ -37,8 +37,8 @@ _valid_keys: t.Set[str] = set()
 
 class Composio(BaseClient):
     """Composio SDK Client."""
+
     _api_key: t.Optional[str] = None
-    _api_key_validated: bool = False
     _http: t.Optional[HttpClient] = None
 
     def __init__(
@@ -73,12 +73,10 @@ class Composio(BaseClient):
                 self._api_key = env_api_key
         if self._api_key is None:
             raise ApiKeyNotProvidedError()
-        if not self._api_key_validated:
-            self._api_key = self.validate_api_key(
-                key=t.cast(str, self._api_key),
-                base_url=self.base_url,
-            )
-            self._api_key_validated = True
+        self._api_key = self.validate_api_key(
+            key=t.cast(str, self._api_key),
+            base_url=self.base_url,
+        )
         return self._api_key
 
     @api_key.setter
