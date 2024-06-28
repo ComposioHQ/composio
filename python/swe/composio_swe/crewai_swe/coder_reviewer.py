@@ -1,7 +1,15 @@
-from composio_swe.agent.base_swe_agent import SWEArgs
-from composio_swe.agent.crewai_agent import CrewaiAgent
+import typing as t
 from composio_swe.config.config_store import IssueConfig
-from composio_swe.config.context import Context, set_context
+
+from swe.composio_swe.agent.base_swe_agent import BaseSWEAgent, SWEArgs
+
+
+class CoderReviewer(BaseSWEAgent):
+    def __init__(self, args: SWEArgs) -> None:
+        super().__init__(args)
+
+    def solve_issue(self, workspace_id: str, issue_config: IssueConfig) -> None:
+        pass
 
 
 if __name__ == "__main__":
@@ -14,7 +22,7 @@ if __name__ == "__main__":
     )
 
     args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)  # type: ignore
-    c_agent = CrewaiAgent(args)
+    c_agent = CoderReviewer(args)
 
     patch = c_agent.setup_and_solve(issue_config=issue_config)
     print(patch)

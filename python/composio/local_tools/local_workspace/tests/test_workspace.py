@@ -167,6 +167,8 @@ class TestWorkspaceGitWorkflow(unittest.TestCase):
         self.assertIsNotNone(open_file_result)
         print("Open File result: ", open_file_result)
 
+        print(h.get_history(workspace_id))
+
         # Check that the file content doesn't contain "Hello, World!"
         self.assertNotIn("Hello", open_file_result)
 

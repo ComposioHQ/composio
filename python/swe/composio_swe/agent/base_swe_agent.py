@@ -33,6 +33,10 @@ class BaseSWEAgent(ABC):
         self.agent_logs: t.Dict[str, t.Any] = {}
         self.current_logs: t.List[t.Any] = []
 
+    @abstractmethod
+    def solve_issue(self, workspace_id: str, issue_config: IssueConfig):
+        pass
+
     def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
         start_time = datetime.datetime.now()
         action_response = self.composio_client.actions.execute(
@@ -63,10 +67,6 @@ class BaseSWEAgent(ABC):
         git_clone_time = datetime.datetime.now() - start_time
         print("git clone completed, time taken: %s", git_clone_time)
         return workspace_id
-
-    @abstractmethod
-    def solve_issue(self, workspace_id: str, issue_config: IssueConfig):
-        pass
 
     def save_history(self, instance_id):
         self.agent_logs[instance_id] = self.current_logs
