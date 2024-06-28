@@ -1,4 +1,9 @@
 from abc import abstractmethod, ABC
+from composio.local_tools.local_workspace.commons.history_processor import (
+    BaseCmdResponse,
+    HistoryProcessor,
+    history_recorder,
+)
 
 from pydantic import BaseModel, Field
 import typing as t
@@ -19,25 +24,30 @@ class CommandFile(BaseModel):
 
 
 class WorkspaceEnv(BaseModel):
-    '''
+    """
     state of the workspace environment, will be used to specify
     -- init env for a workspace
     -- set a workspace to some defined env-state
-    '''
-    env_variables: t.Dict[str, t.Any] = Field(default={}, description="env-variables needed to set")
-    init_scripts: t.List[str] = Field(default=[], description="init scripts needs to run on the workspace")
-    copy_file_to_workspace: t.List[CommandFile] = Field(default=[], description="list of command files to copy on workspace")
-    commands_to_execute: t.List[str] = Field(default=[], description="commands to execute to setup the env")
+    """
+
+    env_variables: t.Dict[str, t.Any] = Field(
+        default={}, description="env-variables needed to set"
+    )
+    init_scripts: t.List[str] = Field(
+        default=[], description="init scripts needs to run on the workspace"
+    )
+    copy_file_to_workspace: t.List[CommandFile] = Field(
+        default=[], description="list of command files to copy on workspace"
+    )
+    commands_to_execute: t.List[str] = Field(
+        default=[], description="commands to execute to setup the env"
+    )
     setup_cmd: str = Field(default="", description="setup command for the workspace")
 
 
-class BaseCmdResponse(BaseModel):
-    output: t.Any = Field(..., description="response from command")
-    return_code: int = Field(..., description="return code from running a command on workspace")
-
-
 class Workspace(ABC):
-    workspace_id: str = None
+    workspace_id: str
+    history_processor: HistoryProcessor
 
     @abstractmethod
     def setup(self, env: WorkspaceEnv, **kwargs):
@@ -46,6 +56,12 @@ class Workspace(ABC):
     @abstractmethod
     def communicate(self, cmd: str, timeout: int = 25) -> BaseCmdResponse:
         pass
+
+    @history_recorder()
+    def record_history_and_communicate(
+        self, cmd: str, timeout: int = 25
+    ) -> BaseCmdResponse:
+        return self.communicate(cmd, timeout)
 
     @abstractmethod
     def reset(self):
@@ -62,5 +78,3 @@ class Workspace(ABC):
     @abstractmethod
     def close(self):
         pass
-
-

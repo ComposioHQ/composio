@@ -5,6 +5,9 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 
+import typing as t
+from pydantic import BaseModel, Field
+
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 
@@ -48,15 +51,22 @@ class HistoryProcessor:
         return file_path.name
 
 
+class BaseCmdResponse(BaseModel):
+    output: t.Any = Field(..., description="response from command")
+    return_code: int = Field(
+        ..., description="return code from running a command on workspace"
+    )
+
+
 def history_recorder():
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            output, return_code = func(self, *args, **kwargs)
+            base_cmd_response: BaseCmdResponse = func(self, *args, **kwargs)
             if hasattr(self, "history_processor") and hasattr(self, "workspace_id"):
                 command = ""
-                if hasattr(self, "command"):
-                    command = self.command + " " + args[0].json()
+                if len(args) > 0:
+                    command = args[0]
                 else:
                     logger.error(
                         "command is not set in command-runner action class. History will have empty command for this"
@@ -65,9 +75,9 @@ def history_recorder():
                 # state = self.workspace_factory.get_workspace_state(self.workspace_id)
                 state = None
                 self.history_processor.log_command(
-                    self.workspace_id, command, output, state
+                    self.workspace_id, command, base_cmd_response.output, state
                 )
-            return output, return_code
+            return base_cmd_response
 
         return wrapper
 
