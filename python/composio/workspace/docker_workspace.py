@@ -69,10 +69,10 @@ class DockerWorkspace(Workspace):
         for cmd_file in env.copy_file_to_workspace:
             name = cmd_file.name
             contents = cmd_file.datum
-            self.docker_client.copy_file_to_container(
-                self.container_obj, contents, f"/root/commands/{name}"
+            self.copy_file_to_container(
+                contents, f"/root/commands/{name}"
             )
-            if cmd_file["type"] == "source_file":
+            if cmd_file.cmd_type == "source_file":
                 self.communicate_with_handling(
                     f"source /root/commands/{name}",
                     error_msg=(
@@ -80,12 +80,12 @@ class DockerWorkspace(Workspace):
                         f"start the file with a shebang (e.g. #!/usr/bin/env python)."
                     ),
                 )
-            elif cmd_file["type"] == "script":
+            elif cmd_file.cmd_type == "script":
                 self.communicate_with_handling(
                     f"chmod +x /root/commands/{name}",
                     error_msg=f"Failed to chmod {name}",
                 )
-            elif cmd_file["type"] == "utility":
+            elif cmd_file.cmd_type == "utility":
                 # nothing to do for utility scripts
                 pass
             else:
