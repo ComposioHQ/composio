@@ -24,6 +24,7 @@ class SWEArgs(BaseModel):
 
 class BaseSWEAgent(ABC, WithLogger):
     def __init__(self, args: SWEArgs):
+        super().__init__()
         self.agent_logs_dir = args.agent_logs_dir
         self.composio_client = Composio()
         # initialize agent logs and history dict
