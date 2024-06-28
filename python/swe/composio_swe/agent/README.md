@@ -25,3 +25,17 @@ To modify the agent and improve the agent's performance:
 
 1. Modify the agent's code in swe.py
 2. Run the script with `python swe_run.py`
+
+## Implementing your own SWE-Agent
+
+1. Create a new class that inherits from `BaseSWEAgent`.
+2. Implement the `__init__` method to initialize any dependencies that your agent requires and set the tools that your agent requires.
+3. Implement the `solve_issue` method to define the logic for solving the issue. This involves the agentic logic to solve the issue.
+4. For example, refer `crewai_agent.py` and `llama_agent.py` for implementing the agents.
+5. For implementing the tools, refer `composio/local_tools/local_workspace/workspace/tool.py` for implementing the tools.
+
+## Running the benchmark
+
+1. Find the benchmark at `python/swe/benchmark`.
+2. To run the benchmark, run `python run_evaluation.py`.
+3. This will run the SWE-Bench (https://www.swebench.com/) benchmark for the agent. You need to init your agent inside the run_evaluation.py file.
