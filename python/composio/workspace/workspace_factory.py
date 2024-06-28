@@ -41,7 +41,7 @@ class WorkspaceFactory:
                          **kwargs) -> str:
         if workspace_type == WorkspaceType.DOCKER:
             workspace = DockerWorkspace(local_docker_args.image_name, self.docker_client, local_docker_args)
-            workspace.setup(env=workspace_const.docker_workspace_env)
+            workspace.setup(env=workspace_const.get_default_docker_env())
             workspace_id = str(uuid4())
             self._registry[workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
