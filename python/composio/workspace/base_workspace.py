@@ -7,12 +7,9 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 logger = get_logger("workspace")
 
 
-class Command:
-    def __init__(self, command: str):
-        self.command = command
-
-    def get_cmd_str(self) -> str:
-        return self.command
+class Command(BaseModel):
+    name: str = Field(..., description="name of the command")
+    code: str = Field(..., description="code to run for that command")
 
 
 class CommandFile(BaseModel):
@@ -47,7 +44,7 @@ class Workspace(ABC):
         pass
 
     @abstractmethod
-    def communicate(self, cmd: Command, timeout: int = 25) -> BaseCmdResponse:
+    def communicate(self, cmd: str, timeout: int = 25) -> BaseCmdResponse:
         pass
 
     @abstractmethod

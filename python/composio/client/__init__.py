@@ -30,6 +30,7 @@ from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import raise_api_key_missing
 from composio.utils.url import get_api_url_base
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 _valid_keys: t.Set[str] = set()
@@ -72,6 +73,7 @@ class Composio(BaseClient):
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
+        self.workspace_manager = WorkspaceFactory()
 
     @staticmethod
     def validate_api_key(key: str, base_url: t.Optional[str] = None) -> str:

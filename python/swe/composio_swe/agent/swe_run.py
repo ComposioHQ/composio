@@ -1,6 +1,8 @@
-from composio_swe.agent.base_swe_agent import SWEArgs
-from composio_swe.agent.crewai import CrewaiAgent
-from composio_swe.config.context import Context, set_context
+
+
+from swe.composio_swe.agent.base_swe_agent import SWEArgs
+from swe.composio_swe.agent.crewai import CrewaiAgent
+from swe.composio_swe.config.context import Context, set_context
 
 
 if __name__ == "__main__":

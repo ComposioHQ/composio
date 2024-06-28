@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from composio_swe.config.config_store import IssueConfig
+from composio.workspace.workspace_factory import WorkspaceType
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
@@ -35,15 +36,16 @@ class BaseSWEAgent(ABC):
 
     def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
         start_time = datetime.datetime.now()
-        action_response = self.composio_client.actions.execute(
-            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
-            params={},
-        )
-        if isinstance(action_response, dict) and action_response["status"] == "failure":
-            raise RuntimeError(action_response["details"])
-
-        workspace_create_resp = CreateWorkspaceResponse.model_validate(action_response)
-        workspace_id = workspace_create_resp.workspace_id
+        workspace_id = self.composio_client.workspace_manager.create_workspace(workspace_type=WorkspaceType.DOCKER)
+        # action_response = self.composio_client.actions.execute(
+        #     action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
+        #     params={},
+        # )
+        # if isinstance(action_response, dict) and action_response["status"] == "failure":
+        #     raise RuntimeError(action_response["details"])
+        #
+        # workspace_create_resp = CreateWorkspaceResponse.model_validate(action_response)
+        # workspace_id = workspace_create_resp.workspace_id
         workspace_creation_time = datetime.datetime.now() - start_time
         print(
             "workspace is created, workspace-id is: %s, creation time: %s",

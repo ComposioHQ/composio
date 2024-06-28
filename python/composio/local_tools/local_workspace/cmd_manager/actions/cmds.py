@@ -109,6 +109,11 @@ class CreateFileCmd(BaseAction):
         output, return_code = process_output(output, return_code)
         return BaseResponse(output=output, return_code=return_code)
 
+    def validate_file_name(self, file_name):
+        if file_name is None or file_name.strip() == "":
+            return "Exception: file-name can not be empty", 1
+        return None, 0
+
 
 class OpenCmdRequest(BaseRequest):
     file_name: str = Field(..., description="file path to open in the editor")

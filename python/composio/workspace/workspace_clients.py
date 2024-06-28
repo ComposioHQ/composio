@@ -62,13 +62,10 @@ class DockerIoClient:
             )
             raise RuntimeError(msg) from e
 
-    @classmethod
     def get_container(
-            cls, ctr_name: str, image_name: str, persistent: bool = False
+            self, ctr_name: str, image_name: str, persistent: bool = False
     ) -> Tuple[Popen, Set]:
-        instance = cls()
-        client = instance.get_client()
-        filtered_images = client.images.list(filters={"reference": image_name})
+        filtered_images = self.docker_client.images.list(filters={"reference": image_name})
 
         if not filtered_images:
             msg = (
@@ -92,13 +89,11 @@ class DockerIoClient:
             )
 
         if persistent:
-            return instance._get_persistent_container(ctr_name, image_name)
-        return instance._get_non_persistent_container(ctr_name, image_name)
+            return self._get_persistent_container(ctr_name, image_name)
+        return self._get_non_persistent_container(ctr_name, image_name)
 
-    @classmethod
-    def get_container_by_container_name(cls, container_name: str, image_name: str):
-        instance = cls()
-        filtered_images = instance.get_client().images.list(
+    def get_container_by_container_name(self, container_name: str, image_name: str):
+        filtered_images = self.docker_client.images.list(
             filters={"reference": image_name}
         )
         if len(filtered_images) == 0:
@@ -125,7 +120,7 @@ class DockerIoClient:
         backoff_time = 1  # Initial backoff time in seconds
         while attempt < max_attempts:
             try:
-                container_obj = instance.get_client().containers.get(container_name)
+                container_obj = self.docker_client.containers.get(container_name)
                 return container_obj
             except docker.errors.NotFound:
                 logger.debug("Couldn't find container. Let's wait and retry.")
@@ -253,7 +248,6 @@ class DockerIoClient:
     def _communicate(
         self, container, container_obj, cmd_input: str, parent_pids, timeout_duration=25
     ):
-        return_code = None
         try:
             cmd = cmd_input if cmd_input.endswith("\n") else cmd_input + "\n"
             os.write(container.stdin.fileno(), cmd.encode())
