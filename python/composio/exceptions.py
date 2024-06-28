@@ -31,17 +31,11 @@ class ComposioSDKError(Exception):
 class ApiKeyNotProvidedError(ComposioSDKError):
     """Raise when API key is required but not provided."""
 
-
-def raise_api_key_missing() -> None:
-    """
-    Raises `ApiKeyNotProvidedError` error.
-
-    :raises ApiKeyNotProvidedError: When invoked.
-    """
-    raise ApiKeyNotProvidedError(
-        message=(
-            "API Key not provided, either provide API key "
-            f"or export it as `{ENV_COMPOSIO_API_KEY}` "
-            "or run `composio login`"
+    def __init__(self) -> None:
+        super().__init__(
+            message=(
+                "API Key not provided, either provide API key "
+                f"or export it as `{ENV_COMPOSIO_API_KEY}` "
+                "or run `composio login`"
+            ),
         )
-    )

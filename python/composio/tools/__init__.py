@@ -28,7 +28,7 @@ from composio.constants import (
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
-from composio.exceptions import ComposioSDKError, raise_api_key_missing
+from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
 
 
@@ -77,7 +77,7 @@ class ComposioToolSet:
     @property
     def client(self) -> Composio:
         if self.api_key is None:
-            raise_api_key_missing()
+            raise ApiKeyNotProvidedError()
         return Composio(
             api_key=self.api_key,
             base_url=self.base_url,
