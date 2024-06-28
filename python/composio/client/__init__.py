@@ -37,6 +37,44 @@ _valid_keys: t.Set[str] = set()
 
 class Composio(BaseClient):
     """Composio SDK Client."""
+    _api_key: t.Optional[str]
+    _api_key_validated: bool = False
+    _http: t.Optional[HttpClient]
+
+    @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            env_api_key = os.environ.get(ENV_COMPOSIO_API_KEY)
+            if env_api_key:
+                self._api_key = env_api_key
+        if self._api_key is None:
+            raise_api_key_missing()
+            return ""
+        if not self._api_key_validated:
+            self._api_key = self.validate_api_key(
+                key=t.cast(str, self._api_key),
+                base_url=self.base_url,
+            )
+            self._api_key_validated = True
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, value: str) -> None:
+        self._api_key = value
+
+    @property
+    def http(self) -> HttpClient:
+        if not self._http:
+            self._http = HttpClient(
+                base_url=self.base_url,
+                api_key=self.api_key,
+                runtime=self.runtime,
+            )
+        return self._http
+
+    @http.setter
+    def http(self, value: HttpClient) -> None:
+        self._http = value
 
     def __init__(
         self,
@@ -51,20 +89,10 @@ class Composio(BaseClient):
         :param base_url: Base URL for Composio server
         :param runtime: Runtime specifier
         """
-        api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
-        if api_key is None:
-            raise_api_key_missing()
+        self._api_key = api_key
+        self.runtime = runtime
 
         self.base_url = base_url or get_api_url_base()
-        self.api_key = self.validate_api_key(
-            key=t.cast(str, api_key),
-            base_url=self.base_url,
-        )
-        self.http = HttpClient(
-            base_url=self.base_url,
-            api_key=self.api_key,
-            runtime=runtime,
-        )
 
         self.connected_accounts = ConnectedAccounts(client=self)
         self.apps = Apps(client=self)
