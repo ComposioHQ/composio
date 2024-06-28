@@ -45,11 +45,9 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
         self.command = ""
         self.return_code = None
 
-    def set_workspace(self, workspace_factory: WorkspaceFactory):
-        self.workspace = workspace_factory.get_registered_manager(self.workspace_id)
-
     def _setup(self, args: BaseRequest):
         self.workspace_id = args.workspace_id
+        self.workspace = WorkspaceFactory.get_instance().get_registered_manager(self.workspace_id)
         if self.workspace is None:
             logger.error("workspace_factory is not set")
             raise ValueError("workspace_factory is not set")

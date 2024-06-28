@@ -73,7 +73,6 @@ class Composio(BaseClient):
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
-        self.workspace_manager = WorkspaceFactory()
 
     @staticmethod
     def validate_api_key(key: str, base_url: t.Optional[str] = None) -> str:

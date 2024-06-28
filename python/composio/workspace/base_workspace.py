@@ -24,11 +24,11 @@ class WorkspaceEnv(BaseModel):
     -- init env for a workspace
     -- set a workspace to some defined env-state
     '''
-    env_variables: t.Dict[str, t.Any] = Field(..., description="env-variables needed to set")
-    init_scripts: t.List[str] = Field(..., description="init scripts needs to run on the workspace")
-    copy_file_to_workspace: t.List[CommandFile] = Field(..., description="list of command files to copy on workspace")
-    commands_to_execute: t.List[str] = Field(..., description="commands to execute to setup the env")
-    setup_cmd: str = Field(..., description="setup command for the workspace")
+    env_variables: t.Dict[str, t.Any] = Field(default={}, description="env-variables needed to set")
+    init_scripts: t.List[str] = Field(default=[], description="init scripts needs to run on the workspace")
+    copy_file_to_workspace: t.List[CommandFile] = Field(default=[], description="list of command files to copy on workspace")
+    commands_to_execute: t.List[str] = Field(default=[], description="commands to execute to setup the env")
+    setup_cmd: str = Field(default="", description="setup command for the workspace")
 
 
 class BaseCmdResponse(BaseModel):

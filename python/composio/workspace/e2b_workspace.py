@@ -1,6 +1,6 @@
 import subprocess
 from .base_workspace import *
-from workspace_clients import E2BClient
+from composio.workspace.workspace_clients import E2BClient
 
 
 class E2BWorkspace(Workspace):

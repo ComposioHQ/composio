@@ -12,7 +12,7 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
 )
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class SubmitPatchRequest(BaseModel):

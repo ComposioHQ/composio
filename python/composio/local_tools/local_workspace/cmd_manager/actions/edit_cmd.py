@@ -15,7 +15,7 @@ from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_EDIT_LINTING
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class EditFileRequest(BaseRequest):
@@ -57,13 +57,8 @@ class EditFile(BaseAction):
         self, request_data: EditFileRequest, authorisation_data: dict
     ) -> BaseResponse:
         workspace = workspace_utils.get_workspace_by_id(self.workspace_id)
-        self.script_file = SCRIPT_EDIT_LINTING
-        self.command = "edit"
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
-
-        workspace_response: BaseCmdResponse = workspace.communicate(
-            Command(command=full_command)
-        )
+        workspace_response: BaseCmdResponse = workspace.communicate(full_command)
         output, return_code = process_output(workspace_response.output, workspace_response.return_code)
         return BaseResponse(
             output=output,

@@ -18,7 +18,7 @@ docker_state_command: Command = Command(
     )
 
 commands_to_execute = (
-            [docker_state_command]
+            [docker_state_command.code]
             + ["pip install flake8"]
             + [f"{k}={v}" for k, v in DOCKER_ENV_VARS.items()]
         )
@@ -26,5 +26,5 @@ commands_to_execute = (
 docker_workspace_env = WorkspaceEnv(
     copy_file_to_workspace=[],
     commands_to_execute=commands_to_execute,
-    setup_cmd=""
+    setup_cmd=docker_state_command.code
 )

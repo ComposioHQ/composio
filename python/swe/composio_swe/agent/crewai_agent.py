@@ -1,7 +1,7 @@
 from itertools import chain
 
 from composio_crewai import Action, App, ComposioToolSet
-from composio_swe.config.config_store import IssueConfig
+from swe.composio_swe.config.config_store import IssueConfig
 from crewai import Agent, Task
 from langchain_core.agents import AgentAction, AgentFinish
 

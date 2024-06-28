@@ -6,9 +6,7 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    communicate,
-)
+from composio.workspace.base_workspace import BaseCmdResponse
 from composio.local_tools.local_workspace.commons.utils import (
     close_container,
     interrupt_container,
@@ -18,7 +16,7 @@ from composio.local_tools.local_workspace.commons.utils import (
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class RunCommandOnWorkspaceRequest(BaseRequest):
@@ -86,64 +84,31 @@ class RunCommandOnWorkspace(BaseAction):
             info (`dict`) - additional information (e.g. debugging information)
         """
         try:
-            if self.container_process is None:
-                logger.error("Container process is None")
-                return "\nCONTAINER PROCESS IS NONE", 1
-            output, return_code = communicate(
-                self.container_process,
-                self.container_obj,
-                action,
-                parent_pids=self.parent_pids,
-                timeout_duration=timeout,
-            )
-            output, return_code = process_output(output, return_code)
+            cmd_response: BaseCmdResponse = self.workspace.communicate(action, timeout)
+            output, return_code = process_output(cmd_response.output, cmd_response.return_code)
             return (
                 output,
                 return_code,
             )
         except TimeoutError:
             try:
-                self.interrupt()
                 return "\nEXECUTION TIMED OUT", 1
             except RuntimeError as e:
                 logger.warning(
                     "Failed to interrupt container: %s\nRESTARTING PROCESS.",
                     e,
                 )
-                self.close_container()
                 return (
                     "\nEXECUTION TIMED OUT AND INTERRUPT FAILED. RESTARTING PROCESS.",
                     1,
                 )
         except RuntimeError as e:
             logger.warning("Failed to execute command: %s\nRESTARTING PROCESS.", e)
-            self.close_container()
             return "\nCOMMAND FAILED TO EXECUTE. RESTARTING PROCESS.", 1
         except BrokenPipeError as e:
             logger.error("Broken pipe error: %s\nRESTARTING PROCESS.", e)
-            self.close_container()
             return "\nBROKEN PIPE ERROR. RESTARTING PROCESS.", 1
         except Exception as e:
             logger.error("cmd failed with exception: %s", e)
             return "\nEXECUTION FAILED OR COMMAND MALFORMED", 1
 
-    def close_container(self) -> None:
-        """
-        called when a command failed to run on the local docker container.
-        NOTE: this works here, as its a local container workspace,
-              for docker on cloud, handle it appropriately
-        """
-        self.close()
-        self.container_process = None
-        self.container_obj = None
-
-    def reset_container(self) -> None:
-        self.close()
-        self.container_process = None
-        self.container_obj = None
-
-    def close(self):
-        close_container(self.container_process, self.container_obj)
-
-    def interrupt(self):
-        interrupt_container(self.container_process, self.container_obj)

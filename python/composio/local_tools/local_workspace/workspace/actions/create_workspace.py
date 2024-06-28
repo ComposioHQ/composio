@@ -29,7 +29,7 @@ from .base_workspace_action import (
 )
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
 

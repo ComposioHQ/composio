@@ -14,7 +14,7 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
 
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class GetWorkspaceHistoryRequest(BaseModel):

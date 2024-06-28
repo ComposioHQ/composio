@@ -36,6 +36,7 @@ class FlyIoClient:
 
 class DockerIoClient:
     def __init__(self):
+        self.docker_client = None
         self.docker_client = self.get_client()
 
     def get_client(self):

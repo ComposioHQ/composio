@@ -11,7 +11,7 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from .actions import GetWorkspaceHistory
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class HistoryKeeper(Tool):

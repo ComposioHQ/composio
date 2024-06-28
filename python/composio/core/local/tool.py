@@ -24,8 +24,8 @@ class Tool:
 
         for action_class in self.actions():
             action_instance = action_class()
-            if action_class.runs_on_workspace:
-                action_instance.set_workspace(self.get_workspace_factory())
+            # if action_class.runs_on_workspace:
+            #     action_instance.set_workspace(self.get_workspace_factory())
             action_name = action_instance.get_tool_merged_action_name()
             action_objects_dict[action_name] = action_instance
 

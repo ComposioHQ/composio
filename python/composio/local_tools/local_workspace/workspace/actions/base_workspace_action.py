@@ -11,7 +11,7 @@ from composio.local_tools.local_workspace.commons import (
 )
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class BaseWorkspaceRequest(BaseModel):

@@ -4,16 +4,14 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    communicate,
-)
+from composio.workspace.base_workspace import BaseCmdResponse
 from composio.local_tools.local_workspace.commons.utils import process_output
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 from .const import SCRIPT_CURSOR_DEFAULT
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class GoToRequest(BaseRequest):
@@ -48,16 +46,9 @@ class GoToLineNumInOpenFile(BaseAction):
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        self.script_file = SCRIPT_CURSOR_DEFAULT
-        self.command = "goto"
-        if self.container_process is None:
-            raise ValueError("Container process is not set")
-        command = f"{self.command} {str(request_data.line_number)}"
-        full_command = f"{command}"
-        output, return_code = communicate(
-            self.container_process, self.container_obj, full_command, self.parent_pids
-        )
-        output, return_code = process_output(output, return_code)
+        command = f"goto {str(request_data.line_number)}"
+        cmd_response: BaseCmdResponse = self.workspace.communicate(command)
+        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
 
 
@@ -92,21 +83,15 @@ class CreateFileCmd(BaseAction):
         self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        self.script_file = SCRIPT_CURSOR_DEFAULT
         self.command = "create"
-        if self.container_process is None:
-            raise ValueError("Container process is not set")
         file_name = request_data.file_name
         output, return_code = self.validate_file_name(file_name)
         if output is not None:
             return CreateFileResponse(output=output, return_code=return_code)
         command = f"{self.command} {str(request_data.file_name)}"
         print(f"Running command: {command}")
-        full_command = f"{command}"
-        output, return_code = communicate(
-            self.container_process, self.container_obj, full_command, self.parent_pids
-        )
-        output, return_code = process_output(output, return_code)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(command)
+        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
 
     def validate_file_name(self, file_name):
@@ -146,16 +131,9 @@ class OpenFile(BaseAction):
         self, request_data: OpenCmdRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        self.script_file = SCRIPT_CURSOR_DEFAULT
-        self.command = "open"
-        if self.container_process is None:
-            raise ValueError("Container process is not set")
-        command = f"{self.command} {request_data.file_name}"
+        command = f"open {request_data.file_name}"
         if request_data.line_number != 0:
             command += f" {request_data.line_number}"
-        full_command = f"{command}"
-        output, return_code = communicate(
-            self.container_process, self.container_obj, full_command, self.parent_pids
-        )
-        output, return_code = process_output(output, return_code)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(command)
+        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)

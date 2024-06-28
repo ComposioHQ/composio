@@ -22,6 +22,14 @@ def process_output(output: str, return_code: Optional[int]):
     return output, return_code
 
 
+class LocalDockerArgumentsModel(BaseModel):
+    image_name: str
+    timeout: int = 35
+    verbose: bool = False
+    environment_setup: Optional[str] = None
+    persistent: bool = False
+
+
 class DockerWorkspace(Workspace):
     def __init__(self, image_name, docker_client, is_persistent=False):
         super().__init__()
@@ -43,7 +51,7 @@ class DockerWorkspace(Workspace):
         commands = "\n".join(env.commands_to_execute)
         output, return_code = None, 0
         try:
-            output, return_code = self.communicate(Command(commands))
+            output, return_code = self.communicate(commands)
         except KeyboardInterrupt as exc:
             if return_code != 0:
                 raise RuntimeError(
@@ -108,7 +116,9 @@ class DockerWorkspace(Workspace):
             self.container_name = (
                 f"{image_name_sanitized}-{hash_object.hexdigest()[:10]}"
             )
-        return self.docker_client.get_container(self.container_name, self.image_name)
+        self.container_process, self.parent_pids = self.docker_client.get_container(self.container_name, self.image_name)
+        self.container_obj = self.docker_client.get_container_by_container_name(self.container_name, self.image_name)
+        return
 
     def _init_scripts(self):
         """
@@ -135,13 +145,13 @@ class DockerWorkspace(Workspace):
         self.docker_client.communicate_with_handling(self.container_process, self.container_obj, cmd, self.parent_pids,
                                                      error_msg, timeout_duration)
 
-    def communicate(self, cmd: Command, timeout: int = 25) -> BaseCmdResponse:
+    def communicate(self, cmd: str, timeout: int = 25) -> BaseCmdResponse:
         if self.container_process is None:
             raise ValueError("Container is None")
         output, return_code = self.docker_client.communicate(
             self.container_process,
             self.container_obj,
-            cmd.get_cmd_str(),
+            cmd,
             list(self.parent_pids),
             timeout,
         )

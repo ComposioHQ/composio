@@ -1,7 +1,7 @@
 import typing as t
 from uuid import uuid4
 
-from composio.workspace import DockerWorkspace, E2BWorkspace
+from composio.workspace import DockerWorkspace, E2BWorkspace, LocalDockerArgumentsModel
 from composio.workspace.workspace_clients import DockerIoClient, E2BClient, WorkspaceType
 
 import composio.workspace.constants as workspace_const
@@ -15,26 +15,43 @@ KEY_WORKSPACE_TYPE = "type"
 
 
 class WorkspaceFactory:
-    def __init__(self):
-        self.docker_client = DockerIoClient()
-        self.e2b_client = E2BClient()
-        self._registry = {}
+    _instance = None  # Singleton instance
+    docker_client = None
+    e2b_client = None
+    _registry = {}
 
-    def create_workspace(self, workspace_type: WorkspaceType, args) -> str:
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(WorkspaceFactory, cls).__new__(cls)
+            cls._instance.docker_client = DockerIoClient()
+            cls._instance.e2b_client = E2BClient()
+            cls._instance._registry = {}
+        return cls._instance
+    
+    @classmethod
+    def get_instance(cls):
+        """Get the singleton instance of the WorkspaceFactory."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def create_workspace(self, workspace_type: WorkspaceType,
+                         local_docker_args: LocalDockerArgumentsModel,
+                         **kwargs) -> str:
         if workspace_type == WorkspaceType.DOCKER:
-            workspace = DockerWorkspace(args, self.docker_client)
+            workspace = DockerWorkspace(local_docker_args.image_name, self.docker_client, local_docker_args)
             workspace.setup(env=workspace_const.docker_workspace_env)
             workspace_id = str(uuid4())
             self._registry[workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
                 KEY_CONTAINER_NAME: workspace.container_name,
                 KEY_PARENT_PIDS: workspace.parent_pids,
-                KEY_IMAGE_NAME: args.image_name,
+                KEY_IMAGE_NAME: local_docker_args.image_name,
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
             return workspace_id
         elif workspace_type == WorkspaceType.E2B:
-            workspace = E2BWorkspace(args, self.e2b_client)
+            workspace = E2BWorkspace(None, self.e2b_client)
             workspace_id = str(uuid4())
             self._registry[workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
@@ -54,3 +71,4 @@ class WorkspaceFactory:
 
     def list_workspace_managers(self) -> t.Dict[str, t.Any]:
         return self._registry
+

@@ -17,7 +17,7 @@ STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
 STATUS_NOT_FOUND = "not_found"
 STATUS_ERROR = "error"
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class WorkspaceStatusRequest(BaseWorkspaceRequest):
