@@ -37,10 +37,16 @@ class BaseSWEAgent(ABC, WithLogger):
         self.agent_logs: t.Dict[str, t.Any] = {}
         self.current_logs: t.List[t.Any] = []
 
-    def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
+    def create_and_setup_workspace(
+        self, repo_name: str, base_commit_id: t.Optional[str] = None
+    ) -> str:
         start_time = datetime.datetime.now()
-        workspace_id = WorkspaceFactory.get_instance().create_workspace(workspace_type=WorkspaceType.DOCKER,
-                                                         local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"))
+        workspace_id = WorkspaceFactory.get_instance().create_workspace(
+            workspace_type=WorkspaceType.DOCKER,
+            local_docker_args=LocalDockerArgumentsModel(
+                image_name="sweagent/swe-agent"
+            ),
+        )
         workspace_creation_time = datetime.datetime.now() - start_time
         print(
             "workspace is created, workspace-id is: %s, creation time: %s",
@@ -77,9 +83,7 @@ class BaseSWEAgent(ABC, WithLogger):
         self, issue_config: IssueConfig, workspace_id: t.Optional[str] = None
     ) -> str:
         if workspace_id is None:
-            assert (
-                issue_config.repo_name is not None
-            ), "repo_name should be provided"
+            assert issue_config.repo_name is not None, "repo_name should be provided"
             workspace_id = self.create_and_setup_workspace(
                 issue_config.repo_name, issue_config.base_commit_id
             )

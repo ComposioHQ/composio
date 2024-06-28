@@ -69,9 +69,7 @@ class DockerWorkspace(Workspace):
         for cmd_file in env.copy_file_to_workspace:
             name = cmd_file.name
             contents = cmd_file.datum
-            self.copy_file_to_container(
-                contents, f"/root/commands/{name}"
-            )
+            self.copy_file_to_container(contents, f"/root/commands/{name}")
             if cmd_file.cmd_type == "source_file":
                 self.communicate_with_handling(
                     f"source /root/commands/{name}",
@@ -92,18 +90,18 @@ class DockerWorkspace(Workspace):
                 raise ValueError(f"Invalid command type: {cmd_file['type']}")
 
     def reset(self):
-            if hasattr(self, "container"):
-                try:
-                    if self.container is None:
-                        raise ValueError("Container is None")
-                    self.container.terminate()
-                except KeyboardInterrupt:
-                    logger.error("handling keyboard interrupt")
-                    raise
-                except Exception as e:
-                    logger.error("reset container exception: %s", e)
-            self._init_container()
-            self._init_scripts()
+        if hasattr(self, "container"):
+            try:
+                if self.container is None:
+                    raise ValueError("Container is None")
+                self.container.terminate()
+            except KeyboardInterrupt:
+                logger.error("handling keyboard interrupt")
+                raise
+            except Exception as e:
+                logger.error("reset container exception: %s", e)
+        self._init_container()
+        self._init_scripts()
 
     def get_running_status(self):
         try:
@@ -133,8 +131,12 @@ class DockerWorkspace(Workspace):
             self.container_name = (
                 f"{image_name_sanitized}-{hash_object.hexdigest()[:10]}"
             )
-        self.container_process, self.parent_pids = self.docker_client.get_container(self.container_name, self.image_name)
-        self.container_obj = self.docker_client.get_container_by_container_name(self.container_name, self.image_name)
+        self.container_process, self.parent_pids = self.docker_client.get_container(
+            self.container_name, self.image_name
+        )
+        self.container_obj = self.docker_client.get_container_by_container_name(
+            self.container_name, self.image_name
+        )
         return
 
     def _init_scripts(self):
@@ -159,8 +161,14 @@ class DockerWorkspace(Workspace):
         )
 
     def communicate_with_handling(self, cmd, error_msg, timeout_duration=25):
-        self.docker_client.communicate_with_handling(self.container_process, self.container_obj, cmd, self.parent_pids,
-                                                     error_msg, timeout_duration)
+        self.docker_client.communicate_with_handling(
+            self.container_process,
+            self.container_obj,
+            cmd,
+            self.parent_pids,
+            error_msg,
+            timeout_duration,
+        )
 
     def communicate(self, cmd: str, timeout: int = 25) -> BaseCmdResponse:
         if self.container_process is None:
@@ -240,9 +248,7 @@ class DockerWorkspace(Workspace):
                 self.container_obj.pause()
                 logger.info("Agent container paused")
             else:
-                logger.info(
-                    "Agent container status: %s", self.container_obj.status
-                )
+                logger.info("Agent container status: %s", self.container_obj.status)
         else:
             try:
                 self.container_obj.remove(force=True)

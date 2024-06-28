@@ -28,4 +28,3 @@ def git_clone_cmd(request_data):
     if request_data.commit_id:
         command_list.append(f"git reset --hard {request_data.commit_id}")
     return " && ".join(command_list)
-
