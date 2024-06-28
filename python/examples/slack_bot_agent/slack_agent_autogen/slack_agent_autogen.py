@@ -25,6 +25,7 @@ user_proxy = UserProxyAgent(
     code_execution_config={"use_docker": False},
 )
 # Bot configuration constants
+#Bot ID changes for each slack user, check the bot id @test_app on slack and change it accordingly
 BOT_USER_ID = "U06P2JKQN5B"  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
