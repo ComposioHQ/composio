@@ -10,9 +10,6 @@ from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
-)
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"

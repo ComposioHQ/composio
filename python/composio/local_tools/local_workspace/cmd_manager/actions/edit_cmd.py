@@ -56,9 +56,9 @@ class EditFile(BaseAction):
     def execute(
         self, request_data: EditFileRequest, authorisation_data: dict
     ) -> BaseResponse:
-        workspace = workspace_utils.get_workspace_by_id(self.workspace_id)
+        self._setup(request_data)
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
-        workspace_response: BaseCmdResponse = workspace.communicate(full_command)
+        workspace_response: BaseCmdResponse = self.workspace.communicate(full_command)
         output, return_code = process_output(workspace_response.output, workspace_response.return_code)
         return BaseResponse(
             output=output,

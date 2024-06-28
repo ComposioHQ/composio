@@ -6,8 +6,7 @@ from composio.local_tools.local_workspace.commons import (
     WorkspaceManagerFactory,
 )
 from composio.local_tools.local_workspace.workspace.actions import (
-    CreateWorkspaceAction,
-    WorkspaceStatusAction,
+    CreateWorkspaceAction, WorkspaceStatusAction
 )
 
 
@@ -21,7 +20,7 @@ class LocalWorkspace(Tool):
     history_processor: t.Optional[HistoryProcessor] = None
 
     def actions(self) -> list[t.Type[Action]]:
-        return [WorkspaceStatusAction, CreateWorkspaceAction]
+        return [CreateWorkspaceAction, WorkspaceStatusAction]
 
     def triggers(self) -> list:
         return []

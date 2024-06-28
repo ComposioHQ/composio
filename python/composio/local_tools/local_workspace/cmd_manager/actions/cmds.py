@@ -46,8 +46,7 @@ class GoToLineNumInOpenFile(BaseAction):
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        command = f"goto {str(request_data.line_number)}"
-        cmd_response: BaseCmdResponse = self.workspace.communicate(command)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(f"goto {str(request_data.line_number)}")
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
 
@@ -83,21 +82,16 @@ class CreateFileCmd(BaseAction):
         self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        self.command = "create"
-        file_name = request_data.file_name
-        output, return_code = self.validate_file_name(file_name)
-        if output is not None:
-            return CreateFileResponse(output=output, return_code=return_code)
-        command = f"{self.command} {str(request_data.file_name)}"
-        print(f"Running command: {command}")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(command)
+        if not self.validate_file_name(request_data.file_name):
+            return CreateFileResponse(output="Exception: file-name can not be empty", return_code=1)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(f"create {str(request_data.file_name)}")
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
 
     def validate_file_name(self, file_name):
         if file_name is None or file_name.strip() == "":
-            return "Exception: file-name can not be empty", 1
-        return None, 0
+            return False
+        return True
 
 
 class OpenCmdRequest(BaseRequest):

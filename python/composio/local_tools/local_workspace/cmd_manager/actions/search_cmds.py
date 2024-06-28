@@ -44,9 +44,7 @@ class SearchDirCmd(BaseAction):
                 "dir can not be null. Give a directory-name in which to search"
             )
         self._setup(request_data)
-        self.command = "search_dir"
-        full_command = f"{self.command} '{request_data.search_term}' {request_data.directory}"  # Command to scroll down 100 lines
-        print(f"Running command: {full_command}")
+        full_command = f"search_dir '{request_data.search_term}' {request_data.directory}"
         cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
@@ -81,11 +79,7 @@ class SearchFileCmd(BaseAction):
                 "file-name can not be null. Give a file-name in which to search"
             )
         self._setup(request_data)
-        self.command = "search_file"
-        full_command = (
-            f"{self.command} '{request_data.search_term}' {request_data.file_name}"
-        )
-        print(f"Running command: {full_command}")
+        full_command = f"search_file '{request_data.search_term}' {request_data.file_name}"
         cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
@@ -130,7 +124,6 @@ class FindFileCmd(BaseAction):
             )
         self._setup(request_data)
         full_command = f"find_file {request_data.file_name} {request_data.dir}"
-        print(f"Running command: {full_command}")
         cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)
@@ -152,16 +145,12 @@ class GetCurrentDirCmd(BaseAction):
     _display_name = "Get Current Directory Action"
     _request_schema = GetCurrentDirRequest
     _response_schema = GetCurrentDirResponse
-    script_file = SCRIPT_SEARCH
-    command = "pwd"
 
     @history_recorder()
     def execute(
         self, request_data: GetCurrentDirRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        self.command = "pwd"
-        print(f"Running command: {self.command}")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(self.command)
+        cmd_response: BaseCmdResponse = self.workspace.communicate("pwd")
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(output=output, return_code=return_code)

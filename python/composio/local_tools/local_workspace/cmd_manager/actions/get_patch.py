@@ -53,18 +53,14 @@ class GetPatchCmd(BaseAction):
     def execute(
         self, request_data: GetPatchRequest, authorisation_data: dict
     ) -> BaseResponse:
-        print("Get patch command...")
         self._setup(request_data)
-        print("Setup completed.")
         new_files = " ".join(request_data.new_file_path)
-        cmd1 = "git add -u"
+        cmd_list = ["git add -u"]
         if len(request_data.new_file_path) > 0:
-            cmd1 = f"git add {new_files} && " + cmd1
-        cmd_response: BaseCmdResponse = self.workspace.communicate(cmd1)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
-        print(f"Output of git add: {output}")
-        cmd2 = "git diff --cached"
-        cmd_response: BaseCmdResponse = self.workspace.communicate(cmd2)
+            cmd_list = [f"git add {new_files}",
+                      "git add -u"]
+        cmd_list.append("git diff --cached")
+        cmd_response: BaseCmdResponse = self.workspace.communicate(" && ".join(cmd_list))
         output, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(
             output=output,

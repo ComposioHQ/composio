@@ -56,6 +56,10 @@ class Workspace(ABC):
         pass
 
     @abstractmethod
+    def get_running_status(self):
+        pass
+
+    @abstractmethod
     def close(self):
         pass
 

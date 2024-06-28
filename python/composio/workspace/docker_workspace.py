@@ -4,6 +4,7 @@ import datetime
 import hashlib
 import tempfile
 import traceback
+import docker
 import tarfile
 from io import BytesIO
 
@@ -13,6 +14,10 @@ from typing import Optional
 
 
 logger = get_logger("local_docker_workspace")
+STATUS_RUNNING = "running"
+STATUS_STOPPED = "stopped"
+STATUS_NOT_FOUND = "not_found"
+STATUS_ERROR = "error"
 
 
 def process_output(output: str, return_code: Optional[int]):
@@ -99,6 +104,18 @@ class DockerWorkspace(Workspace):
                     logger.error("reset container exception: %s", e)
             self._init_container()
             self._init_scripts()
+
+    def get_running_status(self):
+        try:
+            container = self.docker_client.containers.get(self.container_name)
+            if container.status == STATUS_RUNNING:
+                return STATUS_RUNNING
+            return STATUS_STOPPED
+        except docker.errors.NotFound:
+            return STATUS_NOT_FOUND
+        except docker.errors.APIError as e:
+            logger.error("Error checking container status: %s", e)
+            return STATUS_STOPPED
 
     def _init_container(self):
         """
