@@ -28,7 +28,7 @@ from composio.client.enums import Action, App
 from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
-from composio.exceptions import raise_api_key_missing
+from composio.exceptions import ApiKeyNotProvidedError
 from composio.utils.url import get_api_url_base
 
 
@@ -56,7 +56,6 @@ class Composio(BaseClient):
         """
         self._api_key = api_key
         self.runtime = runtime
-
         self.base_url = base_url or get_api_url_base()
 
         self.connected_accounts = ConnectedAccounts(client=self)
@@ -73,8 +72,7 @@ class Composio(BaseClient):
             if env_api_key:
                 self._api_key = env_api_key
         if self._api_key is None:
-            raise_api_key_missing()
-            return ""
+            raise ApiKeyNotProvidedError()
         if not self._api_key_validated:
             self._api_key = self.validate_api_key(
                 key=t.cast(str, self._api_key),
