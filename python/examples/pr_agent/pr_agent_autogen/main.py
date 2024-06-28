@@ -55,8 +55,8 @@ def review_new_pr(event: TriggerEventData) -> None:
     query_task = f"Review the following code changes: {code_to_review}"
     # Execute the agent
     response = user_proxy.initiate_chat(chatbot, message=query_task)
-    print(response)
-    return response
+    print(response.summary)
+    
 
 # Starting the listener
 print("Listener started!")
