@@ -10,6 +10,7 @@ import traceback
 import typing as t
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
+from unittest import mock
 
 import pysher
 import typing_extensions as te
@@ -624,6 +625,8 @@ class _PusherClient:
                 "x-api-key": self.api_key,
             },
         )
+        # Patch pusher logger
+        pusher.connection.logger = mock.MagicMock()  # type: ignore
         pusher.connection.bind(
             "pusher:connection_established",
             self._get_connection_handler(
