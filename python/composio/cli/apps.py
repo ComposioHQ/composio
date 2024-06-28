@@ -249,13 +249,7 @@ def _update_triggers(
     )
     for app in apps:
         for trigger in [trigger for trigger in triggers if trigger.appKey == app.key]:
-            trigger_names.append(
-                (
-                    _get_enum_key(name=app.key)
-                    + "_"
-                    + _get_enum_key(name=trigger.display_name)
-                ).upper()
-            )
+            trigger_names.append(_get_enum_key(name=trigger.name).upper())
             enums.base.TriggerData(
                 name=trigger.name,
                 app=app.key,
