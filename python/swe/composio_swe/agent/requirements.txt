@@ -1,7 +1,0 @@
-langchain-core>=0.2.9
-composio-crewai>=0.3.13
-crewai>=0.32.0
-langchain-openai>=0.1.8
-pydantic>=2.7.4
-rich>=13.7.1
-langchain-anthropic>=0.1.15

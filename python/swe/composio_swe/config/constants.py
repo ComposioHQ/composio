@@ -1,5 +1,6 @@
-LOCAL_CACHE_DIRECTORY_NAME = ".composio_coder"
+"""Constants for composio-swe."""
 
+LOCAL_CACHE_DIRECTORY_NAME = ".composio_coder"
 MODEL_ENV_PATH = "model_env"
 ISSUE_CONFIG_PATH = "issue_config"
 LOGS_DIR = "logs"

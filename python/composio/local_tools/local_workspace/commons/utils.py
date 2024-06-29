@@ -1,6 +1,5 @@
 import os
 import select
-import shlex
 import subprocess
 import tarfile
 import tempfile
