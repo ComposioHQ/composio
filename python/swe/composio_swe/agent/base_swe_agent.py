@@ -90,7 +90,7 @@ class BaseSWEAgent(ABC, WithLogger):
             action=Action.CMDMANAGERTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
-        patch = get_patch_resp.get("output", "")
+        patch = get_patch_resp.output  # type: ignore
         print(f"Final Patch: {patch}")
         self.current_logs.append(
             {
