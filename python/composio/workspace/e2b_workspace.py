@@ -7,6 +7,7 @@ from .base_workspace import BaseCmdResponse, Command, Workspace, WorkspaceEnv
 
 class E2BWorkspace(Workspace):
     def __init__(self, args, client: E2BClient):
+        super().__init__()
         self.sandbox_id = None
         self.sandbox = None
         self.args = args

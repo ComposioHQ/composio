@@ -38,7 +38,7 @@ class HistoryProcessor:
 
     def get_history(self, workspace_id, n=5):
         all_history = self.history.get(workspace_id, [])
-        return all_history[-min(n, len(all_history)) :]
+        return all_history[-min(n, len(all_history)) :]  # noqa: E203
 
     def save_history_to_file(self, workspace_id: str, instance_id: str) -> str:
         # make the submission dir if it doesn't exist

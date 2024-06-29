@@ -10,11 +10,10 @@ from datasets import load_dataset
 from rich.logging import RichHandler
 
 from composio import Action, Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    LocalDockerArgumentsModel,
 )
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
-from composio.local_tools.local_workspace.commons.local_docker_workspace import LocalDockerArgumentsModel
 
 
 # get logger
@@ -129,9 +128,7 @@ def build_image_and_container(
     start_time = datetime.datetime.now()
     workspace_id = WorkspaceFactory.get_instance().create_workspace(
         workspace_type=WorkspaceType.DOCKER,
-        local_docker_args=LocalDockerArgumentsModel(
-            image_name="sweagent/swe-agent"
-        ),
+        local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
     )
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(

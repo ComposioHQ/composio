@@ -1,16 +1,8 @@
-from typing import Optional
-from composio.workspace.workspace_factory import WorkspaceFactory
-
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
-)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    WorkspaceManagerFactory,
-)
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 STATUS_RUNNING = "running"

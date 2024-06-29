@@ -63,7 +63,7 @@ class WorkspaceFactory:
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
             return workspace.workspace_id
-        elif workspace_type == WorkspaceType.E2B:
+        if workspace_type == WorkspaceType.E2B:
             workspace = E2BWorkspace(None, self.e2b_client)
             self._registry[workspace.workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
