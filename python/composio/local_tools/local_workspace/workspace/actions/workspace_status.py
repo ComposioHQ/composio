@@ -8,6 +8,7 @@ from .base_workspace_action import (
     BaseWorkspaceResponse,
 )
 
+
 logger = get_logger("workspace")
 
 
@@ -38,4 +39,6 @@ class WorkspaceStatusAction(BaseWorkspaceAction):
         if authorisation_data is None:
             authorisation_data = {}
         status = self.workspace.get_running_status()
-        return BaseWorkspaceResponse(output=f"docker container running status is {status}")
+        return BaseWorkspaceResponse(
+            output=f"docker container running status is {status}"
+        )

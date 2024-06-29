@@ -1,6 +1,5 @@
 import typing as t
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -33,6 +32,7 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
     """
     Base class for all actions
     """
+
     _runs_on_workspace = True
     _display_name = ""
     _tags = ["workspace"]
@@ -47,7 +47,9 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
 
     def _setup(self, args: BaseRequest):
         self.workspace_id = args.workspace_id
-        self.workspace = WorkspaceFactory.get_instance().get_workspace_by_id(self.workspace_id)
+        self.workspace = WorkspaceFactory.get_instance().get_workspace_by_id(
+            self.workspace_id
+        )
         if self.workspace is None:
             logger.error("workspace_factory is not set")
             raise ValueError("workspace_factory is not set")

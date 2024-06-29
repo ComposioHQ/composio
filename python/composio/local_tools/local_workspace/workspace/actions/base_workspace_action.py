@@ -1,15 +1,13 @@
 import typing
 from abc import ABC, abstractmethod
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from composio.local_tools.local_workspace.commons import (
-    get_logger,
-)
-from composio.workspace.workspace_factory import WorkspaceFactory
+from composio.local_tools.local_workspace.commons import get_logger
 from composio.workspace.base_workspace import Workspace
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 logger = get_logger("workspace")
@@ -53,7 +51,9 @@ class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
         self.config_file_path = None
 
     def _setup(self, request_data: BaseWorkspaceRequest):
-        self.workspace = WorkspaceFactory.get_instance().get_registered_manager(request_data.workspace_id)
+        self.workspace = WorkspaceFactory.get_instance().get_registered_manager(
+            request_data.workspace_id
+        )
 
     @abstractmethod
     def execute(

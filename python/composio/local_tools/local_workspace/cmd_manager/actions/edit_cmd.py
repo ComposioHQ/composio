@@ -4,15 +4,10 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    communicate,
-)
 from composio.local_tools.local_workspace.commons.utils import process_output
-from composio.workspace import utils as workspace_utils
-from composio.workspace.base_workspace import BaseCmdResponse, Command
+from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
-from .const import SCRIPT_EDIT_LINTING
 
 
 logger = get_logger("workspace")
@@ -59,7 +54,9 @@ class EditFile(BaseAction):
         self._setup(request_data)
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
         workspace_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(workspace_response.output, workspace_response.return_code)
+        output, return_code = process_output(
+            workspace_response.output, workspace_response.return_code
+        )
         return BaseResponse(
             output=output,
             return_code=return_code,

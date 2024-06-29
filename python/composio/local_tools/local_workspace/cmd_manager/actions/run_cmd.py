@@ -6,12 +6,8 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
+from composio.local_tools.local_workspace.commons.utils import process_output
 from composio.workspace.base_workspace import BaseCmdResponse
-from composio.local_tools.local_workspace.commons.utils import (
-    close_container,
-    interrupt_container,
-    process_output,
-)
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
@@ -85,7 +81,9 @@ class RunCommandOnWorkspace(BaseAction):
         """
         try:
             cmd_response: BaseCmdResponse = self.workspace.communicate(action, timeout)
-            output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+            output, return_code = process_output(
+                cmd_response.output, cmd_response.return_code
+            )
             return (
                 output,
                 return_code,
@@ -111,4 +109,3 @@ class RunCommandOnWorkspace(BaseAction):
         except Exception as e:
             logger.error("cmd failed with exception: %s", e)
             return "\nEXECUTION FAILED OR COMMAND MALFORMED", 1
-

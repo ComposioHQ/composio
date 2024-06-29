@@ -5,15 +5,12 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from composio_swe.config.config_store import IssueConfig
-from composio.workspace.workspace_factory import WorkspaceType, WorkspaceFactory
-from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
-)
 from composio.utils.logging import WithLogger
+from composio.workspace.docker_workspace import LocalDockerArgumentsModel
+from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -39,8 +36,12 @@ class BaseSWEAgent(ABC, WithLogger):
 
     def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
         start_time = datetime.datetime.now()
-        workspace_id = WorkspaceFactory.get_instance().create_workspace(workspace_type=WorkspaceType.DOCKER,
-                                                         local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"))
+        workspace_id = WorkspaceFactory.get_instance().create_workspace(
+            workspace_type=WorkspaceType.DOCKER,
+            local_docker_args=LocalDockerArgumentsModel(
+                image_name="sweagent/swe-agent"
+            ),
+        )
         workspace_creation_time = datetime.datetime.now() - start_time
         print(
             "workspace is created, workspace-id is: %s, creation time: %s",
@@ -77,9 +78,7 @@ class BaseSWEAgent(ABC, WithLogger):
         self, issue_config: IssueConfig, workspace_id: t.Optional[str] = None
     ) -> str:
         if workspace_id is None:
-            assert (
-                issue_config.repo_name is not None
-            ), "repo_name should be provided"
+            assert issue_config.repo_name is not None, "repo_name should be provided"
             workspace_id = self.create_and_setup_workspace(
                 issue_config.repo_name, issue_config.base_commit_id
             )

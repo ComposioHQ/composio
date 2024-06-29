@@ -4,11 +4,10 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.workspace.base_workspace import BaseCmdResponse
 from composio.local_tools.local_workspace.commons.utils import process_output
+from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
-from .const import SCRIPT_SEARCH
 
 
 logger = get_logger("workspace")
@@ -44,9 +43,13 @@ class SearchDirCmd(BaseAction):
                 "dir can not be null. Give a directory-name in which to search"
             )
         self._setup(request_data)
-        full_command = f"search_dir '{request_data.search_term}' {request_data.directory}"
+        full_command = (
+            f"search_dir '{request_data.search_term}' {request_data.directory}"
+        )
         cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)
 
 
@@ -79,9 +82,13 @@ class SearchFileCmd(BaseAction):
                 "file-name can not be null. Give a file-name in which to search"
             )
         self._setup(request_data)
-        full_command = f"search_file '{request_data.search_term}' {request_data.file_name}"
+        full_command = (
+            f"search_file '{request_data.search_term}' {request_data.file_name}"
+        )
         cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)
 
 
@@ -125,7 +132,9 @@ class FindFileCmd(BaseAction):
         self._setup(request_data)
         full_command = f"find_file {request_data.file_name} {request_data.dir}"
         cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)
 
 
@@ -152,5 +161,7 @@ class GetCurrentDirCmd(BaseAction):
     ) -> BaseResponse:
         self._setup(request_data)
         cmd_response: BaseCmdResponse = self.workspace.communicate("pwd")
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)

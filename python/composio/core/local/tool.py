@@ -1,8 +1,5 @@
 from typing import Optional, Type
 
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
-)
 from composio.workspace.workspace_factory import WorkspaceFactory
 
 from .action import Action

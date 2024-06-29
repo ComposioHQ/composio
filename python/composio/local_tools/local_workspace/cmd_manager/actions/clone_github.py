@@ -1,12 +1,12 @@
-import os
-
 from pydantic import Field
 
+from composio.local_tools.local_workspace.cmd_manager.actions.const import (
+    git_clone_cmd,
+    git_reset_cmd,
+)
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-
 from composio.local_tools.local_workspace.commons.utils import process_output
 from composio.workspace.base_workspace import BaseCmdResponse
-from composio.local_tools.local_workspace.cmd_manager.actions.const import git_reset_cmd, git_clone_cmd
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
@@ -31,7 +31,7 @@ class GithubCloneRequest(BaseRequest):
     just_reset: bool = Field(
         False,
         description="If true, the repo will not be cloned. It will be assumed to exist. "
-                    "The repo will be cleaned and reset to the given commit-id",
+        "The repo will be cleaned and reset to the given commit-id",
     )
 
 
@@ -55,8 +55,12 @@ class GithubCloneCmd(BaseAction):
         self._setup(request_data)
         if request_data.just_reset:
             return self.reset_to_base_commit(request_data)
-        cmd_response: BaseCmdResponse = self.workspace.communicate(git_clone_cmd(request_data), timeout=LONG_TIMEOUT)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(
+            git_clone_cmd(request_data), timeout=LONG_TIMEOUT
+        )
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)
 
     def reset_to_base_commit(self, request_data: GithubCloneRequest) -> BaseResponse:
@@ -65,7 +69,9 @@ class GithubCloneCmd(BaseAction):
         Assumes the repository already exists as cloned by the execute function.
         """
         print("Resetting repository to base commit inside reset_to_base_commit")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(
+            git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT
+        )
         if cmd_response.return_code != 0:
             raise RuntimeError(f"Failed to reset repository: {cmd_response.output}")
         return BaseResponse(output="Repository reset to base commit", return_code=0)

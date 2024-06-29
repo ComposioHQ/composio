@@ -6,7 +6,6 @@ from composio.local_tools.local_workspace.commons.utils import process_output
 from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
-from .const import SCRIPT_EDIT_LINTING
 
 
 logger = get_logger("workspace")
@@ -32,7 +31,9 @@ class GitRepoTree(BaseAction):
         self._setup(request_data)
         self.command = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
         cmd_response: BaseCmdResponse = self.workspace.communicate(self.command)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(
             output="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
             return_code=return_code,

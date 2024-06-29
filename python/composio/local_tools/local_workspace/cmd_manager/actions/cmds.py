@@ -4,11 +4,10 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.workspace.base_workspace import BaseCmdResponse
 from composio.local_tools.local_workspace.commons.utils import process_output
+from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
-from .const import SCRIPT_CURSOR_DEFAULT
 
 
 logger = get_logger("workspace")
@@ -46,8 +45,12 @@ class GoToLineNumInOpenFile(BaseAction):
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        cmd_response: BaseCmdResponse = self.workspace.communicate(f"goto {str(request_data.line_number)}")
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(
+            f"goto {str(request_data.line_number)}"
+        )
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)
 
 
@@ -83,9 +86,15 @@ class CreateFileCmd(BaseAction):
     ) -> BaseResponse:
         self._setup(request_data)
         if not self.validate_file_name(request_data.file_name):
-            return CreateFileResponse(output="Exception: file-name can not be empty", return_code=1)
-        cmd_response: BaseCmdResponse = self.workspace.communicate(f"create {str(request_data.file_name)}")
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+            return CreateFileResponse(
+                output="Exception: file-name can not be empty", return_code=1
+            )
+        cmd_response: BaseCmdResponse = self.workspace.communicate(
+            f"create {str(request_data.file_name)}"
+        )
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)
 
     def validate_file_name(self, file_name):
@@ -129,5 +138,7 @@ class OpenFile(BaseAction):
         if request_data.line_number != 0:
             command += f" {request_data.line_number}"
         cmd_response: BaseCmdResponse = self.workspace.communicate(command)
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(output=output, return_code=return_code)

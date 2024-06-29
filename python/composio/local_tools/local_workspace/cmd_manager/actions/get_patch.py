@@ -6,8 +6,8 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.workspace.base_workspace import BaseCmdResponse
 from composio.local_tools.local_workspace.commons.utils import process_output
+from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
@@ -57,11 +57,14 @@ class GetPatchCmd(BaseAction):
         new_files = " ".join(request_data.new_file_path)
         cmd_list = ["git add -u"]
         if len(request_data.new_file_path) > 0:
-            cmd_list = [f"git add {new_files}",
-                      "git add -u"]
+            cmd_list = [f"git add {new_files}", "git add -u"]
         cmd_list.append("git diff --cached")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(" && ".join(cmd_list))
-        output, return_code = process_output(cmd_response.output, cmd_response.return_code)
+        cmd_response: BaseCmdResponse = self.workspace.communicate(
+            " && ".join(cmd_list)
+        )
+        output, return_code = process_output(
+            cmd_response.output, cmd_response.return_code
+        )
         return BaseResponse(
             output=output,
             return_code=return_code,

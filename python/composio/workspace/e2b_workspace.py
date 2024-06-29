@@ -1,6 +1,8 @@
 import subprocess
-from .base_workspace import *
+
 from composio.workspace.workspace_clients import E2BClient
+
+from .base_workspace import BaseCmdResponse, Command, Workspace, WorkspaceEnv
 
 
 class E2BWorkspace(Workspace):
@@ -22,7 +24,7 @@ class E2BWorkspace(Workspace):
         result = subprocess.run(
             ["e2b-sandbox-cli", "exec", self.sandbox_id, cmd.get_cmd_str()],
             capture_output=True,
-            text=True
+            text=True,
         )
         return BaseCmdResponse(output=result.stdout, retunr_code=result.returncode)
 
@@ -30,7 +32,7 @@ class E2BWorkspace(Workspace):
         state_result = subprocess.run(
             ["e2b-sandbox-cli", "state", self.sandbox_id],
             capture_output=True,
-            text=True
+            text=True,
         )
         return {"sandbox_id": self.sandbox_id, "state": state_result.stdout}
 

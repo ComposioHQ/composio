@@ -1,12 +1,13 @@
-import docker
-import traceback
-import shlex
-import select
 import os
-from subprocess import PIPE, STDOUT, Popen
+import select
+import shlex
 import time
+import traceback
 from enum import Enum
-from typing import Tuple, Set, List
+from subprocess import PIPE, Popen, STDOUT
+from typing import List, Set, Tuple
+
+import docker
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
@@ -64,9 +65,11 @@ class DockerIoClient:
             raise RuntimeError(msg) from e
 
     def get_container(
-            self, ctr_name: str, image_name: str, persistent: bool = False
+        self, ctr_name: str, image_name: str, persistent: bool = False
     ) -> Tuple[Popen, Set]:
-        filtered_images = self.docker_client.images.list(filters={"reference": image_name})
+        filtered_images = self.docker_client.images.list(
+            filters={"reference": image_name}
+        )
 
         if not filtered_images:
             msg = (
@@ -133,7 +136,7 @@ class DockerIoClient:
         )
 
     def _get_persistent_container(
-            self, ctr_name: str, image_name: str
+        self, ctr_name: str, image_name: str
     ) -> Tuple[Popen, Set]:
         containers = self.get_client().containers.list(
             all=True, filters={"name": ctr_name}
@@ -200,10 +203,18 @@ class DockerIoClient:
                 f"Detected alien processes attached or running. "
                 f"Please ensure that no other agents are running on this container. PIDs: {bash_pids}, {other_pids}"
             )
-        return container, set(map(str, [bash_pid, 1,],))
+        return container, set(
+            map(
+                str,
+                [
+                    bash_pid,
+                    1,
+                ],
+            )
+        )
 
     def _get_non_persistent_container(
-            self, ctr_name: str, image_name: str
+        self, ctr_name: str, image_name: str
     ) -> Tuple[Popen, Set]:
         startup_cmd = [
             "docker",
@@ -242,7 +253,10 @@ class DockerIoClient:
         Saves environment variables to file
         """
         output, return_code = self._communicate(
-            container, container_obj, f"/bin/bash -n <<'EOF'\n{cmd_input}\nEOF\n", parent_pids
+            container,
+            container_obj,
+            f"/bin/bash -n <<'EOF'\n{cmd_input}\nEOF\n",
+            parent_pids,
         )
         return output, return_code == 0
 
@@ -281,16 +295,18 @@ class DockerIoClient:
         return buffer, return_code
 
     def communicate(
-            self,
-            container: Popen,
-            container_obj,
-            input_cmd: str,
-            parent_pids: List[str],
-            timeout_duration=25,
+        self,
+        container: Popen,
+        container_obj,
+        input_cmd: str,
+        parent_pids: List[str],
+        timeout_duration=25,
     ):
         return_code = None
         if input_cmd.strip() != EXIT_CMD:
-            output, valid = self._check_syntax(container, container_obj, input_cmd, parent_pids)
+            output, valid = self._check_syntax(
+                container, container_obj, input_cmd, parent_pids
+            )
             if not valid:
                 return output, return_code
             output, return_code = self._communicate(
@@ -310,13 +326,13 @@ class DockerIoClient:
         pass
 
     def communicate_with_handling(
-            self,
-            container_process: Popen,
-            container_obj,
-            cmd_input: str,
-            parent_pids: List[str],
-            error_msg: str,
-            timeout_duration=25,
+        self,
+        container_process: Popen,
+        container_obj,
+        cmd_input: str,
+        parent_pids: List[str],
+        error_msg: str,
+        timeout_duration=25,
     ) -> str:
         """
         Wrapper for communicate function that raises error if return code is non-zero
