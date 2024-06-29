@@ -39,3 +39,7 @@ To modify the agent and improve the agent's performance:
 1. Find the benchmark at `python/swe/benchmark`.
 2. To run the benchmark, run `python run_evaluation.py`.
 3. This will run the SWE-Bench (https://www.swebench.com/) benchmark for the agent. You need to init your agent inside the run_evaluation.py file.
+4. Flags:
+   1. `--test_split`: The test split range (e.g., 1:10).
+   2. `--print_only`: Print the issues only.
+   3. `--include_hints`: Include hints in the issue description.
