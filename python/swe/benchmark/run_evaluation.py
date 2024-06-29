@@ -2,10 +2,9 @@
 import datetime
 import logging
 
-from composio_swe.agent.crewai_agent import CrewaiAgent, SWEArgs
-from composio_swe.config.config_store import IssueConfig
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context
+from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
 from rich.logging import RichHandler
 
@@ -14,6 +13,7 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     LocalDockerArgumentsModel,
 )
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
+from examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
 # get logger

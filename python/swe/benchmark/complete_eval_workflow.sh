@@ -4,6 +4,9 @@
 script_dir=$(dirname "$0")
 current_dir=$(pwd)
 
+# Set `PYTHONPATH` variable
+PYTHONPATH=$(realpath $script_dir/..)
+
 display_usage() {
     echo "+---------------------------------------------------------------+"
     echo "| Complete Evaluation Workflow Script                           |"

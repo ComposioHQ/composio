@@ -1,29 +1,39 @@
-from itertools import chain
+"""
+CrewAI agent implementation.
+"""
+
 
 from composio_crewai import Action, App, ComposioToolSet
-from composio_swe.config.config_store import IssueConfig
+from composio_swe.agents.base import BaseSWEAgent, SWEArgs
+from composio_swe.agents.utils import get_langchain_llm
+from composio_swe.config.context import get_context
+from composio_swe.config.store import IssueConfig
 from crewai import Agent, Task
 from langchain_core.agents import AgentAction, AgentFinish
 
-from .base_swe_agent import BaseSWEAgent, SWEArgs
-from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
-from .utils import get_langchain_llm, logger
+from examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 
 
 class CrewaiAgent(BaseSWEAgent):
-    def __init__(self, args: SWEArgs):
+    """CrewAI agent implementation."""
+
+    def __init__(self, args: SWEArgs) -> None:
+        """Initialize the CrewAI agent."""
         super().__init__(args)
-        # initialize composio toolset
-        local_workspace_tool_set = ComposioToolSet().get_actions(
-            actions=[Action.LOCALWORKSPACE_WORKSPACESTATUSACTION]
-        )
-        cmd_manager_tool_set = ComposioToolSet().get_tools(apps=[App.CMDMANAGERTOOL])
-        history_keeper_tool_set = ComposioToolSet().get_tools(apps=[App.HISTORYKEEPER])
-        self.composio_toolset = list(
-            chain(
-                local_workspace_tool_set, cmd_manager_tool_set, history_keeper_tool_set
-            )
-        )
+        self.toolset = ComposioToolSet()
+        self.tools = [
+            *self.toolset.get_actions(
+                actions=[
+                    Action.LOCALWORKSPACE_WORKSPACESTATUSACTION,
+                ]
+            ),
+            *self.toolset.get_tools(
+                apps=[
+                    App.CMDMANAGERTOOL,
+                    App.HISTORYKEEPER,
+                ]
+            ),
+        ]
 
     def add_in_logs(self, step_output):
         if isinstance(step_output, AgentFinish):
@@ -46,13 +56,13 @@ class CrewaiAgent(BaseSWEAgent):
                     {"agent_action": agent_action.json(), "tool_output": tool_out}
                 )
             else:
-                logger.info(
+                self.logger.info(
                     "type of step_output: %s", type(agent_action_with_tool_out[0])
                 )
         else:
-            logger.info("type is not list: %s", type(step_output))
+            self.logger.info("type is not list: %s", type(step_output))
 
-    def solve_issue(self, workspace_id: str, issue_config: IssueConfig):
+    def solve(self, workspace_id: str, issue_config: IssueConfig):
         llm = get_langchain_llm()
         repo_name = issue_config.repo_name
         if not repo_name:
@@ -69,13 +79,19 @@ class CrewaiAgent(BaseSWEAgent):
             repo_name_dir="/" + repo_name.split("/")[-1].strip(),
             base_commit=issue_config.base_commit_id,
         )
-
         swe_agent = Agent(
-            role="You are the best programmer. You think carefully and step by step take action.",
-            goal="Help fix the given issue / bug in the code. And make sure you get it working. Ask the reviewer agent to review the patch and submit it once they approve it.",
+            role=(
+                "You are the best programmer. You think carefully and step by "
+                "step take action."
+            ),
+            goal=(
+                "Help fix the given issue / bug in the code. And make sure you "
+                "get it working. Ask the reviewer agent to review the patch and "
+                "submit it once they approve it."
+            ),
             backstory=backstory_added_instruction,
             verbose=True,
-            tools=self.composio_toolset,
+            tools=self.tools,
             llm=llm,
             memory=True,
             cache=False,
@@ -89,3 +105,25 @@ class CrewaiAgent(BaseSWEAgent):
         )
 
         coding_task.execute()
+
+
+def main() -> None:
+    """Run CrewAI agent example."""
+    issue_config = IssueConfig(
+        repo_name="ComposioHQ/composio",
+        issue_id="123",
+        issue_desc="""Composio Client should be able to run without API Key.
+        It should err to the user only if local tools are not used. In case of
+        local tools are being used, then it should not err if the API Key is
+        not provided. Main change should happen only in python/composio/client/__init__.py
+        """,
+    )
+    ctx = get_context()
+    args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
+    agent = CrewaiAgent(args)
+    patch = agent.setup_and_solve(issue_config=issue_config)
+    print(patch)
+
+
+if __name__ == "__main__":
+    main()
