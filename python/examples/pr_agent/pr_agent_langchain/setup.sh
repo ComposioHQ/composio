@@ -23,6 +23,9 @@ composio add github
 echo "Add slackbot tool. Finish the flow"
 composio add slackbot
 
+echo "Updating apps"
+composio apps update
+
 echo "Enable trigger for github"
 composio triggers enable github_pull_request_event
 

@@ -20,6 +20,9 @@ composio login
 echo "Add github tool. Finish the flow"
 composio add github
 
+echo "Updating apps"
+composio apps update
+
 echo "Add slackbot tool. Finish the flow"
 composio add slackbot
 
