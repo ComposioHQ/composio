@@ -21,6 +21,10 @@ composio login
 echo "Add slackbot tool. Finish the flow"
 composio add slackbot
 
+echo "Enable Slackbot triggers"
+composio trigger enable slackbot_receive_message
+composio trigger enable slackbot_receive_thread_reply
+
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
     echo "Copying .env.example to .env..."

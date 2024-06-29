@@ -5,6 +5,14 @@ This guide provides detailed steps to create a Slack Bot Agent that leverages Co
 # Slack Bot Schematic 
 ![alt text](https://github.com/ComposioHQ/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/schematic.png?raw=true)
 
+## Steps to perform before running
+
+Ensure that triggers are enabled in the Composio Dashboard. These are the triggers to enable:
+1. [Slack Bot Receive Message (trigger_id = SLACKBOT_RECEIVE_MESSAGE)](https://app.composio.dev/app/slackbot)
+2. [Slack Bot Receive Thread Reply (trigger_id = SLACKBOT_RECEIVE_THREAD_REPLY)](https://app.composio.dev/app/slackbot)
+
+Add the slackbot to any channel in your workspace to use it.
+
 ## Steps to Run
 
 **Navigate to the Project Directory:**

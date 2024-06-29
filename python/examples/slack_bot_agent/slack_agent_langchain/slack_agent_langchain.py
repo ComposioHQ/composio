@@ -13,7 +13,7 @@ load_dotenv()
 llm = ChatOpenAI(model="gpt-4-turbo")
 
 # Bot configuration constants
-BOT_USER_ID = "U06P2JKQN5B"  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
+BOT_USER_ID = os.environ['SLACK_BOT_ID']  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )

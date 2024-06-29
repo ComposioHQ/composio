@@ -23,7 +23,7 @@ code_review_assistant_prompt = """
         3. Provide actionable suggestions if there are any issues in the code.
 
         Once you have decided on the changes, for any TODOs, create a Github issue.
-        And send the summary of the PR review to #ram channel on slack. Slack doesn't have markdown and so send a plain text message.
+        And send the summary of the PR review to #general channel on slack. Slack doesn't have markdown and so send a plain text message.
         Also add the comprehensive review to the PR as a comment.
 """
 
@@ -43,7 +43,8 @@ llm = ChatOpenAI(model="gpt-4")
 
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
-query_agent = create_openai_functions_agent(llm, pr_agent_tools, prompt)
+combined_prompt = prompt+code_review_assistant_prompt
+query_agent = create_openai_functions_agent(llm, pr_agent_tools, combined_prompt)
 agent_executor = AgentExecutor(agent=query_agent, tools=pr_agent_tools, verbose=True)
 
 print("Assistant is ready")
@@ -62,4 +63,5 @@ def review_new_pr(event: TriggerEventData) -> None:
     print(res)
 
 print("Listener started!")
+print("Create a pr to get the review")
 listener.listen()

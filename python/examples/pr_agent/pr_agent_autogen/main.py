@@ -12,14 +12,24 @@ llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]
 }
 
+code_review_assistant_prompt = """
+You are an experienced code reviewer.
+Your task is to review the provided file diff and give constructive feedback and dm that to 
+
+Follow these steps:
+1. Identify if the file contains significant logic changes.
+2. Summarize the changes in the diff in clear and concise English, within 100 words.
+3. Provide actionable suggestions if there are any issues in the code.
+
+Once you have decided on the changes, for any TODOs, create a Github issue. 
+And send the summary of the PR review to #general channel on slack. Slack doesn't have markdown and so send a plain text message.
+Also add the comprehensive review to the PR as a comment.
+"""
+
 # Creating an AssistantAgent instance for the chatbot
 chatbot = AssistantAgent(
     "chatbot",
-    system_message="""
-        You are an experienced code reviewer.
-        Your task is to review the provided file diff and give constructive feedback.
-        ...
-    """,
+    system_message=code_review_assistant_prompt,
     llm_config=llm_config,
 )
 
@@ -60,4 +70,5 @@ def review_new_pr(event: TriggerEventData) -> None:
 
 # Starting the listener
 print("Listener started!")
+print("Create a pr to get the review")
 listener.listen()

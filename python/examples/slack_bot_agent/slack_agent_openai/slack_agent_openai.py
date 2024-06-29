@@ -14,7 +14,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 # Configuration constants
-BOT_USER_ID = "U06P2JKQN5B"  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.
+BOT_USER_ID = os.environ['SLACK_BOT_ID']  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.
 RESPOND_ONLY_IF_TAGGED = (
     True  # IF you want the bot to respond only when tagged, set this to True
 )
