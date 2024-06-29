@@ -31,7 +31,7 @@ class GetPatchCmd(BaseAction):
     The patch is in the format of a proper diff format.
     It incorporates any new files specified in the request, thereby excluding irrelevant installation files.
     It includes deleted files by default.
-    You should run it after all the changes are made.
+    You should run it after all the changes are made to git add and check the result.
     Example:
     diff --git a/repo/example.py b/repo/example.py
     index 1234567..89abcde 100644
