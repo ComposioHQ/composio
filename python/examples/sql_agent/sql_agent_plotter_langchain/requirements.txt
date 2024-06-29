@@ -1,4 +1,4 @@
 composio-core
 composio-langchain
-dotenv
+python-dotenv
 langchain-openai

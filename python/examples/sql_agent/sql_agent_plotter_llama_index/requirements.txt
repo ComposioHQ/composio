@@ -1,6 +1,6 @@
 composio-core
 composio-langchain
 composio-llamaindex
-dotenv
+python-dotenv
 langchain-openai
 crew-ai
