@@ -5,6 +5,9 @@ This guide provides detailed steps to create a PR agent that leverages Composio,
 # PR Agent Schematic 
 ![alt text](https://github.com/ComposioHQ/composio/blob/feat/slack-assistant/python/examples/pr_agent/schematic.png?raw=true)
 
+## Adding a Slackbot
+![alt text](https://github.com/ComposioHQ/composio/blob/feat/slack-assistant/python/examples/pr_agent/adding_slack_bot.gif?raw=true)
+
 ## Steps to perform before running
 
 Ensure you have triggers enabled in the Composio Dashboard. These are the triggers to enable:

@@ -45,7 +45,7 @@ prefix_messages = [
                 3. Provide actionable suggestions if there are any issues in the code.
 
                 Once you have decided on the changes, for any TODOs, create a Github issue.
-                And send the summary of the PR review to #general channel on slack. Slack doesn't have markdown and so send a plain text message.
+                And send the summary of the PR review to+"""+os.environ['CHANNEL_ID']+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
                 Also add the comprehensive review to the PR as a comment.
             """
 
