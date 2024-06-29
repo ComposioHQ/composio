@@ -83,7 +83,7 @@ def save_summaries_to_file(predictions_dir, predictions_path, log_dir, scorecard
 
 def main(predictions_dir, log_dir, swe_bench_path, model):
     logging.info("Starting main function")
-    eval_refs = get_cur_eval_refs(predictions_dir, swe_bench_path)
+    eval_refs, eval_refs_json_path = get_cur_eval_refs(predictions_dir, swe_bench_path)
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
     logging.debug("Predictions path: %s", predictions_path)
 
