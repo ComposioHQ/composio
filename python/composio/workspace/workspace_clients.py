@@ -1,6 +1,5 @@
 import os
 import select
-import shlex
 import time
 import traceback
 from enum import Enum
@@ -81,7 +80,7 @@ class DockerIoClient:
         if len(filtered_images) > 1:
             logger.warning("Multiple images found for %s, that's weird.", image_name)
 
-        attrs = filtered_images[0].attrs
+        # attrs = filtered_images[0].attrs
         # if attrs:
         #     logger.info(
         #         "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
@@ -109,7 +108,7 @@ class DockerIoClient:
             raise RuntimeError(msg)
         if len(filtered_images) > 1:
             logger.warning("Multiple images found for %s, that's weird.", image_name)
-        attrs = filtered_images[0].attrs
+        # attrs = filtered_images[0].attrs
         # if attrs is not None:
         #     logger.info(
         #         "Found image %s with tags: %s, created: %s for os: %s arch: %s.",

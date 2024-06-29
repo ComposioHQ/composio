@@ -1,5 +1,5 @@
 """
-composio-coder CLI Context.
+Composio coder CLI Context.
 """
 
 import typing as t
@@ -9,12 +9,6 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from composio_swe.config.config_store import (
-    AzureModelConfig,
-    IssueConfig,
-    ModelEnv,
-    OpenAiModelConfig,
-)
 from composio_swe.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
@@ -25,6 +19,12 @@ from composio_swe.config.constants import (
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,
     MODEL_ENV_PATH,
+)
+from composio_swe.config.store import (
+    AzureModelConfig,
+    IssueConfig,
+    ModelEnv,
+    OpenAiModelConfig,
 )
 from rich.console import Console
 
