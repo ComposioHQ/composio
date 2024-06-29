@@ -9,9 +9,10 @@ from datasets import load_dataset
 from rich.logging import RichHandler
 
 from composio import Action, Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
+from composio.local_tools.local_workspace.commons.local_docker_workspace import (
+    LocalDockerArgumentsModel,
 )
+from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 from examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
@@ -95,20 +96,19 @@ def create_workspace_from_image(
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    workspace_create_resp = CreateWorkspaceResponse.model_validate(
-        composio_client.actions.execute(
-            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
-            params={"image_name": repo_to_image_id_map[repo]},
-        )
+    workspace_id = WorkspaceFactory.get_instance().create_workspace(
+        workspace_type=WorkspaceType.DOCKER,
+        local_docker_args=LocalDockerArgumentsModel(
+            image_name=repo_to_image_id_map[repo]
+        ),
     )
-    workspace_id = workspace_create_resp.workspace_id
     workspace_creation_time = datetime.datetime.now() - start_time
-    print(
+    logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
         workspace_id,
         workspace_creation_time,
     )
-    print("Resetting repository to base commit")
+    logger.info("Resetting repository to base commit")
     composio_client.actions.execute(
         action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
         params={
@@ -126,14 +126,10 @@ def build_image_and_container(
 ):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
-    workspace_create_resp = CreateWorkspaceResponse.model_validate(
-        composio_client.actions.execute(
-            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
-            params={},
-            entity_id="123",
-        )
+    workspace_id = WorkspaceFactory.get_instance().create_workspace(
+        workspace_type=WorkspaceType.DOCKER,
+        local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
     )
-    workspace_id = workspace_create_resp.workspace_id
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",

@@ -6,16 +6,12 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    communicate,
-)
-from composio.local_tools.local_workspace.commons.utils import process_output
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
 
 LONG_TIMEOUT = 200
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class GetPatchRequest(BaseRequest):
@@ -55,26 +51,10 @@ class GetPatchCmd(BaseAction):
     def execute(
         self, request_data: GetPatchRequest, authorisation_data: dict
     ) -> BaseResponse:
-        print("Get patch command...")
         self._setup(request_data)
-        print("Setup completed.")
-        if self.container_process is None:
-            raise ValueError("Container process is not set")
         new_files = " ".join(request_data.new_file_path)
-        cmd1 = "git add -u"
+        cmd_list = ["git add -u"]
         if len(request_data.new_file_path) > 0:
-            cmd1 = f"git add {new_files} && " + cmd1
-        output, return_code = communicate(
-            self.container_process, self.container_obj, cmd1, self.parent_pids
-        )
-        output, return_code = process_output(output, return_code)
-        print(f"Output of git add: {output}")
-        cmd2 = "git diff --cached"
-        output, return_code = communicate(
-            self.container_process, self.container_obj, cmd2, self.parent_pids
-        )
-        output, return_code = process_output(output, return_code)
-        return BaseResponse(
-            output=output,
-            return_code=return_code,
-        )
+            cmd_list = [f"git add {new_files}", "git add -u"]
+        cmd_list.append("git diff --cached")
+        return self._communicate(" && ".join(cmd_list))

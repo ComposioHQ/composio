@@ -13,10 +13,9 @@ from composio_swe.exceptions import ComposioSWEError
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
-)
 from composio.utils import logging
+from composio.workspace.docker_workspace import LocalDockerArgumentsModel
+from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -65,19 +64,16 @@ class BaseSWEAgent(ABC, logging.WithLogger):
     def _create_workspace(self) -> str:
         """Create the workspace."""
         start_time = datetime.datetime.now()
-        action_response = self.composio_client.actions.execute(
-            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
-            params={},
+        workspace_id = WorkspaceFactory.get_instance().create_workspace(
+            workspace_type=WorkspaceType.DOCKER,
+            local_docker_args=LocalDockerArgumentsModel(
+                image_name="sweagent/swe-agent"
+            ),
         )
-        if isinstance(action_response, dict) and action_response["status"] == "failure":
-            raise ComposioSWEError(action_response["details"])
-
-        workspace_create_resp = CreateWorkspaceResponse.model_validate(action_response)
-        workspace_id = workspace_create_resp.workspace_id
-        workspace_creation_time = datetime.datetime.now() - start_time
         self.logger.info(
-            f"workspace is created, workspace-id is: {workspace_id}, "
-            f"creation time: {workspace_creation_time}",
+            "workspace is created, workspace-id is: %s, creation time: %s",
+            workspace_id,
+            datetime.datetime.now() - start_time,
         )
         return workspace_id
 
@@ -86,16 +82,20 @@ class BaseSWEAgent(ABC, logging.WithLogger):
     ) -> None:
         """Clone repository to the workspace."""
         start_time = datetime.datetime.now()
-        self.composio_client.actions.execute(
+        action_response = self.composio_client.actions.execute(
             action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": repo_name,
-                "base_commit": base_commit_id,
+                "commit_id": base_commit_id,
             },
         )
-        git_clone_time = datetime.datetime.now() - start_time
-        self.logger.info("git clone completed, time taken: %s", git_clone_time)
+        if isinstance(action_response, dict) and action_response["status"] == "failure":
+            raise ComposioSWEError(action_response["details"])
+        self.logger.info("git clone completed, response: %s", action_response)
+        self.logger.info(
+            "git clone completed, time taken: %s", datetime.datetime.now() - start_time
+        )
 
     def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
         """Create and setup the workspace."""
@@ -119,29 +119,30 @@ class BaseSWEAgent(ABC, logging.WithLogger):
         workspace_id: t.Optional[str] = None,
     ) -> str:
         if workspace_id is None:
-            if issue_config.repo_name is None and issue_config.base_commit_id is None:
-                raise ValueError(
-                    "Both `repo_name` and `base_commit_id` must be provided in `issue_config`"
-                )
+            if issue_config.repo_name is None:
+                raise ValueError("`repo_name` should be provided")
             workspace_id = self.create_and_setup_workspace(
-                t.cast(str, issue_config.repo_name),
+                issue_config.repo_name,
                 t.cast(str, issue_config.base_commit_id),
             )
 
-        self.solve(
-            workspace_id=workspace_id,
-            issue_config=issue_config,
-        )
+        self.logger.info("Starting the agent")
+        self.solve(workspace_id, issue_config)
 
         self.logger.info("Getting patch")
         get_patch_resp = self.composio_client.actions.execute(
             action=Action.CMDMANAGERTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
-        patch = get_patch_resp[0][1]
+        patch = get_patch_resp.output  # type: ignore
         self.logger.info(f"Final Patch: {patch}")
-        self.current_logs.append({"agent_action": "final_patch", "agent_output": patch})
-        self.save(instance_id=t.cast(str, issue_config.issue_id))
+        self.current_logs.append(
+            {
+                "agent_action": "final_patch",
+                "agent_output": patch,
+            }
+        )
+        self.save(t.cast(str, issue_config.issue_id))
         return patch
 
     @abstractmethod
