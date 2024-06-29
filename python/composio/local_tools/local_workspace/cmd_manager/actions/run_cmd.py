@@ -80,13 +80,10 @@ class RunCommandOnWorkspace(BaseAction):
             info (`dict`) - additional information (e.g. debugging information)
         """
         try:
-            cmd_response: BaseCmdResponse = self.workspace.communicate(action, timeout)
-            output, return_code = process_output(
-                cmd_response.output, cmd_response.return_code
-            )
+            cmd_response: BaseCmdResponse = self._communicate(action, timeout)
             return (
-                output,
-                return_code,
+                cmd_response.output,
+                cmd_response.return_code,
             )
         except TimeoutError:
             try:

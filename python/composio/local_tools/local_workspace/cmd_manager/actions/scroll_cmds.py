@@ -40,8 +40,4 @@ class Scroll(BaseAction):
         self.command = (
             "scroll_down" if request_data.direction == "down" else "scroll_up"
         )
-        cmd_response: BaseCmdResponse = self.workspace.communicate(self.command)
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate(self.command)

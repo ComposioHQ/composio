@@ -53,17 +53,9 @@ class GithubCloneCmd(BaseAction):
         self, request_data: GithubCloneRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        if self.workspace is None:
-            raise RuntimeError("Workspace is not set")
         if request_data.just_reset:
             return self.reset_to_base_commit(request_data)
-        cmd_response: BaseCmdResponse = self.workspace.record_history_and_communicate(
-            git_clone_cmd(request_data), timeout=LONG_TIMEOUT
-        )
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate(git_clone_cmd(request_data), timeout=LONG_TIMEOUT)
 
     def reset_to_base_commit(self, request_data: GithubCloneRequest) -> BaseResponse:
         """

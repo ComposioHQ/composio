@@ -59,13 +59,4 @@ class GetPatchCmd(BaseAction):
         if len(request_data.new_file_path) > 0:
             cmd_list = [f"git add {new_files}", "git add -u"]
         cmd_list.append("git diff --cached")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(
-            " && ".join(cmd_list)
-        )
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(
-            output=output,
-            return_code=return_code,
-        )
+        return self._communicate(" && ".join(cmd_list))

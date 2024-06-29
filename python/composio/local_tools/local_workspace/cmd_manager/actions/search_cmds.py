@@ -46,11 +46,7 @@ class SearchDirCmd(BaseAction):
         full_command = (
             f"search_dir '{request_data.search_term}' {request_data.directory}"
         )
-        cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate(full_command)
 
 
 class SearchFileRequest(BaseRequest):
@@ -85,11 +81,7 @@ class SearchFileCmd(BaseAction):
         full_command = (
             f"search_file '{request_data.search_term}' {request_data.file_name}"
         )
-        cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate(full_command)
 
 
 class FindFileRequest(BaseRequest):
@@ -131,11 +123,7 @@ class FindFileCmd(BaseAction):
             )
         self._setup(request_data)
         full_command = f"find_file {request_data.file_name} {request_data.dir}"
-        cmd_response: BaseCmdResponse = self.workspace.communicate(full_command)
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate(full_command)
 
 
 class GetCurrentDirRequest(BaseRequest):
@@ -160,8 +148,4 @@ class GetCurrentDirCmd(BaseAction):
         self, request_data: GetCurrentDirRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        cmd_response: BaseCmdResponse = self.workspace.communicate("pwd")
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate("pwd")

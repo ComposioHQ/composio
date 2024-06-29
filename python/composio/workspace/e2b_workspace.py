@@ -2,7 +2,7 @@ import subprocess
 
 from composio.workspace.workspace_clients import E2BClient
 
-from .base_workspace import BaseCmdResponse, Command, Workspace, WorkspaceEnv
+from .base_workspace import BaseCmdResponse, Workspace, WorkspaceEnv
 
 
 class E2BWorkspace(Workspace):

@@ -8,9 +8,6 @@ from composio.local_tools.local_workspace.cmd_manager.tool import CmdManagerTool
 from composio.local_tools.local_workspace.commons.history_processor import (
     HistoryProcessor,
 )
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    WorkspaceManagerFactory,
-)
 from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
 from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.ragtool import RagTool
@@ -28,7 +25,6 @@ class LocalToolHandler:
 
     def _load_local_tools(self) -> t.List:
         """Load local tools."""
-        w = WorkspaceManagerFactory()
         h = HistoryProcessor()
 
         # initialize workspace tool

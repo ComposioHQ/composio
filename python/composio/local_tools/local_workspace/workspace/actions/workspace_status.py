@@ -39,4 +39,4 @@ class WorkspaceStatusAction(BaseWorkspaceAction):
         if authorisation_data is None:
             authorisation_data = {}
         status = self.workspace.get_running_status()
-        return {"output":f"docker container running status is {status}"}
+        return {"output": f"docker container running status is {status}"}

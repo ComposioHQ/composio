@@ -7,6 +7,8 @@ from composio.core.local import Action
 from composio.local_tools.local_workspace.commons import get_logger
 from composio.workspace.base_workspace import Workspace
 from composio.workspace.workspace_factory import WorkspaceFactory
+from composio.workspace.base_workspace import BaseCmdResponse
+from composio.local_tools.local_workspace.commons.utils import process_output
 
 
 logger = get_logger("workspace")
@@ -53,6 +55,16 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
         if self.workspace is None:
             logger.error("workspace_factory is not set")
             raise ValueError("workspace_factory is not set")
+
+    def _communicate(self, cmd_to_run, timeout=25):
+        workspace_response: BaseCmdResponse = self.workspace.record_history_and_communicate(cmd_to_run, timeout)
+        output, return_code = process_output(
+            workspace_response.output, workspace_response.return_code
+        )
+        return BaseResponse(
+            output=output,
+            return_code=return_code,
+        )
 
     @abstractmethod
     def execute(

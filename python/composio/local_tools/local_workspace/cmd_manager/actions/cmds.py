@@ -45,6 +45,9 @@ class GoToLineNumInOpenFile(BaseAction):
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
+        if self.workspace is None:
+            logger.error("Workspace is not initialized.")
+            raise ValueError("Workspace is not initialized.")
         cmd_response: BaseCmdResponse = self.workspace.communicate(
             f"goto {str(request_data.line_number)}"
         )
@@ -89,6 +92,9 @@ class CreateFileCmd(BaseAction):
             return CreateFileResponse(
                 output="Exception: file-name can not be empty", return_code=1
             )
+        if self.workspace is None:
+            logger.error("Workspace is not initialized.")
+            raise ValueError("Workspace is not initialized.")
         cmd_response: BaseCmdResponse = self.workspace.communicate(
             f"create {str(request_data.file_name)}"
         )
@@ -137,6 +143,9 @@ class OpenFile(BaseAction):
         command = f"open {request_data.file_name}"
         if request_data.line_number != 0:
             command += f" {request_data.line_number}"
+        if self.workspace is None:
+            logger.error("Workspace is not initialized.")
+            raise ValueError("Workspace is not initialized.")
         cmd_response: BaseCmdResponse = self.workspace.communicate(command)
         output, return_code = process_output(
             cmd_response.output, cmd_response.return_code
