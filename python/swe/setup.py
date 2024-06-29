@@ -30,7 +30,7 @@ setup(
     },
     install_requires=[
         "pydantic>=2.7.4",
-        "swebench>=1.1.0",
+        "swebench==1.1.0",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
         "crewai==0.30.11",
@@ -40,7 +40,6 @@ setup(
         "langchain-openai",
         "langchain-anthropic",
         "llama-index-llms-anthropic",
-        "swe_bench_docker @ git+https://github.com/ComposioHQ/SWE-bench-docker.git",
         "rich",
     ],
     dependency_links=[
