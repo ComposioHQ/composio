@@ -63,7 +63,8 @@ class GithubCloneCmd(BaseAction):
         """
         print("Resetting repository to base commit inside reset_to_base_commit")
         if self.workspace is None:
-            raise RuntimeError("Workspace is not set")
+            logger.error("Workspace is not initialized.")
+            raise ValueError("Workspace is not initialized.")
         cmd_response: BaseCmdResponse = self.workspace.record_history_and_communicate(
             git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT
         )

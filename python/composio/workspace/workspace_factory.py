@@ -79,6 +79,8 @@ class WorkspaceFactory:
 
     def get_workspace_by_id(self, workspace_id: str) -> Workspace:
         workspace_meta = self._registry.get(workspace_id)
+        if not workspace_meta:
+            raise ValueError(f"workspace not found, workspace-id: {workspace_id}")
         workspace = workspace_meta[KEY_WORKSPACE_MANAGER]
         return workspace
 

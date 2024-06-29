@@ -30,6 +30,9 @@ class GitRepoTree(BaseAction):
     ) -> BaseResponse:
         self._setup(request_data)
         self.command = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
+        if self.workspace is None:
+            logger.error("Workspace is not initialized.")
+            raise ValueError("Workspace is not initialized.")
         cmd_response: BaseCmdResponse = self.workspace.communicate(self.command)
         _, return_code = process_output(cmd_response.output, cmd_response.return_code)
         return BaseResponse(
