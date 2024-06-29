@@ -73,16 +73,16 @@ class DockerManager:
         if len(filtered_images) > 1:
             logger.warning("Multiple images found for %s, that's weird.", image_name)
 
-        attrs = filtered_images[0].attrs
-        if attrs:
-            logger.info(
-                "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
-                image_name,
-                attrs["RepoTags"],
-                attrs["Created"],
-                attrs["Os"],
-                attrs["Architecture"],
-            )
+        # attrs = filtered_images[0].attrs
+        # if attrs:
+        #     # logger.info(
+        #     #     "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
+        #     #     image_name,
+        #     #     attrs["RepoTags"],
+        #     #     attrs["Created"],
+        #     #     attrs["Os"],
+        #     #     attrs["Architecture"],
+        #     # )
 
         if persistent:
             return instance._get_persistent_container(ctr_name, image_name)
@@ -103,16 +103,16 @@ class DockerManager:
             raise RuntimeError(msg)
         if len(filtered_images) > 1:
             logger.warning("Multiple images found for %s, that's weird.", image_name)
-        attrs = filtered_images[0].attrs
-        if attrs is not None:
-            logger.info(
-                "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
-                image_name,
-                attrs["RepoTags"],
-                attrs["Created"],
-                attrs["Os"],
-                attrs["Architecture"],
-            )
+        # attrs = filtered_images[0].attrs
+        # if attrs is not None:
+        #     logger.info(
+        #         "Found image %s with tags: %s, created: %s for os: %s arch: %s.",
+        #         image_name,
+        #         attrs["RepoTags"],
+        #         attrs["Created"],
+        #         attrs["Os"],
+        #         attrs["Architecture"],
+        #     )
         max_attempts = 5
         attempt = 0
         backoff_time = 1  # Initial backoff time in seconds
@@ -169,7 +169,7 @@ class DockerManager:
             "-l",
             "-m",
         ]
-        logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
+        # logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
         # pylint: disable=R1732
         container = subprocess.Popen(
             startup_cmd,
@@ -221,7 +221,7 @@ class DockerManager:
             "-l",
             "-m",
         ]
-        logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
+        # logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
         container = subprocess.Popen(  # pylint: disable=consider-using-with
             startup_cmd,
             stdin=PIPE,
