@@ -24,7 +24,7 @@ echo "Add slackbot tool. Finish the flow"
 composio add slackbot
 
 echo "Enable trigger for github"
-composio trigger enable github_pull_request_event
+composio triggers enable github_pull_request_event
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
