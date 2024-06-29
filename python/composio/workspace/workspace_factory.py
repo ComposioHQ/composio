@@ -1,6 +1,5 @@
 import json
 import typing as t
-from uuid import uuid4
 
 import composio.workspace.constants as workspace_const
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
@@ -56,23 +55,21 @@ class WorkspaceFactory:
                 local_docker_args.image_name, self.docker_client, local_docker_args
             )
             workspace.setup(env=workspace_const.get_default_docker_env())
-            workspace_id = str(uuid4())
-            self._registry[workspace_id] = {
+            self._registry[workspace.workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
                 KEY_CONTAINER_NAME: workspace.container_name,
                 KEY_PARENT_PIDS: workspace.parent_pids,
                 KEY_IMAGE_NAME: local_docker_args.image_name,
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
-            return workspace_id
-        if workspace_type == WorkspaceType.E2B:
+            return workspace.workspace_id
+        elif workspace_type == WorkspaceType.E2B:
             workspace = E2BWorkspace(None, self.e2b_client)
-            workspace_id = str(uuid4())
-            self._registry[workspace_id] = {
+            self._registry[workspace.workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
-            return workspace_id
+            return workspace.workspace_id
         raise ValueError(f"Unsupported workspace type: {workspace_type}")
 
     def get_registered_manager(

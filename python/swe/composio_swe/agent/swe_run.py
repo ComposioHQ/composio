@@ -17,7 +17,7 @@ if __name__ == "__main__":
     ctx.issue_config = issue_config
     set_context(ctx)
 
-    args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)  # type: ignore
+    args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
     c_agent = CrewaiAgent(args)
 
     patch = c_agent.setup_and_solve(issue_config=ctx.issue_config)

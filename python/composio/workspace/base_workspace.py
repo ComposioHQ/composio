@@ -1,9 +1,10 @@
 import typing as t
-from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from abc import abstractmethod, ABC
+from uuid import uuid4
 from composio.local_tools.local_workspace.commons.history_processor import (
     BaseCmdResponse,
     HistoryProcessor,
@@ -51,6 +52,10 @@ class Workspace(ABC):
     workspace_id: str
     history_processor: HistoryProcessor
 
+    def __init__(self):
+        self.workspace_id = str(uuid4())
+        self.history_processor = HistoryProcessor()
+
     @abstractmethod
     def setup(self, env: WorkspaceEnv, **kwargs):
         pass
@@ -64,6 +69,9 @@ class Workspace(ABC):
         self, cmd: str, timeout: int = 25
     ) -> BaseCmdResponse:
         return self.communicate(cmd, timeout)
+
+    def get_history(self, workspace_id: str, n: int = 10):
+        return self.history_processor.get_history(workspace_id, n)
 
     @abstractmethod
     def reset(self):

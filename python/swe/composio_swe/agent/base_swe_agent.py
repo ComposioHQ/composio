@@ -34,7 +34,9 @@ class BaseSWEAgent(ABC, WithLogger):
         self.agent_logs: t.Dict[str, t.Any] = {}
         self.current_logs: t.List[t.Any] = []
 
-    def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
+    def create_and_setup_workspace(
+        self, repo_name: str, base_commit_id: t.Optional[str] = None
+    ) -> str:
         start_time = datetime.datetime.now()
         workspace_id = WorkspaceFactory.get_instance().create_workspace(
             workspace_type=WorkspaceType.DOCKER,

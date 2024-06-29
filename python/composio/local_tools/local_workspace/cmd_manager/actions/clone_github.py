@@ -53,9 +53,11 @@ class GithubCloneCmd(BaseAction):
         self, request_data: GithubCloneRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
+        if self.workspace is None:
+            raise RuntimeError("Workspace is not set")
         if request_data.just_reset:
             return self.reset_to_base_commit(request_data)
-        cmd_response: BaseCmdResponse = self.workspace.communicate(
+        cmd_response: BaseCmdResponse = self.workspace.record_history_and_communicate(
             git_clone_cmd(request_data), timeout=LONG_TIMEOUT
         )
         output, return_code = process_output(
@@ -69,7 +71,9 @@ class GithubCloneCmd(BaseAction):
         Assumes the repository already exists as cloned by the execute function.
         """
         print("Resetting repository to base commit inside reset_to_base_commit")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(
+        if self.workspace is None:
+            raise RuntimeError("Workspace is not set")
+        cmd_response: BaseCmdResponse = self.workspace.record_history_and_communicate(
             git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT
         )
         if cmd_response.return_code != 0:
