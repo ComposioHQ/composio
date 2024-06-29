@@ -38,5 +38,9 @@ class WorkspaceStatusAction(BaseWorkspaceAction):
     ) -> dict:
         if authorisation_data is None:
             authorisation_data = {}
+        if not self.workspace:
+            raise ValueError(
+                f"workspace not found for workspace_id: {request_data.workspace_id}"
+            )
         status = self.workspace.get_running_status()
         return {"output": f"docker container running status is {status}"}

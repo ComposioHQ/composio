@@ -34,7 +34,7 @@ class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
     _display_name = ""
     _tags = ["workspace"]
     _tool_name = "localworkspace"
-    workspace: Workspace = typing.Optional[Workspace]
+    workspace: typing.Optional[Workspace] = None
 
     def __init__(self):
         super().__init__()

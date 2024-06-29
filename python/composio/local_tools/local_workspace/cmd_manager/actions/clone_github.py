@@ -49,8 +49,9 @@ class GithubCloneCmd(BaseAction):
     _response_schema = GithubCloneResponse
 
     def execute(
-        self, request_data: GithubCloneRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = GithubCloneRequest(**request_data.model_dump())
         self._setup(request_data)
         if request_data.just_reset:
             return self.reset_to_base_commit(request_data)
