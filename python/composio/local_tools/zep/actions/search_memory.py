@@ -70,15 +70,11 @@ class SearchMemory(Action):
             results=[
                 SearchResult(
                     message=(
-                        result.message.model_dump()
-                        if result.message is not None
-                        else {}
+                        result.message.dict() if result.message is not None else {}
                     ),
                     metadata=result.metadata,
                     summary=(
-                        result.summary.model_dump()
-                        if result.summary is not None
-                        else {}
+                        result.summary.dict() if result.summary is not None else {}
                     ),
                     score=result.score,
                 )

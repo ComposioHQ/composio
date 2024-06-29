@@ -53,11 +53,11 @@ class GetMemory(Action):
             session_id=request_data.session_id,
         )
         return GetMemoryResponse(
-            messages=[message.model_dump() for message in result.messages or []],
-            summary=result.summary.model_dump() if result.summary is not None else {},
+            messages=[message.dict() for message in result.messages or []],
+            summary=result.summary.dict() if result.summary is not None else {},
             facts=[fact for fact in result.facts or []],
             metadata=result.metadata or {},
             relevant_summaries=[
-                summary.model_dump() for summary in result.relevant_summaries or []
+                summary.dict() for summary in result.relevant_summaries or []
             ],
         )
