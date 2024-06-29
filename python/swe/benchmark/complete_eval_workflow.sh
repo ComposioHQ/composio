@@ -29,7 +29,8 @@ fi
 # Usage: ./complete_eval_workflow.sh <prediction_path_dir> <dataset_path_or_name>
 prediction_path_dir=$1  #
 dataset_path_or_name=$2
-action=${3:-all}  # Default to running all steps if no specific action is provided
+skip_existing=$3 # default to skip_existing = false
+action=${4:-all} # Default to running all steps if no specific action is provided
 dataset_on_disk_path="$prediction_path_dir/dataset"
 predictions_json_path="$prediction_path_dir/patches.json"
 log_dir_path="$prediction_path_dir/logs"
@@ -83,7 +84,12 @@ run_evaluation() {
 
     mkdir -p "$log_dir_path"
     # Run the evaluation
-    python run_evaluation.py --predictions_path "$predictions_json_path" --log_dir "$log_dir_path" --swe_bench_tasks "$dataset_on_disk_path" --namespace aorwall --skip_existing
+     # Conditionally add the --skip_existing flag
+    if [ "$skip_existing" = "false" ]; then
+          python run_evaluation.py --predictions_path "$predictions_json_path" --log_dir "$log_dir_path" --swe_bench_tasks "$dataset_on_disk_path" --namespace aorwall
+    else
+          python run_evaluation.py --predictions_path "$predictions_json_path" --log_dir "$log_dir_path" --swe_bench_tasks "$dataset_on_disk_path" --namespace aorwall --skip_existing
+    fi
     deactivate
     export PATH=$OLD_PATH
     popd
