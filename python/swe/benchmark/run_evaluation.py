@@ -1,7 +1,7 @@
 # pylint: disable=logging-fstring-interpolation
+import argparse
 import datetime
 import logging
-import argparse
 
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context

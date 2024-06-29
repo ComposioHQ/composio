@@ -58,23 +58,34 @@ run_evaluation() {
     banner "Running patches evaluation on docker-images..."
     set -ex
     cd "$script_dir"
+    pip install virtualenv
     # Save current directory and change to home directory
     pushd ~
+    OLD_PATH=$PATH
+
    # Check if the SWE-bench-docker directory already exists
     if [ -d "SWE-bench-docker" ]; then
         echo "SWE-bench-docker already exists, pulling latest changes."
         cd ~/SWE-bench-docker
         git pull
+        virtualenv -p python3.11 venv
+        source venv/bin/activate
+        pip install -e .
     else
         # Clone the SWE-bench-docker repository
-        git clone https://github.com/aorwall/SWE-bench-docker.git
+        git clone https://github.com/ComposioHQ/SWE-bench-docker.git
+        virtualenv -p python3.11 venv
+        source venv/bin/activate
         # Navigate into the cloned directory
         cd ~/SWE-bench-docker
+        pip install -e .
     fi
 
     mkdir -p "$log_dir_path"
     # Run the evaluation
     python run_evaluation.py --predictions_path "$predictions_json_path" --log_dir "$log_dir_path" --swe_bench_tasks "$dataset_on_disk_path" --namespace aorwall --skip_existing
+    deactivate
+    export PATH=$OLD_PATH
     popd
     cd "$current_dir"
 }
