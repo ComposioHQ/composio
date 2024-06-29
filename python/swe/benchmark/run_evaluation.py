@@ -103,12 +103,12 @@ def create_workspace_from_image(
         ),
     )
     workspace_creation_time = datetime.datetime.now() - start_time
-    print(
+    logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
         workspace_id,
         workspace_creation_time,
     )
-    print("Resetting repository to base commit")
+    logger.info("Resetting repository to base commit")
     composio_client.actions.execute(
         action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
         params={

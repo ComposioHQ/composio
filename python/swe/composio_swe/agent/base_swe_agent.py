@@ -45,7 +45,7 @@ class BaseSWEAgent(ABC, WithLogger):
             ),
         )
         workspace_creation_time = datetime.datetime.now() - start_time
-        print(
+        self.logger.info(
             "workspace is created, workspace-id is: %s, creation time: %s",
             workspace_id,
             workspace_creation_time,
