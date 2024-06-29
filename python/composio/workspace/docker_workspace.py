@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
-from .base_workspace import BaseCmdResponse, Command, Workspace, WorkspaceEnv
+from .base_workspace import BaseCmdResponse, Workspace, WorkspaceEnv
 
 
 logger = get_logger("local_docker_workspace")
@@ -140,7 +140,6 @@ class DockerWorkspace(Workspace):
         self.container_obj = self.docker_client.get_container_by_container_name(
             self.container_name, self.image_name
         )
-        return
 
     def _init_scripts(self):
         """
@@ -237,7 +236,7 @@ class DockerWorkspace(Workspace):
         try:
             if self.container_process is None:
                 raise ValueError("Container is None")
-            self.communicate(Command("exit"))
+            self.communicate("exit")
         except KeyboardInterrupt:
             logger.error("handling keyboard interrupt")
             raise

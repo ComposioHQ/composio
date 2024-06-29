@@ -1,7 +1,9 @@
+import json
 import typing as t
 from uuid import uuid4
 
 import composio.workspace.constants as workspace_const
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.workspace import DockerWorkspace, E2BWorkspace, LocalDockerArgumentsModel
 from composio.workspace.base_workspace import Workspace
 from composio.workspace.workspace_clients import (
@@ -17,6 +19,8 @@ KEY_PARENT_PIDS = "parent_pids"
 KEY_IMAGE_NAME = "image_name"
 KEY_WORKSPACE_ID = "workspace_id"
 KEY_WORKSPACE_TYPE = "type"
+
+logger = get_logger("worspace")
 
 
 class WorkspaceFactory:
@@ -46,6 +50,7 @@ class WorkspaceFactory:
         local_docker_args: LocalDockerArgumentsModel,
         **kwargs,
     ) -> str:
+        logger.debug("kwargs: %s", json.dumps(kwargs))
         if workspace_type == WorkspaceType.DOCKER:
             workspace = DockerWorkspace(
                 local_docker_args.image_name, self.docker_client, local_docker_args
@@ -60,17 +65,15 @@ class WorkspaceFactory:
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
             return workspace_id
-        elif workspace_type == WorkspaceType.E2B:
+        if workspace_type == WorkspaceType.E2B:
             workspace = E2BWorkspace(None, self.e2b_client)
             workspace_id = str(uuid4())
             self._registry[workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
-        else:
-            raise ValueError(f"Unsupported workspace type: {workspace_type}")
-
-        return None
+            return workspace_id
+        raise ValueError(f"Unsupported workspace type: {workspace_type}")
 
     def get_registered_manager(
         self, workspace_id: str

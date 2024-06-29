@@ -8,7 +8,9 @@ from .base_workspace import BaseCmdResponse, Command, Workspace, WorkspaceEnv
 class E2BWorkspace(Workspace):
     def __init__(self, args, client: E2BClient):
         self.sandbox_id = None
-        self.sandbox = None  # Assuming a sandbox object needs to be managed
+        self.sandbox = None
+        self.args = args
+        self.client = client
 
     def setup(self, env: WorkspaceEnv, **kwargs):
         # Setup the E2B sandbox environment
@@ -25,6 +27,7 @@ class E2BWorkspace(Workspace):
             ["e2b-sandbox-cli", "exec", self.sandbox_id, cmd.get_cmd_str()],
             capture_output=True,
             text=True,
+            check=False,
         )
         return BaseCmdResponse(output=result.stdout, retunr_code=result.returncode)
 
@@ -33,8 +36,12 @@ class E2BWorkspace(Workspace):
             ["e2b-sandbox-cli", "state", self.sandbox_id],
             capture_output=True,
             text=True,
+            check=False,
         )
         return {"sandbox_id": self.sandbox_id, "state": state_result.stdout}
+
+    def get_running_status(self):
+        return {}
 
     def close(self):
         # Close the sandbox

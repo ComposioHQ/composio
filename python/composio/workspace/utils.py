@@ -1,5 +1,4 @@
-from .base_workspace import Workspace
+from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 
-def get_workspace_by_id(workspace_id: str) -> Workspace:
-    pass
+logger = get_logger("workspace")
