@@ -8,10 +8,9 @@ from composio_swe.config.config_store import IssueConfig
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
-from composio.local_tools.local_workspace.workspace.actions.create_workspace import (
-    CreateWorkspaceResponse,
-)
 from composio.utils.logging import WithLogger
+from composio.workspace.docker_workspace import LocalDockerArgumentsModel
+from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -35,17 +34,16 @@ class BaseSWEAgent(ABC, WithLogger):
         self.agent_logs: t.Dict[str, t.Any] = {}
         self.current_logs: t.List[t.Any] = []
 
-    def create_and_setup_workspace(self, repo_name: str, base_commit_id: str) -> str:
+    def create_and_setup_workspace(
+        self, repo_name: str, base_commit_id: t.Optional[str] = None
+    ) -> str:
         start_time = datetime.datetime.now()
-        action_response = self.composio_client.actions.execute(
-            action=Action.LOCALWORKSPACE_CREATEWORKSPACEACTION,
-            params={},
+        workspace_id = WorkspaceFactory.get_instance().create_workspace(
+            workspace_type=WorkspaceType.DOCKER,
+            local_docker_args=LocalDockerArgumentsModel(
+                image_name="sweagent/swe-agent"
+            ),
         )
-        if isinstance(action_response, dict) and action_response["status"] == "failure":
-            raise RuntimeError(action_response["details"])
-
-        workspace_create_resp = CreateWorkspaceResponse.model_validate(action_response)
-        workspace_id = workspace_create_resp.workspace_id
         workspace_creation_time = datetime.datetime.now() - start_time
         print(
             "workspace is created, workspace-id is: %s, creation time: %s",
@@ -82,10 +80,7 @@ class BaseSWEAgent(ABC, WithLogger):
         self, issue_config: IssueConfig, workspace_id: t.Optional[str] = None
     ) -> str:
         if workspace_id is None:
-            assert (
-                issue_config.repo_name is not None
-                and issue_config.base_commit_id is not None
-            ), "Both repo_name and base_commit_id must be provided in issue_config"
+            assert issue_config.repo_name is not None, "repo_name should be provided"
             workspace_id = self.create_and_setup_workspace(
                 issue_config.repo_name, issue_config.base_commit_id
             )
@@ -95,7 +90,7 @@ class BaseSWEAgent(ABC, WithLogger):
             action=Action.CMDMANAGERTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
-        patch = get_patch_resp[0][1]
+        patch = get_patch_resp.get("output", "")
         print(f"Final Patch: {patch}")
         self.current_logs.append(
             {

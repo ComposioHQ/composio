@@ -1,21 +1,20 @@
+import typing
 from abc import ABC, abstractmethod
-from typing import Optional, TypeVar
+from typing import TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from composio.local_tools.local_workspace.commons import (
-    HistoryProcessor,
-    WorkspaceManagerFactory,
-    get_logger,
-)
+from composio.local_tools.local_workspace.commons import get_logger
+from composio.workspace.base_workspace import Workspace
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 
 
 class BaseWorkspaceRequest(BaseModel):
-    pass
+    workspace_id: str = Field(default="", description="workspace id for the workspace")
 
 
 class BaseWorkspaceResponse(BaseModel):
@@ -35,8 +34,7 @@ class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
     _display_name = ""
     _tags = ["workspace"]
     _tool_name = "localworkspace"
-    workspace_factory: Optional[WorkspaceManagerFactory] = None
-    history_processor: Optional[HistoryProcessor] = None
+    workspace: typing.Optional[Workspace] = None
 
     def __init__(self):
         super().__init__()
@@ -52,13 +50,10 @@ class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
         self.config = None
         self.config_file_path = None
 
-    def set_workspace_and_history(
-        self,
-        workspace_factory: WorkspaceManagerFactory,
-        history_processor: HistoryProcessor,
-    ):
-        self.workspace_factory = workspace_factory
-        self.history_processor = history_processor
+    def _setup(self, request_data: BaseWorkspaceRequest):
+        self.workspace = WorkspaceFactory.get_instance().get_registered_manager(
+            request_data.workspace_id
+        )
 
     @abstractmethod
     def execute(
