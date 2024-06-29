@@ -33,13 +33,14 @@ class E2BWorkspace(Workspace):
         return BaseCmdResponse(output=result.stdout, retunr_code=result.returncode)
 
     def get_state(self) -> dict:
-        state_result = subprocess.run(
-            ["e2b-sandbox-cli", "state", self.sandbox_id],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        return {"sandbox_id": self.sandbox_id, "state": state_result.stdout}
+        # state_result = subprocess.run(
+        #     ["e2b-sandbox-cli", "state", self.sandbox_id],
+        #     capture_output=True,
+        #     text=True,
+        #     check=False,
+        # )
+        # return {"sandbox_id": self.sandbox_id, "state": state_result.stdout}
+        return {}
 
     def get_running_status(self):
         return {}

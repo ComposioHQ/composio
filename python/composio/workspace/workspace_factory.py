@@ -3,7 +3,7 @@ import typing as t
 
 import composio.workspace.constants as workspace_const
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.workspace import DockerWorkspace, E2BWorkspace, LocalDockerArgumentsModel
+from composio.workspace import DockerWorkspace, LocalDockerArgumentsModel
 from composio.workspace.base_workspace import Workspace
 from composio.workspace.workspace_clients import (
     DockerIoClient,
@@ -63,13 +63,13 @@ class WorkspaceFactory:
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
             return workspace.workspace_id
-        if workspace_type == WorkspaceType.E2B:
-            workspace_e2b = E2BWorkspace(None, self.e2b_client)
-            self._registry[workspace_e2b.workspace_id] = {
-                KEY_WORKSPACE_MANAGER: workspace_e2b,
-                KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
-            }
-            return workspace_e2b.workspace_id
+        # if workspace_type == WorkspaceType.E2B:
+        #     workspace_e2b = E2BWorkspace(None, self.e2b_client)
+        #     self._registry[workspace_e2b.workspace_id] = {
+        #         KEY_WORKSPACE_MANAGER: workspace_e2b,
+        #         KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
+        #     }
+        #     return workspace_e2b.workspace_id
         raise ValueError(f"Unsupported workspace type: {workspace_type}")
 
     def get_registered_manager(
