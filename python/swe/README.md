@@ -43,3 +43,8 @@ To modify the agent and improve the agent's performance:
    1. `--test_split`: The test split range (e.g., 1:10).
    2. `--print_only`: Print the issues only.
    3. `--include_hints`: Include hints in the issue description.
+
+### Run Evaluation for the benchmark changes
+1. cd ~/composio/python/swe/benchmark
+2. ./complete_eval_workflow.sh <logs-path> princeton-nlp/SWE-bench_Lite
+"logs-path" = ~/.composio_coder/logs
