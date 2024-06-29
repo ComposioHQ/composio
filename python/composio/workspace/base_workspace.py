@@ -12,6 +12,8 @@ from composio.local_tools.local_workspace.commons.history_processor import (
 )
 
 
+T = t.TypeVar("T", str, bytes)
+
 logger = get_logger("workspace")
 
 
@@ -20,8 +22,8 @@ class Command(BaseModel):
     code: str = Field(..., description="code to run for that command")
 
 
-class CommandFile(BaseModel):
-    datum: t.AnyStr = Field(..., description="file content for the command file")
+class CommandFile(BaseModel, t.Generic[T]):
+    datum: T = Field(..., description="file content for the command file")
     cmd_type: str = Field(..., description="command type one of - source_file, script,")
     name: str = Field(..., description="name of the command file on the workspace")
 

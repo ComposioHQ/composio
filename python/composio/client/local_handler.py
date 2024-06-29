@@ -12,7 +12,6 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     WorkspaceManagerFactory,
 )
 from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
-from composio.local_tools.local_workspace.submit_patch import SubmitPatchTool
 from composio.local_tools.local_workspace.workspace import LocalWorkspace
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
@@ -34,17 +33,14 @@ class LocalToolHandler:
 
         # initialize workspace tool
         workspace_tool = LocalWorkspace()
-        workspace_tool.set_workspace_factory(w)
         workspace_tool.set_history_processor(h)
 
         # initialize command manager
         cmd_manager_tool = CmdManagerTool()
-        cmd_manager_tool.set_workspace_factory(w)
         cmd_manager_tool.set_history_processor(h)
 
         # initiate history keeper
         h_keeper_tool = HistoryKeeper()
-        h_keeper_tool.set_workspace_factory(w)
         h_keeper_tool.set_history_processor(h)
         return [
             Mathematical(),
@@ -54,7 +50,6 @@ class LocalToolHandler:
             RagTool(),
             WebTool(),
             Greptile(),
-            SubmitPatchTool(),
             SqlTool(),
             FileTool(),
         ]

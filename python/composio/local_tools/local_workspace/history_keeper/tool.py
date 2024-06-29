@@ -28,12 +28,6 @@ class HistoryKeeper(Tool):
     def triggers(self) -> list:
         return []
 
-    def set_workspace_factory(self, workspace_factory: WorkspaceManagerFactory):
-        self.workspace_factory = workspace_factory
-
-    def get_workspace_factory(self) -> Optional[WorkspaceManagerFactory]:
-        return self.workspace_factory
-
     def set_history_processor(self, history_processor: HistoryProcessor):
         self.history_processor = history_processor
 

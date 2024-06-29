@@ -59,7 +59,8 @@ class DockerWorkspace(Workspace):
         commands = "\n".join(env.commands_to_execute)
         output, return_code = None, 0
         try:
-            output, return_code = self.communicate(commands)
+            setup_resp = self.communicate(commands)
+            output, return_code = setup_resp.output, setup_resp.return_code
         except KeyboardInterrupt as exc:
             if return_code != 0:
                 raise RuntimeError(
@@ -90,7 +91,7 @@ class DockerWorkspace(Workspace):
                 # nothing to do for utility scripts
                 pass
             else:
-                raise ValueError(f"Invalid command type: {cmd_file['type']}")
+                raise ValueError(f"Invalid command type: {cmd_file.cmd_type}")
 
     def reset(self):
         if hasattr(self, "container"):

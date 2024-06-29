@@ -26,7 +26,7 @@ class WorkspaceFactory:
     _instance = None  # Singleton instance
     docker_client = None
     e2b_client = None
-    _registry = {}
+    _registry: t.Dict[str, t.Any] = {}
 
     def __new__(cls):
         if cls._instance is None:
@@ -64,12 +64,12 @@ class WorkspaceFactory:
             }
             return workspace.workspace_id
         if workspace_type == WorkspaceType.E2B:
-            workspace = E2BWorkspace(None, self.e2b_client)
-            self._registry[workspace.workspace_id] = {
-                KEY_WORKSPACE_MANAGER: workspace,
+            workspace_e2b = E2BWorkspace(None, self.e2b_client)
+            self._registry[workspace_e2b.workspace_id] = {
+                KEY_WORKSPACE_MANAGER: workspace_e2b,
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
-            return workspace.workspace_id
+            return workspace_e2b.workspace_id
         raise ValueError(f"Unsupported workspace type: {workspace_type}")
 
     def get_registered_manager(

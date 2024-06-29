@@ -35,10 +35,8 @@ class WorkspaceStatusAction(BaseWorkspaceAction):
 
     def execute(
         self, request_data: WorkspaceStatusRequest, authorisation_data: dict
-    ) -> BaseWorkspaceResponse:
+    ) -> dict:
         if authorisation_data is None:
             authorisation_data = {}
         status = self.workspace.get_running_status()
-        return BaseWorkspaceResponse(
-            output=f"docker container running status is {status}"
-        )
+        return {"output":f"docker container running status is {status}"}

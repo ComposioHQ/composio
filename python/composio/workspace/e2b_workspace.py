@@ -21,11 +21,11 @@ class E2BWorkspace(Workspace):
         # Reset the sandbox to its initial state
         pass
 
-    def communicate(self, cmd: Command, timeout: int = 25) -> BaseCmdResponse:
+    def communicate(self, cmd: str, timeout: int = 25) -> BaseCmdResponse:
         if self.sandbox is None:
             raise ValueError("Sandbox is None")
         result = subprocess.run(
-            ["e2b-sandbox-cli", "exec", self.sandbox_id, cmd.get_cmd_str()],
+            ["e2b-sandbox-cli", "exec", self.sandbox_id, cmd],
             capture_output=True,
             text=True,
             check=False,
