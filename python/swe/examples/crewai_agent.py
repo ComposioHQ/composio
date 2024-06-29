@@ -11,7 +11,7 @@ from composio_swe.config.store import IssueConfig
 from crewai import Agent, Task
 from langchain_core.agents import AgentAction, AgentFinish
 
-from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+from examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 
 
 class CrewaiAgent(BaseSWEAgent):
