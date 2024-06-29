@@ -5,7 +5,6 @@ from composio.local_tools.local_workspace.cmd_manager.actions.const import (
     git_reset_cmd,
 )
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.utils import process_output
 from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse

@@ -6,8 +6,6 @@ from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
-from composio.local_tools.local_workspace.commons.utils import process_output
-from composio.workspace.base_workspace import BaseCmdResponse
 
 from .base_class import BaseAction, BaseRequest, BaseResponse
 
