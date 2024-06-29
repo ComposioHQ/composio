@@ -1,14 +1,17 @@
 import json
 import os
+import typing as t
 from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
 
+from pydantic import BaseModel, Field
+
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 
-logger = get_logger()
+logger = get_logger("workspace")
 script_path = Path(__file__)
 script_dir = script_path.parent
 
@@ -35,7 +38,7 @@ class HistoryProcessor:
 
     def get_history(self, workspace_id, n=5):
         all_history = self.history.get(workspace_id, [])
-        return all_history[-n:]
+        return all_history[-min(n, len(all_history)) :]  # noqa: E203
 
     def save_history_to_file(self, workspace_id: str, instance_id: str) -> str:
         # make the submission dir if it doesn't exist
@@ -48,15 +51,22 @@ class HistoryProcessor:
         return file_path.name
 
 
+class BaseCmdResponse(BaseModel):
+    output: t.Any = Field(..., description="response from command")
+    return_code: int = Field(
+        ..., description="return code from running a command on workspace"
+    )
+
+
 def history_recorder():
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            output, return_code = func(self, *args, **kwargs)
+            base_cmd_response: BaseCmdResponse = func(self, *args, **kwargs)
             if hasattr(self, "history_processor") and hasattr(self, "workspace_id"):
                 command = ""
-                if hasattr(self, "command"):
-                    command = self.command + " " + args[0].json()
+                if len(args) > 0:
+                    command = args[0]
                 else:
                     logger.error(
                         "command is not set in command-runner action class. History will have empty command for this"
@@ -65,9 +75,9 @@ def history_recorder():
                 # state = self.workspace_factory.get_workspace_state(self.workspace_id)
                 state = None
                 self.history_processor.log_command(
-                    self.workspace_id, command, output, state
+                    self.workspace_id, command, base_cmd_response.output, state
                 )
-            return output, return_code
+            return base_cmd_response
 
         return wrapper
 

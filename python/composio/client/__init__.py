@@ -30,6 +30,7 @@ from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import ApiKeyNotProvidedError
 from composio.utils.url import get_api_url_base
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 _valid_keys: t.Set[str] = set()
