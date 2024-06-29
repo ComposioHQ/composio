@@ -1,34 +1,26 @@
-import typing as t
-from itertools import chain
-
 from composio_llamaindex import Action, App, ComposioToolSet
-from composio_swe.config.config_store import IssueConfig
+from composio_swe.agents.base import BaseSWEAgent, SWEArgs
+from composio_swe.agents.utils import get_llama_llm
+from composio_swe.config.store import IssueConfig
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.core.tools import BaseTool
 
-from .base_swe_agent import BaseSWEAgent, SWEArgs
 from .prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
-from .utils import get_llama_llm, logger
 
 
 class LlamaIndexAgent(BaseSWEAgent):
     def __init__(self, args: SWEArgs):
         super().__init__(args)
+        self.toolset = ComposioToolSet()
+        self.tools = [
+            *self.toolset.get_actions(
+                actions=[Action.LOCALWORKSPACE_WORKSPACESTATUSACTION]
+            ),
+            *self.toolset.get_tools(apps=[App.CMDMANAGERTOOL]),
+            *self.toolset.get_tools(apps=[App.HISTORYKEEPER]),
+        ]
 
-        # initialize composio toolset
-        local_workspace_tool_set = ComposioToolSet().get_actions(
-            actions=[Action.LOCALWORKSPACE_WORKSPACESTATUSACTION]
-        )
-        cmd_manager_tool_set = ComposioToolSet().get_tools(apps=[App.CMDMANAGERTOOL])
-        history_keeper_tool_set = ComposioToolSet().get_tools(apps=[App.HISTORYKEEPER])
-        self.composio_toolset: t.List[BaseTool] = list(
-            chain(
-                local_workspace_tool_set, cmd_manager_tool_set, history_keeper_tool_set
-            )
-        )
-
-    def solve_issue(self, workspace_id: str, issue_config: IssueConfig):
+    def solve(self, workspace_id: str, issue_config: IssueConfig):
         llm = get_llama_llm()
         repo_name = issue_config.repo_name
         if not repo_name:
@@ -50,15 +42,18 @@ class LlamaIndexAgent(BaseSWEAgent):
             ChatMessage(
                 role=MessageRole.SYSTEM,
                 content=(
-                    "You are the best programmer. You think carefully and step by step take action. "
-                    "Your goal is: Help fix the given issue / bug in the code. And make sure you get it working. Ask the reviewer agent to review the patch and submit it once they approve it."
-                    f"{backstory_added_instruction}"
+                    "You are the best programmer. You think carefully and step "
+                    "by step take action. Your goal is: Help fix the given issue "
+                    "/ bug in the code. And make sure you get it working. Ask the "
+                    "reviewer agent to review the patch and submit it once they "
+                    f"approve it. {backstory_added_instruction}"
                 ),
             )
         ]
+
         # TODO: Add callbacks to print logs.
         agent = FunctionCallingAgentWorker(
-            tools=self.composio_toolset,
+            tools=self.tools,  # type: ignore
             llm=llm,
             prefix_messages=prefix_messages,
             max_function_calls=10,
@@ -67,10 +62,10 @@ class LlamaIndexAgent(BaseSWEAgent):
         ).as_agent()
 
         response = agent.chat(
-            f"{issue_added_instruction}, Expected outcome: A patch should be generated which fixes the given issue"
+            f"{issue_added_instruction}, Expected outcome: A patch should be "
+            "generated which fixes the given issue"
         )
-
-        logger.info("Agent response: %s", response)
+        self.logger.info("Agent response: %s", response)
         self.current_logs.append(
             {"agent_action": "agent_finish", "agent_output": str(response)}
         )

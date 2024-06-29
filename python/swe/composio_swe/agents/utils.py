@@ -1,4 +1,7 @@
-import logging
+"""
+Agent runtime utilities.
+"""
+
 import os
 import typing as t
 
@@ -7,20 +10,6 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from llama_index.core.llms.function_calling import FunctionCallingLLM
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.openai import OpenAI
-from rich.logging import RichHandler
-
-
-def setup_logger():
-    handler = RichHandler(show_time=False, show_path=False)
-    handler.setLevel(logging.DEBUG)
-    logger = logging.getLogger("local_workspace")
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(handler)
-    logger.propagate = False
-    return logger
-
-
-logger = setup_logger()
 
 
 def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:

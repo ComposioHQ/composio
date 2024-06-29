@@ -1,10 +1,10 @@
+"""CLI for composio-swe."""
+
 import os
 from urllib.parse import urlparse
 
 import click
 import git
-from composio_swe.agent.crewai_agent import CrewaiAgent, SWEArgs
-from composio_swe.config.config_store import IssueConfig
 from composio_swe.config.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
@@ -14,6 +14,7 @@ from composio_swe.config.constants import (
     MODEL_ENV_OPENAI,
 )
 from composio_swe.config.context import Context, pass_context
+from composio_swe.config.store import IssueConfig
 
 
 def get_git_root():
@@ -32,8 +33,14 @@ def get_git_root():
         raise KeyError("No 'origin' remote found in the repository") from exc
 
 
-@click.command(
-    name="setup", help="🔑 Setup model configuration in the current directory"
+@click.group(name="composio-coder")
+def swe() -> None:
+    """Composio Coder CLI for managing the coding workspace and tasks."""
+
+
+@swe.command(
+    name="setup",
+    help="🔑 Setup model configuration in the current directory",
 )
 @pass_context
 def setup(ctx: Context):
@@ -57,8 +64,9 @@ def setup(ctx: Context):
     click.echo("🍀 Model configuration saved")
 
 
-@click.command(
-    name="add_issue", help="➕ Add an issue configuration to the current directory"
+@swe.command(
+    name="add_issue",
+    help="➕ Add an issue configuration to the current directory",
 )
 @pass_context
 def add_issue(ctx: Context):
@@ -103,22 +111,20 @@ def add_issue(ctx: Context):
     click.echo("🍀 Issue configuration saved\n")
 
 
-@click.command(name="solve", help="👷 Start solving the configured issue")
+@swe.command(
+    name="solve",
+    help="👷 Start solving the configured issue",
+)
 @pass_context
 def solve(ctx: Context):
     """Start solving the configured issue."""
-    issue_config = ctx.issue_config
-
-    click.echo(
-        f"ℹ️ Starting issue solving with the following configuration: {issue_config.to_json()}\n"
-    )
-    args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
-    coder_agent = CrewaiAgent(args)
-    coder_agent.setup_and_solve(issue_config=issue_config)
-    click.echo("Issue solving process started.")
+    raise NotImplementedError()
 
 
-@click.command(name="workflow", help="📋 Show the workflow: setup -> add_issue -> solve")
+@swe.command(
+    name="workflow",
+    help="📋 Show the workflow: setup -> add_issue -> solve",
+)
 @click.help_option("--help", "-h", "-help")
 def show_workflow():
     # Add the workflow description
@@ -128,16 +134,5 @@ def show_workflow():
     click.echo("  3. 👷 solve: Start solving the configured issue\n")
 
 
-# Add commands to the CLI group
-@click.group(name="composio-coder")
-def cli() -> None:
-    """Composio Coder CLI for managing the coding workspace and tasks."""
-
-
-cli.add_command(setup)
-cli.add_command(add_issue)
-cli.add_command(solve)
-cli.add_command(show_workflow)
-
 if __name__ == "__main__":
-    c = cli()
+    swe()
