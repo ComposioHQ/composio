@@ -6,7 +6,7 @@ from functools import wraps
 from pathlib import Path
 
 from composio.workspace.get_logger import get_logger
-from composio.local_tools.local_workspace.base_cmd import BaseCmdResponse
+from composio.workspace.utils import BaseCmdResponse
 
 
 logger = get_logger("workspace")

@@ -3,10 +3,9 @@ from typing import Tuple
 from pydantic import Field
 
 from composio.workspace.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.utils import process_output
 from composio.workspace.base_workspace import BaseCmdResponse
 
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")
@@ -48,7 +47,6 @@ class RunCommandOnWorkspace(BaseAction):
     _request_schema = RunCommandOnWorkspaceRequest
     _response_schema = RunCommandOnWorkspaceResponse
 
-    @history_recorder()
     def execute(
         self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}
     ):
@@ -60,7 +58,6 @@ class RunCommandOnWorkspace(BaseAction):
         output, return_code = self.run_command(
             action=request_data.input_cmd, timeout=request_data.timeout
         )
-        output, return_code = process_output(output, return_code)
         return RunCommandOnWorkspaceResponse(output=output, return_code=return_code)
 
     def run_command(self, action: str, timeout: int) -> Tuple[str, int]:
@@ -122,7 +119,6 @@ class GetCurrentDirCmd(BaseAction):
     _request_schema = GetCurrentDirRequest
     _response_schema = GetCurrentDirResponse
 
-    @history_recorder()
     def execute(
         self, request_data: GetCurrentDirRequest, authorisation_data: dict
     ) -> BaseResponse:

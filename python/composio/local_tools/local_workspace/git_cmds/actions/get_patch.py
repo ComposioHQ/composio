@@ -2,12 +2,9 @@ import typing as t
 
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    history_recorder,
-)
+from composio.local_tools.local_workspace.utils import get_logger
 
-from composio.local_tools.local_workspace.cmd_manager.actions.base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 LONG_TIMEOUT = 200
@@ -47,7 +44,6 @@ class GetPatchCmd(BaseAction):
     _request_schema = GetPatchRequest
     _response_schema = GetPatchResponse
 
-    @history_recorder()
     def execute(
         self, request_data: GetPatchRequest, authorisation_data: dict
     ) -> BaseResponse:

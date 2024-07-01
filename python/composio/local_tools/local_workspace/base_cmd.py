@@ -5,9 +5,10 @@ from pydantic import BaseModel, Field
 
 from composio.core.local import Action
 from composio.workspace.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.utils import process_output
-from composio.workspace.base_workspace import BaseCmdResponse, Workspace
+from composio.local_tools.local_workspace.utils import process_output
+from composio.workspace.base_workspace import Workspace
 from composio.workspace.workspace_factory import WorkspaceFactory
+from composio.workspace.base_workspace import BaseCmdResponse
 
 
 logger = get_logger("workspace")
@@ -26,13 +27,6 @@ class BaseResponse(BaseModel):
     output: t.Any = Field(..., description="output of the command")
     return_code: int = Field(
         ..., description="Any output or errors that occurred during the file edit."
-    )
-
-
-class BaseCmdResponse(BaseModel):
-    output: t.Any = Field(..., description="response from command")
-    return_code: int = Field(
-        ..., description="return code from running a command on workspace"
     )
 
 
@@ -62,13 +56,15 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
             logger.error("workspace_factory is not set")
             raise ValueError("workspace_factory is not set")
 
-    def _communicate(self, cmd_to_run, timeout=25):
+    def _communicate(self, cmd_to_run, timeout=25, output_text=""):
         workspace_response: BaseCmdResponse = (
             self.workspace.record_history_and_communicate(cmd_to_run, timeout)
         )
         output, return_code = process_output(
             workspace_response.output, workspace_response.return_code
         )
+        if output_text and output_text.strip():
+            output = output_text
         return BaseResponse(
             output=output,
             return_code=return_code,

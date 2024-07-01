@@ -4,12 +4,12 @@ from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
 from composio.local_tools import Mathematical
 from composio.local_tools.filetool import FileTool
 from composio.local_tools.greptile.tool import Greptile
-from composio.local_tools.local_workspace.cmd_manager.tool import CmdManagerTool
 from composio.workspace.history_processor import (
     HistoryProcessor,
 )
-from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
-from composio.local_tools.local_workspace.workspace import LocalWorkspace
+from composio.local_tools.local_workspace.git_cmds import GitCmdTool
+from composio.local_tools.local_workspace.shell_cmds import ShellCmdTool
+from composio.local_tools.local_workspace.file_cmds import F
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
 from composio.local_tools.webtool import WebTool

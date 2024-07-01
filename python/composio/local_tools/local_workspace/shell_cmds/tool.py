@@ -9,7 +9,7 @@ from composio.workspace.history_processor import (
 )
 
 
-class CmdManagerTool(Tool):
+class ShellCmdTool(Tool):
     """
     command manager tool for workspace
     """

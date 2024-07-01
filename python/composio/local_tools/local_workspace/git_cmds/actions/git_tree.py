@@ -1,11 +1,7 @@
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    history_recorder,
-)
-from composio.local_tools.local_workspace.commons.utils import process_output
+from composio.local_tools.local_workspace.utils import process_output, get_logger, git_tree_cmd
 from composio.workspace.base_workspace import BaseCmdResponse
 
-from composio.local_tools.local_workspace.cmd_manager.actions.base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")
@@ -23,19 +19,11 @@ class GitRepoTree(BaseAction):
     _display_name = "Git repo tree action"
     _request_schema = BaseRequest
     _response_schema = BaseResponse
+    _output_text = "Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file."
 
-    @history_recorder()
     def execute(
         self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        self.command = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
-        if self.workspace is None:
-            logger.error("Workspace is not initialized.")
-            raise ValueError("Workspace is not initialized.")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(self.command)
-        _, return_code = process_output(cmd_response.output, cmd_response.return_code)
-        return BaseResponse(
-            output="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
-            return_code=return_code,
-        )
+        cmd = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
+        return self._communicate(cmd, output_text=self._output_text)

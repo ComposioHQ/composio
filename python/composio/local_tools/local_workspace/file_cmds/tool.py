@@ -1,5 +1,3 @@
-from typing import Optional
-
 from composio.core.local import Tool
 from composio.local_tools.local_workspace.file_cmds.actions import (
     EditFile,
@@ -9,11 +7,10 @@ from composio.local_tools.local_workspace.file_cmds.actions import (
 )
 
 
-class CmdManagerTool(Tool):
+class FileTool(Tool):
     """
     command manager tool for workspace
     """
-    history_processor: Optional[HistoryProcessor] = None
 
     def actions(self) -> list:
         return [

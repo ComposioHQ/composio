@@ -1,4 +1,7 @@
 import os
+from typing import Optional
+import logging
+from rich.logging import RichHandler
 
 
 SCRIPT_CURSOR_DEFAULT = "/root/commands/defaults.sh"
@@ -30,9 +33,8 @@ def git_clone_cmd(request_data):
     return " && ".join(command_list)
 
 
-from typing import Optional
-import logging
-from rich.logging import RichHandler
+def git_tree_cmd():
+    return "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
 
 
 def process_output(output: str, return_code: Optional[int]):

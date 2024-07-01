@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 from composio.core.local import Action
 from composio.local_tools.local_workspace.utils import get_logger
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
@@ -32,20 +33,16 @@ class GetWorkspaceHistory(
     """
 
     _display_name = "Get workspace history"
-    _request_schema = GetWorkspaceHistoryRequest
-    _response_schema = GetWorkspaceHistoryResponse
     _tags = ["workspace"]
     _tool_name = "historykeeper"
+    _request_schema = GetWorkspaceHistoryRequest
+    _response_schema = GetWorkspaceHistoryResponse
     _history_len = 5
 
     def execute(
         self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict
     ) -> dict:
-        workspace_factory = WorkspaceFactory.get_instance()
-        if workspace_factory is None:
-            logger.error("Workspace factory is not set")
-            raise ValueError("Workspace factory is not set")
-        workspace = workspace_factory.get_workspace_by_id(request_data.workspace_id)
+        workspace = WorkspaceFactory.get_instance().get_workspace_by_id(request_data.workspace_id)
         if workspace is None:
             logger.error("Workspace is not set")
             raise ValueError("Workspace is not set")

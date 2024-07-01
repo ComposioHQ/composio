@@ -4,10 +4,11 @@ from composio.local_tools.local_workspace.cmd_manager.actions.const import (
     git_clone_cmd,
     git_reset_cmd,
 )
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.local_tools.local_workspace.utils import get_logger
+from composio.local_tools.local_workspace.utils import git_reset_cmd, git_clone_cmd
 from composio.workspace.base_workspace import BaseCmdResponse
 
-from composio.local_tools.local_workspace.cmd_manager.actions.base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 LONG_TIMEOUT = 200
@@ -62,13 +63,6 @@ class GithubCloneCmd(BaseAction):
         Resets the repository to the specified base commit and cleans any untracked files or changes.
         Assumes the repository already exists as cloned by the execute function.
         """
-        print("Resetting repository to base commit inside reset_to_base_commit")
-        if self.workspace is None:
-            logger.error("Workspace is not initialized.")
-            raise ValueError("Workspace is not initialized.")
-        cmd_response: BaseCmdResponse = self.workspace.record_history_and_communicate(
-            git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT
-        )
-        if cmd_response.return_code != 0:
-            raise RuntimeError(f"Failed to reset repository: {cmd_response.output}")
+        logger.info("Resetting repository to base commit inside reset_to_base_commit")
+        self._communicate(git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT)
         return BaseResponse(output="Repository reset to base commit", return_code=0)

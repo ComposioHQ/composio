@@ -1,8 +1,6 @@
-from typing import Optional
-
 from composio.core.local import Tool
 from composio.local_tools.local_workspace.git_cmds.actions import (
-    GitRepoTree, GithubCloneCmd, GitRepoTree)
+    GithubCloneCmd, GitRepoTree)
 
 
 class GitCmdTool(Tool):

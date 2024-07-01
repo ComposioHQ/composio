@@ -1,11 +1,8 @@
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    history_recorder,
-)
+from composio.local_tools.local_workspace.utils import get_logger
 
-from composio.local_tools.local_workspace.cmd_manager.actions.base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")
@@ -32,7 +29,6 @@ class SearchDirCmd(BaseAction):
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
 
-    @history_recorder()
     def execute(
         self, request_data: SearchDirRequest, authorisation_data: dict
     ) -> BaseResponse:
@@ -67,7 +63,6 @@ class SearchFileCmd(BaseAction):
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
 
-    @history_recorder()
     def execute(
         self, request_data: SearchFileRequest, authorisation_data: dict
     ) -> BaseResponse:
@@ -85,11 +80,13 @@ class SearchFileCmd(BaseAction):
 class FindFileRequest(BaseRequest):
     file_name: str = Field(
         ...,
-        description="The name of the file to be searched for within the specified directory or the current directory if none is specified.",
+        description="The name of the file to be searched for within the specified "
+                    "directory or the current directory if none is specified.",
     )
     dir: str = Field(
         default=".",
-        description="The directory within which to search for the file. If not provided, the search will default to the current directory.",
+        description="The directory within which to search for the file. If not provided, "
+                    "the search will default to the current directory.",
     )
 
 
@@ -109,7 +106,6 @@ class FindFileCmd(BaseAction):
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
 
-    @history_recorder()
     def execute(
         self, request_data: FindFileRequest, authorisation_data: dict
     ) -> BaseResponse:

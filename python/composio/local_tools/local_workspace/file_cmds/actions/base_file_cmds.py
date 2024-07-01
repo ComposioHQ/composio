@@ -1,13 +1,7 @@
 from pydantic import Field
 
 from composio.workspace.get_logger import get_logger
-from composio.workspace.history_processor import (
-    history_recorder,
-)
-from composio.local_tools.local_workspace.commons.utils import process_output
-from composio.workspace.base_workspace import BaseCmdResponse
-
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")
@@ -40,21 +34,12 @@ class GoToLineNumInOpenFile(BaseAction):
     _request_schema = GoToRequest
     _response_schema = GoToResponse
 
-    @history_recorder()
     def execute(
         self, request_data: GoToRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
-        if self.workspace is None:
-            logger.error("Workspace is not initialized.")
-            raise ValueError("Workspace is not initialized.")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(
-            f"goto {str(request_data.line_number)}"
-        )
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        cmd = f"goto {str(request_data.line_number)}"
+        return self._communicate(cmd)
 
 
 class CreateFileRequest(BaseRequest):
@@ -83,7 +68,6 @@ class CreateFileCmd(BaseAction):
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
 
-    @history_recorder()
     def execute(
         self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> BaseResponse:
@@ -92,16 +76,8 @@ class CreateFileCmd(BaseAction):
             return CreateFileResponse(
                 output="Exception: file-name can not be empty", return_code=1
             )
-        if self.workspace is None:
-            logger.error("Workspace is not initialized.")
-            raise ValueError("Workspace is not initialized.")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(
-            f"create {str(request_data.file_name)}"
-        )
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        cmd = f"create {str(request_data.file_name)}"
+        return self._communicate(cmd)
 
     def validate_file_name(self, file_name):
         if file_name is None or file_name.strip() == "":
@@ -135,7 +111,6 @@ class OpenFile(BaseAction):
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
 
-    @history_recorder()
     def execute(
         self, request_data: OpenCmdRequest, authorisation_data: dict
     ) -> BaseResponse:
@@ -143,11 +118,4 @@ class OpenFile(BaseAction):
         command = f"open {request_data.file_name}"
         if request_data.line_number != 0:
             command += f" {request_data.line_number}"
-        if self.workspace is None:
-            logger.error("Workspace is not initialized.")
-            raise ValueError("Workspace is not initialized.")
-        cmd_response: BaseCmdResponse = self.workspace.communicate(command)
-        output, return_code = process_output(
-            cmd_response.output, cmd_response.return_code
-        )
-        return BaseResponse(output=output, return_code=return_code)
+        return self._communicate(command)

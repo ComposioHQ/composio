@@ -6,10 +6,10 @@ from pydantic import BaseModel, Field
 
 from composio.workspace.get_logger import get_logger
 from composio.workspace.history_processor import (
-    BaseCmdResponse,
     HistoryProcessor,
     history_recorder,
 )
+from composio.workspace.utils import BaseCmdResponse
 
 
 T = t.TypeVar("T", str, bytes)
