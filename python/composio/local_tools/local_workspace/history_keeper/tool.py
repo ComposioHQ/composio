@@ -2,10 +2,7 @@ import typing as t
 from typing import Optional
 
 from composio.core.local import Action, Tool
-from composio.local_tools.local_workspace.commons import (
-    HistoryProcessor,
-    WorkspaceManagerFactory,
-)
+from composio.local_tools.local_workspace.commons import HistoryProcessor
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 
 from .actions import GetWorkspaceHistory
@@ -19,7 +16,6 @@ class HistoryKeeper(Tool):
     local workspace tool which can maintain history across commands.
     """
 
-    workspace_factory: Optional[WorkspaceManagerFactory] = None
     history_processor: Optional[HistoryProcessor] = None
 
     def actions(self) -> list[t.Type[Action]]:

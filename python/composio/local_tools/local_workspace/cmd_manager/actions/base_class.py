@@ -56,6 +56,8 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
             raise ValueError("workspace_factory is not set")
 
     def _communicate(self, cmd_to_run, timeout=25):
+        if self.workspace is None:
+            raise ValueError("workspace is not set")
         workspace_response: BaseCmdResponse = (
             self.workspace.record_history_and_communicate(cmd_to_run, timeout)
         )

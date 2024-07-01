@@ -16,10 +16,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions import (
     SearchDirCmd,
     SearchFileCmd,
 )
-from composio.local_tools.local_workspace.commons import (
-    HistoryProcessor,
-    WorkspaceManagerFactory,
-)
+from composio.local_tools.local_workspace.commons import HistoryProcessor
 
 
 class CmdManagerTool(Tool):
@@ -27,7 +24,6 @@ class CmdManagerTool(Tool):
     command manager tool for workspace
     """
 
-    workspace_factory: Optional[WorkspaceManagerFactory] = None
     history_processor: Optional[HistoryProcessor] = None
 
     def actions(self) -> list:
