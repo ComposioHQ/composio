@@ -17,9 +17,6 @@ logger = get_logger("workspace")
 
 
 class GithubCloneRequest(BaseRequest):
-    workspace_id: str = Field(
-        ..., description="workspace id on which to clone the repo"
-    )
     repo_name: str = Field(
         ...,
         description="github repository to clone",
