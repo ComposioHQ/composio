@@ -44,7 +44,7 @@
 <div align="center">
 <p >
     <b>✨ Socials >></b>
-    <a href="https://discord.gg/XMa3eWKkH8">Discord</a> <b>|</b>
+    <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
     <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
     <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
     <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>
