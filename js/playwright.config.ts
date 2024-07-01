@@ -5,7 +5,7 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   use: {
     // All requests we send go to this API endpoint.
-    baseURL: "https://backend.composio.dev",
+    baseURL: process.env.COMPOSIO_BASE_URL ||"https://backend.composio.dev",
     launchOptions: {
       args: ['--disable-web-security']
     },

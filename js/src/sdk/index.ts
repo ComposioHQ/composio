@@ -66,12 +66,12 @@ export class Composio {
     }
 
     private getApiUrlBase(): string {
-        return 'https://backend.composio.dev/api';
+        return process.env.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api';
     }
 
     static async generateAuthKey(baseUrl?: string): Promise<string> {
         const http = axios.create({
-            baseURL: baseUrl || 'https://backend.composio.dev/api',
+            baseURL: baseUrl || process.env.COMPOSIO_BASE_URL ||'https://backend.composio.dev/api',
             headers: {
                 'Authorization': ''
             }
@@ -85,7 +85,7 @@ export class Composio {
 
     static async validateAuthSession(key: string, code: string, baseUrl?: string): Promise<string> {
         const http = axios.create({
-            baseURL: baseUrl || 'https://backend.composio.dev/api',
+            baseURL: baseUrl || process.env.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api',
             headers: {
                 'Authorization': ''
             }
