@@ -113,6 +113,24 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: SamparkAI/composio_sdk
+
+  js_tests:
+    defaults:
+      run:
+        working-directory: ./js
+    continue-on-error: False
+    runs-on: ubuntu-latest
+    name: JS tests
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install -g pnpm && pnpm install
+      - name: Run tests
+        run: pnpm test
   
   # Needs fixing
   # integration_tests:
