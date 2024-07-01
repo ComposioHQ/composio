@@ -21,7 +21,7 @@ export class Composio {
     activeTriggers: ActiveTriggers;
     config: typeof OpenAPI;
 
-    constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
+    constructor(apiKey?: string, baseUrl?: string, runtime?: string | null) {
         this.apiKey = apiKey || process.env.ENV_COMPOSIO_API_KEY || '';
         if (!this.apiKey) {
             throw new Error('API key is missing');

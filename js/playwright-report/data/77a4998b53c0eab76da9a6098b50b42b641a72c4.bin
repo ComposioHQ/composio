@@ -1,0 +1,13 @@
+/Users/utkarsh/Desktop/composio/composio_sdk/js/lib/sdk/index.js:19
+            throw new Error('API key is missing');
+                  ^
+
+Error: API key is missing
+    at new Composio (/Users/utkarsh/Desktop/composio/composio_sdk/js/lib/sdk/index.js:19:19)
+    at [90mfile:///Users/utkarsh/Desktop/composio/composio_sdk/js/examples/e2e/[39mdemo.mjs:11:18
+[90m    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)[39m
+[90m    at async ModuleLoader.import (node:internal/modules/esm/loader:336:24)[39m
+[90m    at async loadESM (node:internal/process/esm_loader:34:7)[39m
+[90m    at async handleMainPromise (node:internal/modules/run_main:106:12)[39m
+
+Node.js v18.19.0
