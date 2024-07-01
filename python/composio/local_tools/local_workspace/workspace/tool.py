@@ -9,6 +9,7 @@ class WorkspaceTool(Tool):
     Use this action to create a workspace and get workspace ID in return.
     this is a tool for creating local workspace
     """
+
     def actions(self) -> list[t.Type[Action]]:
         return [WorkspaceStatusAction]
 

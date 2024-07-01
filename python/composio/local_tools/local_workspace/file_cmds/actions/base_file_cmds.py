@@ -1,7 +1,11 @@
 from pydantic import Field
 
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
+)
 from composio.workspace.get_logger import get_logger
-from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")

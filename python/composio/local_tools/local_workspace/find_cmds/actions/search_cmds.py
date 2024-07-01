@@ -1,8 +1,11 @@
 from pydantic import Field
 
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
+)
 from composio.local_tools.local_workspace.utils import get_logger
-
-from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")
@@ -83,12 +86,12 @@ class FindFileRequest(BaseRequest):
     file_name: str = Field(
         ...,
         description="The name of the file to be searched for within the specified "
-                    "directory or the current directory if none is specified.",
+        "directory or the current directory if none is specified.",
     )
     dir: str = Field(
         default=".",
         description="The directory within which to search for the file. If not provided, "
-                    "the search will default to the current directory.",
+        "the search will default to the current directory.",
     )
 
 

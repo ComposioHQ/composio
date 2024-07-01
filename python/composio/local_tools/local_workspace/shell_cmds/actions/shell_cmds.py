@@ -2,10 +2,13 @@ from typing import Tuple
 
 from pydantic import Field
 
-from composio.workspace.get_logger import get_logger
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
+)
 from composio.workspace.base_workspace import BaseCmdResponse
-
-from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
+from composio.workspace.get_logger import get_logger
 
 
 logger = get_logger("workspace")

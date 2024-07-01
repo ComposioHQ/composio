@@ -1,7 +1,11 @@
 from pydantic import Field
 
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
+)
 from composio.workspace.get_logger import get_logger
-from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")
@@ -32,4 +36,4 @@ class Scroll(BaseAction):
     ) -> BaseResponse:
         self._setup(request_data)
         cmd = "scroll_down" if request_data.direction == "down" else "scroll_up"
-        return self._communicate(self.command)
+        return self._communicate(cmd)

@@ -1,1 +1,1 @@
-from .search_cmds import SearchDirCmd, SearchFileCmd, FindFileCmd
+from .search_cmds import FindFileCmd, SearchDirCmd, SearchFileCmd

@@ -5,10 +5,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from composio.workspace.get_logger import get_logger
-from composio.workspace.history_processor import (
-    HistoryProcessor,
-    history_recorder,
-)
+from composio.workspace.history_processor import HistoryProcessor, history_recorder
 from composio.workspace.utils import BaseCmdResponse
 
 

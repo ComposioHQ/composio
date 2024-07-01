@@ -1,6 +1,7 @@
+import logging
 import os
 from typing import Optional
-import logging
+
 from rich.logging import RichHandler
 
 

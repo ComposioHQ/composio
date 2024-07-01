@@ -4,6 +4,7 @@ from composio.core.local import Action
 from composio.local_tools.local_workspace.utils import get_logger
 from composio.workspace.workspace_factory import WorkspaceFactory
 
+
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
 logger = get_logger("workspace")
@@ -42,7 +43,9 @@ class GetWorkspaceHistory(
     def execute(
         self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict
     ) -> dict:
-        workspace = WorkspaceFactory.get_instance().get_workspace_by_id(request_data.workspace_id)
+        workspace = WorkspaceFactory.get_instance().get_workspace_by_id(
+            request_data.workspace_id
+        )
         if workspace is None:
             logger.error("Workspace is not set")
             raise ValueError("Workspace is not set")

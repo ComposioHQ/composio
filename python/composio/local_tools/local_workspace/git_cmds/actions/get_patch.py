@@ -2,9 +2,12 @@ import typing as t
 
 from pydantic import Field
 
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
+)
 from composio.local_tools.local_workspace.utils import get_logger
-
-from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
 
 LONG_TIMEOUT = 200
@@ -38,6 +41,7 @@ class GetPatchCmd(BaseAction):
     -Hello, World!
     +Hello, Composio!
     """
+
     _tool_name = "gitcmdtool"
     _display_name = "Get Patch Action"
     _request_schema = GetPatchRequest

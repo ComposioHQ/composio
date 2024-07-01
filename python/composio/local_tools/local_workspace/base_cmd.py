@@ -4,11 +4,10 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from composio.workspace.get_logger import get_logger
 from composio.local_tools.local_workspace.utils import process_output
-from composio.workspace.base_workspace import Workspace
+from composio.workspace.base_workspace import BaseCmdResponse, Workspace
+from composio.workspace.get_logger import get_logger
 from composio.workspace.workspace_factory import WorkspaceFactory
-from composio.workspace.base_workspace import BaseCmdResponse
 
 
 logger = get_logger("workspace")
