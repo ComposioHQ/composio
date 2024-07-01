@@ -128,7 +128,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm install -g pnpm && pnpm install
+        run: npm install -g pnpm && pnpm install && pnpm playwright install
       - name: Run tests
         run: pnpm test
   
