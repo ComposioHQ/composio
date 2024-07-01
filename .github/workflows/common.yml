@@ -131,6 +131,9 @@ jobs:
         run: npm install -g pnpm && pnpm install && pnpm playwright install
       - name: Run tests
         run: pnpm test
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
   
   # Needs fixing
   # integration_tests:
