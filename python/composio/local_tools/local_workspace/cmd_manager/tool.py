@@ -2,19 +2,19 @@ from typing import Optional
 
 from composio.core.local import Tool
 from composio.local_tools.local_workspace.cmd_manager.actions import (
-    CreateFileCmd,
-    EditFile,
-    FindFileCmd,
-    GetCurrentDirCmd,
-    GetPatchCmd,
-    GitRepoTree,
-    GithubCloneCmd,
-    GoToLineNumInOpenFile,
-    OpenFile,
+    # CreateFileCmd,
+    # EditFile,
+    # FindFileCmd,
+    # GetCurrentDirCmd,
+    # GetPatchCmd,
+    # GitRepoTree,
+    # GithubCloneCmd,
+    # GoToLineNumInOpenFile,
+    # OpenFile,
     RunCommandOnWorkspace,
-    Scroll,
-    SearchDirCmd,
-    SearchFileCmd,
+    # Scroll,
+    # SearchDirCmd,
+    # SearchFileCmd,
 )
 from composio.local_tools.local_workspace.commons import (
     HistoryProcessor,
@@ -32,19 +32,19 @@ class CmdManagerTool(Tool):
 
     def actions(self) -> list:
         return [
-            FindFileCmd,
-            CreateFileCmd,
-            GoToLineNumInOpenFile,
-            OpenFile,
-            Scroll,
-            SearchFileCmd,
-            SearchDirCmd,
-            EditFile,
-            RunCommandOnWorkspace,
-            GetCurrentDirCmd,
-            GithubCloneCmd,
-            GitRepoTree,
-            GetPatchCmd,
+            # FindFileCmd,
+            # CreateFileCmd,
+            # GoToLineNumInOpenFile,
+            # OpenFile,
+            # Scroll,
+            # SearchFileCmd,
+            # SearchDirCmd,
+            # EditFile,
+            # RunCommandOnWorkspace,
+            # GetCurrentDirCmd,
+            # GithubCloneCmd,
+            # GitRepoTree,
+            # GetPatchCmd,
         ]
 
     def triggers(self) -> list:

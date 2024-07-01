@@ -5,7 +5,7 @@ from composio.local_tools.local_workspace.commons.history_processor import (
     history_recorder,
 )
 
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.cmd_manager.actions.base_class import BaseAction, BaseRequest, BaseResponse
 
 
 logger = get_logger("workspace")

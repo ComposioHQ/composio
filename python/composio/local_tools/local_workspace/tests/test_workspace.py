@@ -3,7 +3,7 @@ import unittest
 
 import pytest
 
-from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
+from composio.local_tools.local_workspace.git_cmds.actions.clone_github import (
     GithubCloneCmd,
     GithubCloneRequest,
 )
@@ -11,15 +11,15 @@ from composio.local_tools.local_workspace.cmd_manager.actions.cmds import (
     OpenCmdRequest,
     OpenFile,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import (
+from composio.local_tools.local_workspace.edit_cmds.actions.edit_cmd import (
     EditFile,
     EditFileRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import (
+from composio.local_tools.local_workspace.git_cmds.actions.get_patch import (
     GetPatchCmd,
     GetPatchRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (
+from composio.local_tools.local_workspace.find_cmds.actions.search_cmds import (
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )

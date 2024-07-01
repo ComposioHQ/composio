@@ -2,7 +2,7 @@ import json
 import typing as t
 
 import composio.workspace.constants as workspace_const
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.workspace.get_logger import get_logger
 from composio.workspace import DockerWorkspace, LocalDockerArgumentsModel
 from composio.workspace.base_workspace import Workspace
 from composio.workspace.workspace_clients import (

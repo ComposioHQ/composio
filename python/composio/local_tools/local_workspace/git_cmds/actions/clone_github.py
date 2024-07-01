@@ -7,7 +7,7 @@ from composio.local_tools.local_workspace.cmd_manager.actions.const import (
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
 from composio.workspace.base_workspace import BaseCmdResponse
 
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.cmd_manager.actions.base_class import BaseAction, BaseRequest, BaseResponse
 
 
 LONG_TIMEOUT = 200
