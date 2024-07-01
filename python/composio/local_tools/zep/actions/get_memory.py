@@ -41,7 +41,7 @@ class GetMemory(Action):
         authorisation_data: dict,
     ) -> GetMemoryResponse:
         """Create session."""
-        from zep_cloud.client import Zep
+        from zep_cloud.client import Zep  # pylint: disable=import-outside-toplevel
 
         client = Zep(
             api_key=os.environ.get(
@@ -55,7 +55,7 @@ class GetMemory(Action):
         return GetMemoryResponse(
             messages=[message.dict() for message in result.messages or []],
             summary=result.summary.dict() if result.summary is not None else {},
-            facts=[fact for fact in result.facts or []],
+            facts=result.facts or [],
             metadata=result.metadata or {},
             relevant_summaries=[
                 summary.dict() for summary in result.relevant_summaries or []

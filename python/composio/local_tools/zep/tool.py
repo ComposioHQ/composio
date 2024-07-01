@@ -8,11 +8,10 @@ import typing as t
 
 from composio.core.local.action import Action
 from composio.core.local.tool import Tool
-
-from .actions.add_memory import AddMemory
-from .actions.create_session import CreateSession
-from .actions.get_memory import GetMemory
-from .actions.search_memory import SearchMemory
+from composio.local_tools.zep.actions.add_memory import AddMemory
+from composio.local_tools.zep.actions.create_session import CreateSession
+from composio.local_tools.zep.actions.get_memory import GetMemory
+from composio.local_tools.zep.actions.search_memory import SearchMemory
 
 
 class ZepTool(Tool):

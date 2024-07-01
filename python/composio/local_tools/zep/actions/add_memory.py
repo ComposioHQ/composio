@@ -38,8 +38,8 @@ class AddMemory(Action):
         authorisation_data: dict,
     ) -> AddMemoryResponse:
         """Create session."""
-        from zep_cloud.client import Zep
-        from zep_cloud.types import Message
+        from zep_cloud.client import Zep  # pylint: disable=import-outside-toplevel
+        from zep_cloud.types import Message  # pylint: disable=import-outside-toplevel
 
         client = Zep(
             api_key=os.environ.get(

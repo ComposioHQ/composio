@@ -38,7 +38,7 @@ class CreateSession(Action):
         authorisation_data: dict,
     ) -> CreateSessionResponse:
         """Create session."""
-        from zep_cloud.client import Zep
+        from zep_cloud.client import Zep  # pylint: disable=import-outside-toplevel
 
         client = Zep(
             api_key=os.environ.get(
