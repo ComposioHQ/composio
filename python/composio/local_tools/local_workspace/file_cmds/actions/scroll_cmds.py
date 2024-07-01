@@ -23,6 +23,7 @@ class Scroll(BaseAction):
     """
 
     _display_name = "Scroll Action"
+    _tool_name = "filetool"
     _request_schema = ScrollRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollResponse  # Reusing the response schema from SetCursors
 

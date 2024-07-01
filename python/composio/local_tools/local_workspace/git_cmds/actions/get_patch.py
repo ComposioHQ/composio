@@ -38,8 +38,7 @@ class GetPatchCmd(BaseAction):
     -Hello, World!
     +Hello, Composio!
     """
-
-    _history_maintains: bool = True
+    _tool_name = "gitcmdtool"
     _display_name = "Get Patch Action"
     _request_schema = GetPatchRequest
     _response_schema = GetPatchResponse

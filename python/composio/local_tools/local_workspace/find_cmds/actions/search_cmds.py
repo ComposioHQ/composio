@@ -26,6 +26,7 @@ class SearchDirCmd(BaseAction):
     """
 
     _display_name = "Search Directory Action"
+    _tool_name = "searchtool"
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
 
@@ -60,6 +61,7 @@ class SearchFileCmd(BaseAction):
     """
 
     _display_name = "Search file Action"
+    _tool_name = "searchtool"
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
 
@@ -103,6 +105,7 @@ class FindFileCmd(BaseAction):
     """
 
     _display_name = "Find File Action"
+    _tool_name = "searchtool"
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
 

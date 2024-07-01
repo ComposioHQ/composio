@@ -8,7 +8,7 @@ from composio.local_tools.local_workspace.find_cmds import SearchTool
 from composio.local_tools.local_workspace.git_cmds import GitCmdTool
 from composio.local_tools.local_workspace.history_keeper import HistoryFetcherTool
 from composio.local_tools.local_workspace.shell_cmds import ShellCmdTool
-from composio.local_tools.local_workspace.workspace import WorkspaceStatus
+from composio.local_tools.local_workspace.workspace import WorkspaceTool
 from composio.local_tools.local_workspace.file_cmds import FileTool as workspace_file_tool
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
@@ -31,7 +31,7 @@ class LocalToolHandler:
             ShellCmdTool(),
             workspace_file_tool(),
             HistoryFetcherTool(),
-            WorkspaceStatus(),
+            WorkspaceTool(),
             SearchTool(),
             RagTool(),
             WebTool(),

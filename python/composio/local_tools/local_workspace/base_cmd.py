@@ -38,7 +38,6 @@ class BaseAction(Action[BaseRequest, BaseResponse], ABC):
     _runs_on_workspace = True
     _display_name = ""
     _tags = ["workspace"]
-    _tool_name = "cmdmanagertool"
     workspace: t.Optional[Workspace] = None
 
     def __init__(self):

@@ -34,7 +34,7 @@ class GetWorkspaceHistory(
 
     _display_name = "Get workspace history"
     _tags = ["workspace"]
-    _tool_name = "historykeeper"
+    _tool_name = "historyfetchertool"
     _request_schema = GetWorkspaceHistoryRequest
     _response_schema = GetWorkspaceHistoryResponse
     _history_len = 5

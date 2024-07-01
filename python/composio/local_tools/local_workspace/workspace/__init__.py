@@ -1,1 +1,1 @@
-from .tool import WorkspaceStatus
+from .tool import WorkspaceTool

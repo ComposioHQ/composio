@@ -67,7 +67,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SHELLCMDTOOL: 'App'
     FILETOOL: 'App'
     HISTORYFETCHERTOOL: 'App'
-    WORKSPACESTATUS: 'App'
+    WORKSPACETOOL: 'App'
     SEARCHTOOL: 'App'
     RAGTOOL: 'App'
     WEBTOOL: 'App'

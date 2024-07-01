@@ -38,6 +38,7 @@ class EditFile(BaseAction):
     """
 
     _display_name = "Edit File Action"
+    _tool_name = "filetool"
     _request_schema = EditFileRequest
     _response_schema = EditFileResponse
 

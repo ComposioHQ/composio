@@ -4,7 +4,7 @@ from composio.core.local import Action, Tool
 from composio.local_tools.local_workspace.workspace.actions import WorkspaceStatusAction
 
 
-class WorkspaceStatus(Tool):
+class WorkspaceTool(Tool):
     """
     Use this action to create a workspace and get workspace ID in return.
     this is a tool for creating local workspace

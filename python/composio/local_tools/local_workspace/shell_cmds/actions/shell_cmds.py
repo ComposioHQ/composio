@@ -44,6 +44,7 @@ class RunCommandOnWorkspace(BaseAction):
     """
 
     _display_name = "Run command"
+    _tool_name = "shellcmdtool"
     _request_schema = RunCommandOnWorkspaceRequest
     _response_schema = RunCommandOnWorkspaceResponse
 

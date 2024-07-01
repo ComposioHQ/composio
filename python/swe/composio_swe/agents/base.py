@@ -83,7 +83,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
         """Clone repository to the workspace."""
         start_time = datetime.datetime.now()
         action_response = self.composio_client.actions.execute(
-            action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+            action=Action.GITCMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": repo_name,

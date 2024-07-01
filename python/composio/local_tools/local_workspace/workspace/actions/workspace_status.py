@@ -30,6 +30,7 @@ class WorkspaceStatusAction(BaseWorkspaceAction):
     """
 
     _display_name = "Get workspace status"
+    _tool_name = "workspacetool"
     _request_schema = WorkspaceStatusRequest
     _response_schema = WorkspaceStatusResponse
 

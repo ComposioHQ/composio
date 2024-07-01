@@ -39,8 +39,8 @@ class GithubCloneCmd(BaseAction):
     Clones a github repository at a given commit-id.
     """
 
-    runs_on_workspace: bool = True
     _display_name = "Clone Github Repository Action"
+    _tool_name = "gitcmdtool"
     _request_schema = GithubCloneRequest
     _response_schema = GithubCloneResponse
 

@@ -17,6 +17,7 @@ class GitRepoTree(BaseAction):
     """
 
     _display_name = "Git repo tree action"
+    _tool_name = "gitcmdtool"
     _request_schema = BaseRequest
     _response_schema = BaseResponse
     _output_text = "Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file."
