@@ -32,7 +32,7 @@ but we can't pass all of them to our agent.
 So we are going to filter them down`
     );
     
-    const entity = composio.getEntity("utkarsh");
+    const entity = composio.getEntity("default");
     const relevantActions = await composio.actions.list({
         apps: ["googlecalendar"],
         useCase: "Book a meeting"

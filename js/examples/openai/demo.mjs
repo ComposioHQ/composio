@@ -41,4 +41,4 @@ const toolset = new OpenAIToolSet({
     await toolset.handle_tool_call(response, entity.id);
   }
   
-  executeGithubAgent("himanshu")
+  executeAgent("default")
