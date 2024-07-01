@@ -9,7 +9,7 @@ from .actions import GetWorkspaceHistory
 logger = get_logger("workspace")
 
 
-class HistoryKeeper(Tool):
+class HistoryFetcherTool(Tool):
     """
     local workspace tool which can maintain history across commands.
     """

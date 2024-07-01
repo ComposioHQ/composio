@@ -1,12 +1,7 @@
 from pydantic import Field
 
-from composio.local_tools.local_workspace.cmd_manager.actions.const import (
-    git_clone_cmd,
-    git_reset_cmd,
-)
 from composio.local_tools.local_workspace.utils import get_logger
 from composio.local_tools.local_workspace.utils import git_reset_cmd, git_clone_cmd
-from composio.workspace.base_workspace import BaseCmdResponse
 
 from composio.local_tools.local_workspace.base_cmd import BaseAction, BaseRequest, BaseResponse
 
