@@ -134,6 +134,7 @@ jobs:
         env:
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
           COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   
   # Needs fixing
   # integration_tests:
