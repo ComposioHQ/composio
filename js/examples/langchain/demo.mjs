@@ -1,18 +1,11 @@
-import express from 'express';
 import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
-
 import { LangchainToolSet } from "composio-core";
 
-const app = express();
-const PORT = process.env.PORT || 2001;
-
-app.use(express.json());
-
-app.get('/webhook', async (req, res) => {
+async function main() {
     try {
-        const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
+        const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy";
 
         const llm = new ChatOpenAI({
             model: "gpt-4",
@@ -44,13 +37,10 @@ app.get('/webhook', async (req, res) => {
             input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
         });
 
-        res.json({ output: result.output });
+        console.log({ output: result.output });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Internal Server Error');
     }
-});
+}
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+main();
