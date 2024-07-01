@@ -1,6 +1,6 @@
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.workspace.get_logger import get_logger
 
 from .base_workspace_action import (
     BaseWorkspaceAction,

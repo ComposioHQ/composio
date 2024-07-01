@@ -1,15 +1,15 @@
-# import os
-# import select
-# import subprocess
-# import tarfile
-# import tempfile
-# import time
-# import traceback
-# from io import BytesIO
-# from subprocess import PIPE, STDOUT
-# from typing import List, Optional, Set, Tuple
-#
-# import docker
+import os
+import select
+import subprocess
+import tarfile
+import tempfile
+import time
+import traceback
+from io import BytesIO
+from subprocess import PIPE, STDOUT
+from typing import List, Optional, Set, Tuple
+
+import docker
 #
 # from composio.local_tools.local_workspace.commons.get_logger import get_logger
 #
@@ -361,15 +361,15 @@
 #         # Cleanup: Remove the temporary file if it was created
 #         if temp_file_name and os.path.exists(temp_file_name):
 #             os.remove(temp_file_name)
-#
-#
-# def process_output(output: str, return_code: Optional[int]):
-#     if return_code is None:
-#         return_code = 1
-#         output = "Exception: " + output
-#     return output, return_code
-#
-#
+
+
+def process_output(output: str, return_code: Optional[int]):
+    if return_code is None:
+        return_code = 1
+        output = "Exception: " + output
+    return output, return_code
+
+
 # def communicate(
 #     container: subprocess.Popen,
 #     container_obj,

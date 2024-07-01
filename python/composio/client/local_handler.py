@@ -5,7 +5,7 @@ from composio.local_tools import Mathematical
 from composio.local_tools.filetool import FileTool
 from composio.local_tools.greptile.tool import Greptile
 from composio.local_tools.local_workspace.cmd_manager.tool import CmdManagerTool
-from composio.local_tools.local_workspace.commons.history_processor import (
+from composio.workspace.history_processor import (
     HistoryProcessor,
 )
 from composio.local_tools.local_workspace.history_keeper import HistoryKeeper

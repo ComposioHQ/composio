@@ -1,7 +1,7 @@
 import typing as t
 
 from composio.core.local import Action, Tool
-from composio.local_tools.local_workspace.commons import HistoryProcessor
+from composio.workspace.history_processor import HistoryProcessor
 from composio.local_tools.local_workspace.workspace.actions import WorkspaceStatusAction
 
 
