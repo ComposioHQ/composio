@@ -134,6 +134,8 @@ class BaseSWEAgent(ABC, logging.WithLogger):
             action=Action.CMDMANAGERTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
+        if isinstance(get_patch_resp, dict) and get_patch_resp["status"] == "failure":
+            raise ComposioSWEError(get_patch_resp["details"])
         patch = get_patch_resp.output  # type: ignore
         self.logger.info(f"Final Patch: {patch}")
         self.current_logs.append(
