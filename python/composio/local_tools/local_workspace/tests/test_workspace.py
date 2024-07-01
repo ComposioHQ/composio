@@ -27,7 +27,7 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     LocalDockerArgumentsModel,
     WorkspaceManagerFactory,
 )
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
+from composio.workspace import WorkspaceFactory, WorkspaceType
 
 
 @pytest.mark.skipif(

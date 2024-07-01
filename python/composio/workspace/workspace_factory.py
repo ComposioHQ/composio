@@ -1,15 +1,12 @@
 import json
 import typing as t
 
-import composio.workspace.constants as workspace_const
 from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.workspace import DockerWorkspace, LocalDockerArgumentsModel
-from composio.workspace.base_workspace import Workspace
-from composio.workspace.workspace_clients import (
-    DockerIoClient,
-    E2BClient,
-    WorkspaceType,
-)
+
+from .base_workspace import Workspace
+from .constants import get_default_docker_env
+from .docker_workspace import DockerWorkspace, LocalDockerArgumentsModel
+from .workspace_clients import DockerIoClient, E2BClient, WorkspaceType
 
 
 KEY_WORKSPACE_MANAGER = "workspace"
@@ -54,7 +51,7 @@ class WorkspaceFactory:
             workspace = DockerWorkspace(
                 local_docker_args.image_name, self.docker_client, local_docker_args
             )
-            workspace.setup(env=workspace_const.get_default_docker_env())
+            workspace.setup(env=get_default_docker_env())
             self._registry[workspace.workspace_id] = {
                 KEY_WORKSPACE_MANAGER: workspace,
                 KEY_CONTAINER_NAME: workspace.container_name,

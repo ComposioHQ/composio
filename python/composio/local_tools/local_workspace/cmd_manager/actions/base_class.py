@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 from composio.core.local import Action
 from composio.local_tools.local_workspace.commons import get_logger
 from composio.local_tools.local_workspace.commons.utils import process_output
+from composio.workspace import WorkspaceFactory
 from composio.workspace.base_workspace import BaseCmdResponse, Workspace
-from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 logger = get_logger("workspace")

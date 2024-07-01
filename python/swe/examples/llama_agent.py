@@ -1,3 +1,5 @@
+import pathlib
+
 from composio_llamaindex import Action, App, ComposioToolSet
 from composio_swe.agents.base import BaseSWEAgent, SWEArgs
 from composio_swe.agents.utils import get_llama_llm
@@ -69,3 +71,25 @@ class LlamaIndexAgent(BaseSWEAgent):
         self.current_logs.append(
             {"agent_action": "agent_finish", "agent_output": str(response)}
         )
+
+
+def main() -> None:
+    """Run CrewAI agent example."""
+    issue_config = IssueConfig(
+        repo_name="ComposioHQ/composio",
+        issue_id="123",
+        issue_desc="""Composio Client should be able to run without API Key.
+        It should err to the user only if local tools are not used. In case of
+        local tools are being used, then it should not err if the API Key is
+        not provided. Main change should happen only in python/composio/client/__init__.py
+        """,
+    )
+    agent = LlamaIndexAgent(
+        SWEArgs(agent_logs_dir=pathlib.Path("/Users/karanvaidya/llama_index_logs"))
+    )
+    patch = agent.setup_and_solve(issue_config=issue_config)
+    print(patch)
+
+
+if __name__ == "__main__":
+    main()

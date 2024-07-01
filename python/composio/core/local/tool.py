@@ -1,6 +1,6 @@
 from typing import Optional, Type
 
-from composio.workspace.workspace_factory import WorkspaceFactory
+from composio.workspace import WorkspaceFactory
 
 from .action import Action
 
