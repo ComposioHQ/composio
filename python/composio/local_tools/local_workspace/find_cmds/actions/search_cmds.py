@@ -122,28 +122,3 @@ class FindFileCmd(BaseAction):
         self._setup(request_data)
         full_command = f"find_file {request_data.file_name} {request_data.dir}"
         return self._communicate(full_command)
-
-
-class GetCurrentDirRequest(BaseRequest):
-    pass
-
-
-class GetCurrentDirResponse(BaseResponse):
-    pass
-
-
-class GetCurrentDirCmd(BaseAction):
-    """
-    Gets the current directory. This is equivalent to running 'pwd' in the terminal.
-    """
-
-    _display_name = "Get Current Directory Action"
-    _request_schema = GetCurrentDirRequest
-    _response_schema = GetCurrentDirResponse
-
-    @history_recorder()
-    def execute(
-        self, request_data: GetCurrentDirRequest, authorisation_data: dict
-    ) -> BaseResponse:
-        self._setup(request_data)
-        return self._communicate("pwd")

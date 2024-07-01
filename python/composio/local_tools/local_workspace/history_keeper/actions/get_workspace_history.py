@@ -1,9 +1,7 @@
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from composio.workspace.get_logger import get_logger
-from composio.workspace.workspace_factory import WorkspaceFactory
-
+from composio.local_tools.local_workspace.utils import get_logger
 
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
@@ -33,7 +31,6 @@ class GetWorkspaceHistory(
             - output from last n commands
     """
 
-    _history_maintains = True
     _display_name = "Get workspace history"
     _request_schema = GetWorkspaceHistoryRequest
     _response_schema = GetWorkspaceHistoryResponse

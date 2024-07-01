@@ -3,9 +3,6 @@ from typing import Tuple
 from pydantic import Field
 
 from composio.workspace.get_logger import get_logger
-from composio.workspace.history_processor import (
-    history_recorder,
-)
 from composio.local_tools.local_workspace.commons.utils import process_output
 from composio.workspace.base_workspace import BaseCmdResponse
 
@@ -106,3 +103,28 @@ class RunCommandOnWorkspace(BaseAction):
         except Exception as e:
             logger.error("cmd failed with exception: %s", e)
             return "\nEXECUTION FAILED OR COMMAND MALFORMED", 1
+
+
+class GetCurrentDirRequest(BaseRequest):
+    pass
+
+
+class GetCurrentDirResponse(BaseResponse):
+    pass
+
+
+class GetCurrentDirCmd(BaseAction):
+    """
+    Gets the current directory. This is equivalent to running 'pwd' in the terminal.
+    """
+
+    _display_name = "Get Current Directory Action"
+    _request_schema = GetCurrentDirRequest
+    _response_schema = GetCurrentDirResponse
+
+    @history_recorder()
+    def execute(
+        self, request_data: GetCurrentDirRequest, authorisation_data: dict
+    ) -> BaseResponse:
+        self._setup(request_data)
+        return self._communicate("pwd")

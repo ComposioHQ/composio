@@ -29,6 +29,13 @@ class BaseResponse(BaseModel):
     )
 
 
+class BaseCmdResponse(BaseModel):
+    output: t.Any = Field(..., description="response from command")
+    return_code: int = Field(
+        ..., description="return code from running a command on workspace"
+    )
+
+
 class BaseAction(Action[BaseRequest, BaseResponse], ABC):
     """
     Base class for all actions
