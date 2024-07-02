@@ -175,10 +175,10 @@ class EvaluateOnDockerArgs(BaseModel):
 
 if __name__ == "__main__":
     args = EvaluateOnDockerArgs(
-        predictions_path="/home/shubhra/.composio_coder/logs/patches.json",
-        docker_dir="/home/shubhra/work/composio/composio_sdk/python/swe/swe_bench_docker/docker",
+        predictions_path="~/.composio_coder/logs/patches.json",
+        docker_dir="./docker",
         swe_bench_tasks="princeton-nlp/SWE-bench_Lite",
         namespace="aorwall",
-        log_dir="/home/shubhra/.composio_coder/logs/logs/"
+        log_dir="~/.composio_coder/logs/logs/"
     )
     asyncio.run(main(**args.dict()))

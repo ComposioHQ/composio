@@ -87,8 +87,6 @@ if __name__ == "__main__":
         repo_dir = os.getenv('TESTBED')
 
     assert repo_dir, "REPO_DIR environment variable is not set"
-
-
     main(
         task_instance=task_instance,
         testbed_name=os.getenv('TESTBED_NAME'),

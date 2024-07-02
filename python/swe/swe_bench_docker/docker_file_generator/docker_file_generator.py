@@ -400,7 +400,7 @@ class DockerGeneratorArgs(BaseModel):
 if __name__ == "__main__":
     args = DockerGeneratorArgs(swe_bench_tasks_path="princeton-nlp/SWE-bench_Lite",
                                namespace="aorwall",
-                               prediction_path="/home/shubhra/.composio_coder/logs/patches.json",
-                               docker_dir="/home/shubhra/work/composio/composio_sdk/python/swe/swe_bench_docker/docker")
+                               prediction_path="~/.composio_coder/logs/patches.json",
+                               docker_dir="./docker")
     generator = DockerfileGenerator(args.swe_bench_tasks_path, args.namespace, args.docker_dir, args.prediction_path)
     generator.generate()
