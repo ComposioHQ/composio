@@ -72,6 +72,7 @@ class GetCurrentDirCmd(BaseAction):
     """
 
     _display_name = "Get Current Directory Action"
+    _tool_name = "shellcmdtool"
     _request_schema = GetCurrentDirRequest
     _response_schema = GetCurrentDirResponse
 
