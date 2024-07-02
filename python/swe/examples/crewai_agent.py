@@ -3,6 +3,9 @@ CrewAI agent implementation.
 """
 
 
+import sys
+from pathlib import Path
+
 from composio_crewai import Action, App, ComposioToolSet
 from composio_swe.agents.base import BaseSWEAgent, SWEArgs
 from composio_swe.agents.utils import get_langchain_llm
@@ -11,7 +14,14 @@ from composio_swe.config.store import IssueConfig
 from crewai import Agent, Task
 from langchain_core.agents import AgentAction, AgentFinish
 
-from examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+
+# Allows import from examples/
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from examples.prompts import (  # pylint: disable=wrong-import-position # noqa: E402
+    AGENT_BACKSTORY_TMPL,
+    ISSUE_DESC_TMPL,
+)
 
 
 class CrewaiAgent(BaseSWEAgent):

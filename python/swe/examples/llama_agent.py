@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 from composio_llamaindex import Action, App, ComposioToolSet
 from composio_swe.agents.base import BaseSWEAgent, SWEArgs
 from composio_swe.agents.utils import get_llama_llm
@@ -5,7 +8,14 @@ from composio_swe.config.store import IssueConfig
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
 
-from examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+
+# Allows import from examples/
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from examples.prompts import (  # pylint: disable=wrong-import-position # noqa: E402
+    AGENT_BACKSTORY_TMPL,
+    ISSUE_DESC_TMPL,
+)
 
 
 class LlamaIndexAgent(BaseSWEAgent):
