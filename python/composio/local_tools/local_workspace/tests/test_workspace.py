@@ -4,16 +4,12 @@ import unittest
 import pytest
 
 from composio.local_tools.local_workspace.file_cmds.actions.base_file_cmds import (
+    OpenCmdRequest,
     OpenFile,
-    OpenCmdRequest
 )
 from composio.local_tools.local_workspace.file_cmds.actions.edit_cmd import (
     EditFile,
     EditFileRequest,
-)
-from composio.local_tools.local_workspace.shell_cmds.actions.shell_cmds import (
-    GetCurrentDirCmd,
-    GetCurrentDirRequest,
 )
 from composio.local_tools.local_workspace.git_cmds.actions.clone_github import (
     GithubCloneCmd,
@@ -23,17 +19,19 @@ from composio.local_tools.local_workspace.git_cmds.actions.get_patch import (
     GetPatchCmd,
     GetPatchRequest,
 )
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
+from composio.local_tools.local_workspace.shell_cmds.actions.shell_cmds import (
+    GetCurrentDirCmd,
+    GetCurrentDirRequest,
+)
 from composio.workspace.docker_workspace import LocalDockerArgumentsModel
+from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 
 
 def create_workspace() -> str:
     # Setup - create an instance of DockerWorkspace
     workspace_id = WorkspaceFactory.get_instance().create_workspace(
         workspace_type=WorkspaceType.DOCKER,
-        local_docker_args=LocalDockerArgumentsModel(
-            image_name="sweagent/swe-agent"
-        ),
+        local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
     )
     return workspace_id
 

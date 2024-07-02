@@ -1,5 +1,6 @@
-from pydantic import Field
 from typing import cast
+
+from pydantic import Field
 
 from composio.local_tools.local_workspace.base_cmd import (
     BaseAction,
@@ -51,7 +52,7 @@ class RunCommandOnWorkspace(BaseAction):
 
     def execute(
         self, request_data: BaseRequest, authorisation_data: dict
-    )-> BaseResponse:
+    ) -> BaseResponse:
         run_cmd_request = cast(RunCommandOnWorkspaceRequest, request_data)
         self._setup(request_data)
         return self._communicate(run_cmd_request.input_cmd, run_cmd_request.timeout)

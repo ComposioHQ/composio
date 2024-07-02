@@ -4,9 +4,7 @@ from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
 from composio.local_tools import Mathematical
 from composio.local_tools.filetool import FileTool
 from composio.local_tools.greptile.tool import Greptile
-from composio.local_tools.local_workspace.file_cmds import (
-    FileEditTool
-)
+from composio.local_tools.local_workspace.file_cmds import FileEditTool
 from composio.local_tools.local_workspace.find_cmds import SearchTool
 from composio.local_tools.local_workspace.git_cmds import GitCmdTool
 from composio.local_tools.local_workspace.history_keeper import HistoryFetcherTool
