@@ -81,7 +81,7 @@ def save_summaries_to_file(predictions_dir, predictions_path, log_dir, scorecard
     logging.info("- Wrote summary of run to: %s", results_path)
 
 
-def main(predictions_dir, log_dir, swe_bench_path, model):
+def generate_scorecard(predictions_dir, log_dir, swe_bench_path, model):
     logging.info("Starting main function")
     eval_refs, _ = get_cur_eval_refs(predictions_dir, swe_bench_path)
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
     if not os.path.exists(testbed_dir):
         os.makedirs(testbed_dir)
-    main(
+    generate_scorecard(
         predictions_dir=prediction_path_dir,
         log_dir=str(args.log_dir),
         swe_bench_path=args.swe_bench_path,

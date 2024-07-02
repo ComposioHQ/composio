@@ -56,7 +56,7 @@ async def run_docker_throttled(task_instance, namespace, log_dir, timeout, log_s
         return await run_docker_evaluation(task_instance, namespace, log_dir, timeout, log_suffix)
 
 
-async def main(
+async def evaluate(
     predictions_path: str,
     swe_bench_tasks: str,
     namespace: str,
@@ -181,4 +181,4 @@ if __name__ == "__main__":
         namespace="aorwall",
         log_dir="~/.composio_coder/logs/logs/"
     )
-    asyncio.run(main(**args.dict()))
+    asyncio.run(evaluate(**args.dict()))
