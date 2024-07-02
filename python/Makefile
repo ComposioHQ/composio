@@ -99,7 +99,7 @@ env: clean
 		pipenv --python 3.10;\
 		pipenv install --skip-lock;\
 		pipenv install --dev --skip-lock;\
-		pipenv run pip install -e .;\
+		pipenv run pip install -e swe;\
 		pipenv run pip install -e plugins/autogen;\
 		pipenv run pip install -e plugins/claude;\
 		pipenv run pip install -e plugins/crew_ai;\
@@ -109,6 +109,7 @@ env: clean
 		pipenv run pip install -e plugins/llamaindex;\
 		pipenv run pip install -e plugins/lyzr;\
 		pipenv run pip install -e plugins/openai;\
+		pipenv run pip install -e .;\
 		echo "Enter virtual environment with all development dependencies now: 'pipenv shell'.";\
 	else\
 		echo "In a virtual environment! Exit first: 'exit'.";\
