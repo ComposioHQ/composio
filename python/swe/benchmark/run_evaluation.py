@@ -3,8 +3,6 @@
 import argparse
 import datetime
 import logging
-import sys
-from pathlib import Path
 
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context
@@ -17,15 +15,7 @@ from composio.local_tools.local_workspace.commons.local_docker_workspace import 
     LocalDockerArgumentsModel,
 )
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
-
-
-# Allows import from examples/
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from examples.crewai_agent import (  # pylint: disable=wrong-import-position # noqa: E402
-    CrewaiAgent,
-    SWEArgs,
-)
+from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
 # get logger
