@@ -35,7 +35,7 @@ class GoToLineNumInOpenFile(BaseAction):
     """
 
     _display_name = "Goto Line Action"
-    _tool_name = "filetool"
+    _tool_name = "fileedittool"
     _request_schema = GoToRequest
     _response_schema = GoToResponse
 
@@ -71,7 +71,7 @@ class CreateFileCmd(BaseAction):
     """
 
     _display_name = "Create and open a new file"
-    _tool_name = "filetool"
+    _tool_name = "fileedittool"
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
 
@@ -116,7 +116,7 @@ class OpenFile(BaseAction):
     """
 
     _display_name = "Open File on workspace"
-    _tool_name = "filetool"
+    _tool_name = "fileedittool"
     _request_schema = OpenCmdRequest
     _response_schema = OpenCmdResponse
 

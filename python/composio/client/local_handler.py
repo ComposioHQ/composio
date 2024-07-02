@@ -5,7 +5,7 @@ from composio.local_tools import Mathematical
 from composio.local_tools.filetool import FileTool
 from composio.local_tools.greptile.tool import Greptile
 from composio.local_tools.local_workspace.file_cmds import (
-    FileTool as workspace_file_tool,
+    FileEditTool
 )
 from composio.local_tools.local_workspace.find_cmds import SearchTool
 from composio.local_tools.local_workspace.git_cmds import GitCmdTool
@@ -31,7 +31,7 @@ class LocalToolHandler:
             Mathematical(),
             GitCmdTool(),
             ShellCmdTool(),
-            workspace_file_tool(),
+            FileEditTool(),
             HistoryFetcherTool(),
             WorkspaceTool(),
             SearchTool(),

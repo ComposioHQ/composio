@@ -7,7 +7,7 @@ from composio.local_tools.local_workspace.file_cmds.actions import (
 )
 
 
-class FileTool(Tool):
+class FileEditTool(Tool):
     """
     command manager tool for workspace
     """
