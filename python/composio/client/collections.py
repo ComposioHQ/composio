@@ -819,7 +819,6 @@ class Actions(Collection[ActionModel]):
 
     model = ActionModel
     endpoint = v1.actions
-    local_handler = LocalToolHandler()
 
     # TODO: Overload
     def get(  # type: ignore
@@ -858,6 +857,11 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
+            if self.local_handler is None:
+                raise ComposioClientError(
+                    "Local handler is not available. Please initialize the client "
+                    "with a local handler."
+                )
             local_items = self.local_handler.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )

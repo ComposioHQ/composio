@@ -3,6 +3,7 @@ Composio client base.
 """
 
 import typing as t
+from composio.client.local_handler import LocalToolHandler
 
 import requests
 
@@ -24,10 +25,13 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
 
     _list_key: str = "items"
 
-    def __init__(self, client: "BaseClient") -> None:
+    def __init__(
+        self, client: "BaseClient", local_handler: t.Optional[LocalToolHandler] = None
+    ) -> None:
         """Initialize conntected accounts models namespace."""
         logging.WithLogger.__init__(self)
         self.client = client
+        self.local_handler = local_handler
 
     def _raise_if_required(
         self,

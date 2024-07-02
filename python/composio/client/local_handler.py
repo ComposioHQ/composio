@@ -1,3 +1,4 @@
+from enum import Enum
 import typing as t
 
 from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
@@ -13,15 +14,54 @@ from composio.local_tools.local_workspace.workspace import WorkspaceTool
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
 from composio.local_tools.webtool import WebTool
+from composio.workspace import workspace_factory
+from composio.workspace.workspace_factory import WorkspaceFactory
+
+
+class Env(Enum):
+    """Enum representing different execution environments."""
+
+    LOCAL = "local"
+    DOCKER = "docker"
+    E2B = "e2b"
+    FLY_IO = "fly.io"
+
+
+class ExecutionEnvironment:
+    env: Env = Env.LOCAL
+    id: t.Optional[str] = None
+    image: t.Optional[str] = None
+
+    def __init__(
+        self,
+        env: Env = Env.LOCAL,
+        id: t.Optional[str] = None,
+        image: t.Optional[str] = None,
+    ) -> None:
+        self.env = env
+        self.id = id
+        self.image = image
 
 
 class LocalToolHandler:
     """Local tools registry."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, local_tools_env: ExecutionEnvironment = ExecutionEnvironment()
+    ) -> None:
         """Initialize local tools registry."""
         self.registered_tools = self._load_local_tools()
         self.tool_map = {tool.tool_name: tool for tool in self.registered_tools}
+        if local_tools_env.env != Env.LOCAL:
+            if local_tools_env.id is not None:
+                self.workspace = WorkspaceFactory.get_instance().get_workspace_by_id(
+                    local_tools_env.id
+                )
+            else:
+                self.workspace = WorkspaceFactory.get_instance().create_workspace(
+                    workspace_type=WorkspaceType.LOCAL,
+                    local_docker_args=LocalDockerArgumentsModel(),
+                )
 
     def _load_local_tools(self) -> t.List:
         """Load local tools."""

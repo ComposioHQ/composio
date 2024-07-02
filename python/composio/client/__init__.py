@@ -7,6 +7,7 @@ Composio SDK client.
 import os
 import typing as t
 from datetime import datetime
+from composio.client.local_handler import LocalToolHandler, ExecutionEnvironment
 
 import requests
 
@@ -47,6 +48,7 @@ class Composio(BaseClient):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         runtime: t.Optional[str] = None,
+        local_handler: t.Optional[LocalToolHandler] = None,
     ) -> None:
         """
         Initialize Composio SDK client
@@ -61,7 +63,7 @@ class Composio(BaseClient):
 
         self.connected_accounts = ConnectedAccounts(client=self)
         self.apps = Apps(client=self)
-        self.actions = Actions(client=self)
+        self.actions = Actions(client=self, local_handler=local_handler)
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
