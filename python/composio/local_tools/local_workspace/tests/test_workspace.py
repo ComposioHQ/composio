@@ -3,31 +3,37 @@ import unittest
 
 import pytest
 
-from composio.local_tools.local_workspace.cmd_manager.actions.clone_github import (
-    GithubCloneCmd,
-    GithubCloneRequest,
-)
-from composio.local_tools.local_workspace.cmd_manager.actions.cmds import (
+from composio.local_tools.local_workspace.file_cmds.actions.base_file_cmds import (
     OpenCmdRequest,
     OpenFile,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.edit_cmd import (
+from composio.local_tools.local_workspace.file_cmds.actions.edit_cmd import (
     EditFile,
     EditFileRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.get_patch import (
+from composio.local_tools.local_workspace.git_cmds.actions.clone_github import (
+    GithubCloneCmd,
+    GithubCloneRequest,
+)
+from composio.local_tools.local_workspace.git_cmds.actions.get_patch import (
     GetPatchCmd,
     GetPatchRequest,
 )
-from composio.local_tools.local_workspace.cmd_manager.actions.search_cmds import (
+from composio.local_tools.local_workspace.shell_cmds.actions.shell_cmds import (
     GetCurrentDirCmd,
     GetCurrentDirRequest,
 )
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    LocalDockerArgumentsModel,
-    WorkspaceManagerFactory,
-)
+from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
+
+
+def create_workspace() -> str:
+    # Setup - create an instance of DockerWorkspace
+    workspace_id = WorkspaceFactory.get_instance().create_workspace(
+        workspace_type=WorkspaceType.DOCKER,
+        local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
+    )
+    return workspace_id
 
 
 @pytest.mark.skipif(
@@ -36,14 +42,7 @@ from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 )
 class TestWorkspaceGitWorkflow(unittest.TestCase):
     def test_git_workflow(self):
-        # Setup - create an instance of CreateWorkspaceAction
-        workspace_id = WorkspaceFactory.get_instance().create_workspace(
-            workspace_type=WorkspaceType.DOCKER,
-            local_docker_args=LocalDockerArgumentsModel(
-                image_name="sweagent/swe-agent"
-            ),
-        )
-
+        workspace_id = create_workspace()
         action = GithubCloneCmd()
         github_clone_result = action.execute(
             GithubCloneRequest(
@@ -157,10 +156,7 @@ class TestWorkspaceGitWorkflow(unittest.TestCase):
 class TestCmds(unittest.TestCase):
     def test_create_dir_cmd(self):
         # Setup - create an instance of CreateWorkspaceAction
-        w = WorkspaceManagerFactory()
-        workspace_id = w.get_workspace_manager(
-            LocalDockerArgumentsModel(image_name="sweagent/swe-agent:latest")
-        )
+        workspace_id = create_workspace()
         action = GetCurrentDirCmd()
 
         result = action.execute(GetCurrentDirRequest(workspace_id=workspace_id), {})

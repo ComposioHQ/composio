@@ -24,13 +24,16 @@ class CrewaiAgent(BaseSWEAgent):
         self.tools = [
             *self.toolset.get_actions(
                 actions=[
-                    Action.LOCALWORKSPACE_WORKSPACESTATUSACTION,
+                    Action.WORKSPACETOOL_WORKSPACESTATUSACTION,
                 ]
             ),
             *self.toolset.get_tools(
                 apps=[
-                    App.CMDMANAGERTOOL,
-                    App.HISTORYKEEPER,
+                    App.SEARCHTOOL,
+                    App.GITCMDTOOL,
+                    App.SHELLCMDTOOL,
+                    App.FILETOOL,
+                    App.HISTORYFETCHERTOOL,
                 ]
             ),
         ]

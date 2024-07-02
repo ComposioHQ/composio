@@ -1,1 +1,1 @@
-from .tool import LocalWorkspace
+from .tool import WorkspaceTool
