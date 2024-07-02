@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from composio.core.local import Action
 from composio.local_tools.local_workspace.utils import get_logger
 from composio.workspace.workspace_factory import WorkspaceFactory
+from composio.local_tools.local_workspace.base_cmd import BaseRequest
 
 
 STATUS_RUNNING = "running"
@@ -10,10 +11,8 @@ STATUS_STOPPED = "stopped"
 logger = get_logger("workspace")
 
 
-class GetWorkspaceHistoryRequest(BaseModel):
-    workspace_id: str = Field(
-        ..., description="workspace-id will be used to get status of the workspace"
-    )
+class GetWorkspaceHistoryRequest(BaseRequest):
+    pass
 
 
 class GetWorkspaceHistoryResponse(BaseModel):

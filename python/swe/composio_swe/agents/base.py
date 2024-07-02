@@ -131,7 +131,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
 
         self.logger.info("Getting patch")
         get_patch_resp = self.composio_client.actions.execute(
-            action=Action.CMDMANAGERTOOL_GETPATCHCMD,
+            action=Action.GITCMDTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
         if isinstance(get_patch_resp, dict) and get_patch_resp["status"] == "failure":

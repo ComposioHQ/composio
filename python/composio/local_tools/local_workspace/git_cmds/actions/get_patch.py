@@ -48,12 +48,13 @@ class GetPatchCmd(BaseAction):
     _response_schema = GetPatchResponse
 
     def execute(
-        self, request_data: GetPatchRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        get_patch_request = t.cast(GetPatchRequest, request_data)
         self._setup(request_data)
-        new_files = " ".join(request_data.new_file_path)
+        new_files = " ".join(get_patch_request.new_file_path)
         cmd_list = ["git add -u"]
-        if len(request_data.new_file_path) > 0:
+        if len(get_patch_request.new_file_path) > 0:
             cmd_list = [f"git add {new_files}", "git add -u"]
         cmd_list.append("git diff --cached")
         return self._communicate(" && ".join(cmd_list))

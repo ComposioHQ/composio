@@ -1,5 +1,5 @@
 from pydantic import Field
-
+from typing import cast
 from composio.local_tools.local_workspace.base_cmd import (
     BaseAction,
     BaseRequest,
@@ -32,8 +32,9 @@ class Scroll(BaseAction):
     _response_schema = ScrollResponse  # Reusing the response schema from SetCursors
 
     def execute(
-        self, request_data: ScrollRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(ScrollRequest, request_data)
         self._setup(request_data)
         cmd = "scroll_down" if request_data.direction == "down" else "scroll_up"
         return self._communicate(cmd)

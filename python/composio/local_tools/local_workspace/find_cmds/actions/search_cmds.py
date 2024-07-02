@@ -1,4 +1,5 @@
 from pydantic import Field
+from typing import cast
 
 from composio.local_tools.local_workspace.base_cmd import (
     BaseAction,
@@ -34,8 +35,9 @@ class SearchDirCmd(BaseAction):
     _response_schema = SearchDirResponse
 
     def execute(
-        self, request_data: SearchDirRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(SearchDirRequest, request_data)
         if not request_data.directory or not request_data.directory.strip():
             raise ValueError(
                 "dir can not be null. Give a directory-name in which to search"
@@ -69,8 +71,9 @@ class SearchFileCmd(BaseAction):
     _response_schema = SearchFileResponse
 
     def execute(
-        self, request_data: SearchFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(SearchFileRequest, request_data)
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError(
                 "file-name can not be null. Give a file-name in which to search"
@@ -113,8 +116,9 @@ class FindFileCmd(BaseAction):
     _response_schema = FindFileResponse
 
     def execute(
-        self, request_data: FindFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(FindFileRequest, request_data)
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("file-name can not be null. Give a file-name to find")
         if not request_data.dir or not request_data.dir.strip():

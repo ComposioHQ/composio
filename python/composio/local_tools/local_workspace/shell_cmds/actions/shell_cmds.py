@@ -1,13 +1,11 @@
-from typing import Tuple
-
 from pydantic import Field
+from typing import cast
 
 from composio.local_tools.local_workspace.base_cmd import (
     BaseAction,
     BaseRequest,
     BaseResponse,
 )
-from composio.workspace.base_workspace import BaseCmdResponse
 from composio.workspace.get_logger import get_logger
 
 
@@ -52,58 +50,11 @@ class RunCommandOnWorkspace(BaseAction):
     _response_schema = RunCommandOnWorkspaceResponse
 
     def execute(
-        self, request_data: RunCommandOnWorkspaceRequest, authorisation_data: dict = {}
-    ):
-        print("Executing command...")
+        self, request_data: BaseRequest, authorisation_data: dict
+    )-> BaseResponse:
+        run_cmd_request = cast(RunCommandOnWorkspaceRequest, request_data)
         self._setup(request_data)
-        print("Setup completed.")
-        self.return_code = None
-
-        output, return_code = self.run_command(
-            action=request_data.input_cmd, timeout=request_data.timeout
-        )
-        return RunCommandOnWorkspaceResponse(output=output, return_code=return_code)
-
-    def run_command(self, action: str, timeout: int) -> Tuple[str, int]:
-        """
-        Runs given action in environment and returns corresponding output
-
-        Args:
-            action (`str`) - command to run in bash shell
-
-        Returns:
-            observation (`str`) - output from container
-            return_code (`int`) - return code from container
-            done (`bool`) - whether task is over
-            info (`dict`) - additional information (e.g. debugging information)
-        """
-        try:
-            cmd_response: BaseCmdResponse = self._communicate(action, timeout)
-            return (
-                cmd_response.output,
-                cmd_response.return_code,
-            )
-        except TimeoutError:
-            try:
-                return "\nEXECUTION TIMED OUT", 1
-            except RuntimeError as e:
-                logger.warning(
-                    "Failed to interrupt container: %s\nRESTARTING PROCESS.",
-                    e,
-                )
-                return (
-                    "\nEXECUTION TIMED OUT AND INTERRUPT FAILED. RESTARTING PROCESS.",
-                    1,
-                )
-        except RuntimeError as e:
-            logger.warning("Failed to execute command: %s\nRESTARTING PROCESS.", e)
-            return "\nCOMMAND FAILED TO EXECUTE. RESTARTING PROCESS.", 1
-        except BrokenPipeError as e:
-            logger.error("Broken pipe error: %s\nRESTARTING PROCESS.", e)
-            return "\nBROKEN PIPE ERROR. RESTARTING PROCESS.", 1
-        except Exception as e:
-            logger.error("cmd failed with exception: %s", e)
-            return "\nEXECUTION FAILED OR COMMAND MALFORMED", 1
+        return self._communicate(run_cmd_request.input_cmd, run_cmd_request.timeout)
 
 
 class GetCurrentDirRequest(BaseRequest):
@@ -124,7 +75,7 @@ class GetCurrentDirCmd(BaseAction):
     _response_schema = GetCurrentDirResponse
 
     def execute(
-        self, request_data: GetCurrentDirRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
         self._setup(request_data)
         return self._communicate("pwd")

@@ -2,6 +2,7 @@ from composio.core.local import Tool
 from composio.local_tools.local_workspace.git_cmds.actions import (
     GitRepoTree,
     GithubCloneCmd,
+    GetPatchCmd
 )
 
 
@@ -11,7 +12,7 @@ class GitCmdTool(Tool):
     """
 
     def actions(self) -> list:
-        return [GitRepoTree, GithubCloneCmd, GitRepoTree]
+        return [GitRepoTree, GithubCloneCmd, GetPatchCmd]
 
     def triggers(self) -> list:
         return []

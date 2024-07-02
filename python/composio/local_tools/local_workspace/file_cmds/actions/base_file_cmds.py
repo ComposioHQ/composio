@@ -1,5 +1,5 @@
 from pydantic import Field
-
+from typing import cast
 from composio.local_tools.local_workspace.base_cmd import (
     BaseAction,
     BaseRequest,
@@ -40,8 +40,9 @@ class GoToLineNumInOpenFile(BaseAction):
     _response_schema = GoToResponse
 
     def execute(
-        self, request_data: GoToRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(GoToRequest, request_data)
         self._setup(request_data)
         cmd = f"goto {str(request_data.line_number)}"
         return self._communicate(cmd)
@@ -75,8 +76,9 @@ class CreateFileCmd(BaseAction):
     _response_schema = CreateFileResponse
 
     def execute(
-        self, request_data: CreateFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(CreateFileRequest, request_data)
         self._setup(request_data)
         if not self.validate_file_name(request_data.file_name):
             return CreateFileResponse(
@@ -119,8 +121,9 @@ class OpenFile(BaseAction):
     _response_schema = OpenCmdResponse
 
     def execute(
-        self, request_data: OpenCmdRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(OpenCmdRequest, request_data)
         self._setup(request_data)
         command = f"open {request_data.file_name}"
         if request_data.line_number != 0:

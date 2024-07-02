@@ -1,5 +1,5 @@
 from pydantic import Field
-
+from typing import cast
 from composio.local_tools.local_workspace.base_cmd import (
     BaseAction,
     BaseRequest,
@@ -47,8 +47,9 @@ class EditFile(BaseAction):
     _response_schema = EditFileResponse
 
     def execute(
-        self, request_data: EditFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(EditFileRequest, request_data)
         self._setup(request_data)
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
         return self._communicate(full_command)
