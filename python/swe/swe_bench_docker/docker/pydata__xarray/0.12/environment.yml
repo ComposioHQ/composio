@@ -1,0 +1,47 @@
+name: pydata__xarray__0.12
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - aiobotocore
+  - boto3
+  - bottleneck
+  - cartopy
+  - cdms2
+  - cfgrib
+  - cftime
+  - dask
+  - distributed
+  - h5netcdf
+  - h5py
+  - hdf5
+  - hypothesis
+  - iris
+  - lxml    # Optional dep of pydap
+  - matplotlib-base
+  - nc-time-axis
+  - netcdf4
+  - numba
+  - numexpr
+  - numpy
+  - pandas
+  - pint
+  - pip
+  - pooch
+  - pre-commit
+  - pseudonetcdf
+  - pydap
+  # - pynio: not compatible with netCDF4>1.5.3; only tested in py37-bare-minimum
+  - pytest
+  - pytest-cov
+  - pytest-env
+  - pytest-xdist
+  - rasterio
+  - scipy
+  - seaborn
+  - setuptools
+  - sparse
+  - toolz
+  - zarr
+  - pip:
+    - numbagg
