@@ -3,6 +3,7 @@ import unittest
 
 import pytest
 
+from composio.local_tools.local_workspace.base_cmd import BaseResponse
 from composio.local_tools.local_workspace.file_cmds.actions.base_file_cmds import (
     OpenCmdRequest,
     OpenFile,
@@ -110,7 +111,7 @@ class TestWorkspaceGitWorkflow(unittest.TestCase):
             {},
         )
         self.assertIsNotNone(get_patch_result)
-        self.assertIsInstance(get_patch_result, tuple)
+        self.assertIsInstance(get_patch_result, BaseResponse)
         self.assertIsInstance(tuple(get_patch_result)[0], tuple)
         patch_content = (
             tuple(tuple(get_patch_result)[0])[1]
