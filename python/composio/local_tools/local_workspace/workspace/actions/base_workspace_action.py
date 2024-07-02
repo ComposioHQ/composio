@@ -5,8 +5,8 @@ from typing import TypeVar
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
-from composio.local_tools.local_workspace.commons import get_logger
 from composio.workspace.base_workspace import Workspace
+from composio.workspace.get_logger import get_logger
 from composio.workspace.workspace_factory import WorkspaceFactory
 
 
@@ -40,15 +40,6 @@ class BaseWorkspaceAction(Action[RequestType, ResponseType], ABC):
         super().__init__()
         self.args = None
         self.workspace_id = ""
-        self.container_name = ""
-        self.image_name = ""
-        self.container_process = None
-        self.parent_pids = []
-        self.container_obj = None
-        self.return_code = None
-        self.logger = logger
-        self.config = None
-        self.config_file_path = None
 
     def _setup(self, request_data: BaseWorkspaceRequest):
         self.workspace = WorkspaceFactory.get_instance().get_registered_manager(

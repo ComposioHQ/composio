@@ -1,11 +1,13 @@
+from typing import cast
+
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    history_recorder,
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
 )
-
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.workspace.get_logger import get_logger
 
 
 logger = get_logger("workspace")
@@ -27,15 +29,14 @@ class Scroll(BaseAction):
     """
 
     _display_name = "Scroll Action"
+    _tool_name = "fileedittool"
     _request_schema = ScrollRequest  # Reusing the request schema from SetCursors
     _response_schema = ScrollResponse  # Reusing the response schema from SetCursors
 
-    @history_recorder()
     def execute(
-        self, request_data: ScrollRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(ScrollRequest, request_data)
         self._setup(request_data)
-        self.command = (
-            "scroll_down" if request_data.direction == "down" else "scroll_up"
-        )
-        return self._communicate(self.command)
+        cmd = "scroll_down" if request_data.direction == "down" else "scroll_up"
+        return self._communicate(cmd)

@@ -16,7 +16,7 @@ def test_app_enum() -> None:
     """Test `App` enum."""
     assert App.GITHUB == "GITHUB"
     assert not App.GITHUB.is_local
-    assert App.LOCALWORKSPACE.is_local
+    assert App.SEARCHTOOL.is_local
 
 
 def test_action_enum() -> None:

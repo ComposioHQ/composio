@@ -1,11 +1,13 @@
+from typing import cast
+
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    history_recorder,
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
 )
-
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.utils import get_logger
 
 
 logger = get_logger("workspace")
@@ -42,13 +44,14 @@ class EditFile(BaseAction):
     """
 
     _display_name = "Edit File Action"
+    _tool_name = "fileedittool"
     _request_schema = EditFileRequest
     _response_schema = EditFileResponse
 
-    @history_recorder()
     def execute(
-        self, request_data: EditFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(EditFileRequest, request_data)
         self._setup(request_data)
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
         return self._communicate(full_command)

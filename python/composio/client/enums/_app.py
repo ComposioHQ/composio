@@ -1,7 +1,6 @@
 """
 App enums.
 """
-
 import typing as t
 
 from composio.client.enums._action import Action
@@ -67,13 +66,15 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     ZENDESK: "App"
     ZOOM: "App"
     MATHEMATICAL: "App"
-    LOCALWORKSPACE: "App"
-    CMDMANAGERTOOL: "App"
-    HISTORYKEEPER: "App"
+    GITCMDTOOL: "App"
+    SHELLCMDTOOL: "App"
+    FILEEDITTOOL: "App"
+    HISTORYFETCHERTOOL: "App"
+    WORKSPACETOOL: "App"
+    SEARCHTOOL: "App"
     RAGTOOL: "App"
     WEBTOOL: "App"
     GREPTILE: "App"
-    SUBMITPATCHTOOL: "App"
     SQLTOOL: "App"
     FILETOOL: "App"
 
@@ -101,5 +102,5 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
                 continue
             if len(tags) == 0:
                 yield action
-            if any(tag in action.tags for tag in tags):
+            if any((tag in action.tags for tag in tags)):
                 yield action

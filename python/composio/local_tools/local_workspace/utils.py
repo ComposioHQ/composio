@@ -1,4 +1,8 @@
+import logging
 import os
+from typing import Optional
+
+from rich.logging import RichHandler
 
 
 SCRIPT_CURSOR_DEFAULT = "/root/commands/defaults.sh"
@@ -28,3 +32,24 @@ def git_clone_cmd(request_data):
     if request_data.commit_id:
         command_list.append(f"git reset --hard {request_data.commit_id}")
     return " && ".join(command_list)
+
+
+def git_tree_cmd():
+    return "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
+
+
+def process_output(output: str, return_code: Optional[int]):
+    if return_code is None:
+        return_code = 1
+        output = "Exception: " + output
+    return output, return_code
+
+
+def get_logger(logger_name):
+    handler = RichHandler(show_time=False, show_path=False)
+    handler.setLevel(logging.DEBUG)
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    logger.propagate = False
+    return logger

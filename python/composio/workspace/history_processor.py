@@ -1,14 +1,12 @@
 import json
 import os
-import typing as t
 from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
 
-from pydantic import BaseModel, Field
-
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
+from composio.workspace.get_logger import get_logger
+from composio.workspace.utils import BaseCmdResponse
 
 
 logger = get_logger("workspace")
@@ -49,13 +47,6 @@ class HistoryProcessor:
         with open(file_path, "w", encoding="utf-8") as file:
             json.dump(history_logs, file)
         return file_path.name
-
-
-class BaseCmdResponse(BaseModel):
-    output: t.Any = Field(..., description="response from command")
-    return_code: int = Field(
-        ..., description="return code from running a command on workspace"
-    )
 
 
 def history_recorder():

@@ -1,11 +1,13 @@
+from typing import cast
+
 from pydantic import Field
 
-from composio.local_tools.local_workspace.commons.get_logger import get_logger
-from composio.local_tools.local_workspace.commons.history_processor import (
-    history_recorder,
+from composio.local_tools.local_workspace.base_cmd import (
+    BaseAction,
+    BaseRequest,
+    BaseResponse,
 )
-
-from .base_class import BaseAction, BaseRequest, BaseResponse
+from composio.local_tools.local_workspace.utils import get_logger
 
 
 logger = get_logger("workspace")
@@ -29,13 +31,14 @@ class SearchDirCmd(BaseAction):
     """
 
     _display_name = "Search Directory Action"
+    _tool_name = "searchtool"
     _request_schema = SearchDirRequest
     _response_schema = SearchDirResponse
 
-    @history_recorder()
     def execute(
-        self, request_data: SearchDirRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(SearchDirRequest, request_data)
         if not request_data.directory or not request_data.directory.strip():
             raise ValueError(
                 "dir can not be null. Give a directory-name in which to search"
@@ -64,13 +67,14 @@ class SearchFileCmd(BaseAction):
     """
 
     _display_name = "Search file Action"
+    _tool_name = "searchtool"
     _request_schema = SearchFileRequest
     _response_schema = SearchFileResponse
 
-    @history_recorder()
     def execute(
-        self, request_data: SearchFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(SearchFileRequest, request_data)
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError(
                 "file-name can not be null. Give a file-name in which to search"
@@ -85,11 +89,13 @@ class SearchFileCmd(BaseAction):
 class FindFileRequest(BaseRequest):
     file_name: str = Field(
         ...,
-        description="The name of the file to be searched for within the specified directory or the current directory if none is specified.",
+        description="The name of the file to be searched for within the specified "
+        "directory or the current directory if none is specified.",
     )
     dir: str = Field(
         default=".",
-        description="The directory within which to search for the file. If not provided, the search will default to the current directory.",
+        description="The directory within which to search for the file. If not provided, "
+        "the search will default to the current directory.",
     )
 
 
@@ -106,13 +112,14 @@ class FindFileCmd(BaseAction):
     """
 
     _display_name = "Find File Action"
+    _tool_name = "searchtool"
     _request_schema = FindFileRequest
     _response_schema = FindFileResponse
 
-    @history_recorder()
     def execute(
-        self, request_data: FindFileRequest, authorisation_data: dict
+        self, request_data: BaseRequest, authorisation_data: dict
     ) -> BaseResponse:
+        request_data = cast(FindFileRequest, request_data)
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("file-name can not be null. Give a file-name to find")
         if not request_data.dir or not request_data.dir.strip():
@@ -122,28 +129,3 @@ class FindFileCmd(BaseAction):
         self._setup(request_data)
         full_command = f"find_file {request_data.file_name} {request_data.dir}"
         return self._communicate(full_command)
-
-
-class GetCurrentDirRequest(BaseRequest):
-    pass
-
-
-class GetCurrentDirResponse(BaseResponse):
-    pass
-
-
-class GetCurrentDirCmd(BaseAction):
-    """
-    Gets the current directory. This is equivalent to running 'pwd' in the terminal.
-    """
-
-    _display_name = "Get Current Directory Action"
-    _request_schema = GetCurrentDirRequest
-    _response_schema = GetCurrentDirResponse
-
-    @history_recorder()
-    def execute(
-        self, request_data: GetCurrentDirRequest, authorisation_data: dict
-    ) -> BaseResponse:
-        self._setup(request_data)
-        return self._communicate("pwd")
