@@ -83,7 +83,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
         """Clone repository to the workspace."""
         start_time = datetime.datetime.now()
         action_response = self.composio_client.actions.execute(
-            action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+            action=Action.GITCMDTOOL_GITHUBCLONECMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": repo_name,
@@ -131,7 +131,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
 
         self.logger.info("Getting patch")
         get_patch_resp = self.composio_client.actions.execute(
-            action=Action.CMDMANAGERTOOL_GETPATCHCMD,
+            action=Action.GITCMDTOOL_GETPATCHCMD,
             params={"workspace_id": workspace_id},
         )
         if isinstance(get_patch_resp, dict) and get_patch_resp["status"] == "failure":
