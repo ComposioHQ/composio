@@ -2,7 +2,6 @@
 CrewAI agent implementation.
 """
 
-
 from composio_crewai import Action, App, ComposioToolSet
 from composio_swe.agents.base import BaseSWEAgent, SWEArgs
 from composio_swe.agents.utils import get_langchain_llm
@@ -11,7 +10,7 @@ from composio_swe.config.store import IssueConfig
 from crewai import Agent, Task
 from langchain_core.agents import AgentAction, AgentFinish
 
-from examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+from swe.examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 
 
 class CrewaiAgent(BaseSWEAgent):

@@ -1,4 +1,5 @@
 # pylint: disable=logging-fstring-interpolation
+
 import argparse
 import datetime
 import logging
@@ -12,7 +13,7 @@ from rich.logging import RichHandler
 from composio import Action, Composio
 from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
-from examples.crewai_agent import CrewaiAgent, SWEArgs
+from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
 # get logger
