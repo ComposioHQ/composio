@@ -1,4 +1,4 @@
-from .agent import crew
+from agent import crew
 
 # Agent variables
 ROLE = "Software Engineer"
@@ -28,3 +28,7 @@ def main() -> None:
             "expected_output": EXPECTED_OUTPUT,
         }
     )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,4 +1,4 @@
-from .agent import crew
+from agent import crew
 
 
 def main() -> None:
