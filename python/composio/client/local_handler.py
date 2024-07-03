@@ -15,6 +15,8 @@ from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
 from composio.local_tools.webtool import WebTool
 from composio.workspace import workspace_factory
+from composio.workspace.docker_workspace import LocalDockerArgumentsModel
+from composio.workspace.workspace_clients import WorkspaceType
 from composio.workspace.workspace_factory import WorkspaceFactory
 
 
@@ -30,7 +32,7 @@ class Env(Enum):
 class ExecutionEnvironment:
     env: Env = Env.LOCAL
     id: t.Optional[str] = None
-    image: t.Optional[str] = None
+    image_name: t.Optional[str] = None
 
     def __init__(
         self,
@@ -43,6 +45,13 @@ class ExecutionEnvironment:
         self.image = image
 
 
+def get_workspace_type(env: Env) -> WorkspaceType:
+    if env == Env.DOCKER:
+        return WorkspaceType.DOCKER
+    else:
+        raise ValueError(f"Unsupported execution environment: {env}")
+
+
 class LocalToolHandler:
     """Local tools registry."""
 
@@ -52,6 +61,7 @@ class LocalToolHandler:
         """Initialize local tools registry."""
         self.registered_tools = self._load_local_tools()
         self.tool_map = {tool.tool_name: tool for tool in self.registered_tools}
+        self.exec_env = local_tools_env
         if local_tools_env.env != Env.LOCAL:
             if local_tools_env.id is not None:
                 self.workspace = WorkspaceFactory.get_instance().get_workspace_by_id(
@@ -59,8 +69,12 @@ class LocalToolHandler:
                 )
             else:
                 self.workspace = WorkspaceFactory.get_instance().create_workspace(
-                    workspace_type=WorkspaceType.LOCAL,
-                    local_docker_args=LocalDockerArgumentsModel(),
+                    workspace_type=get_workspace_type(local_tools_env.env),
+                    local_docker_args=LocalDockerArgumentsModel(
+                        # TODO: add default image name
+                        image_name=local_tools_env.image_name
+                        or ""
+                    ),
                 )
 
     def _load_local_tools(self) -> t.List:
@@ -123,4 +137,9 @@ class LocalToolHandler:
         """Execute a local action."""
         tool_obj = self.tool_map[action.app]
         action_obj = tool_obj.get_actions_dict()[action.name]
-        return action_obj.execute_action(request_data, metadata or {})
+        if self.exec_env.env == Env.LOCAL:
+            return action_obj.execute_action(request_data, metadata or {})
+        else:
+            return self.workspace.execute_action(
+                action_obj, request_data, metadata or {}
+            )

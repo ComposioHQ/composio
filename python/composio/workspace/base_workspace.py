@@ -1,6 +1,7 @@
 import typing as t
 from abc import ABC, abstractmethod
 from uuid import uuid4
+from composio.core.local.action import Action
 
 from pydantic import BaseModel, Field
 
@@ -86,4 +87,8 @@ class Workspace(ABC):
 
     @abstractmethod
     def close(self):
+        pass
+    
+    @abstractmethod
+    def execute_action(self, action_obj: Action, request_data: dict, metadata: dict):
         pass

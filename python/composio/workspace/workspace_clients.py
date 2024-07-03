@@ -22,6 +22,7 @@ class WorkspaceType(Enum):
     DOCKER = "docker"
     E2B = "e2b"
     FLYIO = "flyio"
+    LOCAL = "local"
 
 
 class E2BClient:

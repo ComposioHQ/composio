@@ -48,7 +48,7 @@ class WorkspaceFactory:
         workspace_type: WorkspaceType,
         local_docker_args: LocalDockerArgumentsModel,
         **kwargs,
-    ) -> str:
+    ) -> Workspace:
         logger.debug("kwargs: %s", json.dumps(kwargs))
         if workspace_type == WorkspaceType.DOCKER:
             workspace = DockerWorkspace(
@@ -62,7 +62,7 @@ class WorkspaceFactory:
                 KEY_IMAGE_NAME: local_docker_args.image_name,
                 KEY_WORKSPACE_TYPE: WorkspaceType.DOCKER,
             }
-            return workspace.workspace_id
+            return workspace
         # if workspace_type == WorkspaceType.E2B:
         #     workspace_e2b = E2BWorkspace(None, self.e2b_client)
         #     self._registry[workspace_e2b.workspace_id] = {

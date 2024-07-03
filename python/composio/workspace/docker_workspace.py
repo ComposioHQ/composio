@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import json
 import os
 import subprocess
 import tarfile
@@ -7,6 +8,8 @@ import tempfile
 import traceback
 from io import BytesIO
 from typing import Optional, Set
+from composio.core.local.action import Action
+from composio.utils import get_enum_key
 
 import docker
 from pydantic import BaseModel
@@ -261,3 +264,13 @@ class DockerWorkspace(Workspace):
             except Exception as e:
                 logger.error("docker close exception: %s", e)
             logger.info("Agent container stopped")
+
+    def execute_action(self, action_obj: Action, request_data: dict, metadata: dict):
+        communicate_resp = self.record_history_and_communicate(
+            f"composio actions execute {get_enum_key(action_obj.action_name)} --params {json.dumps(request_data)}"
+        )
+        if communicate_resp.return_code != 0:
+            return {
+                "execute_action": {"success": False, "error": communicate_resp.output}
+            }
+        return communicate_resp.output
