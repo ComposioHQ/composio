@@ -33,7 +33,7 @@ from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 
-from .local_handler import LocalToolHandler
+from ..tools.local.local_handler import LocalToolHandler
 
 
 def to_trigger_names(

@@ -7,7 +7,7 @@ Composio SDK client.
 import os
 import typing as t
 from datetime import datetime
-from composio.client.local_handler import LocalToolHandler, ExecutionEnvironment
+from composio.tools.local.local_handler import LocalToolHandler, ExecutionEnvironment
 
 import requests
 

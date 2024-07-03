@@ -10,7 +10,7 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from composio.client.local_handler import LocalToolHandler
+from composio.tools.local.local_handler import LocalToolHandler
 from rich.console import Console
 
 from composio.client import Composio

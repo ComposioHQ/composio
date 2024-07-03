@@ -20,7 +20,7 @@ from composio.client.collections import (
 )
 from composio.client.enums import Action, ActionType, App, AppType, TagType
 from composio.client.exceptions import ComposioClientError
-from composio.client.local_handler import LocalToolHandler
+from composio.tools.local.local_handler import LocalToolHandler
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -30,7 +30,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
-from composio.client.local_handler import ExecutionEnvironment, Env
+from composio.tools.local.local_handler import ExecutionEnvironment, Env
 from composio.utils.enums import get_enum_key
 
 

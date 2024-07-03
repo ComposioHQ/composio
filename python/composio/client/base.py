@@ -3,7 +3,7 @@ Composio client base.
 """
 
 import typing as t
-from composio.client.local_handler import LocalToolHandler
+from composio.tools.local.local_handler import LocalToolHandler
 
 import requests
 
