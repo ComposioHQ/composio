@@ -10,7 +10,6 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from composio.tools.local.local_handler import LocalToolHandler
 from rich.console import Console
 
 from composio.client import Composio
@@ -21,6 +20,7 @@ from composio.constants import (
 )
 from composio.core.cls.catch_all_exceptions import init_sentry
 from composio.storage.user import UserData
+from composio.tools.local.handler import LocalClient
 from composio.utils import logging
 
 
@@ -88,10 +88,7 @@ class Context(logging.WithLogger):
         """Composio client."""
         if self._client is None:
             init_sentry()
-            self._client = Composio(
-                api_key=self.user_data.api_key,
-                local_handler=LocalToolHandler(),
-            )
+            self._client = Composio(api_key=self.user_data.api_key)
         return self._client
 
     def using_api_key_from_env(self) -> bool:

@@ -10,8 +10,8 @@ from datasets import load_dataset
 from rich.logging import RichHandler
 
 from composio import Action, Composio
+from composio.tools.env.factory import WorkspaceFactory, WorkspaceType
 from composio.workspace.docker_workspace import LocalDockerArgumentsModel
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 from examples.crewai_agent import CrewaiAgent, SWEArgs
 
 

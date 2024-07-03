@@ -20,7 +20,6 @@ from composio.client.collections import (
 )
 from composio.client.enums import Action, ActionType, App, AppType, TagType
 from composio.client.exceptions import ComposioClientError
-from composio.tools.local.local_handler import LocalToolHandler
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -30,14 +29,15 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
-from composio.tools.local.local_handler import ExecutionEnvironment, Env
+from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
+from composio.utils.logging import WithLogger
 
 
-class ComposioToolSet:
+class ComposioToolSet(WithLogger):
     """Composio toolset."""
 
-    _remote_client: Composio
+    _remote_client: t.Optional[Composio] = None
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
 
     def __init__(
@@ -47,8 +47,6 @@ class ComposioToolSet:
         runtime: t.Optional[str] = None,
         output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
-        local_tools_env: Env = Env.LOCAL,
-        local_tools_env_id: t.Optional[str] = None,
     ) -> None:
         """
         Initialize composio toolset
@@ -58,20 +56,12 @@ class ComposioToolSet:
         :param runtime: Name of the framework runtime, eg. openai, crewai...
         :param output_in_file: Whether to output the result to a file.
         :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
-        :param execution_environment: The execution environment of the toolset. Defaults to "local". Can specify an ID to identify an already running environment.
         """
-        self._local_client = LocalToolHandler(
-            local_tools_env=ExecutionEnvironment(
-                env=local_tools_env, id=local_tools_env_id
-            )
-        )
-        self._runtime = runtime
 
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
 
-        # Check check constructor aegument, environment variables and user data for the key
         try:
             self.api_key = (
                 api_key
@@ -81,18 +71,25 @@ class ComposioToolSet:
                 ).api_key
             )
         except FileNotFoundError:
-            pass
+            self.logger.debug(f"`api_key` is not set when initializing toolset.")
+
+        self._runtime = runtime
+        self._local_client = LocalClient()
 
     @property
     def client(self) -> Composio:
         if self.api_key is None:
             raise ApiKeyNotProvidedError()
-        return Composio(
-            api_key=self.api_key,
-            base_url=self.base_url,
-            runtime=self.runtime,
-            local_handler=self._local_client,
-        )
+
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                runtime=self.runtime,
+            )
+            self._remote_client.local = self._local_client
+
+        return self._remote_client
 
     @property
     def runtime(self) -> t.Optional[str]:

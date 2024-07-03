@@ -9,8 +9,8 @@ from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
-# Import embedtool from composio.local_tools
-from composio.local_tools import embedtool
+# Import embedtool from composio.tools.local.tools
+from composio.tools.local.tools import embedtool
 
 
 # Load environment variables from a .env file

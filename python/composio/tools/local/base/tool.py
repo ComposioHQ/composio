@@ -1,32 +1,29 @@
-from typing import Optional, Type
+import typing as t
 
-from composio.workspace.workspace_factory import WorkspaceFactory
+from composio.tools.env.factory import WorkspaceFactory
 
 from .action import Action
 
 
 class Tool:
+    """Asbtraction for local tools."""
+
     @property
-    def tool_name(self) -> str:
+    def name(self) -> str:
+        """Tool name."""
         return self.__class__.__name__.lower()
 
-    def actions(self) -> list[Type[Action]]:
+    def get_action(self, name: str) -> Action:
+        """Get action object."""
+        for action in self.actions():
+            instance = action()
+            if instance.get_tool_merged_action_name() != name:
+                continue
+            return instance
+        raise ValueError(f"No action found with name `{name}`")
+
+    def actions(self) -> t.List[t.Type[Action]]:
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def get_workspace_factory(self) -> Optional[WorkspaceFactory]:
-        pass
-
-    def get_actions_dict(self) -> dict:
-        action_objects_dict = {}
-
-        for action_class in self.actions():
-            action_instance = action_class()
-            # if action_class.runs_on_workspace:
-            #     action_instance.set_workspace(self.get_workspace_factory())
-            action_name = action_instance.get_tool_merged_action_name()
-            action_objects_dict[action_name] = action_instance
-
-        return action_objects_dict
-
-    # def triggers(self) -> List[Trigger]:
-    #     raise NotImplementedError("This method should be overridden by subclasses.")
+    def triggers(self) -> t.List:
+        raise NotImplementedError("This method should be overridden by subclasses.")

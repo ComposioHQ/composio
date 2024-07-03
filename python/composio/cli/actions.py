@@ -5,18 +5,18 @@ Usage:
     composio actions [command] [options]
 """
 
+import json
 import typing as t
 
 import click
-from composio.utils.enums import get_enum_key
 import pyperclip
-import json
 
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client.enums import App, Action
+from composio.client.enums import Action, App
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
+from composio.utils.enums import get_enum_key
 
 
 class ActionsExamples(HelpfulCmdBase, DYMGroup):

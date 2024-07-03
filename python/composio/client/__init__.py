@@ -7,7 +7,6 @@ Composio SDK client.
 import os
 import typing as t
 from datetime import datetime
-from composio.tools.local.local_handler import LocalToolHandler, ExecutionEnvironment
 
 import requests
 
@@ -31,7 +30,6 @@ from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import ApiKeyNotProvidedError
 from composio.utils.url import get_api_url_base
-from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 _valid_keys: t.Set[str] = set()
@@ -47,8 +45,7 @@ class Composio(BaseClient):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None,
-        local_handler: t.Optional[LocalToolHandler] = None,
+        runtime: t.Optional[str] = None
     ) -> None:
         """
         Initialize Composio SDK client
@@ -61,12 +58,12 @@ class Composio(BaseClient):
         self.runtime = runtime
         self.base_url = base_url or get_api_url_base()
 
-        self.connected_accounts = ConnectedAccounts(client=self)
         self.apps = Apps(client=self)
-        self.actions = Actions(client=self, local_handler=local_handler)
+        self.actions = Actions(client=self)
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
+        self.connected_accounts = ConnectedAccounts(client=self)
 
     @property
     def api_key(self) -> str:

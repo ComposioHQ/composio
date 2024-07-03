@@ -13,9 +13,9 @@ from composio_swe.exceptions import ComposioSWEError
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
+from composio.tools.env.docker import LocalDockerArgumentsModel
+from composio.tools.env.factory import WorkspaceFactory, WorkspaceType
 from composio.utils import logging
-from composio.workspace.docker_workspace import LocalDockerArgumentsModel
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"

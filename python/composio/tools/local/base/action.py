@@ -9,6 +9,8 @@ import inflection
 import jsonref
 from pydantic import BaseModel
 
+from composio.utils.logging import WithLogger
+
 
 def generate_hashed_appId(input_string):
     # Generate a 32-character hash using MD5
@@ -24,7 +26,7 @@ RequestType = TypeVar("RequestType", bound=BaseModel)
 ResponseType = TypeVar("ResponseType", bound=BaseModel)
 
 
-class Action(ABC, Generic[RequestType, ResponseType]):
+class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
     runs_on_workspace: bool = False
     _history_maintains: bool = False
     _display_name: str = ""  # Add an internal variable to hold the display name
