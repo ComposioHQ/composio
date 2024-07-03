@@ -111,6 +111,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
         """Save current history state."""
         self.agent_logs[instance_id] = self.current_logs
         with open(self.task_output_logs, "w", encoding="utf-8") as f:
+            self.logger.info(f"Saving logs to {self.task_output_logs}")
             f.write(json.dumps(self.agent_logs))
 
     def setup_and_solve(

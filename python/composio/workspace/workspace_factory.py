@@ -52,7 +52,9 @@ class WorkspaceFactory:
         logger.debug("kwargs: %s", json.dumps(kwargs))
         if workspace_type == WorkspaceType.DOCKER:
             workspace = DockerWorkspace(
-                local_docker_args.image_name, self.docker_client, local_docker_args
+                image_name=local_docker_args.image_name,
+                docker_client=self.docker_client,
+                is_persistent=local_docker_args.persistent,
             )
             workspace.setup(env=workspace_const.get_default_docker_env())
             self._registry[workspace.workspace_id] = {

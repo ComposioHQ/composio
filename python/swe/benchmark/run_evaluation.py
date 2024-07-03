@@ -6,6 +6,7 @@ import logging
 import asyncio
 from pathlib import Path
 import os
+from composio.utils.logging import WithLogger
 
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context
@@ -22,7 +23,6 @@ from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.benchmark.get_score_card import generate_scorecard, MODEL_GPT4
-
 
 # get logger
 LOGGER_NAME = "local_workspace"
@@ -115,21 +115,25 @@ def create_workspace_from_image(
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=WorkspaceType.DOCKER,
-        local_docker_args=LocalDockerArgumentsModel(
-            image_name=repo_to_image_id_map[repo]
-        ),
+    try:
+        workspace_id = WorkspaceFactory.get_instance().create_workspace(
+            workspace_type=WorkspaceType.DOCKER,
+            local_docker_args=LocalDockerArgumentsModel(
+                image_name=repo_to_image_id_map[repo]
+            ),
+        )
+    except Exception as e:
+        logger.error("Error creating workspace: %s", e)
+        raise e
+    cd_resp = composio_client.actions.execute(
+        action=Action.SHELLCMDTOOL_RUNCOMMANDONWORKSPACE,
+        params={
+            "input_cmd": f"cd /{repo.split('/')[-1]}",
+            "workspace_id": workspace_id,
+        },
     )
-    composio_client.actions.execute(
-        action=Action.  # The `GITCMDTOOL_GITHUBCLONECMD` action is used to clone a GitHub repository
-        # into a workspace. It takes parameters such as the workspace ID, the repository
-        # name, and optionally a commit ID to specify which commit to clone. In the
-        # provided code, this action is used to reset a repository to a specific base
-        # commit before further processing or evaluation.
-        SHELLCMDTOOL_RUNCOMMANDONWORKSPACE,
-        params={"input_cmd": f"cd /opt/{repo.split('/')[-1]}"},
-    )
+    if isinstance(cd_resp, dict) and cd_resp["status"] == "failure":
+        raise Exception(f"Error changing directory: {cd_resp['details']}")
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
@@ -137,7 +141,7 @@ def create_workspace_from_image(
         workspace_creation_time,
     )
     logger.info("Resetting repository to base commit")
-    composio_client.actions.execute(
+    reset_resp = composio_client.actions.execute(
         action=Action.GITCMDTOOL_GITHUBCLONECMD,
         params={
             "workspace_id": workspace_id,
@@ -146,6 +150,8 @@ def create_workspace_from_image(
             "commit_id": base_commit,
         },
     )
+    if isinstance(reset_resp, dict) and reset_resp["status"] == "failure":
+        raise Exception(f"Error resetting repository: {reset_resp['details']}")
     return workspace_id
 
 
@@ -206,16 +212,13 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     issues = get_issues_dataset(test_split)
 
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {
-        "astropy/astropy": "aorwall/swe-bench-astropy_astropy-testbed"
-    }
+    repo_to_image_id_map = {"astropy/astropy": "kaavee315/astropy_astropy"}
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]
             print(f"Processing {count}th issue with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
-            print(f"Issue description: {issue['problem_statement']}")
 
             if print_only:
                 if include_hints:
@@ -262,13 +265,19 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             ctx.issue_config = issue_config
             ctx.model_env = model_env_config
             set_context(ctx)
-            args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
+            args = SWEArgs(agent_logs_dir=logs_dir or ctx.agent_logs_dir)
+            # Sleep for 5 minutes (300 seconds)
+            import time
+
             coder = CrewaiAgent(args)
             coder.setup_and_solve(
                 issue_config=ctx.issue_config, workspace_id=workspace_id
             )
         except Exception as e:
-            print(f"Error processing issue {issue['instance_id']}: {e}")
+            import traceback
+
+            print(f"Error processing issue {issue['instance_id']}:")
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
@@ -298,11 +307,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--logs_dir",
         type=str,
-        default=f"{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
+        default=f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
         help="Logs directory",
     )
 
     args = parser.parse_args()
+
+    # Make the log directory if it doesn't exist
+    logs_dir = Path(args.logs_dir)
+    if not logs_dir.exists():
+        logs_dir.mkdir(parents=True)
 
     print("Starting evaluation with gen_report: ", args.gen_report)
     run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
