@@ -52,9 +52,9 @@ def get_score():
         docker_dir="./docker",
         swe_bench_tasks=DATASET_NAME,
         namespace="aorwall",
-        log_dir=ctx.agent_logs_dir+"/logs"
+        log_dir=ctx.agent_logs_dir + "/logs",
     )
-    asyncio.run(evaluate(**evaluate_args.dict()))
+    asyncio.run(evaluate(**evaluate_args.model_dump()))
     prediction_path_dir = Path(args.prediction_path_dir)
     testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
     if not os.path.exists(testbed_dir):
@@ -86,7 +86,12 @@ def get_workspace_from_repo_map(
     print("Resetting repository to base commit")
     workspace_id = repo_to_workspace_map[repo]
     composio_client.actions.execute(
-        action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        action=Action.  # The `GITCMDTOOL_GITHUBCLONECMD` action is used to clone a GitHub repository
+        # into a workspace. It takes parameters such as the workspace ID, the repository
+        # name, and optionally a commit ID to specify which commit to clone. In the
+        # provided code, this action is used to reset a repository to a specific base
+        # commit before further processing or evaluation.
+        GITCMDTOOL_GITHUBCLONECMD,
         params={
             "workspace_id": workspace_id,
             "repo_name": repo,
@@ -119,7 +124,7 @@ def create_workspace_from_image(
     )
     logger.info("Resetting repository to base commit")
     composio_client.actions.execute(
-        action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        action=Action.GITCMDTOOL_GITHUBCLONECMD,
         params={
             "workspace_id": workspace_id,
             "repo_name": repo,
@@ -149,7 +154,7 @@ def build_image_and_container(
     start_time = datetime.datetime.now()
     composio_client.actions.execute(
         entity_id="123",
-        action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        action=Action.GITCMDTOOL_GITHUBCLONECMD,
         params={
             "workspace_id": workspace_id,
             "repo_name": repo,
@@ -279,4 +284,3 @@ if __name__ == "__main__":
     run(args.test_split, args.print_only, args.include_hints)
     if args.gen_report:
         get_score()
-        
