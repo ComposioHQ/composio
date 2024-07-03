@@ -45,6 +45,7 @@ def format_report(report):
 
 
 def get_cur_eval_refs(predictions_dir, swe_bench_path):
+    
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
         eval_refs[k] = {

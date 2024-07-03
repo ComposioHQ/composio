@@ -31,7 +31,7 @@ class CrewaiAgent(BaseSWEAgent):
                     App.SEARCHTOOL,
                     App.GITCMDTOOL,
                     App.SHELLCMDTOOL,
-                    App.FILETOOL,
+                    App.FILEEDITTOOL,
                     App.HISTORYFETCHERTOOL,
                 ]
             ),

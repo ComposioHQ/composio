@@ -12,6 +12,7 @@ from composio_swe.config.context import Context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
 from composio_swe.config.context import get_context
+from composio_swe.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
 from rich.logging import RichHandler
 
 from composio import Action, Composio
@@ -44,25 +45,29 @@ def get_issues_dataset(test_split):
     return test_dataset
 
 
-def get_score():
+def get_score(logs_dir=None):
     ctx = get_context()
-    prediction_patches_path = create_patches_file(ctx.agent_logs_dir, DATASET_NAME)
+    if logs_dir is None:
+        logs_dir = ctx.agent_logs_dir
+    prediction_patches_path = create_patches_file(logs_dir, DATASET_NAME)
+    print("logs dir: ", logs_dir)
+    print("prediction_patches_path: ", prediction_patches_path)
     evaluate_args = EvaluateOnDockerArgs(
-        predictions_path=prediction_patches_path,
-        docker_dir="./docker",
+        predictions_path=str(prediction_patches_path),
+        # docker_dir="./docker",
         swe_bench_tasks=DATASET_NAME,
         namespace="aorwall",
-        log_dir=ctx.agent_logs_dir + "/logs",
+        log_dir=str(logs_dir),
     )
     asyncio.run(evaluate(**evaluate_args.model_dump()))
-    prediction_path_dir = Path(args.prediction_path_dir)
+    prediction_path_dir = Path(prediction_patches_path).parent
     testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
     if not os.path.exists(testbed_dir):
         os.makedirs(testbed_dir)
     generate_scorecard(
         predictions_dir=prediction_path_dir,
-        log_dir=str(args.log_dir),
-        swe_bench_path=args.swe_bench_path,
+        log_dir=str(logs_dir),
+        swe_bench_path=f"{logs_dir}/dataset",
         model=MODEL_GPT4,
     )
 
@@ -115,6 +120,15 @@ def create_workspace_from_image(
         local_docker_args=LocalDockerArgumentsModel(
             image_name=repo_to_image_id_map[repo]
         ),
+    )
+    composio_client.actions.execute(
+        action=Action.  # The `GITCMDTOOL_GITHUBCLONECMD` action is used to clone a GitHub repository
+        # into a workspace. It takes parameters such as the workspace ID, the repository
+        # name, and optionally a commit ID to specify which commit to clone. In the
+        # provided code, this action is used to reset a repository to a specific base
+        # commit before further processing or evaluation.
+        SHELLCMDTOOL_RUNCOMMANDONWORKSPACE,
+        params={"input_cmd": f"cd /opt/{repo.split('/')[-1]}"},
     )
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
@@ -184,7 +198,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     )
 
 
-def run(test_split, print_only=False, include_hints=True):
+def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     """
     Main function to load and display entries from the SWE-bench lite dataset.
     """
@@ -192,7 +206,9 @@ def run(test_split, print_only=False, include_hints=True):
     issues = get_issues_dataset(test_split)
 
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {}
+    repo_to_image_id_map = {
+        "astropy/astropy": "aorwall/swe-bench-astropy_astropy-testbed"
+    }
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]
@@ -214,7 +230,10 @@ def run(test_split, print_only=False, include_hints=True):
             issue_description = build_issue_description(
                 issue["hints_text"], issue["problem_statement"], include_hints
             )
-            print(f"Issue description: {issue_description}")
+            print("Issue description (first 10 lines):")
+            for line in issue_description.split("\n")[:10]:
+                print(line)
+            print("...")
             patch = issue["patch"]
             install_commit_id = issue["environment_setup_commit"]
             logger.info(
@@ -243,7 +262,6 @@ def run(test_split, print_only=False, include_hints=True):
             ctx.issue_config = issue_config
             ctx.model_env = model_env_config
             set_context(ctx)
-
             args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
             coder = CrewaiAgent(args)
             coder.setup_and_solve(
@@ -277,10 +295,16 @@ if __name__ == "__main__":
         default=False,
         help="Generate a report after running evaluations",
     )
+    parser.add_argument(
+        "--logs_dir",
+        type=str,
+        default=f"{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
+        help="Logs directory",
+    )
 
     args = parser.parse_args()
 
-    print("Starting evaluation")
-    run(args.test_split, args.print_only, args.include_hints)
+    print("Starting evaluation with gen_report: ", args.gen_report)
+    run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
     if args.gen_report:
-        get_score()
+        get_score(args.logs_dir)

@@ -1,5 +1,6 @@
 import typing as t
 from abc import ABC, abstractmethod
+from composio.utils.logging import WithLogger
 
 from pydantic import BaseModel, Field
 
@@ -29,7 +30,7 @@ class BaseResponse(BaseModel):
     )
 
 
-class BaseAction(Action[BaseRequest, BaseResponse], ABC):
+class BaseAction(Action[BaseRequest, BaseResponse], ABC, WithLogger):
     """
     Base class for all actions
     """

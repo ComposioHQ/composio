@@ -12,14 +12,13 @@ from swe.swe_bench_docker.docker_file_generator.const import MAP_VERSION_TO_INST
 logger = logging.getLogger(__name__)
 
 
-async def run_docker_evaluation(
+async def run_docker_container(
     task_instance: dict,
     namespace: str,
     log_dir: str,
     timeout: int = 900,
     log_suffix: str = "",
     verbose: bool = False,
-    base64_instance: bool = True,
 ):
     repo_name = task_instance["repo"].replace("/", "_")
 
@@ -105,33 +104,48 @@ async def run_docker_evaluation(
     if verbose:
         logger.info(cmd_string)
 
+    process = await asyncio.create_subprocess_shell(
+        cmd_string, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
+    stdout, stderr = await process.communicate()
+    stdout = stdout.decode()
+    if stderr:
+        stderr = stderr.decode()
+
+    if swebench_docker_fork_dir:
+        os.unlink(tmpfile_path)
+
+    return process.returncode, stdout, stderr
+
+
+async def run_docker_evaluation(
+    task_instance: dict,
+    namespace: str,
+    log_dir: str,
+    timeout: int = 900,
+    log_suffix: str = "",
+    verbose: bool = False,
+):
     start_time = time.time()
+    docker_image = f"{namespace}/swe-bench-{task_instance['repo'].replace('/', '_')}-testbed:{task_instance['version']}"
 
     try:
-        process = await asyncio.create_subprocess_shell(
-            cmd_string, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        returncode, stdout, stderr = await run_docker_container(
+            task_instance, namespace, log_dir, timeout, log_suffix, verbose
         )
-        stdout, stderr = await process.communicate()
-        stdout = stdout.decode()
-        if stderr:
-            stderr = stderr.decode()
-
         elapsed_time = time.time() - start_time
 
-        if process.returncode != 0:
+        if returncode != 0:
             logger.warning(
-                f"[{task_instance['instance_id']}][{docker_image}]  Error running container:"
+                f"[{task_instance['instance_id']}][{docker_image}] Error running container:"
             )
-            logger.warning(f"Command: {cmd_string}")
             logger.warning(f"Stdout - {stdout}")
             logger.warning(f"Stderr - {stderr}")
-
         elif "Evaluation succeeded" not in stdout:
             logger.warning(
                 f"[{task_instance['instance_id']}][{docker_image}] \
                            Container ran successfully in {elapsed_time} seconds, but evaluation failed."
             )
-            logger.warning(f"Command: {cmd_string}")
             logger.warning(f"stdout - {stdout}")
         else:
             logger.info(
@@ -140,10 +154,5 @@ async def run_docker_evaluation(
             )
     except Exception as e:
         logger.warning(
-            f"[{task_instance['instance_id']}][{docker_image}]  Error running container: {e}"
+            f"[{task_instance['instance_id']}][{docker_image}] Error running container: {e}"
         )
-    finally:
-        if swebench_docker_fork_dir:
-            # Ensure the temporary file is deleted after the Docker process completes
-            os.unlink(tmpfile_path)
-
