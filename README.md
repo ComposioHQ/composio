@@ -1,3 +1,7 @@
+<p>
+  <a href="">EN</a> | <a href="">CN</a>
+</p>
+
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
