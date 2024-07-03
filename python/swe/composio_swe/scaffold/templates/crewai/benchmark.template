@@ -1,0 +1,5 @@
+from .agent import crew
+
+
+def main() -> None:
+    """Run benchmark against the agent."""
