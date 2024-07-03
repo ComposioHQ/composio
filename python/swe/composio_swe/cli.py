@@ -1,13 +1,12 @@
 """CLI for composio-swe."""
 
 import os
-from composio_swe.exceptions import ComposioSWEError
-import git
-import click
 import typing as t
-
 from pathlib import Path
 from urllib.parse import urlparse
+
+import click
+import git
 from composio_swe.config.constants import (
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
@@ -18,8 +17,11 @@ from composio_swe.config.constants import (
 )
 from composio_swe.config.context import Context, pass_context
 from composio_swe.config.store import IssueConfig
-from composio.cli.utils.params import EnumParam, PathParam
+from composio_swe.exceptions import ComposioSWEError
 from composio_swe.scaffold import AgenticFramework, scaffold
+
+from composio.cli.utils.params import EnumParam, PathParam
+
 
 def get_git_root():
     """Try and guess the git repo, since the conf.yml can be at the repo root"""

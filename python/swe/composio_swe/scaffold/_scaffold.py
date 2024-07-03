@@ -1,11 +1,10 @@
 """Scaffolding utilities."""
 
 import typing as t
-import typing_extensions as te
-
 from enum import Enum
 from pathlib import Path
 
+import typing_extensions as te
 from composio_swe.exceptions import ComposioSWEError
 from composio_swe.scaffold.templates import PATH as TEMPLATES_PATH
 

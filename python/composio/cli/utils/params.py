@@ -2,9 +2,9 @@
 Custom click flags.
 """
 
-from pathlib import Path
 import typing as t
 from enum import Enum
+from pathlib import Path
 
 import click
 
@@ -39,7 +39,7 @@ class EnumParam(click.ParamType):
 class PathParam(click.Path):
     """Path as click param."""
 
-    def convert(
+    def convert(  # type: ignore
         self,
         value: str,
         param: t.Optional[click.Parameter] = None,
