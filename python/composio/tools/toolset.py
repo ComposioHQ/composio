@@ -10,6 +10,8 @@ import time
 import typing as t
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
@@ -154,12 +156,15 @@ class ComposioToolSet(WithLogger):
         """
         action = Action(action)
         if action.is_local:
-            return self._local_client.execute_action(
+            response = self._local_client.execute_action(
                 action=action,
                 request_data=params,
                 metadata={
                     "workspace": self.workspace,
                 },
+            )
+            return (
+                response.model_dump() if isinstance(response, BaseModel) else response
             )
 
         self.check_connected_account(
