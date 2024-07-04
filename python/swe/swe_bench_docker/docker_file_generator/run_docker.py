@@ -1,3 +1,5 @@
+# pylint: disable=W1203
+
 import asyncio
 import base64
 import json
@@ -46,7 +48,7 @@ async def run_docker_container(
     if swebench_docker_fork_dir:
         # Create a temporary file to store the task_instance JSON
         tmpfile_path = tempfile.mktemp(suffix=".json")
-        with open(tmpfile_path, "w+") as f:
+        with open(tmpfile_path, "w+", encoding="utf-8") as f:
             json.dump(task_instance, f)
 
         docker_command = [

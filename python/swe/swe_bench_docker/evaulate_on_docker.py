@@ -1,3 +1,5 @@
+# pylint: disable=W1203, W1201, R1729
+
 import asyncio
 import hashlib
 import logging
@@ -127,12 +129,11 @@ async def evaluate(
         if len(predictions_filtered) == 0:
             logger.info("All predictions already exist, skipping")
             return
-        else:
-            logger.info(
-                f"# of predictions to evaluate: {len(predictions_filtered)} "
-                + f"({len(predictions) - len(predictions_filtered)} already evaluated)"
-            )
-            predictions = predictions_filtered
+        logger.info(
+            f"# of predictions to evaluate: {len(predictions_filtered)} "
+            + f"({len(predictions) - len(predictions_filtered)} already evaluated)"
+        )
+        predictions = predictions_filtered
     else:
         logger.info(f"# of predictions to evaluate: {len(predictions)}")
 
