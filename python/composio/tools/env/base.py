@@ -81,7 +81,7 @@ class ShellFactory(WithLogger):
 
     def get(self, id: t.Optional[str] = None) -> Shell:
         """Get shell instance."""
-        if id is None:
+        if id is None or id == "":
             return self.recent
         if id not in self._shells:
             raise ComposioSDKError(

@@ -110,7 +110,7 @@ class TestWorkspaceGitWorkflow(unittest.TestCase):
             {},
         )
         self.assertIsNotNone(get_patch_result)
-        self.assertIsInstance(get_patch_result, tuple)
+        self.assertIsInstance(get_patch_result, BaseResponse)
         self.assertIsInstance(tuple(get_patch_result)[0], tuple)
         patch_content = (
             tuple(tuple(get_patch_result)[0])[1]

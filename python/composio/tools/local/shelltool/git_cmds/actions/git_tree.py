@@ -33,4 +33,7 @@ class GitRepoTree(ExecuteCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
+            stderr=output["stderr"],
+        )
