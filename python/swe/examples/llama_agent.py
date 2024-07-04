@@ -5,7 +5,7 @@ from composio_swe.config.store import IssueConfig
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
 
-from examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
+from swe.examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 
 
 class LlamaIndexAgent(BaseSWEAgent):

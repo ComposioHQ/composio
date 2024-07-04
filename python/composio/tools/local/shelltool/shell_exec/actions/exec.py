@@ -12,7 +12,7 @@ from composio.utils.logging import get as get_logger
 class ShellRequest(BaseModel):
     """Shell request abstraction."""
 
-    shell_id: t.Optional[str] = Field(
+    shell_id: str = Field(
         None,
         description=(
             "ID of the shell where this command will be executed, if not "

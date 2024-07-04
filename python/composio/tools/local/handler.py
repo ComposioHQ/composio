@@ -39,7 +39,9 @@ class LocalClient(WithLogger):
         for action in actions:
             action_objs.append(self.tools[action.app].get_action(name=action.name))
 
-        action_schemas = [action_obj.get_action_schema() for action_obj in action_objs]
+        action_schemas = [
+            action_obj().get_action_schema() for action_obj in action_objs
+        ]
         action_schemas = list(
             {
                 action_schema["name"]: action_schema for action_schema in action_schemas

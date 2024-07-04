@@ -39,7 +39,7 @@ class DockerShell(Shell):
         )
         time.sleep(5)
         bash_pids, other_pids = self._get_background_pids()
-        if len(bash_pids) > 1 or len(other_pids) > 0:
+        if len(other_pids) > 0:
             raise RuntimeError(
                 "Detected alien processes attached or running. "
                 "Please ensure that no other agents are running on "
@@ -76,7 +76,7 @@ class DockerShell(Shell):
         return [
             pid[0]
             for pid in [pid.split() for pid in pids if pid]
-            if pid[1] != "ps" and pid[0] not in self._bash_pids
+            if pid[1] not in ("ps", "bash") and pid[0] not in self._bash_pids
         ]
 
     def _read(self, timeout: float = 10.0) -> t.Dict:
@@ -214,5 +214,3 @@ class DockerShell(Shell):
     def stop(self) -> None:
         """Stop and remove the running shell."""
         self._process.kill()
-        self._container.kill()
-        self._container.remove()

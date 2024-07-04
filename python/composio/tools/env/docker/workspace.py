@@ -2,6 +2,7 @@
 Docker workspace.
 """
 
+import os
 import typing as t
 
 from docker import DockerClient, from_env
@@ -26,7 +27,7 @@ class DockerWorkspace(Workspace):
     def __init__(self, image: t.Optional[str] = None) -> None:
         """Create a docker workspace."""
         self.id = generate_id()
-        self._image = image or DEFAULT_IMAGE
+        self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
         self._container = self.client.containers.run(
             image=self._image,
             command="/bin/bash -l -m",
