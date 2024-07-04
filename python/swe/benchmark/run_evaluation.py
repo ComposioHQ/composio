@@ -210,9 +210,8 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     """
 
     issues = get_issues_dataset(test_split)
-
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {"astropy/astropy": "kaavee315/astropy_astropy"}
+    repo_to_image_id_map = {"django/django": "techcomposio/swe-bench-django_django"}
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]

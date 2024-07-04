@@ -27,11 +27,6 @@ RUN {{ cmd }}
 
 RUN git checkout {{ environment_setup_commit }} .
 
-ENV TESTBED_NAME={{ testbed }}
-ENV IMAGE_TYPE=conda
+WORKDIR /
 
-WORKDIR /home/swe-bench
-
-COPY swebench_docker swebench_docker
-
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/bin/bash"]

@@ -223,9 +223,6 @@ class DockerIoClient:
             "--name",
             ctr_name,
             image_name,
-            "/bin/bash",
-            "-l",
-            "-m",
         ]
         # logger.debug("Starting container with command: %s", shlex.join(startup_cmd))
         container = Popen(  # pylint: disable=consider-using-with

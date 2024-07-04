@@ -8,7 +8,6 @@ from jinja2 import FileSystemLoader, Environment
 from swebench import get_eval_refs, get_instances
 
 from swe.swe_bench_docker.docker_file_generator.const import (
-    MAP_VERSION_TO_INSTALL,
     MAP_REPO_TO_DEB_PACKAGES,
     PYTHON_ENVIRONMENT_VERSIONS,
     PYENV_REPOS,
@@ -17,6 +16,8 @@ from swe.swe_bench_docker.docker_file_generator.utils import (
     get_requirements,
     get_environment_yml,
 )
+
+from swebench import MAP_VERSION_TO_INSTALL
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("build_docker")
@@ -30,6 +31,7 @@ class DockerfileGenerator:
         namespace: str = "aorwall",
         docker_dir: str = "docker",
         predictions_path: str = None,
+        is_testbed: bool = False,
     ):
         self.namespace = namespace
         self.docker_dir = docker_dir
@@ -53,8 +55,10 @@ class DockerfileGenerator:
         ]
 
         env = Environment(loader=FileSystemLoader("../templates"))
-        self.conda_testbed_template = env.get_template(f"Dockerfile.conda_testbed")
-        self.pyenv_testbed_template = env.get_template(f"Dockerfile.pyenv_testbed")
+        # self.conda_instance_template = env.get_template(f"Dockerfile.conda_instance")
+        # self.pyenv_instance_template = env.get_template(f"Dockerfile.pyenv_instance")
+        self.conda_testbed_template = env.get_template(f"Dockerfile.swe")
+        self.pyenv_testbed_template = env.get_template(f"Dockerfile.swe")
         self.conda_repository_template = env.get_template(
             f"Dockerfile.conda_repository"
         )
@@ -109,6 +113,7 @@ class DockerfileGenerator:
 
                     testbeds.add(repo_name)
 
+
                 self.generate_testbed_dockerfile(
                     repo=repo,
                     version=version,
@@ -116,17 +121,17 @@ class DockerfileGenerator:
                     specifications=specifications,
                     use_conda=use_conda,
                 )
-
-                if (
-                    "instance_image" in specifications
-                    and specifications["instance_image"]
-                ):
-                    for instance in instances:
-                        install_cmd = specifications["install"]
-                        self.generate_instance_dockerfile(
-                            instance=instance,
-                            install_cmd=install_cmd,
-                        )
+                for each_instance in instances:
+                    if (
+                        "instance_image" in specifications
+                        and specifications["instance_image"]
+                    ):
+                        for instance in instances:
+                            install_cmd = specifications["install"]
+                            self.generate_instance_dockerfile(
+                                instance=instance,
+                                install_cmd=install_cmd,
+                            )
 
         self.create_makefile()
         self.generate_docker_compose()
@@ -428,16 +433,17 @@ class DockerGeneratorArgs(BaseModel):
     namespace: str = Field(..., description="Docker repository namespace")
     prediction_path: str = Field(..., description="Path to predictions file")
     docker_dir: str = Field(..., description="Path to docker directory")
+    is_testbed: bool = Field(default=False, description="if dockerfile needs to be genrated for testbed")
 
 
 if __name__ == "__main__":
     args = DockerGeneratorArgs(
         swe_bench_tasks_path="princeton-nlp/SWE-bench_Lite",
-        namespace="aorwall",
-        prediction_path="/Users/karanvaidya/relevant_logs_8/patches.json",
-        docker_dir="./docker",
+        namespace="techcomposio",
+        prediction_path="",
+        docker_dir="/home/shubhra/work/composio/composio_sdk/python/swe/swe_bench_docker/docker/",
     )
     generator = DockerfileGenerator(
-        args.swe_bench_tasks_path, args.namespace, args.docker_dir, args.prediction_path
+        args.swe_bench_tasks_path, args.namespace, args.docker_dir, args.prediction_path, args.is_testbed
     )
     generator.generate()
