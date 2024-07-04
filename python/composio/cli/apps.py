@@ -16,9 +16,10 @@ from composio.cli.context import Context, get_context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.client.local_handler import LocalToolHandler
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
+from composio.tools.local.handler import LocalClient
+from composio.utils import get_enum_key
 
 
 class AppsExamples(HelpfulCmdBase, DYMGroup):
@@ -125,7 +126,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
     )
     for app in apps:
         app_names.append(
-            _get_enum_key(
+            get_enum_key(
                 name=app.key.lower().replace(" ", "_").replace("-", "_"),
             )
         )
@@ -135,14 +136,14 @@ def _update_apps(apps: t.List[AppModel]) -> None:
             is_local=False,
         ).store()
 
-    for tool in LocalToolHandler().registered_tools:
+    for tool in LocalClient().tools.values():
         app_names.append(
-            _get_enum_key(
-                name=tool.tool_name.lower().replace(" ", "_").replace("-", "_"),
+            get_enum_key(
+                name=tool.name.lower().replace(" ", "_").replace("-", "_"),
             )
         )
         enums.base.AppData(
-            name=tool.tool_name,
+            name=tool.name,
             path=enums.base.APPS_CACHE / app_names[-1],
             is_local=True,
         ).store()
@@ -164,7 +165,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             if action.appKey != app.key:
                 continue
             action_names.append(
-                _get_enum_key(
+                get_enum_key(
                     name=action.name,
                 )
             )
@@ -177,18 +178,18 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
             ).store()
 
-    local_tool_handler = LocalToolHandler()
-    for tool in local_tool_handler.registered_tools:
+    local_tool_handler = LocalClient()
+    for tool in local_tool_handler.tools.values():
         for tool_action in tool.actions():
             name = tool_action().get_tool_merged_action_name()
             action_names.append(
-                _get_enum_key(
+                get_enum_key(
                     name=name,
                 )
             )
             enums.base.ActionData(
                 name=name,
-                app=tool.tool_name,
+                app=tool.name,
                 tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
                 no_auth=True,
                 is_local=True,
@@ -215,7 +216,7 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     tag_names = ["DEFAULT"]
     for app_name in sorted(tag_map):
         for tag in sorted(tag_map[app_name]):
-            tag_name = _get_enum_key(
+            tag_name = get_enum_key(
                 name=f"{app_name}_{tag}",
             )
             tag_names.append(
@@ -249,7 +250,7 @@ def _update_triggers(
     )
     for app in apps:
         for trigger in [trigger for trigger in triggers if trigger.appKey == app.key]:
-            trigger_names.append(_get_enum_key(name=trigger.name).upper())
+            trigger_names.append(get_enum_key(name=trigger.name).upper())
             enums.base.TriggerData(
                 name=trigger.name,
                 app=app.key,
@@ -268,7 +269,7 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
     file = Path(inspect.getmodule(cls).__file__)  # type: ignore
 
     annotations = []
-    for attribute in attributes:
+    for attribute in sorted(attributes):
         annotations.append(
             ast.AnnAssign(
                 target=ast.Name(
@@ -309,10 +310,3 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
     with file.open("w", encoding="utf-8") as fp:
         fp.write(ast.unparse(tree))
     console.print(f"[green]✔ {cls.__name__}s updated[/green]")
-
-
-def _get_enum_key(name: str) -> str:
-    characters_to_replace = [" ", "-", "/", "(", ")", "\\", ":", '"', "'", "."]
-    for char in characters_to_replace:
-        name = name.replace(char, "_")
-    return name.upper()

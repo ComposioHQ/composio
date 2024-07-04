@@ -1,5 +1,4 @@
 # pylint: disable=logging-fstring-interpolation
-
 import argparse
 import datetime
 import logging
@@ -11,9 +10,8 @@ from datasets import load_dataset
 from rich.logging import RichHandler
 
 from composio import Action, Composio
-from composio.workspace.docker_workspace import LocalDockerArgumentsModel
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
-from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
+from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
 # get logger
@@ -76,7 +74,7 @@ def get_workspace_from_repo_map(
     print("Resetting repository to base commit")
     workspace_id = repo_to_workspace_map[repo]
     composio_client.actions.execute(
-        action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
             "workspace_id": workspace_id,
             "repo_name": repo,
@@ -96,7 +94,7 @@ def create_workspace_from_image(
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
     workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=WorkspaceType.DOCKER,
+        workspace_type=ExecutionEnvironment.DOCKER,
         local_docker_args=LocalDockerArgumentsModel(
             image_name=repo_to_image_id_map[repo]
         ),
@@ -126,7 +124,7 @@ def build_image_and_container(
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
     workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=WorkspaceType.DOCKER,
+        workspace_type=ExecutionEnvironment.DOCKER,
         local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
     )
     workspace_creation_time = datetime.datetime.now() - start_time

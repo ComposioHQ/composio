@@ -87,9 +87,7 @@ class Context(logging.WithLogger):
         """Composio client."""
         if self._client is None:
             init_sentry()
-            self._client = Composio(
-                api_key=self.user_data.api_key,
-            )
+            self._client = Composio(api_key=self.user_data.api_key)
         return self._client
 
     def using_api_key_from_env(self) -> bool:

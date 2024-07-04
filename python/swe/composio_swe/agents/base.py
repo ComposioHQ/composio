@@ -13,9 +13,8 @@ from composio_swe.exceptions import ComposioSWEError
 from pydantic import BaseModel, Field
 
 from composio import Action, Composio
+from composio.tools.env.factory import WorkspaceFactory
 from composio.utils import logging
-from composio.workspace.docker_workspace import LocalDockerArgumentsModel
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"
@@ -65,7 +64,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
         """Create the workspace."""
         start_time = datetime.datetime.now()
         workspace_id = WorkspaceFactory.get_instance().create_workspace(
-            workspace_type=WorkspaceType.DOCKER,
+            workspace_type=ExecutionEnvironment.DOCKER,
             local_docker_args=LocalDockerArgumentsModel(
                 image_name="sweagent/swe-agent"
             ),
@@ -83,7 +82,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
         """Clone repository to the workspace."""
         start_time = datetime.datetime.now()
         action_response = self.composio_client.actions.execute(
-            action=Action.GITCMDTOOL_GITHUBCLONECMD,
+            action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
             params={
                 "workspace_id": workspace_id,
                 "repo_name": repo_name,
@@ -131,7 +130,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
 
         self.logger.info("Getting patch")
         get_patch_resp = self.composio_client.actions.execute(
-            action=Action.GITCMDTOOL_GETPATCHCMD,
+            action=Action.GITCMDTOOL_GET_PATCH_CMD,
             params={"workspace_id": workspace_id},
         )
         if isinstance(get_patch_resp, dict) and get_patch_resp["status"] == "failure":

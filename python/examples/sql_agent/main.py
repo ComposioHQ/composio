@@ -6,7 +6,7 @@ from composio_langchain import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
-from composio.local_tools import filetool, sqltool
+from composio.tools.local import filetool, sqltool
 
 
 # Load environment variables from .env file
