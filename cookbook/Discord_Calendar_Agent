@@ -66,7 +66,7 @@ Composio LangChain offers seamless integration with LangChain tools, providing r
 ## Usage
   1. Run the bot:
       ```bash
-        python bot.py
+        Composio_Discord.py
 
 2. Use the following commands in Discord to interact with the bot:
    ![Alt text](images/screenshot1.png)
