@@ -1,1 +1,0 @@
-"""Tool execution environment constants."""

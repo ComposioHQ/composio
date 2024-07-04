@@ -2,10 +2,10 @@ from typing import cast
 
 from pydantic import Field
 
-from composio.tools.local.shelltool.base_cmd import (
-    BaseAction,
-    BaseRequest,
-    BaseResponse,
+from composio.tools.local.shelltool.shell_exec.actions.exec import (
+    ExecuteCommand,
+    ShellExecRequest,
+    ShellExecResponse,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -13,7 +13,7 @@ from composio.tools.local.shelltool.utils import get_logger
 logger = get_logger("workspace")
 
 
-class SearchDirRequest(BaseRequest):
+class SearchDirRequest(ShellExecRequest):
     search_term: str = Field(..., description="search term to search in the directory")
     directory: str = Field(
         default=".",
@@ -21,11 +21,11 @@ class SearchDirRequest(BaseRequest):
     )
 
 
-class SearchDirResponse(BaseResponse):
+class SearchDirResponse(ShellExecResponse):
     pass
 
 
-class SearchDirCmd(BaseAction):
+class SearchDirCmd(ExecuteCommand):
     """
     Searches for search_term in all files in dir. If dir is not provided, searches in the current directory.
     """
@@ -36,8 +36,8 @@ class SearchDirCmd(BaseAction):
     _response_schema = SearchDirResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(SearchDirRequest, request_data)
         if not request_data.directory or not request_data.directory.strip():
             raise ValueError(
@@ -50,18 +50,18 @@ class SearchDirCmd(BaseAction):
         return self._communicate(full_command)
 
 
-class SearchFileRequest(BaseRequest):
+class SearchFileRequest(ShellExecRequest):
     search_term: str = Field(..., description="search term to search in the file")
     file_name: str = Field(
         ..., description="name of the file in which search needs to be done"
     )
 
 
-class SearchFileResponse(BaseResponse):
+class SearchFileResponse(ShellExecResponse):
     pass
 
 
-class SearchFileCmd(BaseAction):
+class SearchFileCmd(ExecuteCommand):
     """
     Searches for a specified term within a specified file or the current open file if none is specified.
     """
@@ -72,8 +72,8 @@ class SearchFileCmd(BaseAction):
     _response_schema = SearchFileResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(SearchFileRequest, request_data)
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError(
@@ -86,7 +86,7 @@ class SearchFileCmd(BaseAction):
         return self._communicate(full_command)
 
 
-class FindFileRequest(BaseRequest):
+class FindFileRequest(ShellExecRequest):
     file_name: str = Field(
         ...,
         description="The name of the file to be searched for within the specified "
@@ -99,11 +99,11 @@ class FindFileRequest(BaseRequest):
     )
 
 
-class FindFileResponse(BaseResponse):
+class FindFileResponse(ShellExecResponse):
     pass
 
 
-class FindFileCmd(BaseAction):
+class FindFileCmd(ExecuteCommand):
     """
     Searches for files by name within a specified directory or the current directory if none is specified.
     Example:
@@ -117,8 +117,8 @@ class FindFileCmd(BaseAction):
     _response_schema = FindFileResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(FindFileRequest, request_data)
         if not request_data.file_name or not request_data.file_name.strip():
             raise ValueError("file-name can not be null. Give a file-name to find")

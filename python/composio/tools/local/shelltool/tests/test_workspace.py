@@ -3,7 +3,7 @@ import unittest
 
 import pytest
 
-from composio.tools.env.factory import WorkspaceFactory, WorkspaceType
+from composio.tools.env.factory import ExecutionEnvironment, WorkspaceFactory
 from composio.tools.local.shelltool.file_cmds.actions.base_file_cmds import (
     OpenCmdRequest,
     OpenFile,
@@ -30,7 +30,7 @@ from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 def create_workspace() -> str:
     # Setup - create an instance of DockerWorkspace
     workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=WorkspaceType.DOCKER,
+        workspace_type=ExecutionEnvironment.DOCKER,
         local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
     )
     return workspace_id

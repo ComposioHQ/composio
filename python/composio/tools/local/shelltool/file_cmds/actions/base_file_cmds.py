@@ -2,24 +2,24 @@ from typing import cast
 
 from pydantic import Field
 
-from composio.tools.local.shelltool.base_cmd import (
-    BaseAction,
-    BaseRequest,
-    BaseResponse,
+from composio.tools.local.shelltool.shell_exec.actions.exec import (
+    ExecuteCommand,
+    ShellExecRequest,
+    ShellExecResponse,
 )
 
 
-class GoToRequest(BaseRequest):
+class GoToRequest(ShellExecRequest):
     line_number: int = Field(
         ..., description="The line number to which the view should be moved."
     )
 
 
-class GoToResponse(BaseResponse):
+class GoToResponse(ShellExecResponse):
     pass
 
 
-class GoToLineNumInOpenFile(BaseAction):
+class GoToLineNumInOpenFile(ExecuteCommand):
     """
     Navigates to a specific line number in the open file, with checks to ensure the file is open
     and the line number is a valid number.
@@ -38,26 +38,26 @@ class GoToLineNumInOpenFile(BaseAction):
     _response_schema = GoToResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(GoToRequest, request_data)
         self._setup(request_data)
         cmd = f"goto {str(request_data.line_number)}"
         return self._communicate(cmd)
 
 
-class CreateFileRequest(BaseRequest):
+class CreateFileRequest(ShellExecRequest):
     file_name: str = Field(
         ...,
         description="The name of the new file to be created within the shell session",
     )
 
 
-class CreateFileResponse(BaseResponse):
+class CreateFileResponse(ShellExecResponse):
     pass
 
 
-class CreateFileCmd(BaseAction):
+class CreateFileCmd(ExecuteCommand):
     """
     Creates a new file within a shell session.
     Example:
@@ -74,8 +74,8 @@ class CreateFileCmd(BaseAction):
     _response_schema = CreateFileResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(CreateFileRequest, request_data)
         self._setup(request_data)
         if not self.validate_file_name(request_data.file_name):
@@ -91,7 +91,7 @@ class CreateFileCmd(BaseAction):
         return True
 
 
-class OpenCmdRequest(BaseRequest):
+class OpenCmdRequest(ShellExecRequest):
     file_name: str = Field(..., description="file path to open in the editor")
     line_number: int = Field(
         default=0,
@@ -99,11 +99,11 @@ class OpenCmdRequest(BaseRequest):
     )
 
 
-class OpenCmdResponse(BaseResponse):
+class OpenCmdResponse(ShellExecResponse):
     pass
 
 
-class OpenFile(BaseAction):
+class OpenFile(ExecuteCommand):
     """
     Opens a file in the editor based on the provided file path,
     If line_number is provided, the window will be move to include that line
@@ -119,8 +119,8 @@ class OpenFile(BaseAction):
     _response_schema = OpenCmdResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(OpenCmdRequest, request_data)
         self._setup(request_data)
         command = f"open {request_data.file_name}"

@@ -90,7 +90,7 @@ class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
         return []
 
     def get_tool_merged_action_name(self) -> str:
-        return f"{self._tool_name}_{inflection.underscore(self.action_name)}"
+        return f"{self._tool_name}_{inflection.underscore(self.__class__.__name__)}"
 
     def get_action_schema(self):
         request_schema_json = self.request_schema.model_json_schema(by_alias=False)

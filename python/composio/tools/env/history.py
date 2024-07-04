@@ -2,10 +2,7 @@ import json
 import os
 from collections import defaultdict
 from datetime import datetime
-from functools import wraps
 from pathlib import Path
-
-from composio.tools.env.utils import BaseCmdResponse
 
 
 script_path = Path(__file__)
@@ -45,29 +42,3 @@ class HistoryProcessor:
         with open(file_path, "w", encoding="utf-8") as file:
             json.dump(history_logs, file)
         return file_path.name
-
-
-def history_recorder():
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            base_cmd_response: BaseCmdResponse = func(self, *args, **kwargs)
-            if hasattr(self, "history_processor") and hasattr(self, "workspace_id"):
-                command = ""
-                if len(args) > 0:
-                    command = args[0]
-                else:
-                    self.logger.error(
-                        "command is not set in command-runner action class. History will have empty command for this"
-                    )
-                # Assume the state check and logging are meant to be done after the command execution
-                # state = self.workspace_factory.get_workspace_state(self.workspace_id)
-                state = None
-                self.history_processor.log_command(
-                    self.workspace_id, command, base_cmd_response.output, state
-                )
-            return base_cmd_response
-
-        return wrapper
-
-    return decorator

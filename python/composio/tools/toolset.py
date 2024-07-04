@@ -29,6 +29,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
@@ -47,6 +48,8 @@ class ComposioToolSet(WithLogger):
         runtime: t.Optional[str] = None,
         output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
+        workspace_env: ExecEnv = ExecEnv.DOCKER,
+        workspace_id: t.Optional[str] = None,
     ) -> None:
         """
         Initialize composio toolset
@@ -56,11 +59,29 @@ class ComposioToolSet(WithLogger):
         :param runtime: Name of the framework runtime, eg. openai, crewai...
         :param output_in_file: Whether to output the result to a file.
         :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
+        :param workspace_env: Environment where actions should be executed, you can choose from
+                `host`, `docker`, `flyio` and `e2b`.
+        :param workspace_id: Workspace ID for loading an existing workspace
         """
-
+        super().__init__()
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
+        self.workspace_id = workspace_id
+        self.workspace_env = workspace_env
+        if self.workspace_id is None:
+            self.logger.debug(
+                f"Workspace ID not provided, using `{workspace_env}` "
+                "to create a new workspace"
+            )
+            self.workspace = WorkspaceFactory.new(
+                env=workspace_env,
+            )
+        else:
+            self.logger.debug(f"Loading workspace wit ID: {workspace_id}")
+            self.workspace = WorkspaceFactory.get(
+                id=self.workspace_id,
+            )
 
         try:
             self.api_key = (
@@ -71,7 +92,7 @@ class ComposioToolSet(WithLogger):
                 ).api_key
             )
         except FileNotFoundError:
-            self.logger.debug(f"`api_key` is not set when initializing toolset.")
+            self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._runtime = runtime
         self._local_client = LocalClient()
@@ -128,7 +149,7 @@ class ComposioToolSet(WithLogger):
         :param action: Action to execute.
         :param params: The parameters to pass to the action.
         :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
-            Any: The output of the action execution.
+        :param text: Extra text to use for generating function calling metadata
         :return: Output object from the function call.
         """
         action = Action(action)
@@ -136,9 +157,14 @@ class ComposioToolSet(WithLogger):
             return self._local_client.execute_action(
                 action=action,
                 request_data=params,
+                metadata={
+                    "workspace": self.workspace,
+                },
             )
 
-        self.check_connected_account(action=action)
+        self.check_connected_account(
+            action=action,
+        )
         output = self.client.get_entity(
             id=entity_id,
         ).execute(
@@ -146,6 +172,8 @@ class ComposioToolSet(WithLogger):
             params=params,
             text=text,
         )
+
+        # TODO: Clean
         if not os.path.exists(
             Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         ):

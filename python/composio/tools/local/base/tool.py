@@ -1,7 +1,5 @@
 import typing as t
 
-from composio.tools.env.factory import WorkspaceFactory
-
 from .action import Action
 
 

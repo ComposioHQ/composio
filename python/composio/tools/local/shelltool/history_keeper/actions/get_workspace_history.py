@@ -1,8 +1,7 @@
 from pydantic import BaseModel, Field
 
-from composio.tools.env.factory import WorkspaceFactory
 from composio.tools.local.base import Action
-from composio.tools.local.shelltool.base_cmd import BaseRequest
+from composio.tools.local.shelltool.shell_exec.actions.exec import ShellExecRequest
 from composio.tools.local.shelltool.utils import get_logger
 
 
@@ -11,7 +10,7 @@ STATUS_STOPPED = "stopped"
 logger = get_logger("workspace")
 
 
-class GetWorkspaceHistoryRequest(BaseRequest):
+class GetWorkspaceHistoryRequest(ShellExecRequest):
     pass
 
 
@@ -40,16 +39,8 @@ class GetWorkspaceHistory(
     _history_len = 5
 
     def execute(
-        self, request_data: GetWorkspaceHistoryRequest, authorisation_data: dict
+        self,
+        request_data: GetWorkspaceHistoryRequest,
+        authorisation_data: dict,
     ) -> dict:
-        workspace = WorkspaceFactory.get_instance().get_workspace_by_id(
-            request_data.workspace_id
-        )
-        if workspace is None:
-            logger.error("Workspace is not set")
-            raise ValueError("Workspace is not set")
-        return {
-            "workspace_history": workspace.get_history(
-                request_data.workspace_id, self._history_len
-            )
-        }
+        return {}

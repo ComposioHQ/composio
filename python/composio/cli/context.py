@@ -20,7 +20,6 @@ from composio.constants import (
 )
 from composio.core.cls.catch_all_exceptions import init_sentry
 from composio.storage.user import UserData
-from composio.tools.local.handler import LocalClient
 from composio.utils import logging
 
 

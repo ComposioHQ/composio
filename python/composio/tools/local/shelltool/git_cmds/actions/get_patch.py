@@ -2,10 +2,10 @@ import typing as t
 
 from pydantic import Field
 
-from composio.tools.local.shelltool.base_cmd import (
-    BaseAction,
-    BaseRequest,
-    BaseResponse,
+from composio.tools.local.shelltool.shell_exec.actions.exec import (
+    ExecuteCommand,
+    ShellExecRequest,
+    ShellExecResponse,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -14,18 +14,18 @@ LONG_TIMEOUT = 200
 logger = get_logger("workspace")
 
 
-class GetPatchRequest(BaseRequest):
+class GetPatchRequest(ShellExecRequest):
     new_file_path: t.List[str] = Field(
         default=[],
         description="Paths of the files newly created to be included in the patch.",
     )
 
 
-class GetPatchResponse(BaseResponse):
+class GetPatchResponse(ShellExecResponse):
     pass
 
 
-class GetPatchCmd(BaseAction):
+class GetPatchCmd(ExecuteCommand):
     """
     Get the patch from the current working directory. The patch is present in the output field of the response.
     The patch is in the format of a proper diff format.
@@ -48,8 +48,8 @@ class GetPatchCmd(BaseAction):
     _response_schema = GetPatchResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         get_patch_request = t.cast(GetPatchRequest, request_data)
         self._setup(request_data)
         new_files = " ".join(get_patch_request.new_file_path)

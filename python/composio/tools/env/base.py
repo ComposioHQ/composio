@@ -1,91 +1,150 @@
+import threading
 import typing as t
 from abc import ABC, abstractmethod
-from uuid import uuid4
 
-from pydantic import BaseModel, Field
-
-from composio.tools.env.history import HistoryProcessor, history_recorder
-from composio.tools.env.utils import BaseCmdResponse
+from composio.exceptions import ComposioSDKError
+from composio.tools.env.id import generate_id
 from composio.tools.local.base.action import Action
+from composio.utils.logging import WithLogger
 
 
-T = t.TypeVar("T", str, bytes)
+class Shell(ABC, WithLogger):
+    """Abstract shell session."""
+
+    _id: str
+
+    def sanitize_command(self, cmd: str) -> bytes:
+        """Prepare command string."""
+        return (cmd.rstrip() + "\n").encode()
+
+    def __str__(self) -> str:
+        """String representation."""
+        return f"Shell(type={self.__class__.__name__}, id={self.id})"
+
+    __repr__ = __str__
+
+    @property
+    def id(self) -> str:
+        """Get shell ID."""
+        return self._id
+
+    @abstractmethod
+    def setup(self) -> None:
+        """Setup shell."""
+
+    @abstractmethod
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute command on container."""
+
+    @abstractmethod
+    def stop(self) -> None:
+        """Stop and remove the running shell."""
 
 
-class Command(BaseModel):
-    name: str = Field(..., description="name of the command")
-    code: str = Field(..., description="code to run for that command")
+class ShellFactory(WithLogger):
+    """Shell factory."""
 
+    _recent: t.Optional[Shell] = None
+    _shells: t.Dict[str, Shell] = {}
+    _lock: threading.Lock = threading.Lock()
 
-class CommandFile(BaseModel, t.Generic[T]):
-    datum: T = Field(..., description="file content for the command file")
-    cmd_type: str = Field(..., description="command type one of - source_file, script,")
-    name: str = Field(..., description="name of the command file on the workspace")
+    def __init__(self, factory: t.Callable[[], Shell]) -> None:
+        """Creatte shell factory"""
+        super().__init__()
+        self._factory = factory
 
+    @property
+    def recent(cls) -> Shell:
+        """Get most recent workspace."""
+        cls._lock.acquire()
+        shell = cls._recent
+        cls._lock.release()
+        if shell is None:
+            shell = cls.new()
+            cls._recent = shell
+        return shell
 
-class WorkspaceEnv(BaseModel):
-    """
-    state of the workspace environment, will be used to specify
-    -- init env for a workspace
-    -- set a workspace to some defined env-state
-    """
+    @recent.setter
+    def recent(self, shell: Shell) -> None:
+        """Get most recent workspace."""
+        self._lock.acquire()
+        self._recent = shell
+        self._lock.release()
 
-    env_variables: t.Dict[str, t.Any] = Field(
-        default={}, description="env-variables needed to set"
-    )
-    init_scripts: t.List[str] = Field(
-        default=[], description="init scripts needs to run on the workspace"
-    )
-    copy_file_to_workspace: t.List[CommandFile] = Field(
-        default=[], description="list of command files to copy on workspace"
-    )
-    commands_to_execute: t.List[str] = Field(
-        default=[], description="commands to execute to setup the env"
-    )
-    setup_cmd: str = Field(default="", description="setup command for the workspace")
+    def new(self) -> Shell:
+        """Create a new shell."""
+        shell = self._factory()
+        shell.setup()
+        self._shells[shell.id] = shell
+        self.recent = shell
+        return shell
+
+    def get(self, id: t.Optional[str] = None) -> Shell:
+        """Get shell instance."""
+        if id is None:
+            return self.recent
+        if id not in self._shells:
+            raise ComposioSDKError(
+                message=f"No shell found with ID: {id}",
+            )
+        shell = self._shells[id]
+        self.recent = shell
+        return shell
+
+    def exec(self, cmd: str, id: t.Optional[str] = None) -> t.Dict:
+        """Execute a command on shell."""
+        return self.get(id=id).exec(cmd=cmd)
+
+    def stop(self, id: str) -> None:
+        """Stop shell with given ID."""
+        if id not in self._shells:
+            return
+        shell = self._shells.pop(id)
+        shell.stop()
+
+    def teardown(self) -> None:
+        """Stop all running shells."""
+        while len(self._shells) > 0:
+            id, *_ = list(self._shells.keys())
+            self._shells.pop(id).stop()
+            self.logger.debug(f"Stopped shell with ID: {id}")
+        self._recent = None
 
 
 class Workspace(ABC):
-    workspace_id: str
-    history_processor: HistoryProcessor
+    """Workspace abstraction for executing tools."""
+
+    _shell_factory: t.Optional[ShellFactory] = None
 
     def __init__(self):
-        self.workspace_id = str(uuid4())
-        self.history_processor = HistoryProcessor()
+        """Initialize workspace."""
+        self.id = generate_id()
+
+    def __str__(self) -> str:
+        """String representation."""
+        return f"Workspace(type={self.__class__.__name__}, id={self.id})"
+
+    __repr__ = __str__
+
+    @property
+    def shells(self) -> ShellFactory:
+        """Returns shell factory for current workspace."""
+        if self._shell_factory is None:
+            self._shell_factory = ShellFactory(
+                factory=self._create_shell,
+            )
+        return self._shell_factory
 
     @abstractmethod
-    def setup(self, env: WorkspaceEnv, **kwargs):
-        pass
+    def _create_shell(self) -> Shell:
+        """Create shell."""
 
     @abstractmethod
-    def communicate(self, cmd: str, timeout: int = 25) -> BaseCmdResponse:
-        pass
+    def execute_action(
+        self, action_obj: Action, request_data: dict, metadata: dict
+    ) -> t.Dict:
+        """Execute an action in this workspace."""
 
-    @history_recorder()
-    def record_history_and_communicate(
-        self, cmd: str, timeout: int = 25
-    ) -> BaseCmdResponse:
-        return self.communicate(cmd, timeout)
-
-    def get_history(self, workspace_id: str, n: int = 10):
-        return self.history_processor.get_history(workspace_id, n)
-
-    @abstractmethod
-    def reset(self):
-        pass
-
-    @abstractmethod
-    def get_state(self) -> dict:
-        pass
-
-    @abstractmethod
-    def get_running_status(self):
-        pass
-
-    @abstractmethod
-    def close(self):
-        pass
-
-    @abstractmethod
-    def execute_action(self, action_obj: Action, request_data: dict, metadata: dict):
-        pass
+    def teardown(self) -> None:
+        """Teardown current workspace."""
+        self.shells.teardown()

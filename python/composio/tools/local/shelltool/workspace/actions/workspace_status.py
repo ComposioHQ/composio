@@ -9,7 +9,8 @@ from .base_workspace_action import (
 
 class WorkspaceStatusRequest(BaseWorkspaceRequest):
     workspace_id: str = Field(
-        ..., description="workspace-id will be used to get status of the workspace"
+        ...,
+        description="workspace-id will be used to get status of the workspace",
     )
 
 
@@ -30,13 +31,9 @@ class WorkspaceStatusAction(BaseWorkspaceAction):
     _response_schema = WorkspaceStatusResponse
 
     def execute(
-        self, request_data: WorkspaceStatusRequest, authorisation_data: dict
+        self,
+        request_data: WorkspaceStatusRequest,
+        authorisation_data: dict,
     ) -> dict:
-        if authorisation_data is None:
-            authorisation_data = {}
-        if not self.workspace:
-            raise ValueError(
-                f"workspace not found for workspace_id: {request_data.workspace_id}"
-            )
-        status = self.workspace.get_running_status()
-        return {"output": f"docker container running status is {status}"}
+        # TODO: Implement shell status
+        return {"output": "running"}

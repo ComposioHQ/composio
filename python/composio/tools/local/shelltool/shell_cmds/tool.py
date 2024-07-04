@@ -2,10 +2,7 @@ from typing import Optional
 
 from composio.tools.env.history import HistoryProcessor
 from composio.tools.local.base import Tool
-from composio.tools.local.shelltool.shell_cmds.actions import (
-    GetCurrentDirCmd,
-    RunCommandOnWorkspace,
-)
+from composio.tools.local.shelltool.shell_cmds.actions import GetCurrentDirectory
 
 
 class ShellCmdTool(Tool):
@@ -16,7 +13,7 @@ class ShellCmdTool(Tool):
     history_processor: Optional[HistoryProcessor] = None
 
     def actions(self) -> list:
-        return [RunCommandOnWorkspace, GetCurrentDirCmd]
+        return [GetCurrentDirectory]
 
     def triggers(self) -> list:
         return []

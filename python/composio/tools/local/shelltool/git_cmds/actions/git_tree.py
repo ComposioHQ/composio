@@ -1,7 +1,7 @@
-from composio.tools.local.shelltool.base_cmd import (
-    BaseAction,
-    BaseRequest,
-    BaseResponse,
+from composio.tools.local.shelltool.shell_exec.actions.exec import (
+    ExecuteCommand,
+    ShellExecRequest,
+    ShellExecResponse,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -9,7 +9,7 @@ from composio.tools.local.shelltool.utils import get_logger
 logger = get_logger("workspace")
 
 
-class GitRepoTree(BaseAction):
+class GitRepoTree(ExecuteCommand):
     """
     Generate a tree of the repository. This command lists all files in the current commit across all directories.
     Returns a list of files with their relative paths in the codebase.
@@ -20,13 +20,13 @@ class GitRepoTree(BaseAction):
 
     _display_name = "Git repo tree action"
     _tool_name = "gitcmdtool"
-    _request_schema = BaseRequest
-    _response_schema = BaseResponse
+    _request_schema = ShellExecRequest
+    _response_schema = ShellExecResponse
     _output_text = "Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file."
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         self._setup(request_data)
         cmd = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
         return self._communicate(cmd, output_text=self._output_text)

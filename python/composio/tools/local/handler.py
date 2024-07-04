@@ -1,9 +1,6 @@
-import importlib
 import typing as t
-from os import name
 
 from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
-from composio.tools.local.base import Action as LocalActionType
 from composio.tools.local.base import Tool as LocalToolType
 from composio.utils.logging import WithLogger
 
@@ -66,7 +63,7 @@ class LocalClient(WithLogger):
         """Execute a local action."""
         return (
             self.tools[action.app]
-            .get_action(name=name)
+            .get_action(name=action.name)
             .execute_action(
                 request_data=request_data,
                 metadata=metadata or {},

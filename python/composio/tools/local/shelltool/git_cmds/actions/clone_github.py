@@ -1,9 +1,9 @@
 from pydantic import Field
 
-from composio.tools.local.shelltool.base_cmd import (
-    BaseAction,
-    BaseRequest,
-    BaseResponse,
+from composio.tools.local.shelltool.shell_exec.actions.exec import (
+    ExecuteCommand,
+    ShellExecRequest,
+    ShellExecResponse,
 )
 from composio.tools.local.shelltool.utils import (
     get_logger,
@@ -16,7 +16,7 @@ LONG_TIMEOUT = 200
 logger = get_logger("workspace")
 
 
-class GithubCloneRequest(BaseRequest):
+class GithubCloneRequest(ShellExecRequest):
     repo_name: str = Field(
         ...,
         description="github repository to clone",
@@ -33,11 +33,11 @@ class GithubCloneRequest(BaseRequest):
     )
 
 
-class GithubCloneResponse(BaseResponse):
+class GithubCloneResponse(ShellExecResponse):
     pass
 
 
-class GithubCloneCmd(BaseAction):
+class GithubCloneCmd(ExecuteCommand):
     """
     Clones a github repository at a given commit-id.
     """
@@ -48,19 +48,23 @@ class GithubCloneCmd(BaseAction):
     _response_schema = GithubCloneResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = GithubCloneRequest(**request_data.model_dump())
         self._setup(request_data)
         if request_data.just_reset:
             return self.reset_to_base_commit(request_data)
         return self._communicate(git_clone_cmd(request_data), timeout=LONG_TIMEOUT)
 
-    def reset_to_base_commit(self, request_data: GithubCloneRequest) -> BaseResponse:
+    def reset_to_base_commit(
+        self, request_data: GithubCloneRequest
+    ) -> ShellExecResponse:
         """
         Resets the repository to the specified base commit and cleans any untracked files or changes.
         Assumes the repository already exists as cloned by the execute function.
         """
         logger.info("Resetting repository to base commit inside reset_to_base_commit")
         self._communicate(git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT)
-        return BaseResponse(output="Repository reset to base commit", return_code=0)
+        return ShellExecResponse(
+            output="Repository reset to base commit", return_code=0
+        )

@@ -2,10 +2,10 @@ from typing import cast
 
 from pydantic import Field
 
-from composio.tools.local.shelltool.base_cmd import (
-    BaseAction,
-    BaseRequest,
-    BaseResponse,
+from composio.tools.local.shelltool.shell_exec.actions.exec import (
+    ExecuteCommand,
+    ShellExecRequest,
+    ShellExecResponse,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -13,7 +13,7 @@ from composio.tools.local.shelltool.utils import get_logger
 logger = get_logger("workspace")
 
 
-class EditFileRequest(BaseRequest):
+class EditFileRequest(ShellExecRequest):
     start_line: int = Field(
         ..., description="The line number at which the file edit will start"
     )
@@ -26,11 +26,11 @@ class EditFileRequest(BaseRequest):
     )
 
 
-class EditFileResponse(BaseResponse):
+class EditFileResponse(ShellExecResponse):
     pass
 
 
-class EditFile(BaseAction):
+class EditFile(ExecuteCommand):
     """
     replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text.
     Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
@@ -49,8 +49,8 @@ class EditFile(BaseAction):
     _response_schema = EditFileResponse
 
     def execute(
-        self, request_data: BaseRequest, authorisation_data: dict
-    ) -> BaseResponse:
+        self, request_data: ShellExecRequest, authorisation_data: dict
+    ) -> ShellExecResponse:
         request_data = cast(EditFileRequest, request_data)
         self._setup(request_data)
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"

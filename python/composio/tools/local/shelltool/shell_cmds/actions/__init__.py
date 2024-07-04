@@ -1,1 +1,1 @@
-from .shell_cmds import GetCurrentDirCmd, RunCommandOnWorkspace
+from .shell_cmds import GetCurrentDirectory
