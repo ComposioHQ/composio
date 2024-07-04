@@ -14,7 +14,7 @@ from langchain.agents import (  # For creating agents
 # Import ChatOpenAI from langchain_openai
 from langchain_openai import ChatOpenAI
 
-from composio.tools.local.tools import embedtool  # For embedding tool
+from composio.tools.local import embedtool  # For embedding tool
 
 
 # Load environment variables from a .env file (if applicable)
