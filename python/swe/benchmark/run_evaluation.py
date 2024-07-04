@@ -23,7 +23,6 @@ from rich.logging import RichHandler
 from composio import Action, Composio
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
@@ -55,7 +54,9 @@ def get_score(logs_dir=None):
     ctx = get_context()
     if logs_dir is None:
         logs_dir = ctx.agent_logs_dir
-    prediction_patches_path, dataset_on_disk_path = create_patches_file(logs_dir, DATASET_NAME)
+    prediction_patches_path, dataset_on_disk_path = create_patches_file(
+        logs_dir, DATASET_NAME
+    )
     print("logs dir: ", logs_dir)
     print("prediction_patches_path: ", prediction_patches_path)
     evaluate_args = EvaluateOnDockerArgs(
