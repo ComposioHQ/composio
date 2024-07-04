@@ -6,9 +6,9 @@ from griptape.utils.decorators import activity
 from schema import Literal, Schema
 
 from composio.client.enums import Action, ActionType, AppType, TagType
-from composio.tools.env.factory import ExecEnv
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.tools.env.factory import ExecEnv
 from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
 
 

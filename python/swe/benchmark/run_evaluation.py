@@ -175,7 +175,7 @@ def run(test_split, print_only=False, include_hints=True):
     issues = get_issues_dataset(test_split)
 
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {}
+    repo_to_image_id_map = {""}
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]

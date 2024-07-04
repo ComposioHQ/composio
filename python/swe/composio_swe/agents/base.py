@@ -7,8 +7,8 @@ import json
 import typing as t
 from abc import ABC, abstractmethod
 from pathlib import Path
-from composio_crewai import ComposioToolSet
 
+from composio_crewai import ComposioToolSet
 from composio_swe.config.store import IssueConfig
 from composio_swe.exceptions import ComposioSWEError
 from pydantic import BaseModel, Field
