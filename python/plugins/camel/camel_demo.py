@@ -7,6 +7,8 @@ from camel.types import ModelPlatformType, ModelType
 from camel.utils import print_text_animated
 from colorama import Fore
 from composio_camel import Action, ComposioToolSet
+
+
 # pylint: enable=E0611
 
 
@@ -48,7 +50,7 @@ agent.reset()
 
 # set up agent
 PROMPT = (
-    "I have craeted a new Github Repo,"
+    "I have created a new Github Repo,"
     "Please star my github repository: camel-ai/camel"
 )
 user_msg = BaseMessage.make_user_message(role_name="User", content=PROMPT)
