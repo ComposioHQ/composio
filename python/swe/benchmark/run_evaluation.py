@@ -2,8 +2,8 @@
 import argparse
 import datetime
 import logging
-from composio_crewai import ComposioToolSet
 
+from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context
 from composio_swe.config.store import IssueConfig
