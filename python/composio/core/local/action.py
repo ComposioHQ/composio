@@ -25,6 +25,7 @@ ResponseType = TypeVar("ResponseType", bound=BaseModel)
 
 
 class Action(ABC, Generic[RequestType, ResponseType]):
+    runs_on_workspace: bool = False
     _history_maintains: bool = False
     _display_name: str = ""  # Add an internal variable to hold the display name
     _request_schema: Type[RequestType]  # Placeholder for request schema

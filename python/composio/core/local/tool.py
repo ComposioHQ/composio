@@ -1,11 +1,6 @@
 from typing import Optional, Type
 
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
-)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    WorkspaceManagerFactory,
-)
+from composio.workspace.workspace_factory import WorkspaceFactory
 
 from .action import Action
 
@@ -18,10 +13,7 @@ class Tool:
     def actions(self) -> list[Type[Action]]:
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def get_workspace_factory(self) -> Optional[WorkspaceManagerFactory]:
-        pass
-
-    def get_history_processor(self) -> Optional[HistoryProcessor]:
+    def get_workspace_factory(self) -> Optional[WorkspaceFactory]:
         pass
 
     def get_actions_dict(self) -> dict:
@@ -29,10 +21,8 @@ class Tool:
 
         for action_class in self.actions():
             action_instance = action_class()
-            if action_class._history_maintains:  # pylint: disable=protected-access
-                action_instance.set_workspace_and_history(  # type: ignore
-                    self.get_workspace_factory(), self.get_history_processor()
-                )
+            # if action_class.runs_on_workspace:
+            #     action_instance.set_workspace(self.get_workspace_factory())
             action_name = action_instance.get_tool_merged_action_name()
             action_objects_dict[action_name] = action_instance
 

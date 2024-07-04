@@ -4,16 +4,12 @@ from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
 from composio.local_tools import Mathematical
 from composio.local_tools.filetool import FileTool
 from composio.local_tools.greptile.tool import Greptile
-from composio.local_tools.local_workspace.cmd_manager.tool import CmdManagerTool
-from composio.local_tools.local_workspace.commons.history_processor import (
-    HistoryProcessor,
-)
-from composio.local_tools.local_workspace.commons.local_docker_workspace import (
-    WorkspaceManagerFactory,
-)
-from composio.local_tools.local_workspace.history_keeper import HistoryKeeper
-from composio.local_tools.local_workspace.submit_patch import SubmitPatchTool
-from composio.local_tools.local_workspace.workspace import LocalWorkspace
+from composio.local_tools.local_workspace.file_cmds import FileEditTool
+from composio.local_tools.local_workspace.find_cmds import SearchTool
+from composio.local_tools.local_workspace.git_cmds import GitCmdTool
+from composio.local_tools.local_workspace.history_keeper import HistoryFetcherTool
+from composio.local_tools.local_workspace.shell_cmds import ShellCmdTool
+from composio.local_tools.local_workspace.workspace import WorkspaceTool
 from composio.local_tools.ragtool import RagTool
 from composio.local_tools.sqltool import SqlTool
 from composio.local_tools.webtool import WebTool
@@ -29,32 +25,17 @@ class LocalToolHandler:
 
     def _load_local_tools(self) -> t.List:
         """Load local tools."""
-        w = WorkspaceManagerFactory()
-        h = HistoryProcessor()
-
-        # initialize workspace tool
-        workspace_tool = LocalWorkspace()
-        workspace_tool.set_workspace_factory(w)
-        workspace_tool.set_history_processor(h)
-
-        # initialize command manager
-        cmd_manager_tool = CmdManagerTool()
-        cmd_manager_tool.set_workspace_factory(w)
-        cmd_manager_tool.set_history_processor(h)
-
-        # initiate history keeper
-        h_keeper_tool = HistoryKeeper()
-        h_keeper_tool.set_workspace_factory(w)
-        h_keeper_tool.set_history_processor(h)
         return [
             Mathematical(),
-            workspace_tool,
-            cmd_manager_tool,
-            h_keeper_tool,
+            GitCmdTool(),
+            ShellCmdTool(),
+            FileEditTool(),
+            HistoryFetcherTool(),
+            WorkspaceTool(),
+            SearchTool(),
             RagTool(),
             WebTool(),
             Greptile(),
-            SubmitPatchTool(),
             SqlTool(),
             FileTool(),
         ]

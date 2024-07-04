@@ -19,7 +19,9 @@ task = "Star a repo SamparkAI/composio_sdk on GitHub"
 
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
+# from pprint import pprint
+# pprint(tools)
+# print(tools)
 # Get response from the LLM
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
