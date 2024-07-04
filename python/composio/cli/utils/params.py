@@ -4,6 +4,7 @@ Custom click flags.
 
 import typing as t
 from enum import Enum
+from pathlib import Path
 
 import click
 
@@ -33,3 +34,16 @@ class EnumParam(click.ParamType):
                 f"Option `{value}` is invalid for `{'/'.join(t.cast(click.Parameter, param).opts)}` "
                 f"please provide one of {set(map(lambda x:x.value, self.cls))} as value"
             ) from e
+
+
+class PathParam(click.Path):
+    """Path as click param."""
+
+    def convert(  # type: ignore
+        self,
+        value: str,
+        param: t.Optional[click.Parameter] = None,
+        ctx: t.Optional[click.Context] = None,
+    ) -> Path:
+        """Convert to ledger id."""
+        return Path(str(super().convert(value=value, param=param, ctx=ctx)))

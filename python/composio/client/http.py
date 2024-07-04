@@ -98,7 +98,7 @@ class HttpClient(SyncSession, logging.WithLogger):
             self._logger.debug(
                 f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
-            return method(url=f"{self.base_url}{url}", **kwargs)
+            return method(url=f"{self.base_url}{url}", timeout=5, **kwargs)
 
         return request
 

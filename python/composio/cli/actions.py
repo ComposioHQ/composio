@@ -5,6 +5,7 @@ Usage:
     composio actions [command] [options]
 """
 
+import json
 import typing as t
 
 import click
@@ -12,9 +13,10 @@ import pyperclip
 
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client.enums import App
+from composio.client.enums import Action, App
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
+from composio.utils.enums import get_enum_key
 
 
 class ActionsExamples(HelpfulCmdBase, DYMGroup):
@@ -31,6 +33,11 @@ class ActionsExamples(HelpfulCmdBase, DYMGroup):
         + click.style(
             "  # List all actions for the 'get channel messages' use case\n", fg="black"
         ),
+        click.style(
+            "composio actions execute 'action_name' --params '{\"key\": \"value\"}'",
+            fg="green",
+        )
+        + click.style("  # Execute a specific action with parameters\n", fg="black"),
     ]
 
 
@@ -87,6 +94,9 @@ def _actions(
     copy_enums: bool = False,
 ) -> None:
     """List composio actions"""
+    if context.click_ctx.invoked_subcommand:
+        return
+
     if use_case is not None and len(apps) == 0:
         raise click.ClickException(
             "To search by a use case you need to specify atleast one app name."
@@ -108,7 +118,7 @@ def _actions(
         for action in actions:
             if len(tags) > 0 and all(tag not in action.tags for tag in tags):
                 continue
-            enum_strs.append(f"Action.{_get_enum_key(name=action.name)}")
+            enum_strs.append(f"Action.{get_enum_key(name=action.name)}")
             context.console.print(f"• {action.name} ({enum_strs[-1]})")
 
         if len(tags) > 0 and len(enum_strs) == 0:
@@ -132,9 +142,20 @@ def _actions(
         raise click.ClickException(message=e.message) from e
 
 
-# TODO: Extract as reusable
-def _get_enum_key(name: str) -> str:
-    characters_to_replace = [" ", "-", "/", "(", ")", "\\", ":", '"', "'", "."]
-    for char in characters_to_replace:
-        name = name.replace(char, "_")
-    return name.upper()
+@_actions.command(name="execute")
+@click.argument("action_name", type=str)
+@click.option("--params", "-p", type=str, help="Action parameters as a JSON string")
+@pass_context
+def execute(context: Context, action_name: str, params: str) -> None:
+    """Execute a Composio action"""
+    try:
+        # Parse JSON parameters
+        action_params = json.loads(params) if params else {}
+        # Execute the action
+        result = context.client.actions.execute(Action(action_name), action_params)
+        context.console.print(result)
+
+    except json.JSONDecodeError:
+        raise click.ClickException("Invalid JSON format for parameters")
+    except ComposioSDKError as e:
+        raise click.ClickException(message=e.message) from e

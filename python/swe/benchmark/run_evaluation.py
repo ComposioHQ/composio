@@ -5,9 +5,12 @@ import asyncio
 import datetime
 import logging
 import os
-import traceback
 from pathlib import Path
+from benchmark.constants import MODEL_GPT4
+from benchmark.get_score_card import generate_scorecard
+from benchmark.setup_test_bed import create_patches_file
 
+from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import (
     KEY_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
@@ -19,12 +22,9 @@ from datasets import load_dataset
 from rich.logging import RichHandler
 
 from composio import Action, Composio
-from composio.workspace.docker_workspace import LocalDockerArgumentsModel
-from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
-from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
-from swe.benchmark.setup_test_bed import create_patches_file
-from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
-from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
+from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from examples.crewai_agent import CrewaiAgent, SWEArgs
+from swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
 
 # get logger
@@ -85,23 +85,18 @@ def build_issue_description(hints, problem_statement, include_hints):
     return tmpl
 
 
-def get_workspace_from_repo_map(
-    composio_client, repo, repo_to_workspace_map, base_commit
-):
+def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
     workspace_id = repo_to_workspace_map.get(repo)
     if not workspace_id or not workspace_id.strip():
         return None
+    composio_toolset = ComposioToolSet(
+        workspace_env=ExecEnv.DOCKER, workspace_id=workspace_id
+    )
     print("Resetting repository to base commit")
     workspace_id = repo_to_workspace_map[repo]
-    composio_client.actions.execute(
-        action=Action.  # The `GITCMDTOOL_GITHUBCLONECMD` action is used to clone a GitHub repository
-        # into a workspace. It takes parameters such as the workspace ID, the repository
-        # name, and optionally a commit ID to specify which commit to clone. In the
-        # provided code, this action is used to reset a repository to a specific base
-        # commit before further processing or evaluation.
-        GITCMDTOOL_GITHUBCLONECMD,
+    composio_toolset.execute_action(
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
-            "workspace_id": workspace_id,
             "repo_name": repo,
             "just_reset": True,
             "commit_id": base_commit,
@@ -110,44 +105,35 @@ def get_workspace_from_repo_map(
     return workspace_id
 
 
-def create_workspace_from_image(
-    composio_client, repo, repo_to_image_id_map, base_commit
-):
+def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     if not repo_to_image_id_map.get(repo):
         logger.info("repo: %s not found in repo-to-image-map", repo)
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    try:
-        workspace_id = WorkspaceFactory.get_instance().create_workspace(
-            workspace_type=WorkspaceType.DOCKER,
-            local_docker_args=LocalDockerArgumentsModel(
-                image_name=repo_to_image_id_map[repo]
-            ),
-        )
-    except Exception as e:
-        logger.error("Error creating workspace: %s", e)
-        raise e
-    cd_resp = composio_client.actions.execute(
-        action=Action.SHELLCMDTOOL_RUNCOMMANDONWORKSPACE,
+    workspace = WorkspaceFactory.new(
+        env=ExecEnv.DOCKER, image=repo_to_image_id_map[repo]
+    )
+    workspace_id = workspace.id
+    workspace_creation_time = datetime.datetime.now() - start_time
+    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
+    cd_resp = composio_toolset.execute_action(
+        action=Action.SHELL_EXECUTE_COMMAND,
         params={
-            "input_cmd": f"cd /{repo.split('/')[-1]}",
-            "workspace_id": workspace_id,
+            "cmd": f"cd /{repo.split('/')[-1]}",
         },
     )
     if isinstance(cd_resp, dict) and cd_resp["status"] == "failure":
         raise Exception(f"Error changing directory: {cd_resp['details']}")
-    workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
         workspace_id,
         workspace_creation_time,
     )
     logger.info("Resetting repository to base commit")
-    reset_resp = composio_client.actions.execute(
-        action=Action.GITCMDTOOL_GITHUBCLONECMD,
+    reset_resp = composio_toolset.execute_action(
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
-            "workspace_id": workspace_id,
             "repo_name": repo,
             "just_reset": True,
             "commit_id": base_commit,
@@ -158,52 +144,55 @@ def create_workspace_from_image(
     return workspace_id
 
 
-def build_image_and_container(
-    composio_client, repo, repo_to_workspace_map, base_commit
-):
+def build_image_and_container(repo, repo_to_workspace_map, base_commit):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
-    workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=WorkspaceType.DOCKER,
-        local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
+    workspace = WorkspaceFactory.new(
+        env=ExecEnv.DOCKER,
+        image="sweagent/swe-agent",
     )
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
-        workspace_id,
+        workspace.id,
         workspace_creation_time,
     )
+    composio_toolset = ComposioToolSet(workspace_id=workspace.id)
 
     start_time = datetime.datetime.now()
-    composio_client.actions.execute(
+    clone_resp = composio_toolset.execute_action(
         entity_id="123",
-        action=Action.GITCMDTOOL_GITHUBCLONECMD,
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
-            "workspace_id": workspace_id,
             "repo_name": repo,
             "commit_id": base_commit,
         },
     )
+    if (
+        isinstance(clone_resp, dict)
+        and "status" in clone_resp
+        and clone_resp["status"] == "failure"
+    ):
+        raise Exception(clone_resp["details"])
     git_clone_time = datetime.datetime.now() - start_time
     logger.info("git clone completed, time taken: %s", git_clone_time)
-    repo_to_workspace_map[repo] = workspace_id
-    return workspace_id
+    repo_to_workspace_map[repo] = workspace.id
+    return workspace.id
 
 
 def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
-    composio_client = Composio()
     workspace_id = get_workspace_from_repo_map(
-        composio_client, repo, repo_to_workspace_map, base_commit
+        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     )
     if workspace_id:
         return workspace_id
     workspace_id = create_workspace_from_image(
-        composio_client, repo, repo_to_image_id_map, base_commit
+        repo=repo, repo_to_image_id_map=repo_to_image_id_map, base_commit=base_commit
     )
     if workspace_id:
         return workspace_id
     return build_image_and_container(
-        composio_client, repo, repo_to_workspace_map, base_commit
+        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     )
 
 
@@ -267,14 +256,18 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             ctx.issue_config = issue_config
             ctx.model_env = model_env_config
             set_context(ctx)
+
             args = SWEArgs(agent_logs_dir=logs_dir or ctx.agent_logs_dir)
-            coder = CrewaiAgent(args)
+            coder = CrewaiAgent(args=args, workspace_id=workspace_id)
             coder.setup_and_solve(
                 issue_config=ctx.issue_config, workspace_id=workspace_id
             )
         except Exception as e:
-            print(f"Error processing issue {issue['instance_id']}:", e)
+            print(f"Error processing issue {issue['instance_id']}: {e}")
+            import traceback
+
             traceback.print_exc()
+            raise e
 
 
 if __name__ == "__main__":
