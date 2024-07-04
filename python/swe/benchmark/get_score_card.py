@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+from composio.utils.logging import get as get_logger
 import os
 from pathlib import Path
 
@@ -45,6 +46,10 @@ def format_report(report):
 
 
 def get_cur_eval_refs(predictions_dir, swe_bench_path):
+    logger = get_logger(name="get_cur_eval_refs")
+    logger.info(
+        f"Getting eval refs for predictions_dir: {predictions_dir} and swe_bench_path: {swe_bench_path}"
+    )
     eval_refs = get_eval_refs(str(swe_bench_path))
     for k, v in eval_refs.items():
         eval_refs[k] = {
@@ -151,15 +156,15 @@ def generate_scorecard(predictions_dir, log_dir, swe_bench_path, model):
                 + diff_obj.added_files
                 + diff_obj.removed_files
             ]
-            scorecard[
-                "patch_lines_add"
-            ] = sum(  # pylint: disable=consider-using-generator
-                [f.added for f in diff_obj]
+            scorecard["patch_lines_add"] = (
+                sum(  # pylint: disable=consider-using-generator
+                    [f.added for f in diff_obj]
+                )
             )
-            scorecard[
-                "patch_lines_del"
-            ] = sum(  # pylint: disable=consider-using-generator
-                [f.removed for f in diff_obj]
+            scorecard["patch_lines_del"] = (
+                sum(  # pylint: disable=consider-using-generator
+                    [f.removed for f in diff_obj]
+                )
             )
         except Exception as e:
             logging.error(

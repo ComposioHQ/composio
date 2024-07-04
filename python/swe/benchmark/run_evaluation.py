@@ -242,7 +242,7 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
                 base_commit_id=issue["base_commit"],
                 issue_desc=issue_description,
             )
-            logger.info(
+            logger.debug(
                 f"starting agent for issue-id: {issue['instance_id']}\n"
                 f"issue-description: {issue_description}\n"
                 f"repo_name: {issue['repo']}\n"
@@ -303,6 +303,12 @@ if __name__ == "__main__":
         default=f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
         help="Logs directory",
     )
+    parser.add_argument(
+        "--dont_run_eval",
+        action="store_true",
+        default=False,
+        help="Don't run evaluation after running the agent",
+    )
 
     args = parser.parse_args()
 
@@ -312,6 +318,7 @@ if __name__ == "__main__":
         logs_dir.mkdir(parents=True)
 
     print("Starting evaluation with gen_report: ", args.gen_report)
-    run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
+    if not args.dont_run_eval:
+        run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
     if args.gen_report:
         get_score(args.logs_dir)

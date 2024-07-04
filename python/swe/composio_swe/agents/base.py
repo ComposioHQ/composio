@@ -81,9 +81,13 @@ class BaseSWEAgent(ABC, logging.WithLogger):
             action=Action.GITCMDTOOL_GET_PATCH_CMD,
             params={},
         )
-        if isinstance(get_patch_resp, dict) and get_patch_resp["status"] == "failure":
+        if (
+            isinstance(get_patch_resp, dict)
+            and get_patch_resp.get("status") == "failure"
+        ):
             raise ComposioSWEError(get_patch_resp["details"])
-        patch = get_patch_resp.output  # type: ignore
+        self.logger.info(f"Get patch response: {get_patch_resp}")
+        patch = get_patch_resp.get("stdout")  # type: ignore
         self.logger.info(f"Final Patch: {patch}")
         self.current_logs.append(
             {
@@ -92,7 +96,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
             }
         )
         self.save(t.cast(str, issue_config.issue_id))
-        return patch
+        return str(patch)
 
     @abstractmethod
     def solve(self, issue_config: IssueConfig):
