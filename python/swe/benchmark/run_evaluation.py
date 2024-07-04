@@ -5,6 +5,7 @@ import asyncio
 import datetime
 import logging
 import os
+import traceback
 from pathlib import Path
 
 from composio_swe.config.constants import (
@@ -18,7 +19,6 @@ from datasets import load_dataset
 from rich.logging import RichHandler
 
 from composio import Action, Composio
-from composio.utils.logging import WithLogger
 from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
 from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
@@ -268,17 +268,12 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             ctx.model_env = model_env_config
             set_context(ctx)
             args = SWEArgs(agent_logs_dir=logs_dir or ctx.agent_logs_dir)
-            # Sleep for 5 minutes (300 seconds)
-            import time
-
             coder = CrewaiAgent(args)
             coder.setup_and_solve(
                 issue_config=ctx.issue_config, workspace_id=workspace_id
             )
         except Exception as e:
-            import traceback
-
-            print(f"Error processing issue {issue['instance_id']}:")
+            print(f"Error processing issue {issue['instance_id']}:", e)
             traceback.print_exc()
 
 

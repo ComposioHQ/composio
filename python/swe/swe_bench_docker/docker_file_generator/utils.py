@@ -1,4 +1,4 @@
-# noqa: E203
+# flake8: noqa E203
 
 import json
 import os
