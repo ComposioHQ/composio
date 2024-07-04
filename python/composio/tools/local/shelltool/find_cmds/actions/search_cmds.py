@@ -2,8 +2,8 @@ from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
-    ShellExecRequest,
     ShellExecResponse,
+    ShellRequest,
     exec_cmd,
 )
 from composio.tools.local.shelltool.utils import get_logger
@@ -12,7 +12,7 @@ from composio.tools.local.shelltool.utils import get_logger
 logger = get_logger("workspace")
 
 
-class SearchDirRequest(ShellExecRequest):
+class SearchDirRequest(ShellRequest):
     search_term: str = Field(..., description="search term to search in the directory")
     directory: str = Field(
         default=".",
@@ -45,7 +45,7 @@ class SearchDirCmd(ExecuteCommand):
         return SearchDirResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
-class SearchFileRequest(ShellExecRequest):
+class SearchFileRequest(ShellRequest):
     search_term: str = Field(..., description="search term to search in the file")
     file_name: str = Field(
         ..., description="name of the file in which search needs to be done"
@@ -77,7 +77,7 @@ class SearchFileCmd(ExecuteCommand):
         return SearchFileResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
-class FindFileRequest(ShellExecRequest):
+class FindFileRequest(ShellRequest):
     file_name: str = Field(
         ...,
         description="The name of the file to be searched for within the specified "

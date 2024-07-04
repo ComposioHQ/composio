@@ -80,7 +80,7 @@ class ComposioToolSet(WithLogger):
                 env=workspace_env,
             )
         else:
-            self.logger.debug(f"Loading workspace wit ID: {workspace_id}")
+            self.logger.debug(f"Loading workspace with ID: {workspace_id}")
             self.workspace = WorkspaceFactory.get(
                 id=self.workspace_id,
             )

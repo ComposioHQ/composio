@@ -4,13 +4,13 @@ from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
-    ShellExecRequest,
+    ShellRequest,
     ShellExecResponse,
     exec_cmd,
 )
 
 
-class ScrollRequest(ShellExecRequest):
+class ScrollRequest(ShellRequest):
     direction: str = Field(
         ..., description="Direction to scroll, 'up' or 'down'", examples=["down", "up"]
     )

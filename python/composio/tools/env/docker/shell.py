@@ -79,7 +79,7 @@ class DockerShell(Shell):
             if pid[1] not in ("ps", "bash") and pid[0] not in self._bash_pids
         ]
 
-    def _read(self, timeout: float = 10.0) -> t.Dict:
+    def _read(self, timeout: float = 120.0) -> t.Dict:
         """Read data from a subprocess with a timeout."""
         stderr = t.cast(t.IO[str], self._process.stderr).fileno()
         stdout = t.cast(t.IO[str], self._process.stdout).fileno()

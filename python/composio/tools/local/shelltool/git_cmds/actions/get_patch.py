@@ -4,8 +4,8 @@ from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
-    ShellExecRequest,
     ShellExecResponse,
+    ShellRequest,
     exec_cmd,
 )
 from composio.tools.local.shelltool.utils import get_logger
@@ -15,7 +15,7 @@ LONG_TIMEOUT = 200
 logger = get_logger("workspace")
 
 
-class GetPatchRequest(ShellExecRequest):
+class GetPatchRequest(ShellRequest):
     new_file_path: t.List[str] = Field(
         default=[],
         description="Paths of the files newly created to be included in the patch.",
@@ -49,7 +49,7 @@ class GetPatchCmd(ExecuteCommand):
     _response_schema = GetPatchResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: ShellRequest, authorisation_data: dict
     ) -> ShellExecResponse:
         get_patch_request = t.cast(GetPatchRequest, request_data)
         new_files = " ".join(get_patch_request.new_file_path)

@@ -4,7 +4,7 @@ from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
-    ShellExecRequest,
+    ShellRequest,
     ShellExecResponse,
     exec_cmd,
 )
@@ -14,7 +14,7 @@ from composio.tools.local.shelltool.utils import get_logger
 logger = get_logger("workspace")
 
 
-class EditFileRequest(ShellExecRequest):
+class EditFileRequest(ShellRequest):
     start_line: int = Field(
         ..., description="The line number at which the file edit will start"
     )

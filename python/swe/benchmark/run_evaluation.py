@@ -2,6 +2,7 @@
 import argparse
 import datetime
 import logging
+from composio_crewai import ComposioToolSet
 
 from composio_swe.config.constants import KEY_API_KEY
 from composio_swe.config.context import Context, set_context
@@ -65,18 +66,18 @@ def build_issue_description(hints, problem_statement, include_hints):
     return tmpl
 
 
-def get_workspace_from_repo_map(
-    composio_client, repo, repo_to_workspace_map, base_commit
-):
+def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
     workspace_id = repo_to_workspace_map.get(repo)
     if not workspace_id or not workspace_id.strip():
         return None
+    composio_toolset = ComposioToolSet(
+        workspace_env=ExecEnv.DOCKER, workspace_id=workspace_id
+    )
     print("Resetting repository to base commit")
     workspace_id = repo_to_workspace_map[repo]
-    composio_client.actions.execute(
+    composio_toolset.execute_action(
         action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
-            "workspace_id": workspace_id,
             "repo_name": repo,
             "just_reset": True,
             "commit_id": base_commit,
@@ -85,31 +86,27 @@ def get_workspace_from_repo_map(
     return workspace_id
 
 
-def create_workspace_from_image(
-    composio_client, repo, repo_to_image_id_map, base_commit
-):
+def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     if not repo_to_image_id_map.get(repo):
         logger.info("repo: %s not found in repo-to-image-map", repo)
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=ExecutionEnvironment.DOCKER,
-        local_docker_args=LocalDockerArgumentsModel(
-            image_name=repo_to_image_id_map[repo]
-        ),
+    workspace = WorkspaceFactory.new(
+        env=ExecEnv.DOCKER, image=repo_to_image_id_map[repo]
     )
+    workspace_id = workspace.id
     workspace_creation_time = datetime.datetime.now() - start_time
+    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
         workspace_id,
         workspace_creation_time,
     )
     logger.info("Resetting repository to base commit")
-    composio_client.actions.execute(
-        action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+    composio_toolset.execute_action(
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
-            "workspace_id": workspace_id,
             "repo_name": repo,
             "just_reset": True,
             "commit_id": base_commit,
@@ -118,52 +115,55 @@ def create_workspace_from_image(
     return workspace_id
 
 
-def build_image_and_container(
-    composio_client, repo, repo_to_workspace_map, base_commit
-):
+def build_image_and_container(repo, repo_to_workspace_map, base_commit):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
-    workspace_id = WorkspaceFactory.get_instance().create_workspace(
-        workspace_type=ExecutionEnvironment.DOCKER,
-        local_docker_args=LocalDockerArgumentsModel(image_name="sweagent/swe-agent"),
+    workspace = WorkspaceFactory.new(
+        env=ExecEnv.DOCKER,
+        image="sweagent/swe-agent",
     )
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
-        workspace_id,
+        workspace.id,
         workspace_creation_time,
     )
+    composio_toolset = ComposioToolSet(workspace_id=workspace.id)
 
     start_time = datetime.datetime.now()
-    composio_client.actions.execute(
+    clone_resp = composio_toolset.execute_action(
         entity_id="123",
-        action=Action.CMDMANAGERTOOL_GITHUBCLONECMD,
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
-            "workspace_id": workspace_id,
             "repo_name": repo,
             "commit_id": base_commit,
         },
     )
+    if (
+        isinstance(clone_resp, dict)
+        and "status" in clone_resp
+        and clone_resp["status"] == "failure"
+    ):
+        raise Exception(clone_resp["details"])
     git_clone_time = datetime.datetime.now() - start_time
     logger.info("git clone completed, time taken: %s", git_clone_time)
-    repo_to_workspace_map[repo] = workspace_id
-    return workspace_id
+    repo_to_workspace_map[repo] = workspace.id
+    return workspace.id
 
 
 def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
-    composio_client = Composio()
     workspace_id = get_workspace_from_repo_map(
-        composio_client, repo, repo_to_workspace_map, base_commit
+        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     )
     if workspace_id:
         return workspace_id
     workspace_id = create_workspace_from_image(
-        composio_client, repo, repo_to_image_id_map, base_commit
+        repo=repo, repo_to_image_id_map=repo_to_image_id_map, base_commit=base_commit
     )
     if workspace_id:
         return workspace_id
     return build_image_and_container(
-        composio_client, repo, repo_to_workspace_map, base_commit
+        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     )
 
 
@@ -228,12 +228,16 @@ def run(test_split, print_only=False, include_hints=True):
             set_context(ctx)
 
             args = SWEArgs(agent_logs_dir=ctx.agent_logs_dir)
-            coder = CrewaiAgent(args)
+            coder = CrewaiAgent(args=args, workspace_id=workspace_id)
             coder.setup_and_solve(
                 issue_config=ctx.issue_config, workspace_id=workspace_id
             )
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise e
 
 
 if __name__ == "__main__":

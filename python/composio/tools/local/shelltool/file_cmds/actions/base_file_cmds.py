@@ -4,13 +4,13 @@ from pydantic import Field, field_validator
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
-    ShellExecRequest,
+    ShellRequest,
     ShellExecResponse,
     exec_cmd,
 )
 
 
-class GoToRequest(ShellExecRequest):
+class GoToRequest(ShellRequest):
     line_number: int = Field(
         ..., description="The line number to which the view should be moved."
     )
@@ -49,7 +49,7 @@ class GoToLineNumInOpenFile(ExecuteCommand):
         return GoToResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
-class CreateFileRequest(ShellExecRequest):
+class CreateFileRequest(ShellRequest):
     file_name: str = Field(
         ...,
         description="The name of the new file to be created within the shell session",
@@ -96,7 +96,7 @@ class CreateFileCmd(ExecuteCommand):
         return CreateFileResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
-class OpenCmdRequest(ShellExecRequest):
+class OpenCmdRequest(ShellRequest):
     file_name: str = Field(..., description="file path to open in the editor")
     line_number: int = Field(
         default=0,

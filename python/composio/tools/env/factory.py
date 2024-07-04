@@ -56,12 +56,12 @@ class WorkspaceFactory:
         return workspace
 
     @classmethod
-    def new(cls, env: ExecEnv) -> Workspace:
+    def new(cls, env: ExecEnv, **kwargs: t.Any) -> Workspace:
         """Create a new workspace."""
         if env == ExecEnv.HOST:
-            workspace = HostWorkspace()
+            workspace = HostWorkspace(**kwargs)
         elif env == ExecEnv.DOCKER:
-            workspace = DockerWorkspace()
+            workspace = DockerWorkspace(**kwargs)
         else:
             raise ComposioSDKError(
                 f"Workspace environment `{env}` is not supported currently!"

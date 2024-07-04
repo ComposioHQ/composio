@@ -2,8 +2,8 @@ from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
-    ShellExecRequest,
     ShellExecResponse,
+    ShellRequest,
     exec_cmd,
 )
 from composio.tools.local.shelltool.utils import (
@@ -17,7 +17,7 @@ LONG_TIMEOUT = 200
 logger = get_logger("workspace")
 
 
-class GithubCloneRequest(ShellExecRequest):
+class GithubCloneRequest(ShellRequest):
     repo_name: str = Field(
         ...,
         description="github repository to clone",
@@ -49,7 +49,7 @@ class GithubCloneCmd(ExecuteCommand):
     _response_schema = GithubCloneResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: ShellRequest, authorisation_data: dict
     ) -> ShellExecResponse:
         request_data = GithubCloneRequest(**request_data.model_dump())
         if request_data.just_reset:
