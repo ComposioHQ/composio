@@ -1,5 +1,5 @@
 <p>
-  <a href="">EN</a> | <a href="">CN</a>
+  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">CN</a>
 </p>
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
