@@ -2,11 +2,23 @@ import json
 import logging
 import os
 import subprocess
-from logging import INFO, Logger, DEBUG, ERROR
+from logging import DEBUG, ERROR, INFO, Logger
 from traceback import format_exc
 
-from swebench_docker.constants import KEY_INSTANCE_ID, PatchType, APPLY_PATCH_FAIL, APPLY_PATCH_PASS, TESTS_FAILED, \
-    TESTS_PASSED, TESTS_TIMEOUT, TESTS_ERROR, KEY_MODEL, MAP_VERSION_TO_INSTALL, INSTALL_FAIL
+from swebench_docker.constants import (
+    APPLY_PATCH_FAIL,
+    APPLY_PATCH_PASS,
+    INSTALL_FAIL,
+    KEY_INSTANCE_ID,
+    KEY_MODEL,
+    MAP_VERSION_TO_INSTALL,
+    PatchType,
+    TESTS_ERROR,
+    TESTS_FAILED,
+    TESTS_PASSED,
+    TESTS_TIMEOUT,
+)
+
 
 logger_taskenv = logging.getLogger("taskenv")
 
@@ -22,14 +34,13 @@ class LogWrapper:
         self.logger = logger
         self.prefix = prefix
 
-    def write(
-            self,
-            message: str,
-            mode: str = "a",
-            level: int = INFO):
+    def write(self, message: str, mode: str = "a", level: int = INFO):
         with open(self.log_file, mode) as f:
-            log = f"{self.prefix} {message} \n" if self.prefix \
-                is not None else f"{message} \n"
+            log = (
+                f"{self.prefix} {message} \n"
+                if self.prefix is not None
+                else f"{message} \n"
+            )
             f.write(log)
         if self.logger is not None:
             self.logger.log(level, message)
@@ -54,7 +65,9 @@ class ExecWrapper:
             else:
                 self.logger.write(f"Command: {cmd}", level=DEBUG)
             combined_args = {**self.subprocess_args, **kwargs}
-            self.logger.write(f"Subprocess args: {json.dumps(combined_args)}", level=DEBUG)
+            self.logger.write(
+                f"Subprocess args: {json.dumps(combined_args)}", level=DEBUG
+            )
             output = subprocess.run(cmd, **combined_args)
             self.logger.write(f"Std. Output:\n{output.stdout}", level=DEBUG)
             if output.stderr:
@@ -72,7 +85,6 @@ class ExecWrapper:
 
 
 class TaskEnvContextManager:
-
     def __init__(
         self,
         task_instance: dict,
@@ -82,7 +94,7 @@ class TaskEnvContextManager:
         log_suffix: str = None,
         timeout: int = None,
         is_eval: bool = True,
-        image_type: str = "conda"
+        image_type: str = "conda",
     ):
         self.instance_id = task_instance[KEY_INSTANCE_ID]
         self.instance = task_instance
@@ -107,8 +119,10 @@ class TaskEnvContextManager:
 
         self.log_file = os.path.join(log_dir, log_file_name)
         self.log = LogWrapper(
-            self.log_file, logger=logger_taskenv,
-            prefix=f"[{testbed_name}] [{self.instance_id}]")
+            self.log_file,
+            logger=logger_taskenv,
+            prefix=f"[{testbed_name}] [{self.instance_id}]",
+        )
 
         self.exec = ExecWrapper(
             subprocess_args={
@@ -142,9 +156,7 @@ class TaskEnvContextManager:
         self.log.write(enter_msg, mode="w")
 
         self.exec(
-            f"git config --global --add safe.directory {self.repo_dir}".split(
-                " "
-            )
+            f"git config --global --add safe.directory {self.repo_dir}".split(" ")
         )
         self.exec(
             f"git -c advice.detachedHead=false checkout {self.instance['base_commit']}".split(
@@ -152,7 +164,9 @@ class TaskEnvContextManager:
             )
         )
 
-        specifications = MAP_VERSION_TO_INSTALL[self.instance["repo"]][self.instance["version"]]
+        specifications = MAP_VERSION_TO_INSTALL[self.instance["repo"]][
+            self.instance["version"]
+        ]
         if "pre_test" in specifications:
             for cmd_pre_install in specifications["pre_test"]:
                 self.log.write(f"Running pre-test command: {cmd_pre_install}")
@@ -167,7 +181,7 @@ class TaskEnvContextManager:
                     if out_pre_install.stderr:
                         f.write(f"Std. Error: {out_pre_install.stderr}\n")
                 if out_pre_install.returncode != 0:
-                    self.log.write(f"Pre-install setup failed", level=ERROR)
+                    self.log.write("Pre-install setup failed", level=ERROR)
                     with open(self.log_file, "a") as f:
                         f.write(f"\n{INSTALL_FAIL}\n")
                     return False
@@ -227,10 +241,19 @@ class TaskEnvContextManager:
             if patch_type != PatchType.PATCH_TEST.value:
                 self.exec("git restore .".split(" "))
                 # revert to the state of the repo before the patch was applied
-                output = self.exec(f"git apply {init_diff_patch_path}".split(), raise_error=False, check=False)
-                self.log.write(f"Output (git apply - revert to initial state): {output.stdout}")
-            apply_cmd = (f"patch -R --batch --fuzz=5 -p1 -i {patch_path}" if revert
-                         else f"patch --batch --fuzz=5 -p1 -i {patch_path}")
+                output = self.exec(
+                    f"git apply {init_diff_patch_path}".split(),
+                    raise_error=False,
+                    check=False,
+                )
+                self.log.write(
+                    f"Output (git apply - revert to initial state): {output.stdout}"
+                )
+            apply_cmd = (
+                f"patch -R --batch --fuzz=5 -p1 -i {patch_path}"
+                if revert
+                else f"patch --batch --fuzz=5 -p1 -i {patch_path}"
+            )
             out_patch = self.exec(apply_cmd.split(" "), raise_error=False, check=False)
 
         # TODO os.remove(patch_path)
@@ -244,12 +267,21 @@ class TaskEnvContextManager:
                 f.write(out_patch.stdout)
                 if out_patch.stderr:
                     f.write(out_patch.stderr)
-                if patch_type != PatchType.PATCH_TEST.value and "patching" in out_patch.stdout:
+                if (
+                    patch_type != PatchType.PATCH_TEST.value
+                    and "patching" in out_patch.stdout
+                ):
                     # Patch has been partially applied so we should revert it.
                     self.exec("git restore .".split(" "))
                     # revert to the state of the repo before the patch was applied
-                    output = self.exec(f"git apply {init_diff_patch_path}".split(), raise_error=False, check=False)
-                    self.log.write(f"Output (git apply - revert to initial state): {output.stdout}")
+                    output = self.exec(
+                        f"git apply {init_diff_patch_path}".split(),
+                        raise_error=False,
+                        check=False,
+                    )
+                    self.log.write(
+                        f"Output (git apply - revert to initial state): {output.stdout}"
+                    )
             return False
 
         # Patch apply succeeded
@@ -269,7 +301,9 @@ class TaskEnvContextManager:
         """
         try:
             # Run test command for task instance
-            specifications = MAP_VERSION_TO_INSTALL[self.instance["repo"]][self.instance["version"]]
+            specifications = MAP_VERSION_TO_INSTALL[self.instance["repo"]][
+                self.instance["version"]
+            ]
             if "image" in specifications and specifications["image"] == "python":
                 test_cmd = instance["test_cmd"]
             else:
@@ -289,7 +323,7 @@ class TaskEnvContextManager:
                 else:
                     f.write(f"\n{TESTS_PASSED}\n")
 
-            self.log.write(f"Test script run successful")
+            self.log.write("Test script run successful")
             return True
         except subprocess.TimeoutExpired:
             # Test command run timed out
@@ -299,7 +333,7 @@ class TaskEnvContextManager:
             return False
         except Exception as e:
             # Test command run failed
-            self.log.write(f"Test script run failed", level=ERROR)
+            self.log.write("Test script run failed", level=ERROR)
             with open(self.log_file, "a") as f:
                 f.write(f"{TESTS_ERROR}: {e}")
             return False

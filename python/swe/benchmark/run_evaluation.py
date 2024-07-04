@@ -1,28 +1,31 @@
 # pylint: disable=logging-fstring-interpolation
 
 import argparse
+import asyncio
 import datetime
 import logging
-import asyncio
-from pathlib import Path
 import os
-from composio.utils.logging import WithLogger
+from pathlib import Path
 
-from composio_swe.config.constants import KEY_API_KEY
-from composio_swe.config.context import Context, set_context
+from composio_swe.config.constants import (
+    KEY_API_KEY,
+    LOCAL_CACHE_DIRECTORY_NAME,
+    LOGS_DIR,
+)
+from composio_swe.config.context import Context, get_context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
-from composio_swe.config.context import get_context
-from composio_swe.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
 from rich.logging import RichHandler
 
 from composio import Action, Composio
-from swe.swe_bench_docker.evaulate_on_docker import evaluate, EvaluateOnDockerArgs
+from composio.utils.logging import WithLogger
 from composio.workspace.docker_workspace import LocalDockerArgumentsModel
 from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
-from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
+from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
-from swe.benchmark.get_score_card import generate_scorecard, MODEL_GPT4
+from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
+from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
+
 
 # get logger
 LOGGER_NAME = "local_workspace"
@@ -284,7 +287,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--test_split",
         type=str,
-        default="1:10",
+        default="20:40",
         help="Test split range (e.g., 1:10)",
     )
     parser.add_argument(

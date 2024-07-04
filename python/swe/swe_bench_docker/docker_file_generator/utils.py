@@ -1,22 +1,23 @@
+# noqa: E203
+
 import json
 import os
 import re
-import subprocess
 from datetime import datetime
 
 from swe.swe_bench_docker.docker_file_generator.const import (
-    MAP_REPO_TO_REQS_PATHS,
     MAP_REPO_TO_ENV_YML_PATHS,
-    SWE_BENCH_URL_RAW,
+    MAP_REPO_TO_REQS_PATHS,
     NON_TEST_EXTS,
+    SWE_BENCH_URL_RAW,
 )
 
 
 def get_environment_yml(
-        instance: dict,
-        env_name: str,
-        save_path: str = None,
-        python_version: str = None,
+    instance: dict,
+    env_name: str,
+    save_path: str = None,
+    python_version: str = None,
 ) -> str:
     """
     Get environment.yml for given task instance
@@ -34,7 +35,11 @@ def get_environment_yml(
     # Attempt to find environment.yml at each path based on task instance's repo
     path_worked = False
 
-    commit = 'environment_setup_commit' if 'environment_setup_commit' in instance else 'base_commit'
+    commit = (
+        "environment_setup_commit"
+        if "environment_setup_commit" in instance
+        else "base_commit"
+    )
     for req_path in MAP_REPO_TO_ENV_YML_PATHS[instance["repo"]]:
         reqs_url = os.path.join(
             SWE_BENCH_URL_RAW, instance["repo"], instance[commit], req_path
@@ -110,7 +115,11 @@ def get_requirements(instance: dict, save_path: str = None):
 
     # Attempt to find requirements.txt at each path based on task instance's repo
     path_worked = False
-    commit = 'environment_setup_commit' if 'environment_setup_commit' in instance else 'base_commit'
+    commit = (
+        "environment_setup_commit"
+        if "environment_setup_commit" in instance
+        else "base_commit"
+    )
 
     for req_path in MAP_REPO_TO_REQS_PATHS[instance["repo"]]:
         reqs_url = os.path.join(
@@ -140,7 +149,7 @@ def get_requirements(instance: dict, save_path: str = None):
 
         if line.strip().startswith("-r"):
             # Handle recursive requirements
-            file_name = line[len("-r"):].strip()
+            file_name = line[len("-r") :].strip()
             reqs_url = os.path.join(
                 SWE_BENCH_URL_RAW,
                 instance["repo"],
@@ -196,7 +205,7 @@ def get_test_directives(instance: dict) -> list:
         directives_transformed = []
         for d in directives:
             d = d[: -len(".py")] if d.endswith(".py") else d
-            d = d[len("tests/"):] if d.startswith("tests/") else d
+            d = d[len("tests/") :] if d.startswith("tests/") else d
             d = d.replace("/", ".")
             directives_transformed.append(d)
         directives = directives_transformed
@@ -220,7 +229,7 @@ def split_instances(input_list: list, n: int) -> list:
 
     for i in range(n):
         length = avg_length + 1 if i < remainder else avg_length
-        sublist = input_list[start: start + length]
+        sublist = input_list[start : start + length]
         result.append(sublist)
         start += length
 
@@ -240,7 +249,7 @@ def find_python_by_date(target_date, date_format="%Y%m%d"):
     import requests
 
     # Make web request to versions + date page
-    url = f"https://www.python.org/doc/versions/"
+    url = "https://www.python.org/doc/versions/"
     response = requests.get(url)
 
     # Look for all matches
@@ -275,7 +284,7 @@ class DotDict:
         return self.data.get(key)
 
 
-### MARK - Patch Correction
+# MARK - Patch Correction
 PATCH_PATTERN = re.compile(
     r"(?:diff[\w\_\.\ \/\-]+\n)?\-\-\-\s+a\/(?:.*?)\n\+\+\+\s+b\/(?:.*?)(?=diff\ |\-\-\-\ a\/|\Z)",
     re.DOTALL,
@@ -371,22 +380,23 @@ def has_attribute_or_import_error(log_before):
     """
     log_before = log_before.lower()
 
-    if any([x in log_before for x in ['attribute', 'import']]):
+    if any([x in log_before for x in ["attribute", "import"]]):
+
         def get_lines_with_word(text, target_word):
             # Function to extract line(s) that contains target_word
             text, target_word = text.lower(), target_word.lower()
-            lines, hits = text.split('\n')[::-1], []
+            lines, hits = text.split("\n")[::-1], []
             for line in lines:
                 if target_word in line:
                     hits.append(line)
             return hits
 
         # Get line with Attribute/Import error
-        lines_1 = get_lines_with_word(log_before, 'attribute')
-        lines_2 = get_lines_with_word(log_before, 'import')
+        lines_1 = get_lines_with_word(log_before, "attribute")
+        lines_2 = get_lines_with_word(log_before, "import")
         lines_1 = " ".join(lines_1)
         lines_2 = " ".join(lines_2)
 
-        if any([(x in lines_1 or x in lines_2) for x in ['error', 'fail']]):
+        if any([(x in lines_1 or x in lines_2) for x in ["error", "fail"]]):
             return True
     return False

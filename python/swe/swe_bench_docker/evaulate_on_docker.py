@@ -1,19 +1,23 @@
-import argparse
 import asyncio
 import hashlib
 import logging
 import os
 
-from swebench import get_eval_refs
 from pydantic import BaseModel, Field
+from swebench import get_eval_refs
 
 from swe.swe_bench_docker.docker_file_generator.const import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
-    KEY_PREDICTION, MAP_REPO_TO_TEST_FRAMEWORK,
+    KEY_PREDICTION,
+    MAP_REPO_TO_TEST_FRAMEWORK,
 )
 from swe.swe_bench_docker.docker_file_generator.run_docker import run_docker_evaluation
-from swe.swe_bench_docker.docker_file_generator.utils import get_instances, get_test_directives
+from swe.swe_bench_docker.docker_file_generator.utils import (
+    get_instances,
+    get_test_directives,
+)
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -22,7 +26,7 @@ logger = logging.getLogger("run_evaluation")
 
 
 def deterministic_hash(input_string: str, length: int = None):
-    input_bytes = input_string.encode('utf-8')
+    input_bytes = input_string.encode("utf-8")
     sha256_hash = hashlib.sha256(input_bytes)
     hex_digest = sha256_hash.hexdigest()
     if length is None:
@@ -39,7 +43,9 @@ def validate_predictions(predictions_path, tasks_ids):
     # Check that predictions are correctly formatted
     for pred in predictions:
         if any([x not in pred for x in [KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION]]):
-            raise ValueError(f"Every prediction must have {KEY_INSTANCE_ID}, {KEY_MODEL}, and {KEY_PREDICTION} fields")
+            raise ValueError(
+                f"Every prediction must have {KEY_INSTANCE_ID}, {KEY_MODEL}, and {KEY_PREDICTION} fields"
+            )
         if pred[KEY_INSTANCE_ID] not in tasks_ids:
             not_in_tasks.append(pred[KEY_INSTANCE_ID])
     # Check that instance IDs specified by predictions exist
@@ -51,9 +57,13 @@ def validate_predictions(predictions_path, tasks_ids):
         )
 
 
-async def run_docker_throttled(task_instance, namespace, log_dir, timeout, log_suffix, sem):
+async def run_docker_throttled(
+    task_instance, namespace, log_dir, timeout, log_suffix, sem
+):
     async with sem:
-        return await run_docker_evaluation(task_instance, namespace, log_dir, timeout, log_suffix)
+        return await run_docker_evaluation(
+            task_instance, namespace, log_dir, timeout, log_suffix
+        )
 
 
 async def evaluate(
@@ -108,23 +118,23 @@ async def evaluate(
         for p in predictions:
             log_file_name = f"{p[KEY_INSTANCE_ID]}.{p[KEY_MODEL]}.eval.log"
             if log_suffix:
-                log_file_name = f"{p[KEY_INSTANCE_ID]}.{p[KEY_MODEL]}.{log_suffix}.eval.log"
+                log_file_name = (
+                    f"{p[KEY_INSTANCE_ID]}.{p[KEY_MODEL]}.{log_suffix}.eval.log"
+                )
             log_file = os.path.join(log_dir, log_file_name)
             if not os.path.exists(log_file):
                 predictions_filtered.append(p)
         if len(predictions_filtered) == 0:
-            logger.info(f"All predictions already exist, skipping")
+            logger.info("All predictions already exist, skipping")
             return
         else:
             logger.info(
-                f"# of predictions to evaluate: {len(predictions_filtered)} " +
-                f"({len(predictions) - len(predictions_filtered)} already evaluated)"
+                f"# of predictions to evaluate: {len(predictions_filtered)} "
+                + f"({len(predictions) - len(predictions_filtered)} already evaluated)"
             )
             predictions = predictions_filtered
     else:
-        logger.info(
-            f"# of predictions to evaluate: {len(predictions)}"
-        )
+        logger.info(f"# of predictions to evaluate: {len(predictions)}")
 
     task_instances = []
 
@@ -136,17 +146,19 @@ async def evaluate(
         test_directives = get_test_directives(task)
         test_cmd = f"{test_type} {' '.join(test_directives)}"
 
-        task_instances.append({
-            "repo": task["repo"],
-            "version": task["version"],
-            "base_commit": task["base_commit"],
-            KEY_INSTANCE_ID: prediction[KEY_INSTANCE_ID],
-            KEY_MODEL: prediction[KEY_MODEL],
-            KEY_PREDICTION: prediction[KEY_PREDICTION],
-            "test_patch": task["test_patch"],
-            "test_directives": test_directives,
-            "test_cmd": test_cmd
-        })
+        task_instances.append(
+            {
+                "repo": task["repo"],
+                "version": task["version"],
+                "base_commit": task["base_commit"],
+                KEY_INSTANCE_ID: prediction[KEY_INSTANCE_ID],
+                KEY_MODEL: prediction[KEY_MODEL],
+                KEY_PREDICTION: prediction[KEY_PREDICTION],
+                "test_patch": task["test_patch"],
+                "test_directives": test_directives,
+                "test_cmd": test_cmd,
+            }
+        )
 
     task_instances = sorted(task_instances, key=lambda x: x[KEY_INSTANCE_ID])
 
@@ -154,7 +166,11 @@ async def evaluate(
     tasks = []
     for task_instance in task_instances:
         if task_instance[KEY_PREDICTION]:
-            tasks.append(run_docker_throttled(task_instance, namespace, log_dir, timeout, log_suffix, sem))
+            tasks.append(
+                run_docker_throttled(
+                    task_instance, namespace, log_dir, timeout, log_suffix, sem
+                )
+            )
         else:
             logger.info(f"[{task_instance[KEY_INSTANCE_ID]}] No prediction found.")
 
@@ -164,13 +180,23 @@ async def evaluate(
 class EvaluateOnDockerArgs(BaseModel):
     predictions_path: str = Field(..., description="Path to predictions file")
     log_dir: str = Field(..., description="Path to log directory")
-    swe_bench_tasks: str = Field(..., description="Path to dataset file or HF datasets name")
+    swe_bench_tasks: str = Field(
+        ..., description="Path to dataset file or HF datasets name"
+    )
     namespace: str = Field(default="aorwall", description="Docker repository namespace")
-    log_suffix: str = Field(default="", description="(Optional) Suffix to append to log file names")
-    skip_existing: bool = Field(default=False, description="(Optional) Skip existing logs")
-    timeout: int = Field(default=1800, description="(Optional) Timeout in seconds (default: 900)")
-    num_processes: int = Field(default=-1,
-                               description="(Optional) Number of processes to run in parallel (-1 for unlimited)")
+    log_suffix: str = Field(
+        default="", description="(Optional) Suffix to append to log file names"
+    )
+    skip_existing: bool = Field(
+        default=False, description="(Optional) Skip existing logs"
+    )
+    timeout: int = Field(
+        default=1800, description="(Optional) Timeout in seconds (default: 900)"
+    )
+    num_processes: int = Field(
+        default=-1,
+        description="(Optional) Number of processes to run in parallel (-1 for unlimited)",
+    )
 
 
 if __name__ == "__main__":
@@ -179,6 +205,6 @@ if __name__ == "__main__":
         docker_dir="./docker",
         swe_bench_tasks="princeton-nlp/SWE-bench_Lite",
         namespace="aorwall",
-        log_dir="~/.composio_coder/logs/logs/"
+        log_dir="~/.composio_coder/logs/logs/",
     )
     asyncio.run(evaluate(**args.dict()))

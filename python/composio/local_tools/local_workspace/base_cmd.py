@@ -1,11 +1,11 @@
 import typing as t
 from abc import ABC, abstractmethod
-from composio.utils.logging import WithLogger
 
 from pydantic import BaseModel, Field
 
 from composio.core.local import Action
 from composio.local_tools.local_workspace.utils import process_output
+from composio.utils.logging import WithLogger
 from composio.workspace.base_workspace import BaseCmdResponse, Workspace
 from composio.workspace.get_logger import get_logger
 from composio.workspace.workspace_factory import WorkspaceFactory

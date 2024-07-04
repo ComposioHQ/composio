@@ -1,13 +1,14 @@
 import asyncio
 import base64
 import json
-import tempfile
 import logging
-import subprocess
-import time
 import os
+import subprocess
+import tempfile
+import time
 
 from swe.swe_bench_docker.docker_file_generator.const import MAP_VERSION_TO_INSTALL
+
 
 logger = logging.getLogger(__name__)
 

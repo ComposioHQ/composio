@@ -1,30 +1,27 @@
 import logging
 import os
-import argparse
 from typing import List
-from pydantic import BaseModel, Field
 
-from jinja2 import FileSystemLoader, Environment
-from swebench import get_eval_refs, get_instances
+from jinja2 import Environment, FileSystemLoader
+from pydantic import BaseModel, Field
+from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
 
 from swe.swe_bench_docker.docker_file_generator.const import (
     MAP_REPO_TO_DEB_PACKAGES,
-    PYTHON_ENVIRONMENT_VERSIONS,
     PYENV_REPOS,
+    PYTHON_ENVIRONMENT_VERSIONS,
 )
 from swe.swe_bench_docker.docker_file_generator.utils import (
-    get_requirements,
     get_environment_yml,
+    get_requirements,
 )
 
-from swebench import MAP_VERSION_TO_INSTALL
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("build_docker")
 
 
 class DockerfileGenerator:
-
     def __init__(
         self,
         swe_bench_tasks: str,
@@ -57,14 +54,10 @@ class DockerfileGenerator:
         env = Environment(loader=FileSystemLoader("../templates"))
         # self.conda_instance_template = env.get_template(f"Dockerfile.conda_instance")
         # self.pyenv_instance_template = env.get_template(f"Dockerfile.pyenv_instance")
-        self.conda_testbed_template = env.get_template(f"Dockerfile.swe")
-        self.pyenv_testbed_template = env.get_template(f"Dockerfile.swe")
-        self.conda_repository_template = env.get_template(
-            f"Dockerfile.conda_repository"
-        )
-        self.pyenv_repository_template = env.get_template(
-            f"Dockerfile.pyenv_repository"
-        )
+        self.conda_testbed_template = env.get_template("Dockerfile.swe")
+        self.pyenv_testbed_template = env.get_template("Dockerfile.swe")
+        self.conda_repository_template = env.get_template("Dockerfile.conda_repository")
+        self.pyenv_repository_template = env.get_template("Dockerfile.pyenv_repository")
         self.instance_template = env.get_template("Dockerfile.pyenv_instance")
 
         if predictions_path:
@@ -113,7 +106,6 @@ class DockerfileGenerator:
 
                     testbeds.add(repo_name)
 
-
                 self.generate_testbed_dockerfile(
                     repo=repo,
                     version=version,
@@ -140,7 +132,7 @@ class DockerfileGenerator:
             print(f"docker build -t {image_name} -f {dockerfile} .")
 
     def create_makefile(self):
-        with open(f"Makefile", "w") as f:
+        with open("Makefile", "w") as f:
             f.write("all:\n")
             for dockerfile, image_name in self.dockerfiles_to_build:
                 f.write(f"\tdocker build -t {image_name} -f {dockerfile} .\n")
@@ -148,7 +140,6 @@ class DockerfileGenerator:
     def group_task_instances(self, task_instances):
         task_instances_grouped = {}
         for instance in task_instances:
-
             # Group task instances by repo, version
             repo = instance["repo"]
             version = instance["version"] if "version" in instance else None
@@ -191,7 +182,6 @@ class DockerfileGenerator:
         )
 
     def generate_pyenv_repository_dockerfile(self, repo: str, deb_packages: List[str]):
-
         repo_name = _repo_name(repo)
 
         base_image = f"{self.namespace}/{self.image_prefix}-pyenv:bookworm-slim"
@@ -252,7 +242,6 @@ class DockerfileGenerator:
         setup_ref_instance: dict,
         use_conda: bool = False,
     ):
-
         repo_name = _repo_name(repo)
         repo_image_name = repo.replace("/", "_")
 
@@ -304,7 +293,7 @@ class DockerfileGenerator:
                 conda_create_cmd = f"conda create -c conda-forge -n {env_name} python={specifications['python']} -y"
 
                 # Install dependencies
-                install_cmds.append(f"conda env update -f environment.yml")
+                install_cmds.append("conda env update -f environment.yml")
             else:
                 # Create environment from yml
                 path_to_env_file = get_environment_yml(
@@ -314,7 +303,7 @@ class DockerfileGenerator:
                     python_version=specifications["python"],
                 )
 
-                conda_create_cmd = f"conda env create -f environment.yml"
+                conda_create_cmd = "conda env create -f environment.yml"
         elif use_conda:
             conda_create_cmd = f"conda create -n {env_name} python={specifications['python']} {pkgs} -y"
         else:
@@ -433,7 +422,9 @@ class DockerGeneratorArgs(BaseModel):
     namespace: str = Field(..., description="Docker repository namespace")
     prediction_path: str = Field(..., description="Path to predictions file")
     docker_dir: str = Field(..., description="Path to docker directory")
-    is_testbed: bool = Field(default=False, description="if dockerfile needs to be genrated for testbed")
+    is_testbed: bool = Field(
+        default=False, description="if dockerfile needs to be genrated for testbed"
+    )
 
 
 if __name__ == "__main__":
@@ -444,6 +435,10 @@ if __name__ == "__main__":
         docker_dir="/home/shubhra/work/composio/composio_sdk/python/swe/swe_bench_docker/docker/",
     )
     generator = DockerfileGenerator(
-        args.swe_bench_tasks_path, args.namespace, args.docker_dir, args.prediction_path, args.is_testbed
+        args.swe_bench_tasks_path,
+        args.namespace,
+        args.docker_dir,
+        args.prediction_path,
+        args.is_testbed,
     )
     generator.generate()
