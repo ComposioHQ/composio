@@ -10,7 +10,7 @@ from composio.tools.local.base import Action
 class ShellRequest(BaseModel):
     """Shell request abstraction."""
 
-    shell_id: t.Optional[str] = Field(
+    shell_id: str = Field(
         None,
         description=(
             "ID of the shell where this command will be executed, if not "
