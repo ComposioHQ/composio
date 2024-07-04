@@ -52,14 +52,14 @@ def get_score(logs_dir=None):
     ctx = get_context()
     if logs_dir is None:
         logs_dir = ctx.agent_logs_dir
-    prediction_patches_path = create_patches_file(logs_dir, DATASET_NAME)
+    prediction_patches_path, dataset_on_disk_path = create_patches_file(logs_dir, DATASET_NAME)
     print("logs dir: ", logs_dir)
     print("prediction_patches_path: ", prediction_patches_path)
     evaluate_args = EvaluateOnDockerArgs(
         predictions_path=str(prediction_patches_path),
         # docker_dir="./docker",
-        swe_bench_tasks=DATASET_NAME,
-        namespace="aorwall",
+        swe_bench_tasks=os.path.expanduser(dataset_on_disk_path),
+        namespace="techcomposio",
         log_dir=str(logs_dir),
     )
     asyncio.run(evaluate(**evaluate_args.model_dump()))
@@ -70,7 +70,7 @@ def get_score(logs_dir=None):
     generate_scorecard(
         predictions_dir=prediction_path_dir,
         log_dir=str(logs_dir),
-        swe_bench_path=f"{logs_dir}/dataset",
+        swe_bench_path=DATASET_NAME,
         model=MODEL_GPT4,
     )
 
@@ -298,13 +298,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gen_report",
         action="store_true",
-        default=False,
+        default=True,
         help="Generate a report after running evaluations",
     )
     parser.add_argument(
         "--logs_dir",
         type=str,
-        default=f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
+        default=f"~/.composio_coder/logs",
         help="Logs directory",
     )
 
@@ -316,6 +316,6 @@ if __name__ == "__main__":
         logs_dir.mkdir(parents=True)
 
     print("Starting evaluation with gen_report: ", args.gen_report)
-    run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
+    # run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
     if args.gen_report:
         get_score(args.logs_dir)

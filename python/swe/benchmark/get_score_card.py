@@ -46,12 +46,6 @@ def format_report(report):
 
 def get_cur_eval_refs(predictions_dir, swe_bench_path):
     eval_refs = get_eval_refs(str(swe_bench_path))
-    for k, v in eval_refs.items():
-        eval_refs[k] = {
-            KEY_INSTANCE_ID: v[KEY_INSTANCE_ID],
-            "FAIL_TO_PASS": json.loads(v["FAIL_TO_PASS"]),
-            "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"]),
-        }
     eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
     with open(eval_refs_json_path, "w", encoding="utf-8") as f:
         for key in eval_refs:
