@@ -2,6 +2,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -27,6 +28,9 @@ class GitRepoTree(ExecuteCommand):
     def execute(
         self, request_data: ShellExecRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        self._setup(request_data)
-        cmd = "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
-        return self._communicate(cmd, output_text=self._output_text)
+        output = exec_cmd(
+            cmd="git ls-tree -r HEAD --name-only > ./git_repo_tree.txt",
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])

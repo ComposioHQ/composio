@@ -1,11 +1,10 @@
-from typing import cast
-
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -36,18 +35,14 @@ class SearchDirCmd(ExecuteCommand):
     _response_schema = SearchDirResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: SearchDirRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(SearchDirRequest, request_data)
-        if not request_data.directory or not request_data.directory.strip():
-            raise ValueError(
-                "dir can not be null. Give a directory-name in which to search"
-            )
-        self._setup(request_data)
-        full_command = (
-            f"search_dir '{request_data.search_term}' {request_data.directory}"
+        output = exec_cmd(
+            cmd=f"search_dir '{request_data.search_term}' {request_data.directory}",
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
         )
-        return self._communicate(full_command)
+        return SearchDirResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
 class SearchFileRequest(ShellExecRequest):
@@ -72,18 +67,14 @@ class SearchFileCmd(ExecuteCommand):
     _response_schema = SearchFileResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: SearchFileRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(SearchFileRequest, request_data)
-        if not request_data.file_name or not request_data.file_name.strip():
-            raise ValueError(
-                "file-name can not be null. Give a file-name in which to search"
-            )
-        self._setup(request_data)
-        full_command = (
-            f"search_file '{request_data.search_term}' {request_data.file_name}"
+        output = exec_cmd(
+            cmd=f"search_file '{request_data.search_term}' {request_data.file_name}",
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
         )
-        return self._communicate(full_command)
+        return SearchFileResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
 class FindFileRequest(ShellExecRequest):
@@ -117,15 +108,11 @@ class FindFileCmd(ExecuteCommand):
     _response_schema = FindFileResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: FindFileRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(FindFileRequest, request_data)
-        if not request_data.file_name or not request_data.file_name.strip():
-            raise ValueError("file-name can not be null. Give a file-name to find")
-        if not request_data.dir or not request_data.dir.strip():
-            raise ValueError(
-                "directory in which file-name needs to be searched cant be empty. Give a directory name"
-            )
-        self._setup(request_data)
-        full_command = f"find_file {request_data.file_name} {request_data.dir}"
-        return self._communicate(full_command)
+        output = exec_cmd(
+            cmd=f"find_file {request_data.file_name} {request_data.dir}",
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return FindFileResponse(stdout=output["stdout"], stderr=output["stderr"])

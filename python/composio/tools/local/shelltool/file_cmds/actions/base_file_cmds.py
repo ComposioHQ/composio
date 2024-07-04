@@ -1,11 +1,12 @@
 from typing import cast
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 
 
@@ -38,12 +39,14 @@ class GoToLineNumInOpenFile(ExecuteCommand):
     _response_schema = GoToResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: GoToRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(GoToRequest, request_data)
-        self._setup(request_data)
-        cmd = f"goto {str(request_data.line_number)}"
-        return self._communicate(cmd)
+        output = exec_cmd(
+            cmd=f"goto {str(request_data.line_number)}",
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return GoToResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
 class CreateFileRequest(ShellExecRequest):
@@ -51,6 +54,15 @@ class CreateFileRequest(ShellExecRequest):
         ...,
         description="The name of the new file to be created within the shell session",
     )
+
+    @field_validator("file_name")
+    @classmethod
+    def validate_file_name(cls, v: str) -> str:
+        if v.strip() == "":
+            raise ValueError("File name cannot be empty or just whitespace")
+        if v in (".", ".."):
+            raise ValueError('File name cannot be "." or ".."')
+        return v
 
 
 class CreateFileResponse(ShellExecResponse):
@@ -74,21 +86,14 @@ class CreateFileCmd(ExecuteCommand):
     _response_schema = CreateFileResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: CreateFileRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(CreateFileRequest, request_data)
-        self._setup(request_data)
-        if not self.validate_file_name(request_data.file_name):
-            return CreateFileResponse(
-                output="Exception: file-name can not be empty", return_code=1
-            )
-        cmd = f"create {str(request_data.file_name)}"
-        return self._communicate(cmd)
-
-    def validate_file_name(self, file_name):
-        if file_name is None or file_name.strip() == "":
-            return False
-        return True
+        output = exec_cmd(
+            cmd=f"create {str(request_data.file_name)}",
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return CreateFileResponse(stdout=output["stdout"], stderr=output["stderr"])
 
 
 class OpenCmdRequest(ShellExecRequest):
@@ -119,11 +124,14 @@ class OpenFile(ExecuteCommand):
     _response_schema = OpenCmdResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: OpenCmdRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(OpenCmdRequest, request_data)
-        self._setup(request_data)
         command = f"open {request_data.file_name}"
         if request_data.line_number != 0:
             command += f" {request_data.line_number}"
-        return self._communicate(command)
+        output = exec_cmd(
+            cmd=command,
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return OpenCmdResponse(stdout=output["stdout"], stderr=output["stderr"])

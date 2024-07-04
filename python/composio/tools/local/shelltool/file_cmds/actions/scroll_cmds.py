@@ -6,6 +6,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 
 
@@ -30,9 +31,13 @@ class Scroll(ExecuteCommand):
     _response_schema = ScrollResponse  # Reusing the response schema from SetCursors
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
-    ) -> ShellExecResponse:
+        self, request_data: ScrollRequest, authorisation_data: dict
+    ) -> ScrollResponse:
         request_data = cast(ScrollRequest, request_data)
-        self._setup(request_data)
         cmd = "scroll_down" if request_data.direction == "down" else "scroll_up"
-        return self._communicate(cmd)
+        output = exec_cmd(
+            cmd=cmd,
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return ScrollResponse(stdout=output["stdout"], stderr=output["stderr"])

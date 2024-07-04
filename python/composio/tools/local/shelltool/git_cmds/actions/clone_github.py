@@ -4,6 +4,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 from composio.tools.local.shelltool.utils import (
     get_logger,
@@ -51,20 +52,26 @@ class GithubCloneCmd(ExecuteCommand):
         self, request_data: ShellExecRequest, authorisation_data: dict
     ) -> ShellExecResponse:
         request_data = GithubCloneRequest(**request_data.model_dump())
-        self._setup(request_data)
         if request_data.just_reset:
-            return self.reset_to_base_commit(request_data)
-        return self._communicate(git_clone_cmd(request_data), timeout=LONG_TIMEOUT)
+            return self.reset_to_base_commit(request_data, authorisation_data)
+        output = exec_cmd(
+            cmd=git_clone_cmd(request_data),
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
 
     def reset_to_base_commit(
-        self, request_data: GithubCloneRequest
+        self, request_data: GithubCloneRequest, authorisation_data: dict
     ) -> ShellExecResponse:
         """
         Resets the repository to the specified base commit and cleans any untracked files or changes.
         Assumes the repository already exists as cloned by the execute function.
         """
         logger.info("Resetting repository to base commit inside reset_to_base_commit")
-        self._communicate(git_reset_cmd(request_data.commit_id), timeout=LONG_TIMEOUT)
-        return ShellExecResponse(
-            output="Repository reset to base commit", return_code=0
+        output = exec_cmd(
+            cmd=git_reset_cmd(request_data.commit_id),
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
         )
+        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])

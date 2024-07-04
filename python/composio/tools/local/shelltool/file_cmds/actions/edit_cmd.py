@@ -6,6 +6,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -49,9 +50,12 @@ class EditFile(ExecuteCommand):
     _response_schema = EditFileResponse
 
     def execute(
-        self, request_data: ShellExecRequest, authorisation_data: dict
+        self, request_data: EditFileRequest, authorisation_data: dict
     ) -> ShellExecResponse:
-        request_data = cast(EditFileRequest, request_data)
-        self._setup(request_data)
         full_command = f"edit {request_data.start_line}:{request_data.end_line} << end_of_edit\n{request_data.replacement_text}\nend_of_edit"
-        return self._communicate(full_command)
+        output = exec_cmd(
+            cmd=full_command,
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return EditFileResponse(stdout=output["stdout"], stderr=output["stderr"])

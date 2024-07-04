@@ -6,6 +6,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ExecuteCommand,
     ShellExecRequest,
     ShellExecResponse,
+    exec_cmd,
 )
 from composio.tools.local.shelltool.utils import get_logger
 
@@ -51,10 +52,14 @@ class GetPatchCmd(ExecuteCommand):
         self, request_data: ShellExecRequest, authorisation_data: dict
     ) -> ShellExecResponse:
         get_patch_request = t.cast(GetPatchRequest, request_data)
-        self._setup(request_data)
         new_files = " ".join(get_patch_request.new_file_path)
         cmd_list = ["git add -u"]
         if len(get_patch_request.new_file_path) > 0:
             cmd_list = [f"git add {new_files}", "git add -u"]
         cmd_list.append("git diff --cached")
-        return self._communicate(" && ".join(cmd_list))
+        output = exec_cmd(
+            cmd=" && ".join(cmd_list),
+            authorisation_data=authorisation_data,
+            shell_id=request_data.shell_id,
+        )
+        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
