@@ -1,0 +1,53 @@
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Virtual environment
+env/
+venv/
+myenv/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
+
+# Credentials
+credentials.json
+token.json
+
+# Log files
+*.log
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python distribution
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Configurations
+*.config
+config.json

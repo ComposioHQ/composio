@@ -1,0 +1,15 @@
+{
+        "account_id": "",
+        
+        "COMPOSIO_API_KEY":"",
+        "google_calendar": {
+            "Appname" : "GOOGLECALENDAR",
+            "client_id": "*******",
+            "client_secret": "*******",
+            "api_key": "",
+            "headers": {"Authorization":""}
+
+        },
+        "Event_BOT": ""
+
+}
