@@ -24,7 +24,7 @@ class CrewaiAgent(BaseSWEAgent):
             apps=[
                 App.SEARCHTOOL,
                 App.GITCMDTOOL,
-                App.FILETOOL,
+                App.FILEEDITTOOL,
                 App.HISTORYFETCHERTOOL,
             ]
         )
