@@ -3,8 +3,9 @@ Camel tool spec.
 """
 
 import typing as t
-
+# pylint: disable=E0611
 from camel.functions import OpenAIFunction
+# pylint: disable=E0611
 
 from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
@@ -161,7 +162,8 @@ class ComposioToolSet(BaseComposioToolSet):
                             exclude_none=True,
                         )
                     ),
-                ).model_dump()
+                ).model_dump(),
+                entity_id=entity_id
             )
             for schema in self.get_action_schemas(actions=actions)
         ]
@@ -188,7 +190,8 @@ class ComposioToolSet(BaseComposioToolSet):
                             exclude_none=True,
                         )
                     ),
-                ).model_dump()
+                ).model_dump(),
+                entity_id=entity_id
             )
             for schema in self.get_action_schemas(apps=apps, tags=tags)
         ]

@@ -1,3 +1,4 @@
+# pylint: disable=E0611
 from camel.agents import ChatAgent
 from camel.configs import ChatGPTConfig
 from camel.messages import BaseMessage
@@ -6,6 +7,7 @@ from camel.types import ModelPlatformType, ModelType
 from camel.utils import print_text_animated
 from colorama import Fore
 from composio_camel import Action, ComposioToolSet
+# pylint: enable=E0611
 
 
 composio_toolset = ComposioToolSet()
@@ -45,13 +47,12 @@ agent.reset()
 
 
 # set up agent
-
-prompt = (
+PROMPT = (
     "I have craeted a new Github Repo,"
     "Please star my github repository: camel-ai/camel"
 )
-user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)
-print(Fore.YELLOW + f"user prompt:\n{prompt}\n")
+user_msg = BaseMessage.make_user_message(role_name="User", content=PROMPT)
+print(Fore.YELLOW + f"user prompt:\n{PROMPT}\n")
 
 response = agent.step(user_msg)
 for msg in response.msgs:
