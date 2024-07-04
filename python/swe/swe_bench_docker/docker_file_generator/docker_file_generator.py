@@ -59,6 +59,8 @@ class DockerfileGenerator:
         self.conda_repository_template = env.get_template("Dockerfile.conda_repository")
         self.pyenv_repository_template = env.get_template("Dockerfile.pyenv_repository")
         self.instance_template = env.get_template("Dockerfile.pyenv_instance")
+        script_dir = os.path.join(os.path.dirname(__file__), '../templates')
+        self.getconda_path = os.path.join(script_dir, 'getconda.sh')
 
         if predictions_path:
             predictions = get_instances(predictions_path)
@@ -99,10 +101,10 @@ class DockerfileGenerator:
                     if repo in MAP_REPO_TO_DEB_PACKAGES:
                         deb_packages = MAP_REPO_TO_DEB_PACKAGES[repo]
 
-                    if use_conda:
-                        self.generate_conda_repository_dockerfile(repo, deb_packages)
-                    else:
-                        self.generate_pyenv_repository_dockerfile(repo, deb_packages)
+                    # if use_conda:
+                    #     self.generate_conda_repository_dockerfile(repo, deb_packages)
+                    # else:
+                    #     self.generate_pyenv_repository_dockerfile(repo, deb_packages)
 
                     testbeds.add(repo_name)
 
@@ -248,6 +250,7 @@ class DockerfileGenerator:
         env_name = f"{repo_name}__{version}"
 
         test_bed_dir = f"{self.docker_dir}/{repo_name}/{version}"
+        requirements_path = f"./swe_bench"
 
         environment_setup_commit = setup_ref_instance.get(
             "environment_setup_commit", setup_ref_instance["base_commit"]
@@ -349,6 +352,7 @@ class DockerfileGenerator:
             path_to_reqs=path_to_reqs,
             environment_setup_commit=environment_setup_commit,
             path_to_env_file=path_to_env_file,
+            getconda_script_path=self.getconda_path,
         )
 
         testbed_dir = f"{self.docker_dir}/{repo_name}/{version}"
