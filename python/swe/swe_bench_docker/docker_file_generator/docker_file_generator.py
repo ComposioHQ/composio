@@ -51,7 +51,7 @@ class DockerfileGenerator:
             ),
         ]
 
-        env = Environment(loader=FileSystemLoader("../templates"))
+        env = Environment(loader=FileSystemLoader("swe_bench_docker/templates"))
         # self.conda_instance_template = env.get_template(f"Dockerfile.conda_instance")
         # self.pyenv_instance_template = env.get_template(f"Dockerfile.pyenv_instance")
         self.conda_testbed_template = env.get_template("Dockerfile.swe")
@@ -60,7 +60,9 @@ class DockerfileGenerator:
         self.pyenv_repository_template = env.get_template("Dockerfile.pyenv_repository")
         self.instance_template = env.get_template("Dockerfile.pyenv_instance")
         script_dir = os.path.join(os.path.dirname(__file__), '../templates')
-        self.getconda_path = os.path.join(script_dir, 'getconda.sh')
+        getconda_path = os.path.join(script_dir, 'getconda.sh')
+        self.getconda_path = os.path.relpath(script_dir, getconda_path)
+
 
         if predictions_path:
             predictions = get_instances(predictions_path)
@@ -94,7 +96,7 @@ class DockerfileGenerator:
 
                 specifications = MAP_VERSION_TO_INSTALL[repo][version]
 
-                use_conda = repo not in PYENV_REPOS
+                # use_conda = repo not in PYENV_REPOS
 
                 if repo_name not in testbeds:
                     deb_packages = None
@@ -108,12 +110,11 @@ class DockerfileGenerator:
 
                     testbeds.add(repo_name)
 
-                self.generate_testbed_dockerfile(
+                self.generate_swe_dockerfile(
                     repo=repo,
                     version=version,
                     setup_ref_instance=instances[0],
                     specifications=specifications,
-                    use_conda=use_conda,
                 )
                 for each_instance in instances:
                     if (
@@ -236,13 +237,13 @@ class DockerfileGenerator:
 
         print(f"docker-compose.yml generated at: {docker_compose_path}")
 
-    def generate_testbed_dockerfile(
+    def generate_swe_dockerfile(
         self,
         repo: str,
         version: str,
         specifications: dict,
         setup_ref_instance: dict,
-        use_conda: bool = False,
+        use_conda: bool = True,
     ):
         repo_name = _repo_name(repo)
         repo_image_name = repo.replace("/", "_")
@@ -250,7 +251,6 @@ class DockerfileGenerator:
         env_name = f"{repo_name}__{version}"
 
         test_bed_dir = f"{self.docker_dir}/{repo_name}/{version}"
-        requirements_path = f"./swe_bench"
 
         environment_setup_commit = setup_ref_instance.get(
             "environment_setup_commit", setup_ref_instance["base_commit"]
@@ -275,7 +275,140 @@ class DockerfileGenerator:
             conda_create_cmd = (
                 f"conda create -n {env_name} python={specifications['python']} -y"
             )
+            path_to_reqs = get_requirements(setup_ref_instance, save_path=test_bed_dir)
 
+            if specifications["python"] == "3.5":
+                install_cmds.append(
+                    "pip install --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host pypi.org -r requirements.txt"
+                )
+            else:
+                install_cmds.append("pip install -r requirements.txt")
+        elif pkgs == "environment.yml":
+            # if not use_conda:
+            #    raise ValueError(f"Can't create non conda docker image with environment.yml set")
+
+            if "no_use_env" in specifications and specifications["no_use_env"]:
+                # Create environment from yml
+                path_to_env_file = get_environment_yml(
+                    setup_ref_instance, env_name, save_path=test_bed_dir
+                )
+                conda_create_cmd = f"conda create -c conda-forge -n {env_name} python={specifications['python']} -y"
+
+                # Install dependencies
+                install_cmds.append("conda env update -f environment.yml")
+            else:
+                # Create environment from yml
+                path_to_env_file = get_environment_yml(
+                    setup_ref_instance,
+                    env_name,
+                    save_path=test_bed_dir,
+                    python_version=specifications["python"],
+                )
+
+                conda_create_cmd = "conda env create -f environment.yml"
+        elif use_conda:
+            conda_create_cmd = f"conda create -n {env_name} python={specifications['python']} {pkgs} -y"
+        else:
+            conda_create_cmd = None
+            pip_packages.extend(pkgs.split())
+
+        # Install additional packages if specified
+        if pip_packages:
+            pip_packages = " ".join(pip_packages)
+            install_cmds.append(f"pip install {pip_packages}")
+
+        if "install" in specifications and (
+            "instance_image" not in specifications
+            or not specifications["instance_image"]
+        ):
+            install_cmds.append(specifications["install"])
+
+        repo_name = _repo_name(repo)
+
+        base_image = (
+            f"{self.namespace}/{self.image_prefix}-{repo_image_name}:bookworm-slim"
+        )
+        pyenv_image = f"{self.namespace}/swe-bench-pyenvs:bookworm-slim"
+
+        python_version = specifications["python"]
+        if use_conda:
+            template = self.conda_testbed_template
+        else:
+            python_version = PYTHON_ENVIRONMENT_VERSIONS[python_version]
+            template = self.pyenv_testbed_template
+
+        dockerfile_content = template.render(
+            base_image=base_image,
+            pyenv_image=pyenv_image,
+            docker_dir=self.docker_dir,
+            repo_name=repo_name,
+            version=version,
+            testbed=repo_name + "__" + version,
+            python_version=python_version,
+            conda_create_cmd=conda_create_cmd,
+            pre_install_cmds=pre_install_cmds,
+            install_cmds=install_cmds,
+            path_to_reqs=path_to_reqs,
+            environment_setup_commit=environment_setup_commit,
+            path_to_env_file=path_to_env_file,
+            getconda_script_path=self.getconda_path,
+        )
+
+        testbed_dir = f"{self.docker_dir}/{repo_name}/{version}"
+        if not os.path.exists(testbed_dir):
+            os.makedirs(testbed_dir)
+
+        output_file = f"{testbed_dir}/Dockerfile"
+        with open(output_file, "w") as f:
+            f.write(dockerfile_content)
+
+        print(f"Dockerfile generated: {output_file}")
+
+        self.dockerfiles_to_build.append(
+            (
+                output_file,
+                f"{self.namespace}/{self.image_prefix}-{repo_image_name}-testbed:{version}",
+            )
+        )
+
+    def generate_testbed_dockerfile(
+        self,
+        repo: str,
+        version: str,
+        specifications: dict,
+        setup_ref_instance: dict,
+        use_conda: bool = False,
+    ):
+        repo_name = _repo_name(repo)
+        repo_image_name = repo.replace("/", "_")
+
+        env_name = f"{repo_name}__{version}"
+
+        test_bed_dir = f"{self.docker_dir}/{repo_name}/{version}"
+
+        environment_setup_commit = setup_ref_instance.get(
+            "environment_setup_commit", setup_ref_instance["base_commit"]
+        )
+
+        path_to_reqs = None
+        path_to_env_file = None
+        install_cmds = []
+
+        testbed_dir = f"{self.docker_dir}/{repo_name}/{version}"
+        if not os.path.exists(testbed_dir):
+            os.makedirs(testbed_dir)
+
+        pre_install_cmds = specifications.get("pre_install", None)
+
+        pip_packages = specifications.get("pip_packages", [])
+
+        # Create conda environment according to install instructinos
+        pkgs = specifications["packages"] if "packages" in specifications else ""
+        if pkgs == "requirements.txt":
+            # Create environment
+            conda_create_cmd = (
+                f"conda create -n {env_name} python={specifications['python']} -y"
+            )
             path_to_reqs = get_requirements(setup_ref_instance, save_path=test_bed_dir)
 
             if specifications["python"] == "3.5":
@@ -436,7 +569,7 @@ if __name__ == "__main__":
         swe_bench_tasks_path="princeton-nlp/SWE-bench_Lite",
         namespace="techcomposio",
         prediction_path="",
-        docker_dir="/home/shubhra/work/composio/composio_sdk/python/swe/swe_bench_docker/docker/",
+        docker_dir="./swe_bench_docker/docker",
     )
     generator = DockerfileGenerator(
         args.swe_bench_tasks_path,

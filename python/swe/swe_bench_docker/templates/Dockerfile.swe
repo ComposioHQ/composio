@@ -48,7 +48,12 @@ ENV REPO_DIR=/opt/{{ repo_name }}
 
 WORKDIR /opt/{{ repo_name }}
 
-RUN git -c advice.detachedHead=false checkout 4a72da71001f154ea60906a2f74898d32b7322a7
+RUN git -c advice.detachedHead=false checkout {{ environment_setup_commit }}
+
+RUN {{conda_create_cmd}}
+SHELL ["conda", "run", "-n", "{{ testbed }}", "/bin/bash", "-c"]
+
+RUN pip install -U pip setuptools
 
 {% if pre_install_cmds -%}
 {% for cmd in pre_install_cmds -%}

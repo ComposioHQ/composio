@@ -5,12 +5,11 @@ import asyncio
 import datetime
 import logging
 import os
-from pathlib import Path
 from benchmark.constants import MODEL_GPT4
-from benchmark.get_score_card import generate_scorecard
-from benchmark.setup_test_bed import create_patches_file
 
 from composio_crewai import ComposioToolSet
+from pathlib import Path
+
 from composio_swe.config.constants import (
     KEY_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
@@ -23,6 +22,10 @@ from rich.logging import RichHandler
 
 from composio import Action, Composio
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+
+from composio.workspace.workspace_factory import WorkspaceFactory, WorkspaceType
+from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
+from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
@@ -52,13 +55,13 @@ def get_score(logs_dir=None):
     ctx = get_context()
     if logs_dir is None:
         logs_dir = ctx.agent_logs_dir
-    prediction_patches_path = create_patches_file(logs_dir, DATASET_NAME)
+    prediction_patches_path, dataset_on_disk_path = create_patches_file(logs_dir, DATASET_NAME)
     print("logs dir: ", logs_dir)
     print("prediction_patches_path: ", prediction_patches_path)
     evaluate_args = EvaluateOnDockerArgs(
         predictions_path=str(prediction_patches_path),
         # docker_dir="./docker",
-        swe_bench_tasks=DATASET_NAME,
+        swe_bench_tasks=os.path.expanduser(dataset_on_disk_path),
         namespace="aorwall",
         log_dir=str(logs_dir),
     )
@@ -70,7 +73,7 @@ def get_score(logs_dir=None):
     generate_scorecard(
         predictions_dir=prediction_path_dir,
         log_dir=str(logs_dir),
-        swe_bench_path=f"{logs_dir}/dataset",
+        swe_bench_path=DATASET_NAME,
         model=MODEL_GPT4,
     )
 
@@ -262,6 +265,7 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
 
             args = SWEArgs(agent_logs_dir=logs_dir or ctx.agent_logs_dir)
             coder = CrewaiAgent(args=args, workspace_id=workspace_id)
+
             coder.setup_and_solve(
                 issue_config=ctx.issue_config, workspace_id=workspace_id
             )
