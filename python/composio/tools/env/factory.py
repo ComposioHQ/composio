@@ -61,6 +61,8 @@ class WorkspaceFactory:
         if env == ExecEnv.HOST:
             workspace = HostWorkspace(**kwargs)
         elif env == ExecEnv.DOCKER:
+            logger = get_logger(name="workspace_factory_new")
+            logger.info(f"Creating docker workspace with kwargs: {kwargs}")
             workspace = DockerWorkspace(**kwargs)
         else:
             raise ComposioSDKError(

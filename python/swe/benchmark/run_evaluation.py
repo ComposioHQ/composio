@@ -23,8 +23,8 @@ from rich.logging import RichHandler
 
 from composio import Action, Composio
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from examples.crewai_agent import CrewaiAgent, SWEArgs
-from swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
+from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
+from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
 
 # get logger
@@ -123,7 +123,7 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
             "cmd": f"cd /{repo.split('/')[-1]}",
         },
     )
-    if isinstance(cd_resp, dict) and cd_resp["status"] == "failure":
+    if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
         raise Exception(f"Error changing directory: {cd_resp['details']}")
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
@@ -139,7 +139,7 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
             "commit_id": base_commit,
         },
     )
-    if isinstance(reset_resp, dict) and reset_resp["status"] == "failure":
+    if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
         raise Exception(f"Error resetting repository: {reset_resp['details']}")
     return workspace_id
 
@@ -203,7 +203,10 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
 
     issues = get_issues_dataset(test_split)
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {"django/django": "techcomposio/swe-bench-django_django"}
+    repo_to_image_id_map = {
+        "django/django": "techcomposio/swe-bench-django_django",
+        "astropy/astropy": "kaavee315/astropy_astropy",
+    }
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]

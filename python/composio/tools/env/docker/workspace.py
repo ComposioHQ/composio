@@ -4,6 +4,7 @@ Docker workspace.
 
 import os
 import typing as t
+from composio.utils.logging import get as get_logger
 
 from docker import DockerClient, from_env
 from docker.errors import DockerException
@@ -27,7 +28,10 @@ class DockerWorkspace(Workspace):
     def __init__(self, image: t.Optional[str] = None) -> None:
         """Create a docker workspace."""
         self.id = generate_id()
+        logger = get_logger(name="docker_workspace")
+        logger.info(f"Creating docker workspace with image: {image}")
         self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
+        logger.info(f"Using image: {self._image}")
         self._container = self.client.containers.run(
             image=self._image,
             command="/bin/bash -l -m",
