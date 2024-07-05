@@ -5,7 +5,9 @@ import asyncio
 import datetime
 import logging
 import os
-from benchmark.constants import MODEL_GPT4
+import docker
+from tqdm import tqdm
+from benchmark.constants import MODEL_GPT4, DEFAULT_IMAGE_NAME
 
 from composio_crewai import ComposioToolSet
 from pathlib import Path
@@ -115,36 +117,36 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    workspace = WorkspaceFactory.new(
-        env=ExecEnv.DOCKER, image=repo_to_image_id_map[repo]
-    )
+    image = repo_to_image_id_map[repo]
+    workspace = WorkspaceFactory.new(env=ExecEnv.DOCKER, image=image)
     workspace_id = workspace.id
     workspace_creation_time = datetime.datetime.now() - start_time
     composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-    cd_resp = composio_toolset.execute_action(
-        action=Action.SHELL_EXECUTE_COMMAND,
-        params={
-            "cmd": f"cd /{repo.split('/')[-1]}",
-        },
-    )
-    if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
-        raise Exception(f"Error changing directory: {cd_resp['details']}")
-    logger.info(
-        "workspace is created, workspace-id is: %s, creation time: %s",
-        workspace_id,
-        workspace_creation_time,
-    )
-    logger.info("Resetting repository to base commit")
-    reset_resp = composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
-        params={
-            "repo_name": repo,
-            "just_reset": True,
-            "commit_id": base_commit,
-        },
-    )
-    if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
-        raise Exception(f"Error resetting repository: {reset_resp['details']}")
+    if image == DEFAULT_IMAGE_NAME:
+        cd_resp = composio_toolset.execute_action(
+            action=Action.SHELL_EXECUTE_COMMAND,
+            params={
+                "cmd": f"cd /{repo.split('/')[-1]}",
+            },
+        )
+        if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
+            raise Exception(f"Error changing directory: {cd_resp['details']}")
+        logger.info(
+            "workspace is created, workspace-id is: %s, creation time: %s",
+            workspace_id,
+            workspace_creation_time,
+        )
+        logger.info("Resetting repository to base commit")
+        reset_resp = composio_toolset.execute_action(
+            action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+            params={
+                "repo_name": repo,
+                "just_reset": True,
+                "commit_id": base_commit,
+            },
+        )
+        if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
+            raise Exception(f"Error resetting repository: {reset_resp['details']}")
     return workspace_id
 
 
@@ -200,6 +202,46 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     )
 
 
+def check_and_pull_image(image_name):
+    """
+    Check if a Docker image exists locally, and pull it if it does not.
+
+    Args:
+        image_name (str): The name of the image with tag (e.g., 'repository/image:tag').
+
+    Returns:
+        bool: True if the image is available locally or was successfully pulled,
+              False if the image could not be pulled due to an error.
+    """
+    client = docker.from_env()
+    image_available = False
+
+    try:
+        # Attempt to get the image locally
+        client.images.get(image_name)
+        logger.info(f"Image already exists locally: {image_name}")
+        image_available = True
+    except docker.errors.ImageNotFound:
+        # Image not found locally, need to pull
+        logger.info(f"Image not found locally. Attempting to pull: {image_name}")
+    except docker.errors.APIError as e:
+        logger.error(f"API error occurred while checking the image: {e}")
+
+    # If the image was not found, try pulling it
+    if not image_available:
+        try:
+            client.images.pull(image_name)
+            logger.info(f"Successfully pulled the image: {image_name}")
+            image_available = True
+        except docker.errors.APIError as e:
+            logger.error(f"Failed to pull the image {image_name}: {e}")
+            image_available = False
+
+        finally:
+            client.close()
+    return image_available
+
+
 def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     """
     Main function to load and display entries from the SWE-bench lite dataset.
@@ -207,21 +249,18 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
 
     issues = get_issues_dataset(test_split)
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {
-        "django/django": "techcomposio/swe-bench-django_django",
-        "astropy/astropy": "kaavee315/astropy_astropy",
-    }
-    for count, issue in enumerate(issues, 1):
+    repo_to_image_id_map = {}
+    for count, issue in tqdm(enumerate(issues, 1), total=len(issues), desc="Processing issues"):
         try:
             repo = issue["repo"]
             version = issue.get("version", "latest")  # Assuming 'version' key exists, default to 'latest'
-            image_name = f"techcomposio/swe-bench-{repo.replace('/', '__')}:{version}"
+            image_name = f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
             # Check if the image exists, if not use the default image
-            if not check_image_exists(image_name):  # You need to define or implement check_image_exists
+            if not check_and_pull_image(image_name):  # You need to define or implement check_image_exists
                 image_name = "sweagent/swe-agent"
-            
-            repo_to_image_id_map = {repo: image_name}
-            print(f"Processing {count}th issue with repoMap: {repo_to_workspace_map}")
+
+            repo_to_image_id_map.setdefault(repo, image_name)
+            print(f"Processing issue: {count} with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
 
