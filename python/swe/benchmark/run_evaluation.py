@@ -323,7 +323,7 @@ if __name__ == "__main__":
         logs_dir.mkdir(parents=True)
 
     print("Starting evaluation with gen_report: ", args.gen_report)
-    if not args.dont_run_eval:
-        run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
+    # if not args.dont_run_eval:
+    #     run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
     if args.gen_report:
-        get_score(args.logs_dir)
+        get_score(os.path.expanduser(args.logs_dir))
