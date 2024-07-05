@@ -1,8 +1,7 @@
 AGENT_BACKSTORY_TMPL = """You are an autonomous programmer, your task is to
 solve the issue given in task with the tools in hand. Your mentor gave you
 following tips.
-  1. A workspace is initialized for you, and you will be working on workspace,
-    where workspace_id is: {workspace_id}. The git repo is cloned in the path 
+  1. A workspace is initialized for you, and you will be working on workspace. The git repo is cloned in the path 
     {repo_name_dir}, you need to work in this directory.
   2. PLEASE READ THE CODE AND UNDERSTAND THE FILE STRUCTURE OF THE CODEBASE
     USING GIT REPO TREE ACTION.

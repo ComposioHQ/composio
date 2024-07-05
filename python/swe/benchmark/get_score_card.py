@@ -16,6 +16,8 @@ from swebench import (
 from swebench.harness.constants import INSTALL_FAIL
 from unidiff import PatchSet
 
+from composio.utils.logging import get as get_logger
+
 
 MODEL_GPT4 = "gpt-4-1106"
 PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
@@ -45,13 +47,11 @@ def format_report(report):
 
 
 def get_cur_eval_refs(predictions_dir, swe_bench_path):
+    logger = get_logger(name="get_cur_eval_refs")
+    logger.info(
+        f"Getting eval refs for predictions_dir: {predictions_dir} and swe_bench_path: {swe_bench_path}"
+    )
     eval_refs = get_eval_refs(str(swe_bench_path))
-    for k, v in eval_refs.items():
-        eval_refs[k] = {
-            KEY_INSTANCE_ID: v[KEY_INSTANCE_ID],
-            "FAIL_TO_PASS": json.loads(v["FAIL_TO_PASS"]),
-            "PASS_TO_PASS": json.loads(v["PASS_TO_PASS"]),
-        }
     eval_refs_json_path = predictions_dir / Path(EVAL_REFS_JSON_PATH)
     with open(eval_refs_json_path, "w", encoding="utf-8") as f:
         for key in eval_refs:
@@ -81,7 +81,7 @@ def save_summaries_to_file(predictions_dir, predictions_path, log_dir, scorecard
     logging.info("- Wrote summary of run to: %s", results_path)
 
 
-def main(predictions_dir, log_dir, swe_bench_path, model):
+def generate_scorecard(predictions_dir, log_dir, swe_bench_path, model):
     logging.info("Starting main function")
     eval_refs, _ = get_cur_eval_refs(predictions_dir, swe_bench_path)
     predictions_path = predictions_dir / Path(PATH_PATCHES_JSON)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
     if not os.path.exists(testbed_dir):
         os.makedirs(testbed_dir)
-    main(
+    generate_scorecard(
         predictions_dir=prediction_path_dir,
         log_dir=str(args.log_dir),
         swe_bench_path=args.swe_bench_path,
