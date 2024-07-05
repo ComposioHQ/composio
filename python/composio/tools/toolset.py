@@ -51,7 +51,7 @@ class ComposioToolSet(WithLogger):
         runtime: t.Optional[str] = None,
         output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_env: ExecEnv = ExecEnv.DOCKER,
+        workspace_env: ExecEnv = ExecEnv.HOST,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """
