@@ -122,31 +122,22 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     workspace_id = workspace.id
     workspace_creation_time = datetime.datetime.now() - start_time
     composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-    if image == DEFAULT_IMAGE_NAME:
-        cd_resp = composio_toolset.execute_action(
-            action=Action.SHELL_EXECUTE_COMMAND,
-            params={
-                "cmd": f"cd /{repo.split('/')[-1]}",
-            },
-        )
-        if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
-            raise Exception(f"Error changing directory: {cd_resp['details']}")
-        logger.info(
-            "workspace is created, workspace-id is: %s, creation time: %s",
-            workspace_id,
-            workspace_creation_time,
-        )
-        logger.info("Resetting repository to base commit")
-        reset_resp = composio_toolset.execute_action(
-            action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
-            params={
-                "repo_name": repo,
-                "just_reset": True,
-                "commit_id": base_commit,
-            },
-        )
-        if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
-            raise Exception(f"Error resetting repository: {reset_resp['details']}")
+    logger.info(
+        "workspace is created, workspace-id is: %s, creation time: %s",
+        workspace_id,
+        workspace_creation_time,
+    )
+    logger.info("Resetting repository to base commit")
+    reset_resp = composio_toolset.execute_action(
+        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+        params={
+            "repo_name": repo,
+            "just_reset": True,
+            "commit_id": base_commit,
+        },
+    )
+    if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
+        raise Exception(f"Error resetting repository: {reset_resp['details']}")
     return workspace_id
 
 
@@ -256,10 +247,9 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             version = issue.get("version", "latest")  # Assuming 'version' key exists, default to 'latest'
             image_name = f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
             # Check if the image exists, if not use the default image
-            if not check_and_pull_image(image_name):  # You need to define or implement check_image_exists
-                image_name = "sweagent/swe-agent"
+            if check_and_pull_image(image_name):  # You need to define or implement check_image_exists
+                repo_to_image_id_map.setdefault(repo, image_name)
 
-            repo_to_image_id_map.setdefault(repo, image_name)
             print(f"Processing issue: {count} with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
