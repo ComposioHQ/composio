@@ -1,7 +1,6 @@
 import argparse
 import json
 import logging
-from composio.utils.logging import get as get_logger
 import os
 from pathlib import Path
 
@@ -16,6 +15,8 @@ from swebench import (
 )
 from swebench.harness.constants import INSTALL_FAIL
 from unidiff import PatchSet
+
+from composio.utils.logging import get as get_logger
 
 
 MODEL_GPT4 = "gpt-4-1106"
@@ -150,15 +151,15 @@ def generate_scorecard(predictions_dir, log_dir, swe_bench_path, model):
                 + diff_obj.added_files
                 + diff_obj.removed_files
             ]
-            scorecard["patch_lines_add"] = (
-                sum(  # pylint: disable=consider-using-generator
-                    [f.added for f in diff_obj]
-                )
+            scorecard[
+                "patch_lines_add"
+            ] = sum(  # pylint: disable=consider-using-generator
+                [f.added for f in diff_obj]
             )
-            scorecard["patch_lines_del"] = (
-                sum(  # pylint: disable=consider-using-generator
-                    [f.removed for f in diff_obj]
-                )
+            scorecard[
+                "patch_lines_del"
+            ] = sum(  # pylint: disable=consider-using-generator
+                [f.removed for f in diff_obj]
             )
         except Exception as e:
             logging.error(

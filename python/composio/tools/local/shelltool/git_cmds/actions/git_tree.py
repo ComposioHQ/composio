@@ -1,5 +1,5 @@
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    ExecuteCommand,
+    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
@@ -10,7 +10,7 @@ from composio.tools.local.shelltool.utils import get_logger
 logger = get_logger("workspace")
 
 
-class GitRepoTree(ExecuteCommand):
+class GitRepoTree(BaseExecCommand):
     """
     Generate a tree of the repository. This command lists all files in the current commit across all directories.
     Returns a list of files with their relative paths in the codebase.

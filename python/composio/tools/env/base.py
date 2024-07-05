@@ -2,9 +2,9 @@ import threading
 import typing as t
 from abc import ABC, abstractmethod
 
+from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.id import generate_id
-from composio.tools.local.base.action import Action
 from composio.utils.logging import WithLogger
 
 
@@ -54,22 +54,21 @@ class ShellFactory(WithLogger):
         self._factory = factory
 
     @property
-    def recent(cls) -> Shell:
+    def recent(self) -> Shell:
         """Get most recent workspace."""
-        cls._lock.acquire()
-        shell = cls._recent
-        cls._lock.release()
+        with self._lock:
+            shell = self._recent
         if shell is None:
-            shell = cls.new()
-            cls._recent = shell
+            shell = self.new()
+            with self._lock:
+                self._recent = shell
         return shell
 
     @recent.setter
     def recent(self, shell: Shell) -> None:
         """Get most recent workspace."""
-        self._lock.acquire()
-        self._recent = shell
-        self._lock.release()
+        with self._lock:
+            self._recent = shell
 
     def new(self) -> Shell:
         """Create a new shell."""
@@ -111,13 +110,14 @@ class ShellFactory(WithLogger):
         self._recent = None
 
 
-class Workspace(ABC):
+class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
 
     _shell_factory: t.Optional[ShellFactory] = None
 
     def __init__(self):
         """Initialize workspace."""
+        super().__init__()
         self.id = generate_id()
 
     def __str__(self) -> str:

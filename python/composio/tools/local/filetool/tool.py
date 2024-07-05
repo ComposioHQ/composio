@@ -15,3 +15,7 @@ class FileTool(Tool):
     def actions(self) -> t.List[t.Type[Action]]:
         """Return the list of actions."""
         return [ReadFile, WriteFile]
+
+    def triggers(self) -> t.List:
+        """Return the list of triggers."""
+        return []

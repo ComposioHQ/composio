@@ -1,7 +1,7 @@
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    ExecuteCommand,
+    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
@@ -24,7 +24,7 @@ class SearchDirResponse(ShellExecResponse):
     pass
 
 
-class SearchDirCmd(ExecuteCommand):
+class SearchDirCmd(BaseExecCommand):
     """
     Searches for search_term in all files in dir. If dir is not provided, searches in the current directory.
     """
@@ -56,7 +56,7 @@ class SearchFileResponse(ShellExecResponse):
     pass
 
 
-class SearchFileCmd(ExecuteCommand):
+class SearchFileCmd(BaseExecCommand):
     """
     Searches for a specified term within a specified file or the current open file if none is specified.
     """
@@ -94,7 +94,7 @@ class FindFileResponse(ShellExecResponse):
     pass
 
 
-class FindFileCmd(ExecuteCommand):
+class FindFileCmd(BaseExecCommand):
     """
     Searches for files by name within a specified directory or the current directory if none is specified.
     Example:

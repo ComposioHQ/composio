@@ -20,7 +20,7 @@ class HostShell(Shell):
         """Initialize shell."""
         super().__init__()
         self._id = generate_id()
-        self._process = subprocess.Popen(
+        self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

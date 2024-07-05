@@ -149,13 +149,10 @@ def _actions(
 def execute(context: Context, action_name: str, params: str) -> None:
     """Execute a Composio action"""
     try:
-        # Parse JSON parameters
         action_params = json.loads(params) if params else {}
-        # Execute the action
         result = context.client.actions.execute(Action(action_name), action_params)
         context.console.print(result)
-
-    except json.JSONDecodeError:
-        raise click.ClickException("Invalid JSON format for parameters")
+    except json.JSONDecodeError as e:
+        raise click.ClickException("Invalid JSON format for parameters") from e
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
