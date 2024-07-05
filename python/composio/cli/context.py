@@ -20,6 +20,8 @@ from composio.constants import (
 )
 from composio.core.cls.catch_all_exceptions import init_sentry
 from composio.storage.user import UserData
+from composio.tools.env.factory import ExecEnv
+from composio.tools.toolset import ComposioToolSet
 from composio.utils import logging
 
 
@@ -30,6 +32,7 @@ class Context(logging.WithLogger):
     """Runtime Context for Compsio CLI tool."""
 
     _client: t.Optional[Composio] = None
+    _toolset: t.Optional[ComposioToolSet] = None
     _user_data: t.Optional[UserData] = None
     _cache_dir: t.Optional[Path] = None
     _console: t.Optional[Console] = None
@@ -89,6 +92,16 @@ class Context(logging.WithLogger):
             init_sentry()
             self._client = Composio(api_key=self.user_data.api_key)
         return self._client
+
+    @property
+    def toolset(self) -> ComposioToolSet:
+        """Composio toolset."""
+        if self._toolset is None:
+            self._toolset = ComposioToolSet(
+                api_key=self.user_data.api_key,
+                workspace_env=ExecEnv.HOST,
+            )
+        return self._toolset
 
     def using_api_key_from_env(self) -> bool:
         """Check if API Key being used was parsed from the environment"""

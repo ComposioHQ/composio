@@ -2,6 +2,7 @@
 Docker workspace.
 """
 
+import json
 import os
 import typing as t
 
@@ -12,6 +13,7 @@ from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
 from composio.tools.env.docker.shell import DockerShell
+from composio.tools.local.handler import LocalClient
 
 
 DEFAULT_IMAGE = "sweagent/swe-agent"
@@ -55,11 +57,59 @@ class DockerWorkspace(Workspace):
                 ) from e
         return self._client
 
+    def _execute_shell(
+        self,
+        action: Action,
+        request_data: dict,
+        metadata: dict,
+    ) -> t.Dict:
+        """Execute action using shell."""
+        return (
+            LocalClient()
+            .get_action(action=action)
+            .execute_action(
+                request_data=request_data,
+                metadata={
+                    **metadata,
+                    "workspace": self,
+                },
+            )
+        )
+
+    def _execute_cli(
+        self,
+        action: Action,
+        request_data: dict,
+        metadata: dict,
+    ) -> t.Dict:
+        """Execute action using CLI"""
+        output = self.shells.recent.exec(
+            f"composio execute {action.slug}"
+            f" --param {json.dumps(request_data)}"
+            f" --metadata {json.dumps(metadata)}"
+        )
+        if len(output["stderr"]) > 0:
+            return {"status": "failure", "message": output["stderr"]}
+        try:
+            return {"status": "success", "data": json.loads(output["stdout"])}
+        except json.JSONDecodeError:
+            return {"status": "failure", "message": output["stdout"]}
+
     def execute_action(
         self,
-        action_obj: Action,
+        action: Action,
         request_data: dict,
         metadata: dict,
     ) -> t.Dict:
         """Execute action in docker workspace."""
-        return {}
+        if action.shell:
+            return self._execute_shell(
+                action=action,
+                request_data=request_data,
+                metadata=metadata,
+            )
+        return self._execute_cli(
+            action=action,
+            request_data=request_data,
+            metadata=metadata,
+        )

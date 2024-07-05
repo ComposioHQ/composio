@@ -141,7 +141,10 @@ class Workspace(WithLogger, ABC):
 
     @abstractmethod
     def execute_action(
-        self, action_obj: Action, request_data: dict, metadata: dict
+        self,
+        action: Action,
+        request_data: dict,
+        metadata: dict,
     ) -> t.Dict:
         """Execute an action in this workspace."""
 
