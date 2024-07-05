@@ -4,10 +4,9 @@ import argparse
 import asyncio
 import datetime
 import json
-import logging
 import os
-from pathlib import Path
 import typing as t
+from pathlib import Path
 
 from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import (
@@ -15,14 +14,13 @@ from composio_swe.config.constants import (
     LOCAL_CACHE_DIRECTORY_NAME,
     LOGS_DIR,
 )
-from composio.utils.logging import get as get_logger
 from composio_swe.config.context import Context, get_context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
-from rich.logging import RichHandler
 
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from composio.utils.logging import get as get_logger
 from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
@@ -195,10 +193,11 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     )
 
 
-default_agent_func = lambda workspace_id, issue_config: CrewaiAgent(
-    args=SWEArgs(agent_logs_dir=""),
-    workspace_id=workspace_id,
-).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
+def default_agent_func(workspace_id, issue_config):
+    return CrewaiAgent(
+        args=SWEArgs(agent_logs_dir=Path("")),
+        workspace_id=workspace_id,
+    ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
 
 
 def run_and_get_scores(agent_func=t.Callable, test_split="1:50", include_hints=True):

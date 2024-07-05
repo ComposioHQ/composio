@@ -99,10 +99,7 @@ class ComposioToolSet(WithLogger):
         self._local_client = LocalClient()
 
     def set_workspace_id(self, workspace_id: str) -> None:
-        self.workspace_id = workspace_id
-        self.workspace = WorkspaceFactory.get(
-            id=self.workspace_id,
-        )
+        self.workspace = WorkspaceFactory.get(id=workspace_id)
 
     @property
     def client(self) -> Composio:
