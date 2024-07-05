@@ -4,7 +4,7 @@ from inspect import Signature
 
 from langchain_core.tools import StructuredTool
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.env.factory import ExecEnv

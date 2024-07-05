@@ -1,6 +1,6 @@
 from composio_claude.toolset import ComposioToolset
 
-from composio.client.enums import Action, App, Tag, Trigger
+from composio import Action, App, Tag, Trigger
 
 
 __all__ = (
