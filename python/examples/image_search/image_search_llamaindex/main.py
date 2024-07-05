@@ -9,8 +9,8 @@ from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
-# Import embedtool from composio.local_tools
-from composio.local_tools import embedtool
+# Import embedtool from composio.tools.local
+from composio.tools.local import embedtool
 
 
 # Load environment variables from a .env file

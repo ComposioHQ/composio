@@ -33,8 +33,6 @@ from composio.client.exceptions import ComposioClientError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 
-from .local_handler import LocalToolHandler
-
 
 def to_trigger_names(
     triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]]
@@ -819,7 +817,6 @@ class Actions(Collection[ActionModel]):
 
     model = ActionModel
     endpoint = v1.actions
-    local_handler = LocalToolHandler()
 
     # TODO: Overload
     def get(  # type: ignore
@@ -858,7 +855,7 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            local_items = self.local_handler.get_action_schemas(
+            local_items = self.client.local.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             return [self.model(**item) for item in local_items]
@@ -946,7 +943,7 @@ class Actions(Collection[ActionModel]):
                     items = filtered_items
 
         if len(local_apps) > 0 or len(local_actions) > 0:
-            local_items = self.local_handler.get_action_schemas(
+            local_items = self.client.local.get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             items = [self.model(**item) for item in local_items] + items
@@ -970,10 +967,11 @@ class Actions(Collection[ActionModel]):
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
-            return self.local_handler.execute_action(
+            return self.client.local.execute_action(
                 action=action,
                 request_data=params,
             )
+
         actions = self.get(
             actions=[action],
         )
