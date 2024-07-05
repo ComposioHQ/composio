@@ -7,3 +7,5 @@ PATH_TESTBED = "testbed/"
 
 DATASET_ON_DISK = "./swe_lite_dataset"
 TEST_SPLIT = "[1:300]"
+
+DEFAULT_IMAGE_NAME = "sweagent/swe-agent"

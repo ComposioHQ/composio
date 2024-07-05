@@ -7,6 +7,8 @@ import logging
 import os
 from pathlib import Path
 
+import docker
+from benchmark.constants import MODEL_GPT4
 from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import (
     KEY_API_KEY,
@@ -17,10 +19,11 @@ from composio_swe.config.context import Context, get_context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
 from rich.logging import RichHandler
+from tqdm import tqdm
 
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
+from swe.benchmark.get_score_card import generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
@@ -197,6 +200,46 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     )
 
 
+def check_and_pull_image(image_name):
+    """
+    Check if a Docker image exists locally, and pull it if it does not.
+
+    Args:
+        image_name (str): The name of the image with tag (e.g., 'repository/image:tag').
+
+    Returns:
+        bool: True if the image is available locally or was successfully pulled,
+              False if the image could not be pulled due to an error.
+    """
+    client = docker.from_env()
+    image_available = False
+
+    try:
+        # Attempt to get the image locally
+        client.images.get(image_name)
+        logger.info(f"Image already exists locally: {image_name}")
+        image_available = True
+    except docker.errors.ImageNotFound:
+        # Image not found locally, need to pull
+        logger.info(f"Image not found locally. Attempting to pull: {image_name}")
+    except docker.errors.APIError as e:
+        logger.error(f"API error occurred while checking the image: {e}")
+
+    # If the image was not found, try pulling it
+    if not image_available:
+        try:
+            client.images.pull(image_name)
+            logger.info(f"Successfully pulled the image: {image_name}")
+            image_available = True
+        except docker.errors.APIError as e:
+            logger.error(f"Failed to pull the image {image_name}: {e}")
+            image_available = False
+
+        finally:
+            client.close()
+    return image_available
+
+
 def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     """
     Main function to load and display entries from the SWE-bench lite dataset.
@@ -204,14 +247,25 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
 
     issues = get_issues_dataset(test_split)
     repo_to_workspace_map = {}
-    repo_to_image_id_map = {
-        "django/django": "techcomposio/swe-bench-django_django",
-        "astropy/astropy": "kaavee315/astropy_astropy",
-    }
-    for count, issue in enumerate(issues, 1):
+    repo_to_image_id_map = {}
+    for count, issue in tqdm(
+        enumerate(issues, 1), total=len(issues), desc="Processing issues"
+    ):
         try:
             repo = issue["repo"]
-            print(f"Processing {count}th issue with repoMap: {repo_to_workspace_map}")
+            version = issue.get(
+                "version", "latest"
+            )  # Assuming 'version' key exists, default to 'latest'
+            image_name = (
+                f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
+            )
+            # Check if the image exists, if not use the default image
+            if check_and_pull_image(
+                image_name
+            ):  # You need to define or implement check_image_exists
+                repo_to_image_id_map.setdefault(repo, image_name)
+
+            print(f"Processing issue: {count} with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
 
@@ -277,7 +331,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--test_split",
         type=str,
-        default="20:40",
+        default="20:22",
         help="Test split range (e.g., 1:10)",
     )
     parser.add_argument(
@@ -320,4 +374,4 @@ if __name__ == "__main__":
     if not args.dont_run_eval:
         run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
     if args.gen_report:
-        get_score(args.logs_dir)
+        get_score(os.path.expanduser(args.logs_dir))

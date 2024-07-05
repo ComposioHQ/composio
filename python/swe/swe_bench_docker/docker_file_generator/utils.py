@@ -1,5 +1,4 @@
 # flake8: noqa E203
-# type: ignore
 
 import json
 import os
