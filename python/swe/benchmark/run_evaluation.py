@@ -201,7 +201,7 @@ default_agent_func = lambda workspace_id, issue_config: CrewaiAgent(
 ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
 
 
-def run_and_get_scores(agent_func, test_split="1:50", include_hints=True):
+def run_and_get_scores(agent_func=t.Callable, test_split="1:50", include_hints=True):
     logs_dir = f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}"
     logger.info("Running agent with logs_dir: %s", logs_dir)
     run(
