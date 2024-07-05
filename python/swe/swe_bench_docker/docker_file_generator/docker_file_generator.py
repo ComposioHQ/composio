@@ -6,11 +6,7 @@ from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
 
-from swe.swe_bench_docker.docker_file_generator.const import (
-    MAP_REPO_TO_DEB_PACKAGES,
-    PYENV_REPOS,
-    PYTHON_ENVIRONMENT_VERSIONS,
-)
+from swe.swe_bench_docker.docker_file_generator.const import PYTHON_ENVIRONMENT_VERSIONS
 from swe.swe_bench_docker.docker_file_generator.utils import (
     get_environment_yml,
     get_requirements,
@@ -59,8 +55,8 @@ class DockerfileGenerator:
         self.conda_repository_template = env.get_template("Dockerfile.conda_repository")
         self.pyenv_repository_template = env.get_template("Dockerfile.pyenv_repository")
         self.instance_template = env.get_template("Dockerfile.pyenv_instance")
-        script_dir = os.path.join(os.path.dirname(__file__), '../templates')
-        getconda_path = os.path.join(script_dir, 'getconda.sh')
+        script_dir = os.path.join(os.path.dirname(__file__), "../templates")
+        getconda_path = os.path.join(script_dir, "getconda.sh")
         self.getconda_path = os.path.relpath(script_dir, getconda_path)
 
         if predictions_path:
@@ -98,9 +94,9 @@ class DockerfileGenerator:
                 # use_conda = repo not in PYENV_REPOS
 
                 if repo_name not in testbeds:
-                    deb_packages = None
-                    if repo in MAP_REPO_TO_DEB_PACKAGES:
-                        deb_packages = MAP_REPO_TO_DEB_PACKAGES[repo]
+                    # deb_packages = None
+                    # if repo in MAP_REPO_TO_DEB_PACKAGES:
+                    # deb_packages = MAP_REPO_TO_DEB_PACKAGES[repo]
                     # if use_conda:
                     #     self.generate_conda_repository_dockerfile(repo, deb_packages)
                     # else:

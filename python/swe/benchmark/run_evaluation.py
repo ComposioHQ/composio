@@ -5,12 +5,10 @@ import asyncio
 import datetime
 import logging
 import os
-import docker
-from tqdm import tqdm
-from benchmark.constants import MODEL_GPT4
-
 from pathlib import Path
 
+import docker
+from benchmark.constants import MODEL_GPT4
 from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import (
     KEY_API_KEY,
@@ -21,10 +19,11 @@ from composio_swe.config.context import Context, get_context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
 from rich.logging import RichHandler
+from tqdm import tqdm
 
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
+from swe.benchmark.get_score_card import generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
@@ -200,6 +199,7 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
         repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     )
 
+
 def check_and_pull_image(image_name):
     """
     Check if a Docker image exists locally, and pull it if it does not.
@@ -248,13 +248,21 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     issues = get_issues_dataset(test_split)
     repo_to_workspace_map = {}
     repo_to_image_id_map = {}
-    for count, issue in tqdm(enumerate(issues, 1), total=len(issues), desc="Processing issues"):
+    for count, issue in tqdm(
+        enumerate(issues, 1), total=len(issues), desc="Processing issues"
+    ):
         try:
             repo = issue["repo"]
-            version = issue.get("version", "latest")  # Assuming 'version' key exists, default to 'latest'
-            image_name = f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
+            version = issue.get(
+                "version", "latest"
+            )  # Assuming 'version' key exists, default to 'latest'
+            image_name = (
+                f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
+            )
             # Check if the image exists, if not use the default image
-            if check_and_pull_image(image_name):  # You need to define or implement check_image_exists
+            if check_and_pull_image(
+                image_name
+            ):  # You need to define or implement check_image_exists
                 repo_to_image_id_map.setdefault(repo, image_name)
 
             print(f"Processing issue: {count} with repoMap: {repo_to_workspace_map}")
