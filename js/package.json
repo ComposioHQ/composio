@@ -24,6 +24,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@cloudflare/workers-types": "^4.20240620.0",
     "@langchain/core": "^0.2.6",
     "@langchain/openai": "^0.1.2",
     "axios": "^1.7.2",
