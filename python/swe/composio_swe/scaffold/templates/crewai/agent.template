@@ -1,0 +1,63 @@
+"""CrewAI SWE Agent"""
+
+import os
+import dotenv
+
+from crewai import Agent, Task, Crew, Process
+from composio_crewai import App, Action, ComposioToolSet
+from langchain_openai import ChatOpenAI
+
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+# Initialize tool.
+openai_client = ChatOpenAI(
+    api_key=os.environ["OPENAI_API_KEY"],  # type: ignore
+)
+composio_toolset = ComposioToolSet()
+
+# Get required tools
+tools = [
+    *composio_toolset.get_actions(
+        actions=[
+            Action.WORKSPACETOOL_WORKSPACESTATUSACTION,
+        ]
+    ),
+    *composio_toolset.get_tools(
+        apps=[
+            App.SEARCHTOOL,
+            App.GITCMDTOOL,
+            App.SHELLCMDTOOL,
+            App.FILETOOL,
+            App.HISTORYFETCHERTOOL,
+        ]
+    ),
+]
+
+# Define agent
+agent = Agent(
+    role="{role}",
+    goal="{goal}",
+    backstory="{backstory}",
+    llm=openai_client,
+    tools=tools,
+    verbose=True,
+)
+
+task = Task(
+    description="{description}",
+    expected_output="{expected_output}",
+    agent=agent,
+)
+
+crew = Crew(
+    agents=[agent],
+    tasks=[task],
+    process=Process.sequential,
+    full_output=True,
+    verbose=True,
+    cache=False,
+    memory=True,
+)
+

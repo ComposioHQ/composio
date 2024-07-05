@@ -62,12 +62,11 @@ def log_file(f_name):
     return False
 
 
-def main(predictions_dir, dataset_path_or_name):
+def create_patches_file(predictions_dir, dataset_path_or_name):
     all_patches = []
     pred_total, pred_will_eval = 0, 0
-    download_and_store_dataset(
-        dataset_path_or_name, str(Path(predictions_dir) / Path("dataset"))
-    )
+    dataset_on_disk = str(Path(predictions_dir) / Path("dataset"))
+    download_and_store_dataset(dataset_path_or_name, dataset_on_disk)
     pred_path_orig = predictions_dir / Path(PATH_PATCHES_JSON)
 
     # Iterate over each file in the directory
@@ -109,6 +108,7 @@ def main(predictions_dir, dataset_path_or_name):
     print(
         f"Found {pred_total} total predictions, will evaluate {pred_will_eval} ({pred_total-pred_will_eval} are empty)"
     )
+    return pred_path_orig, dataset_on_disk
 
 
 if __name__ == "__main__":
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     script_path = Path(__file__)
     script_dir = script_path.parent
     prediction_path_dir = Path(args.prediction_path_dir)
-    main(
+    create_patches_file(
         predictions_dir=prediction_path_dir,
         dataset_path_or_name=args.dataset_path_or_name,
     )
