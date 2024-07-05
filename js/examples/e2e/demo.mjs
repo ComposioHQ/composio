@@ -38,8 +38,8 @@ So we are going to filter them down`
         useCase: "Book a meeting"
     })
     await setupUserConnectionIfNotExists(entity.id);
-    const calendarAction = relevantActions.items.find(action => action.name === "googlecalendar_quick_add_google_calendar")
-    console.log("Calendar action", calendarAction);
+    const calendarAction = relevantActions.items.find(action => action.name === "googlecalendar_quick_add")
+    console.log("Calendar action", calendarAction, relevantActions.items);
 
     const result = await entity.execute(calendarAction.name, {}, "Book a meeting for 60 minutes with GUEST = hudixt@gmail.com wih DESCRIPTION = 'Test meeting'");
     console.log("Result", result);
