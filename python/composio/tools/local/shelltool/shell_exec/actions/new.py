@@ -28,6 +28,8 @@ class CreateShell(Action[ShellCreateRequest, ShellCreateResponse]):
     _response_schema = ShellCreateResponse
     _tags = ["workspace", "shell", "create"]
 
+    run_on_shell = True
+
     def execute(
         self,
         request_data: ShellCreateRequest,

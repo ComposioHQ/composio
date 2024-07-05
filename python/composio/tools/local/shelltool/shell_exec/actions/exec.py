@@ -65,8 +65,10 @@ class BaseExecCommand(Action):
     _tool_name = "shell"
     _tags = ["workspace", "shell"]
 
+    run_on_shell = True
 
-class ExecCommand(Action[ShellExecRequest, ShellExecResponse]):
+
+class ExecCommand(BaseExecCommand):
     """
     Run any command directly on shell.
     Examples:

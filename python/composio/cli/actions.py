@@ -5,7 +5,6 @@ Usage:
     composio actions [command] [options]
 """
 
-import json
 import typing as t
 
 import click
@@ -13,7 +12,7 @@ import pyperclip
 
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client.enums import Action, App
+from composio.client.enums import App
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 from composio.utils.enums import get_enum_key
@@ -138,21 +137,5 @@ def _actions(
         ):
             pyperclip.copy(text="[" + ", ".join(enum_strs) + "]")
 
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
-
-
-@_actions.command(name="execute")
-@click.argument("action_name", type=str)
-@click.option("--params", "-p", type=str, help="Action parameters as a JSON string")
-@pass_context
-def execute(context: Context, action_name: str, params: str) -> None:
-    """Execute a Composio action"""
-    try:
-        action_params = json.loads(params) if params else {}
-        result = context.client.actions.execute(Action(action_name), action_params)
-        context.console.print(result)
-    except json.JSONDecodeError as e:
-        raise click.ClickException("Invalid JSON format for parameters") from e
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e

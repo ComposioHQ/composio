@@ -3,6 +3,7 @@ Composio SDK tools.
 """
 
 import base64
+import hashlib
 import itertools
 import json
 import os
@@ -25,8 +26,8 @@ from composio.client.exceptions import ComposioClientError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
+    LOCAL_CACHE_DIRECTORY,
     LOCAL_CACHE_DIRECTORY_NAME,
-    LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
@@ -138,35 +139,30 @@ class ComposioToolSet(WithLogger):
                 f"Run `composio add {action.app}` to fix this"
             )
 
-    def execute_action(
+    def _execute_local(
         self,
-        action: t.Union[Action, str],
-        params: dict,
+        action: Action,
+        params: t.Dict,
+        metadata: t.Optional[t.Dict] = None,
+    ) -> t.Dict:
+        """Execute a local action."""
+        response = self.workspace.execute_action(
+            action=action,
+            request_data=params,
+            metadata=metadata or {},
+        )
+        if isinstance(response, BaseModel):
+            return response.model_dump()
+        return response
+
+    def _execute_remote(
+        self,
+        action: Action,
+        params: t.Dict,
         entity_id: str = DEFAULT_ENTITY_ID,
         text: t.Optional[str] = None,
     ) -> t.Dict:
-        """
-        Execute an action on a given entity.
-
-        :param action: Action to execute.
-        :param params: The parameters to pass to the action.
-        :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
-        :param text: Extra text to use for generating function calling metadata
-        :return: Output object from the function call.
-        """
-        action = Action(action)
-        if action.is_local:
-            response = self._local_client.execute_action(
-                action=action,
-                request_data=params,
-                metadata={
-                    "workspace": self.workspace,
-                },
-            )
-            return (
-                response.model_dump() if isinstance(response, BaseModel) else response
-            )
-
+        """Execute a remote action."""
         self.check_connected_account(
             action=action,
         )
@@ -177,58 +173,108 @@ class ComposioToolSet(WithLogger):
             params=params,
             text=text,
         )
-
-        # TODO: Clean
-        if not os.path.exists(
-            Path.home() / LOCAL_CACHE_DIRECTORY_NAME / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-        ):
-            os.makedirs(
-                Path.home()
-                / LOCAL_CACHE_DIRECTORY_NAME
-                / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-            )
         if self.output_in_file:
-            output_file_path = (
-                Path.home()
-                / LOCAL_CACHE_DIRECTORY_NAME
-                / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-                / f"{action.name}_{entity_id}_{time.time()}"
+            return self._write_to_file(
+                action=action,
+                output=output,
+                entity_id=entity_id,
             )
-            with open(output_file_path, "w", encoding="utf-8") as file:
-                file.write(str(output))
-                return {"output_file": f"{output_file_path}"}
 
-        try:
-            output_modified = self._save_files(
-                f"{action.name}_{entity_id}_{time.time()}",
-                output,
-            )
-            return output_modified
-        except Exception:
-            pass
-        return output
+        return self._write_file(
+            action=action,
+            output=output,
+            entity_id=entity_id,
+        )
 
-    def _save_files(self, file_name_prefix: str, output: dict) -> dict:
+    def _write_to_file(
+        self,
+        action: Action,
+        output: t.Dict,
+        entity_id: str = DEFAULT_ENTITY_ID,
+    ) -> t.Dict:
+        """Write output to a file."""
+        filename = hashlib.sha256(
+            f"{action.name}-{entity_id}-{time.time()}".encode()
+        ).hexdigest()
+
+        outdir = LOCAL_CACHE_DIRECTORY / "outputs"
+        if not outdir.exists():
+            outdir.mkdir()
+
+        outfile = outdir / filename
+        self.logger.info(f"Writing output to: {outfile}")
+
+        outfile.write_text(
+            data=json.dumps(output),
+            encoding="utf-8",
+        )
+        return {
+            "message": f"output written to {outfile.resolve()}",
+            "file": str(outfile.resolve()),
+        }
+
+    def _write_file(
+        self,
+        action: Action,
+        output: t.Dict,
+        entity_id: str = DEFAULT_ENTITY_ID,
+    ) -> dict:
+        """If received object is a blob, write it to a file."""
         success_response_model = SuccessExecuteActionResponseModel.model_validate(
             output
         )
-        resp_data = json.loads(success_response_model.response_data)
-        for key, val in resp_data.items():
-            try:
-                file_model = FileModel.model_validate(val)
-                output_file_path = (
-                    Path.home()
-                    / LOCAL_CACHE_DIRECTORY_NAME
-                    / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
-                )
-                print(f"Saving file to: {output_file_path}")
-                with open(output_file_path, "wb") as file:
-                    file.write(base64.b64decode(file_model.content))
-                resp_data[key] = str(output_file_path)
-            except Exception:
-                pass
-        return resp_data
+        files = json.loads(
+            success_response_model.response_data,
+        )
+        outdir = (
+            LOCAL_CACHE_DIRECTORY
+            / "outputs"
+            / hashlib.sha256(
+                f"{action.name}-{entity_id}-{time.time()}".encode()
+            ).hexdigest()
+        )
+        if not outdir.exists():
+            outdir.mkdir()
+
+        response = {}
+        self.logger.info(f"Writing files to: {outdir}")
+        for key, val in files.items():
+            file = FileModel.model_validate(val)
+            (outdir / file.name).write_bytes(data=base64.b64decode(file.content))
+            response[key] = str(outdir / file.name)
+        return response
+
+    def execute_action(
+        self,
+        action: t.Union[Action, str],
+        params: dict,
+        metadata: t.Optional[t.Dict] = None,
+        entity_id: str = DEFAULT_ENTITY_ID,
+        text: t.Optional[str] = None,
+    ) -> t.Dict:
+        """
+        Execute an action on a given entity.
+
+        :param action: Action to execute
+        :param params: The parameters to pass to the action
+        :param entity_id: The ID of the entity to execute the action on. Defaults to "default"
+        :param text: Extra text to use for generating function calling metadata
+        :param metadata: Metadata for executing local action
+        :return: Output object from the function call
+        """
+        action = Action(action)
+        if action.is_local:
+            return self._execute_local(
+                action=action,
+                params=params,
+                metadata=metadata,
+            )
+        return self._execute_remote(
+            action=action,
+            params=params,
+            entity_id=entity_id,
+            text=text,
+        )
 
     def get_action_schemas(
         self,

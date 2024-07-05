@@ -3765,3 +3765,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     def is_local(self) -> bool:
         """If set `True` the `app` is a local app."""
         return self.load().is_local
+
+    @property
+    def shell(self) -> bool:
+        """If set `True` the tool will be executed using a shell."""
+        return self.load().shell

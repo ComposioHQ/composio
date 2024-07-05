@@ -1,6 +1,7 @@
 import typing as t
 
 from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
+from composio.tools.local.base import Action as LocalActionType
 from composio.tools.local.base import Tool as LocalToolType
 from composio.utils.logging import WithLogger
 
@@ -54,6 +55,10 @@ class LocalClient(WithLogger):
                 if bool(set(tags) & set(action_schema["tags"]))
             ]
         return action_schemas
+
+    def get_action(self, action: Action) -> LocalActionType:
+        """Get a local action class."""
+        return self.tools[action.app].get_action(name=action.name)
 
     def execute_action(
         self,
