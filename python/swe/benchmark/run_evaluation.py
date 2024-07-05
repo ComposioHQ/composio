@@ -214,6 +214,13 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
     for count, issue in enumerate(issues, 1):
         try:
             repo = issue["repo"]
+            version = issue.get("version", "latest")  # Assuming 'version' key exists, default to 'latest'
+            image_name = f"techcomposio/swe-bench-{repo.replace('/', '__')}:{version}"
+            # Check if the image exists, if not use the default image
+            if not check_image_exists(image_name):  # You need to define or implement check_image_exists
+                image_name = "sweagent/swe-agent"
+            
+            repo_to_image_id_map = {repo: image_name}
             print(f"Processing {count}th issue with repoMap: {repo_to_workspace_map}")
             print(f"Repo: {repo}")
             print(f"Issue id: {issue['instance_id']}")
@@ -283,7 +290,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--test_split",
         type=str,
-        default="20:40",
+        default="20:22",
         help="Test split range (e.g., 1:10)",
     )
     parser.add_argument(
@@ -323,7 +330,7 @@ if __name__ == "__main__":
         logs_dir.mkdir(parents=True)
 
     print("Starting evaluation with gen_report: ", args.gen_report)
-    # if not args.dont_run_eval:
-    #     run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
+    if not args.dont_run_eval:
+        run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
     if args.gen_report:
         get_score(os.path.expanduser(args.logs_dir))

@@ -43,6 +43,8 @@ RUN conda --version \
 
 WORKDIR /opt
 
+RUN conda run pip install -U composio-core
+
 RUN git clone https://github.com/swe-bench/{{ repo_name }}.git
 ENV REPO_DIR=/opt/{{ repo_name }}
 
@@ -52,8 +54,6 @@ RUN git -c advice.detachedHead=false checkout {{ environment_setup_commit }}
 
 RUN {{conda_create_cmd}}
 SHELL ["conda", "run", "-n", "{{ testbed }}", "/bin/bash", "-c"]
-
-RUN pip install -U pip setuptools
 
 {% if pre_install_cmds -%}
 {% for cmd in pre_install_cmds -%}
@@ -68,5 +68,3 @@ COPY {{ path_to_reqs }} .
 {% for cmd in install_cmds %}
 RUN {{ cmd }}
 {% endfor %}
-
-ENTRYPOINT ["/bin/bash"]
