@@ -9,6 +9,7 @@ import inflection
 import jsonref
 from pydantic import BaseModel
 
+from composio.client.enums import SentinalObject
 from composio.utils.logging import WithLogger
 
 
@@ -26,8 +27,8 @@ RequestType = TypeVar("RequestType", bound=BaseModel)
 ResponseType = TypeVar("ResponseType", bound=BaseModel)
 
 
-class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
-    """Action"""
+class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]):
+    """Action abstraction."""
 
     _history_maintains: bool = False
     _display_name: str = ""  # Add an internal variable to hold the display name

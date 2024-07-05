@@ -29,7 +29,7 @@ class DockerWorkspace(Workspace):
         """Create a docker workspace."""
         super().__init__()
         self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
-        self.logger.info(f"Creating docker workspace with image: {self._image}")
+        self.logger.debug(f"Creating docker workspace with image: {self._image}")
         self._container = self.client.containers.run(
             image=self._image,
             command="/bin/bash -l -m",
@@ -95,6 +95,22 @@ class DockerWorkspace(Workspace):
         except json.JSONDecodeError:
             return {"status": "failure", "message": output["stdout"]}
 
+    def _execute_runtime(
+        self,
+        action: Action,
+        request_data: dict,
+        metadata: dict,
+    ) -> t.Dict:
+        """Execute action using CLI"""
+        return LocalClient().execute_action(
+            action=action,
+            request_data=request_data,
+            metadata={
+                **metadata,
+                "workspace": self,
+            },
+        )
+
     def execute_action(
         self,
         action: Action,
@@ -102,6 +118,13 @@ class DockerWorkspace(Workspace):
         metadata: dict,
     ) -> t.Dict:
         """Execute action in docker workspace."""
+        if action.is_runtime:
+            return self._execute_runtime(
+                action=action,
+                request_data=request_data,
+                metadata=metadata,
+            )
+
         if action.shell:
             return self._execute_shell(
                 action=action,
