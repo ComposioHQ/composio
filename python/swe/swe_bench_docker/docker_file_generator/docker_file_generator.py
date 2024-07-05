@@ -63,7 +63,6 @@ class DockerfileGenerator:
         getconda_path = os.path.join(script_dir, 'getconda.sh')
         self.getconda_path = os.path.relpath(script_dir, getconda_path)
 
-
         if predictions_path:
             predictions = get_instances(predictions_path)
             self.instance_ids = set([p["instance_id"] for p in predictions])
@@ -102,7 +101,6 @@ class DockerfileGenerator:
                     deb_packages = None
                     if repo in MAP_REPO_TO_DEB_PACKAGES:
                         deb_packages = MAP_REPO_TO_DEB_PACKAGES[repo]
-
                     # if use_conda:
                     #     self.generate_conda_repository_dockerfile(repo, deb_packages)
                     # else:
@@ -128,8 +126,8 @@ class DockerfileGenerator:
                                 install_cmd=install_cmd,
                             )
 
-        self.create_makefile()
-        self.generate_docker_compose()
+            self.create_makefile()
+            self.generate_docker_compose()
 
         for dockerfile, image_name in self.dockerfiles_to_build:
             print(f"docker build -t {image_name} -f {dockerfile} .")

@@ -66,9 +66,7 @@ def create_patches_file(predictions_dir, dataset_path_or_name):
     all_patches = []
     pred_total, pred_will_eval = 0, 0
     dataset_on_disk = str(Path(predictions_dir) / Path("dataset"))
-    download_and_store_dataset(
-        dataset_path_or_name, dataset_on_disk
-    )
+    download_and_store_dataset(dataset_path_or_name, dataset_on_disk)
     pred_path_orig = predictions_dir / Path(PATH_PATCHES_JSON)
 
     # Iterate over each file in the directory

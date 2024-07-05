@@ -13,8 +13,12 @@ from composio_swe.config.store import IssueConfig
 from composio_swe.exceptions import ComposioSWEError
 from pydantic import BaseModel, Field
 
+<<<<<<< HEAD
 from composio import Action, Composio
 from composio.tools.env.factory import WorkspaceFactory
+=======
+from composio import Action
+>>>>>>> master
 from composio.utils import logging
 
 

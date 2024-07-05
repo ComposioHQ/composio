@@ -1,9 +1,7 @@
-from typing import cast
-
 from pydantic import Field, field_validator
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    ExecuteCommand,
+    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
@@ -20,7 +18,7 @@ class GoToResponse(ShellExecResponse):
     pass
 
 
-class GoToLineNumInOpenFile(ExecuteCommand):
+class GoToLineNumInOpenFile(BaseExecCommand):
     """
     Navigates to a specific line number in the open file, with checks to ensure the file is open
     and the line number is a valid number.
@@ -69,7 +67,7 @@ class CreateFileResponse(ShellExecResponse):
     pass
 
 
-class CreateFileCmd(ExecuteCommand):
+class CreateFileCmd(BaseExecCommand):
     """
     Creates a new file within a shell session.
     Example:
@@ -108,7 +106,7 @@ class OpenCmdResponse(ShellExecResponse):
     pass
 
 
-class OpenFile(ExecuteCommand):
+class OpenFile(BaseExecCommand):
     """
     Opens a file in the editor based on the provided file path,
     If line_number is provided, the window will be move to include that line

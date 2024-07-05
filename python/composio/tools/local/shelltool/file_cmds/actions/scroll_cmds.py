@@ -3,7 +3,7 @@ from typing import cast
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    ExecuteCommand,
+    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
@@ -20,7 +20,7 @@ class ScrollResponse(ShellExecResponse):
     pass
 
 
-class Scroll(ExecuteCommand):
+class Scroll(BaseExecCommand):
     """
     Scrolls the view within a shell session down by 100 lines.
     """

@@ -29,7 +29,7 @@ class DockerShell(Shell):
         super().__init__()
         self._id = generate_id()
         self._container = container
-        self._process = subprocess.Popen(
+        self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["docker", "exec", "-i", str(container.name), "/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

@@ -146,7 +146,11 @@ MAP_VERSION_TO_INSTALL_DJANGO.update(
 )
 for k in ["2.2", "3.0", "3.1"]:
     MAP_VERSION_TO_INSTALL_DJANGO[k].update(
-        {"env_vars_test": {"LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"}}
+        {"env_vars_test": {
+                "LANG": "en_US.UTF-8",
+                "LC_ALL": "en_US.UTF-8",
+            }
+        }
     )
 
 MAP_VERSION_TO_INSTALL_REQUESTS = {

@@ -1,6 +1,5 @@
 """Tool for creating a new shell session."""
 
-import typing as t
 
 from pydantic import BaseModel, Field
 
@@ -23,12 +22,13 @@ class ShellCreateResponse(BaseModel):
 class CreateShell(Action[ShellCreateRequest, ShellCreateResponse]):
     """Use this tool to create a new shell session."""
 
-    _runs_on_workspace = True
     _display_name = "Create Shell"
     _tool_name = "shell"
     _request_schema = ShellCreateRequest
     _response_schema = ShellCreateResponse
     _tags = ["workspace", "shell", "create"]
+
+    run_on_shell = True
 
     def execute(
         self,

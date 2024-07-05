@@ -1,6 +1,7 @@
 import typing as t
 
 from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
+from composio.tools.local.base import Action as LocalActionType
 from composio.tools.local.base import Tool as LocalToolType
 from composio.utils.logging import WithLogger
 
@@ -14,7 +15,9 @@ class LocalClient(WithLogger):
     @property
     def tools(self) -> t.Dict[str, LocalToolType]:
         """Local tools."""
-        from composio.tools.local import TOOLS
+        from composio.tools.local import (  # pylint: disable=import-outside-toplevel
+            TOOLS,
+        )
 
         for tool in t.cast(t.List[t.Type[LocalToolType]], TOOLS):
             _tool = tool()
@@ -31,22 +34,19 @@ class LocalClient(WithLogger):
         """Get action schemas for given parameters."""
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+        action_schemas: t.List[t.Dict] = []
 
-        action_objs: t.List[t.Any] = []
         for app in apps:
-            action_objs.extend([action for action in self.tools[app.name].actions()])
+            action_schemas += [
+                action().get_action_schema()
+                for action in self.tools[app.name].actions()
+            ]
 
         for action in actions:
-            action_objs.append(self.tools[action.app].get_action(name=action.name))
+            action_schemas.append(
+                self.tools[action.app].get_action(name=action.name).get_action_schema()
+            )
 
-        action_schemas = [
-            action_obj().get_action_schema() for action_obj in action_objs
-        ]
-        action_schemas = list(
-            {
-                action_schema["name"]: action_schema for action_schema in action_schemas
-            }.values()
-        )
         if tags:
             tags = t.cast(t.List[str], [Tag(tag).value for tag in tags or []])
             action_schemas = [
@@ -55,6 +55,10 @@ class LocalClient(WithLogger):
                 if bool(set(tags) & set(action_schema["tags"]))
             ]
         return action_schemas
+
+    def get_action(self, action: Action) -> LocalActionType:
+        """Get a local action class."""
+        return self.tools[action.app].get_action(name=action.name)
 
     def execute_action(
         self,

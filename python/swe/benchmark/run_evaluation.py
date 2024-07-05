@@ -7,11 +7,11 @@ import logging
 import os
 import docker
 from tqdm import tqdm
-from benchmark.constants import MODEL_GPT4, DEFAULT_IMAGE_NAME
+from benchmark.constants import MODEL_GPT4
 
-from composio_crewai import ComposioToolSet
 from pathlib import Path
 
+from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import (
     KEY_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
@@ -22,9 +22,8 @@ from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
 from rich.logging import RichHandler
 
-from composio import Action, Composio
+from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-
 from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
@@ -117,11 +116,20 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    image = repo_to_image_id_map[repo]
-    workspace = WorkspaceFactory.new(env=ExecEnv.DOCKER, image=image)
+    workspace = WorkspaceFactory.new(
+        env=ExecEnv.DOCKER, image=repo_to_image_id_map[repo]
+    )
     workspace_id = workspace.id
     workspace_creation_time = datetime.datetime.now() - start_time
     composio_toolset = ComposioToolSet(workspace_id=workspace_id)
+    cd_resp = composio_toolset.execute_action(
+        action=Action.SHELL_EXECUTE_COMMAND,
+        params={
+            "cmd": f"cd /{repo.split('/')[-1]}",
+        },
+    )
+    if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
+        raise Exception(f"Error changing directory: {cd_resp['details']}")
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
         workspace_id,
@@ -191,7 +199,6 @@ def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_comm
     return build_image_and_container(
         repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     )
-
 
 def check_and_pull_image(image_name):
     """
@@ -308,9 +315,6 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             )
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
-            import traceback
-
-            traceback.print_exc()
             raise e
 
 

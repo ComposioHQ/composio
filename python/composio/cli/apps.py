@@ -194,6 +194,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
+                shell=tool_action.run_on_shell,
             ).store()
 
     _update_annotations(
@@ -294,7 +295,7 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             for child in node.body[1:]
             if isinstance(child, ast.AnnAssign)
         ]
-        if cls_attributes == attributes:
+        if set(cls_attributes) == set(attributes):
             console.print(
                 f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]"
             )

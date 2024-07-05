@@ -10,6 +10,7 @@ from composio.cli.actions import _actions
 from composio.cli.add import _add
 from composio.cli.apps import _apps
 from composio.cli.connections import _connections
+from composio.cli.execute import _execute
 from composio.cli.integrations import _integrations
 from composio.cli.login import _login
 from composio.cli.logout import _logout
@@ -74,3 +75,4 @@ composio.add_command(_actions)
 composio.add_command(_triggers)
 composio.add_command(_integrations)
 composio.add_command(_connections)
+composio.add_command(_execute)
