@@ -3,7 +3,7 @@ import typing as t
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    ExecuteCommand,
+    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
@@ -26,7 +26,7 @@ class GetPatchResponse(ShellExecResponse):
     pass
 
 
-class GetPatchCmd(ExecuteCommand):
+class GetPatchCmd(BaseExecCommand):
     """
     Get the patch from the current working directory. The patch is present in the output field of the response.
     The patch is in the format of a proper diff format.

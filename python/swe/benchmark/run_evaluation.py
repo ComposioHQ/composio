@@ -5,11 +5,9 @@ import asyncio
 import datetime
 import logging
 import os
-from benchmark.constants import MODEL_GPT4
-
-from composio_crewai import ComposioToolSet
 from pathlib import Path
 
+from composio_crewai import ComposioToolSet
 from composio_swe.config.constants import (
     KEY_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
@@ -20,9 +18,8 @@ from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
 from rich.logging import RichHandler
 
-from composio import Action, Composio
+from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-
 from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
 from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
@@ -272,9 +269,6 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             )
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
-            import traceback
-
-            traceback.print_exc()
             raise e
 
 

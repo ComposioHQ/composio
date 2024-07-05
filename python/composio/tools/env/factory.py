@@ -42,22 +42,20 @@ class WorkspaceFactory:
     @classmethod
     def get_recent_workspace(cls) -> Workspace:
         """Get most recent workspace."""
-        cls._lock.acquire()
-        workspace = cls._recent
-        cls._lock.release()
-        return workspace
+        with cls._lock:
+            return cls._recent
 
     @classmethod
     def set_recent_workspace(cls, workspace: Workspace) -> Workspace:
         """Get most recent workspace."""
-        cls._lock.acquire()
-        cls._recent = workspace
-        cls._lock.release()
+        with cls._lock:
+            cls._recent = workspace
         return workspace
 
     @classmethod
     def new(cls, env: ExecEnv, **kwargs: t.Any) -> Workspace:
         """Create a new workspace."""
+        workspace: Workspace
         if env == ExecEnv.HOST:
             workspace = HostWorkspace(**kwargs)
         elif env == ExecEnv.DOCKER:
@@ -93,8 +91,9 @@ class WorkspaceFactory:
     @classmethod
     def teardown(cls) -> None:
         """Teardown the workspace factory."""
-        for id in cls._workspaces:
-            cls._workspaces[id].teardown()
+        for workspace in cls._workspaces.values():
+            get_logger(name="factory").info("Tearing down: %s", workspace)
+            workspace.teardown()
 
 
 @atexit.register

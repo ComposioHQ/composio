@@ -1,7 +1,7 @@
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    ExecuteCommand,
+    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
@@ -38,7 +38,7 @@ class GithubCloneResponse(ShellExecResponse):
     pass
 
 
-class GithubCloneCmd(ExecuteCommand):
+class GithubCloneCmd(BaseExecCommand):
     """
     Clones a github repository at a given commit-id.
     """

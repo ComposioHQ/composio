@@ -294,7 +294,7 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             for child in node.body[1:]
             if isinstance(child, ast.AnnAssign)
         ]
-        if cls_attributes == attributes:
+        if set(cls_attributes) == set(attributes):
             console.print(
                 f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]"
             )
