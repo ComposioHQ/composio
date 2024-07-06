@@ -19,9 +19,6 @@ from composio.utils.logging import get as get_logger
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 import utils as eval_utils
 
-LOGGER_NAME = "local_workspace"
-DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
-PATH_TESTBED = "testbed/"
 logger = get_logger(name="run_evaluation")
 
 
@@ -59,11 +56,6 @@ class EvaluationManager:
         issue_description = eval_utils.build_issue_description(
             issue["hints_text"], issue["problem_statement"], self.include_hints
         )
-        logger.debug(
-            f"starting agent for issue-id: {issue['instance_id']}\n"
-            f"issue-description: {issue_description}\n"
-            f"repo_name: {issue['repo']}\n"
-        )
         return IssueConfig(
             repo_name=issue["repo"],
             issue_id=issue["instance_id"],
@@ -82,7 +74,7 @@ class EvaluationManager:
                 isinstance(get_patch_resp, dict)
                 and get_patch_resp.get("status") == "failure"
         ):
-            raise Exception(get_patch_resp["details"])
+            raise Exception(get_patch_resp)
         logger.info(f"Get patch response: {get_patch_resp}")
         patch = get_patch_resp.get("stdout")  # type: ignore
         logger.info(f"Final Patch: {patch}")
@@ -156,7 +148,7 @@ class EvaluationManager:
                 self.save_agent_run(issue_config, issue_patch)
 
             except Exception as e:
-                print(f"Error processing issue {issue['instance_id']}: {e}")
+                logger.error(f"Error processing issue {issue['instance_id']}: {e}")
                 raise e
 
     def score_evaluation(self):
