@@ -20,43 +20,6 @@ _openapi_to_python = {
 class ComposioToolSet(BaseComposioToolSet):
     """
     Composio toolset for Langchain framework.
-
-    Example:
-    ```python
-        import os
-        import dotenv
-
-        from composio_langchain import App, ComposioToolSet
-        from langchain.agents import AgentExecutor, create_openai_functions_agent
-        from langchain_openai import ChatOpenAI
-
-        from langchain import hub
-
-
-        # Load environment variables from .env
-        dotenv.load_dotenv()
-
-
-        # Pull relevant agent model.
-        prompt = hub.pull("hwchase17/openai-functions-agent")
-
-        # Initialize tools.
-        openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
-        composio_toolset = ComposioToolSet()
-
-        # Get All the tools
-        tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
-        # Define task
-        task = "Star a repo SamparkAI/docs on GitHub"
-
-        # Define agent
-        agent = create_openai_functions_agent(openai_client, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-        # Execute using agent_executor
-        agent_executor.invoke({"input": task})
-    ```
     """
 
     def __init__(
@@ -140,32 +103,48 @@ class ComposioToolSet(BaseComposioToolSet):
         self,
         action_name: str,
         tool_name: str,
+        entity_id: t.Any,
         tool_description: str,
         tool_input_model_name: str,
-    ):
-        basetool_lines = []
-        basetool_lines.append(f"class {tool_name}(BaseTool):")
-        basetool_lines.append(f'\tname: str = "{tool_name}"')
-        basetool_lines.append(f'\tdescription: str = "{tool_description}"')
-        basetool_lines.append(
-            f"\targs_schema: Type[BaseModel] = {tool_input_model_name}"
-        )
-        basetool_lines.append("\n")
-        basetool_lines.append("\tdef _run(self, **kwargs: t.Any):")
-        basetool_lines.append(f"\t\ttoolset = ComposioToolSet()")
-        basetool_lines.append(f"\t\treturn toolset.execute_tool(")
-        basetool_lines.append(f'\t\t\ttool_identifier="{action_name}",')
-        basetool_lines.append(f"\t\t\tparams=kwargs,")
-        basetool_lines.append(f"\t\t\t)")
+    ) -> str:
+        """
+        Generates the string representation of a BaseTool class.
 
+        :param action_name: Identifier for the tool action.
+        :param tool_name: Name of the tool class.
+        :param tool_description: Description of the tool.
+        :param tool_input_model_name: Name of the input model class.
+        :return: String representation of the BaseTool class.
+        """
+        basetool_lines = [
+            f"class {tool_name}(BaseTool):",
+            f'\tname: str = "{tool_name}"',
+            f'\tdescription: str = "{tool_description}"',
+            f"\targs_schema: Type[BaseModel] = {tool_input_model_name}",
+            "",
+            "\tdef _run(self, **kwargs: t.Any) -> t.Any:",
+            f"\t\ttoolset = ComposioToolSet(entity_id='{entity_id}')",
+            "\t\treturn toolset.execute_tool(",
+            f'\t\t\ttool_identifier="{action_name}",',
+            "\t\t\tparams=kwargs,",
+            "\t\t)",
+        ]
         return "\n".join(basetool_lines)
 
-    def _wrap_tool(
+    def _write_tool(
         self,
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
     ) -> str:
-        """Wraps composio tool as Langchain StructuredTool object."""
+        """
+        Generats PraisonAI tools from Composio Actions
+
+        :param action_name: Identifier for the tool action.
+        :param tool_name: Name of the tool class.
+        :param tool_description: Description of the tool.
+        :param tool_input_model_name: Name of the input model class.
+        :return: String representation of the BaseTool class.
+        """
         name = schema["name"]
         description = schema["description"].replace('"', "'").replace("\n", " ")
 
@@ -180,6 +159,7 @@ class ComposioToolSet(BaseComposioToolSet):
         basetool_str = self._process_basetool(
             action_name=name,
             tool_name=tool_name,
+            entity_id=entity_id,
             tool_description=description,
             tool_input_model_name=tool_input_model_name,
         )
@@ -191,7 +171,13 @@ class ComposioToolSet(BaseComposioToolSet):
 
         return tool_name
 
-    def get_tools_section(self, tool_names: t.List):
+    def get_tools_section(self, tool_names: t.List) -> str:
+        """
+        Constructs a YAML section for the tools.
+
+        :param tool_names: A list of tool names to include in the section.
+        :return: A string representing the YAML section.
+        """
         tools_section_parts = ["\n"]
         tools_section_parts.append("    tools:")
         for tool_name in tool_names:
@@ -203,17 +189,17 @@ class ComposioToolSet(BaseComposioToolSet):
         self,
         actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[str]:
+    ) -> t.List[str]:
         """
-        Get composio tools wrapped as Langchain StructuredTool objects.
+        Get composio tools written as ParisonAi supported tools.
 
-        :param actions: List of actions to wrap
+        :param actions: List of actions to write
         :param entity_id: Entity ID to use for executing function calls.
-        :return: Composio tools wrapped as `StructuredTool` objects
+        :return: Name of the tools written
         """
 
         return [
-            self._wrap_tool(
+            self._write_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
@@ -225,18 +211,17 @@ class ComposioToolSet(BaseComposioToolSet):
         apps: t.Sequence[AppType],
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[str]:
+    ) -> t.List[str]:
         """
-        Get composio tools wrapped as Langchain StructuredTool objects.
+        Get composio tools written as ParisonAi supported tools.
 
-        :param apps: List of apps to wrap
-        :param tags: Filter the apps by given tags
+        :param actions: List of actions to write
         :param entity_id: Entity ID to use for executing function calls.
-        :return: Composio tools wrapped as `StructuredTool` objects
+        :return: Name of the tools written
         """
 
         return [
-            self._wrap_tool(
+            self._write_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )

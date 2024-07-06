@@ -22,8 +22,8 @@ class GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER_TOOL(BaseTool):
         BaseModel
     ] = GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER_PARAMS
 
-    def _run(self, **kwargs: t.Any):
-        toolset = ComposioToolSet()
+    def _run(self, **kwargs: t.Any) -> t.Any:
+        toolset = ComposioToolSet(entity_id="default")
         return toolset.execute_tool(
             tool_identifier="github_activity_star_repo_for_authenticated_user",
             params=kwargs,

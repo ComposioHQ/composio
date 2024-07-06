@@ -1,9 +1,9 @@
-import os
-
-import yaml
+# pylint: disable=E0611
 from composio_praisonai import Action, ComposioToolSet
 from praisonai import PraisonAI
 
+
+# pylint: enable=E0611
 
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
@@ -31,8 +31,6 @@ roles:
 """
     + tool_section_str
 )
-
-print(agent_yaml)
 
 # Create a PraisonAI instance with the agent_yaml content
 praison_ai = PraisonAI(agent_yaml=agent_yaml)
