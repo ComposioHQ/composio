@@ -2,7 +2,6 @@
 Composio SDK tools.
 """
 
-import base64
 import hashlib
 import itertools
 import json
@@ -17,8 +16,6 @@ from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
     ConnectedAccountModel,
-    FileModel,
-    SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
 from composio.client.enums import Action, ActionType, App, AppType, TagType
@@ -181,11 +178,7 @@ class ComposioToolSet(WithLogger):
                 entity_id=entity_id,
             )
 
-        return self._write_file(
-            action=action,
-            output=output,
-            entity_id=entity_id,
-        )
+        return output
 
     def _write_to_file(
         self,
@@ -213,37 +206,6 @@ class ComposioToolSet(WithLogger):
             "message": f"output written to {outfile.resolve()}",
             "file": str(outfile.resolve()),
         }
-
-    def _write_file(
-        self,
-        action: Action,
-        output: t.Dict,
-        entity_id: str = DEFAULT_ENTITY_ID,
-    ) -> dict:
-        """If received object is a blob, write it to a file."""
-        success_response_model = SuccessExecuteActionResponseModel.model_validate(
-            output
-        )
-        files = json.loads(
-            success_response_model.response_data,
-        )
-        outdir = (
-            LOCAL_CACHE_DIRECTORY
-            / "outputs"
-            / hashlib.sha256(
-                f"{action.name}-{entity_id}-{time.time()}".encode()
-            ).hexdigest()
-        )
-        if not outdir.exists():
-            outdir.mkdir()
-
-        response = {}
-        self.logger.info(f"Writing files to: {outdir}")
-        for key, val in files.items():
-            file = FileModel.model_validate(val)
-            (outdir / file.name).write_bytes(data=base64.b64decode(file.content))
-            response[key] = str(outdir / file.name)
-        return response
 
     def execute_action(
         self,
