@@ -1,4 +1,3 @@
-from composio.utils.logging import WithLogger
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
@@ -12,6 +11,7 @@ from composio.tools.local.shelltool.utils import (
     git_clone_cmd,
     git_reset_cmd,
 )
+from composio.utils.logging import WithLogger
 
 
 LONG_TIMEOUT = 200
