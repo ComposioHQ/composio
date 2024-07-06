@@ -96,7 +96,7 @@ class DockerfileGenerator:
                 if repo_name not in testbeds:
                     # deb_packages = None
                     # if repo in MAP_REPO_TO_DEB_PACKAGES:
-                    #     deb_packages = MAP_REPO_TO_DEB_PACKAGES[repo]
+                    # deb_packages = MAP_REPO_TO_DEB_PACKAGES[repo]
                     # if use_conda:
                     #     self.generate_conda_repository_dockerfile(repo, deb_packages)
                     # else:
@@ -122,8 +122,8 @@ class DockerfileGenerator:
                                 install_cmd=install_cmd,
                             )
 
-        self.create_makefile()
-        self.generate_docker_compose()
+            self.create_makefile()
+            self.generate_docker_compose()
 
         for dockerfile, image_name in self.dockerfiles_to_build:
             print(f"docker build -t {image_name} -f {dockerfile} .")
