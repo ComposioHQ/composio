@@ -1,7 +1,6 @@
 import { CancelablePromise, ListTriggersData, ListTriggersResponse, SetupTriggerData, SetupTriggerResponse, listTriggers, setupTrigger } from "../client";
 import { Composio } from "../";
-// import { PusherUtils, TriggerData } from "../utils/pusher";
-
+import { TriggerData, PusherUtils } from "../utils/pusher";
 
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
@@ -34,46 +33,46 @@ export class Triggers {
         return setupTrigger(data, this.client.config);
     }
 
-    // async subscribe(fn: (data: TriggerData) => void, filters:{
-    //     appName?: string,
-    //     triggerId?  : string;
-    //     connectionId?: string;
-    //     integrationId?: string;
-    //     triggerName?: string;
-    //     triggerData?: string;
-    //     entityId?: string;
-    // }={}) {
+    async subscribe(fn: (data: TriggerData) => void, filters:{
+        appName?: string,
+        triggerId?  : string;
+        connectionId?: string;
+        integrationId?: string;
+        triggerName?: string;
+        triggerData?: string;
+        entityId?: string;
+    }={}) {
 
-    //     if(!fn) throw new Error("Function is required for trigger subscription");
+        if(!fn) throw new Error("Function is required for trigger subscription");
 
-    //     const clientId = await this.client.getClientId();
-    //     await PusherUtils.getPusherClient(this.client.baseUrl, this.client.apiKey);
+        const clientId = await this.client.getClientId();
+        await PusherUtils.getPusherClient(this.client.baseUrl, this.client.apiKey);
 
-    //     const shouldSendTrigger = (data: TriggerData) => {
-    //        if(Object.keys(filters).length === 0) return true;
-    //         else{
-    //             return (
-    //                 (!filters.appName || data.appName === filters.appName) &&
-    //                 (!filters.triggerId || data.metadata.id === filters.triggerId) &&
-    //                 (!filters.connectionId || data.metadata.connectionId === filters.connectionId) &&
-    //                 (!filters.triggerName || data.metadata.triggerName === filters.triggerName) &&
-    //                 (!filters.entityId || data.metadata.connection.clientUniqueUserId === filters.entityId) &&
-    //                 (!filters.integrationId || data.metadata.connection.integrationId === filters.integrationId)
-    //             );
-    //         }
-    //     }
+        const shouldSendTrigger = (data: TriggerData) => {
+           if(Object.keys(filters).length === 0) return true;
+            else{
+                return (
+                    (!filters.appName || data.appName === filters.appName) &&
+                    (!filters.triggerId || data.metadata.id === filters.triggerId) &&
+                    (!filters.connectionId || data.metadata.connectionId === filters.connectionId) &&
+                    (!filters.triggerName || data.metadata.triggerName === filters.triggerName) &&
+                    (!filters.entityId || data.metadata.connection.clientUniqueUserId === filters.entityId) &&
+                    (!filters.integrationId || data.metadata.connection.integrationId === filters.integrationId)
+                );
+            }
+        }
         
-    //     console.log("Subscribing to triggers",filters)
-    //     PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
-    //         if (shouldSendTrigger(data)) {
-    //             fn(data);
-    //         }
-    //     });
-    // }
+        console.log("Subscribing to triggers",filters)
+        PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
+            if (shouldSendTrigger(data)) {
+                fn(data);
+            }
+        });
+    }
 
-    // async unsubscribe() {
-    //     const clientId = await this.client.getClientId();
-    //     PusherUtils.triggerUnsubscribe(clientId);
-    // }
+    async unsubscribe() {
+        const clientId = await this.client.getClientId();
+        PusherUtils.triggerUnsubscribe(clientId);
+    }
 }
 
