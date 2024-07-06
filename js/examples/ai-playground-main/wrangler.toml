@@ -2,5 +2,7 @@ name = "ai-playground"
 main = "src/worker.js"
 compatibility_date = "2024-04-18"
 
+compatibility_flags = [ "nodejs_compat" ]
+
 [ai]
 binding = "AI"

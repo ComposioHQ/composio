@@ -1,5 +1,5 @@
 import { Composio } from "../sdk";
-import * as path from "path";
+import * as path from "node:path";
 
 class UserData {
     apiKey: string | undefined;
