@@ -70,9 +70,7 @@ class ComposioToolSet(WithLogger):
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
-        self.workspace_id = workspace_id
-        self.workspace_env = workspace_env
-        if self.workspace_id is None:
+        if workspace_id is None:
             self.logger.debug(
                 f"Workspace ID not provided, using `{workspace_env}` "
                 "to create a new workspace"
@@ -83,7 +81,7 @@ class ComposioToolSet(WithLogger):
         else:
             self.logger.debug(f"Loading workspace with ID: {workspace_id}")
             self.workspace = WorkspaceFactory.get(
-                id=self.workspace_id,
+                id=workspace_id,
             )
 
         try:
@@ -99,6 +97,9 @@ class ComposioToolSet(WithLogger):
 
         self._runtime = runtime
         self._local_client = LocalClient()
+
+    def set_workspace_id(self, workspace_id: str) -> None:
+        self.workspace = WorkspaceFactory.get(id=workspace_id)
 
     @property
     def client(self) -> Composio:

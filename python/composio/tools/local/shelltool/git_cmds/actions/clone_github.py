@@ -11,6 +11,7 @@ from composio.tools.local.shelltool.utils import (
     git_clone_cmd,
     git_reset_cmd,
 )
+from composio.utils.logging import WithLogger
 
 
 LONG_TIMEOUT = 200
@@ -38,7 +39,7 @@ class GithubCloneResponse(ShellExecResponse):
     pass
 
 
-class GithubCloneCmd(BaseExecCommand):
+class GithubCloneCmd(BaseExecCommand, WithLogger):
     """
     Clones a github repository at a given commit-id.
     """
@@ -59,6 +60,8 @@ class GithubCloneCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
+        if "stderr" in output and len(output["stderr"]) > 0:
+            self.logger.error(f"Error cloning repo: {output['stderr']}")
         return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
 
     def reset_to_base_commit(

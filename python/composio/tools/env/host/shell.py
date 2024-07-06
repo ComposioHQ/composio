@@ -30,7 +30,7 @@ class HostShell(Shell):
         )
         self.logger.debug(f"Initial data from session: {self.id} - {self._read()}")
 
-    def _read(self, timeout: float = 10.0) -> t.Dict:
+    def _read(self, timeout: float = 120.0) -> t.Dict:
         """Read data from a subprocess with a timeout."""
         stderr = t.cast(t.IO[str], self._process.stderr).fileno()
         stdout = t.cast(t.IO[str], self._process.stdout).fileno()
