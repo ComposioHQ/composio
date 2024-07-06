@@ -85,10 +85,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     tool: AiTextGenerationOutput,
     entityId: Optional<string> = null
   ): Promise<string> {
+    console.log(tool)
     return JSON.stringify(
       await this.execute_action(
         tool.name,
-        JSON.parse(tool.arguments),
+        tool.arguments,
         entityId || this.entityId
       )
     );
