@@ -9,7 +9,7 @@ const config = {
 
 // Initialize the CloudflareToolSet with the API key
 const toolset = new CloudflareToolSet({
-  apiKey: 'iai2fob29jhl4kooocdot',
+  apiKey: process.env.COMPOSIO_API_KEY,
 });
 
 // Function to set up the GitHub connection for the user if it doesn't exist
