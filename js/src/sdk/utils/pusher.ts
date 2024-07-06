@@ -29,7 +29,8 @@ export class PusherUtils {
     static pusherClient:  PusherClient;
 
     static getPusherClient(baseURL: string, apiKey: string):  PusherClient {
-        if (!PusherUtils.pusherClient && typeof window !== "undefined") {
+
+        if (!PusherUtils.pusherClient) {
             const PusherClient = require("pusher-js")
             PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
                 cluster: PUSHER_CLUSTER,
