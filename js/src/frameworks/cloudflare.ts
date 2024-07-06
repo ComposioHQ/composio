@@ -2,6 +2,7 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
   AiTextGenerationToolInput,
+  // @ts-ignore
 } from "@cloudflare/workers-types";
 import { GetListActionsResponse } from "../sdk/client";
 
@@ -110,7 +111,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     return JSON.stringify(
       await this.execute_action(
         tool.name,
-        tool.arguments as Record<string, any>,
+        typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
         entityId || this.entityId
       )
     );

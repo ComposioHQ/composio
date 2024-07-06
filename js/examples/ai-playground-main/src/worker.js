@@ -7,13 +7,9 @@ const config = {
   model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
 };
 
-// Initialize the CloudflareToolSet with the API key
-const toolset = new CloudflareToolSet({
-  apiKey: process.env.COMPOSIO_API_KEY,
-});
 
 // Function to set up the GitHub connection for the user if it doesn't exist
-async function setupUserConnectionIfNotExists(entityId, c) {
+async function setupUserConnectionIfNotExists(toolset, entityId, c) {
   const entity = await toolset.client.getEntity(entityId);
   const connection = await entity.getConnection('github');
 
@@ -27,12 +23,17 @@ async function setupUserConnectionIfNotExists(entityId, c) {
   return connection;
 }
 
+
 // POST endpoint to handle the AI request
 app.post('/', async (c) => {
+  // Initialize the CloudflareToolSet with the API key
+  const toolset = new CloudflareToolSet({
+    apiKey: c.env.COMPOSIO_API_KEY,
+  });
+
   try {
     const entity = await toolset.client.getEntity('default');
-    await setupUserConnectionIfNotExists(entity.id, c);
-
+    await setupUserConnectionIfNotExists(toolset, entity.id, c);
     // Get the required tools for the AI task
     const tools = await toolset.get_actions({ actions: ['github_issues_create'] }, entity.id);
     const instruction = 'Make an issue with sample title in the repo - anonthedev/break, only use the tools';
@@ -51,7 +52,7 @@ app.post('/', async (c) => {
 
     // Handle the tool call response
     await toolset.handle_tool_call(toolCallResp, entity.id);
-    return c.json({ messages: "Tool call successful" });
+    return c.json({ messages: "Your issue has been created" });
   } catch (err) {
     console.log(err);
     return c.text('Something went wrong', 500);
