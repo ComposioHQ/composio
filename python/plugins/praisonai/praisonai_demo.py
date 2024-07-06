@@ -1,13 +1,9 @@
-
-
-
-
-
-
 import os
+
 import yaml
-from praisonai import PraisonAI
 from composio_praisonai import Action, ComposioToolSet
+from praisonai import PraisonAI
+
 
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
@@ -18,7 +14,8 @@ tool_section_str = composio_toolset.get_tools_section(tools)
 print(tool_section_str)
 
 # Example agent_yaml content
-agent_yaml = """
+agent_yaml = (
+    """
 framework: "crewai"
 topic: "Github Mangement"
 
@@ -31,7 +28,9 @@ roles:
       star_github:
         description: "Star a repo ComposioHQ/composio on GitHub"
         expected_output: "Response wheather the task was executed."
-""" + tool_section_str
+"""
+    + tool_section_str
+)
 
 print(agent_yaml)
 

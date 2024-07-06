@@ -4,6 +4,8 @@ import typing as t
 from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+
+
 # from composio.tools.env.factory import ExecEnv
 
 
@@ -13,6 +15,7 @@ _openapi_to_python = {
     "integer": "int",
     "boolean": "bool",
 }
+
 
 class ComposioToolSet(BaseComposioToolSet):
     """
@@ -88,11 +91,11 @@ class ComposioToolSet(BaseComposioToolSet):
             "from typing import Type",
             "from praisonai_tools import BaseTool",
             "from composio_praisonai import ComposioToolSet",
-            "from langchain.pydantic_v1 import BaseModel, Field"
+            "from langchain.pydantic_v1 import BaseModel, Field",
         ]
-        self.tool_file_path = 'tools.py'
+        self.tool_file_path = "tools.py"
         if not os.path.exists(self.tool_file_path):
-            with open(self.tool_file_path, 'w', encoding="utf-8") as tool_file:
+            with open(self.tool_file_path, "w", encoding="utf-8") as tool_file:
                 tool_file.write("\n".join(prefix_imports) + "\n\n")
 
     def _process_input_schema(
@@ -114,50 +117,48 @@ class ComposioToolSet(BaseComposioToolSet):
                 )
                 schema_dtype = (
                     f"list[{schema_array_dtype}]" if schema_array_dtype else "list"
-                    )
+                )
             else:
                 raise TypeError(
                     f"Some dtype of current schema are not handled yet. Current Schema: {param_body}"
                 )
 
             input_model_lines.append(
-                f'\t{param_name}: {schema_dtype} = Field(description="{description}")')
+                f'\t{param_name}: {schema_dtype} = Field(description="{description}")'
+            )
 
         return "\n".join(input_model_lines)
 
-    def execute_tool(
-        self,
-        tool_identifier,
-        params
-    ):
+    def execute_tool(self, tool_identifier, params):
         return self.execute_action(
             action=Action(value=tool_identifier),
             params=params,
             entity_id=self.entity_id,
-            )
+        )
 
     def _process_basetool(
         self,
-        action_name:str,
-        tool_name:str,
-        tool_description:str,
-        tool_input_model_name:str,
+        action_name: str,
+        tool_name: str,
+        tool_description: str,
+        tool_input_model_name: str,
     ):
         basetool_lines = []
         basetool_lines.append(f"class {tool_name}(BaseTool):")
         basetool_lines.append(f'\tname: str = "{tool_name}"')
         basetool_lines.append(f'\tdescription: str = "{tool_description}"')
-        basetool_lines.append(f'\targs_schema: Type[BaseModel] = {tool_input_model_name}')
+        basetool_lines.append(
+            f"\targs_schema: Type[BaseModel] = {tool_input_model_name}"
+        )
         basetool_lines.append("\n")
-        basetool_lines.append('\tdef _run(self, **kwargs: t.Any):')
-        basetool_lines.append(f'\t\ttoolset = ComposioToolSet()')
-        basetool_lines.append(f'\t\treturn toolset.execute_tool(')
+        basetool_lines.append("\tdef _run(self, **kwargs: t.Any):")
+        basetool_lines.append(f"\t\ttoolset = ComposioToolSet()")
+        basetool_lines.append(f"\t\treturn toolset.execute_tool(")
         basetool_lines.append(f'\t\t\ttool_identifier="{action_name}",')
-        basetool_lines.append(f'\t\t\tparams=kwargs,')
-        basetool_lines.append(f'\t\t\t)')
+        basetool_lines.append(f"\t\t\tparams=kwargs,")
+        basetool_lines.append(f"\t\t\t)")
 
         return "\n".join(basetool_lines)
-
 
     def _wrap_tool(
         self,
@@ -166,11 +167,7 @@ class ComposioToolSet(BaseComposioToolSet):
     ) -> str:
         """Wraps composio tool as Langchain StructuredTool object."""
         name = schema["name"]
-        description = (
-            schema["description"]
-            .replace("\"", "\'")
-            .replace("\n", " ")
-        )
+        description = schema["description"].replace('"', "'").replace("\n", " ")
 
         tool_name = f"{name.upper()}_TOOL"
         tool_input_model_name = f"{name.upper()}_PARAMS"
@@ -188,16 +185,13 @@ class ComposioToolSet(BaseComposioToolSet):
         )
 
         tool_str = input_model_str + "\n\n" + basetool_str
-        with open(self.tool_file_path, 'r+', encoding="utf-8") as tool_file:
+        with open(self.tool_file_path, "r+", encoding="utf-8") as tool_file:
             if tool_str not in tool_file.read():
                 tool_file.write("\n\n" + tool_str)
 
         return tool_name
 
-    def get_tools_section(
-        self,
-        tool_names:t.List
-    ):
+    def get_tools_section(self, tool_names: t.List):
         tools_section_parts = ["\n"]
         tools_section_parts.append("    tools:")
         for tool_name in tool_names:
