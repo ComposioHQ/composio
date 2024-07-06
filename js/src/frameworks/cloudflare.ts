@@ -1,9 +1,9 @@
-//@ts-nocheck
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
   AiTextGenerationToolInput,
 } from "@cloudflare/workers-types";
+import { GetListActionsResponse } from "../sdk/client";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -42,7 +42,16 @@ export class CloudflareToolSet extends BaseComposioToolSet {
           const formattedSchema: AiTextGenerationToolInput["function"] = {
             name: action.name!,
             description: action.description!,
-            parameters: action.parameters!,
+            parameters: action.parameters as unknown as {
+              type: "object";
+              properties: {
+                [key: string]: {
+                  type: string;
+                  description?: string;
+                };
+              };
+              required: string[];
+            },
           };
           const tool: AiTextGenerationToolInput = {
             type: "function",
@@ -70,7 +79,16 @@ export class CloudflareToolSet extends BaseComposioToolSet {
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
           description: action.description!,
-          parameters: action.parameters!,
+          parameters: action.parameters as unknown as {
+            type: "object";
+            properties: {
+              [key: string]: {
+                type: string;
+                description?: string;
+              };
+            };
+            required: string[];
+          },
         };
         const tool: AiTextGenerationToolInput = {
           type: "function",
@@ -82,14 +100,17 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   }
 
   async execute_tool_call(
-    tool: AiTextGenerationOutput,
+    tool: {
+      name: string;
+      arguments: unknown;
+    },
     entityId: Optional<string> = null
   ): Promise<string> {
-    console.log(tool)
+    console.log(tool);
     return JSON.stringify(
       await this.execute_action(
         tool.name,
-        tool.arguments,
+        tool.arguments as Record<string, any>,
         entityId || this.entityId
       )
     );
@@ -100,11 +121,15 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
     const outputs = [];
-    for (const tool_call of result.tool_calls) {
-      if (tool_call.name) {
-        outputs.push(
-          await this.execute_tool_call(result.tool_calls[0], entityId)
-        );
+    if (result instanceof ReadableStream) {
+      console.log("");
+    } else if (!result) {
+      console.log("");
+    } else if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
+      for (const tool_call of result.tool_calls) {
+        if (tool_call.name) {
+          outputs.push(await this.execute_tool_call(tool_call, entityId));
+        }
       }
     }
     return outputs;
