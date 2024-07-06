@@ -25,7 +25,7 @@
     "wrangler": "^3.63.1"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20240620.0",
+    "@cloudflare/workers-types": "github:cloudflare/workers-types",
     "@faker-js/faker": "^8.4.1",
     "@hono/node-server": "^1.12.0",
     "@langchain/core": "^0.2.6",

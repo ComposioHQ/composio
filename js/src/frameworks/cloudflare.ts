@@ -2,6 +2,7 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
   AiTextGenerationToolInput,
+  // @ts-ignore
 } from "@cloudflare/workers-types";
 
 type Optional<T> = T | null;
