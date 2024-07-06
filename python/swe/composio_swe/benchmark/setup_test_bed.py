@@ -4,7 +4,7 @@ import os
 from codecs import decode, encode
 from pathlib import Path
 
-from benchmark.constants import (
+from composio_swe.benchmark.constants import (
     MODEL_GPT4,
     PATH_PATCHES_JSON,
     SUBMIT_PATCH_CMD,

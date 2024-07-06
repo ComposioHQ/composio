@@ -9,6 +9,8 @@ import typing as t
 from pathlib import Path
 
 from composio_crewai import ComposioToolSet
+from composio_swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
+from composio_swe.benchmark.setup_test_bed import create_patches_file
 from composio_swe.config.constants import (
     KEY_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
@@ -21,8 +23,6 @@ from datasets import load_dataset
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 from composio.utils.logging import get as get_logger
-from swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
-from swe.benchmark.setup_test_bed import create_patches_file
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
@@ -298,7 +298,8 @@ def run(
             logger.info(f"Get patch response: {get_patch_resp}")
             patch = get_patch_resp.get("stdout")  # type: ignore
             logger.info(f"Final Patch: {patch}")
-            task_output_log = f"{logs_dir}/{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
+            Path(str(logs_dir)).mkdir(parents=True, exist_ok=True)
+            task_output_log = f"{logs_dir}/agent_logs.json{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
             with open(task_output_log, "w", encoding="utf-8") as f:
                 logs = {
                     issue_config.issue_id: [
