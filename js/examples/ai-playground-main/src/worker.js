@@ -1,100 +1,58 @@
-import { faker } from '@faker-js/faker';
 import { Hono } from 'hono';
-import ui from './ui.html';
 import { CloudflareToolSet } from '../../../lib/frameworks/cloudflare';
 
 const app = new Hono();
 
+// Configuration for the AI model
 const config = {
   model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
 };
 
+// Initialize the CloudflareToolSet with the API key
 const toolset = new CloudflareToolSet({
-  apiKey: 'gz9byycic0mhhk2plynqyb',
+  apiKey: 'iai2fob29jhl4kooocdot',
 });
 
-async function setupUserConnectionIfNotExists(entityId) {
+// Function to set up the GitHub connection for the user if it doesn't exist
+async function setupUserConnectionIfNotExists(entityId, c) {
   const entity = await toolset.client.getEntity(entityId);
   const connection = await entity.getConnection('github');
 
   if (!connection) {
-    // If this entity/user hasn't already connected the account
+    // If the user hasn't connected their GitHub account
     const connection = await entity.initiateConnection('github');
     console.log('Log in via: ', connection.redirectUrl);
-    return connection.waitUntilActive(60);
+    c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again' });
   }
 
   return connection;
 }
 
-app.get('/', (c) => c.html(ui));
-
+// POST endpoint to handle the AI request
 app.post('/', async (c) => {
   try {
-    const { content } = await c.req.json();
+    const entity = await toolset.client.getEntity('default');
+    await setupUserConnectionIfNotExists(entity.id, c);
 
-    const entity = await toolset.client.getEntity('anon');
-    await setupUserConnectionIfNotExists(entity.id);
-
+    // Get the required tools for the AI task
     const tools = await toolset.get_actions({ actions: ['github_issues_create'] }, entity.id);
-    console.log(tools);
+    const instruction = 'Make an issue with sample title in the repo - anonthedev/break, only use the tools';
 
-    const instruction = 'Make an issue with sample title in the repo - anonthedev/break';
-
+    // Set up the initial messages for the AI model
     let messages = [
-      { role: 'system', content: 'You are a helpful assistant that I can talk with. Only call tools if I ask for them.' },
+      { role: 'system', content: '' },
       { role: 'user', content: instruction },
     ];
 
+    // Run the AI model with the messages and tools
     const toolCallResp = await c.env.AI.run(config.model, {
       messages,
       tools,
     });
 
-    console.log(toolCallResp);
-
-    if (toolCallResp.tool_calls) {
-      const modifiedToolCalls = {
-        response: null,
-        tool_calls: [{ arguments: toolCallResp.tool_calls[0].arguments, name: 'github_issues_create' }],
-      };
-      // console.log(toolCallResp.tool_calls[0].arguments)
-      const outputs = await toolset.handle_tool_call(modifiedToolCalls, entity.id);
-      // console.log(outputs)
-      // for (const tool_call of toolCallResp.tool_calls) {
-      // const string = faker.string.alpha(10);
-      // messages.push({
-      //   role: 'system',
-      //   content: `The random string is ${string}`,
-      // });
-
-      // let result = await c.env.AI.run(config.model, { messages });
-      // messages.unshift();
-
-      // messages.push({
-      //   role: 'tool',
-      //   tool: tool_call.name,
-      //   result: string,
-      // });
-
-      // messages.push({
-      //   role: 'assistant',
-      //   content: result.response,
-      // });
-      // }
-    } else {
-      // No tools used, run "tool-less"
-      // let result = await c.env.AI.run(config.model, {
-      //   messages,
-      // });
-      // messages.push({ role: 'assistant', content: result.response });
-    }
-
-    const filteredMessages = messages.filter((m) => ['assistant', 'tool'].includes(m.role));
-
-    console.log(filteredMessages);
-
-    return c.json({ messages: filteredMessages });
+    // Handle the tool call response
+    await toolset.handle_tool_call(toolCallResp, entity.id);
+    return c.json({ messages: "Tool call successful" });
   } catch (err) {
     console.log(err);
     return c.text('Something went wrong', 500);
