@@ -37,7 +37,7 @@ export class ComposioToolSet {
             throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
         }
         this.apiKey = clientApiKey;
-        this.client = new Composio(this.apiKey, baseUrl || undefined, runtime);
+        this.client = new Composio(this.apiKey, baseUrl || undefined, runtime || undefined);
         this.runtime = runtime;
         this.entityId = entityId;
     }

@@ -123,7 +123,7 @@ export class Entity {
         const app = await this.client.apps.get({
             appKey: action.appKey!
         });
-        if ((app.yaml as any).no_auth) {
+        if ((app.yaml as any)?.no_auth) {
             return this.client.actions.execute({
                 actionName: actionName,
                 requestBody: {
