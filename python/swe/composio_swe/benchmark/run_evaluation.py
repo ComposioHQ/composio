@@ -9,10 +9,9 @@ import typing as t
 from pathlib import Path
 
 import docker
-from docker import errors as docker_errors
-from composio_swe.benchmark.constants import MODEL_GPT4
 from composio_crewai import ComposioToolSet
-from composio_swe.benchmark.get_score_card import MODEL_GPT4, generate_scorecard
+from composio_swe.benchmark.constants import MODEL_GPT4
+from composio_swe.benchmark.get_score_card import generate_scorecard
 from composio_swe.benchmark.setup_test_bed import create_patches_file
 from composio_swe.config.constants import (
     KEY_API_KEY,
@@ -22,14 +21,12 @@ from composio_swe.config.constants import (
 from composio_swe.config.context import Context, get_context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
-
-from composio import Action
-from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from composio.utils.logging import get as get_logger
+from docker import errors as docker_errors
 from tqdm import tqdm
 
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from composio.utils.logging import get as get_logger
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
