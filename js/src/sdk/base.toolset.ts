@@ -32,7 +32,7 @@ export class ComposioToolSet {
         runtime: string | null = null,
         entityId: string = "default"
     ) {
-        const clientApiKey: string | undefined = apiKey || process.env["COMPOSIO_API_KEY"] || UserData.load(path.join(process.env.HOME || "", ".composio", "userData.json")).apiKey;
+        const clientApiKey: string | undefined = apiKey || process.env["COMPOSIO_API_KEY"];
         if (!clientApiKey) {
             throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
         }
