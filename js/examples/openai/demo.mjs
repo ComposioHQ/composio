@@ -41,4 +41,4 @@ async function executeGithubAgent(entityName) {
     await toolset.handle_tool_call(response, entity.id);
   }
   
-  executeAgent("default")
+executeGithubAgent("default")

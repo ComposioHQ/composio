@@ -15,7 +15,7 @@ async function main() {
             apiKey: process.env.COMPOSIO_API_KEY,
         });
 
-        const tools = await toolset.get_actions("github_issues_create");
+        const tools = await toolset.get_actions({ actions: ["github_issues_create"] });
 
         const prompt = await pull(
             "hwchase17/openai-functions-agent"
