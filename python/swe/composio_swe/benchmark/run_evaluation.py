@@ -3,13 +3,16 @@
 import argparse
 import asyncio
 import datetime
-import logging
+import json
 import os
+import typing as t
 from pathlib import Path
 
 import docker
-from benchmark.constants import MODEL_GPT4
 from composio_crewai import ComposioToolSet
+from composio_swe.benchmark.constants import MODEL_GPT4
+from composio_swe.benchmark.get_score_card import generate_scorecard
+from composio_swe.benchmark.setup_test_bed import create_patches_file
 from composio_swe.config.constants import (
     KEY_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
@@ -18,13 +21,12 @@ from composio_swe.config.constants import (
 from composio_swe.config.context import Context, get_context, set_context
 from composio_swe.config.store import IssueConfig
 from datasets import load_dataset
-from rich.logging import RichHandler
+from docker import errors as docker_errors
 from tqdm import tqdm
 
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from swe.benchmark.get_score_card import generate_scorecard
-from swe.benchmark.setup_test_bed import create_patches_file
+from composio.utils.logging import get as get_logger
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
@@ -34,12 +36,7 @@ LOGGER_NAME = "local_workspace"
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
 PATH_TESTBED = "testbed/"
 
-handler = RichHandler(show_time=False, show_path=False)
-handler.setLevel(logging.DEBUG)
-logger = logging.getLogger(LOGGER_NAME)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(handler)
-logger.propagate = False
+logger = get_logger(name="run_evaluation")
 
 
 def get_issues_dataset(test_split):
@@ -122,7 +119,7 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     workspace_creation_time = datetime.datetime.now() - start_time
     composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     cd_resp = composio_toolset.execute_action(
-        action=Action.SHELL_EXECUTE_COMMAND,
+        action=Action.SHELL_EXEC_COMMAND,
         params={
             "cmd": f"cd /{repo.split('/')[-1]}",
         },
@@ -219,10 +216,10 @@ def check_and_pull_image(image_name):
         client.images.get(image_name)
         logger.info(f"Image already exists locally: {image_name}")
         image_available = True
-    except docker.errors.ImageNotFound:
+    except docker_errors.ImageNotFound:
         # Image not found locally, need to pull
         logger.info(f"Image not found locally. Attempting to pull: {image_name}")
-    except docker.errors.APIError as e:
+    except docker_errors.APIError as e:
         logger.error(f"API error occurred while checking the image: {e}")
 
     # If the image was not found, try pulling it
@@ -231,7 +228,7 @@ def check_and_pull_image(image_name):
             client.images.pull(image_name)
             logger.info(f"Successfully pulled the image: {image_name}")
             image_available = True
-        except docker.errors.APIError as e:
+        except docker_errors.APIError as e:
             logger.error(f"Failed to pull the image {image_name}: {e}")
             image_available = False
 
@@ -240,7 +237,32 @@ def check_and_pull_image(image_name):
     return image_available
 
 
-def run(test_split, print_only=False, include_hints=True, logs_dir=None):
+def default_agent_func(workspace_id, issue_config):
+    return CrewaiAgent(
+        args=SWEArgs(agent_logs_dir=Path("")),
+        workspace_id=workspace_id,
+    ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
+
+
+def run_and_get_scores(agent_func=t.Callable, test_split="1:50", include_hints=True):
+    logs_dir = f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}"
+    logger.info("Running agent with logs_dir: %s", logs_dir)
+    run(
+        agent_func=agent_func,
+        test_split=test_split,
+        include_hints=include_hints,
+        logs_dir=logs_dir,
+    )
+    return get_score(logs_dir)
+
+
+def run(
+    agent_func: t.Callable = default_agent_func,
+    test_split="1:50",
+    print_only=False,
+    include_hints=True,
+    logs_dir=None,
+):
     """
     Main function to load and display entries from the SWE-bench lite dataset.
     """
@@ -315,12 +337,35 @@ def run(test_split, print_only=False, include_hints=True, logs_dir=None):
             ctx.model_env = model_env_config
             set_context(ctx)
 
-            args = SWEArgs(agent_logs_dir=logs_dir or ctx.agent_logs_dir)
-            coder = CrewaiAgent(args=args, workspace_id=workspace_id)
+            agent_func(workspace_id, issue_config)
+            composio_toolset = ComposioToolSet(workspace_id=workspace_id)
 
-            coder.setup_and_solve(
-                issue_config=ctx.issue_config, workspace_id=workspace_id
+            logger.info("Getting patch")
+            get_patch_resp = composio_toolset.execute_action(
+                action=Action.GITCMDTOOL_GET_PATCH_CMD,
+                params={},
             )
+            if (
+                isinstance(get_patch_resp, dict)
+                and get_patch_resp.get("status") == "failure"
+            ):
+                raise Exception(get_patch_resp["details"])
+            logger.info(f"Get patch response: {get_patch_resp}")
+            patch = get_patch_resp.get("stdout")  # type: ignore
+            logger.info(f"Final Patch: {patch}")
+            Path(str(logs_dir)).mkdir(parents=True, exist_ok=True)
+            task_output_log = f"{logs_dir}/agent_logs.json{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
+            with open(task_output_log, "w", encoding="utf-8") as f:
+                logs = {
+                    issue_config.issue_id: [
+                        {
+                            "agent_action": "final_patch",
+                            "agent_output": patch,
+                        }
+                    ]
+                }
+                f.write(json.dumps(logs))
+
         except Exception as e:
             print(f"Error processing issue {issue['instance_id']}: {e}")
             raise e
@@ -372,6 +417,12 @@ if __name__ == "__main__":
 
     print("Starting evaluation with gen_report: ", args.gen_report)
     if not args.dont_run_eval:
-        run(args.test_split, args.print_only, args.include_hints, args.logs_dir)
+        run(
+            agent_func=default_agent_func,
+            test_split=args.test_split,
+            print_only=args.print_only,
+            include_hints=args.include_hints,
+            logs_dir=args.logs_dir,
+        )
     if args.gen_report:
         get_score(os.path.expanduser(args.logs_dir))

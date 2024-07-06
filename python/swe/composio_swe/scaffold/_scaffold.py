@@ -15,6 +15,7 @@ class Templates(te.TypedDict):
     main: str
     agent: str
     benchmark: str
+    prompts: str
 
 
 class AgenticFramework(Enum):
@@ -25,17 +26,20 @@ class AgenticFramework(Enum):
 
     def load_templates(self) -> Templates:
         """Load tempalte string."""
-        return {
-            "main": (TEMPLATES_PATH / self.value / "main.template").read_text(
+        return Templates(
+            main=(TEMPLATES_PATH / self.value / "main.template").read_text(
                 encoding="utf-8"
             ),
-            "agent": (TEMPLATES_PATH / self.value / "agent.template").read_text(
+            agent=(TEMPLATES_PATH / self.value / "agent.template").read_text(
                 encoding="utf-8"
             ),
-            "benchmark": (TEMPLATES_PATH / self.value / "benchmark.template").read_text(
+            benchmark=(TEMPLATES_PATH / self.value / "benchmark.template").read_text(
                 encoding="utf-8"
             ),
-        }
+            prompts=(TEMPLATES_PATH / self.value / "prompts.template").read_text(
+                encoding="utf-8"
+            ),
+        )
 
 
 def scaffold(
