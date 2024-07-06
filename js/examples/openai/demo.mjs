@@ -11,7 +11,7 @@ const toolset = new OpenAIToolSet({
   
     if (!connection) {
         // If this entity/user hasn't already connected the account
-        const connection = await entity.initiateConnection(appName);
+        const connection = await entity.initiateConnection("github");
         console.log("Log in via: ", connection.redirectUrl);
         return connection.waitUntilActive(60);
     }
@@ -19,7 +19,7 @@ const toolset = new OpenAIToolSet({
     return connection;
   }
 
-  async function executeAgent(entityName) {
+async function executeGithubAgent(entityName) {
     const entity = await toolset.client.getEntity(entityName)
     await setupUserConnectionIfNotExists(entity.id);
   
