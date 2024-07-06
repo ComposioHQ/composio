@@ -12,7 +12,6 @@
     "wrangler": "^3.0.0"
   },
   "dependencies": {
-    "@faker-js/faker": "^8.4.1",
     "hono": "^4.2.5"
   }
 }
