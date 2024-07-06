@@ -10,7 +10,6 @@ from composio_crewai import ComposioToolSet
 from composio_swe.benchmark.constants import MODEL_GPT4
 from composio_swe.benchmark.get_score_card import generate_scorecard
 from composio_swe.benchmark.setup_test_bed import create_patches_file
-from composio_swe.config.context import get_context
 from datasets import load_dataset
 from docker import errors as docker_errors
 
@@ -20,8 +19,6 @@ from composio.utils.logging import get as get_logger
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
 
-# get logger
-LOGGER_NAME = "local_workspace"
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
 PATH_TESTBED = "testbed/"
 
@@ -37,20 +34,15 @@ def get_issues_dataset(test_split):
     return test_dataset
 
 
-def get_score(logs_dir=None):
-    if logs_dir is None:
-        ctx = get_context()
-        logs_dir = ctx.agent_logs_dir
+def get_score(logs_dir):
     prediction_patches_path, dataset_on_disk_path = create_patches_file(
         logs_dir, DATASET_NAME
     )
-    print("logs dir: ", logs_dir)
-    print("prediction_patches_path: ", prediction_patches_path)
+    logger.info("logs dir: ", logs_dir)
+    logger.info("prediction_patches_path: ", prediction_patches_path)
     evaluate_args = EvaluateOnDockerArgs(
         predictions_path=str(prediction_patches_path),
-        # docker_dir="./docker",
         swe_bench_tasks=os.path.expanduser(dataset_on_disk_path),
-        namespace="aorwall",
         log_dir=str(logs_dir),
     )
     asyncio.run(evaluate(**evaluate_args.model_dump()))
