@@ -38,7 +38,7 @@ app.post('/', async (c) => {
 
     const tools = await toolset.get_actions({ actions: ['github_issues_create'] }, entity.id);
     console.log(tools);
-    
+
     const instruction = 'Make an issue with sample title in the repo - anonthedev/break';
 
     let messages = [
@@ -54,8 +54,12 @@ app.post('/', async (c) => {
     console.log(toolCallResp);
 
     if (toolCallResp.tool_calls) {
+      const modifiedToolCalls = {
+        response: null,
+        tool_calls: [{ arguments: toolCallResp.tool_calls[0].arguments, name: 'github_issues_create' }],
+      };
       // console.log(toolCallResp.tool_calls[0].arguments)
-      const outputs = await toolset.handle_tool_call(toolCallResp, entity.id);
+      const outputs = await toolset.handle_tool_call(modifiedToolCalls, entity.id);
       // console.log(outputs)
       // for (const tool_call of toolCallResp.tool_calls) {
       // const string = faker.string.alpha(10);
