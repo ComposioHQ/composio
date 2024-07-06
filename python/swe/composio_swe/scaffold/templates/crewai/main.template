@@ -1,5 +1,4 @@
 from agent import crew
-from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 
 
 def main() -> None:
@@ -7,11 +6,8 @@ def main() -> None:
 
     crew.kickoff(
         inputs={
-            "role": ROLE,
-            "goal": GOAL,
-            "backstory": BACKSTORY,
-            "description": DESCRIPTION,
-            "expected_output": EXPECTED_OUTPUT,
+            "repo": "repo",
+            "issue": "issue",
         }
     )
 
