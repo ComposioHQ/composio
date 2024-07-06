@@ -113,6 +113,28 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: SamparkAI/composio_sdk
+
+  js_tests:
+    defaults:
+      run:
+        working-directory: ./js
+    continue-on-error: False
+    runs-on: ubuntu-latest
+    name: JS tests
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install -g pnpm && pnpm install && pnpm playwright install
+      - name: Run tests
+        run: pnpm test
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   
   # Needs fixing
   # integration_tests:
