@@ -7,6 +7,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
+from pydantic import BaseModel, Field
 
 import docker
 from composio_crewai import ComposioToolSet
@@ -36,6 +37,7 @@ LOGGER_NAME = "local_workspace"
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
 PATH_TESTBED = "testbed/"
 
+
 logger = get_logger(name="run_evaluation")
 
 
@@ -48,8 +50,8 @@ def get_issues_dataset(test_split):
 
 
 def get_score(logs_dir=None):
-    ctx = get_context()
     if logs_dir is None:
+        ctx = get_context()
         logs_dir = ctx.agent_logs_dir
     prediction_patches_path, dataset_on_disk_path = create_patches_file(
         logs_dir, DATASET_NAME
@@ -244,185 +246,155 @@ def default_agent_func(workspace_id, issue_config):
     ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
 
 
-def run_and_get_scores(agent_func=t.Callable, test_split="1:50", include_hints=True):
-    logs_dir = f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}"
-    logger.info("Running agent with logs_dir: %s", logs_dir)
-    run(
-        agent_func=agent_func,
-        test_split=test_split,
-        include_hints=include_hints,
-        logs_dir=logs_dir,
-    )
-    return get_score(logs_dir)
+class EvaluationArgs(BaseModel):
+    test_range: str = Field(default="20:30", description="slice for the test split range ")
+    dry_run: bool = Field(default=False, description="dry-run will only print short issue description")
+    include_hints: bool = Field(default=False)
+    logs_dir: Path = Field(default=f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
+        description="Logs directory",)
+    generate_report: bool = Field(default=True, description="generate evaluation report after running evaluation")
 
 
-def run(
-    agent_func: t.Callable = default_agent_func,
-    test_split="1:50",
-    print_only=False,
-    include_hints=True,
-    logs_dir=None,
-):
-    """
-    Main function to load and display entries from the SWE-bench lite dataset.
-    """
+class EvaluationManager:
+    def __init__(self, eval_args: EvaluationArgs):
+        self.issues = get_issues_dataset(eval_args.test_range)
+        self.dry_run = eval_args.dry_run
+        self.include_hints = eval_args.include_hints
+        self.logs_dir = eval_args.logs_dir
+        self.skip_evaluation = eval_args.skip_evaluation
+        self.repo_to_workspace_map = {}
+        self.repo_to_image_id_map = {}
+        # Make the log directory if it doesn't exist
+        logs_dir = Path(args.logs_dir)
+        if not logs_dir.exists():
+            logs_dir.mkdir(parents=True)
 
-    issues = get_issues_dataset(test_split)
-    repo_to_workspace_map = {}
-    repo_to_image_id_map = {}
-    for count, issue in tqdm(
-        enumerate(issues, 1), total=len(issues), desc="Processing issues"
-    ):
-        try:
-            repo = issue["repo"]
-            version = issue.get(
-                "version", "latest"
-            )  # Assuming 'version' key exists, default to 'latest'
-            image_name = (
-                f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
-            )
-            # Check if the image exists, if not use the default image
-            if check_and_pull_image(
-                image_name
-            ):  # You need to define or implement check_image_exists
-                repo_to_image_id_map.setdefault(repo, image_name)
+    def get_issue_config(self, issue) -> IssueConfig:
+        issue_description = build_issue_description(
+            issue["hints_text"], issue["problem_statement"], self.include_hints
+        )
+        logger.debug(
+            f"starting agent for issue-id: {issue['instance_id']}\n"
+            f"issue-description: {issue_description}\n"
+            f"repo_name: {issue['repo']}\n"
+        )
+        return IssueConfig(
+            repo_name=issue["repo"],
+            issue_id=issue["instance_id"],
+            base_commit_id=issue["base_commit"],
+            issue_desc=issue_description,
+        )
 
-            print(f"Processing issue: {count} with repoMap: {repo_to_workspace_map}")
-            print(f"Repo: {repo}")
-            print(f"Issue id: {issue['instance_id']}")
-
-            if print_only:
-                if include_hints:
-                    print(f"Hints: {issue['hints_text']}")
-                print("--------------------------------------------------")
-                continue
-
-            workspace_id = setup_workspace(
-                repo, repo_to_workspace_map, repo_to_image_id_map, issue["base_commit"]
-            )
-
-            issue_description = build_issue_description(
-                issue["hints_text"], issue["problem_statement"], include_hints
-            )
-            print("Issue description (first 10 lines):")
-            for line in issue_description.split("\n")[:10]:
-                print(line)
-            print("...")
-            patch = issue["patch"]
-            install_commit_id = issue["environment_setup_commit"]
-            logger.info(
-                "found patch-id: %s and install_commit_id: %s", patch, install_commit_id
-            )
-            issue_config = IssueConfig(
-                repo_name=issue["repo"],
-                issue_id=issue["instance_id"],
-                base_commit_id=issue["base_commit"],
-                issue_desc=issue_description,
-            )
-            logger.debug(
-                f"starting agent for issue-id: {issue['instance_id']}\n"
-                f"issue-description: {issue_description}\n"
-                f"repo_name: {issue['repo']}\n"
-            )
-
-            print("--------------------------------------------------")
-
-            model_env_config = {
-                KEY_API_KEY: "test-key",
-                "azure_endpoint": "test-endpoint",
-                "model_env": "azure",
-            }
-            ctx = Context()
-            ctx.issue_config = issue_config
-            ctx.model_env = model_env_config
-            set_context(ctx)
-
-            agent_func(workspace_id, issue_config)
-            composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-
-            logger.info("Getting patch")
-            get_patch_resp = composio_toolset.execute_action(
-                action=Action.GITCMDTOOL_GET_PATCH_CMD,
-                params={},
-            )
-            if (
+    def get_patch_for_issue(self, workspace_id: str, issue):
+        composio_toolset = ComposioToolSet(workspace_id=workspace_id)
+        logger.info(f"Agent run finished, getting path for issue: {issue['instance_id']}")
+        get_patch_resp = composio_toolset.execute_action(
+            action=Action.GITCMDTOOL_GET_PATCH_CMD,
+            params={},
+        )
+        if (
                 isinstance(get_patch_resp, dict)
                 and get_patch_resp.get("status") == "failure"
-            ):
-                raise Exception(get_patch_resp["details"])
-            logger.info(f"Get patch response: {get_patch_resp}")
-            patch = get_patch_resp.get("stdout")  # type: ignore
-            logger.info(f"Final Patch: {patch}")
-            Path(str(logs_dir)).mkdir(parents=True, exist_ok=True)
-            task_output_log = f"{logs_dir}/agent_logs.json{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
-            with open(task_output_log, "w", encoding="utf-8") as f:
-                logs = {
-                    issue_config.issue_id: [
-                        {
-                            "agent_action": "final_patch",
-                            "agent_output": patch,
-                        }
-                    ]
-                }
-                f.write(json.dumps(logs))
+        ):
+            raise Exception(get_patch_resp["details"])
+        logger.info(f"Get patch response: {get_patch_resp}")
+        patch = get_patch_resp.get("stdout")  # type: ignore
+        logger.info(f"Final Patch: {patch}")
 
-        except Exception as e:
-            print(f"Error processing issue {issue['instance_id']}: {e}")
-            raise e
+    def save_agent_run(self, issue_config, issue_patch):
+        Path(str(self.logs_dir)).mkdir(parents=True, exist_ok=True)
+        task_output_log = f"{self.logs_dir}/agent_logs.json{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
+        with open(task_output_log, "w", encoding="utf-8") as f:
+            logs = {
+                issue_config.issue_id: [
+                    {
+                        "agent_action": "final_patch",
+                        "agent_output": issue_patch,
+                    }
+                ]
+            }
+            f.write(json.dumps(logs))
+
+    def show_info_and_exit(self):
+        """
+        Display information about the evaluation setup and exit.
+        """
+        info = {
+            "Dry Run": self.dry_run,
+            "Include Hints": self.include_hints,
+            "Logs Directory": str(self.logs_dir),
+            "Skip Evaluation": self.skip_evaluation,
+            "Total Issues": len(self.issues),
+            "Test Range": self.issues.num_rows if hasattr(self.issues, 'num_rows') else 'Unknown',
+            "Dataset Description": self.issues.info.description if hasattr(self.issues,
+                                                                           'info') and self.issues.info.description else "No description available",
+            "Number of Features": len(self.issues.features) if hasattr(self.issues, 'features') else 'Unknown',
+            "Features": list(self.issues.features.keys()) if hasattr(self.issues, 'features') else 'Unknown'
+        }
+        print("Evaluation Setup Information:")
+        for key, value in info.items():
+            print(f"{key}: {value}")
+
+    def run(self, agent_func: t.Callable = default_agent_func):
+        """
+          Main function to load and display entries from the SWE-bench lite dataset.
+        """
+        if self.dry_run:
+            self.show_info_and_exit()
+            return
+
+        for count, issue in tqdm(
+                enumerate(self.issues, 1), total=len(self.issues), desc="Processing issues"
+        ):
+            try:
+                repo = issue["repo"]
+                version = issue.get("version")
+                image_name = (
+                    f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
+                )
+                if check_and_pull_image(image_name) and version:
+                    self.repo_to_image_id_map.setdefault(repo, image_name)
+                logger.info(f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map}"
+                            f"Repo: {repo}"
+                            f"Issue id: {issue['instance_id']}")
+
+                workspace_id = setup_workspace(
+                    repo, self.repo_to_workspace_map, self.repo_to_image_id_map, issue["base_commit"]
+                )
+                issue_config = self.get_issue_config(issue)
+                logger.info(
+                    "found patch-id: %s and install_commit_id: %s", issue["patch"], issue["environment_setup_commit"]
+                )
+                # run agent function with the specified agent-function
+                agent_func(workspace_id, issue_config)
+                issue_patch = self.get_patch_for_issue(workspace_id, issue)
+                self.save_agent_run(issue_config, issue_patch)
+
+            except Exception as e:
+                print(f"Error processing issue {issue['instance_id']}: {e}")
+                raise e
+
+    def score_evaluation(self):
+        get_score(os.path.expanduser(self.logs_dir))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run SWE-bench evaluation")
-    parser.add_argument(
-        "--test_split",
-        type=str,
-        default="20:22",
-        help="Test split range (e.g., 1:10)",
-    )
-    parser.add_argument(
-        "--print_only",
-        action="store_true",
-        help="Just print the issues without running an agent",
-    )
-    parser.add_argument(
-        "--include_hints",
-        action="store_true",
-        help="Include hints in the issue description",
-    )
-    parser.add_argument(
-        "--gen_report",
-        action="store_true",
-        default=False,
-        help="Generate a report after running evaluations",
-    )
-    parser.add_argument(
-        "--logs_dir",
-        type=str,
-        default=f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
-        help="Logs directory",
-    )
-    parser.add_argument(
-        "--dont_run_eval",
-        action="store_true",
-        default=False,
-        help="Don't run evaluation after running the agent",
-    )
+    parser.add_argument("--test_range", type=str, default="20:22",help="Test split range (e.g., 1:10)")
+    parser.add_argument("--dry_run", action="store_true", help="Just print the issues without running an agent")
+    parser.add_argument("--include_hints", action="store_true", help="Include hints in the issue description")
+    parser.add_argument("--gen_report", action="store_true", default=False, help="Generate a report after running evaluations")
+    parser.add_argument("--logs_dir", type=str, help="Logs directory")
 
     args = parser.parse_args()
 
-    # Make the log directory if it doesn't exist
-    logs_dir = Path(args.logs_dir)
-    if not logs_dir.exists():
-        logs_dir.mkdir(parents=True)
+    eval_manager = EvaluationManager(EvaluationArgs(
+        test_range=args.test_range,
+        dry_run=args.dry_run,
+        include_hints=args.include_hints,
+        logs_dir=args.logs_dir,
+        generate_report=args.gen_report
+    ))
+    eval_manager.run(default_agent_func)
+    eval_manager.score_evaluation()
 
-    print("Starting evaluation with gen_report: ", args.gen_report)
-    if not args.dont_run_eval:
-        run(
-            agent_func=default_agent_func,
-            test_split=args.test_split,
-            print_only=args.print_only,
-            include_hints=args.include_hints,
-            logs_dir=args.logs_dir,
-        )
-    if args.gen_report:
-        get_score(os.path.expanduser(args.logs_dir))
