@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
-import { CloudflareToolSet } from '../../../lib/frameworks/cloudflare';
-
+import { CloudflareToolSet } from "composio-core"
 const app = new Hono();
 
 // Configuration for the AI model
