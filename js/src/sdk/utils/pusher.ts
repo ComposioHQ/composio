@@ -1,8 +1,7 @@
-const PusherClient = require("pusher-js")
-
 const PUSHER_KEY = "ff9f18c208855d77a152"
 const PUSHER_CLUSTER = "mt1"
 
+type PusherClient = any;
 
 export interface TriggerData {
     appName: string;
@@ -27,10 +26,12 @@ export interface TriggerData {
 
 export class PusherUtils {
 
-    static pusherClient: typeof PusherClient;
+    static pusherClient:  PusherClient;
 
-    static getPusherClient(baseURL: string, apiKey: string): typeof PusherClient {
+    static getPusherClient(baseURL: string, apiKey: string):  PusherClient {
+
         if (!PusherUtils.pusherClient) {
+            const PusherClient = require("pusher-js")
             PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
                 cluster: PUSHER_CLUSTER,
                 channelAuthorization: {
@@ -75,7 +76,7 @@ export class PusherUtils {
      * @param {string} event - The event to bind to the channel.
      * @param {(data: any) => void} callback - The callback function to execute when the event is triggered.
      */
-    private static bindWithChunking(channel: typeof PusherClient, event: string, callback: (data: any) => void): void {
+    private static bindWithChunking(channel: PusherClient, event: string, callback: (data: any) => void): void {
         channel.bind(event, callback); // Allow normal unchunked events.
 
         // Now the chunked variation. Allows arbitrarily long messages.
