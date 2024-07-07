@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from composio.tools.local.base import Action
 from composio.tools.local.shelltool.shell_exec.actions.exec import ShellExecRequest
 
+
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
 logger = logging.getLogger()
