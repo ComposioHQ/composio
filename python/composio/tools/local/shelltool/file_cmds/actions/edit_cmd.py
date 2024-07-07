@@ -1,3 +1,5 @@
+import logging
+
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
@@ -6,10 +8,8 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import get_logger
 
-
-logger = get_logger("workspace")
+logger = logging.getLogger()
 
 
 class EditFileRequest(ShellRequest):

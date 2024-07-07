@@ -38,8 +38,7 @@ def get_score(logs_dir):
     prediction_patches_path, dataset_on_disk_path = create_patches_file(
         logs_dir, DATASET_NAME
     )
-    logger.info("logs dir: ", logs_dir)
-    logger.info("prediction_patches_path: ", prediction_patches_path)
+    logger.info(f"logs dir: {logs_dir}, prediction_patches_path: {prediction_patches_path}")
     evaluate_args = EvaluateOnDockerArgs(
         predictions_path=str(prediction_patches_path),
         swe_bench_tasks=os.path.expanduser(dataset_on_disk_path),

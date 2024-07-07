@@ -1,13 +1,13 @@
+import logging
+
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
 from composio.tools.local.shelltool.shell_exec.actions.exec import ShellExecRequest
-from composio.tools.local.shelltool.utils import get_logger
-
 
 STATUS_RUNNING = "running"
 STATUS_STOPPED = "stopped"
-logger = get_logger("workspace")
+logger = logging.getLogger()
 
 
 class GetWorkspaceHistoryRequest(ShellExecRequest):

@@ -1,3 +1,4 @@
+import logging
 import typing as t
 
 from pydantic import Field
@@ -8,11 +9,9 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import get_logger
-
 
 LONG_TIMEOUT = 200
-logger = get_logger("workspace")
+logger = logging.getLogger()
 
 
 class GetPatchRequest(ShellRequest):

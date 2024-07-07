@@ -52,7 +52,6 @@ class EvaluationManager:
         self.dry_run = eval_args.dry_run
         self.include_hints = eval_args.include_hints
         self.logs_dir = os.path.expanduser(eval_args.logs_dir)
-        self.skip_evaluation = eval_args.skip_evaluation
         self.repo_to_workspace_map = {}
         self.repo_to_image_id_map = {}
         logs_dir = Path(args.logs_dir)
@@ -113,7 +112,6 @@ class EvaluationManager:
             "Dry Run": self.dry_run,
             "Include Hints": self.include_hints,
             "Logs Directory": str(self.logs_dir),
-            "Skip Evaluation": self.skip_evaluation,
             "Total Issues": len(self.issues),
             "Test Range": self.issues.num_rows
             if hasattr(self.issues, "num_rows")
