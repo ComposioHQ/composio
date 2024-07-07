@@ -86,6 +86,7 @@ class EvaluationManager:
         logger.info(f"Get patch response: {get_patch_resp}")
         patch = get_patch_resp.get("stdout")  # type: ignore
         logger.info(f"Final Patch: {patch}")
+        return patch
 
     def save_agent_run(self, issue_config, issue_patch):
         Path(str(self.logs_dir)).mkdir(parents=True, exist_ok=True)
