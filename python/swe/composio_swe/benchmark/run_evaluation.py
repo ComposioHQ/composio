@@ -181,29 +181,15 @@ class EvaluationManager:
 
 
 if __name__ == "__main__":
+    # fmt: off
     parser = argparse.ArgumentParser(description="Run SWE-bench evaluation")
-    parser.add_argument(
-        "--test_range", type=str, default="20:22", help="Test split range (e.g., 1:10)"
-    )
-    parser.add_argument(
-        "--dry_run",
-        action="store_true",
-        help="Just print the issues without running an agent",
-    )
-    parser.add_argument(
-        "--include_hints",
-        action="store_true",
-        help="Include hints in the issue description",
-    )
-    parser.add_argument(
-        "--gen_report",
-        action="store_true",
-        default=False,
-        help="Generate a report after running evaluations",
-    )
+    parser.add_argument("--test_range", type=str, default="20:22", help="Test split range (e.g., 1:10)")
+    parser.add_argument("--dry_run", action="store_true", default=True, help="Just print the issues without running an agent",)
+    parser.add_argument("--include_hints", action="store_true", default=False, help="Include hints in the issue description",)
+    parser.add_argument("--gen_report", action="store_true", default=True, help="Generate a report after running evaluations",)
     parser.add_argument("--logs_dir", type=str, help="Logs directory")
-
     args = parser.parse_args()
+    # fmt: on
 
     eval_manager = EvaluationManager(
         EvaluationArgs(
