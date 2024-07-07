@@ -1,3 +1,7 @@
+<p>
+  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-CN.md">CN</a>
+</p>
+
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
