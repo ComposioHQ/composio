@@ -9,7 +9,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
 from composio.utils.logging import get as get_logger
 
 
-logger = WithLogger.logger
+logger = get_logger("workspace")
 
 
 class EditFileRequest(ShellRequest):
