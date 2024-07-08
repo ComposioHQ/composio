@@ -29,6 +29,7 @@ class DockerShell(Shell):
         super().__init__()
         self._id = generate_id()
         self._container = container
+        self._wait_for_entrypoint()
         self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["docker", "exec", "-i", str(container.name), "/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
@@ -52,6 +53,20 @@ class DockerShell(Shell):
         self._bash_pids = set(map(str, (1, bash_pid)))
 
         self.logger.debug(f"Initial data from session: {self.id} - {self._read()}")
+
+    def _wait_for_entrypoint(self, timeout: float = 120.0) -> None:
+        """Wait for the entrypoint script to complete."""
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            exit_code, output = self._container.exec_run(
+                "test -f /tmp/entrypoint_complete"
+            )
+            if exit_code == 0:
+                return
+            time.sleep(1)
+        raise TimeoutError(
+            "Timeout reached while waiting for the entrypoint script to complete."
+        )
 
     def _get_background_pids(self) -> t.Tuple[t.List, t.List]:
         """Gets list of processes running inside docker container"""

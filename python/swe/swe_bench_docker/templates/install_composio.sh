@@ -13,5 +13,8 @@ else
     pip install -U composio-core
 fi
 
+# Create a flag file indicating that the script has finished
+touch /tmp/entrypoint_complete
+
 # Execute the command passed to the entrypoint
 exec "$@"
