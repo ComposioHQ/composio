@@ -1,4 +1,4 @@
-# README for swe
+# SWE Development Kit
 
 ## Overview
 
