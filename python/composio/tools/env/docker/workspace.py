@@ -106,8 +106,8 @@ class DockerWorkspace(Workspace):
         """Execute action using CLI"""
         output = self.shells.recent.exec(
             f"composio execute {action.slug}"
-            f" --param {json.dumps(request_data)}"
-            f" --metadata {json.dumps(metadata)}"
+            f" --params '{json.dumps(request_data)}'"
+            f" --metadata '{json.dumps(metadata)}'"
         )
         if len(output["stderr"]) > 0:
             return {"status": "failure", "message": output["stderr"]}
