@@ -19,6 +19,7 @@ from composio.tools.local.handler import LocalClient
 DEFAULT_IMAGE = "techcomposio/swe-agent"
 script_path = os.path.dirname(os.path.realpath(__file__))
 composio_core_path = os.path.abspath(os.path.join(script_path, "../../../../"))
+composio_local_store_path = os.path.expanduser("~/.composio/")
 
 
 class DockerWorkspace(Workspace):
@@ -33,31 +34,22 @@ class DockerWorkspace(Workspace):
         self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
         composio_swe_env = os.environ.get("COMPOSIO_SWE_ENV")
+        container_args = { "image": self._image,
+                    "command": "/bin/bash -l -m",
+                    "name": self.id,
+                    "tty":True,
+                    "detach":True,
+                    "stdin_open":True,
+                    "auto_remove":False,}
         try:
             if composio_swe_env == "dev":
-                self._container = self.client.containers.run(
-                    image=self._image,
-                    command="/bin/bash -l -m",
-                    name=self.id,
-                    tty=True,
-                    detach=True,
-                    stdin_open=True,
-                    auto_remove=False,
-                    environment={"ENV": "dev"},
-                    volumes={
-                        composio_core_path: {"bind": "/opt/composio-core", "mode": "rw"}
-                    },
-                )
-            else:
-                self._container = self.client.containers.run(
-                    image=self._image,
-                    command="/bin/bash -l -m",
-                    name=self.id,
-                    tty=True,
-                    detach=True,
-                    stdin_open=True,
-                    auto_remove=False,
-                )
+                container_args.update({
+                    "environment": {"ENV": "dev"},
+                    "volumes": {
+                    composio_core_path: {"bind": "/opt/composio-core", "mode": "rw"},
+                    composio_local_store_path: {"bind": "/root/.composio", "mode":"rw"}
+                }})
+            self._container = self.client.containers.run(**container_args)
             self._container.start()
         except Exception as e:
             raise Exception("exception in starting container: ", e) from e
