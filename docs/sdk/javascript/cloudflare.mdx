@@ -1,0 +1,104 @@
+---
+title: "Using Composio JS SDK with Cloudflare Worker AI"
+sidebarTitle: "With Cloudflare Worker AI"
+icon: "code"
+description: "Use Composio JS SDK with Cloudflare Worker AI"
+---
+
+<Steps>
+<Step title="Import Dependencies">
+ <CodeGroup>
+      ```javascript Import Hono and CloudflareToolSet
+import { Hono } from 'hono';
+import { CloudflareToolSet } from "composio-core"
+      ```
+    </CodeGroup>
+</Step>
+<Step title="Define method to let user connect their GitHub account">
+
+ <CodeGroup>
+      ```typescript Define method to let user connect their GitHub account
+const toolset = new CloudflareToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+async function setupUserConnectionIfNotExists(entityId) {
+        const entity = await toolset.client.getEntity(entityId);
+        const connection = await entity.getConnection('github');
+
+        if (!connection) {
+            // If this entity/user hasn't already connected the account
+            const connection = await entity.initiateConnection(appName);
+            console.log("Log in via: ", connection.redirectUrl);
+            return connection.waitUntilActive(60);
+        }
+
+        return connection;
+}
+      ```
+    </CodeGroup>
+
+Learn more about entities [here](introduction/foundations/components/entity/entity-guide)
+
+</Step>
+
+<Step title="Setup Agent with Cloudflare Worker AI">
+
+<CodeGroup>
+      ```typescript Define your Agent
+const app = new Hono();
+
+const config = {
+  model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
+};
+
+app.post('/', async (c) => {
+  // Initialize the CloudflareToolSet with the API key
+  const toolset = new CloudflareToolSet({
+    apiKey: c.env.COMPOSIO_API_KEY,
+  });
+
+  try {
+    const entity = await toolset.client.getEntity('default');
+    await setupUserConnectionIfNotExists(toolset, entity.id, c);
+    // Get the required tools for the AI task
+    const tools = await toolset.get_actions({ actions: ['github_issues_create'] }, entity.id);
+    const instruction = 'Make an issue with sample title in the repo - anonthedev/break, only use the tools';
+
+    // Set up the initial messages for the AI model
+    let messages = [
+      { role: 'system', content: '' },
+      { role: 'user', content: instruction },
+    ];
+
+    // Run the AI model with the messages and tools
+    const toolCallResp = await c.env.AI.run(config.model, {
+      messages,
+      tools,
+    });
+
+    // Handle the tool call response
+    await toolset.handle_tool_call(toolCallResp, entity.id);
+    return c.json({ messages: "Your issue has been created" });
+  } catch (err) {
+    console.log(err);
+    return c.text('Something went wrong', 500);
+  }
+});
+
+      ```
+    </CodeGroup>
+
+</Step>
+
+<Step title="Invoke Your Agent">
+
+Do a POST request to the server to invoke your agent.
+
+Tada 🎉! It was this simple to create a powerful Agent with Composio and Cloudflare Worker AI.
+</Step>
+
+<Step title="Complete code snippet">
+View the full snippet [here](https://github.com/ComposioHQ/composio-js/blob/main/examples/ai-playground-main/src/worker.js)
+</Step>
+</Steps>
