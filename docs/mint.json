@@ -153,7 +153,8 @@
       "pages": [
         "sdk/javascript/introduction",
         "sdk/javascript/langchain",
-        "sdk/javascript/openai"
+        "sdk/javascript/openai",
+        "sdk/javascript/cloudflare"
       ]
     },
     {
