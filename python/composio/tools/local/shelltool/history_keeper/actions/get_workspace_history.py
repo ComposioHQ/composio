@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
-from composio.utils.logging import WithLogger
+
 from composio.tools.local.base import Action
 from composio.tools.local.shelltool.shell_exec.actions.exec import ShellExecRequest
+from composio.utils.logging import WithLogger
 
 
 STATUS_RUNNING = "running"

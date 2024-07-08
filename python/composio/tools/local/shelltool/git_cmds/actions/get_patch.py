@@ -1,13 +1,14 @@
 import typing as t
 
 from pydantic import Field
-from composio.utils.logging import WithLogger
+
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
 )
+from composio.utils.logging import WithLogger
 
 
 LONG_TIMEOUT = 200
