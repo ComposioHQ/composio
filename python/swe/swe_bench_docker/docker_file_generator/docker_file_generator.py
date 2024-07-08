@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List
 
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
@@ -34,31 +33,17 @@ class DockerfileGenerator:
 
         self.dockerfiles_to_build = [
             (
-                "docker/Dockerfile",
-                f"{self.namespace}/{self.image_prefix}-conda:bookworm-slim",
-            ),
-            (
-                "docker/pyenv/Dockerfile",
-                f"{self.namespace}/{self.image_prefix}-pyenv:bookworm-slim",
-            ),
-            (
-                "docker/pyenv/Dockerfile-pyenvs",
-                f"{self.namespace}/{self.image_prefix}-pyenvs:bookworm-slim",
+                "docker/Dockerfile.swe_agent",
+                f"{self.namespace}/swe-agent",
             ),
         ]
-
-        env = Environment(loader=FileSystemLoader("swe_bench_docker/templates"))
-        # self.conda_instance_template = env.get_template(f"Dockerfile.conda_instance")
-        # self.pyenv_instance_template = env.get_template(f"Dockerfile.pyenv_instance")
-        self.conda_testbed_template = env.get_template("Dockerfile.swe")
-        self.pyenv_testbed_template = env.get_template("Dockerfile.swe")
-        self.conda_repository_template = env.get_template("Dockerfile.conda_repository")
-        self.pyenv_repository_template = env.get_template("Dockerfile.pyenv_repository")
-        self.instance_template = env.get_template("Dockerfile.pyenv_instance")
         script_dir = os.path.join(os.path.dirname(__file__), "../templates")
-        getconda_path = os.path.join(script_dir, "getconda.sh")
-        self.getconda_path = os.path.relpath(script_dir, getconda_path)
-
+        env = Environment(loader=FileSystemLoader(script_dir))
+        self.base_swe_agent_tmpl = env.get_template("Dockerfile.base")
+        self.swe_dockerfile_tmpl = env.get_template("Dockerfile.swe")
+        self.instance_template = env.get_template("Dockerfile.pyenv_instance")
+        self.getconda_path = os.path.relpath(script_dir, os.path.join(script_dir, "getconda.sh"))
+        self.install_composio_path = os.path.join(os.path.relpath(script_dir, "install_composio.sh"), "install_composio.sh")
         if predictions_path:
             predictions = get_instances(predictions_path)
             self.instance_ids = set([p["instance_id"] for p in predictions])
@@ -69,6 +54,8 @@ class DockerfileGenerator:
     def generate(self):
         testbeds = set()
         task_instances_grouped = self.group_task_instances(self.task_instances)
+
+        self.generate_swe_agent_base()
 
         for repo, map_version_to_instances in task_instances_grouped.items():
             logger.info(f"Repo {repo}: {len(map_version_to_instances)} versions")
@@ -147,68 +134,6 @@ class DockerfileGenerator:
             task_instances_grouped[repo][version].append(instance)
 
         return task_instances_grouped
-
-    def generate_conda_repository_dockerfile(self, repo: str, deb_packages: List[str]):
-        repo_name = _repo_name(repo)
-
-        base_image = f"{self.namespace}/{self.image_prefix}-conda:bookworm-slim"
-
-        dockerfile_content = self.conda_repository_template.render(
-            base_image=base_image,
-            deb_packages=" ".join(deb_packages) if deb_packages else None,
-            repo_name=repo_name,
-        )
-
-        repo_dir = f"{self.docker_dir}/{repo_name}"
-        if not os.path.exists(repo_dir):
-            os.makedirs(repo_dir)
-
-        output_file = f"{repo_dir}/Dockerfile"
-        with open(output_file, "w") as f:
-            f.write(dockerfile_content)
-
-        print(f"Dockerfile generated: {output_file}")
-
-        repo_image_name = repo.replace("/", "_")
-
-        self.dockerfiles_to_build.append(
-            (
-                output_file,
-                f"{self.namespace}/{self.image_prefix}-{repo_image_name}:bookworm-slim",
-            )
-        )
-
-    def generate_pyenv_repository_dockerfile(self, repo: str, deb_packages: List[str]):
-        repo_name = _repo_name(repo)
-
-        base_image = f"{self.namespace}/{self.image_prefix}-pyenv:bookworm-slim"
-        pyenv_image = f"{self.namespace}/swe-bench-pyenvs:bookworm-slim"
-
-        dockerfile_content = self.pyenv_repository_template.render(
-            base_image=base_image,
-            pyenv_image=pyenv_image,
-            deb_packages=" ".join(deb_packages) if deb_packages else None,
-            repo_name=repo_name,
-        )
-
-        repo_dir = f"{self.docker_dir}/{repo_name}"
-        if not os.path.exists(repo_dir):
-            os.makedirs(repo_dir)
-
-        output_file = f"{repo_dir}/Dockerfile"
-        with open(output_file, "w") as f:
-            f.write(dockerfile_content)
-
-        print(f"Dockerfile generated: {output_file}")
-
-        repo_image_name = repo.replace("/", "_")
-
-        self.dockerfiles_to_build.append(
-            (
-                output_file,
-                f"{self.namespace}/{self.image_prefix}-{repo_image_name}:bookworm-slim",
-            )
-        )
 
     def generate_docker_compose(self):
         import yaml
@@ -326,10 +251,10 @@ class DockerfileGenerator:
 
         python_version = specifications["python"]
         if use_conda:
-            template = self.conda_testbed_template
+            template = self.swe_dockerfile_tmpl
         else:
             python_version = PYTHON_ENVIRONMENT_VERSIONS[python_version]
-            template = self.pyenv_testbed_template
+            template = self.swe_dockerfile_tmpl
 
         dockerfile_content = template.render(
             base_image=base_image,
@@ -364,6 +289,21 @@ class DockerfileGenerator:
                 f"{self.namespace}/{self.image_prefix}-{repo_image_name}-testbed:{version}",
             )
         )
+
+    def generate_swe_agent_base(self):
+        template = self.base_swe_agent_tmpl
+        base_dir = f"{self.docker_dir}"
+        dockerfile_content = template.render(
+           install_composio_path=self.install_composio_path
+        )
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
+
+        output_file = f"{base_dir}/Dockerfile.swe_agent"
+        with open(output_file, "w") as f:
+            f.write(dockerfile_content)
+
+        print(f"Dockerfile generated: {output_file}")
 
     def generate_testbed_dockerfile(
         self,
@@ -460,10 +400,10 @@ class DockerfileGenerator:
 
         python_version = specifications["python"]
         if use_conda:
-            template = self.conda_testbed_template
+            template = self.swe_dockerfile_tmpl
         else:
             python_version = PYTHON_ENVIRONMENT_VERSIONS[python_version]
-            template = self.pyenv_testbed_template
+            template = self.swe_dockerfile_tmpl
 
         dockerfile_content = template.render(
             base_image=base_image,

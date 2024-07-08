@@ -17,6 +17,8 @@ from composio.tools.local.handler import LocalClient
 
 
 DEFAULT_IMAGE = "sweagent/swe-agent"
+script_path = os.path.dirname(os.path.realpath(__file__))
+composio_core_path = os.path.abspath(os.path.join(script_path, "../../../../../composio-core"))
 
 
 class DockerWorkspace(Workspace):
@@ -30,15 +32,29 @@ class DockerWorkspace(Workspace):
         super().__init__()
         self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
-        self._container = self.client.containers.run(
-            image=self._image,
-            command="/bin/bash -l -m",
-            name=self.id,
-            tty=True,
-            detach=True,
-            stdin_open=True,
-            auto_remove=False,
-        )
+        composio_swe_env = os.environ.get("COMPOSIO_SWE_ENV")
+        if composio_swe_env == "dev":
+            self._container = self.client.containers.run(
+                image=self._image,
+                command="/bin/bash -l -m",
+                name=self.id,
+                tty=True,
+                detach=True,
+                stdin_open=True,
+                auto_remove=False,
+                environment={"ENV": "dev"},
+                volumes={composio_core_path: {"bind": "/opt/composio-core", "mode": "rw"}}
+            )
+        else:
+            self._container = self.client.containers.run(
+                image=self._image,
+                command="/bin/bash -l -m",
+                name=self.id,
+                tty=True,
+                detach=True,
+                stdin_open=True,
+                auto_remove=False,
+            )
         self._container.start()
 
     def _create_shell(self) -> DockerShell:
