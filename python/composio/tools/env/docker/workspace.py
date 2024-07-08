@@ -16,7 +16,7 @@ from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
 
-DEFAULT_IMAGE = "sweagent/swe-agent"
+DEFAULT_IMAGE = "techcomposio/swe-agent"
 script_path = os.path.dirname(os.path.realpath(__file__))
 composio_core_path = os.path.abspath(os.path.join(script_path, "../../../../../composio-core"))
 

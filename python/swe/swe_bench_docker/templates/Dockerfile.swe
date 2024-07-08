@@ -2,8 +2,6 @@ FROM techcomposio/swe-agent
 
 WORKDIR /opt
 
-RUN conda run pip install -U composio-core
-
 RUN git clone https://github.com/swe-bench/{{ repo_name }}.git
 ENV REPO_DIR=/opt/{{ repo_name }}
 
