@@ -58,7 +58,7 @@ class ComposioToolSet(BaseComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_env: ExecEnv = ExecEnv.DOCKER,
+        workspace_env: ExecEnv = ExecEnv.HOST,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """
