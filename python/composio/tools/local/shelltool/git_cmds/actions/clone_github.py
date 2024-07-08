@@ -8,10 +8,11 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
 )
 from composio.tools.local.shelltool.utils import git_clone_cmd, git_reset_cmd
 from composio.utils.logging import WithLogger
+from composio.utils.logging import get as get_logger
 
 
 LONG_TIMEOUT = 200
-logger = WithLogger.logger
+logger = get_logger("workspace")
 
 
 class GithubCloneRequest(ShellRequest):
