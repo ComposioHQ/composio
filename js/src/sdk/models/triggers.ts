@@ -1,7 +1,6 @@
 import { CancelablePromise, ListTriggersData, ListTriggersResponse, SetupTriggerData, SetupTriggerResponse, listTriggers, setupTrigger } from "../client";
 import { Composio } from "../";
-import { PusherUtils, TriggerData } from "../utils/pusher";
-
+import { TriggerData, PusherUtils } from "../utils/pusher";
 
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";

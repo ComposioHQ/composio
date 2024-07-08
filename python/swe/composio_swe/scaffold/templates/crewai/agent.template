@@ -1,11 +1,12 @@
 """CrewAI SWE Agent"""
 
 import os
-import dotenv
 
-from crewai import Agent, Task, Crew, Process
-from composio_crewai import App, Action, ComposioToolSet
+import dotenv
+from composio_crewai import App, ComposioToolSet, ExecEnv
+from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
+from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 
 
 # Load environment variables from .env
@@ -13,41 +14,33 @@ dotenv.load_dotenv()
 
 # Initialize tool.
 openai_client = ChatOpenAI(
-    api_key=os.environ["OPENAI_API_KEY"],  # type: ignore
+    api_key=os.environ["OPENAI_API_KEY"], model="gpt-4-turbo"  # type: ignore
 )
-composio_toolset = ComposioToolSet()
+composio_toolset = ComposioToolSet(workspace_env=ExecEnv.DOCKER)
 
 # Get required tools
-tools = [
-    *composio_toolset.get_actions(
-        actions=[
-            Action.WORKSPACETOOL_WORKSPACESTATUSACTION,
-        ]
-    ),
-    *composio_toolset.get_tools(
-        apps=[
-            App.SEARCHTOOL,
-            App.GITCMDTOOL,
-            App.SHELLCMDTOOL,
-            App.FILETOOL,
-            App.HISTORYFETCHERTOOL,
-        ]
-    ),
-]
+tools = composio_toolset.get_tools(
+    apps=[
+        App.SEARCHTOOL,
+        App.GITCMDTOOL,
+        App.FILEEDITTOOL,
+        App.HISTORYFETCHERTOOL,
+    ]
+)
 
 # Define agent
 agent = Agent(
-    role="{role}",
-    goal="{goal}",
-    backstory="{backstory}",
+    role=ROLE,
+    goal=GOAL,
+    backstory=BACKSTORY,
     llm=openai_client,
     tools=tools,
     verbose=True,
 )
 
 task = Task(
-    description="{description}",
-    expected_output="{expected_output}",
+    description=DESCRIPTION,
+    expected_output=EXPECTED_OUTPUT,
     agent=agent,
 )
 
@@ -60,4 +53,3 @@ crew = Crew(
     cache=False,
     memory=True,
 )
-

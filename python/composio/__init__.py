@@ -10,6 +10,7 @@ from composio.client.enums import (
     TriggerType,
 )
 from composio.tools import ComposioToolSet
+from composio.tools.env.factory import ExecEnv
 
 
 __all__ = (
@@ -23,4 +24,5 @@ __all__ = (
     "ActionType",
     "TriggerType",
     "ComposioToolSet",
+    "ExecEnv",
 )

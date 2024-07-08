@@ -2,7 +2,6 @@
 Composio SDK tools.
 """
 
-import base64
 import hashlib
 import itertools
 import json
@@ -18,8 +17,6 @@ from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
     ConnectedAccountModel,
-    FileModel,
-    SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
 from composio.client.exceptions import ComposioClientError
@@ -52,7 +49,7 @@ class ComposioToolSet(WithLogger):
         runtime: t.Optional[str] = None,
         output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_env: ExecEnv = ExecEnv.DOCKER,
+        workspace_env: ExecEnv = ExecEnv.HOST,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """
@@ -71,9 +68,7 @@ class ComposioToolSet(WithLogger):
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
-        self.workspace_id = workspace_id
-        self.workspace_env = workspace_env
-        if self.workspace_id is None:
+        if workspace_id is None:
             self.logger.debug(
                 f"Workspace ID not provided, using `{workspace_env}` "
                 "to create a new workspace"
@@ -84,7 +79,7 @@ class ComposioToolSet(WithLogger):
         else:
             self.logger.debug(f"Loading workspace with ID: {workspace_id}")
             self.workspace = WorkspaceFactory.get(
-                id=self.workspace_id,
+                id=workspace_id,
             )
 
         try:
@@ -100,6 +95,9 @@ class ComposioToolSet(WithLogger):
 
         self._runtime = runtime
         self._local_client = LocalClient()
+
+    def set_workspace_id(self, workspace_id: str) -> None:
+        self.workspace = WorkspaceFactory.get(id=workspace_id)
 
     @property
     def client(self) -> Composio:
@@ -181,11 +179,7 @@ class ComposioToolSet(WithLogger):
                 entity_id=entity_id,
             )
 
-        return self._write_file(
-            action=action,
-            output=output,
-            entity_id=entity_id,
-        )
+        return output
 
     def _write_to_file(
         self,
@@ -213,37 +207,6 @@ class ComposioToolSet(WithLogger):
             "message": f"output written to {outfile.resolve()}",
             "file": str(outfile.resolve()),
         }
-
-    def _write_file(
-        self,
-        action: Action,
-        output: t.Dict,
-        entity_id: str = DEFAULT_ENTITY_ID,
-    ) -> dict:
-        """If received object is a blob, write it to a file."""
-        success_response_model = SuccessExecuteActionResponseModel.model_validate(
-            output
-        )
-        files = json.loads(
-            success_response_model.response_data,
-        )
-        outdir = (
-            LOCAL_CACHE_DIRECTORY
-            / "outputs"
-            / hashlib.sha256(
-                f"{action.name}-{entity_id}-{time.time()}".encode()
-            ).hexdigest()
-        )
-        if not outdir.exists():
-            outdir.mkdir()
-
-        response = {}
-        self.logger.info(f"Writing files to: {outdir}")
-        for key, val in files.items():
-            file = FileModel.model_validate(val)
-            (outdir / file.name).write_bytes(data=base64.b64decode(file.content))
-            response[key] = str(outdir / file.name)
-        return response
 
     def execute_action(
         self,
