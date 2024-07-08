@@ -4,7 +4,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import get_logger
+from composio.utils.logging import get as get_logger
 
 
 logger = get_logger("workspace")
