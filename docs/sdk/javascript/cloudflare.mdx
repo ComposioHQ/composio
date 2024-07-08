@@ -6,14 +6,6 @@ description: "Use Composio JS SDK with Cloudflare Worker AI"
 ---
 
 <Steps>
-<Step title="Import Dependencies">
- <CodeGroup>
-      ```javascript Import Hono and CloudflareToolSet
-import { Hono } from 'hono';
-import { CloudflareToolSet } from "composio-core"
-      ```
-    </CodeGroup>
-</Step>
 
 <Step title="Setup wrangler in wrangler.toml file">
 <CodeGroup>
@@ -26,9 +18,19 @@ compatibility_date = "2024-04-18"
 binding = "AI"
 
 [vars]
-COMPOSIO_API_KEY = ""
+COMPOSIO_API_KEY = "{{COMPOSIO_API_KEY}}"
 ```
 </CodeGroup>
+</Step>
+
+
+<Step title="Create file and Import Dependencies">
+ <CodeGroup>
+      ```javascript Import Hono and CloudflareToolSet
+import { Hono } from 'hono';
+import { CloudflareToolSet } from "composio-core"
+      ```
+    </CodeGroup>
 </Step>
 
 <Step title="Define method to let user connect their GitHub account">
