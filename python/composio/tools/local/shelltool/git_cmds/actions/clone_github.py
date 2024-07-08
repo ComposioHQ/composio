@@ -6,12 +6,9 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import (
-    get_logger,
-    git_clone_cmd,
-    git_reset_cmd,
-)
+from composio.tools.local.shelltool.utils import git_clone_cmd, git_reset_cmd
 from composio.utils.logging import WithLogger
+from composio.utils.logging import get as get_logger
 
 
 LONG_TIMEOUT = 200
