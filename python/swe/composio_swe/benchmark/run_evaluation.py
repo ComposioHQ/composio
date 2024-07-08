@@ -15,11 +15,11 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from composio import Action
-from composio.utils.logging import get as get_logger
+from composio.utils.logging import WithLogger
 from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
-logger = get_logger(name="run_evaluation")
+logger = WithLogger.logger
 
 
 def default_agent_func(workspace_id, issue_config):

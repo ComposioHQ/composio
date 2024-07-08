@@ -1,5 +1,4 @@
-import logging
-
+from composio.utils.logging import WithLogger
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
@@ -8,7 +7,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
 )
 
 
-logger = logging.getLogger()
+logger = WithLogger.logger
 
 
 class GitRepoTree(BaseExecCommand):

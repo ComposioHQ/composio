@@ -1,5 +1,3 @@
-import logging
-
 from pydantic import Field
 
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
@@ -13,7 +11,7 @@ from composio.utils.logging import WithLogger
 
 
 LONG_TIMEOUT = 200
-logger = logging.getLogger()
+logger = WithLogger.logger
 
 
 class GithubCloneRequest(ShellRequest):
