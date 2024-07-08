@@ -57,7 +57,7 @@ def find_patch(prediction_data):
 
 
 def log_file(f_name):
-    if f_name.startswith("agent_logs.json"):
+    if f_name.startswith("agent_logs"):
         return True
     return False
 
