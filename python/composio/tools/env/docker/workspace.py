@@ -44,7 +44,9 @@ class DockerWorkspace(Workspace):
                     stdin_open=True,
                     auto_remove=False,
                     environment={"ENV": "dev"},
-                    volumes={composio_core_path: {"bind": "/opt/composio-core", "mode": "rw"}}
+                    volumes={
+                        composio_core_path: {"bind": "/opt/composio-core", "mode": "rw"}
+                    },
                 )
             else:
                 self._container = self.client.containers.run(
@@ -58,7 +60,7 @@ class DockerWorkspace(Workspace):
                 )
             self._container.start()
         except Exception as e:
-            raise Exception("exception in starting container: ", e)
+            raise Exception("exception in starting container: ", e) from e
 
     def _create_shell(self) -> DockerShell:
         """Create docker shell."""

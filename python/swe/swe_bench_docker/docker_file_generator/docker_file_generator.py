@@ -42,8 +42,12 @@ class DockerfileGenerator:
         self.base_swe_agent_tmpl = env.get_template("Dockerfile.base")
         self.swe_dockerfile_tmpl = env.get_template("Dockerfile.swe")
         self.instance_template = env.get_template("Dockerfile.pyenv_instance")
-        self.getconda_path = os.path.relpath(script_dir, os.path.join(script_dir, "getconda.sh"))
-        self.install_composio_path = os.path.join(os.path.relpath(script_dir, "install_composio.sh"), "install_composio.sh")
+        self.getconda_path = os.path.relpath(
+            script_dir, os.path.join(script_dir, "getconda.sh")
+        )
+        self.install_composio_path = os.path.join(
+            os.path.relpath(script_dir, "install_composio.sh"), "install_composio.sh"
+        )
         if predictions_path:
             predictions = get_instances(predictions_path)
             self.instance_ids = set([p["instance_id"] for p in predictions])
@@ -294,7 +298,7 @@ class DockerfileGenerator:
         template = self.base_swe_agent_tmpl
         base_dir = f"{self.docker_dir}"
         dockerfile_content = template.render(
-           install_composio_path=self.install_composio_path
+            install_composio_path=self.install_composio_path
         )
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)

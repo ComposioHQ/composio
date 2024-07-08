@@ -58,7 +58,7 @@ class DockerShell(Shell):
         """Wait for the entrypoint script to complete."""
         end_time = time.time() + timeout
         while time.time() < end_time:
-            exit_code, output = self._container.exec_run(
+            exit_code, _ = self._container.exec_run(
                 "test -f /tmp/entrypoint_complete"
             )
             if exit_code == 0:
