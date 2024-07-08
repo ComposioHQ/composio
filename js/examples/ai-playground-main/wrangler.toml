@@ -1,0 +1,9 @@
+name = "ai-playground"
+main = "src/worker.js"
+compatibility_date = "2024-04-18"
+
+[ai]
+binding = "AI"
+
+[vars]
+COMPOSIO_API_KEY = ""
