@@ -4,18 +4,8 @@ import typing as t
 from enum import Enum
 from pathlib import Path
 
-import typing_extensions as te
 from composio_swe.exceptions import ComposioSWEError
 from composio_swe.scaffold.templates import PATH as TEMPLATES_PATH
-
-
-class Templates(te.TypedDict):
-    """Collection of templates."""
-
-    main: str
-    agent: str
-    benchmark: str
-    prompts: str
 
 
 class AgenticFramework(Enum):
@@ -24,22 +14,12 @@ class AgenticFramework(Enum):
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
 
-    def load_templates(self) -> Templates:
+    def load_templates(self) -> t.Dict:
         """Load tempalte string."""
-        return Templates(
-            main=(TEMPLATES_PATH / self.value / "main.template").read_text(
-                encoding="utf-8"
-            ),
-            agent=(TEMPLATES_PATH / self.value / "agent.template").read_text(
-                encoding="utf-8"
-            ),
-            benchmark=(TEMPLATES_PATH / self.value / "benchmark.template").read_text(
-                encoding="utf-8"
-            ),
-            prompts=(TEMPLATES_PATH / self.value / "prompts.template").read_text(
-                encoding="utf-8"
-            ),
-        )
+        return {
+            file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
+            for file in (TEMPLATES_PATH / self.value).glob("*.template")
+        }
 
 
 def scaffold(
@@ -59,6 +39,6 @@ def scaffold(
     output.mkdir()
 
     for file, template in framework.load_templates().items():
-        (output / f"{file}.py").write_text(str(template), encoding="utf-8")
+        (output / file).write_text(str(template), encoding="utf-8")
 
     return output
