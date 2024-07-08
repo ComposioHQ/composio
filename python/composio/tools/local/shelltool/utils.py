@@ -26,7 +26,7 @@ def git_clone_cmd(request_data):
         raise ValueError("github_token can not be null")
     repo_dir = request_data.repo_name.split("/")[-1].strip()
     command_list = [
-        f"git clone https://{git_token}@github.com/{request_data.repo_name}.git",
+        f"git clone --progress https://{git_token}@github.com/{request_data.repo_name}.git",
         f"cd {repo_dir}",
     ]
     if request_data.commit_id:

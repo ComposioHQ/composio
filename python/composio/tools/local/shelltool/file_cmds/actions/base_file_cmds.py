@@ -44,7 +44,11 @@ class GoToLineNumInOpenFile(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return GoToResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return GoToResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )
 
 
 class CreateFileRequest(ShellRequest):
@@ -91,7 +95,11 @@ class CreateFileCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return CreateFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return CreateFileResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )
 
 
 class OpenCmdRequest(ShellRequest):
@@ -132,4 +140,8 @@ class OpenFile(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return OpenCmdResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return OpenCmdResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )

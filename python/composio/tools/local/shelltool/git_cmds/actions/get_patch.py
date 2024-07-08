@@ -62,4 +62,8 @@ class GetPatchCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )

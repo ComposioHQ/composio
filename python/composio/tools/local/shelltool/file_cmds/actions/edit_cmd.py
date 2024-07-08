@@ -56,4 +56,8 @@ class EditFile(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return EditFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return EditFileResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )

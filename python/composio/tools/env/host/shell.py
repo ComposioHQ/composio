@@ -33,13 +33,42 @@ class HostShell(Shell):
             text=True,
             bufsize=1,
         )
-        self.logger.debug(f"Initial data from session: {self.id} - {self._read()}")
+        self.logger.debug(
+            f"Initial data from session: {self.id} - {self._read(wait=False)}"
+        )
 
-    def _read(self, timeout: float = 120.0) -> t.Dict:
+    def _wait_for_cmd(self, cmd: str) -> None:
+        """Waif for command to exit."""
+        while True:
+            output = subprocess.run(  # pylint: disable=subprocess-run-check
+                ["ps", "-e"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ).stdout.decode()
+            if all(_cmd.lstrip().rstrip() not in output for _cmd in cmd.split("&&")):
+                return
+            time.sleep(1)
+
+    def _get_exit_code(self) -> int:
+        """Get exit code of the last process."""
+        self._write("echo $#")
+        return int(self._read(wait=False).get("stdout").strip())  # type: ignore
+
+    def _read(
+        self,
+        cmd: t.Optional[str] = None,
+        wait: bool = True,
+        timeout: float = 120.0,
+    ) -> t.Dict:
         """Read data from a subprocess with a timeout."""
         stderr = t.cast(t.IO[str], self._process.stderr).fileno()
         stdout = t.cast(t.IO[str], self._process.stdout).fileno()
         buffer = {stderr: b"", stdout: b""}
+        if wait and cmd is None:
+            raise ValueError("`cmd` cannot be `None` when `wait` is set to `True`")
+
+        if wait:
+            self._wait_for_cmd(cmd=str(cmd))
 
         end_time = time.time() + timeout
         while time.time() < end_time:
@@ -78,8 +107,8 @@ class HostShell(Shell):
             self.exec(cmd=f"source {file}")
             time.sleep(0.05)
 
-    def exec(self, cmd: str) -> t.Dict:
-        """Execute command on container."""
+    def _write(self, cmd: str) -> None:
+        """Write command to shell."""
         try:
             stdin = t.cast(t.IO[str], self._process.stdin)
             os.write(stdin.fileno(), self.sanitize_command(cmd=cmd))
@@ -88,7 +117,13 @@ class HostShell(Shell):
             # TODO: Handle this as framework error
             raise RuntimeError(str(e)) from e
 
-        return self._read()
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute command on container."""
+        self._write(cmd=cmd)
+        return {
+            **self._read(cmd=cmd, wait=True),
+            "exit_code": self._get_exit_code(),
+        }
 
     def stop(self) -> None:
         """Stop and remove the running shell."""

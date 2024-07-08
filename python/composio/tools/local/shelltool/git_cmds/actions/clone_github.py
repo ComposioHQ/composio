@@ -57,9 +57,11 @@ class GithubCloneCmd(BaseExecCommand, WithLogger):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        if "stderr" in output and len(output["stderr"]) > 0:
-            self.logger.error(f"Error cloning repo: {output['stderr']}")
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output["stderr"],
+            stderr="",
+            exit_code=int(output["exit_code"]),
+        )
 
     def reset_to_base_commit(
         self, request_data: GithubCloneRequest, authorisation_data: dict
@@ -74,4 +76,8 @@ class GithubCloneCmd(BaseExecCommand, WithLogger):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )

@@ -37,7 +37,12 @@ class ShellExecResponse(BaseModel):
         description="Output captured from the execution of the command",
     )
     stderr: str = Field(
-        ..., description="Errors captured during execution of the command"
+        ...,
+        description="Errors captured during execution of the command",
+    )
+    exit_code: int = Field(
+        ...,
+        description="Exit code of the command",
     )
 
 
@@ -104,7 +109,11 @@ class ExecCommand(BaseExecCommand):
         shell = authorisation_data.get("workspace").shells.get(id=request_data.shell_id)  # type: ignore
         self.logger.debug(f"Executing {request_data.cmd} @ {shell}")
         output = shell.exec(cmd=request_data.cmd)
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )
 
 
 def exec_cmd(

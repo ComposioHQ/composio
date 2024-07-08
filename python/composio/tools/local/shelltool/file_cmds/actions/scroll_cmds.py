@@ -40,4 +40,8 @@ class Scroll(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ScrollResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ScrollResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )

@@ -42,7 +42,11 @@ class SearchDirCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return SearchDirResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return SearchDirResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )
 
 
 class SearchFileRequest(ShellRequest):
@@ -74,7 +78,11 @@ class SearchFileCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return SearchFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return SearchFileResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )
 
 
 class FindFileRequest(ShellRequest):
@@ -115,4 +123,8 @@ class FindFileCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return FindFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return FindFileResponse(
+            stdout=output["stdout"],
+            stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
+        )

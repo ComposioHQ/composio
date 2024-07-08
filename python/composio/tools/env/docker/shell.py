@@ -160,6 +160,11 @@ class DockerShell(Shell):
             raise RuntimeError(f"{cmd}: {error}: {output}")
         return output["stdout"]
 
+    def _get_exit_code(self) -> int:
+        """Get exit code of the last process."""
+        self._write("echo $#")
+        return int(self._read().get("stdout").strip())  # type: ignore
+
     def setup(self) -> None:
         """Setup shell."""
 
@@ -200,8 +205,8 @@ class DockerShell(Shell):
             else:
                 raise ValueError(f"Invalid command type: {cmd_file.cmd_type}")
 
-    def exec(self, cmd: str) -> t.Dict:
-        """Execute command on container."""
+    def _write(self, cmd: str) -> None:
+        """Write command to console."""
         try:
             stdin = t.cast(t.IO[str], self._process.stdin)
             os.write(stdin.fileno(), self.sanitize_command(cmd=cmd))
@@ -209,7 +214,14 @@ class DockerShell(Shell):
         except BrokenPipeError as e:
             # TODO: Handle this as framework error
             raise RuntimeError(str(e)) from e
-        return self._read()
+
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute command on container."""
+        self._write(cmd=cmd)
+        return {
+            **self._read(),
+            "exit_code": self._get_exit_code(),
+        }
 
     def stop(self) -> None:
         """Stop and remove the running shell."""
