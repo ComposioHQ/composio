@@ -6,7 +6,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ShellRequest,
     exec_cmd,
 )
-from composio.utils.logging import WithLogger
+from composio.utils.logging import get as get_logger
 
 
 logger = WithLogger.logger
