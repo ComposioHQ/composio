@@ -34,21 +34,32 @@ class DockerWorkspace(Workspace):
         self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
         composio_swe_env = os.environ.get("COMPOSIO_SWE_ENV")
-        container_args = { "image": self._image,
-                    "command": "/bin/bash -l -m",
-                    "name": self.id,
-                    "tty":True,
-                    "detach":True,
-                    "stdin_open":True,
-                    "auto_remove":False,}
+        container_args = {
+            "image": self._image,
+            "command": "/bin/bash -l -m",
+            "name": self.id,
+            "tty": True,
+            "detach": True,
+            "stdin_open": True,
+            "auto_remove": False,
+        }
         try:
             if composio_swe_env == "dev":
-                container_args.update({
-                    "environment": {"ENV": "dev"},
-                    "volumes": {
-                    composio_core_path: {"bind": "/opt/composio-core", "mode": "rw"},
-                    composio_local_store_path: {"bind": "/root/.composio", "mode":"rw"}
-                }})
+                container_args.update(
+                    {
+                        "environment": {"ENV": "dev"},
+                        "volumes": {
+                            composio_core_path: {
+                                "bind": "/opt/composio-core",
+                                "mode": "rw",
+                            },
+                            composio_local_store_path: {
+                                "bind": "/root/.composio",
+                                "mode": "rw",
+                            },
+                        },
+                    }
+                )
             self._container = self.client.containers.run(**container_args)
             self._container.start()
         except Exception as e:

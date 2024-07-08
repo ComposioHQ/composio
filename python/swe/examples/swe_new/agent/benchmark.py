@@ -1,6 +1,7 @@
-from agent import composio_toolset, crew
 from composio_swe.benchmark.run_evaluation import run_and_get_scores
 from composio_swe.config.store import IssueConfig
+
+from agent import composio_toolset, crew
 
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
