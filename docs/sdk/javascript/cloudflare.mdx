@@ -49,9 +49,7 @@ async function setupUserConnectionIfNotExists(toolset, entityId, c) {
         }
 
         return connection;
-}
-
-      ```
+}```
     </CodeGroup>
 
 Learn more about entities [here](introduction/foundations/components/entity/entity-guide)
@@ -100,20 +98,18 @@ app.post('/', async (c) => {
             console.log(err);
             return c.text('Something went wrong', 500);
         }
-});
-
-      ```
+});```
     </CodeGroup>
 
 </Step>
 
 <Step title="Invoke Your Agent">
-Start Wrangler by doing ```wrangler dev``` and do a POST request to the server to invoke your agent.
+Start Wrangler by doing ```wrangler dev``` and send a POST request to the server to invoke your agent.
 
 Tada 🎉! It was this simple to create a powerful Agent with Composio and Cloudflare Worker AI.
 </Step>
 
 <Step title="Complete code snippet">
-View the full snippet [here](https://github.com/ComposioHQ/composio-js/blob/main/examples/ai-playground-main/src/worker.js)
+View the full snippet [here](https://github.com/ComposioHQ/composio/tree/master/js/examples/ai-playground-main/src/worker.js)
 </Step>
 </Steps>
