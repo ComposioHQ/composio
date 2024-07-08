@@ -7,6 +7,11 @@ import time
 import typing as t
 
 from composio.tools.env.base import Shell
+from composio.tools.env.docker.scripts import (
+    SHELL_ENV_VARS,
+    SHELL_SOURCE_FILES,
+    SHELL_STATE_CMD,
+)
 from composio.tools.env.id import generate_id
 
 
@@ -63,6 +68,15 @@ class HostShell(Shell):
 
     def setup(self) -> None:
         """Setup host shell."""
+        self.logger.debug(f"Setting up shell: {self.id}")
+        for var, val in SHELL_ENV_VARS.items():
+            self.exec(cmd=f"{var}={val}")
+            time.sleep(0.05)
+        self.exec(cmd=SHELL_STATE_CMD)
+        time.sleep(0.05)
+        for file in SHELL_SOURCE_FILES:
+            self.exec(cmd=f"source {file}")
+            time.sleep(0.05)
 
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
