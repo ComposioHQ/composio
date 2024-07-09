@@ -22,7 +22,7 @@ def git_clone_cmd(request_data):
     *_, reponame = request_data.repo_name.lstrip().rstrip().split("/")
     github_access_token = os.environ.get("GITHUB_ACCESS_TOKEN")
     if not github_access_token or not github_access_token.strip():
-        if not os.environ.get("ALLOW_CLONE_WITHOUT_REPO", False):
+        if os.environ.get("ALLOW_CLONE_WITHOUT_REPO") != "true":
             raise RuntimeError(
                 "Cannot clone github repository without github access token"
             )

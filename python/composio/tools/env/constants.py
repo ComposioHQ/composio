@@ -4,4 +4,4 @@ EXIT_CODE = "exit_code"
 STDOUT = "stdout"
 STDERR = "stderr"
 
-ECHO_EXIT_CODE = "echo $#"
+ECHO_EXIT_CODE = "echo $?"

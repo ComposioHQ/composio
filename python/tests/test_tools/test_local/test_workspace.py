@@ -1,6 +1,7 @@
 """Test workspace tools."""
 
 
+import os
 import tempfile
 from pathlib import Path
 
@@ -33,7 +34,7 @@ def test_stderr() -> None:
     )
     output = toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
-        params={"cmd": f"ls ./random"},
+        params={"cmd": "ls ./random"},
     )
     assert output[STDERR] == "ls: ./random: No such file or directory\n"
 
@@ -45,7 +46,9 @@ def _check_output(output: dict) -> None:
 
 def test_workspace() -> None:
     """Test workspace tools."""
-    tempdir = tempfile.TemporaryDirectory()
+    tempdir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+    allow_clone_without_repo = os.environ.get("ALLOW_CLONE_WITHOUT_REPO")
+    os.environ["ALLOW_CLONE_WITHOUT_REPO"] = "true"
     try:
         toolset = ComposioToolSet(
             workspace_env=ExecEnv.HOST,
@@ -94,6 +97,9 @@ def test_workspace() -> None:
             "\\ No newline at end of file\n"
             "+# some text\n"
         )
-
     finally:
         tempdir.cleanup()
+        if allow_clone_without_repo is not None:
+            os.environ["ALLOW_CLONE_WITHOUT_REPO"] = allow_clone_without_repo
+        else:
+            del os.environ["ALLOW_CLONE_WITHOUT_REPO"]
