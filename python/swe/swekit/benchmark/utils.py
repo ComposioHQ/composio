@@ -7,11 +7,11 @@ from pathlib import Path
 
 import docker
 from composio_crewai import ComposioToolSet
-from composio_swe.benchmark.constants import MODEL_GPT4
-from composio_swe.benchmark.get_score_card import generate_scorecard
-from composio_swe.benchmark.setup_test_bed import create_patches_file
 from datasets import load_dataset
 from docker import errors as docker_errors
+from swekit.benchmark.constants import MODEL_GPT4
+from swekit.benchmark.get_score_card import generate_scorecard
+from swekit.benchmark.setup_test_bed import create_patches_file
 
 from composio import Action
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory

@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio SWE Agent plugin
+Setup configuration for SWE Kit.
 """
 
 from pathlib import Path
@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 
 
 setup(
-    name="composio_swe",
+    name="swekit",
     version="0.1.0-rc0",
     author="Shubhra",
     author_email="shubhra@composio.dev",
@@ -22,14 +22,14 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    packages=find_packages(include=["composio_swe*"]),
+    packages=find_packages(include=["swekit*"]),
     entry_points={
         "console_scripts": [
-            "composio-swe=composio_swe.cli:swe",
+            "swekit=swekit.cli:swekit",
         ],
     },
     package_data={
-        "composio_swe": [
+        "swekit": [
             "py.typed",
             "scaffold/templates/crewai/*",
         ],

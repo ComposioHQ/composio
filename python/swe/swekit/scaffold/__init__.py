@@ -1,4 +1,4 @@
-"""Scaffolding Utilities Composio SWE Agents."""
+"""Scaffolding Utilities."""
 
 from ._scaffold import AgenticFramework, scaffold
 

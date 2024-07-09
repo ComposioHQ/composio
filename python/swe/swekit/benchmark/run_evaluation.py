@@ -9,9 +9,9 @@ from pathlib import Path
 
 import utils as eval_utils
 from composio_crewai import ComposioToolSet
-from composio_swe.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
-from composio_swe.config.store import IssueConfig
 from pydantic import BaseModel, Field
+from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
+from swekit.config.store import IssueConfig
 from tqdm import tqdm
 
 from composio import Action

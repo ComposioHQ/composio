@@ -1,6 +1,6 @@
 from agent import composio_toolset, crew
-from composio_swe.benchmark.run_evaluation import run_and_get_scores
-from composio_swe.config.store import IssueConfig
+from swekit.benchmark.run_evaluation import run_and_get_scores
+from swekit.config.store import IssueConfig
 import argparse
 
 

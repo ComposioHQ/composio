@@ -9,7 +9,8 @@ from pathlib import Path
 import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
-from composio_swe.config.constants import (
+from rich.console import Console
+from swekit.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
@@ -20,13 +21,12 @@ from composio_swe.config.constants import (
     MODEL_ENV_OPENAI,
     MODEL_ENV_PATH,
 )
-from composio_swe.config.store import (
+from swekit.config.store import (
     AzureModelConfig,
     IssueConfig,
     ModelEnv,
     OpenAiModelConfig,
 )
-from rich.console import Console
 
 
 _context: t.Optional["Context"] = None

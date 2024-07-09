@@ -103,7 +103,7 @@ jobs:
 
           # Build dist
           python -m build
-      - name: Publish Composio-SWE to PyPI
+      - name: Publish SWE Kit to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: ${{ secrets.PYPI_USERNAME }}
