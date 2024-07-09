@@ -9,9 +9,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from composio_crewai import ComposioToolSet
-from composio_swe.config.store import IssueConfig
-from composio_swe.exceptions import ComposioSWEError
 from pydantic import BaseModel, Field
+from swekit.config.store import IssueConfig
+from swekit.exceptions import SWEKitError
 
 from composio import Action
 from composio.utils import logging
@@ -84,7 +84,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
             isinstance(get_patch_resp, dict)
             and get_patch_resp.get("status") == "failure"
         ):
-            raise ComposioSWEError(get_patch_resp["details"])
+            raise SWEKitError(get_patch_resp["details"])
         self.logger.info(f"Get patch response: {get_patch_resp}")
         patch = get_patch_resp.get("stdout")  # type: ignore
         self.logger.info(f"Final Patch: {patch}")

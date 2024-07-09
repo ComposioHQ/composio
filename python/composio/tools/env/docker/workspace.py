@@ -25,9 +25,29 @@ from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
 
-script_path = os.path.dirname(os.path.realpath(__file__))
-composio_core_path = Path(script_path).parent.parent.parent.parent.absolute()
-composio_local_store_path = Path.home() / ".composio"
+COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.resolve()
+COMPOSIO_CACHE = Path.home() / ".composio"
+
+CONTAINER_BASE_KWARGS = {
+    "command": "/bin/bash -l -m",
+    "tty": True,
+    "detach": True,
+    "stdin_open": True,
+    "auto_remove": False,
+}
+CONTAINER_DEVELOPMENT_MODE_KWARGS = {
+    "environment": {ENV_COMPOSIO_DEV_MODE: 1},
+    "volumes": {
+        COMPOSIO_PATH: {
+            "bind": "/opt/composio-core",
+            "mode": "rw",
+        },
+        COMPOSIO_CACHE: {
+            "bind": "/root/.composio",
+            "mode": "rw",
+        },
+    },
+}
 
 
 class DockerWorkspace(Workspace):
@@ -41,34 +61,15 @@ class DockerWorkspace(Workspace):
         super().__init__()
         self._image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
-        composio_swe_env = os.environ.get(ENV_COMPOSIO_DEV_MODE, 0)
-        container_args = {
-            "image": self._image,
-            "command": "/bin/bash -l -m",
-            "name": self.id,
-            "tty": True,
-            "detach": True,
-            "stdin_open": True,
-            "auto_remove": False,
-        }
         try:
-            if composio_swe_env != 0:
-                container_args.update(
-                    {
-                        "environment": {ENV_COMPOSIO_DEV_MODE: 1},
-                        "volumes": {
-                            composio_core_path: {
-                                "bind": "/opt/composio-core",
-                                "mode": "rw",
-                            },
-                            composio_local_store_path: {
-                                "bind": "/root/.composio",
-                                "mode": "rw",
-                            },
-                        },
-                    }
-                )
-            self._container = self.client.containers.run(**container_args)
+            container_kwargs = {
+                "image": self._image,
+                "name": self.id,
+                **CONTAINER_BASE_KWARGS,
+            }
+            if os.environ.get(ENV_COMPOSIO_DEV_MODE, 0) != 0:
+                container_kwargs.update(CONTAINER_DEVELOPMENT_MODE_KWARGS)
+            self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
         except Exception as e:
             raise Exception("exception in starting container: ", e) from e
