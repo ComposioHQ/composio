@@ -12,6 +12,7 @@ from docker.errors import DockerException
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
+from composio.tools.env.constants import STDERR, STDOUT
 from composio.tools.env.docker.shell import Container as DockerContainer
 from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
@@ -89,12 +90,12 @@ class DockerWorkspace(Workspace):
             f" --param {json.dumps(request_data)}"
             f" --metadata {json.dumps(metadata)}"
         )
-        if len(output["stderr"]) > 0:
-            return {"status": "failure", "message": output["stderr"]}
+        if len(output[STDERR]) > 0:
+            return {"status": "failure", "message": output[STDERR]}
         try:
-            return {"status": "success", "data": json.loads(output["stdout"])}
+            return {"status": "success", "data": json.loads(output[STDOUT])}
         except json.JSONDecodeError:
-            return {"status": "failure", "message": output["stdout"]}
+            return {"status": "failure", "message": output[STDOUT]}
 
     def execute_action(
         self,

@@ -1,5 +1,6 @@
 from pydantic import Field, field_validator
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
@@ -45,9 +46,9 @@ class GoToLineNumInOpenFile(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return GoToResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )
 
 
@@ -96,9 +97,9 @@ class CreateFileCmd(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return CreateFileResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )
 
 
@@ -141,7 +142,7 @@ class OpenFile(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return OpenCmdResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )

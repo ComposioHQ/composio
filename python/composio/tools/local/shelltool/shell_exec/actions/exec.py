@@ -4,6 +4,7 @@ import typing as t
 
 from pydantic import BaseModel, Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.base import Action
 from composio.utils.logging import get as get_logger
 
@@ -110,9 +111,9 @@ class ExecCommand(BaseExecCommand):
         self.logger.debug(f"Executing {request_data.cmd} @ {shell}")
         output = shell.exec(cmd=request_data.cmd)
         return ShellExecResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )
 
 

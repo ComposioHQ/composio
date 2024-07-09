@@ -1,5 +1,6 @@
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
@@ -43,9 +44,9 @@ class SearchDirCmd(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return SearchDirResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )
 
 
@@ -79,9 +80,9 @@ class SearchFileCmd(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return SearchFileResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )
 
 
@@ -124,7 +125,7 @@ class FindFileCmd(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return FindFileResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )

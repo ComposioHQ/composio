@@ -1,5 +1,6 @@
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
@@ -57,7 +58,7 @@ class EditFile(BaseExecCommand):
             shell_id=request_data.shell_id,
         )
         return EditFileResponse(
-            stdout=output["stdout"],
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )
