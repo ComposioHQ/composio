@@ -2,42 +2,83 @@
 
 ## Overview
 
-Composio-swe is a framework for building and evaluating software engineering agents. You can use it to build your own agents or use the ones that we have built. You can run the SWE-Bench benchmark on your agent to evaluate its performance.
+Composio-swe is a powerful framework for building and evaluating software engineering agents. With this toolkit, you can:
+
+- Build your own custom agents
+- Utilize pre-built agents provided by Composio
+- Run the SWE-Bench benchmark to evaluate agent performance
 
 ## Dependencies
 
-1. Get the Github Access Token. You can create one at https://github.com/settings/tokens with the necessary permissions.
-2. Add the environment variable `export GITHUB_ACCESS_TOKEN = <git_access_token>`.
-3. Install everything locally using `pip install composio-swe` and `pip install composio-core`.
-4. If you want to use crewai for your agent, install `pip install crewai` and `pip install composio-crewai`.
-5. Add the LLM configuration via `OPENAI_API_KEY`. You can also use other LLMs by changing the code. More on it later.
+Before getting started, ensure you have the following set up:
 
-## Getting started
+1. **GitHub Access Token**:
 
-You can scaffold a new agent by running `composio-swe scaffold crewai -o <path>`. This will create a new agent in `<path>/agent`.
-There will be 4 files created:
+   - Create one at https://github.com/settings/tokens with necessary permissions
+   - Set the environment variable: `export GITHUB_ACCESS_TOKEN=<your_token>`
 
-1. `agent/main.py`: This is the main file to run the agent on your issue.
-2. `agent/agent.py`: This is the agentic code, which you should edit to change the agentic logic
-3. `agent/prompts.py`: This is the prompts for the agent.
-4. `agent/benchmark.py`: This is to run the SWE-Bench benchmark on your agent.
+2. **Installation**:
 
-NOTE: By default, the SWE-agent runs on docker. If you want to run it locally, you can do so by changing the workspace_env in the `agent/agent.py` file.
+   ```
+   pip install composio-swe composio-core
+   ```
 
-Run it using `python agent/main.py` which will ask you to give the repo name and issue.
+3. **Optional CrewAI Support**:
+   If you plan to use CrewAI for your agent:
 
-Run the benchmark using `python agent/benchmark.py`.
+   ```
+   pip install crewai composio-crewai
+   ```
 
-## Adding a new tool.
+4. **LLM Configuration**:
+   - Set up OpenAI API key: `export OPENAI_API_KEY=<your_key>`
+   - Other LLMs can be configured by modifying the code (details provided later)
 
-Check https://docs.composio.dev/sdk/python/local_tools to add a new local tool, which you can use inside the agent.
+## Getting Started
 
-## Adding a new shell tool.
+### Scaffolding a New Agent
 
-There are various tools which you want to run in the running shell session to maintain the context of the issue. You can check https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/shelltool/git_cmds/actions/get_patch.py to understand how to add a new shell tool.
-You need to:
+1. Run the following command:
 
-1. Implement `ShellRequest`, `ShellExecResponse` and `BaseExecCommand` to do the same.
-2. Use `exec_cmd` to exec your commands.
+   ```
+   composio-swe scaffold crewai -o <path>
+   ```
 
-NOTE: If you are adding a new tool, for it to get reflected in the docker, please run the swe agent with environment variable `export COMPOSIO_SWE_ENV=dev`.
+   This creates a new agent in `<path>/agent` with four key files:
+
+   - `main.py`: Entry point to run the agent on your issue
+   - `agent.py`: Core agentic logic (edit this to customize behavior)
+   - `prompts.py`: Agent prompts
+   - `benchmark.py`: SWE-Bench benchmark runner
+
+   > **Note**: By default, the SWE-agent runs in Docker. To run locally, modify the `workspace_env` in `agent/agent.py`.
+
+2. Run the agent:
+
+   ```
+   python agent/main.py
+   ```
+
+   You'll be prompted for the repository name and issue.
+
+3. Run the benchmark:
+   ```
+   python agent/benchmark.py
+   ```
+
+## Extending Functionality
+
+### Adding a New Tool
+
+To add a new local tool for use within the agent, refer to the [Composio SDK documentation](https://docs.composio.dev/sdk/python/local_tools).
+
+### Adding a New Shell Tool
+
+For tools that need to run in the active shell session to maintain issue context:
+
+1. Implement `ShellRequest`, `ShellExecResponse`, and `BaseExecCommand`
+2. Use `exec_cmd` to execute your commands
+
+Example: [Git Patch Tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/shelltool/git_cmds/actions/get_patch.py)
+
+> **Note**: When adding a new tool, run the SWE agent with `export COMPOSIO_SWE_ENV=dev` to reflect changes in Docker.
