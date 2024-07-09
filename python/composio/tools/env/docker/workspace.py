@@ -19,8 +19,6 @@ from composio.tools.env.docker.shell import Container as DockerContainer
 from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
-
-
 script_path = os.path.dirname(os.path.realpath(__file__))
 composio_core_path = Path(script_path).parent.parent.parent.parent.absolute()
 composio_local_store_path = Path.home() / ".composio"
@@ -51,7 +49,7 @@ class DockerWorkspace(Workspace):
             if composio_swe_env != 0:
                 container_args.update(
                     {
-                        "environment": {"ENV": "dev"},
+                        "environment": {workspace_constants.ENV_COMPOSIO_DEV_MODE: 1},
                         "volumes": {
                             composio_core_path: {
                                 "bind": "/opt/composio-core",
