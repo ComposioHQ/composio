@@ -103,6 +103,8 @@ To add a new local tool for use within the agent, refer to the [Local Tool docum
 
 ### Adding a New Shell Tool
 
+> **Important**: When adding a new tool, run the SWE agent with `COMPOSIO_DEV_MODE=1` to reflect changes within the Docker container.
+
 The agent can create and manage multiple shell sessions, allowing for complex workflows and maintaining separate contexts. Key features include:
 
 1. Dynamic shell session creation
@@ -122,5 +124,3 @@ For tools requiring execution in the active shell session:
 2. Use the `exec_cmd` function to execute commands
 
 For an implementation example, see the [Git Patch Tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/shelltool/git_cmds/actions/get_patch.py).
-
-> **Important**: When adding a new tool, run the SWE agent with `COMPOSIO_DEV_MODE=1` to reflect changes within the Docker container.
