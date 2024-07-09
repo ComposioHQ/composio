@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="swekit",
-    version="0.1.0-rc0",
+    version="0.1.0-rc1",
     author="Shubhra",
     author_email="shubhra@composio.dev",
     description="Tools for running a SWE agent using Composio platform",
