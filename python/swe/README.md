@@ -89,3 +89,5 @@ To run the benchmark:
    - Specify a test split ratio to run more tests, e.g., `--test-split=1:300` runs 300 tests.
 
 **Note**: We utilize [SWE-Bench-Docker](https://github.com/aorwall/SWE-bench-docker) to ensure each test instance runs in an isolated container with its specific environment and Python version.
+
+To extend the functionality of the SWE agent by adding new tools or extending existing ones, refer to the [Development Guide](DEVELOPMENT.md).
