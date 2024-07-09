@@ -156,7 +156,7 @@ class DockerShell(Shell):
     def _communicate_with_handling(self, cmd: str, error: str) -> str:
         """Communicate with docker process."""
         output = self.exec(cmd)
-        if len(output[STDERR]) != 0:
+        if output[EXIT_CODE] != 0:
             raise RuntimeError(f"{cmd}: {error}: {output}")
         return output[STDOUT]
 
