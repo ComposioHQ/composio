@@ -177,6 +177,7 @@ class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
             }
             # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
         except Exception as e:
+            raise
             return {
                 "status": "failure",
                 "details": "Error executing action with error: " + str(e),

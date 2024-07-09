@@ -7,6 +7,7 @@ import time
 import typing as t
 
 from composio.tools.env.base import Shell
+from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.docker.scripts import (
     SHELL_ENV_VARS,
     SHELL_SOURCE_FILES,
@@ -37,21 +38,18 @@ class HostShell(Shell):
             f"Initial data from session: {self.id} - {self._read(wait=False)}"
         )
 
-    def _wait_for_cmd(self, cmd: str) -> None:
+    def _has_command_exited(self, cmd: str) -> bool:
         """Waif for command to exit."""
-        while True:
-            output = subprocess.run(  # pylint: disable=subprocess-run-check
-                ["ps", "-e"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ).stdout.decode()
-            if all(_cmd.lstrip().rstrip() not in output for _cmd in cmd.split("&&")):
-                return
-            time.sleep(1)
+        output = subprocess.run(  # pylint: disable=subprocess-run-check
+            ["ps", "-e"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        ).stdout.decode()
+        return all(_cmd.lstrip().rstrip() not in output for _cmd in cmd.split("&&"))
 
     def _get_exit_code(self) -> int:
         """Get exit code of the last process."""
-        self._write("echo $#")
+        self._write(ECHO_EXIT_CODE)
         return int(self._read(wait=False).get("stdout").strip())  # type: ignore
 
     def _read(
@@ -67,11 +65,12 @@ class HostShell(Shell):
         if wait and cmd is None:
             raise ValueError("`cmd` cannot be `None` when `wait` is set to `True`")
 
-        if wait:
-            self._wait_for_cmd(cmd=str(cmd))
-
         end_time = time.time() + timeout
         while time.time() < end_time:
+            if wait and not self._has_command_exited(cmd=str(cmd)):
+                time.sleep(0.5)
+                continue
+
             readables, _, _ = select.select([stderr, stdout], [], [], 0.1)
             if not readables:
                 break
@@ -91,8 +90,8 @@ class HostShell(Shell):
                 f"buffer: {buffer}"
             )
         return {
-            "stdout": buffer[stdout].decode(),
-            "stderr": buffer[stderr].decode(),
+            STDOUT: buffer[stdout].decode(),
+            STDERR: buffer[stderr].decode(),
         }
 
     def setup(self) -> None:
@@ -122,7 +121,7 @@ class HostShell(Shell):
         self._write(cmd=cmd)
         return {
             **self._read(cmd=cmd, wait=True),
-            "exit_code": self._get_exit_code(),
+            EXIT_CODE: self._get_exit_code(),
         }
 
     def stop(self) -> None:

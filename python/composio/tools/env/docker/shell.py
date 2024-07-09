@@ -13,6 +13,7 @@ from io import BytesIO
 from docker.models.containers import Container
 
 from composio.tools.env.base import Shell
+from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.docker.scripts import get_shell_env
 from composio.tools.env.id import generate_id
 
@@ -50,7 +51,6 @@ class DockerShell(Shell):
         if len(bash_pids) == 1:
             bash_pid = bash_pids[0][0]
         self._bash_pids = set(map(str, (1, bash_pid)))
-
         self.logger.debug(f"Initial data from session: {self.id} - {self._read()}")
 
     def _get_background_pids(self) -> t.Tuple[t.List, t.List]:
@@ -111,8 +111,8 @@ class DockerShell(Shell):
                 f"buffer: {buffer}\nRunning PIDs: {pids}"
             )
         return {
-            "stdout": buffer[stdout].decode(),
-            "stderr": buffer[stderr].decode(),
+            STDOUT: buffer[stdout].decode(),
+            STDERR: buffer[stderr].decode(),
         }
 
     def _copy(self, contents, destination: str) -> None:
@@ -156,24 +156,23 @@ class DockerShell(Shell):
     def _communicate_with_handling(self, cmd: str, error: str) -> str:
         """Communicate with docker process."""
         output = self.exec(cmd)
-        if len(output["stderr"]) != 0:
+        if len(output[STDERR]) != 0:
             raise RuntimeError(f"{cmd}: {error}: {output}")
-        return output["stdout"]
+        return output[STDOUT]
 
     def _get_exit_code(self) -> int:
         """Get exit code of the last process."""
-        self._write("echo $#")
-        return int(self._read().get("stdout").strip())  # type: ignore
+        self._write(ECHO_EXIT_CODE)
+        return int(self._read().get(STDOUT).strip())  # type: ignore
 
     def setup(self) -> None:
         """Setup shell."""
-
         env = get_shell_env()
         commands = "\n".join(env.commands_to_execute)
         output, return_code = None, 0
         try:
             response = self.exec(commands)
-            output, return_code = response["stdout"], 0
+            output, return_code = response[STDOUT], response[EXIT_CODE]
         except KeyboardInterrupt as e:
             if return_code != 0:
                 raise RuntimeError(
@@ -220,7 +219,7 @@ class DockerShell(Shell):
         self._write(cmd=cmd)
         return {
             **self._read(),
-            "exit_code": self._get_exit_code(),
+            EXIT_CODE: self._get_exit_code(),
         }
 
     def stop(self) -> None:
