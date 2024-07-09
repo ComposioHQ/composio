@@ -176,7 +176,7 @@ class DockerShell(Shell):
     def _get_exit_code(self) -> int:
         """Get exit code of the last process."""
         self._write(ECHO_EXIT_CODE)
-        exit_code = self._read().get(STDOUT).strip()  # type: ignore
+        *_, exit_code = self._read().get(STDOUT).strip().split("\n")  # type: ignore
         if len(exit_code) == 0:
             # `edit` command sometimes does not work as expected
             return 0
