@@ -46,5 +46,7 @@ class Scrape(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolResponse]):
             if response is None:
                 return {"error": "Response is None"}
             return {"content": response.content}
+        except (ConnectionError, TimeoutError) as e:
+            return {"error": f"Connection or timeout error occurred: {e}"}
         except Exception as e:
-            return {"error": f"Error crawling website: {e}"}
+            return {"error": f"An unexpected error occurred: {e}"}

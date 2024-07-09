@@ -24,8 +24,6 @@ class Crawl(Action[CrawlToolRequest, CrawlToolResponse]):
 
     def execute(self, request: CrawlToolRequest, authorisation_data: dict) -> dict:
         """Crawl a website and return its content in markdown format"""
-        if authorisation_data is None:
-            authorisation_data = {}
         url = request.url
         try:
             # pylint: disable=import-outside-toplevel
@@ -42,5 +40,7 @@ class Crawl(Action[CrawlToolRequest, CrawlToolResponse]):
             if response is None:
                 return {"error": "Response is None"}
             return {"content": response.content}
+        except (ConnectionError, TimeoutError) as e:
+            return {"error": f"Connection or timeout error occurred: {e}"}
         except Exception as e:
-            return {"error": f"Error scraping website: {e}"}
+            return {"error": f"An unexpected error occurred: {e}"}
