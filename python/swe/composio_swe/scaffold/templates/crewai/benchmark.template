@@ -1,6 +1,7 @@
 from agent import composio_toolset, crew
 from composio_swe.benchmark.run_evaluation import run_and_get_scores
 from composio_swe.config.store import IssueConfig
+import argparse
 
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
@@ -19,4 +20,13 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
 
 
 if __name__ == "__main__":
-    run_and_get_scores(bench, test_split="21:22")
+    parser = argparse.ArgumentParser(description="Run benchmark on the agent.")
+    parser.add_argument(
+        "--test-split",
+        type=str,
+        default="1:2",
+        help="Test split ratio (e.g. 1:2, 1:300) Maximum 300 tests per project.",
+    )
+    args = parser.parse_args()
+
+    run_and_get_scores(bench, test_split=args.test_split)
