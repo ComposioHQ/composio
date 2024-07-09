@@ -22,7 +22,7 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run benchmark on the agent.")
     parser.add_argument(
-        "--test_split",
+        "--test-split",
         type=str,
         default="1:2",
         help="Test split ratio (e.g. 1:2, 1:300) Maximum 300 tests per project.",

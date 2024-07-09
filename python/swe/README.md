@@ -16,11 +16,11 @@
 
 ## Overview
 
-Composio-swe is a powerful framework for building and evaluating software engineering agents. With this toolkit, you can:
+`Composio SWE` is a framework for building SWE agents on by utilising composio tooling ecosystem. Composio-SWE allows you to
 
-- Build your own custom agents
-- Utilize pre-built agents provided by Composio
-- Run the SWE-Bench benchmark to evaluate agent performance
+- Scaffold agents which works out-of-the-box with choice of your agentic framework, `crewai`, `llamaindex`, etc...
+- Tools to add or optimise your agent's abilities
+- Benchmark your agents against `SWE-bench`
 
 ## Dependencies
 
@@ -32,8 +32,8 @@ Before getting started, ensure you have the following set up:
    pip install composio-swe composio-core
    ```
 
-2. **Optional CrewAI Support**:
-   If you plan to use CrewAI for your agent:
+2. **Install agentic framework of your choice and the Composio plugin for the same**:
+   Here we're using `crewai` for the example:
 
    ```
    pip install crewai composio-crewai
@@ -41,18 +41,16 @@ Before getting started, ensure you have the following set up:
 
 3. **GitHub Access Token**:
 
-   - Create one at https://github.com/settings/tokens with necessary permissions
-   - Set the environment variable: `export GITHUB_ACCESS_TOKEN=<your_token>`
+    The agent requires a github access token to work with your repositories, You can create one at https://github.com/settings/tokens with necessary permissions and export it as an environment variable using `export GITHUB_ACCESS_TOKEN=<your_token>`
 
 4. **LLM Configuration**:
-   - Set up OpenAI API key: `export OPENAI_API_KEY=<your_key>`
-   - Other LLMs can be configured by modifying the code (details provided later)
+   You also need to setup API key for the LLM provider you're planning to use. By default the agents scaffolded by `composio-swe` uses `openai` client, so export  `OPENAI_API_KEY` before running your agent
 
 ## Getting Started
 
-### Scaffolding a New Agent
+### Creating a new agent
 
-1. Run the following command:
+1. Scaffold your agent using:
 
    ```
    composio-swe scaffold crewai -o <path>
@@ -61,7 +59,7 @@ Before getting started, ensure you have the following set up:
    This creates a new agent in `<path>/agent` with four key files:
 
    - `main.py`: Entry point to run the agent on your issue
-   - `agent.py`: Core agentic logic (edit this to customize behavior)
+   - `agent.py`: Agent definition (edit this to customise behaviour)
    - `prompts.py`: Agent prompts
    - `benchmark.py`: SWE-Bench benchmark runner
 
@@ -88,10 +86,10 @@ To run the benchmark:
 2. Execute the following command:
    ```
    cd agent
-   python benchmark.py --test_split=<test_split>
+   python benchmark.py --test-split=<test_split>
    ```
    - By default, `python benchmark.py` runs only 1 test instance.
-   - Specify a test split ratio to run more tests, e.g., `--test_split=1:300` runs 300 tests.
+   - Specify a test split ratio to run more tests, e.g., `--test-split=1:300` runs 300 tests.
 
 **Note**: We utilize [SWE-Bench-Docker](https://github.com/aorwall/SWE-bench-docker) to ensure each test instance runs in an isolated container with its specific environment and Python version.
 
