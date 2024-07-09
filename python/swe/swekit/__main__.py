@@ -1,7 +1,7 @@
 """Pyrunner entrypoint."""
 
-from composio_swe.cli import swe
+from swekit.cli import swekit
 
 
 if __name__ == "__main__":
-    swe()
+    swekit()

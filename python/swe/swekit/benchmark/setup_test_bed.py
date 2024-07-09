@@ -4,14 +4,14 @@ import os
 from codecs import decode, encode
 from pathlib import Path
 
-from composio_swe.benchmark.constants import (
+from datasets import load_dataset
+from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
+from swekit.benchmark.constants import (
     MODEL_GPT4,
     PATH_PATCHES_JSON,
     SUBMIT_PATCH_CMD,
     TEST_SPLIT,
 )
-from datasets import load_dataset
-from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
 
 
 def download_and_store_dataset(dataset_path_or_name, path_on_disk):
