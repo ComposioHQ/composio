@@ -99,7 +99,7 @@ To run the benchmark:
 
 ### Adding a New Tool
 
-To add a new local tool for use within the agent, refer to the <a href="https://docs.composio.dev/sdk/python/local_tools" target="_blank">Local Tool documentation</a>.
+To add a new local tool for use within the agent, refer to the [Local Tool documentation](https://docs.composio.dev/sdk/python/local_tools).
 
 ### Adding a New Shell Tool
 
