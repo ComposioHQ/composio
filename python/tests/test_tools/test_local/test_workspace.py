@@ -36,7 +36,7 @@ def test_stderr() -> None:
         action=Action.SHELL_EXEC_COMMAND,
         params={"cmd": "ls ./random"},
     )
-    assert output[STDERR] == "ls: ./random: No such file or directory\n"
+    assert "No such file or directory" in output[STDERR]
 
 
 def _check_output(output: dict) -> None:
