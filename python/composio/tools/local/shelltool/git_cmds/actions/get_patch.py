@@ -2,13 +2,14 @@ import typing as t
 
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import get_logger
+from composio.utils.logging import get as get_logger
 
 
 LONG_TIMEOUT = 200
@@ -62,4 +63,8 @@ class GetPatchCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )
