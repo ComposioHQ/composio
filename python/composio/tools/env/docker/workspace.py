@@ -4,7 +4,6 @@ Docker workspace.
 
 import json
 import os
-import time
 import typing as t
 from pathlib import Path
 
@@ -64,7 +63,6 @@ class DockerWorkspace(Workspace):
                 )
             self._container = self.client.containers.run(**container_args)
             self._container.start()
-            time.sleep(5)
         except Exception as e:
             raise Exception("exception in starting container: ", e) from e
 
