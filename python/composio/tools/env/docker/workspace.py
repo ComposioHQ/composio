@@ -13,13 +13,18 @@ from docker.errors import DockerException
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
-from composio.tools.env.constants import EXIT_CODE, STDOUT
+from composio.tools.env.constants import (
+    DEFAULT_IMAGE,
+    ENV_COMPOSIO_DEV_MODE,
+    ENV_COMPOSIO_SWE_AGENT,
+    EXIT_CODE,
+    STDOUT,
+)
 from composio.tools.env.docker.shell import Container as DockerContainer
 from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
 
-DEFAULT_IMAGE = "techcomposio/swe-agent"
 script_path = os.path.dirname(os.path.realpath(__file__))
 composio_core_path = Path(script_path).parent.parent.parent.parent.absolute()
 composio_local_store_path = Path.home() / ".composio"
@@ -34,9 +39,9 @@ class DockerWorkspace(Workspace):
     def __init__(self, image: t.Optional[str] = None) -> None:
         """Create a docker workspace."""
         super().__init__()
-        self._image = image or os.environ.get("COMPOSIO_SWE_AGENT", DEFAULT_IMAGE)
+        self._image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
-        composio_swe_env = os.environ.get("COMPOSIO_SWE_ENV")
+        composio_swe_env = os.environ.get(ENV_COMPOSIO_DEV_MODE, 0)
         container_args = {
             "image": self._image,
             "command": "/bin/bash -l -m",
@@ -47,10 +52,10 @@ class DockerWorkspace(Workspace):
             "auto_remove": False,
         }
         try:
-            if composio_swe_env == "dev":
+            if composio_swe_env != 0:
                 container_args.update(
                     {
-                        "environment": {"ENV": "dev"},
+                        "environment": {ENV_COMPOSIO_DEV_MODE: 1},
                         "volumes": {
                             composio_core_path: {
                                 "bind": "/opt/composio-core",
