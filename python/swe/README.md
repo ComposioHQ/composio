@@ -25,6 +25,7 @@ There will be 4 files created:
 NOTE: By default, the SWE-agent runs on docker. If you want to run it locally, you can do so by changing the workspace_env in the `agent/agent.py` file.
 
 Run it using `python agent/main.py` which will ask you to give the repo name and issue.
+
 Run the benchmark using `python agent/benchmark.py`.
 
 ## Adding a new tool.
