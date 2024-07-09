@@ -58,6 +58,7 @@ export const listAllConnections = (data: ListAllConnectionsData = {}, config: ty
     url: '/v1/connectedAccounts',
     query: {
         user_uuid: data.user_uuid,
+        appNames: data.appNames?.join(','),
         page: data.page,
         pageSize: data.pageSize,
         integrationId: data.integrationId
