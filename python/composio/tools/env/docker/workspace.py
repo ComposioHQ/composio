@@ -13,7 +13,7 @@ from docker.errors import DockerException
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
-from composio.tools.env.constants import STDERR, STDOUT
+from composio.tools.env.constants import EXIT_CODE, STDOUT
 from composio.tools.env.docker.shell import Container as DockerContainer
 from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
@@ -115,7 +115,7 @@ class DockerWorkspace(Workspace):
             f" --params '{json.dumps(request_data)}'"
             f" --metadata '{json.dumps(metadata)}'"
         )
-        if len(output["exit_code"]) != 0:
+        if len(output[EXIT_CODE]) != 0:
             return {"status": "failure", "message": output["stderr"]}
         try:
             return {"status": "success", "data": json.loads(output[STDOUT])}
