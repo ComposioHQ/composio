@@ -37,6 +37,7 @@ setup(
         "composio_crewai>=0.3.9",
         "composio_core>=0.3.9",
         "unidiff==0.7.5",
+        "tqdm==4.66.4",
         "langchain-core",
         "langchain-openai",
         "langchain-anthropic",

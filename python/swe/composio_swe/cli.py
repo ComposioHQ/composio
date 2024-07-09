@@ -1,6 +1,8 @@
 """CLI for composio-swe."""
 
 import os
+import typing as t
+from pathlib import Path
 from urllib.parse import urlparse
 
 import click
@@ -15,6 +17,10 @@ from composio_swe.config.constants import (
 )
 from composio_swe.config.context import Context, pass_context
 from composio_swe.config.store import IssueConfig
+from composio_swe.exceptions import ComposioSWEError
+from composio_swe.scaffold import AgenticFramework, scaffold
+
+from composio.cli.utils.params import EnumParam, PathParam
 
 
 def get_git_root():
@@ -33,7 +39,7 @@ def get_git_root():
         raise KeyError("No 'origin' remote found in the repository") from exc
 
 
-@click.group(name="composio-coder")
+@click.group(name="composio-swe")
 def swe() -> None:
     """Composio Coder CLI for managing the coding workspace and tasks."""
 
@@ -132,6 +138,38 @@ def show_workflow():
     click.echo("  1. 🔑 setup: Setup model configuration in the current directory")
     click.echo("  2. ➕ add_issue: Add an issue configuration to the current directory")
     click.echo("  3. 👷 solve: Start solving the configured issue\n")
+
+
+@swe.command(name="scaffold")
+@click.argument("framework", type=EnumParam(cls=AgenticFramework))
+@click.option(
+    "-n",
+    "--name",
+    type=str,
+    help="Name of agent",
+)
+@click.option(
+    "-o",
+    "--outdir",
+    type=PathParam(),
+    help="Output directory for the agent",
+)
+@click.help_option("--help")
+def _scaffold(
+    framework: AgenticFramework,
+    name: t.Optional[str] = None,
+    outdir: t.Optional[Path] = None,
+) -> None:
+    """Scaffold and agent using Composio SWE tools"""
+    try:
+        output = scaffold(
+            framework=framework,
+            name=name,
+            outdir=outdir,
+        )
+        click.echo(f"🤖 Scaffolded agent @ {output}")
+    except ComposioSWEError as e:
+        raise click.ClickException(str(e)) from e
 
 
 if __name__ == "__main__":

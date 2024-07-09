@@ -1,7 +1,6 @@
 """
 App enums.
 """
-
 import typing as t
 
 from composio.client.enums._action import Action
@@ -24,8 +23,11 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     ELEVENLABS: "App"
     EXA: "App"
     FIGMA: "App"
+    FILEEDITTOOL: "App"
     FILEMANAGER: "App"
+    FILETOOL: "App"
     FIRECRAWL: "App"
+    GITCMDTOOL: "App"
     GITHUB: "App"
     GMAIL: "App"
     GOOGLECALENDAR: "App"
@@ -34,25 +36,32 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     GOOGLEMEET: "App"
     GOOGLESHEETS: "App"
     GOOGLETASKS: "App"
+    GREPTILE: "App"
     HACKERNEWS: "App"
     HEROKU: "App"
+    HISTORYFETCHERTOOL: "App"
     INDUCEDAI: "App"
     LINEAR: "App"
     LISTENNOTES: "App"
+    MATHEMATICAL: "App"
     MULTIONAI: "App"
     NASA: "App"
     NOTION: "App"
     OKTA: "App"
     PAGERDUTY: "App"
     PERPLEXITYAI: "App"
+    RAGTOOL: "App"
     SCHEDULER: "App"
+    SEARCHTOOL: "App"
     SERPAPI: "App"
+    SHELLEXEC: "App"
     SLACK: "App"
     SLACKBOT: "App"
     SNOWFLAKE: "App"
     SOUNDCLOUD: "App"
     SPLITWISE: "App"
     SPOTIFY: "App"
+    SQLTOOL: "App"
     STRAVA: "App"
     TASKADE: "App"
     TAVILY: "App"
@@ -60,22 +69,14 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     TWILIO: "App"
     TYPEFORM: "App"
     WEATHERMAP: "App"
+    WEBTOOL: "App"
     WHATSAPP: "App"
     WORKABLE: "App"
     YOUSEARCH: "App"
     YOUTUBE: "App"
     ZENDESK: "App"
+    ZEPTOOL: "App"
     ZOOM: "App"
-    MATHEMATICAL: "App"
-    LOCALWORKSPACE: "App"
-    CMDMANAGERTOOL: "App"
-    HISTORYKEEPER: "App"
-    RAGTOOL: "App"
-    WEBTOOL: "App"
-    GREPTILE: "App"
-    SUBMITPATCHTOOL: "App"
-    SQLTOOL: "App"
-    FILETOOL: "App"
 
     @property
     def is_local(self) -> bool:
@@ -101,5 +102,5 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
                 continue
             if len(tags) == 0:
                 yield action
-            if any(tag in action.tags for tag in tags):
+            if any((tag in action.tags for tag in tags)):
                 yield action

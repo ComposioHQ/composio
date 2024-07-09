@@ -65,6 +65,9 @@ class ActionData(LocalStorage):
     is_local: bool = False
     "If set `True` the `app` is a local app."
 
+    shell: bool = False
+    "If set `True` the action will be executed using a shell."
+
 
 class TriggerData(LocalStorage):
     """Local storage for `Trigger` object."""

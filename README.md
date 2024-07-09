@@ -1,3 +1,7 @@
+<p>
+  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-CN.md">CN</a>
+</p>
+
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
@@ -44,7 +48,7 @@
 <div align="center">
 <p >
     <b>✨ Socials >></b>
-    <a href="https://discord.gg/XMa3eWKkH8">Discord</a> <b>|</b>
+    <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
     <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
     <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
     <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>

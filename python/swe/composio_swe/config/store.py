@@ -8,7 +8,7 @@ from composio.storage.base import LocalStorage
 
 
 class ModelEnv(LocalStorage):
-    model_env: str
+    env: str
 
 
 # todo: change this to litellm model config
@@ -17,7 +17,7 @@ class AzureModelConfig(LocalStorage):
     endpoint-url for azure llm
     """
 
-    model_env: str
+    env: str
     azure_endpoint: t.Optional[str] = None
     api_key: t.Optional[str] = None
 
@@ -27,7 +27,7 @@ class OpenAiModelConfig(LocalStorage):
     azure-keys for azure keys
     """
 
-    model_env: str
+    env: str
     api_key: t.Optional[str] = None
 
 

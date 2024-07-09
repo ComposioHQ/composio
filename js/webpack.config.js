@@ -9,15 +9,21 @@ const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: {
+    index: "./src/index.ts",
+  },
   output: {
-    filename: 'bundle.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
     library: {
       name: 'Composio',
       type: 'umd',
     },
     globalObject: 'this'
+  },
+  output: {
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist'),
   },
   resolve: {
     extensions: ['.ts', '.js']

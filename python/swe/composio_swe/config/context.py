@@ -77,11 +77,11 @@ class Context:
         if not path.exists():
             raise ValueError("model env config path not found !!!")
         model_env = ModelEnv.load(path=path)
-        if model_env.model_env == MODEL_ENV_AZURE:
+        if model_env.env == MODEL_ENV_AZURE:
             a = AzureModelConfig.load(path=path)
             self._model_env = a.to_json()
             return self._model_env
-        if model_env.model_env == MODEL_ENV_OPENAI:
+        if model_env.env == MODEL_ENV_OPENAI:
             o = OpenAiModelConfig.load(path=path)
             self._model_env = o.to_json()
             return self._model_env
@@ -92,7 +92,7 @@ class Context:
         path = self.cache_dir / MODEL_ENV_PATH
         if config.get(KEY_MODEL_ENV) == MODEL_ENV_OPENAI:
             model_config = OpenAiModelConfig(
-                path=path, model_env=MODEL_ENV_OPENAI, api_key=config[KEY_API_KEY]
+                path=path, env=MODEL_ENV_OPENAI, api_key=config[KEY_API_KEY]
             )
             model_config.store()
             self._model_env = model_config.to_json()
@@ -100,7 +100,7 @@ class Context:
         if config.get(KEY_MODEL_ENV) == MODEL_ENV_AZURE:
             model_config_azure = AzureModelConfig(
                 path=path,
-                model_env=MODEL_ENV_AZURE,
+                env=MODEL_ENV_AZURE,
                 api_key=config[KEY_API_KEY],
                 azure_endpoint=config[KEY_AZURE_ENDPOINT],
             )

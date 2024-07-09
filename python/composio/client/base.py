@@ -80,4 +80,5 @@ class BaseClient:
     """Composio client abstraction."""
 
     http: HttpClient
+    local: t.Any
     api_key: str

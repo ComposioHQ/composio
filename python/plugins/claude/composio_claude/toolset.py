@@ -6,6 +6,7 @@ from anthropic.types.beta.tools.tool_param import ToolParam
 from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.tools.env.factory import ExecEnv
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
@@ -56,6 +57,8 @@ class ComposioToolset(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
+        workspace_env: ExecEnv = ExecEnv.HOST,
+        workspace_id: t.Optional[str] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -71,6 +74,8 @@ class ComposioToolset(BaseComposioToolSet):
             runtime="claude",
             entity_id=entity_id,
             output_in_file=output_in_file,
+            workspace_env=workspace_env,
+            workspace_id=workspace_id,
         )
         self.schema = SchemaType.CLAUDE
 
