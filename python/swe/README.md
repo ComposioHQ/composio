@@ -56,7 +56,8 @@ Before getting started, ensure you have the following set up:
 2. Run the agent:
 
    ```
-   python agent/main.py
+   cd agent
+   python main.py
    ```
 
    You'll be prompted for the repository name and issue.
