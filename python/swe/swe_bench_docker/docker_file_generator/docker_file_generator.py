@@ -113,7 +113,7 @@ class DockerfileGenerator:
                                 install_cmd=install_cmd,
                             )
 
-            self.create_makefile()
+            # self.create_makefile()
             self.generate_docker_compose()
 
         for dockerfile, image_name in self.dockerfiles_to_build:

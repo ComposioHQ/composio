@@ -4,6 +4,8 @@ REPO_NAME ?= "django__django"
 
 all: generate_dockerfiles build_images push_images
 
+build_and_push: build_images push_images
+
 generate_dockerfiles:
 	python ./swe_bench_docker/docker_file_generator/docker_file_generator.py
 
