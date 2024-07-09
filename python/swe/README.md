@@ -113,7 +113,7 @@ The agent can create and manage multiple shell sessions, allowing for complex wo
 4. Ability to switch between sessions
 5. Useful for multi-tasking and maintaining separate contexts
 
-For tools requiring execution in the active shell session:
+For tools requiring execution in the active shell session like `git` commands, bash commands, etc:
 
 1. Implement the following classes:
 
