@@ -5,6 +5,7 @@ Docker workspace.
 import json
 import os
 import typing as t
+from pathlib import Path
 
 from docker import DockerClient, from_env
 from docker.errors import DockerException
@@ -18,8 +19,8 @@ from composio.tools.local.handler import LocalClient
 
 DEFAULT_IMAGE = "techcomposio/swe-agent"
 script_path = os.path.dirname(os.path.realpath(__file__))
-composio_core_path = os.path.abspath(os.path.join(script_path, "../../../../"))
-composio_local_store_path = os.path.expanduser("~/.composio/")
+composio_core_path = Path(script_path).parent.parent.parent.parent.parent.absolute()
+composio_local_store_path = Path.home() / ".composio"
 
 
 class DockerWorkspace(Workspace):
