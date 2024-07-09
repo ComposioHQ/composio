@@ -194,10 +194,12 @@ def evaluate(
     test_range: str = "20:22",
     dry_run: bool = True,
     include_hints: bool = False,
-    logs_dir: str = "./logs",
+    logs_dir: str = _get_logs_dir(),
     generate_report: bool = True,
 ) -> None:
     """Evaluate a callable."""
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
     manager = EvaluationManager(
         EvaluationArgs(
             test_range=test_range,

@@ -29,9 +29,7 @@ RESULTS_JSON_PATH = "results.json"
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
+    level=logging.INFO,
 )
 
 
