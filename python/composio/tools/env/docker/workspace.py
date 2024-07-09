@@ -12,6 +12,7 @@ from docker.errors import DockerException
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
+from composio.tools.env.docker.shell import Container as DockerContainer
 from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
@@ -22,7 +23,7 @@ DEFAULT_IMAGE = "sweagent/swe-agent"
 class DockerWorkspace(Workspace):
     """Docker workspace implementation."""
 
-    _shell_cls = DockerShell
+    _container: DockerContainer
     _client: t.Optional[DockerClient] = None
 
     def __init__(self, image: t.Optional[str] = None) -> None:
@@ -113,3 +114,9 @@ class DockerWorkspace(Workspace):
             request_data=request_data,
             metadata=metadata,
         )
+
+    def teardown(self) -> None:
+        """Teardown docker workspace factory."""
+        super().teardown()
+        self._container.kill()
+        self._container.remove()
