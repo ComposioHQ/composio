@@ -113,7 +113,7 @@ class DockerWorkspace(Workspace):
             f" --params '{json.dumps(request_data)}'"
             f" --metadata '{json.dumps(metadata)}'"
         )
-        if len(output["stderr"]) > 0:
+        if len(output["exit_code"]) != 0:
             return {"status": "failure", "message": output["stderr"]}
         try:
             return {"status": "success", "data": json.loads(output["stdout"])}
