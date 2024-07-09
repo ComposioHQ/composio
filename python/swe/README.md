@@ -6,7 +6,7 @@ Composio-swe is a framework for building and evaluating software engineering age
 
 ## Dependencies
 
-1. Get the Github Access Token.
+1. Get the Github Access Token. You can create one at https://github.com/settings/tokens with the necessary permissions.
 2. Add the environment variable `export GITHUB_ACCESS_TOKEN = <git_access_token>`.
 3. Install everything locally using `pip install composio-swe` and `pip install composio-core`.
 4. If you want to use crewai for your agent, install `pip install crewai` and `pip install composio-crewai`.
@@ -24,6 +24,9 @@ There will be 4 files created:
 
 NOTE: By default, the SWE-agent runs on docker. If you want to run it locally, you can do so by changing the workspace_env in the `agent/agent.py` file.
 
+Run it using `python agent/main.py` which will ask you to give the repo name and issue.
+Run the benchmark using `python agent/benchmark.py`.
+
 ## Adding a new tool.
 
 Check https://docs.composio.dev/sdk/python/local_tools to add a new local tool, which you can use inside the agent.
@@ -35,3 +38,5 @@ You need to:
 
 1. Implement `ShellRequest`, `ShellExecResponse` and `BaseExecCommand` to do the same.
 2. Use `exec_cmd` to exec your commands.
+
+NOTE: If you are adding a new tool, for it to get reflected in the docker, please run the swe agent with environment variable `export COMPOSIO_SWE_ENV=dev`.
