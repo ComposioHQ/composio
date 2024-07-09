@@ -2,6 +2,7 @@ import base64
 import hashlib
 import json
 import os
+import traceback
 from abc import ABC, abstractmethod
 from typing import Generic, List, Type, TypeVar, Union
 
@@ -177,6 +178,12 @@ class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
             }
             # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
         except Exception as e:
+            self.logger.error(
+                "Error while executing `%s` with parameters `%s`; Error: %s",
+                self.display_name,
+                request_data,
+                traceback.format_exc(),
+            )
             return {
                 "status": "failure",
                 "details": "Error executing action with error: " + str(e),
