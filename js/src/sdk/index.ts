@@ -139,7 +139,9 @@ export class Entity {
             });
         } else {
             const connectedAccounts = await this.client.connectedAccounts.list({
-                user_uuid: this.id
+                user_uuid: this.id,
+                appNames: [action.appKey!],
+                status: 'ACTIVE'
             });
             if (connectedAccounts.items!.length === 0) {
                 throw new Error('No connected account found');
