@@ -198,6 +198,8 @@ def evaluate(
     generate_report: bool = True,
 ) -> None:
     """Evaluate a callable."""
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
     manager = EvaluationManager(
         EvaluationArgs(
             test_range=test_range,

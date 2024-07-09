@@ -27,5 +27,3 @@ COPY {{ path_to_reqs }} .
 {% for cmd in install_cmds %}
 RUN {{ cmd }}
 {% endfor %}
-
-ENTRYPOINT ["/bin/bash"]
