@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="composio_swe",
-    version="0.0.1",
+    version="0.1.0-rc0",
     author="Shubhra",
     author_email="shubhra@composio.dev",
     description="Tools for running a SWE agent using Composio platform",
@@ -28,24 +28,24 @@ setup(
             "composio-swe=composio_swe.cli:swe",
         ],
     },
+    package_data={
+        "composio_swe": [
+            "py.typed",
+            "scaffold/templates/crewai/*",
+        ],
+    },
+    include_package_data=True,
     install_requires=[
         "pydantic>=2.7.4",
         "swebench==1.1.0",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
-        "crewai==0.30.11",
-        "composio_crewai>=0.3.9",
         "composio_core>=0.3.9",
         "unidiff==0.7.5",
         "tqdm==4.66.4",
-        "langchain-core",
-        "langchain-openai",
-        "langchain-anthropic",
-        "llama-index-llms-anthropic",
         "rich",
     ],
     dependency_links=[
         "git+https://github.com/ComposioHQ/SWE-bench-docker.git",
     ],
-    include_package_data=True,
 )
