@@ -45,7 +45,4 @@ setup(
         "tqdm==4.66.4",
         "rich",
     ],
-    dependency_links=[
-        "git+https://github.com/ComposioHQ/SWE-bench-docker.git",
-    ],
 )
