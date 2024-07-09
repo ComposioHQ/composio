@@ -50,7 +50,12 @@ class HostShell(Shell):
     def _get_exit_code(self) -> int:
         """Get exit code of the last process."""
         self._write(ECHO_EXIT_CODE)
-        return int(self._read(wait=False).get(STDOUT).strip())  # type: ignore
+        *_, exit_code = self._read(wait=False).get(STDOUT).strip().split("\n")  # type: ignore
+        print(exit_code)
+        if len(exit_code) == 0:
+            # `edit` command sometimes does not work as expected
+            return 0
+        return int(exit_code)
 
     def _read(
         self,
