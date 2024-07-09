@@ -7,12 +7,9 @@
   - [Overview](#overview)
   - [Dependencies](#dependencies)
   - [Getting Started](#getting-started)
-    - [Scaffolding a New Agent](#scaffolding-a-new-agent)
+    - [Creating a new agent](#creating-a-new-agent)
     - [Docker Environment](#docker-environment)
     - [Running the Benchmark](#running-the-benchmark)
-  - [Extending Functionality](#extending-functionality)
-    - [Adding a New Tool](#adding-a-new-tool)
-    - [Adding a New Shell Tool](#adding-a-new-shell-tool)
 
 ## Overview
 
@@ -41,10 +38,10 @@ Before getting started, ensure you have the following set up:
 
 3. **GitHub Access Token**:
 
-    The agent requires a github access token to work with your repositories, You can create one at https://github.com/settings/tokens with necessary permissions and export it as an environment variable using `export GITHUB_ACCESS_TOKEN=<your_token>`
+   The agent requires a github access token to work with your repositories, You can create one at https://github.com/settings/tokens with necessary permissions and export it as an environment variable using `export GITHUB_ACCESS_TOKEN=<your_token>`
 
 4. **LLM Configuration**:
-   You also need to setup API key for the LLM provider you're planning to use. By default the agents scaffolded by `composio-swe` uses `openai` client, so export  `OPENAI_API_KEY` before running your agent
+   You also need to setup API key for the LLM provider you're planning to use. By default the agents scaffolded by `composio-swe` uses `openai` client, so export `OPENAI_API_KEY` before running your agent
 
 ## Getting Started
 
@@ -92,33 +89,3 @@ To run the benchmark:
    - Specify a test split ratio to run more tests, e.g., `--test-split=1:300` runs 300 tests.
 
 **Note**: We utilize [SWE-Bench-Docker](https://github.com/aorwall/SWE-bench-docker) to ensure each test instance runs in an isolated container with its specific environment and Python version.
-
-## Extending Functionality
-
-### Adding a New Tool
-
-To add a new local tool for use within the agent, refer to the [Local Tool documentation](https://docs.composio.dev/sdk/python/local_tools).
-
-### Adding a New Shell Tool
-
-> **Important**: When adding a new tool, run the SWE agent with `COMPOSIO_DEV_MODE=1` to reflect changes within the Docker container.
-
-The agent can create and manage multiple shell sessions, allowing for complex workflows and maintaining separate contexts. Key features include:
-
-1. Dynamic shell session creation
-2. Default use of the most recent active session
-3. Session-specific environment persistence
-4. Ability to switch between sessions
-5. Useful for multi-tasking and maintaining separate contexts
-
-For tools requiring execution in the active shell session like `git` commands, bash commands, etc:
-
-1. Implement the following classes:
-
-   - `ShellRequest`
-   - `ShellExecResponse`
-   - `BaseExecCommand`
-
-2. Use the `exec_cmd` function to execute commands
-
-For an implementation example, see the [Git Patch Tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/shelltool/git_cmds/actions/get_patch.py).
