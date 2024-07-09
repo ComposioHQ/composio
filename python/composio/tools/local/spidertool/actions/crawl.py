@@ -43,4 +43,4 @@ class Crawl(Action[CrawlToolRequest, CrawlToolResponse]):
                 return {"error": "Response is None"}
             return {"content": response.content}
         except Exception as e:
-            return {"error": f"Error scraping element: {e}"}
+            return {"error": f"Error scraping website: {e}"}

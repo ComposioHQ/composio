@@ -47,6 +47,4 @@ class Scrape(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolResponse]):
                 return {"error": "Response is None"}
             return {"content": response.content}
         except Exception as e:
-            print("ERROR __________________", e)
-            result = {"error": f"Error scraping website: {e}"}
-            return result
+            return {"error": f"Error crawling website: {e}"}
