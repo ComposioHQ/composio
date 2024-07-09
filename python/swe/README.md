@@ -13,7 +13,7 @@
 
 ## Overview
 
-`Composio SWE` is a framework for building SWE agents on by utilising composio tooling ecosystem. Composio-SWE allows you to
+`swekit` is a framework for building SWE agents on by utilising composio tooling ecosystem. SWE Kit allows you to
 
 - Scaffold agents which works out-of-the-box with choice of your agentic framework, `crewai`, `llamaindex`, etc...
 - Tools to add or optimise your agent's abilities
@@ -26,7 +26,7 @@ Before getting started, ensure you have the following set up:
 1. **Installation**:
 
    ```
-   pip install composio-swe composio-core
+   pip install swekit composio-core
    ```
 
 2. **Install agentic framework of your choice and the Composio plugin for the same**:
@@ -41,7 +41,7 @@ Before getting started, ensure you have the following set up:
    The agent requires a github access token to work with your repositories, You can create one at https://github.com/settings/tokens with necessary permissions and export it as an environment variable using `export GITHUB_ACCESS_TOKEN=<your_token>`
 
 4. **LLM Configuration**:
-   You also need to setup API key for the LLM provider you're planning to use. By default the agents scaffolded by `composio-swe` uses `openai` client, so export `OPENAI_API_KEY` before running your agent
+   You also need to setup API key for the LLM provider you're planning to use. By default the agents scaffolded by `swekit` uses `openai` client, so export `OPENAI_API_KEY` before running your agent
 
 ## Getting Started
 
@@ -50,7 +50,7 @@ Before getting started, ensure you have the following set up:
 1. Scaffold your agent using:
 
    ```
-   composio-swe scaffold crewai -o <path>
+   swekit scaffold crewai -o <path>
    ```
 
    This creates a new agent in `<path>/agent` with four key files:

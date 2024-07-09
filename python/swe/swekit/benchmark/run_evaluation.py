@@ -7,26 +7,25 @@ import os
 import typing as t
 from pathlib import Path
 
-import utils as eval_utils
+import swekit.benchmark.utils as eval_utils
 from composio_crewai import ComposioToolSet
-from composio_swe.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
-from composio_swe.config.store import IssueConfig
 from pydantic import BaseModel, Field
+from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
+from swekit.config.store import IssueConfig
 from tqdm import tqdm
 
 from composio import Action
 from composio.utils.logging import WithLogger
-from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
 
 
-logger = WithLogger.logger
-
-
-def default_agent_func(workspace_id, issue_config):
-    return CrewaiAgent(
-        args=SWEArgs(agent_logs_dir=Path("")),
-        workspace_id=workspace_id,
-    ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
+def _get_logs_dir() -> Path:
+    """Logs dir factory."""
+    return (
+        Path.home()
+        / LOCAL_CACHE_DIRECTORY_NAME
+        / LOGS_DIR
+        / str(int(datetime.datetime.now().timestamp()))
+    )
 
 
 class EvaluationArgs(BaseModel):
@@ -36,9 +35,11 @@ class EvaluationArgs(BaseModel):
     dry_run: bool = Field(
         default=False, description="dry-run will only print short issue description"
     )
-    include_hints: bool = Field(default=False)
+    include_hints: bool = Field(
+        default=False,
+    )
     logs_dir: Path = Field(
-        default=f"{Path.home()}/{LOCAL_CACHE_DIRECTORY_NAME}/{LOGS_DIR}/{int(datetime.datetime.now().timestamp())}",
+        default_factory=_get_logs_dir,
         description="Logs directory",
     )
     generate_report: bool = Field(
@@ -46,15 +47,16 @@ class EvaluationArgs(BaseModel):
     )
 
 
-class EvaluationManager:
+class EvaluationManager(WithLogger):
     def __init__(self, eval_args: EvaluationArgs):
+        super().__init__()
         self.issues = eval_utils.get_issues_dataset(eval_args.test_range)
         self.dry_run = eval_args.dry_run
         self.include_hints = eval_args.include_hints
         self.logs_dir = os.path.expanduser(eval_args.logs_dir)
         self.repo_to_workspace_map = {}
         self.repo_to_image_id_map = {}
-        logs_dir = Path(args.logs_dir)
+        logs_dir = Path(eval_args.logs_dir)
         if not logs_dir.exists():
             logs_dir.mkdir(parents=True)
 
@@ -71,7 +73,7 @@ class EvaluationManager:
 
     def get_patch_for_issue(self, workspace_id: str, issue):
         composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-        logger.info(
+        self.logger.info(
             f"Agent run finished, getting path for issue: {issue['instance_id']}"
         )
         get_patch_resp = composio_toolset.execute_action(
@@ -83,14 +85,14 @@ class EvaluationManager:
             and get_patch_resp.get("status") == "failure"
         ):
             raise Exception(get_patch_resp)
-        logger.info(f"Get patch response: {get_patch_resp}")
+        self.logger.info(f"Get patch response: {get_patch_resp}")
         patch = get_patch_resp.get("stdout")  # type: ignore
-        logger.info(f"Final Patch: {patch}")
+        self.logger.info(f"Final Patch: {patch}")
         return patch
 
     def save_agent_run(self, issue_config, issue_patch):
         Path(str(self.logs_dir)).mkdir(parents=True, exist_ok=True)
-        task_output_log = f"{self.logs_dir}/agent_logs_{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json.log"
+        task_output_log = f"{self.logs_dir}/agent_logs_{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
         with open(task_output_log, "w", encoding="utf-8") as f:
             f.write(
                 json.dumps(
@@ -114,24 +116,30 @@ class EvaluationManager:
             "Include Hints": self.include_hints,
             "Logs Directory": str(self.logs_dir),
             "Total Issues": len(self.issues),
-            "Test Range": self.issues.num_rows
-            if hasattr(self.issues, "num_rows")
-            else "Unknown",
-            "Dataset Description": self.issues.info.description
-            if hasattr(self.issues, "info") and self.issues.info.description
-            else "No description available",
-            "Number of Features": len(self.issues.features)
-            if hasattr(self.issues, "features")
-            else "Unknown",
-            "Features": list(self.issues.features.keys())
-            if hasattr(self.issues, "features")
-            else "Unknown",
+            "Test Range": (
+                self.issues.num_rows if hasattr(self.issues, "num_rows") else "Unknown"
+            ),
+            "Dataset Description": (
+                self.issues.info.description
+                if hasattr(self.issues, "info") and self.issues.info.description
+                else "No description available"
+            ),
+            "Number of Features": (
+                len(self.issues.features)
+                if hasattr(self.issues, "features")
+                else "Unknown"
+            ),
+            "Features": (
+                list(self.issues.features.keys())
+                if hasattr(self.issues, "features")
+                else "Unknown"
+            ),
         }
         print("Evaluation Setup Information:")
         for key, value in info.items():
             print(f"{key}: {value}")
 
-    def run(self, agent_func: t.Callable = default_agent_func):
+    def run(self, agent_func: t.Callable):
         """
         Main function to load and display entries from the SWE-bench lite dataset.
         """
@@ -150,7 +158,7 @@ class EvaluationManager:
                 )
                 if version and eval_utils.check_and_pull_image(image_name):
                     self.repo_to_image_id_map.setdefault(repo, image_name)
-                logger.info(
+                self.logger.info(
                     f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map}"
                     f"Repo: {repo}"
                     f"Issue id: {issue['instance_id']}"
@@ -163,7 +171,7 @@ class EvaluationManager:
                     issue["base_commit"],
                 )
                 issue_config = self.get_issue_config(issue)
-                logger.info(
+                self.logger.info(
                     "found patch-id: %s and install_commit_id: %s",
                     issue["patch"],
                     issue["environment_setup_commit"],
@@ -174,32 +182,82 @@ class EvaluationManager:
                 self.save_agent_run(issue_config, issue_patch)
 
             except Exception as e:
-                logger.error(f"Error processing issue {issue['instance_id']}: {e}")
+                self.logger.error(f"Error processing issue {issue['instance_id']}: {e}")
                 raise e
 
     def score_evaluation(self):
         eval_utils.get_score(self.logs_dir)
 
 
-if __name__ == "__main__":
-    # fmt: off
-    parser = argparse.ArgumentParser(description="Run SWE-bench evaluation")
-    parser.add_argument("--test_range", type=str, default="20:22", help="Test split range (e.g., 1:10)")
-    parser.add_argument("--dry_run", action="store_true", default=True, help="Just print the issues without running an agent",)
-    parser.add_argument("--include_hints", action="store_true", default=False, help="Include hints in the issue description",)
-    parser.add_argument("--gen_report", action="store_true", default=True, help="Generate a report after running evaluations",)
-    parser.add_argument("--logs_dir", type=str, help="Logs directory")
-    args = parser.parse_args()
-    # fmt: on
-
-    eval_manager = EvaluationManager(
+def evaluate(
+    runnable: t.Callable,
+    test_range: str = "20:22",
+    dry_run: bool = True,
+    include_hints: bool = True,
+    logs_dir: Path = _get_logs_dir(),
+    generate_report: bool = True,
+) -> None:
+    """Evaluate a callable."""
+    manager = EvaluationManager(
         EvaluationArgs(
-            test_range=args.test_range,
-            dry_run=args.dry_run,
-            include_hints=args.include_hints,
-            logs_dir=args.logs_dir,
-            generate_report=args.gen_report,
+            test_range=test_range,
+            dry_run=dry_run,
+            include_hints=include_hints,
+            logs_dir=logs_dir,
+            generate_report=generate_report,
         )
     )
-    eval_manager.run(default_agent_func)
-    eval_manager.score_evaluation()
+    manager.run(runnable)
+    manager.score_evaluation()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run SWE-bench evaluation")
+    parser.add_argument(
+        "--test_range",
+        type=str,
+        default="20:22",
+        help="Test split range (e.g., 1:10)",
+    )
+    parser.add_argument(
+        "--dry_run",
+        action="store_true",
+        default=True,
+        help="Just print the issues without running an agent",
+    )
+    parser.add_argument(
+        "--include_hints",
+        action="store_true",
+        default=False,
+        help="Include hints in the issue description",
+    )
+    parser.add_argument(
+        "--gen_report",
+        action="store_true",
+        default=True,
+        help="Generate a report after running evaluations",
+    )
+    parser.add_argument(
+        "--logs_dir",
+        type=str,
+        help="Logs directory",
+        default=_get_logs_dir(),
+    )
+    args = parser.parse_args()
+
+    from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
+
+    def default_agent_func(workspace_id, issue_config):
+        return CrewaiAgent(
+            args=SWEArgs(agent_logs_dir=Path("")),
+            workspace_id=workspace_id,
+        ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
+
+    evaluate(
+        default_agent_func,
+        test_range=args.test_range,
+        dry_run=args.dry_run,
+        include_hints=args.include_hints,
+        logs_dir=args.logs_dir,
+        generate_report=args.gen_report,
+    )

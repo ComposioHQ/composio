@@ -4,8 +4,8 @@ import typing as t
 from enum import Enum
 from pathlib import Path
 
-from composio_swe.exceptions import ComposioSWEError
-from composio_swe.scaffold.templates import PATH as TEMPLATES_PATH
+from swekit.exceptions import SWEKitError
+from swekit.scaffold.templates import PATH as TEMPLATES_PATH
 
 
 class AgenticFramework(Enum):
@@ -35,7 +35,7 @@ def scaffold(
 
     output = outdir / name
     if output.exists():
-        raise ComposioSWEError(f"Directory already exists @ {output}")
+        raise SWEKitError(f"Directory already exists @ {output}")
     output.mkdir()
 
     for file, template in framework.load_templates().items():

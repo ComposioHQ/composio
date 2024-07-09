@@ -1,9 +1,9 @@
 from composio_llamaindex import Action, App, ComposioToolSet
-from composio_swe.agents.base import BaseSWEAgent, SWEArgs
-from composio_swe.agents.utils import get_llama_llm
-from composio_swe.config.store import IssueConfig
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
+from swekit.agents.base import BaseSWEAgent, SWEArgs
+from swekit.agents.utils import get_llama_llm
+from swekit.config.store import IssueConfig
 
 from swe.examples.prompts import AGENT_BACKSTORY_TMPL, ISSUE_DESC_TMPL
 
