@@ -14,6 +14,7 @@ from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
 
 from composio import Action
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 from composio.utils.logging import get as get_logger
 from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
@@ -133,7 +134,7 @@ def build_image_and_container(repo, repo_to_workspace_map, base_commit):
     start_time = datetime.datetime.now()
     workspace = WorkspaceFactory.new(
         env=ExecEnv.DOCKER,
-        image="sweagent/swe-agent",
+        image=DEFAULT_IMAGE,
     )
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
