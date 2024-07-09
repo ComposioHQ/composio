@@ -4,7 +4,7 @@ from composio.tools.local.shelltool.shell_exec.actions.exec import (
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import get_logger
+from composio.utils.logging import get as get_logger
 
 
 logger = get_logger("workspace")
@@ -36,4 +36,5 @@ class GitRepoTree(BaseExecCommand):
         return ShellExecResponse(
             stdout="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
             stderr=output["stderr"],
+            exit_code=int(output["exit_code"]),
         )

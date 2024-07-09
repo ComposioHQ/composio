@@ -13,6 +13,8 @@ from docker.errors import DockerException
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
+from composio.tools.env.constants import STDERR, STDOUT
+from composio.tools.env.docker.shell import Container as DockerContainer
 from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
@@ -26,7 +28,7 @@ composio_local_store_path = Path.home() / ".composio"
 class DockerWorkspace(Workspace):
     """Docker workspace implementation."""
 
-    _shell_cls = DockerShell
+    _container: DockerContainer
     _client: t.Optional[DockerClient] = None
 
     def __init__(self, image: t.Optional[str] = None) -> None:
@@ -116,9 +118,9 @@ class DockerWorkspace(Workspace):
         if len(output["exit_code"]) != 0:
             return {"status": "failure", "message": output["stderr"]}
         try:
-            return {"status": "success", "data": json.loads(output["stdout"])}
+            return {"status": "success", "data": json.loads(output[STDOUT])}
         except json.JSONDecodeError:
-            return {"status": "failure", "message": output["stdout"]}
+            return {"status": "failure", "message": output[STDOUT]}
 
     def execute_action(
         self,
@@ -138,3 +140,9 @@ class DockerWorkspace(Workspace):
             request_data=request_data,
             metadata=metadata,
         )
+
+    def teardown(self) -> None:
+        """Teardown docker workspace factory."""
+        super().teardown()
+        self._container.kill()
+        self._container.remove()
