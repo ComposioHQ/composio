@@ -92,7 +92,7 @@ class EvaluationManager(WithLogger):
 
     def save_agent_run(self, issue_config, issue_patch):
         Path(str(self.logs_dir)).mkdir(parents=True, exist_ok=True)
-        task_output_log = f"{self.logs_dir}/agent_logs_{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json.log"
+        task_output_log = f"{self.logs_dir}/agent_logs_{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
         with open(task_output_log, "w", encoding="utf-8") as f:
             f.write(
                 json.dumps(
@@ -193,8 +193,8 @@ def evaluate(
     runnable: t.Callable,
     test_range: str = "20:22",
     dry_run: bool = True,
-    include_hints: bool = False,
-    logs_dir: str = _get_logs_dir(),
+    include_hints: bool = True,
+    logs_dir: Path = _get_logs_dir(),
     generate_report: bool = True,
 ) -> None:
     """Evaluate a callable."""
@@ -205,7 +205,7 @@ def evaluate(
             test_range=test_range,
             dry_run=dry_run,
             include_hints=include_hints,
-            logs_dir=Path(logs_dir),
+            logs_dir=logs_dir,
             generate_report=generate_report,
         )
     )
