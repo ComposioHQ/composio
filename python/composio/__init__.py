@@ -12,6 +12,7 @@ from composio.client.enums import (
 from composio.tools import ComposioToolSet
 from composio.tools.env.base import Shell
 from composio.tools.env.factory import ExecEnv
+from composio.tools.local.base.decorators import action
 
 
 __all__ = (
@@ -27,4 +28,5 @@ __all__ = (
     "ComposioToolSet",
     "ExecEnv",
     "Shell",
+    "action",
 )
