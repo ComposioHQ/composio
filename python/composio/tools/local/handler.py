@@ -6,6 +6,9 @@ from composio.tools.local.base import Tool as LocalToolType
 from composio.utils.logging import WithLogger
 
 
+_runtime_actions: t.Dict[str, LocalActionType] = {}
+
+
 class LocalClient(WithLogger):
     """Local tools client."""
 
@@ -67,6 +70,11 @@ class LocalClient(WithLogger):
         metadata: t.Optional[t.Dict] = None,
     ):
         """Execute a local action."""
+        if action.is_runtime:
+            return _runtime_actions[action.name].execute_action(
+                request_data=request_data,
+                metadata=metadata or {},
+            )
         return (
             self.tools[action.app]
             .get_action(name=action.name)
@@ -75,3 +83,8 @@ class LocalClient(WithLogger):
                 metadata=metadata or {},
             )
         )
+
+
+def add_runtime_action(name: str, cls: t.Type[LocalActionType]) -> None:
+    """Add runtime action."""
+    _runtime_actions[name] = cls()
