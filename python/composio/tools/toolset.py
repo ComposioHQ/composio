@@ -327,3 +327,60 @@ class ComposioToolSet(WithLogger):
             if any(tag in action.tags for tag in tags):
                 actions.append(action)
         return actions
+
+    def get_agent_instructions(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> str:
+        """
+        Generate a formatted string with instructions for agents based on the provided apps, actions, and tags.
+
+        This function compiles a list of available tools from the specified apps, actions, and tags,
+        and formats them into a human-readable string that can be used as instructions for agents.
+
+        :param apps: Optional sequence of AppType to include in the search.
+        :param actions: Optional sequence of ActionType to include in the search.
+        :param tags: Optional sequence of TagType to filter the actions.
+        :return: A formatted string with instructions for agents.
+        """
+        # Retrieve schema information for the given apps, actions, and tags
+        schema_list = [
+            schema.model_dump()
+            for schema in (
+                self.get_action_schemas(apps=apps, tags=tags)
+                + self.get_action_schemas(actions=actions)
+            )
+        ]
+        schema_info = [
+            (schema_obj["appName"], schema_obj["name"]) for schema_obj in schema_list
+        ]
+
+        # Helper function to format a list of items into a string
+        def format_list(items):
+            if not items:
+                return ""
+            if len(items) == 1:
+                return items[0]
+            return ", ".join(items[:-2] + [" and ".join(items[-2:])])
+
+        # Organize the schema information by app name
+        action_dict: t.Dict[str, t.List] = {}
+        for appName, name in schema_info:
+            if appName not in action_dict:
+                action_dict[appName] = []
+            action_dict[appName].append(name)
+
+        # Format the schema information into a human-readable string
+        formatted_schema_info = (
+            "You have various tools, among which "
+            + ", ".join(
+                [
+                    f"for interacting with **{appName}** you might use {format_list(action_items)} tools"
+                    for appName, action_items in action_dict.items()
+                ]
+            )
+            + ". Whichever tool is useful to execute your task, use that with proper parameters."
+        )
+        return formatted_schema_info
