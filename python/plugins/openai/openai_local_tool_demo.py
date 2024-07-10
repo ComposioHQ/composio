@@ -2,16 +2,24 @@
 OpenAI demo.
 """
 
+from pathlib import Path
+
 import dotenv
 from composio_openai import ComposioToolSet
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
+from composio import Shell
 from composio.tools.local.base.decorators import action
 
 
 class GitRepoRequest(BaseModel):
     """Git repo request."""
+
+    working_directory: str = Field(
+        default="./",
+        description="Path to the git repo.",
+    )
 
 
 class GitRepoResponse(BaseModel):
@@ -21,12 +29,31 @@ class GitRepoResponse(BaseModel):
     author: str = Field(..., description="Name of the repository author.")
 
 
-@action(toolname="git")
-def get_git_repo(  # pylint: disable=unused-argument
-    request_data: GitRepoRequest, metadata: dict
-) -> GitRepoResponse:
+@action(toolname="git", runs_on_shell=True)
+def get_git_repo(request_data: GitRepoRequest, metadata: dict) -> GitRepoResponse:
     """Get git repo for working directory."""
-    return GitRepoResponse(name="composio", author="ComposioHQ")
+    shell = metadata["workspace"].shells.recent
+    shell.exec(f"cd {request_data.working_directory}")
+    output = (
+        shell.exec("git config --get remote.origin.url").get("stdout").lstrip().rstrip()
+    )
+    _, repo = output.split(":")
+    author, name = repo.split("/")
+    return GitRepoResponse(name=name, author=author)
+
+
+@action(toolname="git")
+def create_git_tree(shell: Shell, working_directory: str = "./") -> str:
+    """
+    Write the git tree of the provided working directory and returns the filename.
+
+    :param working_directory: Path to the directory for which the tree will be generated
+    :return file_path: Path to file containing git tree information
+    """
+    outfile = Path(working_directory, "tree.txt")
+    shell.exec(f"cd {working_directory}")
+    shell.exec(f"git ls-tree -r HEAD --name-only > {outfile}")
+    return str(outfile)
 
 
 # Load environment variables from .env
@@ -40,7 +67,7 @@ composio_toolset = ComposioToolSet()
 task = "Can you give me the name of the git repository working directory"
 
 # Get GitHub tools that are pre-configured
-tools = composio_toolset.get_actions(actions=[get_git_repo])
+tools = composio_toolset.get_actions(actions=[create_git_tree, get_git_repo])
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
