@@ -1,5 +1,5 @@
 <p>
-  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-CN.md">CN</a>
+  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-JP.md">JP</a>
 </p>
 
 
