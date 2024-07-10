@@ -28,6 +28,7 @@ TOOLS = [
     GitCmdTool,
     HistoryFetcherTool,
     ShellExec,
+    SpiderTool,
     SqlTool,
     WebTool,
     ZepTool,
