@@ -59,8 +59,11 @@ class WorkspaceFactory:
         if env == ExecEnv.HOST:
             workspace = HostWorkspace(**kwargs)
         elif env == ExecEnv.DOCKER:
-            logger = get_logger(name="workspace_factory_new")
-            logger.info(f"Creating docker workspace with kwargs: {kwargs}")
+            get_logger(
+                name="workspace_factory_new",
+            ).debug(
+                f"Creating docker workspace with kwargs: {kwargs}",
+            )
             workspace = DockerWorkspace(**kwargs)
         else:
             raise ComposioSDKError(
@@ -92,7 +95,7 @@ class WorkspaceFactory:
     def teardown(cls) -> None:
         """Teardown the workspace factory."""
         for workspace in cls._workspaces.values():
-            get_logger(name="factory").info("Tearing down: %s", workspace)
+            get_logger(name="factory").debug("Tearing down %s", workspace)
             workspace.teardown()
 
 
