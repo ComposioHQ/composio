@@ -17,7 +17,12 @@ def main() -> None:
         action=Action.GITCMDTOOL_GET_PATCH_CMD,
         params={},
     )
-    print(response["stderr"] if len(response["stderr"]) > 0 else response["stdout"])
+    if response.get("stderr") and len(response["stderr"]) > 0:
+        print("Error:", response["stderr"])
+    elif response.get("stdout"):
+        print("Output:", response["stdout"])
+    else:
+        print("No output available")
 
 
 if __name__ == "__main__":
