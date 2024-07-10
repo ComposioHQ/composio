@@ -147,6 +147,10 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
             modified_request_data = {}
 
             for param, value in request_data.items():  # type: ignore
+                if param not in request_schema.model_fields:
+                    raise ValueError(
+                        f"Invalid param `{param}` for action `{self.get_tool_merged_action_name().upper()}`"
+                    )
                 annotations = request_schema.model_fields[param].json_schema_extra
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
