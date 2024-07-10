@@ -59,6 +59,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SLACKBOT: "App"
     SNOWFLAKE: "App"
     SOUNDCLOUD: "App"
+    SPIDERTOOL: "App"
     SPLITWISE: "App"
     SPOTIFY: "App"
     SQLTOOL: "App"
