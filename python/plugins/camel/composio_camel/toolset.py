@@ -7,7 +7,7 @@ import typing as t
 # pylint: disable=E0611
 from camel.functions import OpenAIFunction
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType

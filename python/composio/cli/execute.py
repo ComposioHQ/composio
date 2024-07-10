@@ -4,7 +4,7 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
-from composio.client.enums import Action
+from composio.client import Action
 from composio.exceptions import ComposioSDKError
 
 
