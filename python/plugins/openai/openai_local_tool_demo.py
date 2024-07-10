@@ -9,8 +9,7 @@ from composio_openai import ComposioToolSet
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from composio import Shell
-from composio.tools.local.base.decorators import action
+from composio import ExecEnv, Shell, action
 
 
 class GitRepoRequest(BaseModel):
@@ -61,7 +60,7 @@ dotenv.load_dotenv()
 
 # Initialize tools.
 openai_client = OpenAI()
-composio_toolset = ComposioToolSet()
+composio_toolset = ComposioToolSet(workspace_env=ExecEnv.HOST)
 
 # Define task.
 task = "Can you give me the name of the git repository working directory"
