@@ -7,15 +7,16 @@ import os
 
 from pydantic import BaseModel, Field
 from swebench import get_eval_refs
-
-from swe.swe_bench_docker.docker_file_generator.const import (
+from swekit.benchmark.docker.docker_file_generator.const import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
     MAP_REPO_TO_TEST_FRAMEWORK,
 )
-from swe.swe_bench_docker.docker_file_generator.run_docker import run_docker_evaluation
-from swe.swe_bench_docker.docker_file_generator.utils import (
+from swekit.benchmark.docker.docker_file_generator.run_docker import (
+    run_docker_evaluation,
+)
+from swekit.benchmark.docker.docker_file_generator.utils import (
     get_instances,
     get_test_directives,
 )

@@ -4,11 +4,14 @@ import logging
 import os
 import sys
 
-from swe.swe_bench_docker.docker_file_generator.const import KEY_PREDICTION, PatchType
-from swe.swe_bench_docker.docker_file_generator.context_manager import (
+from swekit.benchmark.docker.docker_file_generator.const import (
+    KEY_PREDICTION,
+    PatchType,
+)
+from swekit.benchmark.docker.docker_file_generator.context_manager import (
     TaskEnvContextManager,
 )
-from swe.swe_bench_docker.docker_file_generator.utils import extract_minimal_patch
+from swekit.benchmark.docker.docker_file_generator.utils import extract_minimal_patch
 
 
 logging.basicConfig(

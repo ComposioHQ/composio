@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import time
 
-from swe.swe_bench_docker.docker_file_generator.const import MAP_VERSION_TO_INSTALL
+from swekit.benchmark.docker.docker_file_generator.const import MAP_VERSION_TO_INSTALL
 
 
 logger = logging.getLogger(__name__)
