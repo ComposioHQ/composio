@@ -25,8 +25,8 @@ _ = composio_toolset.get_agent_instructions(
     apps=[App.GMAIL],
     actions=[
         Action.GITHUB_ACTIONS_ADD_CUSTOM_LABELS_TO_SELF_HOSTED_RUNNER_FOR_ORG,
-        Action.ASANA_ALLOCATIONS_DELETE_ALLOCATION_BY_ID
-    ]
+        Action.ASANA_ALLOCATIONS_DELETE_ALLOCATION_BY_ID,
+    ],
 )
 
 # Get response from the LLM
