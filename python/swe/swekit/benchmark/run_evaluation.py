@@ -15,6 +15,7 @@ from swekit.config.store import IssueConfig
 from tqdm import tqdm
 
 from composio import Action
+from composio.tools.env.factory import WorkspaceFactory
 from composio.utils.logging import WithLogger
 
 
@@ -183,6 +184,7 @@ class EvaluationManager(WithLogger):
                 agent_func(workspace_id, issue_config)
                 issue_patch = self.get_patch_for_issue(workspace_id, issue)
                 self.save_agent_run(issue_config, issue_patch)
+                WorkspaceFactory.close(id=workspace_id)
 
             except Exception as e:
                 self.logger.error(f"Error processing issue {issue['instance_id']}: {e}")
