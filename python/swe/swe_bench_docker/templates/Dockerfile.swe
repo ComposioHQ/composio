@@ -9,6 +9,10 @@ WORKDIR /opt/{{ repo_name }}
 
 RUN git -c advice.detachedHead=false checkout {{ environment_setup_commit }}
 
+{% if path_to_env_file -%}
+COPY {{ path_to_env_file }} .
+{% endif -%}
+
 RUN {{conda_create_cmd}}
 SHELL ["conda", "run", "-n", "{{ testbed }}", "/bin/bash", "-c"]
 
