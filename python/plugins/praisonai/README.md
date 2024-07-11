@@ -35,7 +35,7 @@ from praisonai import PraisonAI
 
 ### Step 2: Write the Praison-supported Composio Tools ins `tools.py` file.
 
-This step involves fetching and integrating GitHub tools provided by Composio, and writing them in Praison supported Format, returning the name of tools in a format, taht should be added to `agents.yml` file.
+This step involves fetching and integrating GitHub tools provided by Composio, and writing them in Praison supported Format, returning the name of tools in a format, that should be added to `agents.yml` file.
 ```python
 from composio_praisonai import Action, ComposioToolSet
 
@@ -48,7 +48,7 @@ tool_section_str = composio_toolset.get_tools_section(tools)
 print(tool_section_str)
 ```
 
-### Step 3: Define the 'agents_yml` eiter in a separate file, or in your script.
+### Step 3: Define the 'agents_yml` either in a separate file, or in your script.
 
 This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
 
