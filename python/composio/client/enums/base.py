@@ -163,6 +163,11 @@ def enum(cls: ClassType) -> ClassType:
     return cls
 
 
-def add_action(name: str, data: ActionData) -> None:
+def add_runtime_action(name: str, data: ActionData) -> None:
     """Add action at runtime."""
     _runtime_actions[name] = data
+
+
+def get_runtime_actions() -> t.List:
+    """Add action at runtime."""
+    return list(_runtime_actions)

@@ -4,7 +4,7 @@ import json
 import os
 import traceback
 from abc import ABC, abstractmethod
-from typing import Generic, List, Type, TypeVar, Union
+from typing import Generic, List, Optional, Type, TypeVar, Union
 
 import inflection
 import jsonref
@@ -38,7 +38,10 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
     _tags: List[str] = []  # Placeholder for tags
     _tool_name: str = ""
 
+    # For workspace
     run_on_shell: bool = False
+    requires: Optional[List[str]] = None  # List of python dependencies
+    module: Optional[str] = None  # File where this tool is defined
 
     @property
     def tool_name(self) -> str:

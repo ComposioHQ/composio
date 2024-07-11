@@ -210,7 +210,7 @@ class ComposioToolSet(WithLogger):
 
     def execute_action(
         self,
-        action: t.Union[Action, str],
+        action: ActionType,
         params: dict,
         metadata: t.Optional[t.Dict] = None,
         entity_id: str = DEFAULT_ENTITY_ID,

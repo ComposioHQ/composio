@@ -35,8 +35,12 @@ def _wrap(
     request_schema: t.Type[BaseModel],
     response_schema: t.Type[BaseModel],
     runs_on_shell: bool = False,
+    requires: t.Optional[t.List[str]] = None,
+    file: t.Optional[str] = None,
 ) -> t.Type[LocalAction]:
     """Wrap action class with given params."""
+
+    _requires = requires
 
     class WrappedAction(LocalAction):
         """Wrapped action class."""
@@ -50,16 +54,11 @@ def _wrap(
 
         _history_maintains: bool = False
         run_on_shell: bool = runs_on_shell
+        requires = _requires
+        module = file
 
-        def execute(
-            self,
-            request_data: t.Any,
-            authorisation_data: dict,
-        ) -> t.Any:
-            return f(
-                request_data,
-                authorisation_data,
-            )
+        def execute(self, request_data: t.Any, authorisation_data: dict) -> t.Any:
+            return f(request_data, authorisation_data)
 
     cls = type(inflection.camelize(f.__name__), (WrappedAction,), {})
     cls.__doc__ = f.__doc__
@@ -246,11 +245,13 @@ def action(
     toolname: str,
     runs_on_shell: bool = False,
     tags: t.Optional[t.List[str]] = None,
+    requires: t.Optional[t.List] = None,
 ) -> t.Callable[[ActionCallable], t.Type[LocalAction]]:
     """Marks a callback as wanting to receive the current context object as first argument."""
 
     def wrapper(f: ActionCallable) -> t.Type[LocalAction]:
         """Action wrapper."""
+        file = inspect.getfile(f)
         f, RequestSchema, ResponseSchema, _runs_on_shell = _parse_schemas(
             f=f,
             runs_on_shell=runs_on_shell,
@@ -262,6 +263,8 @@ def action(
             request_schema=RequestSchema,
             response_schema=ResponseSchema,
             runs_on_shell=_runs_on_shell,
+            requires=requires,
+            file=file,
         )
 
     return wrapper
