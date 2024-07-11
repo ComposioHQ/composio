@@ -45,12 +45,15 @@ class EvaluationArgs(BaseModel):
     generate_report: bool = Field(
         default=True, description="generate evaluation report after running evaluation"
     )
+    test_instance_ids: t.List[str] = Field(default=[], description="test instance ids")
 
 
 class EvaluationManager(WithLogger):
     def __init__(self, eval_args: EvaluationArgs):
         super().__init__()
-        self.issues = eval_utils.get_issues_dataset(eval_args.test_range)
+        self.issues = eval_utils.get_issues_dataset(
+            eval_args.test_range, eval_args.test_instance_ids
+        )
         self.dry_run = eval_args.dry_run
         self.include_hints = eval_args.include_hints
         self.logs_dir = os.path.expanduser(eval_args.logs_dir)
@@ -171,7 +174,7 @@ class EvaluationManager(WithLogger):
                     issue["base_commit"],
                 )
                 issue_config = self.get_issue_config(issue)
-                self.logger.info(
+                self.logger.debug(
                     "found patch-id: %s and install_commit_id: %s",
                     issue["patch"],
                     issue["environment_setup_commit"],
@@ -196,6 +199,7 @@ def evaluate(
     include_hints: bool = True,
     logs_dir: Path = _get_logs_dir(),
     generate_report: bool = True,
+    test_instance_ids: t.List[str] = [],
 ) -> None:
     """Evaluate a callable."""
     if not os.path.exists(logs_dir):
@@ -207,6 +211,7 @@ def evaluate(
             include_hints=include_hints,
             logs_dir=logs_dir,
             generate_report=generate_report,
+            test_instance_ids=test_instance_ids,
         )
     )
     manager.run(runnable)

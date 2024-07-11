@@ -5,7 +5,7 @@ import os
 import re
 from datetime import datetime
 
-from swekit.benchmark.docker.docker_file_generator.const import (
+from swekit.benchmark.docker_utils.docker_file_generator.const import (
     MAP_REPO_TO_ENV_YML_PATHS,
     MAP_REPO_TO_REQS_PATHS,
     NON_TEST_EXTS,
