@@ -263,17 +263,13 @@ class DockerfileGenerator:
         dockerfile_content = template.render(
             base_image=base_image,
             pyenv_image=pyenv_image,
-            docker_dir=self.docker_dir,
             repo_name=repo_name,
-            version=version,
             testbed=repo_name + "__" + version,
-            python_version=python_version,
             conda_create_cmd=conda_create_cmd,
             pre_install_cmds=pre_install_cmds,
             install_cmds=install_cmds,
             path_to_reqs=path_to_reqs,
             environment_setup_commit=environment_setup_commit,
-            path_to_env_file=path_to_env_file,
             getconda_script_path=self.getconda_path,
         )
 

@@ -1,19 +1,27 @@
 #!/bin/bash
 
 # Usage check
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <root_directory> <docker_namespace>"
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+    echo "Usage: $0 <root_directory> <docker_namespace> [sub_folder]"
     exit 1
 fi
 
 root_directory=$1
 docker_namespace=$2
+sub_folder=${3:-}  # Optional third argument for subfolder
 base_image="${docker_namespace}/swe-bench"
 
 push_docker_images() {
-    for dir in $root_directory/*/*; do
+    target_directory="$root_directory"
+    if [ -n "$sub_folder" ]; then
+        target_directory="$root_directory/$sub_folder"
+    fi
+
+    for dir in $target_directory/*/*; do
+        echo "Checking directory: $dir"
         if [ -d "$dir" ] && [[ "$dir" =~ .*/[0-9]+\.[0-9]+$ ]]; then
             dockerfile_path="$dir/Dockerfile"
+            echo "Checking Dockerfile: $dockerfile_path"
             if [ -f "$dockerfile_path" ]; then
                 base_dir=$(dirname "$dir")
                 version=$(basename "$dir")

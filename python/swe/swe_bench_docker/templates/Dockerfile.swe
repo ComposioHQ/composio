@@ -7,27 +7,13 @@ ENV REPO_DIR=/opt/{{ repo_name }}
 
 WORKDIR /opt/{{ repo_name }}
 
-RUN git -c advice.detachedHead=false checkout {{ environment_setup_commit }}
-
-{% if path_to_env_file -%}
-COPY {{ path_to_env_file }} .
-{% endif -%}
+RUN git -c advice.detachedHead=false checkout {{ repo_name }}
 
 RUN {{conda_create_cmd}}
 SHELL ["conda", "run", "-n", "{{ testbed }}", "/bin/bash", "-c"]
-
-RUN pip install -U pip setuptools
 
 {% if pre_install_cmds -%}
 {% for cmd in pre_install_cmds -%}
 RUN {{ cmd }}
 {% endfor -%}
 {% endif -%}
-
-{% if path_to_reqs -%}
-COPY {{ path_to_reqs }} .
-{% endif -%}
-
-{% for cmd in install_cmds %}
-RUN {{ cmd }}
-{% endfor %}
