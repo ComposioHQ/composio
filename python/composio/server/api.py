@@ -25,6 +25,7 @@ from composio import Action, App
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
+from composio.tools.env.e2b.workspace import ENV_ACCESS_TOKEN
 
 
 ResponseType = t.TypeVar("ResponseType")
@@ -71,6 +72,7 @@ class ToolUploadRequest(BaseModel):
 
 def create_app() -> FastAPI:
     """Create Fast API app."""
+    access_token = os.environ.get(ENV_ACCESS_TOKEN)
     tooldir = tempfile.TemporaryDirectory()
     app = FastAPI(on_shutdown=[tooldir.cleanup])
     sys.path.append(tooldir.name)
@@ -89,6 +91,22 @@ def create_app() -> FastAPI:
                 )
 
         return update_wrapper(wrapper, f)
+
+    @app.middleware("http")
+    async def add_process_time_header(request: Request, call_next):
+        if access_token is None:
+            return await call_next(request)
+
+        if "x-api-key" in request.headers and request.headers["x-api-key"]:
+            return await call_next(request)
+
+        return Response(
+            content=APIResponse[None](
+                data=None,
+                error="Unauthorised request",
+            ).model_dump_json(),
+            status_code=401,
+        )
 
     @app.get("/api", response_model=APIResponse[GetApiResponse])
     @with_exception_handling

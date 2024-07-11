@@ -4,6 +4,7 @@ import os
 import time
 import typing as t
 from pathlib import Path
+from uuid import uuid4
 
 import requests
 from e2b import Sandbox
@@ -20,6 +21,8 @@ TOOLSERVER_PORT = 8000
 TOOLSERVER_URL = "https://{host}/api"
 
 ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
+ENV_ACCESS_TOKEN = "ACCESS_TOKEN"
+ENV_E2B_TEMPLATE = "E2B_TEMPLATE"
 
 
 class E2BWorkspace(Workspace):
@@ -35,14 +38,14 @@ class E2BWorkspace(Workspace):
     ):
         """Initialize E2B workspace."""
         super().__init__()
-        self.api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
-        if self.api_key is None:
+        api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
+        if api_key is None:
             raise ValueError(
                 "`api_key` cannot be `None` when initializing E2BWorkspace"
             )
 
-        self.base_url = base_url or os.environ.get(ENV_COMPOSIO_BASE_URL)
-        if self.base_url is None:
+        base_url = base_url or os.environ.get(ENV_COMPOSIO_BASE_URL)
+        if base_url is None:
             raise ValueError(
                 "`base_url` cannot be `None` when initializing E2BWorkspace"
             )
@@ -53,14 +56,22 @@ class E2BWorkspace(Workspace):
                 f"Please export your github access token as `{ENV_GITHUB_ACCESS_TOKEN}`"
             )
 
+        if template is None:
+            template = os.environ.get(ENV_E2B_TEMPLATE)
+            if template is not None:
+                self.logger.debug(f"Using E2B template `{template}` from environment")
+            template = template or DEFAULT_TEMPLATE
+
+        self.access_token = "".join(uuid4().hex.split("-"))
         self.port = port or TOOLSERVER_PORT
         self.sandbox = Sandbox(
-            template=template or DEFAULT_TEMPLATE,
+            template=template,
             env_vars={
                 **(env or {}),
-                ENV_COMPOSIO_API_KEY: self.api_key,
-                ENV_COMPOSIO_BASE_URL: self.base_url,
+                ENV_COMPOSIO_API_KEY: api_key,
+                ENV_COMPOSIO_BASE_URL: base_url,
                 ENV_GITHUB_ACCESS_TOKEN: github_access_token,
+                ENV_ACCESS_TOKEN: self.access_token,
             },
         )
         self.url = TOOLSERVER_URL.format(
@@ -70,6 +81,24 @@ class E2BWorkspace(Workspace):
         )
         self._start_toolserver()
 
+    def _request(
+        self,
+        endpoint: str,
+        method: str,
+        json: t.Optional[t.Dict] = None,
+        timeout: t.Optional[float] = 15.0,
+    ) -> requests.Response:
+        """Make request to the tooling server."""
+        return requests.request(
+            url=f"{self.url}{endpoint}",
+            method=method,
+            json=json,
+            headers={
+                "x-api-key": self.access_token,
+            },
+            timeout=timeout,
+        )
+
     def _start_toolserver(self) -> None:
         """Start toolserver."""
         process = self.sandbox.process.start(
@@ -78,7 +107,7 @@ class E2BWorkspace(Workspace):
         self.sandbox.process.start(
             cmd=f"composio serve --host 0.0.0.0 --port {self.port}",
         )
-        while requests.get(self.url, timeout=15).status_code != 200:
+        while self._request(endpoint="", method="get").status_code != 200:
             time.sleep(1)
         process.wait()
 
@@ -91,17 +120,14 @@ class E2BWorkspace(Workspace):
     def _upload(self, action: Action) -> None:
         """Upload action instance to tooling server."""
         obj = get_runtime_action(name=action.name)
-        request = requests.post(
-            url=f"{self.url}/tools",
+        request = self._request(
+            method="post",
+            endpoint="/tools",
             json={
                 "content": Path(str(obj.module)).read_text(encoding="utf-8"),
                 "filename": Path(str(obj.module)).name,
                 "dependencies": obj.requires or {},
             },
-            headers={
-                "x-api-key": self.api_key,
-            },
-            timeout=15,
         )
         response = request.json()
         if response["error"] is not None:
@@ -120,13 +146,10 @@ class E2BWorkspace(Workspace):
         if action.is_runtime:
             self._upload(action=action)
 
-        request = requests.post(
-            url=f"{self.url}/actions/execute/{action.slug}",
+        request = self._request(
+            method="post",
+            endpoint=f"/actions/execute/{action.slug}",
             json=request_data,
-            headers={
-                "x-api-key": self.api_key,
-            },
-            timeout=15,
         )
         response = request.json()
         if response["error"] is None:
