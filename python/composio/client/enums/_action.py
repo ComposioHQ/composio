@@ -1,9 +1,24 @@
 """
 Action enums.
 """
+
 import typing as t
 
-from composio.client.enums.base import ACTIONS_CACHE, ActionData, _AnnotatedEnum, enum
+import typing_extensions as te
+
+from composio.client.enums.base import (
+    ACTIONS_CACHE,
+    ActionData,
+    _AnnotatedEnum,
+    add_action,
+    enum,
+)
+
+
+class SentinalObject:
+    """Sentinal object."""
+
+    sentinal = None
 
 
 @enum
@@ -3003,6 +3018,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     SOUNDCLOUD_USERSLISTFAVORITES: "Action"
     SOUNDCLOUD_USERSLISTLIKEDPLAYLISTS: "Action"
     SOUNDCLOUD_USERSLISTLIKEDTRACKS: "Action"
+    SPIDERTOOL_CRAWL: "Action"
+    SPIDERTOOL_SCRAPE: "Action"
     SPLITWISE_ADD_USER_TO_GROUP: "Action"
     SPLITWISE_DELETE_GROUP: "Action"
     SPLITWISE_GET_CURRENT_USER_INFO: "Action"
@@ -3741,6 +3758,12 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_VIRTUAL_BACKGROUND: "Action"
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_WALLPAPER: "Action"
 
+    def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
+        """Create an Enum"""
+        if hasattr(value, "sentinal"):
+            raise ValueError()
+        super().__init__(value=value)  # type: ignore
+
     @property
     def name(self) -> str:
         """Action name."""
@@ -3767,6 +3790,16 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
         return self.load().is_local
 
     @property
+    def is_runtime(self) -> bool:
+        """If set `True` the `app` is a runtime app."""
+        return self.load().is_runtime
+
+    @property
     def shell(self) -> bool:
         """If set `True` the tool will be executed using a shell."""
         return self.load().shell
+
+    @classmethod
+    def add(cls, name: str, data: ActionData) -> None:
+        """Add a new action."""
+        add_action(name=name, data=data)

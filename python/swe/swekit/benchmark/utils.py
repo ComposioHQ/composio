@@ -10,6 +10,7 @@ from composio_crewai import ComposioToolSet
 from datasets import load_dataset
 from docker import errors as docker_errors
 from swekit.benchmark.constants import MODEL_GPT4
+from swekit.benchmark.docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
 
@@ -17,7 +18,6 @@ from composio import Action
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 from composio.utils.logging import get as get_logger
-from swe.swe_bench_docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
 
 
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"

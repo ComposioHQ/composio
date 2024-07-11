@@ -4,9 +4,10 @@ import os
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
-
-from swe.swe_bench_docker.docker_file_generator.const import PYTHON_ENVIRONMENT_VERSIONS
-from swe.swe_bench_docker.docker_file_generator.utils import (
+from swekit.benchmark.docker.docker_file_generator.const import (
+    PYTHON_ENVIRONMENT_VERSIONS,
+)
+from swekit.benchmark.docker.docker_file_generator.utils import (
     get_environment_yml,
     get_requirements,
 )
