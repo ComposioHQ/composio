@@ -70,6 +70,23 @@ class ToolUploadRequest(BaseModel):
     )
 
 
+class ExecuteActionRequest(BaseModel):
+    """Execute action request."""
+
+    params: t.Dict = Field(
+        ...,
+        description="Parameters for executing the request.",
+    )
+    entity_id: str = Field(
+        None,
+        description="Entity ID assosiated with the account.",
+    )
+    connection_id: str = Field(
+        None,
+        description="Connection ID to use for executing the action.",
+    )
+
+
 def create_app() -> FastAPI:
     """Create Fast API app."""
     access_token = os.environ.get(ENV_ACCESS_TOKEN)
@@ -164,11 +181,13 @@ def create_app() -> FastAPI:
 
     @app.post("/api/actions/execute/{action}", response_model=APIResponse[t.Dict])
     @with_exception_handling
-    def _execute_action(action: str, params: t.Dict) -> t.Dict:
+    def _execute_action(action: str, request: ExecuteActionRequest) -> t.Dict:
         """Execute an action."""
         return get_context().toolset.execute_action(
             action=action,
-            params=params,
+            params=request.params,
+            entity_id=request.entity_id,
+            connected_account_id=request.connection_id,
         )
 
     @app.get("/api/workspace", response_model=APIResponse[t.Dict])

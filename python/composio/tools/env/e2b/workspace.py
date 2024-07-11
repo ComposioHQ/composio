@@ -149,7 +149,9 @@ class E2BWorkspace(Workspace):
         request = self._request(
             method="post",
             endpoint=f"/actions/execute/{action.slug}",
-            json=request_data,
+            json={
+                "params": request_data,
+            },
         )
         response = request.json()
         if response["error"] is None:
