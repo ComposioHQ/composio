@@ -15,7 +15,7 @@ openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 
 # Define task.
-task = "Send a mail to sawradip0@gmail.com, with `abc` in subject, and `defghijklm` in body, and `/Users/sawradip/Desktop/practice_code/practice_composio/composio/docs/media/intro.jpg` as attachment."
+task = "Send a mail to sawradip0@gmail.com, with `Test Composio Attachment` in subject, and `defghijklm` in body, and `/Users/sawradip/Desktop/practice_code/practice_composio/composio/docs/media/intro.jpg` as attachment."
 
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_actions(actions=[Action.GMAIL_SEND_EMAIL])
