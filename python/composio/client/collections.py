@@ -1000,9 +1000,7 @@ class Actions(Collection[ActionModel]):
                 with open(value, "rb") as file:
                     file_content = file.read()
                 encoded_data = base64.b64encode(file_content).decode("utf-8")
-                encoded_data_with_filename = (
-                    f"{encoded_data}@{os.path.basename(value)}"
-                )
+                encoded_data_with_filename = f"{encoded_data}@{os.path.basename(value)}"
                 modified_params[param] = encoded_data_with_filename
             else:
                 modified_params[param] = value
