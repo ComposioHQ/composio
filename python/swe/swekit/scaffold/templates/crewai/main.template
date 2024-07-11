@@ -20,7 +20,7 @@ def main() -> None:
     if response.get("stderr") and len(response["stderr"]) > 0:
         print("Error:", response["stderr"])
     elif response.get("stdout"):
-        print("Output:", response["stdout"])
+        print("=== Generated Patch ===\n" + response["stdout"])
     else:
         print("No output available")
 
