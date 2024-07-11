@@ -10,7 +10,10 @@ from composio_crewai import ComposioToolSet
 from datasets import load_dataset
 from docker import errors as docker_errors
 from swekit.benchmark.constants import MODEL_GPT4
-from swekit.benchmark.docker.evaulate_on_docker import EvaluateOnDockerArgs, evaluate
+from swekit.benchmark.docker_utils.evaulate_on_docker import (
+    EvaluateOnDockerArgs,
+    evaluate,
+)
 from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
 
@@ -27,11 +30,23 @@ PATH_TESTBED = "testbed/"
 logger = get_logger(name="run_evaluation")
 
 
-def get_issues_dataset(test_split):
+def get_issues_dataset(test_split, test_instance_ids=[]):
     test_dataset = load_dataset(
         DATASET_NAME,
         split=f"test[{test_split}]",
     )
+    print(f"Original test_dataset size: {len(test_dataset)}")
+    print(f"Number of test_instance_ids: {len(test_instance_ids)}")
+    print(f"First few test_instance_ids: {test_instance_ids[:5]}")
+
+    if len(test_instance_ids) > 0:
+        test_dataset = test_dataset.filter(
+            lambda x: x["instance_id"] in test_instance_ids
+        )
+    else:
+        raise ValueError(f"Unsupported dataset type: {type(test_dataset)}")
+
+    print(f"Filtered test_dataset size: {len(test_dataset)}")
     return test_dataset
 
 
@@ -219,3 +234,7 @@ def check_and_pull_image(image_name):
         finally:
             client.close()
     return image_available
+
+
+if __name__ == "__main__":
+    get_score(logs_dir="/Users/karanvaidya/debugging_logs")
