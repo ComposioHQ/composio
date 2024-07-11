@@ -1,6 +1,5 @@
 """Test workspace tools."""
 
-
 import os
 import tempfile
 from pathlib import Path
@@ -41,7 +40,7 @@ def test_stderr() -> None:
 
 def _check_output(output: dict) -> None:
     """Check tool output."""
-    assert output[EXIT_CODE] == 0, output
+    assert output[EXIT_CODE] == 0, f"output: {output}"
 
 
 def test_workspace() -> None:
