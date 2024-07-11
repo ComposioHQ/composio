@@ -181,11 +181,11 @@ def build_image_and_container(repo, repo_to_workspace_map, base_commit):
 
 
 def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
-    workspace_id = get_workspace_from_repo_map(
-        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
-    )
-    if workspace_id:
-        return workspace_id
+    # workspace_id = get_workspace_from_repo_map(
+    #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
+    # )
+    # if workspace_id:
+    #     return workspace_id
     workspace_id = create_workspace_from_image(
         repo=repo, repo_to_image_id_map=repo_to_image_id_map, base_commit=base_commit
     )
@@ -237,4 +237,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/debugging_logs")
+    get_score(logs_dir="/Users/karanvaidya/1720733455")

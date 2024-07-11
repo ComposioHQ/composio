@@ -84,7 +84,7 @@ class DockerWorkspace(Workspace):
         """Docker client object."""
         if self._client is None:
             try:
-                self._client = from_env()
+                self._client = from_env(timeout=100)
             except DockerException as e:
                 raise ComposioSDKError(
                     message=f"Error initializing docker client: {e}"
