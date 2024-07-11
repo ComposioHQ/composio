@@ -985,6 +985,7 @@ class Actions(Collection[ActionModel]):
             file_readable = False
             if isinstance(action_req_schema[param], dict):
                 file_readable = action_req_schema[param].get("file_readable", False)
+                file_uploadable = action_req_schema[param].get("file_uploadable", False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
                     file_content = file.read()
@@ -995,6 +996,14 @@ class Actions(Collection[ActionModel]):
                         modified_params[param] = base64.b64encode(file_content).decode(
                             "utf-8"
                         )
+            elif file_uploadable and isinstance(value, str) and os.path.isfile(value):
+                with open(value, "rb") as file:
+                    file_content = file.read()
+                encoded_data = base64.b64encode(file_content).decode("utf-8")
+                encoded_data_with_filename = (
+                    f"{encoded_data}@{os.path.basename(value)}"
+                )
+                modified_params[param] = encoded_data_with_filename
             else:
                 modified_params[param] = value
 
