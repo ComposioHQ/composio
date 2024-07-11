@@ -171,14 +171,16 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                             modified_request_data[param] = base64.b64encode(
                                 file_content
                             ).decode("utf-8")
-                elif file_readable and isinstance(value, str) and os.path.isfile(value):
+                elif (
+                    file_uploadable and isinstance(value, str) and os.path.isfile(value)
+                ):
                     # For uploadable files, we also need to send the  filename
                     with open(value, "rb") as file:
                         file_content = file.read()
-                    encoded_data = base64.b64encode(
-                        file_content
-                    ).decode("utf-8")
-                    encoded_data_with_filename = f"{encoded_data}@{os.path.basename(value)}"
+                    encoded_data = base64.b64encode(file_content).decode("utf-8")
+                    encoded_data_with_filename = (
+                        f"{encoded_data}@{os.path.basename(value)}"
+                    )
                     modified_request_data[param] = encoded_data_with_filename
                 else:
                     modified_request_data[param] = value
