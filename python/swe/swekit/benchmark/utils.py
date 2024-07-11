@@ -7,7 +7,7 @@ from pathlib import Path
 
 import docker
 from composio_crewai import ComposioToolSet
-from datasets import load_dataset, Dataset, IterableDataset
+from datasets import load_dataset
 from docker import errors as docker_errors
 from swekit.benchmark.constants import MODEL_GPT4
 from swekit.benchmark.docker_utils.evaulate_on_docker import (
