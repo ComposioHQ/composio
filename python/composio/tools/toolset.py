@@ -12,13 +12,13 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
     ConnectedAccountModel,
     TriggerSubscription,
 )
-from composio.client.enums import Action, ActionType, App, AppType, TagType
 from composio.client.exceptions import ComposioClientError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -30,6 +30,7 @@ from composio.constants import (
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from composio.tools.local.base import Action as LocalAction
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
@@ -245,21 +246,36 @@ class ComposioToolSet(WithLogger):
         actions: t.Optional[t.Sequence[ActionType]] = None,
         tags: t.Optional[t.Sequence[TagType]] = None,
     ) -> t.List[ActionModel]:
-        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+        runtime_actions = t.cast(
+            t.List[t.Type[LocalAction]],
+            [action for action in actions or [] if hasattr(action, "run_on_shell")],
+        )
+        actions = t.cast(
+            t.List[Action],
+            [
+                Action(action)
+                for action in actions or []
+                if action not in runtime_actions
+            ],
+        )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
+
         local_actions = [action for action in actions if action.is_local]
-        remote_actions = [action for action in actions if not action.is_local]
         local_apps = [app for app in apps if app.is_local]
+
+        remote_actions = [action for action in actions if not action.is_local]
         remote_apps = [app for app in apps if not app.is_local]
 
         items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
-            local_items = self._local_client.get_action_schemas(
-                apps=local_apps,
-                actions=local_actions,
-                tags=tags,
-            )
-            items = items + [ActionModel(**item) for item in local_items]
+            items += [
+                ActionModel(**item)
+                for item in self._local_client.get_action_schemas(
+                    apps=local_apps,
+                    actions=local_actions,
+                    tags=tags,
+                )
+            ]
 
         if len(remote_actions) > 0 or len(remote_apps) > 0:
             remote_items = self.client.actions.get(
@@ -271,6 +287,7 @@ class ComposioToolSet(WithLogger):
 
         for item in items:
             self.check_connected_account(action=item.name)
+        items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         return items
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:

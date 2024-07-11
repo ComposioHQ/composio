@@ -5,7 +5,7 @@ from composio_openai import ComposioToolSet as BaseComposioToolSet
 from julep import Client
 from julep.api.types import ChatResponse
 
-from composio.client.enums import Action
+from composio import Action
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools.env.factory import ExecEnv
 

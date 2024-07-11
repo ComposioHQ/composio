@@ -18,6 +18,7 @@ from composio.tools.env.constants import (
     ENV_COMPOSIO_DEV_MODE,
     ENV_COMPOSIO_SWE_AGENT,
     EXIT_CODE,
+    STDERR,
     STDOUT,
 )
 from composio.tools.env.docker.shell import Container as DockerContainer
@@ -97,16 +98,13 @@ class DockerWorkspace(Workspace):
         metadata: dict,
     ) -> t.Dict:
         """Execute action using shell."""
-        return (
-            LocalClient()
-            .get_action(action=action)
-            .execute_action(
-                request_data=request_data,
-                metadata={
-                    **metadata,
-                    "workspace": self,
-                },
-            )
+        return LocalClient().execute_action(
+            action=action,
+            request_data=request_data,
+            metadata={
+                **metadata,
+                "workspace": self,
+            },
         )
 
     def _execute_cli(
@@ -121,8 +119,8 @@ class DockerWorkspace(Workspace):
             f" --params '{json.dumps(request_data)}'"
             f" --metadata '{json.dumps(metadata)}'"
         )
-        if len(output[EXIT_CODE]) != 0:
-            return {"status": "failure", "message": output["stderr"]}
+        if output[EXIT_CODE] != 0:
+            return {"status": "failure", "message": output[STDERR]}
         try:
             return {"status": "success", "data": json.loads(output[STDOUT])}
         except json.JSONDecodeError:
