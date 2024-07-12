@@ -209,7 +209,7 @@ class TreeContext:
                 closed_show.add(sorted_show[i] + 1)
 
         # Pick up adjacent blank lines
-        for i, line in enumerate(self.lines):
+        for i in range(len(self.lines)):
             if i not in closed_show:
                 continue
             if (

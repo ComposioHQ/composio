@@ -25,10 +25,10 @@ def get_files_excluding_gitignore(root_path, no_gitignore=False):
             if potential_gitignore.exists():
                 gitignore = potential_gitignore
                 break
-    import pathspec  # TODO: simplify import
+    import pathspec  # TODO: simplify import  # pylint: disable=C0415
 
     if gitignore:
-        with open(gitignore, "r") as f:
+        with open(gitignore, "r", encoding="utf-8") as f:
             spec = pathspec.PathSpec.from_lines("gitwildmatch", f)
     else:
         spec = pathspec.PathSpec.from_lines("gitwildmatch", [])

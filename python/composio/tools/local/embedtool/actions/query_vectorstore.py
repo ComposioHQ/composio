@@ -37,8 +37,8 @@ class QueryImageVectorStore(Action):
         request_data: QueryImageVectorStoreInputSchema,
         authorisation_data: dict = {},
     ) -> QueryImageVectorStoreOutputSchema:
-        import chromadb
-        from chromadb.utils import embedding_functions
+        import chromadb  # pylint: disable=C0415
+        from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
         image_collection_name = Path(request_data.indexed_directory).name + "_images"
         index_storage_path = Path.home() / ".composio" / "image_index_storage"

@@ -26,7 +26,7 @@ def find_src_files(directory):
         return [directory]
 
     src_files = []
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         for file in files:
             src_files.append(os.path.join(root, file))
     return src_files
@@ -39,7 +39,7 @@ def print_if_verbose(text, verbose=True):
 
 # Replace the existing token_count function with this:
 def token_count(text):
-    from transformers import GPT2Tokenizer  # TODO: simplify import
+    from transformers import GPT2Tokenizer  # pylint: disable=C0415
 
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     max_length = 1024
@@ -50,5 +50,4 @@ def token_count(text):
             chunk = tokenizer.encode(text[i : i + max_length])
             total_tokens += len(chunk)
         return total_tokens
-    else:
-        return len(tokenizer.encode(text))
+    return len(tokenizer.encode(text))

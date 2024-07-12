@@ -76,8 +76,8 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
     def execute(
         self, request: SearchCodebaseRequest, authorisation_data: dict = {}
     ) -> SearchCodebaseResponse:
-        import chromadb
-        from chromadb.errors import ChromaError
+        import chromadb  # pylint: disable=C0415
+        from chromadb.errors import ChromaError  # pylint: disable=C0415
 
         # Verify index existence
         index_creator = CreateIndex()

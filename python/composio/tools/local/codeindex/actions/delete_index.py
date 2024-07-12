@@ -29,8 +29,8 @@ class DeleteIndex(Action[DeleteIndexInput, DeleteIndexOutput]):
     def execute(
         self, input_data: DeleteIndexInput, authorisation_data: dict = {}
     ) -> DeleteIndexOutput:
-        import chromadb  # TODO: simplify import
-        from chromadb.errors import ChromaError
+        import chromadb  # pylint: disable=C0415
+        from chromadb.errors import ChromaError  # pylint: disable=C0415
 
         index_storage_path = Path.home() / ".composio" / "index_storage"
         collection_name = Path(input_data.index_directory).name

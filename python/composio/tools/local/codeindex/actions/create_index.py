@@ -86,7 +86,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
         )
 
     def _delete_existing_index(self, repo_path: str):
-        import chromadb  # TODO: simplify import
+        import chromadb  # pylint: disable=C0415
 
         index_storage_path = Path.home() / ".composio" / "index_storage"
         collection_name = self._get_collection_name(repo_path)
@@ -148,8 +148,10 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
         self,
         embedding_type: str,
     ):
-        from chromadb.utils import embedding_functions
-        from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+        from chromadb.utils import embedding_functions  # pylint: disable=C0415
+        from chromadb.utils.embedding_functions import (
+            OpenAIEmbeddingFunction,
+        )  # pylint: disable=C0415
 
         if embedding_type == "remote":
             openai_key, api_base, helicone_auth = self._get_openai_credentials()
@@ -270,12 +272,12 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
         }
         if error:
             status_data["error"] = error
-        with open(status_file, "w") as f:
+        with open(status_file, "w", encoding="utf-8") as f:
             json.dump(status_data, f)
 
     def check_status(self, repo_path: str) -> dict:
         status_file = Path(repo_path) / ".indexing_status.json"
         if not status_file.exists():
             return {"status": "not_started"}
-        with open(status_file, "r") as f:
+        with open(status_file, "r", encoding="utf-8") as f:
             return json.load(f)

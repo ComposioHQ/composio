@@ -50,8 +50,8 @@ class CreateImageVectorStore(
     def execute(
         self, request_data: CreateVectorStoreInputSchema, authorisation_data: dict = {}
     ) -> CreateVectorStoreOutputSchema:
-        import chromadb
-        from chromadb.utils import embedding_functions
+        import chromadb  # pylint: disable=C0415
+        from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
         """
         Executes the vector store creation process for all image files in the folder.

@@ -168,9 +168,8 @@ class RepoMap:
         return repo_content
 
     def load_tags_cache(self):
-        from diskcache import Cache  # TODO: simplify import
+        from diskcache import Cache  # pylint: disable=C0415
 
-        """Load tags cache from disk."""
         path = Path(self.root) / self.TAGS_CACHE_DIR
         if not path.exists():
             self.cache_missing = True
@@ -299,11 +298,13 @@ class RepoMap:
             )
             return
 
-        from pygments.util import ClassNotFound
+        from pygments.util import ClassNotFound  # pylint: disable=C0415
 
         try:
-            from pygments.lexers import guess_lexer_for_filename
-            from pygments.token import Token
+            from pygments.lexers import (
+                guess_lexer_for_filename,
+            )  # pylint: disable=C0415
+            from pygments.token import Token  # pylint: disable=C0415
 
             lexer = guess_lexer_for_filename(fname, code)
             tokens = [
@@ -337,7 +338,7 @@ class RepoMap:
         :param mentioned_idents: Mentioned identifiers
         :return: List of ranked tags
         """
-        import networkx as nx
+        import networkx as nx  # pylint: disable=C0415
 
         defines = defaultdict(set)
         references = defaultdict(list)
@@ -411,7 +412,9 @@ class RepoMap:
             mul = (
                 2.0
                 if ident in mentioned_idents
-                else 0.5 if ident.startswith("_") else 1.0
+                else 0.5
+                if ident.startswith("_")
+                else 1.0
             )
 
             for referencer, num_refs in Counter(references[ident]).items():
@@ -503,7 +506,6 @@ class RepoMap:
         ranked_tags = self.get_ranked_tags(
             chat_fnames, other_fnames, mentioned_fnames, mentioned_idents
         )
-        # print(f"Got {len(ranked_tags)} ranked tags")
 
         num_tags = len(ranked_tags)
         lower_bound = 0
@@ -512,35 +514,25 @@ class RepoMap:
         best_tree_tokens = 0
 
         chat_rel_fnames = [get_rel_fname(self.root, fname) for fname in chat_fnames]
-        # print(f"Chat relative filenames: {chat_rel_fnames}")
-
-        # Binary search for optimal number of tags
         middle = min(max_map_tokens // 25, num_tags)
 
         self.tree_cache = dict()
 
-        # print("Starting binary search for optimal number of tags")
         while lower_bound <= upper_bound:
             tree = self.to_tree(ranked_tags[:middle], chat_rel_fnames)
             num_tokens = self.token_count(tree)
-            # print(f"Current middle: {middle}, num_tokens: {num_tokens}")
 
             if num_tokens < max_map_tokens and num_tokens > best_tree_tokens:
                 best_tree = tree
                 best_tree_tokens = num_tokens
-                # print(f"New best tree found with {best_tree_tokens} tokens")
-            # print(f"Best tree: reached")
+
             if num_tokens < max_map_tokens:
                 lower_bound = middle + 1
             else:
                 upper_bound = middle - 1
-            # print(f"New middle: {middle}")
+
             middle = (lower_bound + upper_bound) // 2
-        # if best_tree is None:
-        #     # print("No best tree found")
-        #     return ""
-        # print(f"Binary search completed. Best tree has {best_tree_tokens} tokens")
-        # print(f"Best tree content (first 100 characters): {best_tree[:100]}")
+
         return best_tree
 
     def render_tree(self, abs_fname, rel_fname, lois):
@@ -633,7 +625,7 @@ class RepoMap:
             # print(f"Cache contents deleted: {cache_path}")
         else:
             # print("No cache found to delete.")
-            from diskcache import Cache  # TODO: simplify import
+            from diskcache import Cache  # pylint: disable=C0415
 
             # Reset the cache object
             self.TAGS_CACHE = Cache(cache_path)
