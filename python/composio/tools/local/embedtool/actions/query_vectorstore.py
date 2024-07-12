@@ -53,7 +53,7 @@ class QueryImageVectorStore(Action):
         query_embeddings = text_embedding_function([request_data.search_query])
 
         search_results = chroma_collection.query(
-            query_texts=request_data.search_query,
+            query_embeddings=query_embeddings,
             n_results=request_data.max_results,
         )
         if search_results is None:

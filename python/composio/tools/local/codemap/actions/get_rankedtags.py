@@ -76,9 +76,7 @@ class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsRes
     def execute(
         self, request: GenerateRankedTagsRequest, authorisation_data: dict = {}
     ) -> GenerateRankedTagsResponse:
-        print(f"Executing GenerateRankedTags with request: {request}")
         repo_root = Path(request.code_directory).resolve()
-        print(f"Repository root: {repo_root}")
 
         if not repo_root.exists():
             print(f"Error: Repository root path {repo_root} does not exist")
@@ -91,23 +89,18 @@ class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsRes
             all_files = get_files_excluding_gitignore(
                 root_path=repo_root, no_gitignore=False
             )
-            print(f"Number of files found: {len(all_files)}")
 
             # Convert absolute paths to relative paths
             all_files = [str(Path(file).relative_to(repo_root)) for file in all_files]
-            print(f"Sample of relative file paths: {all_files[:5]}")
 
             # Generate ranked tags map
-            print("Generating ranked tags map...")
             repo_map = RepoMap(root=repo_root)
-            print(f"Repo map: init done")
             ranked_tags_map = repo_map.get_ranked_tags_map(
                 chat_fnames=[],
                 other_fnames=all_files,
                 mentioned_fnames=set(request.files_of_interest),
                 mentioned_idents=set(),
             )
-            print("Ranked tags map generated successfully")
 
             # Parse the ranked_tags_map string to extract RankedTag objects
             if ranked_tags_map is None:
@@ -116,13 +109,11 @@ class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsRes
                     ranked_tags="",
                     error="No ranked tags map generated",
                 )
-            print(f"Ranked tags map length: {len(ranked_tags_map)}")
             return GenerateRankedTagsResponse(
                 ranked_tags=ranked_tags_map,
             )
 
         except Exception as e:
-            print(f"Error occurred: {str(e)}")
             return GenerateRankedTagsResponse(
                 ranked_tags="",
                 error=f"An error occurred while generating ranked tags: {str(e)}",

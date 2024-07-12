@@ -10,17 +10,24 @@ from composio.tools.local.base.utils.grep_utils import grep_util
 class CodeSearchRequest(BaseModel):
     query: str = Field(
         ...,
-        description="The search pattern or regular expression to find in the codebase. Use this to locate specific code constructs, function definitions, variable names, or text patterns.",
+        description="""The search pattern or regular expression to find in the codebase. 
+        Use this to locate specific code constructs, function definitions, 
+        variable names, or text patterns.""",
         examples=["def main(", "TODO:", "import numpy"],
     )
     code_directory: str = Field(
         default=str(Path.home()),
-        description="The code directory to start the search from. This should be the top-level folder of your project or codebase. If not specified, the search will start from the user's home directory.",
+        description="""The code directory to start the search from. 
+        This should be the top-level folder of your project or codebase.
+        If not specified, the search will start from the user's home directory.
+        """,
         examples=["/path/to/project", "/home/user/workspace/my-app"],
     )
     file_paths: List[str] = Field(
         default=None,
-        description="A list of specific file paths to search within. Use this when you want to limit the search to particular files or subdirectories. If not provided, the search will cover all files under the root_directory.",
+        description="""A list of specific file paths to search within. 
+        Use this when you want to limit the search to particular files or subdirectories.
+        If not provided, the search will cover all files under the root_directory.""",
         examples=[
             ["/path/to/project/src/main.py", "/path/to/project/tests/test_main.py"],
             ["app/models.py", "app/views.py", "app/controllers.py"],
