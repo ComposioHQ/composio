@@ -276,11 +276,7 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
-            print(f"param_schema: {param_schema}")
-            if param_type is None:
-                param_default = None
-            else:
-                param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
+            param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
 
         param_annotation = signature_param_type
         param = Parameter(
