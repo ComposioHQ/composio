@@ -10,7 +10,7 @@ from composio.client.enums.base import (
     ACTIONS_CACHE,
     ActionData,
     _AnnotatedEnum,
-    add_action,
+    add_runtime_action,
     enum,
 )
 
@@ -3761,7 +3761,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            raise ValueError()
+            value = value().get_tool_merged_action_name()  # type: ignore
         super().__init__(value=value)  # type: ignore
 
     @property
@@ -3802,4 +3802,4 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     @classmethod
     def add(cls, name: str, data: ActionData) -> None:
         """Add a new action."""
-        add_action(name=name, data=data)
+        add_runtime_action(name=name, data=data)

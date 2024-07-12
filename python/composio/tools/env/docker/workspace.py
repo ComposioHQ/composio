@@ -28,7 +28,6 @@ from composio.tools.local.handler import LocalClient
 
 COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 COMPOSIO_CACHE = Path.home() / ".composio"
-
 CONTAINER_BASE_KWARGS = {
     "command": "/bin/bash -l -m",
     "tty": True,
