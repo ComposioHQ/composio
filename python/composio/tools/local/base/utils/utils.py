@@ -47,7 +47,7 @@ def token_count(text):
     if len(text) > max_length:
         total_tokens = 0
         for i in range(0, len(text), max_length):
-            chunk = tokenizer.encode(text[i : i + max_length])
+            chunk = tokenizer.encode(text[i:i + max_length])
             total_tokens += len(chunk)
         return total_tokens
     return len(tokenizer.encode(text))
