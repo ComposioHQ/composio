@@ -1098,3 +1098,18 @@ class Integrations(Collection[IntegrationModel]):
             )
         )
         return IntegrationModel(**response.json())
+
+    def get_by_id(
+        self,
+        integration_id: str,
+    ) -> IntegrationModel:
+        """
+        Get an integration by its ID.
+
+        :param integration_id: Integration ID string.
+        :return: Integration model.
+        """
+        response = self._raise_if_required(
+            self.client.http.get(url=str(self.endpoint / integration_id))
+        )
+        return IntegrationModel(**response.json())
