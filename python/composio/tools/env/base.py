@@ -115,10 +115,16 @@ class Workspace(WithLogger, ABC):
 
     _shell_factory: t.Optional[ShellFactory] = None
 
-    def __init__(self):
+    def __init__(
+        self,
+        api_key: t.Optional[str] = None,
+        base_url: t.Optional[str] = None,
+    ):
         """Initialize workspace."""
         super().__init__()
         self.id = generate_id()
+        self._api_key = api_key
+        self._base_url = base_url
 
     def __str__(self) -> str:
         """String representation."""
