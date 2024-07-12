@@ -131,10 +131,13 @@ class E2BWorkspace(Workspace):
         )
         response = request.json()
         if response["error"] is not None:
-            raise RuntimeError(
+            self.logger.error(
                 f"Error while uploading {action.slug}: " + response["error"]
             )
-        self.logger.debug(f"Succesfully uploaded: {action.slug}")
+        else:
+            self.logger.debug(
+                f"Succesfully uploaded: {action.slug}",
+            )
 
     def execute_action(  # pylint: disable=unused-argument
         self,
