@@ -15,6 +15,7 @@ from composio.tools.local.spidertool import SpiderTool
 from composio.tools.local.sqltool import SqlTool
 from composio.tools.local.webtool import WebTool
 from composio.tools.local.zep import ZepTool
+from composio.tools.local.reddit import Reddit
 
 
 TOOLS_PATH = Path(__file__).parent
@@ -32,4 +33,5 @@ TOOLS = [
     SqlTool,
     WebTool,
     ZepTool,
+    Reddit,
 ]
