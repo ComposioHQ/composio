@@ -102,7 +102,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
             os.remove(status_file)
 
     def _index_creation(self, request_data: CreateCodeIndexInput):
-        import chromadb  # TODO: simplify import
+        import chromadb  # pylint: disable=C0415
 
         collection_name = self._get_collection_name(request_data.dir_to_index_path)
         index_storage_path = Path.home() / ".composio" / "index_storage"
@@ -149,9 +149,9 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
         embedding_type: str,
     ):
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
-        from chromadb.utils.embedding_functions import (
+        from chromadb.utils.embedding_functions import (  # pylint: disable=C0415
             OpenAIEmbeddingFunction,
-        )  # pylint: disable=C0415
+        )
 
         if embedding_type == "remote":
             openai_key, api_base, helicone_auth = self._get_openai_credentials()

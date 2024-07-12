@@ -25,9 +25,9 @@ class CreateImageVectorStore(
 
     _display_name = "Create Image Vector Store"
     _request_schema: Type[CreateVectorStoreInputSchema] = CreateVectorStoreInputSchema
-    _response_schema: Type[
+    _response_schema: Type[CreateVectorStoreOutputSchema] = (
         CreateVectorStoreOutputSchema
-    ] = CreateVectorStoreOutputSchema
+    )
     _tags = ["vectorstore", "image", "indexing"]
     _tool_name = "embedtool"
 
@@ -53,9 +53,6 @@ class CreateImageVectorStore(
         import chromadb  # pylint: disable=C0415
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
-        """
-        Executes the vector store creation process for all image files in the folder.
-        """
         image_collection_name = Path(request_data.folder_path).name + "_images"
         index_storage_path = Path.home() / ".composio" / "image_index_storage"
         index_storage_path.mkdir(parents=True, exist_ok=True)

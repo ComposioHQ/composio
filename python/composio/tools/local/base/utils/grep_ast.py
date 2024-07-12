@@ -41,7 +41,7 @@ class TreeContext:
         # Determine the language of the file
         lang = filename_to_lang(filename)
 
-        from tree_sitter_languages import get_parser  # TODO: simplify import
+        from tree_sitter_languages import get_parser  # pylint: disable=C0415
 
         # Get parser based on file extension
         parser = get_parser(lang)

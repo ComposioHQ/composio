@@ -226,7 +226,7 @@ class RepoMap:
             )
             return
 
-        from tree_sitter_languages import (  # TODO: simplify import
+        from tree_sitter_languages import (  # pylint: disable=C0415
             get_language,
             get_parser,
         )
@@ -301,9 +301,9 @@ class RepoMap:
         from pygments.util import ClassNotFound  # pylint: disable=C0415
 
         try:
-            from pygments.lexers import (
+            from pygments.lexers import (  # pylint: disable=C0415
                 guess_lexer_for_filename,
-            )  # pylint: disable=C0415
+            )
             from pygments.token import Token  # pylint: disable=C0415
 
             lexer = guess_lexer_for_filename(fname, code)
@@ -412,9 +412,7 @@ class RepoMap:
             mul = (
                 2.0
                 if ident in mentioned_idents
-                else 0.5
-                if ident.startswith("_")
-                else 1.0
+                else 0.5 if ident.startswith("_") else 1.0
             )
 
             for referencer, num_refs in Counter(references[ident]).items():
