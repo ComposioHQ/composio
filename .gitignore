@@ -33,3 +33,5 @@ temp
 refactor_debug.ipynb
 **/coder_agent_logs_*
 **/.composio.coder.*
+
+python/dockerfiles/e2b-dev/composio

@@ -159,6 +159,7 @@ class ComposioToolSet(WithLogger):
         action: Action,
         params: t.Dict,
         entity_id: str = DEFAULT_ENTITY_ID,
+        connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
@@ -171,6 +172,7 @@ class ComposioToolSet(WithLogger):
             action=action,
             params=params,
             text=text,
+            connected_account_id=connected_account_id,
         )
         if self.output_in_file:
             return self._write_to_file(
@@ -210,11 +212,12 @@ class ComposioToolSet(WithLogger):
 
     def execute_action(
         self,
-        action: t.Union[Action, str],
+        action: ActionType,
         params: dict,
         metadata: t.Optional[t.Dict] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         text: t.Optional[str] = None,
+        connected_account_id: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -224,6 +227,7 @@ class ComposioToolSet(WithLogger):
         :param entity_id: The ID of the entity to execute the action on. Defaults to "default"
         :param text: Extra text to use for generating function calling metadata
         :param metadata: Metadata for executing local action
+        :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
         action = Action(action)
@@ -238,6 +242,7 @@ class ComposioToolSet(WithLogger):
             params=params,
             entity_id=entity_id,
             text=text,
+            connected_account_id=connected_account_id,
         )
 
     def get_action_schemas(
