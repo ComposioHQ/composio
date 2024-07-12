@@ -252,8 +252,9 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
     for param_name, param_schema in schema_params_object.items():
         param_type = param_schema.get("type", None)
         param_oneOf = param_schema.get("oneOf", None)
-        if param_oneOf is not None:
-            param_types = [ptype.get("type") for ptype in param_oneOf]
+        param_anyOf = param_schema.get("anyOf", None)
+        if param_oneOf is not None or param_anyOf is not None:
+            param_types = [ptype.get("type") for ptype in (param_oneOf or param_anyOf)]
             if len(param_types) == 1:
                 signature_param_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]
             elif len(param_types) == 2:
@@ -275,7 +276,11 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
-            param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
+            print(f"param_schema: {param_schema}")
+            if param_type is None:
+                param_default = None
+            else:
+                param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
 
         param_annotation = signature_param_type
         param = Parameter(
