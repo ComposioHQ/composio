@@ -32,7 +32,6 @@ class EditFileResponse(ShellExecResponse):
 
 class EditFile(BaseExecCommand):
     """
-    replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text.
     Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
 
     Python files will be checked for syntax errors after the edit.
