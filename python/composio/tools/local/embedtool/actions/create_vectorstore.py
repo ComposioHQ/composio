@@ -25,9 +25,9 @@ class CreateImageVectorStore(
 
     _display_name = "Create Image Vector Store"
     _request_schema: Type[CreateVectorStoreInputSchema] = CreateVectorStoreInputSchema
-    _response_schema: Type[CreateVectorStoreOutputSchema] = (
+    _response_schema: Type[
         CreateVectorStoreOutputSchema
-    )
+    ] = CreateVectorStoreOutputSchema
     _tags = ["vectorstore", "image", "indexing"]
     _tool_name = "embedtool"
 

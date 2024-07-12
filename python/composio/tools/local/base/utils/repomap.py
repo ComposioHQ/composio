@@ -91,7 +91,8 @@ class RepoMap:
 
         self.max_map_tokens = map_tokens
         self.max_context_window = max_context_window
-
+        self.TAGS_CACHE = None
+        self.tree_cache = {}
         self.token_count = token_count
         self.repo_content_prefix = repo_content_prefix
 
@@ -113,7 +114,7 @@ class RepoMap:
                 "Exiting repo-map due to max_map_tokens <= 0 or no other_files",
                 self.verbose,
             )
-            return
+            return "error"
 
         # Initialize mentioned sets if not provided
         mentioned_fnames = mentioned_fnames or set()
@@ -144,13 +145,13 @@ class RepoMap:
             # Handle recursion error (possibly due to large git repo)
             self.max_map_tokens = 0
             print_if_verbose("Exiting repo-map due to RecursionError", self.verbose)
-            return
+            return "error"
 
         if not files_listing:
             print_if_verbose(
                 "Exiting repo-map due to empty files_listing", self.verbose
             )
-            return
+            return "error"
 
         # Count tokens in the files listing
         num_tokens = self.token_count(files_listing)
@@ -328,7 +329,7 @@ class RepoMap:
 
     def get_ranked_tags(
         self, chat_fnames, other_fnames, mentioned_fnames, mentioned_idents
-    ):
+    ):  # pylint: disable=R0915
         """
         Generate ranked tags for files in the repository.
 
@@ -344,7 +345,7 @@ class RepoMap:
         references = defaultdict(list)
         definitions = defaultdict(set)
 
-        personalization = dict()
+        personalization = {}
         fnames = sorted(set(chat_fnames).union(set(other_fnames)))
         chat_rel_fnames = set()
 
@@ -494,7 +495,7 @@ class RepoMap:
         """
         # print("Starting get_ranked_tags_map")
         if not other_fnames:
-            other_fnames = list()
+            other_fnames = []
         if not max_map_tokens:
             max_map_tokens = self.max_map_tokens
 
@@ -514,13 +515,13 @@ class RepoMap:
         chat_rel_fnames = [get_rel_fname(self.root, fname) for fname in chat_fnames]
         middle = min(max_map_tokens // 25, num_tags)
 
-        self.tree_cache = dict()
+        self.tree_cache = {}
 
         while lower_bound <= upper_bound:
             tree = self.to_tree(ranked_tags[:middle], chat_rel_fnames)
             num_tokens = self.token_count(tree)
 
-            if num_tokens < max_map_tokens and num_tokens > best_tree_tokens:
+            if best_tree_tokens < num_tokens < max_map_tokens:
                 best_tree = tree
                 best_tree_tokens = num_tokens
 
@@ -596,7 +597,7 @@ class RepoMap:
                     lois = None
                 elif cur_fname:
                     output += "\n" + cur_fname + "\n"
-                if type(tag) is Tag:
+                if isinstance(tag, Tag):
                     lois = []
                     cur_abs_fname = tag.fname
                 cur_fname = this_rel_fname

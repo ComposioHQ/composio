@@ -34,7 +34,7 @@ class TreeContext:
         self.header_max = header_max
         self.loi_pad = loi_pad
         self.show_top_of_file_parent_scope = show_top_of_file_parent_scope
-
+        self.done_parent_scopes = set()
         self.parent_context = parent_context
         self.child_context = child_context
 
@@ -52,19 +52,19 @@ class TreeContext:
         self.num_lines = len(self.lines) + 1
 
         # Initialize data structures for storing information about the code
-        self.output_lines = dict()  # color lines, with highlighted matches
+        self.output_lines = {}  # color lines, with highlighted matches
         self.scopes = [
             set() for _ in range(self.num_lines)
         ]  # Which scopes is each line part of?
         self.header = [
-            list() for _ in range(self.num_lines)
+            [] for _ in range(self.num_lines)
         ]  # Which lines serve as a short "header" for the scope starting on that line
-        self.nodes = [list() for _ in range(self.num_lines)]
+        self.nodes = [[] for _ in range(self.num_lines)]
 
         # Walk the AST tree
         root_node = tree.root_node
         self.walk_tree(root_node)
-
+        scope_width = 0
         # Process headers and scopes
         if self.verbose:
             scope_width = max(
@@ -89,8 +89,6 @@ class TreeContext:
         # Initialize sets for tracking lines to show and lines of interest
         self.show_lines = set()
         self.lines_of_interest = set()
-
-        return
 
     def grep(self, pat, ignore_case):
         # Search for pattern in lines and highlight matches if color is enabled
@@ -209,7 +207,7 @@ class TreeContext:
                 closed_show.add(sorted_show[i] + 1)
 
         # Pick up adjacent blank lines
-        for i in range(len(self.lines)):
+        for i, _ in enumerate(self.lines):
             if i not in closed_show:
                 continue
             if (
