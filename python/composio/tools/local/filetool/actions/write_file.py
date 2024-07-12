@@ -39,7 +39,6 @@ class WriteFile(Action[WriteFileRequest, WriteFileResponse]):
     """Write file tool."""
 
     _display_name = "Write file"
-    _description = "Write file to a file."
     _request_schema = WriteFileRequest
     _response_schema = WriteFileResponse
     _tags = ["file", "write"]

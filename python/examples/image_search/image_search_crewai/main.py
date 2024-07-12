@@ -5,17 +5,17 @@ from email.mime import image  # Likely unused in this context
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from ComposioCrewAI and LangChain
-from composio_crewai import App, ComposioToolSet
+from composio_crewai import ComposioToolSet, App # type: ignore
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
 # Import embedtool from composio.tools.local
 from composio.tools.local import embedtool
+from composio.tools.local import filetool
 
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
-
 # Initialize a ChatOpenAI instance with GPT-4o model
 llm = ChatOpenAI(model="gpt-4o")
 
@@ -41,29 +41,24 @@ image_search_agent = Agent(
     allow_delegation=True  # Allow the agent to delegate tasks if necessary
 )
 
-# Define the images path, collection name, and query string
-collection_name = "animals2"#this collection is stored in the path ./animals
-collection_path = "/path/to/the/chromadb/folder/in/your/working/directory"
-images_path = "/path/to/the/images"
-prompt = "horse"
-create_task_description = (
-    "Create a vector store of the images in the "+images_path
-    "collection name:"+ collection_name
-    "folder_path:"+collection_path
-)
-query_task_description = (
-    "Query the vector store for prompt:"+prompt
-    "with store name:"+collection_name
-    "collection_path at:"+collection_path
-)
+# Define the images path and query string
+images_path = "/path/to/the/images/folder"
+search_prompt = "image_description"
+top_no_of_images = 1 #returns n closest images to the search 
 
+
+#Create a vector store prompt template
+create_task_description = "Create a vector store of the images in the "+images_path
+
+#Query the vector store prompt template
+query_task_description = "Only Query the vector store for the top"+str(top_no_of_images)+",image of:"+search_prompt+"at the indexed directory:"+images_path
 
 # Define a task for the image search agent
 image_search_task = Task(
     description=query_task_description,
     expected_output='A collection of retrieved images.',  # Expected result from the task
     agent=image_search_agent,  # Agent assigned to perform the task
-    human_input=True  # Indicates that human input is allowed/required
+    #human_input=True  # Indicates that human input is allowed/required
 )
 
 # Execute the task and retrieve the result
