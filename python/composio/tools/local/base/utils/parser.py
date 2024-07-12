@@ -1,5 +1,6 @@
 import os
 
+
 # Updated mapping of file extensions to parsers
 PARSERS = {
     ".py": "python",

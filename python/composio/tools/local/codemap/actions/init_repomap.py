@@ -1,10 +1,11 @@
 from pathlib import Path
 from typing import Optional, Type
 
+from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
 from composio.tools.local.base.utils.grep_utils import get_files_excluding_gitignore
 from composio.tools.local.base.utils.repomap import RepoMap
-from pydantic import BaseModel, Field
 
 
 class InitRepoMapRequest(BaseModel):
@@ -32,7 +33,7 @@ class InitRepoMap(Action[InitRepoMapRequest, InitRepoMapResponse]):
     def execute(
         self, request: InitRepoMapRequest, authorisation_data: dict = {}
     ) -> dict:
-        root_path = Path(request.root_path).resolve()
+        root_path = Path(request.code_directory).resolve()
         if not root_path.exists():
             return {"success": False, "error": f"Path {root_path} does not exist"}
 

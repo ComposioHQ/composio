@@ -5,8 +5,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional, Tuple, Type
 
-from composio.tools.local.base import Action
 from pydantic import BaseModel, Field
+
+from composio.tools.local.base import Action
+
 
 # Constants
 MAX_WINDOW_SIZE = 200
@@ -59,7 +61,6 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
     def execute(
         self, request_data: CreateCodeIndexInput, authorisation_data: dict = {}
     ) -> CreateCodeIndexOutput:
-
         # Check if index already exists or is in progress
         status = self.check_status(request_data.dir_to_index_path)
         if status["status"] == "completed" and not request_data.force_index:

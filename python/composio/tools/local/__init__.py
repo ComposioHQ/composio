@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from composio.tools.local.codeformat import CodeFormatTool
 from composio.tools.local.codegrep import CodeGrepTool
 from composio.tools.local.codeindex import CodeIndexTool
 from composio.tools.local.codemap import CodeMapTool
@@ -19,7 +20,7 @@ from composio.tools.local.spidertool import SpiderTool
 from composio.tools.local.sqltool import SqlTool
 from composio.tools.local.webtool import WebTool
 from composio.tools.local.zep import ZepTool
-from composio.tools.local.codeformat import CodeFormatTool
+
 
 TOOLS_PATH = Path(__file__).parent
 

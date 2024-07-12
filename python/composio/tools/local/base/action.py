@@ -12,9 +12,6 @@ from pydantic import BaseModel
 
 from composio.client.enums import SentinalObject
 from composio.utils.logging import WithLogger
-from pydantic import BaseModel
-
-from composio.utils.logging import WithLogger
 
 
 def generate_hashed_appId(input_string):

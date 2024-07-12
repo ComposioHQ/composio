@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 from typing import Type
 
-from composio.tools.local.base import Action
 from pydantic import BaseModel, Field
+
+from composio.tools.local.base import Action
 
 
 class DeleteIndexInput(BaseModel):

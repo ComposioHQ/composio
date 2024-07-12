@@ -16,7 +16,9 @@ class QueryImageVectorStoreInputSchema(BaseModel):
 
 class QueryImageVectorStoreOutputSchema(BaseModel):
     result: str = Field(..., description="Status of the image retrieval")
-    image_paths: list[str] = Field(..., description="List of retrieved image file paths")
+    image_paths: list[str] = Field(
+        ..., description="List of retrieved image file paths"
+    )
 
 
 class QueryImageVectorStore(Action):
@@ -43,7 +45,11 @@ class QueryImageVectorStore(Action):
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
         chroma_collection = chroma_client.get_collection(image_collection_name)
 
-        text_embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="distiluse-base-multilingual-cased-v2")
+        text_embedding_function = (
+            embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name="distiluse-base-multilingual-cased-v2"
+            )
+        )
         query_embeddings = text_embedding_function([request_data.search_query])
 
         search_results = chroma_collection.query(
@@ -51,9 +57,14 @@ class QueryImageVectorStore(Action):
             n_results=request_data.max_results,
         )
         if search_results is None:
-            return QueryImageVectorStoreOutputSchema(result="No images found", image_paths=[])
+            return QueryImageVectorStoreOutputSchema(
+                result="No images found", image_paths=[]
+            )
 
-        retrieved_image_paths = [result["file_path"] for result in search_results["metadatas"][0]]
+        retrieved_image_paths = [
+            result["file_path"] for result in search_results["metadatas"][0]
+        ]
 
-        return QueryImageVectorStoreOutputSchema(result="Images successfully retrieved", image_paths=retrieved_image_paths)
-
+        return QueryImageVectorStoreOutputSchema(
+            result="Images successfully retrieved", image_paths=retrieved_image_paths
+        )

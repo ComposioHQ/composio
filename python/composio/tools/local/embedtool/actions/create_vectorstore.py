@@ -1,7 +1,9 @@
-from typing import Type, List
 import os
 from pathlib import Path
+from typing import List, Type
+
 from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
 
 
@@ -23,9 +25,9 @@ class CreateImageVectorStore(
 
     _display_name = "Create Image Vector Store"
     _request_schema: Type[CreateVectorStoreInputSchema] = CreateVectorStoreInputSchema
-    _response_schema: Type[CreateVectorStoreOutputSchema] = (
+    _response_schema: Type[
         CreateVectorStoreOutputSchema
-    )
+    ] = CreateVectorStoreOutputSchema
     _tags = ["vectorstore", "image", "indexing"]
     _tool_name = "embedtool"
 

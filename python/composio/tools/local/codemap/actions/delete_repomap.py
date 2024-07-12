@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Optional, Type
 
+from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
 from composio.tools.local.base.utils.repomap import RepoMap
-from pydantic import BaseModel, Field
 
 
 class DeleteRepoMapRequest(BaseModel):

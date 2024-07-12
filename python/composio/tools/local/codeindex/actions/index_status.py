@@ -1,8 +1,9 @@
 from typing import Optional, Type
 
+from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
 from composio.tools.local.codeindex.actions.create_index import CreateIndex
-from pydantic import BaseModel, Field
 
 
 class IndexStatusInput(BaseModel):

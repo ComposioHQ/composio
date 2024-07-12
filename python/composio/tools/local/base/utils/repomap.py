@@ -228,10 +228,10 @@ class RepoMap:
             )
             return
 
-        from tree_sitter_languages import (
+        from tree_sitter_languages import (  # TODO: simplify import
             get_language,
             get_parser,
-        )  # TODO: simplify import
+        )
 
         language = get_language(lang)
         parser = get_parser(lang)
@@ -412,7 +412,9 @@ class RepoMap:
             mul = (
                 2.0
                 if ident in mentioned_idents
-                else 0.5 if ident.startswith("_") else 1.0
+                else 0.5
+                if ident.startswith("_")
+                else 1.0
             )
 
             for referencer, num_refs in Counter(references[ident]).items():

@@ -2,10 +2,8 @@ import typing as t
 
 from composio.tools.local.base import Action, Tool
 
-from .actions import (
-    CreateImageVectorStore,  # Import your action class
-    QueryImageVectorStore,
-)
+from .actions import CreateImageVectorStore  # Import your action class
+from .actions import QueryImageVectorStore
 
 
 class EmbedTool(Tool):
