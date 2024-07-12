@@ -13,8 +13,8 @@ import traceback
 import typing as t
 import zipfile
 from functools import update_wrapper
+from hashlib import md5
 from pathlib import Path
-from uuid import uuid4
 
 import typing_extensions as te
 from fastapi import FastAPI, Request, Response
@@ -81,7 +81,7 @@ class ExecuteActionRequest(BaseModel):
         None,
         description="Entity ID assosiated with the account.",
     )
-    connection_id: str = Field(
+    connected_account_id: str = Field(
         None,
         description="Connection ID to use for executing the action.",
     )
@@ -187,7 +187,7 @@ def create_app() -> FastAPI:
             action=action,
             params=request.params,
             entity_id=request.entity_id,
-            connected_account_id=request.connection_id,
+            connected_account_id=request.connected_account_id,
         )
 
     @app.get("/api/workspace", response_model=APIResponse[t.Dict])
@@ -216,8 +216,11 @@ def create_app() -> FastAPI:
                 f"Error installing dependencies: {process.stderr.decode()}"
             )
 
-        filename = uuid4().hex.replace("-", "")
+        filename = md5(request.content.encode(encoding="utf-8")).hexdigest()
         tempfile = Path(tooldir.name, f"{filename}.py")
+        if tempfile.exists():
+            raise ValueError("Tools from this module already exits!")
+
         tempfile.write_text(request.content)
         importlib.import_module(filename)
         return get_runtime_actions()
