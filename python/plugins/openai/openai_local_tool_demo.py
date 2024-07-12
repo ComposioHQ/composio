@@ -37,7 +37,7 @@ def get_git_repo(request_data: GitRepoRequest, metadata: dict) -> GitRepoRespons
         shell.exec("git config --get remote.origin.url").get("stdout").lstrip().rstrip()
     )
     _, repo = output.split(":")
-    author, name = repo.split("/")
+    *_, author, name = repo.split("/")
     return GitRepoResponse(name=name, author=author)
 
 

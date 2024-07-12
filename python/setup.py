@@ -73,6 +73,8 @@ setup(
         "pyyaml>=6.0.1",
         "sentry-sdk>=2.0.0",
         "pysher==1.0.8",
+        "e2b-code-interpreter",
+        "fastapi"
     ],
     include_package_data=True,
     package_data={
