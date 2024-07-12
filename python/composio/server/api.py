@@ -130,7 +130,7 @@ def create_app() -> FastAPI:
     def _api() -> GetApiResponse:
         """Composio tooling server API root."""
         return GetApiResponse(
-            version="0.3.19",
+            version="0.3.20",
         )
 
     @app.get("/api/apps", response_model=APIResponse[t.List[AppModel]])
