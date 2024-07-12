@@ -74,7 +74,15 @@ setup(
         "sentry-sdk>=2.0.0",
         "pysher==1.0.8",
         "e2b-code-interpreter",
-        "fastapi"
+        "fastapi",
+        # TODO: Fix this
+        "tree_sitter_languages",
+        "tree_sitter==0.21.3",
+        "pygments",
+        "pathspec",
+        "diskcache",
+        "networkx",
+        "ruff",
     ],
     include_package_data=True,
     package_data={

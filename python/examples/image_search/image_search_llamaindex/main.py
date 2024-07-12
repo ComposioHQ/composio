@@ -46,20 +46,21 @@ agent = FunctionCallingAgentWorker(
 ).as_agent()
 
 # Define the images path and collection name
-collection_name = "animals"
-collection_path = "/path/to/the/chromadb/folder/in/your/working/directory"
-images_path = "/path/to/the/images"
-prompt = "horse"
+# Define the images path and query string
+images_path = "/path/to/the/images/folder"
+search_prompt = "image_description"
+top_no_of_images = 1 #returns n closest images to the search 
+
+
+#Create a vector store prompt templat e
+create_task_description = "Create a vector store of the images in the "+images_path
+
+#Query the vector store prompt template
+query_task_description = "Only Query the vector store for the top"+str(top_no_of_images)+",image of:"+search_prompt+"at the indexed directory:"+images_path
+
 
 # Execute the task using the agent
-response = agent.chat(
-    "Create a vectorstore of name:"
-    + collection_name
-    + " using images in path:"
-    + images_path
-    + " and query the string:"
-    + query_string
-)
+response = agent.chat(create_task_description)
 
 # Print the response
 print("Response:", response)
