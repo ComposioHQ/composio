@@ -1,7 +1,8 @@
 import typing as t
 
-from composio.constants import DEFAULT_ENTITY_ID
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
+
+from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools.env.factory import ExecEnv
 
 

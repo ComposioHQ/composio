@@ -1,15 +1,16 @@
 import json
 import operator
-from typing import Annotated, TypedDict, Sequence
+from typing import Annotated, Sequence, TypedDict
 
-from langchain_openai import ChatOpenAI
-from langchain_core.utils.function_calling import convert_to_openai_function
-from langchain_core.messages import BaseMessage, HumanMessage, FunctionMessage
-
-from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolInvocation, ToolExecutor
 from composio_langgraph import Action, ComposioToolSet
-
+from langchain_core.messages import BaseMessage, FunctionMessage, HumanMessage
+from langchain_core.utils.function_calling import convert_to_openai_function
+from langchain_openai import ChatOpenAI
+from langgraph.graph import END, StateGraph  # pylint: disable=no-name-in-module
+from langgraph.prebuilt import (  # pylint: disable=no-name-in-module
+    ToolExecutor,
+    ToolInvocation,
+)
 
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
@@ -23,13 +24,13 @@ model = model.bind_functions(functions)
 
 
 def function_1(state):
-    messages = state['messages']
+    messages = state["messages"]
     response = model.invoke(messages)
     return {"messages": [response]}
 
 
 def function_2(state):
-    messages = state['messages']
+    messages = state["messages"]
     last_message = messages[-1]
 
     parsed_function_call = last_message.additional_kwargs["function_call"]
@@ -52,13 +53,12 @@ def function_2(state):
 
 
 def where_to_go(state):
-    messages = state['messages']
+    messages = state["messages"]
     last_message = messages[-1]
 
     if "function_call" in last_message.additional_kwargs:
         return "continue"
-    else:
-        return "end"
+    return "end"
 
 
 class AgentState(TypedDict):
@@ -76,22 +76,18 @@ workflow.add_conditional_edges(
         "continue": "tool",
         # Otherwise we finish. END is a special node marking
         # that the graph should finish.
-        "end": END
-    }
+        "end": END,
+    },
 )
-workflow.add_edge('tool', 'agent')
+workflow.add_edge("tool", "agent")
 workflow.set_entry_point("agent")
 
 app = workflow.compile()
 
 
 inputs = {
-    "messages": [
-        HumanMessage(
-            content="Star the Github Repository sawradip/sawradip"
-            )
-        ]
-    }
+    "messages": [HumanMessage(content="Star the Github Repository sawradip/sawradip")]
+}
 # response = app.invoke(inputs)
 # print(response)
 

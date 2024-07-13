@@ -20,11 +20,11 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
-        ],
+    ],
     python_requires=">=3.9,<4",
     install_requires=[
         "langchain_core>=0.2.17",
         "composio_langchain==0.3.20",
-        ],
+    ],
     include_package_data=True,
 )
