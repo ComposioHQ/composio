@@ -7,6 +7,7 @@ from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
 from composio.tools.env.docker.workspace import DockerWorkspace
 from composio.tools.env.e2b.workspace import E2BWorkspace
+from composio.tools.env.flyio.workspace import FlyIOWorkspace
 from composio.tools.env.host.workspace import HostWorkspace
 from composio.utils.logging import get as get_logger
 
@@ -57,9 +58,7 @@ class WorkspaceFactory:
         elif env == ExecEnv.E2B:
             workspace = E2BWorkspace(**kwargs)
         else:
-            raise ComposioSDKError(
-                f"Workspace environment `{env}` is not supported currently!"
-            )
+            workspace = FlyIOWorkspace(**kwargs)
         cls._workspaces[workspace.id] = workspace
         return cls.set_recent_workspace(workspace=workspace)
 
