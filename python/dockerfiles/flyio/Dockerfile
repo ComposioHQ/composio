@@ -11,4 +11,4 @@ RUN sudo apt install python3-pip -y
 RUN /bin/python3 -m pip install composio-core==0.3.20 fastapi
 
 # Define entry point
-ENTRYPOINT [ "composio",  "serve", "-h", "0.0.0.0" ]
+ENTRYPOINT [ "composio",  "serve", "-h", "0.0.0.0", "-p", "8000" ]

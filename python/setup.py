@@ -73,8 +73,11 @@ setup(
         "pyyaml>=6.0.1",
         "sentry-sdk>=2.0.0",
         "pysher==1.0.8",
+        # Workspace Dependencies
         "e2b-code-interpreter",
         "fastapi",
+        "gql",
+        "requests_toolbelt",
         # TODO: Fix this
         "tree_sitter_languages",
         "tree_sitter==0.21.3",

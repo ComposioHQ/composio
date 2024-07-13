@@ -34,6 +34,7 @@ from composio.tools.local.base import Action as LocalAction
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
+from composio.utils.url import get_api_url_base
 
 
 class ComposioToolSet(WithLogger):
@@ -68,19 +69,6 @@ class ComposioToolSet(WithLogger):
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
-        if workspace_id is None:
-            self.logger.debug(
-                f"Workspace ID not provided, using `{workspace_env}` "
-                "to create a new workspace"
-            )
-            self.workspace = WorkspaceFactory.new(
-                env=workspace_env,
-            )
-        else:
-            self.logger.debug(f"Loading workspace with ID: {workspace_id}")
-            self.workspace = WorkspaceFactory.get(
-                id=workspace_id,
-            )
 
         try:
             self.api_key = (
@@ -92,6 +80,22 @@ class ComposioToolSet(WithLogger):
             )
         except FileNotFoundError:
             self.logger.debug("`api_key` is not set when initializing toolset.")
+
+        if workspace_id is None:
+            self.logger.debug(
+                f"Workspace ID not provided, using `{workspace_env}` "
+                "to create a new workspace"
+            )
+            self.workspace = WorkspaceFactory.new(
+                env=workspace_env,
+                api_key=self.api_key,
+                base_url=base_url or get_api_url_base(),
+            )
+        else:
+            self.logger.debug(f"Loading workspace with ID: {workspace_id}")
+            self.workspace = WorkspaceFactory.get(
+                id=workspace_id,
+            )
 
         self._runtime = runtime
         self._local_client = LocalClient()
