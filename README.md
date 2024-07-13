@@ -17,6 +17,9 @@
   <a href="https://pypi.org/project/composio-core/">
   <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
   </a>
+  <a href="https://www.npmjs.com/package/composio-core">
+  <img alt="NPM" src="https://img.shields.io/npm/v/composio-core?style=plastic&logo=npm&logoColor=white&label=latest&color=blue&cacheSeconds=60">
+  </a>
   <a href="https://pypi.org/project/composio-core/">
   <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
   </a>
