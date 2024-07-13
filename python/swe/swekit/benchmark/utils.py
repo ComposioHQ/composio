@@ -43,8 +43,6 @@ def get_issues_dataset(test_split, test_instance_ids=[]):
         test_dataset = test_dataset.filter(
             lambda x: x["instance_id"] in test_instance_ids
         )
-    else:
-        raise ValueError(f"Unsupported dataset type: {type(test_dataset)}")
 
     print(f"Filtered test_dataset size: {len(test_dataset)}")
     return test_dataset
