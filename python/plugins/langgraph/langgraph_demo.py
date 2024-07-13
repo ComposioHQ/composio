@@ -12,6 +12,7 @@ from langgraph.prebuilt import (  # pylint: disable=no-name-in-module
     ToolInvocation,
 )
 
+
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
     actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
