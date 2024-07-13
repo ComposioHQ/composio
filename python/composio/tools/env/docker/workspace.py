@@ -56,19 +56,24 @@ class DockerWorkspace(Workspace):
     _container: DockerContainer
     _client: t.Optional[DockerClient] = None
 
-    def __init__(self, image: t.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        image: t.Optional[str] = None,
+        api_key: t.Optional[str] = None,
+        base_url: t.Optional[str] = None,
+    ) -> None:
         """Create a docker workspace."""
-        super().__init__()
+        super().__init__(api_key=api_key, base_url=base_url)
         self._image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
         try:
             container_kwargs = {
                 "image": self._image,
                 "name": self.id,
-                **CONTAINER_BASE_KWARGS,
+                **CONTAINER_BASE_KWARGS,  # type: ignore
             }
             if os.environ.get(ENV_COMPOSIO_DEV_MODE, 0) != 0:
-                container_kwargs.update(CONTAINER_DEVELOPMENT_MODE_KWARGS)
+                container_kwargs.update(CONTAINER_DEVELOPMENT_MODE_KWARGS)  # type: ignore
             self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
         except Exception as e:
