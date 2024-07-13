@@ -11,7 +11,7 @@ import webbrowser
 import click
 from beaupy.spinners import DOTS, Spinner
 
-from composio.cli.context import Context, login_required, pass_context
+from composio.cli.context import Context, pass_context, ensure_login
 from composio.cli.utils.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity
@@ -57,7 +57,7 @@ class AddIntegrationExamples(HelpfulCmd):
     type=str,
     help="Specify intgration ID to use existing integration",
 )
-@login_required
+@ensure_login
 @pass_entity_id
 @pass_context
 def _add(
@@ -214,7 +214,7 @@ def _handle_no_auth(
     no_browser: bool = False,
     integration: t.Optional[IntegrationModel] = None,
 ) -> None:
-    """Handle basic auth."""
+    """Handle no auth."""
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
