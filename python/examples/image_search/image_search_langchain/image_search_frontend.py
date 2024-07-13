@@ -1,84 +1,61 @@
-import os
-
-import dotenv
 import streamlit as st
-from composio_langchain import App, ComposioToolSet
+import os
+import dotenv
+from composio_langchain import ComposioToolSet, App
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-
+from composio.tools.local import embedtool
 
 # Load environment variables
 dotenv.load_dotenv()
 
-# Initialize ChatOpenAI and ComposioToolSet
-llm = ChatOpenAI(model="gpt-4", openai_api_key=os.environ["OPENAI_API_KEY"])
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+# Streamlit app
+def main():
+    st.title("Image Search App")
 
-# Retrieve tools from Composio
-tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
+    # Sidebar for API key input
+    # Main app
+    images_path = st.text_input("Enter the path to the images folder:")
+    search_prompt = st.text_input("Enter the image description for the image you want to search:")
+    top_no_of_images = st.number_input("Number of closest images to return:", min_value=1, value=5)
 
-# Pull prompt from LangChain hub
-prompt = hub.pull("hwchase17/openai-functions-agent")
+    if st.button("Search Images"):
+        if not images_path or not search_prompt:
+            st.error("Please fill in all the required fields.")
+        else:
+            with st.spinner("Searching images..."):
+                results = search_images(images_path, search_prompt, top_no_of_images)
+            st.success("Search completed!")
+            st.write(results)
 
-# Create OpenAI functions agent and AgentExecutor
-query_agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=query_agent, tools=tools, verbose=True)
+def search_images(images_path, search_prompt, top_no_of_images):
+    # Initialize LLM
+    llm = ChatOpenAI(model="gpt-4")
 
-# Streamlit UI
-st.title("Image Query Application")
+    # Get prompt from LangChain hub
+    prompt = hub.pull("hwchase17/openai-functions-agent")
 
-# Sidebar for configuration
-st.sidebar.header("Configuration")
-collection_name = st.sidebar.text_input("Collection Name", "animals2")
-collection_path = st.sidebar.text_input(
-    "Collection Path", "/path/to/the/chromadb/folder/in/your/working/directory"
-)
-images_path = st.sidebar.text_input("Images Path", "/path/to/the/images")
+    # Initialize ComposioToolSet
+    composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
 
-# Main content
-st.header("Query Images")
-user_prompt = st.text_input("Enter your query prompt:")
+    task_description = f"""
+    Check if a Vector Store exists for the image directory
+    If it doesn't create a vector store.
+    If it already exists, query the vector store
+    Search the vector store for {search_prompt}
+    The images path and indexed directory is {images_path}
+    return the top {top_no_of_images} results.
+    """
 
-if st.button("Run Query"):
-    if user_prompt:
-        with st.spinner("Processing query..."):
-            query_task = (
-                f"Query the vector store for prompt: {user_prompt} "
-                f"with store name: {collection_name} "
-                f"collection_path at: {collection_path}"
-            )
+    # Create agent and executor
+    query_agent = create_openai_functions_agent(llm, tools, prompt)
+    agent_executor = AgentExecutor(agent=query_agent, tools=tools, verbose=True)
 
-            # Execute the query task
-            result = agent_executor.invoke({"input": query_task})
+    # Execute the query task and get the result
+    res = agent_executor.invoke({"input": task_description})
+    return res
 
-            # Display the result
-            st.subheader("Query Result")
-            st.write(result["output"])
-    else:
-        st.warning("Please enter a query prompt.")
-
-# Option to create a new vector store
-st.header("Create New Vector Store")
-if st.button("Create Vector Store"):
-    with st.spinner("Creating vector store..."):
-        create_task = (
-            f"Create a vector store of the images in the {images_path} "
-            f"collection name: {collection_name} "
-            f"folder_path: {collection_path}"
-        )
-
-        # Execute the create task
-        result = agent_executor.invoke({"input": create_task})
-
-        # Display the result
-        st.subheader("Vector Store Creation Result")
-        st.write(result["output"])
-
-# Add some helpful information
-st.sidebar.markdown("---")
-st.sidebar.info(
-    "This application allows you to query a vector store of images. "
-    "You can also create a new vector store from a directory of images. "
-    "Make sure to set the correct paths in the sidebar before querying or creating a vector store."
-)
+if __name__ == "__main__":
+    main()

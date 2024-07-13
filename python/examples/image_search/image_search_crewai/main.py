@@ -41,21 +41,22 @@ image_search_agent = Agent(
     allow_delegation=True  # Allow the agent to delegate tasks if necessary
 )
 
-# Define the images path and query string
-images_path = "/path/to/the/images/folder"
-search_prompt = "image_description"
-top_no_of_images = 1 #returns n closest images to the search 
+images_path = input("Enter the path to the images folder:")
+search_prompt = input("Enter the image description for the image you want to search:")
+top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
 
+task_description = f"""
+    Check if a Vector Store exists for the image directory
+    If it doesn't create a vector store.
+    If it already exists, query the vector store
+    The images path and indexed directory is {images_path}
+    the prompt for the image to search is {search_prompt}
+    return the top {top_no_of_images} results.
 
-#Create a vector store prompt template
-create_task_description = "Create a vector store of the images in the "+images_path
-
-#Query the vector store prompt template
-query_task_description = "Only Query the vector store for the top"+str(top_no_of_images)+",image of:"+search_prompt+"at the indexed directory:"+images_path
-
+"""
 # Define a task for the image search agent
 image_search_task = Task(
-    description=query_task_description,
+    description=task_description,
     expected_output='A collection of retrieved images.',  # Expected result from the task
     agent=image_search_agent,  # Agent assigned to perform the task
     #human_input=True  # Indicates that human input is allowed/required
