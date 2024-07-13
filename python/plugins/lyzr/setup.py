@@ -15,7 +15,7 @@ setup(
     description="Use Composio to get an array of tools with your Lyzr workflow.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    url="https://github.com/SamparkAI/composio_sdk",
+    url="https://github.com/ComposioHQ/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

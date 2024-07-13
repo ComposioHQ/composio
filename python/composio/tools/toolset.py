@@ -59,9 +59,10 @@ class ComposioToolSet(WithLogger):
         :param base_url: Base URL for the Composio API server
         :param runtime: Name of the framework runtime, eg. openai, crewai...
         :param output_in_file: Whether to output the result to a file.
-        :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
-        :param workspace_env: Environment where actions should be executed, you can choose from
-                `host`, `docker`, `flyio` and `e2b`.
+        :param entity_id: The ID of the entity to execute the action on.
+            Defaults to "default".
+        :param workspace_env: Environment where actions should be executed,
+            you can choose from `host`, `docker`, `flyio` and `e2b`.
         :param workspace_id: Workspace ID for loading an existing workspace
         """
         super().__init__()
