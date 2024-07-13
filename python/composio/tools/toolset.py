@@ -2,13 +2,13 @@
 Composio SDK tools.
 """
 
+import base64
 import hashlib
 import itertools
 import json
 import os
 import time
 import typing as t
-from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -17,6 +17,8 @@ from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
     ConnectedAccountModel,
+    FileModel,
+    SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
 from composio.client.exceptions import ComposioClientError
@@ -24,7 +26,7 @@ from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY,
-    LOCAL_CACHE_DIRECTORY_NAME,
+    LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
@@ -35,6 +37,9 @@ from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
 from composio.utils.url import get_api_url_base
+
+
+output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
 
 
 class ComposioToolSet(WithLogger):
@@ -75,9 +80,7 @@ class ComposioToolSet(WithLogger):
             self.api_key = (
                 api_key
                 or os.environ.get(ENV_COMPOSIO_API_KEY)
-                or UserData.load(
-                    Path.home() / LOCAL_CACHE_DIRECTORY_NAME / USER_DATA_FILE_NAME
-                ).api_key
+                or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
             )
         except FileNotFoundError:
             self.logger.debug("`api_key` is not set when initializing toolset.")
@@ -185,8 +188,35 @@ class ComposioToolSet(WithLogger):
                 output=output,
                 entity_id=entity_id,
             )
-
+        try:
+            # Save the variables of type file to the composio/output directory.
+            output_modified = self._save_var_files(
+                f"{action.name}_{entity_id}_{time.time()}", output
+            )
+            return output_modified
+        except Exception as e:
+            print(f"Error checking file response: {e}")
         return output
+
+    def _save_var_files(self, file_name_prefix: str, output: dict) -> dict:
+        success_response_model = SuccessExecuteActionResponseModel.model_validate(
+            output
+        )
+        resp_data = json.loads(success_response_model.response_data)
+        for key, val in resp_data.items():
+            try:
+                file_model = FileModel.model_validate(val)
+                _ensure_output_dir_exists()
+                output_file_path = (
+                    output_dir
+                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+                )
+                _write_file(output_file_path, base64.b64decode(file_model.content))
+                resp_data[key] = str(output_file_path)
+            except Exception:
+                pass
+        success_response_model.response_data = resp_data
+        return success_response_model.model_dump()
 
     def _write_to_file(
         self,
@@ -198,18 +228,10 @@ class ComposioToolSet(WithLogger):
         filename = hashlib.sha256(
             f"{action.name}-{entity_id}-{time.time()}".encode()
         ).hexdigest()
-
-        outdir = LOCAL_CACHE_DIRECTORY / "outputs"
-        if not outdir.exists():
-            outdir.mkdir()
-
-        outfile = outdir / filename
+        _ensure_output_dir_exists()
+        outfile = output_dir / filename
         self.logger.info(f"Writing output to: {outfile}")
-
-        outfile.write_text(
-            data=json.dumps(output),
-            encoding="utf-8",
-        )
+        _write_file(outfile, json.dumps(output))
         return {
             "message": f"output written to {outfile.resolve()}",
             "file": str(outfile.resolve()),
@@ -411,3 +433,19 @@ class ComposioToolSet(WithLogger):
             + ". Whichever tool is useful to execute your task, use that with proper parameters."
         )
         return formatted_schema_info
+
+
+def _ensure_output_dir_exists():
+    """Ensure the output directory exists."""
+    if not output_dir.exists():
+        output_dir.mkdir()
+
+
+def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
+    """Write content to a file."""
+    if isinstance(content, str):
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(content)
+    else:
+        with open(file_path, "wb") as file:
+            file.write(content)
