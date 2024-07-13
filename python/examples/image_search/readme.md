@@ -29,6 +29,4 @@ Now, fill in the `.env` file with your secrets.
 ```shell
 python cookbook/examples/image_search/main.py
 ```
-Your database operations should be performed as described by the script, with SQL queries executed and logged accordingly.
-
 Note: We have a dummy folder called iamges with a few images of animals named. Feel free to use this folder for reference and search images on it to understand the agent's functionality better.
