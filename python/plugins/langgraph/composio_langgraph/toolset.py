@@ -24,7 +24,6 @@ class ComposioToolSet(BaseComposioToolSet):
     from langgraph.prebuilt import ToolInvocation, ToolExecutor
     from composio_langgraph import Action, ComposioToolSet
 
-
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_actions(
         actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
