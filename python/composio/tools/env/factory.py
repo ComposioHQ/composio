@@ -6,16 +6,10 @@ from enum import Enum
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace
 from composio.tools.env.docker.workspace import DockerWorkspace
+from composio.tools.env.e2b.workspace import E2BWorkspace
+from composio.tools.env.flyio.workspace import FlyIOWorkspace
 from composio.tools.env.host.workspace import HostWorkspace
 from composio.utils.logging import get as get_logger
-
-
-KEY_WORKSPACE_MANAGER = "workspace"
-KEY_CONTAINER_NAME = "container_name"
-KEY_PARENT_PIDS = "parent_pids"
-KEY_IMAGE_NAME = "image_name"
-KEY_WORKSPACE_ID = "workspace_id"
-KEY_WORKSPACE_TYPE = "type"
 
 
 class ExecEnv(Enum):
@@ -55,17 +49,16 @@ class WorkspaceFactory:
     @classmethod
     def new(cls, env: ExecEnv, **kwargs: t.Any) -> Workspace:
         """Create a new workspace."""
+        get_logger().debug(f"Creating workspace with {env=} and {kwargs=}")
         workspace: Workspace
         if env == ExecEnv.HOST:
             workspace = HostWorkspace(**kwargs)
         elif env == ExecEnv.DOCKER:
-            logger = get_logger(name="workspace_factory_new")
-            logger.info(f"Creating docker workspace with kwargs: {kwargs}")
             workspace = DockerWorkspace(**kwargs)
+        elif env == ExecEnv.E2B:
+            workspace = E2BWorkspace(**kwargs)
         else:
-            raise ComposioSDKError(
-                f"Workspace environment `{env}` is not supported currently!"
-            )
+            workspace = FlyIOWorkspace(**kwargs)
         cls._workspaces[workspace.id] = workspace
         return cls.set_recent_workspace(workspace=workspace)
 
@@ -92,7 +85,7 @@ class WorkspaceFactory:
     def teardown(cls) -> None:
         """Teardown the workspace factory."""
         for workspace in cls._workspaces.values():
-            get_logger(name="factory").info("Tearing down: %s", workspace)
+            get_logger(name="factory").debug("Tearing down %s", workspace)
             workspace.teardown()
 
 

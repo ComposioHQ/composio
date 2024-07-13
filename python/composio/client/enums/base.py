@@ -13,6 +13,7 @@ from composio.storage.base import LocalStorage
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}
+_runtime_actions: t.Dict[str, "ActionData"] = {}
 
 EntityType = t.TypeVar("EntityType", bound=LocalStorage)
 ClassType = t.TypeVar("ClassType", bound=t.Type["_AnnotatedEnum"])
@@ -65,6 +66,9 @@ class ActionData(LocalStorage):
     is_local: bool = False
     "If set `True` the `app` is a local app."
 
+    is_runtime: bool = False
+    "Set `True` for actions registered at runtime."
+
     shell: bool = False
     "If set `True` the action will be executed using a shell."
 
@@ -104,7 +108,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             value = value._slug
 
         value = t.cast(str, value).upper()
-        if value not in self.__annotations__:
+        if value not in self.__annotations__ and value not in _runtime_actions:
             raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
         self._slug = value
 
@@ -119,6 +123,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             raise ValueError(
                 "Cannot load `AppData` object without initializing object."
             )
+        if self._slug in _runtime_actions:
+            return _runtime_actions[self._slug]  # type: ignore
         if not (self._path / self._slug).exists():
             raise MetadataFileNotFound(
                 f"Metadata file for `{self._slug}` not found, "
@@ -155,3 +161,13 @@ def enum(cls: ClassType) -> ClassType:
     for attr in cls.__annotations__:
         setattr(cls, attr, cls(attr))
     return cls
+
+
+def add_runtime_action(name: str, data: ActionData) -> None:
+    """Add action at runtime."""
+    _runtime_actions[name] = data
+
+
+def get_runtime_actions() -> t.List:
+    """Add action at runtime."""
+    return list(_runtime_actions)

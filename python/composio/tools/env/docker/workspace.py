@@ -18,6 +18,7 @@ from composio.tools.env.constants import (
     ENV_COMPOSIO_DEV_MODE,
     ENV_COMPOSIO_SWE_AGENT,
     EXIT_CODE,
+    STDERR,
     STDOUT,
 )
 from composio.tools.env.docker.shell import Container as DockerContainer
@@ -25,9 +26,28 @@ from composio.tools.env.docker.shell import DockerShell
 from composio.tools.local.handler import LocalClient
 
 
-script_path = os.path.dirname(os.path.realpath(__file__))
-composio_core_path = Path(script_path).parent.parent.parent.parent.absolute()
-composio_local_store_path = Path.home() / ".composio"
+COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.resolve()
+COMPOSIO_CACHE = Path.home() / ".composio"
+CONTAINER_BASE_KWARGS = {
+    "command": "/bin/bash -l -m",
+    "tty": True,
+    "detach": True,
+    "stdin_open": True,
+    "auto_remove": False,
+}
+CONTAINER_DEVELOPMENT_MODE_KWARGS = {
+    "environment": {ENV_COMPOSIO_DEV_MODE: 1},
+    "volumes": {
+        COMPOSIO_PATH: {
+            "bind": "/opt/composio-core",
+            "mode": "rw",
+        },
+        COMPOSIO_CACHE: {
+            "bind": "/root/.composio",
+            "mode": "rw",
+        },
+    },
+}
 
 
 class DockerWorkspace(Workspace):
@@ -36,39 +56,25 @@ class DockerWorkspace(Workspace):
     _container: DockerContainer
     _client: t.Optional[DockerClient] = None
 
-    def __init__(self, image: t.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        image: t.Optional[str] = None,
+        api_key: t.Optional[str] = None,
+        base_url: t.Optional[str] = None,
+    ) -> None:
         """Create a docker workspace."""
-        super().__init__()
+        super().__init__(api_key=api_key, base_url=base_url)
         self._image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
         self.logger.info(f"Creating docker workspace with image: {self._image}")
-        composio_swe_env = os.environ.get(ENV_COMPOSIO_DEV_MODE, 0)
-        container_args = {
-            "image": self._image,
-            "command": "/bin/bash -l -m",
-            "name": self.id,
-            "tty": True,
-            "detach": True,
-            "stdin_open": True,
-            "auto_remove": False,
-        }
         try:
-            if composio_swe_env != 0:
-                container_args.update(
-                    {
-                        "environment": {ENV_COMPOSIO_DEV_MODE: 1},
-                        "volumes": {
-                            composio_core_path: {
-                                "bind": "/opt/composio-core",
-                                "mode": "rw",
-                            },
-                            composio_local_store_path: {
-                                "bind": "/root/.composio",
-                                "mode": "rw",
-                            },
-                        },
-                    }
-                )
-            self._container = self.client.containers.run(**container_args)
+            container_kwargs = {
+                "image": self._image,
+                "name": self.id,
+                **CONTAINER_BASE_KWARGS,  # type: ignore
+            }
+            if os.environ.get(ENV_COMPOSIO_DEV_MODE, 0) != 0:
+                container_kwargs.update(CONTAINER_DEVELOPMENT_MODE_KWARGS)  # type: ignore
+            self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
         except Exception as e:
             raise Exception("exception in starting container: ", e) from e
@@ -82,10 +88,11 @@ class DockerWorkspace(Workspace):
         """Docker client object."""
         if self._client is None:
             try:
-                self._client = from_env()
+                self._client = from_env(timeout=100)
             except DockerException as e:
                 raise ComposioSDKError(
-                    message=f"Error initializing docker client: {e}"
+                    message=f"Error initializing docker client: {e}. "
+                    "Please make sure docker is running and try again."
                 ) from e
         return self._client
 
@@ -96,16 +103,13 @@ class DockerWorkspace(Workspace):
         metadata: dict,
     ) -> t.Dict:
         """Execute action using shell."""
-        return (
-            LocalClient()
-            .get_action(action=action)
-            .execute_action(
-                request_data=request_data,
-                metadata={
-                    **metadata,
-                    "workspace": self,
-                },
-            )
+        return LocalClient().execute_action(
+            action=action,
+            request_data=request_data,
+            metadata={
+                **metadata,
+                "workspace": self,
+            },
         )
 
     def _execute_cli(
@@ -120,8 +124,8 @@ class DockerWorkspace(Workspace):
             f" --params '{json.dumps(request_data)}'"
             f" --metadata '{json.dumps(metadata)}'"
         )
-        if len(output[EXIT_CODE]) != 0:
-            return {"status": "failure", "message": output["stderr"]}
+        if output[EXIT_CODE] != 0:
+            return {"status": "failure", "message": output[STDERR]}
         try:
             return {"status": "success", "data": json.loads(output[STDOUT])}
         except json.JSONDecodeError:

@@ -4,12 +4,13 @@ import json
 import os
 import traceback
 from abc import ABC, abstractmethod
-from typing import Generic, List, Type, TypeVar, Union
+from typing import Generic, List, Optional, Type, TypeVar, Union
 
 import inflection
 import jsonref
 from pydantic import BaseModel
 
+from composio.client.enums import SentinalObject
 from composio.utils.logging import WithLogger
 
 
@@ -27,8 +28,8 @@ RequestType = TypeVar("RequestType", bound=BaseModel)
 ResponseType = TypeVar("ResponseType", bound=BaseModel)
 
 
-class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
-    """Action"""
+class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]):
+    """Action abstraction."""
 
     _history_maintains: bool = False
     _display_name: str = ""  # Add an internal variable to hold the display name
@@ -37,7 +38,10 @@ class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
     _tags: List[str] = []  # Placeholder for tags
     _tool_name: str = ""
 
+    # For workspace
     run_on_shell: bool = False
+    requires: Optional[List[str]] = None  # List of python dependencies
+    module: Optional[str] = None  # File where this tool is defined
 
     @property
     def tool_name(self) -> str:
@@ -146,6 +150,10 @@ class Action(ABC, WithLogger, Generic[RequestType, ResponseType]):
             modified_request_data = {}
 
             for param, value in request_data.items():  # type: ignore
+                if param not in request_schema.model_fields:
+                    raise ValueError(
+                        f"Invalid param `{param}` for action `{self.get_tool_merged_action_name().upper()}`"
+                    )
                 annotations = request_schema.model_fields[param].json_schema_extra
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False

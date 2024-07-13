@@ -12,13 +12,13 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio
 from composio.client.collections import (
     ActionModel,
     ConnectedAccountModel,
     TriggerSubscription,
 )
-from composio.client.enums import Action, ActionType, App, AppType, TagType
 from composio.client.exceptions import ComposioClientError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -30,9 +30,11 @@ from composio.constants import (
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from composio.tools.local.base import Action as LocalAction
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
+from composio.utils.url import get_api_url_base
 
 
 class ComposioToolSet(WithLogger):
@@ -58,28 +60,16 @@ class ComposioToolSet(WithLogger):
         :param base_url: Base URL for the Composio API server
         :param runtime: Name of the framework runtime, eg. openai, crewai...
         :param output_in_file: Whether to output the result to a file.
-        :param entity_id: The ID of the entity to execute the action on. Defaults to "default".
-        :param workspace_env: Environment where actions should be executed, you can choose from
-                `host`, `docker`, `flyio` and `e2b`.
+        :param entity_id: The ID of the entity to execute the action on.
+            Defaults to "default".
+        :param workspace_env: Environment where actions should be executed,
+            you can choose from `host`, `docker`, `flyio` and `e2b`.
         :param workspace_id: Workspace ID for loading an existing workspace
         """
         super().__init__()
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url
-        if workspace_id is None:
-            self.logger.debug(
-                f"Workspace ID not provided, using `{workspace_env}` "
-                "to create a new workspace"
-            )
-            self.workspace = WorkspaceFactory.new(
-                env=workspace_env,
-            )
-        else:
-            self.logger.debug(f"Loading workspace with ID: {workspace_id}")
-            self.workspace = WorkspaceFactory.get(
-                id=workspace_id,
-            )
 
         try:
             self.api_key = (
@@ -91,6 +81,22 @@ class ComposioToolSet(WithLogger):
             )
         except FileNotFoundError:
             self.logger.debug("`api_key` is not set when initializing toolset.")
+
+        if workspace_id is None:
+            self.logger.debug(
+                f"Workspace ID not provided, using `{workspace_env}` "
+                "to create a new workspace"
+            )
+            self.workspace = WorkspaceFactory.new(
+                env=workspace_env,
+                api_key=self.api_key,
+                base_url=base_url or get_api_url_base(),
+            )
+        else:
+            self.logger.debug(f"Loading workspace with ID: {workspace_id}")
+            self.workspace = WorkspaceFactory.get(
+                id=workspace_id,
+            )
 
         self._runtime = runtime
         self._local_client = LocalClient()
@@ -158,6 +164,7 @@ class ComposioToolSet(WithLogger):
         action: Action,
         params: t.Dict,
         entity_id: str = DEFAULT_ENTITY_ID,
+        connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
@@ -170,6 +177,7 @@ class ComposioToolSet(WithLogger):
             action=action,
             params=params,
             text=text,
+            connected_account_id=connected_account_id,
         )
         if self.output_in_file:
             return self._write_to_file(
@@ -209,11 +217,12 @@ class ComposioToolSet(WithLogger):
 
     def execute_action(
         self,
-        action: t.Union[Action, str],
+        action: ActionType,
         params: dict,
         metadata: t.Optional[t.Dict] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         text: t.Optional[str] = None,
+        connected_account_id: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -223,6 +232,7 @@ class ComposioToolSet(WithLogger):
         :param entity_id: The ID of the entity to execute the action on. Defaults to "default"
         :param text: Extra text to use for generating function calling metadata
         :param metadata: Metadata for executing local action
+        :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
         action = Action(action)
@@ -237,6 +247,7 @@ class ComposioToolSet(WithLogger):
             params=params,
             entity_id=entity_id,
             text=text,
+            connected_account_id=connected_account_id,
         )
 
     def get_action_schemas(
@@ -245,21 +256,36 @@ class ComposioToolSet(WithLogger):
         actions: t.Optional[t.Sequence[ActionType]] = None,
         tags: t.Optional[t.Sequence[TagType]] = None,
     ) -> t.List[ActionModel]:
-        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+        runtime_actions = t.cast(
+            t.List[t.Type[LocalAction]],
+            [action for action in actions or [] if hasattr(action, "run_on_shell")],
+        )
+        actions = t.cast(
+            t.List[Action],
+            [
+                Action(action)
+                for action in actions or []
+                if action not in runtime_actions
+            ],
+        )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
+
         local_actions = [action for action in actions if action.is_local]
-        remote_actions = [action for action in actions if not action.is_local]
         local_apps = [app for app in apps if app.is_local]
+
+        remote_actions = [action for action in actions if not action.is_local]
         remote_apps = [app for app in apps if not app.is_local]
 
         items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
-            local_items = self._local_client.get_action_schemas(
-                apps=local_apps,
-                actions=local_actions,
-                tags=tags,
-            )
-            items = items + [ActionModel(**item) for item in local_items]
+            items += [
+                ActionModel(**item)
+                for item in self._local_client.get_action_schemas(
+                    apps=local_apps,
+                    actions=local_actions,
+                    tags=tags,
+                )
+            ]
 
         if len(remote_actions) > 0 or len(remote_apps) > 0:
             remote_items = self.client.actions.get(
@@ -271,6 +297,7 @@ class ComposioToolSet(WithLogger):
 
         for item in items:
             self.check_connected_account(action=item.name)
+        items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         return items
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
@@ -327,3 +354,60 @@ class ComposioToolSet(WithLogger):
             if any(tag in action.tags for tag in tags):
                 actions.append(action)
         return actions
+
+    def get_agent_instructions(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> str:
+        """
+        Generate a formatted string with instructions for agents based on the provided apps, actions, and tags.
+
+        This function compiles a list of available tools from the specified apps, actions, and tags,
+        and formats them into a human-readable string that can be used as instructions for agents.
+
+        :param apps: Optional sequence of AppType to include in the search.
+        :param actions: Optional sequence of ActionType to include in the search.
+        :param tags: Optional sequence of TagType to filter the actions.
+        :return: A formatted string with instructions for agents.
+        """
+        # Retrieve schema information for the given apps, actions, and tags
+        schema_list = [
+            schema.model_dump()
+            for schema in (
+                self.get_action_schemas(apps=apps, tags=tags)
+                + self.get_action_schemas(actions=actions)
+            )
+        ]
+        schema_info = [
+            (schema_obj["appName"], schema_obj["name"]) for schema_obj in schema_list
+        ]
+
+        # Helper function to format a list of items into a string
+        def format_list(items):
+            if not items:
+                return ""
+            if len(items) == 1:
+                return items[0]
+            return ", ".join(items[:-2] + [" and ".join(items[-2:])])
+
+        # Organize the schema information by app name
+        action_dict: t.Dict[str, t.List] = {}
+        for appName, name in schema_info:
+            if appName not in action_dict:
+                action_dict[appName] = []
+            action_dict[appName].append(name)
+
+        # Format the schema information into a human-readable string
+        formatted_schema_info = (
+            "You have various tools, among which "
+            + ", ".join(
+                [
+                    f"for interacting with **{appName}** you might use {format_list(action_items)} tools"
+                    for appName, action_items in action_dict.items()
+                ]
+            )
+            + ". Whichever tool is useful to execute your task, use that with proper parameters."
+        )
+        return formatted_schema_info
