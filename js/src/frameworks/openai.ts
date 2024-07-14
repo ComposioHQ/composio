@@ -1,5 +1,6 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
+import { ExecEnv } from "../utils/workspaceFactory";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -17,14 +18,16 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       config: {
         apiKey?: Optional<string>,
         baseUrl?: Optional<string>,
-        entityId?: string
+        entityId?: string,
+        workspaceEnv: ExecEnv
       }
     ) {
         super(
             config.apiKey || null,
             config.baseUrl || null,
             "openai",
-            config.entityId || "default"
+            config.entityId || "default",
+            config.workspaceEnv || ExecEnv.E2B
         );
     }
 

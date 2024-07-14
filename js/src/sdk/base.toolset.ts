@@ -1,4 +1,6 @@
 import { Composio } from "../sdk";
+import { LocalActions } from "../utils/localTools";
+import { ExecEnv, WorkspaceFactory } from "../utils/workspaceFactory";
 
 class UserData {
     apiKey: string | undefined;
@@ -33,12 +35,14 @@ export class ComposioToolSet {
     apiKey: string;
     runtime: string | null;
     entityId: string;
+    workspace: WorkspaceFactory;
 
     constructor(
         apiKey: string | null,
         baseUrl: string | null = null,
         runtime: string | null = null,
-        entityId: string = "default"
+        entityId: string = "default",
+        workspaceEnv: ExecEnv = ExecEnv.E2B
     ) {  
         const clientApiKey: string | undefined = apiKey || process.env["COMPOSIO_API_KEY"] || UserData.load(getUserPath()).apiKey;
         if (!clientApiKey) {
@@ -48,6 +52,13 @@ export class ComposioToolSet {
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
         this.runtime = runtime;
         this.entityId = entityId;
+        this.workspace = new WorkspaceFactory(
+            workspaceEnv,
+            {
+                apiKey: this.apiKey,
+                baseUrl: baseUrl
+            }
+        )
     }
 
     async execute_action(
@@ -55,6 +66,10 @@ export class ComposioToolSet {
         params: Record<string, any>,
         entityId: string = "default"
     ): Promise<Record<string, any>> {
+        if(LocalActions.includes(action)) {
+            const workspace = await this.workspace.get();
+            return workspace.executeAction(action, params);
+        }
         return this.client.getEntity(entityId).execute(action, params);
     }
 }

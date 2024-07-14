@@ -1,6 +1,7 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
+import { ExecEnv } from "../utils/workspaceFactory";
 
 type Optional<T> = T | null;
 type Dict<T> = { [key: string]: T };
@@ -46,14 +47,16 @@ export class LangchainToolSet extends BaseComposioToolSet {
         config: {
             apiKey?: Optional<string>,
             baseUrl?: Optional<string>,
-            entityId?: string
+            entityId?: string,
+            workspaceEnv: ExecEnv
         }
     ) {
         super(
             config.apiKey || null,
             config.baseUrl || null,
             "langchain",
-            config.entityId || "default"
+            config.entityId || "default",
+            config.workspaceEnv || ExecEnv.E2B
         );
     }
 

@@ -826,7 +826,7 @@ class Actions(Collection[ActionModel]):
         tags: t.Optional[t.Sequence[TagType]] = None,
         limit: t.Optional[int] = None,
         use_case: t.Optional[str] = None,
-        allow_all: bool = False,
+        allow_all: bool = False
     ) -> t.List[ActionModel]:
         """
         Get a list of apps by the specified filters.

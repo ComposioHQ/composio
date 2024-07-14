@@ -5,6 +5,7 @@ import {
   // @ts-ignore
 } from "@cloudflare/workers-types";
 import { GetListActionsResponse } from "../sdk/client";
+import { ExecEnv } from "../utils/workspaceFactory";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -22,12 +23,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     apiKey?: Optional<string>;
     baseUrl?: Optional<string>;
     entityId?: string;
+    workspaceEnv: ExecEnv;
   }) {
     super(
       config.apiKey || null,
       config.baseUrl || null,
       "cloudflare",
-      config.entityId || "default"
+      config.entityId || "default",
+      config.workspaceEnv || ExecEnv.E2B
     );
   }
 

@@ -16,6 +16,7 @@
     "@types/node": "^20.14.2",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
+    "sdk": "link:@types/@e2b/sdk",
     "terser-webpack-plugin": "^5.3.10",
     "ts-loader": "^9.5.1",
     "typedoc": "^0.25.13",
@@ -26,16 +27,19 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "github:cloudflare/workers-types",
+    "@e2b/sdk": "^0.16.1",
     "@faker-js/faker": "^8.4.1",
     "@hono/node-server": "^1.12.0",
     "@langchain/core": "^0.2.6",
     "@langchain/openai": "^0.1.2",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.7.2",
     "enumify": "^2.0.0",
     "hono": "^4.4.11",
     "langchain": "^0.2.5",
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
+    "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "publishConfig": {
