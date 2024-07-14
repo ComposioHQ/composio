@@ -11,6 +11,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: github:cloudflare/workers-types
         version: https://codeload.github.com/cloudflare/workers-types/tar.gz/c8d9533caa4415c2156d2cf1daca75289d01ae70
+      '@e2b/code-interpreter':
+        specifier: ^0.0.8
+        version: 0.0.8(bufferutil@4.0.8)(utf-8-validate@6.0.4)
       '@e2b/sdk':
         specifier: ^0.16.1
         version: 0.16.1
@@ -154,6 +157,10 @@ packages:
   '@discoveryjs/json-ext@0.5.7':
     resolution: {integrity: sha512-dBVuXR082gk3jsFp7Rd/JI4kytwGHecnCoTtXFb7DB6CNHp4rg5k1bhg0nWdLGLnOV71lmDzGQaLMy8iPLY0pw==}
     engines: {node: '>=10.0.0'}
+
+  '@e2b/code-interpreter@0.0.8':
+    resolution: {integrity: sha512-cKDFY9js9l3MfL71x0IDvaz0mAhvHIurVFnimtFRXNzuV0TxhuFqsauKabet0TMOrcDF3H3trC7pct6mNgRYTA==}
+    engines: {node: '>=18'}
 
   '@e2b/sdk@0.16.1':
     resolution: {integrity: sha512-7D8NkogBlDAh/zO3LnsZR5duPToriAkfoPgu/jq2HinUF8hgzPeOyBe3OX386CyltAttEI+q12qBegv++NVPgg==}
@@ -734,6 +741,10 @@ packages:
   dotenv@16.4.5:
     resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
     engines: {node: '>=12'}
+
+  e2b@0.16.1:
+    resolution: {integrity: sha512-2L1R/REEB+EezD4Q4MmcXXNATjvCYov2lv/69+PY6V95+wl1PZblIMTYAe7USxX6P6sqANxNs+kXqZr6RvXkSw==}
+    engines: {node: '>=18'}
 
   electron-to-chromium@1.4.802:
     resolution: {integrity: sha512-TnTMUATbgNdPXVSHsxvNVSG0uEd6cSZsANjm8c9HbvflZVVn1yTRcmVXYT1Ma95/ssB/Dcd30AHweH2TE+dNpA==}
@@ -1950,6 +1961,15 @@ snapshots:
 
   '@discoveryjs/json-ext@0.5.7': {}
 
+  '@e2b/code-interpreter@0.0.8(bufferutil@4.0.8)(utf-8-validate@6.0.4)':
+    dependencies:
+      e2b: 0.16.1
+      isomorphic-ws: 5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@e2b/sdk@0.16.1':
     dependencies:
       isomorphic-ws: 5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
@@ -2511,6 +2531,18 @@ snapshots:
   destr@2.0.3: {}
 
   dotenv@16.4.5: {}
+
+  e2b@0.16.1:
+    dependencies:
+      isomorphic-ws: 5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      normalize-path: 3.0.0
+      openapi-typescript-fetch: 1.1.3
+      path-browserify: 1.0.1
+      platform: 1.3.6
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 6.0.4
 
   electron-to-chromium@1.4.802: {}
 

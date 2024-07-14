@@ -1,6 +1,7 @@
 import { Composio } from "../sdk";
 import { LocalActions } from "../utils/localTools";
 import { ExecEnv, WorkspaceFactory } from "../utils/workspaceFactory";
+import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 
 class UserData {
     apiKey: string | undefined;
@@ -39,7 +40,7 @@ export class ComposioToolSet {
 
     constructor(
         apiKey: string | null,
-        baseUrl: string | null = null,
+        baseUrl: string | null = COMPOSIO_BASE_URL,
         runtime: string | null = null,
         entityId: string = "default",
         workspaceEnv: ExecEnv = ExecEnv.E2B
@@ -56,10 +57,13 @@ export class ComposioToolSet {
             workspaceEnv,
             {
                 apiKey: this.apiKey,
-                baseUrl: baseUrl
+                baseUrl: baseUrl,
+                port: 8812
             }
         )
     }
+
+
 
     async execute_action(
         action: string,

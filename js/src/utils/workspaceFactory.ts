@@ -18,10 +18,14 @@ export enum ExecEnv {
 }
 
 export class WorkspaceFactory {
-    workspace: E2BWorkspace;
-    id: string;
+    workspace: E2BWorkspace | null = null;
+    id: string | null = null;
 
     constructor(env: ExecEnv, kwargs: any) {
+        this.new(env, kwargs);
+    }
+
+    async new(env: ExecEnv, kwargs: any) {
         console.debug(`Creating workspace with env=${env} and kwargs=${JSON.stringify(kwargs)}`);
         let workspace: E2BWorkspace;
         switch (env) {
@@ -29,6 +33,7 @@ export class WorkspaceFactory {
                 throw new Error("Not implemented");
             case ExecEnv.E2B:
                 workspace = new E2BWorkspace(kwargs);
+                await workspace.new();
                 break;
             default:
                 throw new Error(`Unknown environment: ${env}`);
@@ -39,10 +44,10 @@ export class WorkspaceFactory {
     }
 
     async get(id: string | null = null): Promise<E2BWorkspace> {
-        return this.workspace;
+        return this.workspace!;
     }
 
     async close(id: string): Promise<void> {
-        await this.workspace.teardown();
+        await this.workspace!.teardown();
     }
 }

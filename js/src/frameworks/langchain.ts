@@ -2,6 +2,9 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ExecEnv } from "../utils/workspaceFactory";
+import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
+import { LocalActions } from "../utils/localTools";
+import { ComposioServer } from "../sdk/models/composioServer";
 
 type Optional<T> = T | null;
 type Dict<T> = { [key: string]: T };
@@ -53,7 +56,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
     ) {
         super(
             config.apiKey || null,
-            config.baseUrl || null,
+            config.baseUrl || COMPOSIO_BASE_URL,
             "langchain",
             config.entityId || "default",
             config.workspaceEnv || ExecEnv.E2B
@@ -93,13 +96,24 @@ export class LangchainToolSet extends BaseComposioToolSet {
         } = {},
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
-        const actions =  (await this.client.actions.list({
+        let actions =  (await this.client.actions.list({
             actions: filters.actions?.join(","),
             showAll: true
         })).items?.filter((a) => {
             return filters.actions
         });
+
+        const localActionsArr = [];
+        for (const action of filters.actions!) {
+            if (LocalActions.includes(action.toLowerCase())) {
+                const actionData = await ComposioServer.getAction(action);
+                if(actionData) {
+                    localActionsArr.push(actionData);
+                }
+            }
+        }
          
+         actions = [...actions!, ...localActionsArr];
          return actions!.map(tool =>
             this._wrap_tool(
                 tool,

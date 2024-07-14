@@ -1,0 +1,2 @@
+Creating workspace with env=e2b and kwargs={"apiKey":"cq5ke4zt8e7a1lmen823","baseUrl":"https://backend.composio.dev/api","port":8812}
+Warning: Please set GITHUB_ACCESS_TOKEN environment variable to allow github functionality inside sandbox environment

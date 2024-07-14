@@ -6,6 +6,7 @@ import {
 } from "@cloudflare/workers-types";
 import { GetListActionsResponse } from "../sdk/client";
 import { ExecEnv } from "../utils/workspaceFactory";
+import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -27,7 +28,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   }) {
     super(
       config.apiKey || null,
-      config.baseUrl || null,
+      config.baseUrl || COMPOSIO_BASE_URL,
       "cloudflare",
       config.entityId || "default",
       config.workspaceEnv || ExecEnv.E2B

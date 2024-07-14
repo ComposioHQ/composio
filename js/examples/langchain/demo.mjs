@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 2001;
 
 app.use(express.json());
 
-app.get('/webhook', async (req, res) => {
+(async () => {
     try {
         const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
 
@@ -22,8 +22,9 @@ app.get('/webhook', async (req, res) => {
             apiKey: process.env.COMPOSIO_API_KEY,
         });
 
-        const tools = await toolset.get_actions("github_issues_create");
-
+        const tools = await toolset.get_actions({
+            actions: ["searchtool_find_file_cmd".toLowerCase()]
+        });
         const prompt = await pull(
             "hwchase17/openai-functions-agent"
         );
@@ -41,16 +42,11 @@ app.get('/webhook', async (req, res) => {
         });
 
         const result = await agentExecutor.invoke({
-            input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
+            input: "Check if README.md file exists in the current folder, " + JSON.stringify(body)
         });
 
         res.json({ output: result.output });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Internal Server Error');
     }
-});
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+})();

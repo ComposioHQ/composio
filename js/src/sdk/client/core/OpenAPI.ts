@@ -54,3 +54,5 @@ export const OpenAPI: OpenAPIConfig = {
 		response: new Interceptors(),
 	},
 };
+
+export const COMPOSIO_BASE_URL = "https://backend.composio.dev/api";
