@@ -32,7 +32,6 @@ class ReadFile(Action[ReadFileRequest, ReadFileResponse]):
     """Read file tool."""
 
     _display_name = "Read file"
-    _description = "Read file from a file."
     _request_schema: Type[ReadFileRequest] = ReadFileRequest
     _response_schema: Type[ReadFileResponse] = ReadFileResponse
     _tags = ["file", "read"]

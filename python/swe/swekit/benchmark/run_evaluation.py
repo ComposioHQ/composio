@@ -15,6 +15,7 @@ from swekit.config.store import IssueConfig
 from tqdm import tqdm
 
 from composio import Action
+from composio.tools.env.factory import WorkspaceFactory
 from composio.utils.logging import WithLogger
 
 
@@ -45,12 +46,15 @@ class EvaluationArgs(BaseModel):
     generate_report: bool = Field(
         default=True, description="generate evaluation report after running evaluation"
     )
+    test_instance_ids: t.List[str] = Field(default=[], description="test instance ids")
 
 
 class EvaluationManager(WithLogger):
     def __init__(self, eval_args: EvaluationArgs):
         super().__init__()
-        self.issues = eval_utils.get_issues_dataset(eval_args.test_range)
+        self.issues = eval_utils.get_issues_dataset(
+            eval_args.test_range, eval_args.test_instance_ids
+        )
         self.dry_run = eval_args.dry_run
         self.include_hints = eval_args.include_hints
         self.logs_dir = os.path.expanduser(eval_args.logs_dir)
@@ -171,7 +175,7 @@ class EvaluationManager(WithLogger):
                     issue["base_commit"],
                 )
                 issue_config = self.get_issue_config(issue)
-                self.logger.info(
+                self.logger.debug(
                     "found patch-id: %s and install_commit_id: %s",
                     issue["patch"],
                     issue["environment_setup_commit"],
@@ -180,6 +184,7 @@ class EvaluationManager(WithLogger):
                 agent_func(workspace_id, issue_config)
                 issue_patch = self.get_patch_for_issue(workspace_id, issue)
                 self.save_agent_run(issue_config, issue_patch)
+                WorkspaceFactory.close(id=workspace_id)
 
             except Exception as e:
                 self.logger.error(f"Error processing issue {issue['instance_id']}: {e}")
@@ -196,6 +201,7 @@ def evaluate(
     include_hints: bool = True,
     logs_dir: Path = _get_logs_dir(),
     generate_report: bool = True,
+    test_instance_ids: t.List[str] = [],
 ) -> None:
     """Evaluate a callable."""
     if not os.path.exists(logs_dir):
@@ -207,6 +213,7 @@ def evaluate(
             include_hints=include_hints,
             logs_dir=logs_dir,
             generate_report=generate_report,
+            test_instance_ids=test_instance_ids,
         )
     )
     manager.run(runnable)

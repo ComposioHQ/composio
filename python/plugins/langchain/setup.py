@@ -9,13 +9,13 @@ from setuptools import setup
 
 setup(
     name="composio_langchain",
-    version="0.3.19",
+    version="0.3.20",
     author="Karan",
     author_email="karan@composio.dev",
     description="Use Composio to get an array of tools with your LangChain agent.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    url="https://github.com/SamparkAI/composio_sdk",
+    url="https://github.com/ComposioHQ/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
@@ -27,7 +27,7 @@ setup(
         "langchain-openai>=0.0.2.post1",
         "pydantic>=2.6.4",
         "langchainhub>=0.1.15",
-        "composio_core==0.3.19",
+        "composio_core==0.3.20",
     ],
     include_package_data=True,
 )

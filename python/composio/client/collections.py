@@ -855,7 +855,11 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            local_items = self.client.local.get_action_schemas(
+            from composio.tools.local.handler import (  # pylint: disable=import-outside-toplevel
+                LocalClient,
+            )
+
+            local_items = LocalClient().get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             return [self.model(**item) for item in local_items]
@@ -1099,5 +1103,20 @@ class Integrations(Collection[IntegrationModel]):
                 url=str(self.endpoint),
                 json=request,
             )
+        )
+        return IntegrationModel(**response.json())
+
+    def get_by_id(
+        self,
+        integration_id: str,
+    ) -> IntegrationModel:
+        """
+        Get an integration by its ID.
+
+        :param integration_id: Integration ID string.
+        :return: Integration model.
+        """
+        response = self._raise_if_required(
+            self.client.http.get(url=str(self.endpoint / integration_id))
         )
         return IntegrationModel(**response.json())
