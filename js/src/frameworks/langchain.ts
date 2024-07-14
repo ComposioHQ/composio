@@ -112,9 +112,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
                 }
             }
         }
-         
-         actions = [...actions!, ...localActionsArr];
-         return actions!.map(tool =>
+        actions = [...actions!, ...localActionsArr];
+        return actions!.map(tool =>
             this._wrap_tool(
                 tool,
                 entityId || this.entityId

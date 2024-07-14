@@ -7,6 +7,8 @@ import {
 import { GetListActionsResponse } from "../sdk/client";
 import { ExecEnv } from "../utils/workspaceFactory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
+import { LocalActions } from "../utils/localTools";
+import { ComposioServer } from "../sdk/models/composioServer";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -38,12 +40,24 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   async get_actions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    return (
-      (await this.client.actions.list({})).items
-        ?.filter((a) => {
-          return filters.actions.includes(a!.name!);
-        })
-        .map((action) => {
+    let actions =  (await this.client.actions.list({
+      actions: filters.actions?.join(","),
+      showAll: true
+    })).items?.filter((a) => {
+        return filters.actions
+    });
+
+    const localActionsArr = [];
+    for (const action of filters.actions!) {
+        if (LocalActions.includes(action.toLowerCase())) {
+            const actionData = await ComposioServer.getAction(action);
+            if(actionData) {
+                localActionsArr.push(actionData);
+            }
+        }
+    }
+    actions = [...actions!, ...localActionsArr];
+    return actions.map((action) => {
           const formattedSchema: AiTextGenerationToolInput["function"] = {
             name: action.name!,
             description: action.description!,
@@ -63,8 +77,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
             function: formattedSchema,
           };
           return tool;
-        }) || []
-    );
+        }) || [];
   }
 
   async get_tools(filters: {

@@ -43,7 +43,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             return filters.actions.includes(a!.name!);
         });
         
-        
         const localActionsArr = [];
         for (const action of filters.actions!) {
             if (LocalActions.includes(action.toLowerCase())) {

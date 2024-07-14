@@ -45,7 +45,6 @@ app.use(express.json());
             input: "Check if README.md file exists in the current folder, " + JSON.stringify(body)
         });
 
-        res.json({ output: result.output });
     } catch (error) {
         console.error(error);
     }
