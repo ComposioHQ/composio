@@ -61,6 +61,19 @@ export class ComposioToolSet {
                 port: 8812
             }
         )
+
+        process.on("exit", () => {
+            this.workspace.workspace?.teardown();
+        });
+        process.on("SIGINT", () => {
+            this.workspace.workspace?.teardown();
+        });
+        process.on('SIGUSR1', () => {
+            this.workspace.workspace?.teardown();
+        });
+        process.on('SIGUSR2', () => {
+            this.workspace.workspace?.teardown();
+        });
     }
 
 
