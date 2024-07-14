@@ -58,6 +58,7 @@ export class E2BWorkspace {
 	async new() {
 		this.sandbox = await Sandbox.create({
 			template: this.options.template,
+            timeout: process.env.WORKSPACE_TIMEOUT ? parseInt(process.env.WORKSPACE_TIMEOUT) : undefined,
 			envVars: {
 				...this.options.env,
 				COMPOSIO_API_KEY: this.apiKey,
@@ -65,15 +66,6 @@ export class E2BWorkspace {
 				GITHUB_ACCESS_TOKEN: this.githubAccessToken,
 				ACCESS_TOKEN: this.accessToken,
 			},
-            onStdout: (data: any) => {
-                console.log(data);
-            },
-            onStderr: (data: any) => {
-                console.log(data);
-            },
-            onExit: (code: any, signal: any) => {
-                console.log(`Process exited with code ${code} and signal ${signal}`);
-            }
 		} as any);
 		this.id = this.sandbox.id;
 		this.url = TOOLSERVER_URL.replace("{host}", this.sandbox.getHostname(this.port));

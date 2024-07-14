@@ -13,8 +13,9 @@ const ENV_ACCESS_TOKEN = "ACCESS_TOKEN";
 const ENV_E2B_TEMPLATE = "E2B_TEMPLATE";
 
 export enum ExecEnv {
-    DOCKER = "docker",
-    E2B = "e2b"
+    HOST = "HOST",
+    DOCKER = "DOCKER",
+    E2B = "E2B"
 }
 
 export class WorkspaceFactory {
@@ -27,10 +28,14 @@ export class WorkspaceFactory {
 
     async new(env: ExecEnv, kwargs: any) {
         console.debug(`Creating workspace with env=${env} and kwargs=${JSON.stringify(kwargs)}`);
-        let workspace: E2BWorkspace;
+        let workspace: E2BWorkspace | null = null;
         switch (env) {
             case ExecEnv.DOCKER:
-                throw new Error("Not implemented");
+                console.warn("Local tools are not supported in docker environment");
+                break;
+            case ExecEnv.HOST:
+                console.warn("Local tools are not supported in host environment");
+                break;
             case ExecEnv.E2B:
                 workspace = new E2BWorkspace(kwargs);
                 await workspace.new();
@@ -39,8 +44,10 @@ export class WorkspaceFactory {
                 throw new Error(`Unknown environment: ${env}`);
         }
 
-        this.workspace = workspace;
-        this.id = workspace.id;
+        if (workspace) {
+            this.workspace = workspace;
+            this.id = workspace.id;
+        }
     }
 
     async get(id: string | null = null): Promise<E2BWorkspace> {
@@ -48,6 +55,6 @@ export class WorkspaceFactory {
     }
 
     async close(id: string): Promise<void> {
-        await this.workspace!.teardown();
+        await this.workspace?.teardown();
     }
 }

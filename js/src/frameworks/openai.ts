@@ -30,7 +30,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             config.baseUrl || COMPOSIO_BASE_URL,
             "openai",
             config.entityId || "default",
-            config.workspaceEnv || ExecEnv.E2B
+            config.workspaceEnv || ExecEnv.HOST
         );
     }
 

@@ -59,7 +59,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
             config.baseUrl || COMPOSIO_BASE_URL,
             "langchain",
             config.entityId || "default",
-            config.workspaceEnv || ExecEnv.E2B
+            config.workspaceEnv || ExecEnv.HOST
         );
     }
 

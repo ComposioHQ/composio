@@ -37,13 +37,14 @@ export class ComposioToolSet {
     runtime: string | null;
     entityId: string;
     workspace: WorkspaceFactory;
+    workspaceEnv: ExecEnv;
 
     constructor(
         apiKey: string | null,
         baseUrl: string | null = COMPOSIO_BASE_URL,
         runtime: string | null = null,
         entityId: string = "default",
-        workspaceEnv: ExecEnv = ExecEnv.E2B
+        workspaceEnv: ExecEnv = ExecEnv.HOST
     ) {  
         const clientApiKey: string | undefined = apiKey || process.env["COMPOSIO_API_KEY"] || UserData.load(getUserPath()).apiKey;
         if (!clientApiKey) {
@@ -61,6 +62,7 @@ export class ComposioToolSet {
                 port: 8812
             }
         )
+        this.workspaceEnv = workspaceEnv;
 
         process.on("exit", () => {
             this.workspace.workspace?.teardown();
@@ -84,6 +86,9 @@ export class ComposioToolSet {
         entityId: string = "default"
     ): Promise<Record<string, any>> {
         if(LocalActions.includes(action)) {
+            if (this.workspaceEnv === ExecEnv.HOST) {
+                throw new Error("Local tools are not supported in host environment");
+            }
             const workspace = await this.workspace.get();
             return workspace.executeAction(action, params);
         }

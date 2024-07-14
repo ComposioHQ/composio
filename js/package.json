@@ -16,7 +16,6 @@
     "@types/node": "^20.14.2",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
-    "sdk": "link:@types/@e2b/sdk",
     "terser-webpack-plugin": "^5.3.10",
     "ts-loader": "^9.5.1",
     "typedoc": "^0.25.13",
