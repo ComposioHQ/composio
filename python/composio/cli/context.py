@@ -3,8 +3,8 @@ CLI Context.
 """
 
 import os
-import webbrowser
 import typing as t
+import webbrowser
 from functools import update_wrapper
 from pathlib import Path
 
@@ -182,10 +182,11 @@ def ensure_login(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
 
 
 def login_flow(
-    context: Context,
+    context: t.Optional[Context],
     no_browser: bool = False,
 ):
-
+    if context is None:
+        context = Context()
     key = Composio.generate_auth_key()
     url = get_web_url(path=f"?cliKey={key}")
     context.console.print(

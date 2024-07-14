@@ -11,7 +11,7 @@ import webbrowser
 import click
 from beaupy.spinners import DOTS, Spinner
 
-from composio.cli.context import Context, pass_context, ensure_login
+from composio.cli.context import Context, ensure_login, pass_context
 from composio.cli.utils.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity

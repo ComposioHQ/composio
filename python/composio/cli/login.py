@@ -7,9 +7,9 @@ Usage:
 
 import click
 
-from composio.exceptions import ComposioSDKError
+from composio.cli.context import Context, login_flow, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.cli.context import Context, pass_context, login_flow
+from composio.exceptions import ComposioSDKError
 
 
 class Examples(HelpfulCmdBase, click.Command):
