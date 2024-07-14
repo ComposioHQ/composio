@@ -78,44 +78,49 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
 def _update(context: Context, beta: bool = False) -> None:
     """Updates local Apps database."""
     try:
-        apps = sorted(
-            context.client.apps.get(),
-            key=lambda x: x.key,
-        )
-        actions = sorted(
-            context.client.actions.get(allow_all=True),
-            key=lambda x: f"{x.appKey}_{x.name}",
-        )
-        triggers = sorted(
-            context.client.triggers.get(),
-            key=lambda x: f"{x.appKey}_{x.name}",
-        )
-        if not beta:
-
-            def filter_non_beta_items(items):
-                filtered_items = []
-                for item in items:
-                    if not item.name.lower().endswith("beta"):
-                        filtered_items.append(item)
-
-                seen = set()
-                unique_items = []
-                for item in filtered_items:
-                    if item.name not in seen:
-                        unique_items.append(item)
-                        seen.add(item.name)
-                return unique_items
-
-            apps = filter_non_beta_items(apps)
-            actions = filter_non_beta_items(actions)
-            triggers = filter_non_beta_items(triggers)
-
-        _update_apps(apps=apps)
-        _update_tags(apps=apps, actions=actions)
-        _update_actions(apps=apps, actions=actions)
-        _update_triggers(apps=apps, triggers=triggers)
+        update(context=context, beta=beta)
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
+
+
+def update(context: Context, beta: bool = False) -> None:
+    """Update apps."""
+    apps = sorted(
+        context.client.apps.get(),
+        key=lambda x: x.key,
+    )
+    actions = sorted(
+        context.client.actions.get(allow_all=True),
+        key=lambda x: f"{x.appKey}_{x.name}",
+    )
+    triggers = sorted(
+        context.client.triggers.get(),
+        key=lambda x: f"{x.appKey}_{x.name}",
+    )
+    if not beta:
+
+        def filter_non_beta_items(items):
+            filtered_items = []
+            for item in items:
+                if not item.name.lower().endswith("beta"):
+                    filtered_items.append(item)
+
+            seen = set()
+            unique_items = []
+            for item in filtered_items:
+                if item.name not in seen:
+                    unique_items.append(item)
+                    seen.add(item.name)
+            return unique_items
+
+        apps = filter_non_beta_items(apps)
+        actions = filter_non_beta_items(actions)
+        triggers = filter_non_beta_items(triggers)
+
+    _update_apps(apps=apps)
+    _update_tags(apps=apps, actions=actions)
+    _update_actions(apps=apps, actions=actions)
+    _update_triggers(apps=apps, triggers=triggers)
 
 
 def _update_apps(apps: t.List[AppModel]) -> None:

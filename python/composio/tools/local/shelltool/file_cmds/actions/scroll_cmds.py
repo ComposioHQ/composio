@@ -2,6 +2,7 @@ from typing import cast
 
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
@@ -40,4 +41,8 @@ class Scroll(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ScrollResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ScrollResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )

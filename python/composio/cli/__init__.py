@@ -14,6 +14,7 @@ from composio.cli.execute import _execute
 from composio.cli.integrations import _integrations
 from composio.cli.login import _login
 from composio.cli.logout import _logout
+from composio.cli.serve import _serve
 from composio.cli.triggers import _triggers
 from composio.cli.utils.params import EnumParam
 from composio.cli.whoami import _whoami
@@ -76,3 +77,4 @@ composio.add_command(_triggers)
 composio.add_command(_integrations)
 composio.add_command(_connections)
 composio.add_command(_execute)
+composio.add_command(_serve)

@@ -1,5 +1,6 @@
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
@@ -31,7 +32,6 @@ class EditFileResponse(ShellExecResponse):
 
 class EditFile(BaseExecCommand):
     """
-    replaces *all* of the text between the START CURSOR and the END CURSOR with the replacement_text.
     Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
 
     Python files will be checked for syntax errors after the edit.
@@ -56,4 +56,8 @@ class EditFile(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return EditFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return EditFileResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )

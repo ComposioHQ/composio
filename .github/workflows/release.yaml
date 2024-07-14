@@ -48,7 +48,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
-        package: [autogen, claude,crew_ai, griptape, julep, langchain, lyzr, openai, llamaindex]
+        package: [autogen, camel, claude, crew_ai, griptape, julep, langchain, llamaindex, lyzr, openai]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -74,3 +74,39 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
           packages-dir: python/plugins/${{ matrix.package }}/dist/
+
+  publish-swe:
+    needs: publish-core
+    name: Create SWE Toolkit Release
+    defaults:
+      run:
+        working-directory: ./python/swe
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          python -m pip install --upgrade pip
+          pip install twine build
+
+          # Build dist
+          python -m build
+      - name: Publish SWE Kit to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
+          skip-existing: true
+          packages-dir: python/swe/dist/

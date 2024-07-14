@@ -95,6 +95,16 @@ export type ListAllConnectionsData = {
     user_uuid?: string;
 
     /**
+     * Filter by using specific app names, seperated by comma
+     */
+    appNames?: string[];
+
+    /**
+     * Filter by using specific status, seperated by comma
+     */
+    status?: string;
+
+    /**
      * Page number to fetch
      */
     page?: number;

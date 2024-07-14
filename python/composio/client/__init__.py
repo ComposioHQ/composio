@@ -24,7 +24,15 @@ from composio.client.collections import (
     Triggers,
 )
 from composio.client.endpoints import v1
-from composio.client.enums import Action, App
+from composio.client.enums import (
+    Action,
+    App,
+    AppType,
+    Tag,
+    TagType,
+    Trigger,
+    TriggerType,
+)
 from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
@@ -347,3 +355,15 @@ class Entity:
             entity_id=self.id,
             redirect_url=redirect_url,
         )
+
+
+__all__ = (
+    "Action",
+    "App",
+    "Tag",
+    "AppType",
+    "TagType",
+    "Trigger",
+    "TriggerType",
+    "Composio",
+)

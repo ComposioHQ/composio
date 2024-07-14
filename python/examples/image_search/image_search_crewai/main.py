@@ -5,17 +5,17 @@ from email.mime import image  # Likely unused in this context
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from ComposioCrewAI and LangChain
-from composio_crewai import App, ComposioToolSet
+from composio_crewai import ComposioToolSet, App # type: ignore
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
 # Import embedtool from composio.tools.local
 from composio.tools.local import embedtool
+from composio.tools.local import filetool
 
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
-
 # Initialize a ChatOpenAI instance with GPT-4o model
 llm = ChatOpenAI(model="gpt-4o")
 
@@ -41,29 +41,25 @@ image_search_agent = Agent(
     allow_delegation=True  # Allow the agent to delegate tasks if necessary
 )
 
-# Define the images path, collection name, and query string
-collection_name = "animals2"#this collection is stored in the path ./animals
-collection_path = "/path/to/the/chromadb/folder/in/your/working/directory"
-images_path = "/path/to/the/images"
-prompt = "horse"
-create_task_description = (
-    "Create a vector store of the images in the "+images_path
-    "collection name:"+ collection_name
-    "folder_path:"+collection_path
-)
-query_task_description = (
-    "Query the vector store for prompt:"+prompt
-    "with store name:"+collection_name
-    "collection_path at:"+collection_path
-)
+images_path = input("Enter the path to the images folder:")
+search_prompt = input("Enter the image description for the image you want to search:")
+top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
 
+task_description = f"""
+    Check if a Vector Store exists for the image directory
+    If it doesn't create a vector store.
+    If it already exists, query the vector store
+    The images path and indexed directory is {images_path}
+    the prompt for the image to search is {search_prompt}
+    return the top {top_no_of_images} results.
 
+"""
 # Define a task for the image search agent
 image_search_task = Task(
-    description=query_task_description,
+    description=task_description,
     expected_output='A collection of retrieved images.',  # Expected result from the task
     agent=image_search_agent,  # Agent assigned to perform the task
-    human_input=True  # Indicates that human input is allowed/required
+    #human_input=True  # Indicates that human input is allowed/required
 )
 
 # Execute the task and retrieve the result

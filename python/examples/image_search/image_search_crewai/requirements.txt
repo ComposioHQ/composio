@@ -8,3 +8,4 @@ open-clip-torch
 composio-crewai
 langchain-openai
 crewai
+open-clip-torch

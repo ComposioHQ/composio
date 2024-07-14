@@ -13,6 +13,7 @@ from io import BytesIO
 from docker.models.containers import Container
 
 from composio.tools.env.base import Shell
+from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.docker.scripts import get_shell_env
 from composio.tools.env.id import generate_id
 
@@ -29,6 +30,7 @@ class DockerShell(Shell):
         super().__init__()
         self._id = generate_id()
         self._container = container
+        self._wait_for_entrypoint()
         self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["docker", "exec", "-i", str(container.name), "/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
@@ -50,8 +52,19 @@ class DockerShell(Shell):
         if len(bash_pids) == 1:
             bash_pid = bash_pids[0][0]
         self._bash_pids = set(map(str, (1, bash_pid)))
-
         self.logger.debug(f"Initial data from session: {self.id} - {self._read()}")
+
+    def _wait_for_entrypoint(self, timeout: float = 120.0) -> None:
+        """Wait for the entrypoint script to complete."""
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            exit_code, _ = self._container.exec_run("test -f /tmp/entrypoint_complete")
+            if exit_code == 0:
+                return
+            time.sleep(1)
+        raise TimeoutError(
+            "Timeout reached while waiting for the entrypoint script to complete."
+        )
 
     def _get_background_pids(self) -> t.Tuple[t.List, t.List]:
         """Gets list of processes running inside docker container"""
@@ -111,8 +124,8 @@ class DockerShell(Shell):
                 f"buffer: {buffer}\nRunning PIDs: {pids}"
             )
         return {
-            "stdout": buffer[stdout].decode(),
-            "stderr": buffer[stderr].decode(),
+            STDOUT: buffer[stdout].decode(),
+            STDERR: buffer[stderr].decode(),
         }
 
     def _copy(self, contents, destination: str) -> None:
@@ -156,19 +169,27 @@ class DockerShell(Shell):
     def _communicate_with_handling(self, cmd: str, error: str) -> str:
         """Communicate with docker process."""
         output = self.exec(cmd)
-        if len(output["stderr"]) != 0:
+        if output[EXIT_CODE] != 0:
             raise RuntimeError(f"{cmd}: {error}: {output}")
-        return output["stdout"]
+        return output[STDOUT]
+
+    def _get_exit_code(self) -> int:
+        """Get exit code of the last process."""
+        self._write(ECHO_EXIT_CODE)
+        *_, exit_code = self._read().get(STDOUT).strip().split("\n")  # type: ignore
+        if len(exit_code) == 0:
+            # `edit` command sometimes does not work as expected
+            return 0
+        return int(exit_code)
 
     def setup(self) -> None:
         """Setup shell."""
-
         env = get_shell_env()
         commands = "\n".join(env.commands_to_execute)
         output, return_code = None, 0
         try:
             response = self.exec(commands)
-            output, return_code = response["stdout"], 0
+            output, return_code = response[STDOUT], response[EXIT_CODE]
         except KeyboardInterrupt as e:
             if return_code != 0:
                 raise RuntimeError(
@@ -200,8 +221,8 @@ class DockerShell(Shell):
             else:
                 raise ValueError(f"Invalid command type: {cmd_file.cmd_type}")
 
-    def exec(self, cmd: str) -> t.Dict:
-        """Execute command on container."""
+    def _write(self, cmd: str) -> None:
+        """Write command to console."""
         try:
             stdin = t.cast(t.IO[str], self._process.stdin)
             os.write(stdin.fileno(), self.sanitize_command(cmd=cmd))
@@ -209,7 +230,14 @@ class DockerShell(Shell):
         except BrokenPipeError as e:
             # TODO: Handle this as framework error
             raise RuntimeError(str(e)) from e
-        return self._read()
+
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute command on container."""
+        self._write(cmd=cmd)
+        return {
+            **self._read(),
+            EXIT_CODE: self._get_exit_code(),
+        }
 
     def stop(self) -> None:
         """Stop and remove the running shell."""

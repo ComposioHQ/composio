@@ -1,0 +1,13 @@
+FROM sweagent/swe-agent
+RUN apt-get update && apt-get install -y python3-venv 
+RUN python3 -m venv /opt/composio-venv
+ENV PATH="/opt/composio-venv/bin:$PATH"
+
+# Copy the entrypoint script into the container
+COPY {{ install_composio_path }} /usr/local/bin/install_composio.sh
+
+# Make the script executable
+RUN chmod +x /usr/local/bin/install_composio.sh
+
+# Set the entrypoint to the script
+ENTRYPOINT ["/usr/local/bin/install_composio.sh"]

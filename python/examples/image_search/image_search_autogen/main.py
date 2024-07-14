@@ -6,7 +6,7 @@ import dotenv  # For loading environment variables from a .env file
 # Import modules from Autogen and ComposioAutogen
 from autogen import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
-
+from composio.tools.local import embedtool
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
@@ -40,16 +40,26 @@ composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 
 # Register tools with the ComposioToolSet, specifying the caller (chatbot) and executor (user_proxy)
 composio_toolset.register_tools(
-    tools=[App.SQLTOOL, App.FILETOOL, App.CODEINTERPRETER],  # Tools to be registered
+    tools=[App.EMBEDTOOL],  # Tools to be registered
     caller=chatbot,  # The chatbot that calls the tools
     executor=user_proxy,  # The user proxy that executes the tools
 )
 
-# Define the task to be executed
-task = "Create a vectorstore called animals with the images in the path ./images/ and return the image that looks like a horse."
+images_path = input("Enter the path to the images folder:")
+search_prompt = input("Enter the image description for the image you want to search:")
+top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
 
+task_description = f"""
+    Check if a Vector Store exists for the image directory
+    If it doesn't create a vector store.
+    If it already exists, query the vector store
+    The images path and indexed directory is {images_path}
+    the prompt for the image to search is {search_prompt}
+    return the top {top_no_of_images} results.
+
+"""
 # Initiate chat between the user proxy and the chatbot with the given task
-response = user_proxy.initiate_chat(chatbot, message=task)
+response = user_proxy.initiate_chat(chatbot, message=task_description)
 
 # Print the chat history
 print(response.chat_history)
