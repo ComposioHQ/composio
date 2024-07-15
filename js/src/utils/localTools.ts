@@ -58,5 +58,5 @@ export const LocalActions = [
     "ZEPTOOL_ADD_MEMORY",
     "ZEPTOOL_CREATE_SESSION",
     "ZEPTOOL_GET_MEMORY",
-    "ZEPTOOL_SEARCH_MEMORY"
+    "ZEPTOOL_SEARCH_MEMORY",
 ].map((a) => a.toLowerCase());

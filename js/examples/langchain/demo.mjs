@@ -3,7 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 
-import { LangchainToolSet } from "composio-core";
+import { LangchainToolSet, ExecEnv } from "composio-core";
 
 const app = express();
 const PORT = process.env.PORT || 2001;
@@ -20,10 +20,11 @@ app.use(express.json());
 
         const toolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY,
+            workspaceEnv: ExecEnv.E2B
         });
 
         const tools = await toolset.get_actions({
-            actions: ["searchtool_find_file_cmd".toLowerCase()]
+            actions: ["FILETOOL_READ_FILE".toLowerCase()]
         });
         const prompt = await pull(
             "hwchase17/openai-functions-agent"
@@ -42,7 +43,7 @@ app.use(express.json());
         });
 
         const result = await agentExecutor.invoke({
-            input: "Check if README.md file exists in the current folder, " + JSON.stringify(body)
+            input: "Get contents of README.md in the current folder"
         });
 
     } catch (error) {
