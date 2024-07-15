@@ -37,7 +37,7 @@ class FlyIOWorkspace(Workspace):
             env=env,
         )
         self.flyio.setup()
-        self._update_apps()
+        # self._update_apps()
 
     def _update_apps(self) -> None:
         """Update apps."""
