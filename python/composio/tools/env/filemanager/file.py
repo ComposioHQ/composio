@@ -2,15 +2,13 @@
 
 import re
 import typing as t
+from enum import Enum
 from pathlib import Path
 
 import typing_extensions as te
 
 from composio.utils.logging import WithLogger
 
-
-ScrollDirection = t.Literal["up", "down"]
-FileOperationScope = t.Literal["file", "window"]
 
 SCROLL_UP = "up"
 SCROLL_DOWN = "down"
@@ -19,11 +17,26 @@ SCOPE_FILE = "file"
 SCOPE_WINDOW = "window"
 
 
+class ScrollDirection(Enum):
+    UP = "up"
+    DOWN = "down"
+
+    def __mul__(self, lines: int) -> int:
+        """Multiply the window by scroll direction."""
+        return lines * (-1 if self.value == "up" else 1)
+
+
+class FileOperationScope(str, Enum):
+    FILE = "file"
+    WINDOW = "window"
+
+
 class Match(te.TypedDict):
     """Match object."""
 
     start: int
     end: int
+    lineno: int
     content: str
 
 
@@ -32,6 +45,7 @@ class TextReplacement(te.TypedDict):
 
     replaced_with: str
     replaced_text: str
+    error: te.NotRequired[str]
 
 
 class File(WithLogger):
@@ -40,10 +54,16 @@ class File(WithLogger):
     _start: int
     _end: int
 
-    def __init__(self, path: Path, window: t.Optional[int] = None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        workdir: Path,
+        window: t.Optional[int] = None,
+    ) -> None:
         """Initialize file object."""
         super().__init__()
         self.path = path
+        self.workdir = workdir
 
         # View window
         self._start = 0
@@ -62,12 +82,12 @@ class File(WithLogger):
         :param direction: Direction of scrolling.
         :return: None
         """
-        direction = direction or "down"
-        lines = (lines or self._window) * (1 if direction == "down" else -1)
+        direction = direction or ScrollDirection.DOWN
+        lines = direction * (lines or self._window)
         self._start += lines
         self._end += lines
 
-    def _find(self, buffer: str, pattern: str) -> t.List[Match]:
+    def _find(self, buffer: str, pattern: str, lineno: int) -> t.List[Match]:
         """Find the occurences for given pattern in the buffer."""
         matches: t.List[Match] = []
         for match in re.finditer(pattern=pattern, string=buffer):
@@ -76,25 +96,38 @@ class File(WithLogger):
             matches.append(
                 {
                     "content": match.string[start:end],
-                    "start": start,
                     "end": end,
+                    "start": start,
+                    "lineno": lineno,
                 }
             )
         return matches
 
     def _find_window(self, pattern: str) -> t.List[Match]:
         """Find in the current window."""
-        return self._find(
-            buffer=self.read(),
-            pattern=pattern,
-        )
+        offset = self._start
+        matches = []
+        for lineno, line in enumerate(self._iter_window()):
+            matches += self._find(
+                buffer=line,
+                pattern=pattern,
+                lineno=lineno + offset,
+            )
+        return matches
 
     def _find_file(
         self,
         pattern: str,
     ) -> t.List[Match]:
         """Find in the whole file."""
-        return self._find(buffer=self.path.read_text(encoding="utf-8"), pattern=pattern)
+        matches = []
+        for lineno, line in enumerate(self._iter_file()):
+            matches += self._find(
+                buffer=line,
+                pattern=pattern,
+                lineno=lineno,
+            )
+        return matches
 
     def find(
         self,
@@ -110,10 +143,37 @@ class File(WithLogger):
             the search will be performed over the current view window.
         :return: List of matches found for the given pattern
         """
-        scope = scope or "file"
+        scope = scope or FileOperationScope.FILE
         if scope == SCOPE_FILE:
             return self._find_file(pattern=pattern)
         return self._find_window(pattern=pattern)
+
+    def _iter_window(self) -> t.Iterable[str]:
+        """Iter data from the current window."""
+        cursor = 0
+        with self.path.open("r") as fp:
+            while cursor < self._start:
+                _ = fp.readline()
+                cursor += 1
+            while cursor < self._end:
+                yield fp.readline()
+                cursor += 1
+
+    def _iter_file(self) -> t.Iterable[str]:
+        """Iter data from the current file."""
+        with self.path.open(mode="r") as fp:
+            while True:
+                line = fp.readline()
+                if not line:
+                    break
+                yield line
+
+    def iter(self, scope: t.Optional[FileOperationScope] = None) -> t.Iterable[str]:
+        """Iter data from the current window."""
+        scope = scope or FileOperationScope.FILE
+        if scope == FileOperationScope.WINDOW:
+            return self._iter_window()
+        return self._iter_file()
 
     def read(self) -> str:
         """Read data from file."""
@@ -133,20 +193,26 @@ class File(WithLogger):
         text: str,
         start: int,
         end: int,
+        scope: t.Optional[FileOperationScope] = None,
     ) -> TextReplacement:
         """
         Write given content to file
 
         :param text: Content to write to file.
+        :param scope: Scope of the file operation
         :param start: Line number to start the edit at
         :param end: Line number where to end the edit
         :return: Replaced text
         """
+        scope = scope or FileOperationScope.FILE
+
         cursor = 0
         buffer = ""
         replaced = ""
-
         with self.path.open(mode="r") as fp:
+            if scope == FileOperationScope.WINDOW:
+                fp.seek(self._start)
+
             while cursor < (start - 1):
                 buffer += fp.readline()
                 cursor += 1
@@ -164,6 +230,23 @@ class File(WithLogger):
 
         self.path.write_text(data=buffer, encoding="utf-8")
         return {"replaced_text": replaced, "replaced_with": text}
+
+    def replace(self, string: str, replacement: str) -> TextReplacement:
+        """Replace given string with replacement."""
+        content = self.path.read_text(encoding="utf-8")
+        update = re.sub(
+            pattern=re.escape(string),
+            repl=replacement,
+            string=content,
+        )
+        if content == update:
+            return {
+                "replaced_text": "",
+                "replaced_with": "",
+                "error": "Error replacing given string, string not found",
+            }
+        self.path.write_text(update, encoding="utf-8")
+        return {"replaced_text": string, "replaced_with": replacement}
 
     def __str__(self) -> str:
         """String representation."""

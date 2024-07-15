@@ -85,7 +85,7 @@ class FileManager(WithLogger):
         # TODO: Fuzzy search for relevant files
         if not path.exists():
             raise FileNotFoundError(f"File {path} does not exist!")
-        file = File(path=path, window=window)
+        file = File(path=path, workdir=self.working_dir, window=window)
 
         self._files[path] = file
         self._recent = self._files[path]
@@ -101,7 +101,7 @@ class FileManager(WithLogger):
         path = self.working_dir / path
         path.touch()
 
-        file = File(path=path)
+        file = File(path=path, workdir=self.working_dir)
         self._files[path] = file
         self._recent = self._files[path]
         return self._recent
@@ -216,3 +216,7 @@ class FileManager(WithLogger):
             depth=depth or -1,
             exclude=list(map(Path, exclude or [])) + [Path(".git").resolve()],
         )
+
+    def ls(self) -> t.List[str]:
+        """List contents of the current directory."""
+        return list(map(str, self.working_dir.iterdir()))
