@@ -3,7 +3,7 @@ OpenAI demo.
 """
 
 import dotenv
-from composio_openai import Action, App, ComposioToolSet
+from composio_openai import App, Action, ComposioToolSet
 from openai import OpenAI
 
 
@@ -15,20 +15,10 @@ openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 
 # Define task.
-task = "Star a repo SamparkAI/composio_sdk on GitHub"
+task = "Send a mail to sawradip0@gmail.com, with `Test Composio Attachment` in subject, and `defghijklm` in body, and `/Users/sawradip/Desktop/practice_code/practice_composio/composio/docs/media/intro.jpg` as attachment."
 
 # Get GitHub tools that are pre-configured
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
-# Extension of system prompt(Not using at this moment)
-_ = composio_toolset.get_agent_instructions(
-    apps=[App.GMAIL],
-    actions=[
-        Action.MATHEMATICAL_CALCULATOR,
-        Action.GITHUB_ACTIONS_ADD_CUSTOM_LABELS_TO_SELF_HOSTED_RUNNER_FOR_ORG,
-        Action.ASANA_ALLOCATIONS_DELETE_ALLOCATION_BY_ID,
-    ],
-)
+tools = composio_toolset.get_actions(actions=[Action.GMAIL_SEND_EMAIL, Action.MATHEMATICAL_CALCULATOR])
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
