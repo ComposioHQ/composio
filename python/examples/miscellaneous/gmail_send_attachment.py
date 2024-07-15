@@ -18,7 +18,7 @@ composio_toolset = ComposioToolSet()
 task = "Send a mail to sawradip0@gmail.com, with `Test Composio Attachment` in subject, and `defghijklm` in body, and `/Users/sawradip/Desktop/practice_code/practice_composio/composio/docs/media/intro.jpg` as attachment."
 
 # Get GitHub tools that are pre-configured
-tools = composio_toolset.get_actions(actions=[Action.GMAIL_SEND_EMAIL])
+tools = composio_toolset.get_actions(actions=[Action.GMAIL_SEND_EMAIL, Action.MATHEMATICAL_CALCULATOR])
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(

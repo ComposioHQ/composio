@@ -14,7 +14,7 @@ from unittest import mock
 
 import pysher
 import typing_extensions as te
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
 
 from composio.client.base import BaseClient, Collection
@@ -411,8 +411,10 @@ class SuccessExecuteActionResponseModel(BaseModel):
 
 
 class FileModel(BaseModel):
-    name: str
-    content: bytes
+    name: str = Field(
+        ..., description="File name, contains extension to indetify the file type"
+    )
+    content: bytes = Field(..., description="File content in base64")
 
 
 class Connection(BaseModel):
@@ -984,12 +986,17 @@ class Actions(Collection[ActionModel]):
 
         (action_model,) = actions
         action_req_schema = action_model.parameters.properties
-        modified_params = {}
+        modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in params.items():
             file_readable = False
             if isinstance(action_req_schema[param], dict):
                 file_readable = action_req_schema[param].get("file_readable", False)
-                file_uploadable = action_req_schema[param].get("file_uploadable", False)
+                file_uploadable = (
+                    action_req_schema[param].get("allOf", [{}])[0].get("properties")
+                    or action_req_schema[param].get("properties")
+                    or {}
+                ) == FileModel.schema().get("properties")
+
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
                     file_content = file.read()
@@ -1004,7 +1011,10 @@ class Actions(Collection[ActionModel]):
                 with open(value, "rb") as file:
                     file_content = file.read()
                 encoded_data = base64.b64encode(file_content).decode("utf-8")
-                encoded_data_with_filename = f"{encoded_data}@{os.path.basename(value)}"
+                encoded_data_with_filename = {
+                    "name": os.path.basename(value),
+                    "content": encoded_data,
+                }
                 modified_params[param] = encoded_data_with_filename
             else:
                 modified_params[param] = value

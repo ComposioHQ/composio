@@ -8,8 +8,10 @@ from typing import Generic, List, Optional, Type, TypeVar, Union
 
 import inflection
 import jsonref
+import typing as t
 from pydantic import BaseModel
 
+from composio.client.collections import FileModel
 from composio.client.enums import SentinalObject
 from composio.utils.logging import WithLogger
 
@@ -147,7 +149,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
         # print(f"Executing {self.__class__.__name__} on Tool: {self.tool_name} with request data {request_data} and meta data {metadata}")
         try:
             request_schema = self.request_schema  # type: ignore
-            modified_request_data = {}
+            modified_request_data: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
 
             for param, value in request_data.items():  # type: ignore
                 if param not in request_schema.model_fields:
@@ -158,9 +160,13 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
                 )
-                file_uploadable = annotations is not None and annotations.get(  # type: ignore
-                    "file_uploadable", False
-                )
+                file_uploadable = (  # type: ignore
+                    request_schema.model_fields[param]  # type: ignore
+                    .get("allOf", [{}])[0]  # type: ignore
+                    .get("properties", {})  # type: ignore
+                    or request_schema.model_fields[param].get("properties", {})  # type: ignore
+                ) == FileModel.schema().get("properties")
+
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
                     with open(value, "rb") as file:
                         file_content = file.read()
@@ -181,10 +187,11 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                     with open(value, "rb") as file:
                         file_content = file.read()
                     encoded_data = base64.b64encode(file_content).decode("utf-8")
-                    encoded_data_with_filename = (
-                        f"{encoded_data}@{os.path.basename(value)}"
-                    )
-                    modified_request_data[param] = encoded_data_with_filename
+
+                    modified_request_data[param] = {
+                        "name": os.path.basename(value),
+                        "content": encoded_data,
+                    }
                 else:
                     modified_request_data[param] = value
 
