@@ -497,7 +497,7 @@ class TriggerSubscription(logging.WithLogger):
         callback: TriggerCallback,
         data: TriggerEventData,
         filters: _TriggerEventFilters,
-    ) -> None:
+    ) -> t.Any:
         """Handle callback."""
         for name, check in (
             ("app_name", data.appName),
@@ -515,16 +515,17 @@ class TriggerSubscription(logging.WithLogger):
                 f"Skipping `{callback.__name__}` since "
                 f"`{name}` filter does not match the event metadata",
             )
-            return
+            return None
 
         try:
-            callback(data)
+            return callback(data)
         except BaseException:
             self.logger.info(
                 f"Erorr executing `{callback.__name__}` for "
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
             )
+            return None
 
     def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
         """Parse event payload."""
