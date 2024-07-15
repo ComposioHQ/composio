@@ -2,6 +2,9 @@ import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 import { LangchainToolSet } from "composio-core";
+import dotenv from "dotenv"
+
+dotenv.config()
 
 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY});
 
@@ -16,44 +19,33 @@ async function setupUserConnectionIfNotExists(entityId) {
     return connection;
 }
 
-async function executeAgent(entityName,url) {
+async function executeGithubAgent (entityName){
     // Create entity and get tools
     const entity = await toolset.client.getEntity(entityName)
     await setupUserConnectionIfNotExists(entity.id);
-    const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
-
+    const tools = await toolset.get_actions({ actions: ["github_issues_create"] },entity.id);
+  
+    // Create an agent
     const prompt = await pull("hwchase17/openai-functions-agent");
     const llm = new ChatOpenAI({
         model: "gpt-4",
-        apiKey: process.env.OPEN_AI_API_KEY
+        apiKey: process.env.OPENAI_API_KEY
     });
-
-
-    const body = `TITLE: ${url}, DESCRIPTION: ${url} for the repo - himanshu-dixit/custom-repo-breaking`
+  
     const agent = await createOpenAIFunctionsAgent({
         llm,
         tools: tools,
         prompt,
     });
-
-    const agentExecutor = new AgentExecutor({ agent, tools, verbose: true, });
+    const agentExecutor = new AgentExecutor({agent,tools,verbose: true,});
+  
+    // Invoke the agent
+    const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - himanshu-dixit/custom-repo-breaking"
     const result = await agentExecutor.invoke({
         input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
     });
-
+  
     console.log(result.output)
-}
-
-toolset.client.triggers.subscribe(async (data) => {
-    console.log("DATA for himanshu",data)
-    // executeAgent("himanshu",data.payload.repository.html_url)
-},{
-    entityId: "himanshu"
-})
-
-toolset.client.triggers.subscribe(async (data) => {
-    console.log("DATA for default",data)
-    // executeAgent("himanshu",data.payload.repository.html_url)
-},{
-    entityId: "default"
-})
+  }
+  executeGithubAgent("himanshu")
+  

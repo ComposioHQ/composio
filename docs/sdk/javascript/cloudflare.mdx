@@ -26,7 +26,7 @@ COMPOSIO_API_KEY = "{{COMPOSIO_API_KEY}}"
 
 <Step title="Create JS file and Import Dependencies">
  <CodeGroup>
-      ```javascript Import Hono and CloudflareToolSet
+      ```typescript Import Hono and CloudflareToolSet
 import { Hono } from 'hono';
 import { CloudflareToolSet } from "composio-core"
       ```
@@ -35,8 +35,15 @@ import { CloudflareToolSet } from "composio-core"
 
 <Step title="Define method to let user connect their GitHub account">
 
- <CodeGroup>
+<CodeGroup>
       ```typescript Define method to let user connect their GitHub account
+const app = new Hono();
+
+// Configuration for the AI model
+const config = {
+        model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
+};
+
 async function setupUserConnectionIfNotExists(toolset, entityId, c) {
         const entity = await toolset.client.getEntity(entityId);
         const connection = await entity.getConnection('github');
@@ -49,8 +56,9 @@ async function setupUserConnectionIfNotExists(toolset, entityId, c) {
         }
 
         return connection;
-}```
-    </CodeGroup>
+}
+```
+</CodeGroup>
 
 Learn more about entities [here](introduction/foundations/components/entity/entity-guide)
 
@@ -60,12 +68,6 @@ Learn more about entities [here](introduction/foundations/components/entity/enti
 
 <CodeGroup>
       ```typescript Define your Agent
-const app = new Hono();
-
-const config = {
-        model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
-};
-
 app.post('/', async (c) => {
         // Initialize the CloudflareToolSet with the API key
         const toolset = new CloudflareToolSet({
@@ -98,7 +100,8 @@ app.post('/', async (c) => {
             console.log(err);
             return c.text('Something went wrong', 500);
         }
-});```
+});
+```
     </CodeGroup>
 
 </Step>
