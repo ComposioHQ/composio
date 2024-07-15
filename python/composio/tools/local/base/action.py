@@ -147,33 +147,35 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
         }
         return action_schema
 
+    def _check_file_uploadable(self, param: str) -> bool:
+        return (
+            self.request_schema.model_json_schema()
+            .get("properties", {})
+            .get(param, {})
+            .get("allOf", [{}])[0]
+            .get("properties", {})
+            or self.request_schema.model_json_schema()
+            .get("properties", {})
+            .get(param, {})
+            .get("properties", {})
+        ) == FileModel.model_json_schema().get("properties")
+
     def execute_action(
         self,
         request_data: RequestType,
         metadata: dict,
     ) -> Union[dict, ResponseType]:
-        # req = self._request_schema.model_validate_json(json_data=json.dumps(request_data))
-
-        # print(f"Executing {self.__class__.__name__} on Tool: {self.tool_name} with request data {request_data} and meta data {metadata}")
         try:
-            request_schema = self.request_schema  # type: ignore
             modified_request_data: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
-
             for param, value in request_data.items():  # type: ignore
-                if param not in request_schema.model_fields:
+                if param not in self.request_schema.model_fields:
                     raise ValueError(
                         f"Invalid param `{param}` for action `{self.get_tool_merged_action_name().upper()}`"
                     )
-                annotations = request_schema.model_fields[param].json_schema_extra
+                annotations = self.request_schema.model_fields[param].json_schema_extra
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
                 )
-                file_uploadable = (  # type: ignore
-                    request_schema.model_fields[param]  # type: ignore
-                    .get("allOf", [{}])[0]  # type: ignore
-                    .get("properties", {})  # type: ignore
-                    or request_schema.model_fields[param].get("properties", {})  # type: ignore
-                ) == FileModel.schema().get("properties")
 
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
                     with open(value, "rb") as file:
@@ -189,24 +191,29 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                                 file_content
                             ).decode("utf-8")
                 elif (
-                    file_uploadable and isinstance(value, str) and os.path.isfile(value)
+                    self._check_file_uploadable(param=param)
+                    and isinstance(value, str)
+                    and os.path.isfile(value)
                 ):
                     # For uploadable files, we also need to send the  filename
                     with open(value, "rb") as file:
                         file_content = file.read()
-                    encoded_data = base64.b64encode(file_content).decode("utf-8")
 
                     modified_request_data[param] = {
                         "name": os.path.basename(value),
-                        "content": encoded_data,
+                        "content": base64.b64encode(file_content).decode("utf-8"),
                     }
                 else:
                     modified_request_data[param] = value
 
-            req = request_schema.model_validate_json(
-                json_data=json.dumps(modified_request_data)
+            return self.execute(
+                request_data=self.request_schema.model_validate_json(
+                    json_data=json.dumps(
+                        modified_request_data,
+                    )
+                ),
+                authorisation_data=metadata,
             )
-            return self.execute(req, metadata)  # type: ignore
         except json.JSONDecodeError as e:
             # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
             return {
