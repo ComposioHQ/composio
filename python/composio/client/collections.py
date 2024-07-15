@@ -497,7 +497,7 @@ class TriggerSubscription(logging.WithLogger):
         callback: TriggerCallback,
         data: TriggerEventData,
         filters: _TriggerEventFilters,
-    ) -> None:
+    ) -> t.Any:
         """Handle callback."""
         for name, check in (
             ("app_name", data.appName),
@@ -518,7 +518,7 @@ class TriggerSubscription(logging.WithLogger):
             return
 
         try:
-            callback(data)
+            return callback(data)
         except BaseException:
             self.logger.info(
                 f"Erorr executing `{callback.__name__}` for "
