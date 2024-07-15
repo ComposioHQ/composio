@@ -77,6 +77,7 @@ setup(
         "e2b-code-interpreter",
         "fastapi",
         "gql",
+        "paramiko",
         "requests_toolbelt",
         # TODO: Fix this
         "tree_sitter_languages",
