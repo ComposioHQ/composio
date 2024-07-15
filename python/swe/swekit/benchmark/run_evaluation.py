@@ -15,7 +15,7 @@ from swekit.config.store import IssueConfig
 from tqdm import tqdm
 
 from composio import Action
-from composio.tools.env.factory import WorkspaceFactory
+from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 from composio.utils.logging import WithLogger
 
 
@@ -47,6 +47,9 @@ class EvaluationArgs(BaseModel):
         default=True, description="generate evaluation report after running evaluation"
     )
     test_instance_ids: t.List[str] = Field(default=[], description="test instance ids")
+    workspace_env: ExecEnv = Field(
+        default=ExecEnv.DOCKER, description="workspace environment"
+    )
 
 
 class EvaluationManager(WithLogger):
@@ -60,6 +63,7 @@ class EvaluationManager(WithLogger):
         self.logs_dir = os.path.expanduser(eval_args.logs_dir)
         self.repo_to_workspace_map = {}
         self.repo_to_image_id_map = {}
+        self.workspace_env = eval_args.workspace_env
         logs_dir = Path(eval_args.logs_dir)
         if not logs_dir.exists():
             logs_dir.mkdir(parents=True)
@@ -167,12 +171,13 @@ class EvaluationManager(WithLogger):
                     f"Repo: {repo}"
                     f"Issue id: {issue['instance_id']}"
                 )
-
-                workspace_id = eval_utils.setup_workspace(
+q
+                workspace_id = eval_utils.setup_qworkspace(
                     repo,
                     self.repo_to_workspace_map,
                     self.repo_to_image_id_map,
                     issue["base_commit"],
+                    self.workspace_env,
                 )
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(
@@ -197,6 +202,7 @@ class EvaluationManager(WithLogger):
 def evaluate(
     runnable: t.Callable,
     test_range: str = "20:22",
+    workspace_env: ExecEnv = ExecEnv.DOCKER,
     dry_run: bool = True,
     include_hints: bool = True,
     logs_dir: Path = _get_logs_dir(),
@@ -214,6 +220,7 @@ def evaluate(
             logs_dir=logs_dir,
             generate_report=generate_report,
             test_instance_ids=test_instance_ids,
+            workspace_env=workspace_env,
         )
     )
     manager.run(runnable)
