@@ -9,9 +9,8 @@ from typing import Generic, List, Optional, Type, TypeVar, Union
 
 import inflection
 import jsonref
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from composio.client.collections import FileModel
 from composio.client.enums import SentinalObject
 from composio.utils.logging import WithLogger
 
@@ -28,6 +27,13 @@ def generate_hashed_appId(input_string):
 
 RequestType = TypeVar("RequestType", bound=BaseModel)
 ResponseType = TypeVar("ResponseType", bound=BaseModel)
+
+
+class FileModel(BaseModel):
+    name: str = Field(
+        ..., description="File name, contains extension to indetify the file type"
+    )
+    content: bytes = Field(..., description="File content in base64")
 
 
 class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]):
@@ -142,7 +148,9 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
         return action_schema
 
     def execute_action(
-        self, request_data: RequestType, metadata: dict
+        self,
+        request_data: RequestType,
+        metadata: dict,
     ) -> Union[dict, ResponseType]:
         # req = self._request_schema.model_validate_json(json_data=json.dumps(request_data))
 
