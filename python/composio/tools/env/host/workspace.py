@@ -9,6 +9,7 @@ import paramiko
 
 from composio.client.enums import Action
 from composio.tools.env.base import Shell, Workspace
+from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.env.host.shell import HostShell, SSHShell
 from composio.tools.local.handler import LocalClient
 
@@ -34,17 +35,23 @@ class HostWorkspace(Workspace):
     """Host workspace implementation."""
 
     _ssh: t.Optional[paramiko.SSHClient] = None
+    _file_manager: t.Optional[FileManager] = None
 
     def __init__(
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
+        working_dir: t.Optional[str] = None,
         ssh_username: t.Optional[str] = None,
         ssh_password: t.Optional[str] = None,
         ssh_hostname: t.Optional[str] = None,
     ):
         """Initialize host workspace."""
-        super().__init__(api_key=api_key, base_url=base_url)
+        super().__init__(
+            api_key=api_key,
+            base_url=base_url,
+            working_dir=working_dir,
+        )
         try:
             self.logger.debug(f"Setting up SSH client for workspace {self.id}")
             self._ssh = paramiko.SSHClient()
@@ -68,6 +75,13 @@ class HostWorkspace(Workspace):
             )
             self.logger.debug("Using shell over `subprocess.Popen`")
 
+    @property
+    def file_manager(self) -> FileManager:
+        """File manager for the workspace."""
+        if self._file_manager is None:
+            self._file_manager = FileManager(working_dir=self._working_dir)
+        return self._file_manager
+
     def _create_shell(self) -> Shell:
         """Create host shell."""
         if self._ssh is not None:
@@ -84,10 +98,7 @@ class HostWorkspace(Workspace):
         return LocalClient().execute_action(
             action=action,
             request_data=request_data,
-            metadata={
-                **metadata,
-                "workspace": self,
-            },
+            metadata={**metadata, "workspace": self},
         )
 
     def teardown(self) -> None:

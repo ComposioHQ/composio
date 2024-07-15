@@ -123,7 +123,8 @@ class E2BWorkspace(Workspace):
         self.sandbox.process.start(
             cmd=(
                 f"_SSH_USERNAME={_ssh_username} _SSH_PASSWORD={_ssh_password} "
-                f"COMPOSIO_LOGGING_LEVEL=debug composio serve -h '0.0.0.0' -p {self.port}"
+                f"/home/{_ssh_username} && COMPOSIO_LOGGING_LEVEL=debug "
+                f"composio serve -h '0.0.0.0' -p {self.port}"
             ),
         )
         while self._request(endpoint="", method="get").status_code != 200:

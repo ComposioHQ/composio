@@ -37,14 +37,6 @@ class FlyIOWorkspace(Workspace):
             env=env,
         )
         self.flyio.setup()
-        # self._update_apps()
-
-    def _update_apps(self) -> None:
-        """Update apps."""
-        response = self._request(endpoint="/apps/update", method="post").json()
-        if response["error"] is not None:
-            raise RuntimeError(f"Error update apps: {response['error']}")
-        self.logger.debug(f"Updated apps for workspace {self.id}")
 
     def _request(
         self,

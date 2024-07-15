@@ -1,6 +1,7 @@
 import threading
 import typing as t
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
@@ -119,12 +120,14 @@ class Workspace(WithLogger, ABC):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
+        working_dir: t.Optional[str] = None,
     ):
         """Initialize workspace."""
         super().__init__()
         self.id = generate_id()
         self._api_key = api_key
         self._base_url = base_url
+        self._working_dir = str(working_dir or Path.cwd())
 
     def __str__(self) -> str:
         """String representation."""
