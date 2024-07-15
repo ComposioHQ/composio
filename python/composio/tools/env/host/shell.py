@@ -1,10 +1,13 @@
 """Host shell session wrapper."""
 
 import os
+import re
 import select
 import subprocess
 import time
 import typing as t
+
+import paramiko
 
 from composio.tools.env.base import Shell
 from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
@@ -14,6 +17,22 @@ from composio.tools.env.docker.scripts import (
     SHELL_STATE_CMD,
 )
 from composio.tools.env.id import generate_id
+
+
+_ANSI_ESCAPE = re.compile(
+    r"""
+    \x1B
+    (?:
+        [@-Z\\-_]
+    |
+        \[
+        [0-?]*
+        [ -/]*
+        [@-~]
+    )
+""",
+    re.VERBOSE,
+)
 
 
 # TODO: Execute in a virtual environment
@@ -131,3 +150,95 @@ class HostShell(Shell):
     def stop(self) -> None:
         """Stop and remove the running shell."""
         self._process.kill()
+
+
+class SSHShell(Shell):
+    """Interactive shell over SSH session."""
+
+    def __init__(self, client: paramiko.SSHClient) -> None:
+        """Initialize interactive shell."""
+        super().__init__()
+        self._id = generate_id()
+        self.client = client
+        self.channel = self.client.invoke_shell()
+
+    def setup(self) -> None:
+        """Invoke shell."""
+        self.logger.debug(f"Setting up shell: {self.id}")
+        self._send("export PS1=''")
+        time.sleep(0.3)
+        self._read()
+
+        # CD to user dir
+        self.exec(cmd="cd ~/")
+        time.sleep(0.5)
+
+        # Export default env vars
+        for var, val in SHELL_ENV_VARS.items():
+            self.exec(cmd=f"{var}={val}")
+            time.sleep(0.05)
+
+        # Setup shell state
+        self.exec(cmd=SHELL_STATE_CMD)
+        time.sleep(0.05)
+
+        # Source the tool files
+        for file in SHELL_SOURCE_FILES:
+            self.exec(cmd=f"source {file}")
+            time.sleep(0.05)
+
+    def _send(self, buffer: str) -> None:
+        """Send buffer to shell."""
+        self.channel.sendall(f"{buffer}\n".encode("utf-8"))
+        time.sleep(0.05)
+
+    def _read(self) -> str:
+        """Read buffer from shell."""
+        output = b""
+        while self.channel.recv_ready():
+            output += self.channel.recv(512)
+        while self.channel.recv_stderr_ready():
+            output += self.channel.recv_stderr(512)
+        return _ANSI_ESCAPE.sub("", output.decode(encoding="utf-8"))
+
+    def _wait(self, cmd: str) -> None:
+        """Wait for the command to execute."""
+        _cmd, *_rest = cmd.split(" ")
+        if _cmd in ("ls", "cd") or len(_rest) == 0:
+            time.sleep(0.1)
+            return
+
+        while True:
+            _, stdout, _ = self.client.exec_command(command="ps -eo command")
+            if all(
+                not line.lstrip().rstrip().endswith(cmd)
+                for line in stdout.read().decode().split("\n")
+            ):
+                return
+            time.sleep(1)
+
+    def _exit_status(self) -> int:
+        """Wait for the command to execute."""
+        self._send(buffer="echo $?")
+        try:
+            output = self._read().split("\n")
+            if len(output) == 1:
+                return int(output[0].lstrip().rstrip())
+            return int(output[1].lstrip().rstrip())
+        except ValueError:
+            return 1
+
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute a command and return output and exit code."""
+        self._send(buffer=cmd)
+        for _cmd in cmd.split(" && "):
+            self._wait(cmd=_cmd)
+        return {
+            STDOUT: self._read(),
+            STDERR: "",
+            EXIT_CODE: str(self._exit_status()),
+        }
+
+    def stop(self) -> None:
+        """Close the SSH channel."""
+        self.channel.close()
