@@ -515,7 +515,7 @@ class TriggerSubscription(logging.WithLogger):
                 f"Skipping `{callback.__name__}` since "
                 f"`{name}` filter does not match the event metadata",
             )
-            return
+            return None
 
         try:
             return callback(data)
@@ -525,6 +525,7 @@ class TriggerSubscription(logging.WithLogger):
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
             )
+            return None
 
     def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
         """Parse event payload."""
