@@ -7,6 +7,8 @@ from unittest import mock
 
 import pytest
 
+from composio.client.collections import Actions
+
 from tests.test_cli.base import BaseCliTest
 
 
@@ -50,7 +52,8 @@ class TestListActions(BaseCliTest):
 
     def test_tag_not_found(self) -> None:
         """Test list all actions."""
-        self.run("actions", "--tag", "repo")
+        with mock.patch.object(Actions, "get", return_value=[]):
+            self.run("actions", "--tag", "repo")
         self.assert_exit_code(code=1)
         self.assert_stderr("Could not find actions with following tags {'repo'}")
 

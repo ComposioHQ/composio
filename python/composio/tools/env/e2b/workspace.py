@@ -86,7 +86,7 @@ class E2BWorkspace(Workspace):
         endpoint: str,
         method: str,
         json: t.Optional[t.Dict] = None,
-        timeout: t.Optional[float] = 15.0,
+        timeout: t.Optional[float] = 300.0,
     ) -> requests.Response:
         """Make request to the tooling server."""
         return requests.request(
@@ -101,11 +101,30 @@ class E2BWorkspace(Workspace):
 
     def _start_toolserver(self) -> None:
         """Start toolserver."""
+        # Start app update in background
         process = self.sandbox.process.start(
             cmd="composio apps update",
         )
+
+        # TOFIX: Do not use random user everytime
+        # Setup SSH server
+        _ssh_username = uuid4().hex.replace("-", "")
+        _ssh_password = uuid4().hex.replace("-", "")
         self.sandbox.process.start(
-            cmd=f"composio serve --host 0.0.0.0 --port {self.port}",
+            cmd=(
+                f"sudo useradd -rm -d /home/{_ssh_username} -s "
+                f"/bin/bash -g root -G sudo {_ssh_username}"
+            ),
+        )
+        self.sandbox.process.start(
+            cmd=f"echo {_ssh_username}:{_ssh_password} | sudo chpasswd"
+        )
+        self.sandbox.process.start(cmd="sudo service ssh restart")
+        self.sandbox.process.start(
+            cmd=(
+                f"_SSH_USERNAME={_ssh_username} _SSH_PASSWORD={_ssh_password} "
+                f"COMPOSIO_LOGGING_LEVEL=debug composio serve -h '0.0.0.0' -p {self.port}"
+            ),
         )
         while self._request(endpoint="", method="get").status_code != 200:
             time.sleep(1)
