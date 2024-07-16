@@ -1,0 +1,174 @@
+---
+title: "Calendar Agent"
+sidebarTitle: "Calendar Agent"
+icon: "calendar"
+description: "This guide provides detailed steps to create a Calendar Agent using CrewAI, Composio, and Google Calendar API.
+You will build a system capable of converting roughly written todo items into Google Calendar events, ensuring your tasks are scheduled efficiently."
+---
+This project is an example which uses Composio to seamlessly convert your to-do lists into Google Calendar events. It automatically schedules tasks with specified labels and times, ensuring your calendar is always up-to-date and organized.
+
+<Steps>
+    <Step title="Run the `setup.sh` file">
+    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
+
+    `cd cookbook/examples/python/calendar_agent`
+
+
+    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
+    <CodeGroup>
+        ```bash Run Command
+       chmod +x setup.sh
+
+       # run the setup.sh file
+       ./setup.sh
+        ```
+        Fill in the .env file after running the script.
+    </CodeGroup>
+    </Step>
+
+    <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```python Import statements
+        import os
+        from datetime import datetime
+
+        from composio_crewai import App, ComposioToolSet
+        from crewai import Agent, Task
+        from dotenv import load_dotenv
+        from langchain_openai import ChatOpenAI        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialise Language Model and Define tools">
+    We'll initialize our language model and set up the necessary tools for our agents.
+    <CodeGroup>
+        ```python Models and Tools
+        load_dotenv()
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        model = os.getenv("MODEL")
+
+        # Initialize the language model
+        llm = ChatOpenAI(model=model, api_key=openai_api_key)
+
+        # Define tools for the agents
+        # We are using Google calendar tool from composio to connect to our calendar account.
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
+
+        # Retreive the current date and time
+        date = datetime.today().strftime("%Y-%m-%d")
+        timezone = datetime.now().astimezone().tzinfo        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Setup Todo">
+    Define the todo list that we want to convert into calendar events.
+    <CodeGroup>
+        ```python Web Server in flask
+        # Setup Todo
+        todo = """
+            1PM - 3PM -> Code,
+            5PM - 7PM -> Meeting,
+            9AM - 12AM -> Learn something,
+            8PM - 10PM -> Game
+        """        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Create and Execute Agent">
+    Finally, we'll define and execute the agent responsible for creating Google Calendar events based on the todo list.
+    <CodeGroup>
+        ```python Run agent
+        # Create and Execute Agent.
+        def run_crew():
+        calendar_agent = Agent(
+            role="Google Calendar Agent",
+            goal="""You take action on Google Calendar using Google Calendar APIs""",
+            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
+            You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.""",
+            verbose=True,
+            tools=tools,
+            llm=llm,
+        )
+        task = Task(
+            description=f"Book slots according to {todo}. Label them with the work provided to be done in that time period. Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
+            agent=calendar_agent,
+            expected_output="if free slot is found",
+        )
+        task.execute()
+        return "Crew run initiated", 200
+
+        run_crew()        
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+
+## Putting it All Together
+
+<CodeGroup>
+    ```python Final Code
+    # Import base packages
+    import os
+    from datetime import datetime
+
+    from composio_crewai import App, ComposioToolSet
+    from crewai import Agent, Task
+    from dotenv import load_dotenv
+    from langchain_openai import ChatOpenAI
+
+    # Load environment variables
+    load_dotenv()
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    model = os.getenv("MODEL")
+
+    # Initialize the language model
+    llm = ChatOpenAI(model=model, api_key=openai_api_key)
+
+    # Define tools for the agents
+    # We are using Google calendar tool from composio to connect to our calendar account.
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
+
+    # Retreive the current date and time
+    date = datetime.today().strftime("%Y-%m-%d")
+    timezone = datetime.now().astimezone().tzinfo
+
+    # Setup Todo
+    todo = """
+        1PM - 3PM -> Code,
+        5PM - 7PM -> Meeting,
+        9AM - 12AM -> Learn something,
+        8PM - 10PM -> Game
+    """
+
+    # Create and Execute Agent.
+    def run_crew():
+        calendar_agent = Agent(
+            role="Google Calendar Agent",
+            goal="""You take action on Google Calendar using Google Calendar APIs""",
+            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
+            You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.""",
+            verbose=True,
+            tools=tools,
+            llm=llm,
+        )
+        task = Task(
+            description=f"Book slots according to {todo}. Label them with the work provided to be done in that time period. Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
+            agent=calendar_agent,
+            expected_output="if free slot is found",
+        )
+        task.execute()
+        return "Crew run initiated", 200
+
+    run_crew()    
+    ```
+</CodeGroup>
+
+## Link to the Source Code 
+- [Github](https://git.new/calendar-agent)
