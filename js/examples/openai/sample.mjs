@@ -1,5 +1,8 @@
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
+import dotenv from "dotenv"
+
+dotenv.config()
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
@@ -23,7 +26,7 @@ async function executeAgent(entityName) {
     const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
     const instruction = "Make an issue with sample title in the repo - himanshu-dixit/custom-repo-breaking"
 
-    const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     const response = await client.chat.completions.create({
         model: "gpt-4-turbo",
         messages: [{

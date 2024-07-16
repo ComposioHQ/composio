@@ -9,13 +9,40 @@ importers:
   .:
     dependencies:
       composio-core:
-        specifier: ^0.1.4
-        version: 0.1.4
+        specifier: ^0.1.6-0
+        version: 0.1.6-0(bufferutil@4.0.8)(utf-8-validate@6.0.4)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
       express:
         specifier: ^4.19.2
         version: 4.19.2
+      openai:
+        specifier: ^4.52.7
+        version: 4.52.7
 
 packages:
+
+  '@cloudflare/workers-types@https://codeload.github.com/cloudflare/workers-types/tar.gz/c8d9533caa4415c2156d2cf1daca75289d01ae70':
+    resolution: {tarball: https://codeload.github.com/cloudflare/workers-types/tar.gz/c8d9533caa4415c2156d2cf1daca75289d01ae70}
+    version: 3.19.0
+
+  '@e2b/code-interpreter@0.0.8':
+    resolution: {integrity: sha512-cKDFY9js9l3MfL71x0IDvaz0mAhvHIurVFnimtFRXNzuV0TxhuFqsauKabet0TMOrcDF3H3trC7pct6mNgRYTA==}
+    engines: {node: '>=18'}
+
+  '@e2b/sdk@0.16.1':
+    resolution: {integrity: sha512-7D8NkogBlDAh/zO3LnsZR5duPToriAkfoPgu/jq2HinUF8hgzPeOyBe3OX386CyltAttEI+q12qBegv++NVPgg==}
+    engines: {node: '>=18'}
+    deprecated: 'The package @e2b/sdk has been renamed to e2b. Please uninstall the old one and install the new by running following command: npm uninstall @e2b/sdk && npm install e2b'
+
+  '@faker-js/faker@8.4.1':
+    resolution: {integrity: sha512-XQ3cU+Q8Uqmrbf2e0cIC/QN43sTBSC8KF12u29Mb47tWrt2hAgBXSgpZMj4Ao8Uk0iJcU99QsOCaIL8934obCg==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0, npm: '>=6.14.13'}
+
+  '@hono/node-server@1.12.0':
+    resolution: {integrity: sha512-e6oHjNiErRxsZRZBmc2KucuvY3btlO/XPncIpP2X75bRdTilF9GLjm3NHvKKunpJbbJJj31/FoPTksTf8djAVw==}
+    engines: {node: '>=18.14.1'}
 
   '@langchain/core@0.2.14':
     resolution: {integrity: sha512-e+dB2Sra+5sY4fPCXrZh4w1fLR68yfX2XSWS97DzHpeJRRnMGbOzjaaks6gy3wPyWhfS1WGLisJCMfCmFvH9fw==}
@@ -37,6 +64,9 @@ packages:
 
   '@types/retry@0.12.0':
     resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
+
+  '@types/uuid@10.0.0':
+    resolution: {integrity: sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ==}
 
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
@@ -83,6 +113,10 @@ packages:
     resolution: {integrity: sha512-ml9pReCu3M61kGlqoTm2umSXTlRTuGTx0bfYj+uIUKKYycG5NtSbeetV3faSU6R7ajOPw0g/J1PvK4qNy7s5bA==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
 
+  bufferutil@4.0.8:
+    resolution: {integrity: sha512-4T53u4PdgsXqKaIctwF8ifXlRTTmEPJ8iEPWFdGZvcf7sbwYo6FKFEX9eNNAnzFZ7EzJAQ3CJeOtCRA4rDp7Pw==}
+    engines: {node: '>=6.14.2'}
+
   bytes@3.1.2:
     resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==}
     engines: {node: '>= 0.8'}
@@ -103,8 +137,8 @@ packages:
     resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
     engines: {node: '>=14'}
 
-  composio-core@0.1.4:
-    resolution: {integrity: sha512-2Xjb/PmozbAq8vUS+lQUsYh4vn0hbRgFiQx+EXFkNA7CKe2gOqwga4NllBmOTym6fDqbRlO2l/cDuW3ipheUiA==}
+  composio-core@0.1.6-0:
+    resolution: {integrity: sha512-Sn2aYi61UxPNDI/IzusvCuY3+jD/abbKnX/Y851xWAywiy2mhePry4itFyThIm8cSdVUEXDKs9AQNlaWRSz5Dw==}
 
   content-disposition@0.5.4:
     resolution: {integrity: sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==}
@@ -148,6 +182,14 @@ packages:
   destroy@1.2.0:
     resolution: {integrity: sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
+
+  dotenv@16.4.5:
+    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
+    engines: {node: '>=12'}
+
+  e2b@0.16.1:
+    resolution: {integrity: sha512-2L1R/REEB+EezD4Q4MmcXXNATjvCYov2lv/69+PY6V95+wl1PZblIMTYAe7USxX6P6sqANxNs+kXqZr6RvXkSw==}
+    engines: {node: '>=18'}
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
@@ -242,6 +284,10 @@ packages:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
+  hono@4.4.13:
+    resolution: {integrity: sha512-c6qqenclmQ6wpXzqiElMa2jt423PVCmgBreDfC5s2lPPpGk7d0lOymd8QTzFZyYC5mSSs6imiTMPip+gLwuW/g==}
+    engines: {node: '>=16.0.0'}
+
   http-errors@2.0.0:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
     engines: {node: '>= 0.8'}
@@ -262,6 +308,11 @@ packages:
 
   is-any-array@2.0.1:
     resolution: {integrity: sha512-UtilS7hLRu++wb/WBAw9bNuP1Eg04Ivn1vERJck8zJthEvXCBEBpGR/33u/xLKWEQf95803oalHrVDptcAvFdQ==}
+
+  isomorphic-ws@5.0.0:
+    resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
+    peerDependencies:
+      ws: '*'
 
   js-tiktoken@1.0.12:
     resolution: {integrity: sha512-L7wURW1fH9Qaext0VzaUDpFGVQgjkdE3Dgsy9/+yXyGEpBKnylTd0mU0bfbNkKDlXRb6TEsZkwuflu1B8uQbJQ==}
@@ -513,6 +564,14 @@ packages:
       encoding:
         optional: true
 
+  node-gyp-build@4.8.1:
+    resolution: {integrity: sha512-OSs33Z9yWr148JZcbZd5WiAXhh/n9z8TxQcdMhIOlpN9AhWpLfvVFO73+m77bBABQMaY9XSvIa+qk0jlI7Gcaw==}
+    hasBin: true
+
+  normalize-path@3.0.0:
+    resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
+    engines: {node: '>=0.10.0'}
+
   num-sort@2.1.0:
     resolution: {integrity: sha512-1MQz1Ed8z2yckoBeSfkQHHO9K1yDRxxtotKSJ9yvcTUUxSvfvzEq5GwBrjjHEpMlq/k5gvXdmJ1SbYxWtpNoVg==}
     engines: {node: '>=8'}
@@ -524,12 +583,16 @@ packages:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
     engines: {node: '>= 0.8'}
 
-  openai@4.52.3:
-    resolution: {integrity: sha512-IyQLYKGYoEEkUCEm2frPzwHDJ3Ym663KtivnY6pWCzuoi6/HgSIMMxpcuTRS81GH6tiULPYGmTxIvzXdmPIWOw==}
+  openai@4.52.7:
+    resolution: {integrity: sha512-dgxA6UZHary6NXUHEDj5TWt8ogv0+ibH+b4pT5RrWMjiRZVylNwLcw/2ubDrX5n0oUmHX/ZgudMJeemxzOvz7A==}
     hasBin: true
 
   openapi-types@12.1.3:
     resolution: {integrity: sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==}
+
+  openapi-typescript-fetch@1.1.3:
+    resolution: {integrity: sha512-smLZPck4OkKMNExcw8jMgrMOGgVGx2N/s6DbKL2ftNl77g5HfoGpZGFy79RBzU/EkaO0OZpwBnslfdBfh7ZcWg==}
+    engines: {node: '>= 12.0.0', npm: '>= 7.0.0'}
 
   p-finally@1.0.0:
     resolution: {integrity: sha512-LICb2p9CB7FS+0eR1oqWnHhp0FljGLZCWBE9aix0Uye9W8LTQPwMTYVGWQWIw9RdQiDg4+epXQODwIYJtSJaow==}
@@ -551,8 +614,14 @@ packages:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
     engines: {node: '>= 0.8'}
 
+  path-browserify@1.0.1:
+    resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
+
   path-to-regexp@0.1.7:
     resolution: {integrity: sha512-5DFkuoqlv1uYQKxy8omFBeJPQcdoE07Kv2sferDCrAq1ohOU+MSDswDIbnx3YAM60qIOnYa53wBhXW0EbMonrQ==}
+
+  platform@1.3.6:
+    resolution: {integrity: sha512-fnWVljUchTro6RiCFvCXBbNhJc2NijN7oIQxbwsyL0buWJPG85v81ehlHI9fXrJsMNgTofEoWIQeClKpgxFLrg==}
 
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
@@ -630,6 +699,10 @@ packages:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
     engines: {node: '>= 0.8'}
 
+  utf-8-validate@6.0.4:
+    resolution: {integrity: sha512-xu9GQDeFp+eZ6LnCywXN/zBancWvOpUMzgjLPSjy4BRHSmTelvn2E0DG0o1sTiw5hkCKBHo8rwSKncfRfv2EEQ==}
+    engines: {node: '>=6.14.2'}
+
   utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
@@ -660,6 +733,18 @@ packages:
   whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
 
+  ws@8.18.0:
+    resolution: {integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   yaml@2.4.5:
     resolution: {integrity: sha512-aBx2bnqDzVOyNKfsysjA2ms5ZlnjSAW2eG3/L5G/CSujfjLJTJsEw1bGw8kCf04KodQWk1pxlGnZ56CRxiawmg==}
     engines: {node: '>= 14'}
@@ -675,13 +760,40 @@ packages:
 
 snapshots:
 
-  '@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)':
+  '@cloudflare/workers-types@https://codeload.github.com/cloudflare/workers-types/tar.gz/c8d9533caa4415c2156d2cf1daca75289d01ae70': {}
+
+  '@e2b/code-interpreter@0.0.8(bufferutil@4.0.8)(utf-8-validate@6.0.4)':
+    dependencies:
+      e2b: 0.16.1
+      isomorphic-ws: 5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@e2b/sdk@0.16.1':
+    dependencies:
+      isomorphic-ws: 5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      normalize-path: 3.0.0
+      openapi-typescript-fetch: 1.1.3
+      path-browserify: 1.0.1
+      platform: 1.3.6
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 6.0.4
+
+  '@faker-js/faker@8.4.1': {}
+
+  '@hono/node-server@1.12.0': {}
+
+  '@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.12
-      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3))(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
+      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7))(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
       ml-distance: 4.0.1
       mustache: 4.2.0
       p-queue: 6.6.2
@@ -693,20 +805,20 @@ snapshots:
       - langchain
       - openai
 
-  '@langchain/openai@0.1.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))':
+  '@langchain/openai@0.1.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))':
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
+      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
       js-tiktoken: 1.0.12
-      openai: 4.52.3
+      openai: 4.52.7
       zod: 3.23.8
       zod-to-json-schema: 3.23.1(zod@3.23.8)
     transitivePeerDependencies:
       - encoding
       - langchain
 
-  '@langchain/textsplitters@0.0.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)':
+  '@langchain/textsplitters@0.0.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)':
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
+      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
       js-tiktoken: 1.0.12
     transitivePeerDependencies:
       - langchain
@@ -722,6 +834,8 @@ snapshots:
       undici-types: 5.26.5
 
   '@types/retry@0.12.0': {}
+
+  '@types/uuid@10.0.0': {}
 
   '@types/uuid@9.0.8': {}
 
@@ -777,6 +891,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  bufferutil@4.0.8:
+    dependencies:
+      node-gyp-build: 4.8.1
+    optional: true
+
   bytes@3.1.2: {}
 
   call-bind@1.0.7:
@@ -795,15 +914,23 @@ snapshots:
 
   commander@10.0.1: {}
 
-  composio-core@0.1.4:
+  composio-core@0.1.6-0(bufferutil@4.0.8)(utf-8-validate@6.0.4)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
-      '@langchain/openai': 0.1.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))
+      '@cloudflare/workers-types': https://codeload.github.com/cloudflare/workers-types/tar.gz/c8d9533caa4415c2156d2cf1daca75289d01ae70
+      '@e2b/code-interpreter': 0.0.8(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+      '@e2b/sdk': 0.16.1
+      '@faker-js/faker': 8.4.1
+      '@hono/node-server': 1.12.0
+      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
+      '@langchain/openai': 0.1.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))
+      '@types/uuid': 10.0.0
       axios: 1.7.2
       enumify: 2.0.0
-      langchain: 0.2.8(axios@1.7.2)(openai@4.52.3)
-      openai: 4.52.3
+      hono: 4.4.13
+      langchain: 0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      openai: 4.52.7
       pusher-js: 8.4.0-rc2
+      uuid: 10.0.0
       zod: 3.23.8
     transitivePeerDependencies:
       - '@aws-sdk/client-s3'
@@ -823,6 +950,7 @@ snapshots:
       - '@xata.io/client'
       - apify-client
       - assemblyai
+      - bufferutil
       - cheerio
       - chromadb
       - convex
@@ -852,6 +980,7 @@ snapshots:
       - sonix-speech-recognition
       - srt-parser-2
       - typeorm
+      - utf-8-validate
       - weaviate-ts-client
       - web-auth-library
       - ws
@@ -885,6 +1014,20 @@ snapshots:
   depd@2.0.0: {}
 
   destroy@1.2.0: {}
+
+  dotenv@16.4.5: {}
+
+  e2b@0.16.1:
+    dependencies:
+      isomorphic-ws: 5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      normalize-path: 3.0.0
+      openapi-typescript-fetch: 1.1.3
+      path-browserify: 1.0.1
+      platform: 1.3.6
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 6.0.4
 
   ee-first@1.1.1: {}
 
@@ -999,6 +1142,8 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  hono@4.4.13: {}
+
   http-errors@2.0.0:
     dependencies:
       depd: 2.0.0
@@ -1021,6 +1166,10 @@ snapshots:
 
   is-any-array@2.0.1: {}
 
+  isomorphic-ws@5.0.0(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
+    dependencies:
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
+
   js-tiktoken@1.0.12:
     dependencies:
       base64-js: 1.5.1
@@ -1031,17 +1180,17 @@ snapshots:
 
   jsonpointer@5.0.1: {}
 
-  langchain@0.2.8(axios@1.7.2)(openai@4.52.3):
+  langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
     dependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
-      '@langchain/openai': 0.1.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))
-      '@langchain/textsplitters': 0.0.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
+      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
+      '@langchain/openai': 0.1.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))
+      '@langchain/textsplitters': 0.0.3(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
       binary-extensions: 2.3.0
       js-tiktoken: 1.0.12
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
       langchainhub: 0.0.11
-      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3))(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
+      langsmith: 0.1.36(@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7))(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
       ml-distance: 4.0.1
       openapi-types: 12.1.3
       p-retry: 4.6.2
@@ -1051,13 +1200,14 @@ snapshots:
       zod-to-json-schema: 3.23.1(zod@3.23.8)
     optionalDependencies:
       axios: 1.7.2
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
     transitivePeerDependencies:
       - encoding
       - openai
 
   langchainhub@0.0.11: {}
 
-  langsmith@0.1.36(@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3))(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3):
+  langsmith@0.1.36(@langchain/core@0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7))(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7):
     dependencies:
       '@types/uuid': 9.0.8
       commander: 10.0.1
@@ -1065,9 +1215,9 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.3))(openai@4.52.3)
-      langchain: 0.2.8(axios@1.7.2)(openai@4.52.3)
-      openai: 4.52.3
+      '@langchain/core': 0.2.14(langchain@0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.52.7)
+      langchain: 0.2.8(axios@1.7.2)(openai@4.52.7)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      openai: 4.52.7
 
   media-typer@0.3.0: {}
 
@@ -1118,6 +1268,11 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
+  node-gyp-build@4.8.1:
+    optional: true
+
+  normalize-path@3.0.0: {}
+
   num-sort@2.1.0: {}
 
   object-inspect@1.13.1: {}
@@ -1126,7 +1281,7 @@ snapshots:
     dependencies:
       ee-first: 1.1.1
 
-  openai@4.52.3:
+  openai@4.52.7:
     dependencies:
       '@types/node': 18.19.39
       '@types/node-fetch': 2.6.11
@@ -1140,6 +1295,8 @@ snapshots:
       - encoding
 
   openapi-types@12.1.3: {}
+
+  openapi-typescript-fetch@1.1.3: {}
 
   p-finally@1.0.0: {}
 
@@ -1159,7 +1316,11 @@ snapshots:
 
   parseurl@1.3.3: {}
 
+  path-browserify@1.0.1: {}
+
   path-to-regexp@0.1.7: {}
+
+  platform@1.3.6: {}
 
   proxy-addr@2.0.7:
     dependencies:
@@ -1253,6 +1414,11 @@ snapshots:
 
   unpipe@1.0.0: {}
 
+  utf-8-validate@6.0.4:
+    dependencies:
+      node-gyp-build: 4.8.1
+    optional: true
+
   utils-merge@1.0.1: {}
 
   uuid@10.0.0: {}
@@ -1271,6 +1437,11 @@ snapshots:
     dependencies:
       tr46: 0.0.3
       webidl-conversions: 3.0.1
+
+  ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4):
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 6.0.4
 
   yaml@2.4.5: {}
 

@@ -11,7 +11,9 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "composio-core": "^0.1.4",
-    "express": "^4.19.2"
+    "composio-core": "^0.1.6-0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "openai": "^4.52.7"
   }
 }
