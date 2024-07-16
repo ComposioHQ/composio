@@ -34,7 +34,7 @@ def scan_for_package_data(
 
 setup(
     name="composio_core",
-    version="0.3.20",
+    version="0.3.21",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
@@ -77,6 +77,7 @@ setup(
         "e2b-code-interpreter",
         "fastapi",
         "gql",
+        "paramiko",
         "requests_toolbelt",
         # TODO: Fix this
         "tree_sitter_languages",

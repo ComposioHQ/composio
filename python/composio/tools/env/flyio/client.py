@@ -18,7 +18,7 @@ FLY_API = "https://api.machines.dev"
 FLY_GRAPHQL_API = "https://api.fly.io/graphql"
 API_VERSION = "/v1"
 BASE_URL = FLY_API + API_VERSION
-TOOLSERVER_IMAGE = "angrybayblade/composio"
+TOOLSERVER_IMAGE = "angrybayblade/composio:latest"
 
 
 ALLOCATE_IP_QUERY = """mutation {

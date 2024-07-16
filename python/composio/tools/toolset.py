@@ -319,8 +319,32 @@ class ComposioToolSet(WithLogger):
 
         for item in items:
             self.check_connected_account(action=item.name)
+            item = self.action_preprocessing(item)
         items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         return items
+
+    def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
+        for param_name, param_details in action_item.parameters.properties.items():
+            if param_details.get("properties") == FileModel.schema().get("properties"):
+                action_item.parameters.properties[param_name].pop("properties")
+                action_item.parameters.properties[param_name] = {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": f"File path to {param_details.get('description', '')}",
+                }
+            elif param_details.get("allOf", [{}])[0].get(
+                "properties"
+            ) == FileModel.schema().get("properties"):
+                action_item.parameters.properties[param_name].pop("allOf")
+                action_item.parameters.properties[param_name].update(
+                    {
+                        "type": "string",
+                        "format": "file-path",
+                        "description": f"File path to {param_details.get('description', '')}",
+                    }
+                )
+
+        return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
         """Create trigger subscription."""

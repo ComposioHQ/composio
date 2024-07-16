@@ -1,0 +1,24 @@
+FROM techcomposio/swe-agent
+
+# Install dependencies
+RUN apt update \
+    && apt install sudo \
+    && apt install openssh-server sudo python3-pip uuid-runtime -y
+
+# Define entry point
+COPY entrypoint.sh /root/entrypoint.sh
+
+# Set working dir
+WORKDIR /root
+
+# Copy source
+COPY ./composio /root/composio
+
+# Install from source
+RUN /bin/python3 -m pip install /root/composio/
+
+# Remove cache
+RUN rm -rf /root/composio/
+
+# Run entrypoint.sh
+ENTRYPOINT [ "/root/entrypoint.sh" ]
