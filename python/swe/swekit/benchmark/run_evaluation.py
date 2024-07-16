@@ -171,8 +171,8 @@ class EvaluationManager(WithLogger):
                     f"Repo: {repo}"
                     f"Issue id: {issue['instance_id']}"
                 )
-q
-                workspace_id = eval_utils.setup_qworkspace(
+
+                workspace_id = eval_utils.setup_workspace(
                     repo,
                     self.repo_to_workspace_map,
                     self.repo_to_image_id_map,
