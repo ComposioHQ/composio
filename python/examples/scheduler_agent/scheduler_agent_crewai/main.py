@@ -6,7 +6,7 @@ from composio_crewai import Action, ComposioToolSet
 from crewai import Agent, Crew, Task, Process
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-4-turbo", openai_api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4-turbo", api_key=os.environ["OPENAI_API_KEY"])
 # llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
 composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
@@ -30,7 +30,7 @@ email_assistant = Agent(
     Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.""",
     verbose=True,
     llm=llm,
-    tools=schedule_tool,
+    tools=[schedule_tool],
     allow_delegation=False,
 )
 
@@ -88,7 +88,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         should describe what the meeting is about""",
         expected_output="emails was drafted",
         agent=email_assistant,
-        tools=email_tool,
+        tools=[email_tool],
         context=[analyze_email_task],
     )
 
