@@ -44,18 +44,18 @@ class WriteFile(Action[WriteFileRequest, WriteFileResponse]):
     _tags = ["file", "write"]
     _tool_name = "filetool"
 
-    def execute(self, request: WriteFileRequest, authorisation_data: dict) -> WriteFileResponse:  # type: ignore[override]
+    def execute(self, request_data: WriteFileRequest, authorisation_data: dict) -> WriteFileResponse:  # type: ignore[override]
         """
         Saves the contents to a file called `file_name` and returns the
         file name if successful.
         """
         try:
-            file = Path(request.base_dir, request.filename)
+            file = Path(request_data.base_dir, request_data.filename)
             if not file.parent.exists():
                 file.parent.mkdir(parents=True)
-            if file.exists() and not request.overwrite:
+            if file.exists() and not request_data.overwrite:
                 return WriteFileResponse(filename=f"File {file} already exists")
-            file.write_text(request.contents, encoding="utf-8")
+            file.write_text(request_data.contents, encoding="utf-8")
             return WriteFileResponse(filename=str(file))
         except Exception as e:  # pylint: disable=broad-exception-caught
             return WriteFileResponse(filename=f"Error saving to file: {e}")

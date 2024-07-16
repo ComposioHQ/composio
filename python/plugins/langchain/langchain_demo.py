@@ -1,15 +1,15 @@
 """
 Langchain demo.
 """
+# isort: skip_file
 
 import os
 
 import dotenv
 from composio_langchain import Action, ComposioToolSet
+from langchain import hub  # type: ignore
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-
-from langchain import hub  # type: ignore
 
 
 # Load environment variables from .env
