@@ -38,7 +38,7 @@ class ReadFile(Action[ReadFileRequest, ReadFileResponse]):
     _tool_name = "filetool"
 
     def execute(
-        self, request: ReadFileRequest, authorisation_data: dict
+        self, request_data: ReadFileRequest, authorisation_data: dict
     ) -> ReadFileResponse:
         """
         Reads the contents of the file `file_name` and returns the contents
@@ -46,7 +46,7 @@ class ReadFile(Action[ReadFileRequest, ReadFileResponse]):
         """
         try:
             return ReadFileResponse(
-                contents=Path(request.base_dir, request.filename).read_text(
+                contents=Path(request_data.base_dir, request_data.filename).read_text(
                     encoding="utf-8"
                 )
             )
