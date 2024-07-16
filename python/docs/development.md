@@ -25,7 +25,7 @@
 - Use a descriptive title for creating a PR
   - `fix: login cli tool` is a bad way to name a PR
   - `Fixes the user validation on the login command` is more apt way to name a PR
-- Make sure to specify the breakig changes on the PR description
+- Make sure to specify the breaking changes on the PR description
 - Add unit tests whenever possible as a proof that your code works
 - Make sure to run the code formatters and linters before pushing your code to save some time on the CI.
 

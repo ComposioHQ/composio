@@ -87,7 +87,7 @@ class ComposioToolset(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "Seperate `entity_id` can not be provided during "
+                "separate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:

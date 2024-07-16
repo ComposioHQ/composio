@@ -27,7 +27,7 @@ roles:
     tasks:
       star_github:
         description: "Star a repo ComposioHQ/composio on GitHub"
-        expected_output: "Response wheather the task was executed."
+        expected_output: "Response whether the task was executed."
 """
     + tool_section_str
 )

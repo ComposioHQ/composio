@@ -206,7 +206,7 @@ class Action(tuple, Enum):
 
 
 <Info> Make sure `_tool_name` is always the lowercase of the `<ToolName>` class we defined in the previous steps. E.g if we defined `<ToolName>` as `MyTool`, then _tool_name should be `mytool`.</Info>
-<Info> Make sure `TOOL_ENUM_NAME` and `ACTION_ENUM_NAME` is always one or more uppercase words seperated by _.</Info>
+<Info> Make sure `TOOL_ENUM_NAME` and `ACTION_ENUM_NAME` is always one or more uppercase words separated by _.</Info>
 
 
 **Examples/Sample Code:**

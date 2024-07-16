@@ -1,6 +1,6 @@
 # Slack Bot Guide
 
-This guide provides detailed steps to create a Slack Bot Agent that leverages Composio, agentic frameworks such as Langchain, LlamaIndex, CrewAI, Autogen and ChatGPT to review PRs everytime they're created. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a Slack Bot Agent that leverages Composio, agentic frameworks such as Langchain, LlamaIndex, CrewAI, Autogen and ChatGPT to review PRs every time they're created. Ensure you have Python 3.8 or higher installed.
 
 # How to use Ollama
 

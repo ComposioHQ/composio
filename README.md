@@ -72,13 +72,15 @@
 - [🚀 Getting Started with Python](#-getting-started-with-python)
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
-- [🚀 Getting Started with Javascript ](#-getting-started-with-javascript)
-  - [1. Install the Composio SDK](#1-install-the-composio-sdk)
-  - [2. Setup the OpenAI and Composio Tool Set](#2-setup-the-openai-and-composio-tool-set)
+- [🚀 Getting Started with Javascript](#-getting-started-with-javascript)
+  - [1. **Install the Composio SDK**:](#1-install-the-composio-sdk)
+  - [2. **Setup the OpenAI and Composio Tool Set**:](#2-setup-the-openai-and-composio-tool-set)
+  - [3. **Run your script**:](#3-run-your-script)
 - [💡 Examples](#-examples)
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
-  - [Github to Trello](#github-to-trello)
+  - [Github to Trellox](#github-to-trellox)
+- [Star History](#star-history)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
 - [🔗 Links](#-links)
@@ -96,7 +98,7 @@ Composio is the best toolset to integrate AI Agents to best Agentic Tools and us
 
 - **100+ Tools**: Support for a range of different categories
 
-  - **Softwares**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
+  - **Software**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
   - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
   - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
   - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
