@@ -205,7 +205,7 @@ class SSHShell(Shell):
         """Wait for the command to execute."""
         _cmd, *_rest = cmd.split(" ")
         if _cmd in ("ls", "cd") or len(_rest) == 0:
-            time.sleep(0.1)
+            time.sleep(0.3)
             return
 
         while True:

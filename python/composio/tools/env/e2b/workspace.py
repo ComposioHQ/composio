@@ -158,7 +158,7 @@ class E2BWorkspace(Workspace):
                 f"Succesfully uploaded: {action.slug}",
             )
 
-    def execute_action(  # pylint: disable=unused-argument
+    def execute_action(
         self,
         action: Action,
         request_data: dict,
@@ -173,6 +173,7 @@ class E2BWorkspace(Workspace):
             endpoint=f"/actions/execute/{action.slug}",
             json={
                 "params": request_data,
+                "metadata": metadata,
             },
         )
         response = request.json()

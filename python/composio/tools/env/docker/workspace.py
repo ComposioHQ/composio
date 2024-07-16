@@ -2,58 +2,54 @@
 Docker workspace.
 """
 
-import json
 import os
+import socket
+import time
 import typing as t
 from pathlib import Path
+from uuid import uuid4
 
+import requests
 from docker import DockerClient, from_env
 from docker.errors import DockerException
 
 from composio.client.enums import Action
+from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import Workspace
-from composio.tools.env.constants import (
-    DEFAULT_IMAGE,
-    ENV_COMPOSIO_DEV_MODE,
-    ENV_COMPOSIO_SWE_AGENT,
-    EXIT_CODE,
-    STDERR,
-    STDOUT,
-)
-from composio.tools.env.docker.shell import Container as DockerContainer
-from composio.tools.env.docker.shell import DockerShell
-from composio.tools.local.handler import LocalClient
+from composio.tools.env.base import Shell, Workspace
+from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
+from composio.tools.local.handler import get_runtime_action
 
 
 COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.resolve()
 COMPOSIO_CACHE = Path.home() / ".composio"
-CONTAINER_BASE_KWARGS = {
-    "command": "/bin/bash -l -m",
-    "tty": True,
-    "detach": True,
-    "stdin_open": True,
-    "auto_remove": False,
-}
-CONTAINER_DEVELOPMENT_MODE_KWARGS = {
-    "environment": {ENV_COMPOSIO_DEV_MODE: 1},
-    "volumes": {
-        COMPOSIO_PATH: {
-            "bind": "/opt/composio-core",
-            "mode": "rw",
-        },
-        COMPOSIO_CACHE: {
-            "bind": "/root/.composio",
-            "mode": "rw",
-        },
+CONTAINER_DEV_VOLUMES = {
+    COMPOSIO_PATH: {
+        "bind": "/opt/composio-core",
+        "mode": "rw",
+    },
+    COMPOSIO_CACHE: {
+        "bind": "/root/.composio",
+        "mode": "rw",
     },
 }
+DEV_MODE = os.environ.get(ENV_COMPOSIO_DEV_MODE, "0") == "1"
+DEFAULT_IMAGE = "angrybayblade/composio"
+DEFAULT_PORT = 54321
+
+
+def _get_free_port() -> int:
+    sock = socket.socket()
+    try:
+        sock.bind(("", 0))
+        return sock.getsockname()[1]
+    finally:
+        sock.close()
 
 
 class DockerWorkspace(Workspace):
     """Docker workspace implementation."""
 
-    _container: DockerContainer
     _client: t.Optional[DockerClient] = None
 
     def __init__(
@@ -64,24 +60,57 @@ class DockerWorkspace(Workspace):
     ) -> None:
         """Create a docker workspace."""
         super().__init__(api_key=api_key, base_url=base_url)
-        self._image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
-        self.logger.info(f"Creating docker workspace with image: {self._image}")
+        self.access_token = "".join(uuid4().hex.split("-"))
+        self.image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
+        self.port = _get_free_port()
+        self.url = f"http://localhost:{self.port}/api"
+
+        self._setup()
+        self._wait()
+
+    def _setup(self) -> None:
+        """Setup docker workspace."""
+        self.logger.info(f"Creating docker workspace with image: {self.image}")
+        container_kwargs: t.Dict[str, t.Any] = {
+            "tty": True,
+            "detach": True,
+            "stdin_open": True,
+            "auto_remove": False,
+            "image": self.image,
+            "name": self.id,
+            "environment": {
+                "ACCESS_TOKEN": self.access_token,
+                "GITHUB_ACCESS_TOKEN": os.environ.get(
+                    "GITHUB_ACCESS_TOKEN",
+                ),
+                ENV_COMPOSIO_API_KEY: self._api_key,
+                ENV_COMPOSIO_BASE_URL: self._base_url,
+            },
+            "command": "/root/entrypoint.sh",
+            "ports": {8000: self.port},
+        }
+        if DEV_MODE:
+            container_kwargs["volumes"] = CONTAINER_DEV_VOLUMES
+            container_kwargs["environment"][ENV_COMPOSIO_DEV_MODE] = "1"
+
         try:
-            container_kwargs = {
-                "image": self._image,
-                "name": self.id,
-                **CONTAINER_BASE_KWARGS,  # type: ignore
-            }
-            if os.environ.get(ENV_COMPOSIO_DEV_MODE, 0) != 0:
-                container_kwargs.update(CONTAINER_DEVELOPMENT_MODE_KWARGS)  # type: ignore
             self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
         except Exception as e:
-            raise Exception("exception in starting container: ", e) from e
+            raise Exception("Error starting workspace: ", e) from e
 
-    def _create_shell(self) -> DockerShell:
+    def _wait(self) -> None:
+        """Wait for docker workspace to get started."""
+        while True:
+            try:
+                if self._request(endpoint="", method="get").status_code == 200:
+                    return
+            except requests.ConnectionError:
+                time.sleep(1)
+
+    def _create_shell(self) -> Shell:
         """Create docker shell."""
-        return DockerShell(container=self._container)
+        raise RuntimeError("Creating shell is not allowed for docker workspaces")
 
     @property
     def client(self) -> DockerClient:
@@ -96,40 +125,46 @@ class DockerWorkspace(Workspace):
                 ) from e
         return self._client
 
-    def _execute_shell(
+    def _request(
         self,
-        action: Action,
-        request_data: dict,
-        metadata: dict,
-    ) -> t.Dict:
-        """Execute action using shell."""
-        return LocalClient().execute_action(
-            action=action,
-            request_data=request_data,
-            metadata={
-                **metadata,
-                "workspace": self,
+        endpoint: str,
+        method: str,
+        json: t.Optional[t.Dict] = None,
+        timeout: t.Optional[float] = 15.0,
+    ) -> requests.Response:
+        """Make request to the tooling server."""
+        return requests.request(
+            url=f"{self.url}{endpoint}",
+            method=method,
+            json=json,
+            headers={
+                "x-api-key": self.access_token,
             },
+            timeout=timeout,
         )
 
-    def _execute_cli(
-        self,
-        action: Action,
-        request_data: dict,
-        metadata: dict,
-    ) -> t.Dict:
-        """Execute action using CLI"""
-        output = self.shells.recent.exec(
-            f"composio execute {action.slug}"
-            f" --params '{json.dumps(request_data)}'"
-            f" --metadata '{json.dumps(metadata)}'"
+    def _upload(self, action: Action) -> None:
+        """Upload action instance to tooling server."""
+        obj = get_runtime_action(name=action.name)
+        request = self._request(
+            method="post",
+            endpoint="/tools",
+            json={
+                "content": Path(str(obj.module)).read_text(encoding="utf-8"),
+                "filename": Path(str(obj.module)).name,
+                "dependencies": obj.requires or {},
+            },
+            timeout=300.0,
         )
-        if output[EXIT_CODE] != 0:
-            return {"status": "failure", "message": output[STDERR]}
-        try:
-            return {"status": "success", "data": json.loads(output[STDOUT])}
-        except json.JSONDecodeError:
-            return {"status": "failure", "message": output[STDOUT]}
+        response = request.json()
+        if response["error"] is not None:
+            self.logger.error(
+                f"Error while uploading {action.slug}: " + response["error"]
+            )
+        else:
+            self.logger.debug(
+                f"Succesfully uploaded: {action.slug}",
+            )
 
     def execute_action(
         self,
@@ -138,17 +173,22 @@ class DockerWorkspace(Workspace):
         metadata: dict,
     ) -> t.Dict:
         """Execute action in docker workspace."""
-        if action.shell:
-            return self._execute_shell(
-                action=action,
-                request_data=request_data,
-                metadata=metadata,
-            )
-        return self._execute_cli(
-            action=action,
-            request_data=request_data,
-            metadata=metadata,
+        if action.is_runtime:
+            self._upload(action=action)
+
+        request = self._request(
+            method="post",
+            endpoint=f"/actions/execute/{action.slug}",
+            json={
+                "params": request_data,
+                "metadata": metadata,
+            },
+            timeout=300.0,
         )
+        response = request.json()
+        if response["error"] is None:
+            return response["data"]
+        raise RuntimeError(f"Error while executing {action.slug}: " + response["error"])
 
     def teardown(self) -> None:
         """Teardown docker workspace factory."""

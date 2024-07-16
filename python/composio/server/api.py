@@ -77,6 +77,10 @@ class ExecuteActionRequest(BaseModel):
         ...,
         description="Parameters for executing the request.",
     )
+    metadata: t.Dict = Field(
+        None,
+        description="Metadata for executing action.",
+    )
     entity_id: str = Field(
         None,
         description="Entity ID assosiated with the account.",
@@ -186,6 +190,7 @@ def create_app() -> FastAPI:
         return get_context().toolset.execute_action(
             action=action,
             params=request.params,
+            metadata=request.metadata,
             entity_id=request.entity_id,
             connected_account_id=request.connected_account_id,
         )
