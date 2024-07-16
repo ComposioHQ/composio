@@ -175,16 +175,19 @@ class File(WithLogger):
             return self._iter_window()
         return self._iter_file()
 
-    def read(self) -> str:
+    def read(self) -> t.Dict[int, str]:
         """Read data from file."""
         cursor = 0
-        buffer = ""
+        buffer = {}
         with self.path.open("r") as fp:
             while cursor < self._start:
                 _ = fp.readline()
                 cursor += 1
             while cursor < self._end:
-                buffer += fp.readline()
+                line = fp.readline()
+                if not line:
+                    break
+                buffer[cursor] = line
                 cursor += 1
         return buffer
 

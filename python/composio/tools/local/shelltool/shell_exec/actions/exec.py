@@ -1,6 +1,7 @@
 """Tool for executing shell commands."""
 
 import typing as t
+from composio.tools.env.base import Workspace
 
 from pydantic import BaseModel, Field
 
@@ -122,6 +123,7 @@ def exec_cmd(
 ) -> t.Dict[str, str]:
     """Execute a shell command."""
     shell_id = shell_id or ""
-    shell = authorisation_data.get("workspace").shells.get(id=shell_id if len(shell_id) > 0 else None)  # type: ignore
+    workspace = t.cast(Workspace, authorisation_data["workspace"])
+    shell = workspace.shells.get(id=shell_id if len(shell_id) > 0 else None)
     get_logger(name="exec_cmd").debug(f"Executing {cmd} @ {shell}")
     return shell.exec(cmd=cmd)
