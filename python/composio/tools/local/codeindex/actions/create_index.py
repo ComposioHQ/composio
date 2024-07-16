@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
 
-
 # Constants
 MAX_WINDOW_SIZE = 200
 IDEAL_WINDOW_SIZE = 80
@@ -24,6 +23,7 @@ SUPPORTED_FILE_EXTENSIONS = {
     ".c": "C",
     ".h": "CHEADER",
     ".md": "MD",
+    ".rst": "RST",
     ".txt": "TXT",
 }
 DEFAULT_EMBEDDING_MODEL_REMOTE = "text-embedding-3-large"
@@ -196,7 +196,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
 
                 windows = self._create_windows(content)
 
-                file_extension = os.path.splitext(file_path)[1]
+                file_extension = os.path.splitext(file_path)[1].lower()
                 file_type = SUPPORTED_FILE_EXTENSIONS.get(file_extension, "Unknown")
 
                 for start, end, window_content in windows:

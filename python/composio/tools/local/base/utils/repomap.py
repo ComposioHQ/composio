@@ -350,8 +350,8 @@ class RepoMap:
         chat_rel_fnames = set()
 
         # Improved personalization logic
-        chat_weight = 1.0
-        mentioned_weight = 20.0
+        chat_weight = 10.0
+        mentioned_weight = 5.0
         other_weight = 1.0
 
         total_weight = (
@@ -413,9 +413,7 @@ class RepoMap:
             mul = (
                 2.0
                 if ident in mentioned_idents
-                else 0.5
-                if ident.startswith("_")
-                else 1.0
+                else 0.5 if ident.startswith("_") else 1.0
             )
 
             for referencer, num_refs in Counter(references[ident]).items():
