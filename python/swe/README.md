@@ -88,6 +88,25 @@ To run the benchmark:
    - By default, `python benchmark.py` runs only 1 test instance.
    - Specify a test split ratio to run more tests, e.g., `--test-split=1:300` runs 300 tests.
 
+To run the benchmarks in `E2B` or `FlyIO` sandbox, you can set the `workspace_env` in the `evaluate` function call in `benchmark.py`
+
+
+```python
+from composio import ExecEnv
+
+(...)
+
+    evaluate(
+        bench,
+        dry_run=False,
+        test_range=test_range,
+        test_instance_ids=test_instance_ids_list,
+        workspace_env=ExecEnv.E2B
+    )
+```
+
+To use `E2B` or `FlyIO` sandboxes you'll require API key for respective platforms, to use `E2B` export your API key as `E2B_API_KEY` and to use `FlyIO` export your API token as `FLY_API_TOKEN`.
+
 **Note**: We utilize [SWE-Bench-Docker](https://github.com/aorwall/SWE-bench-docker) to ensure each test instance runs in an isolated container with its specific environment and Python version.
 
 To extend the functionality of the SWE agent by adding new tools or extending existing ones, refer to the [Development Guide](DEVELOPMENT.md).
