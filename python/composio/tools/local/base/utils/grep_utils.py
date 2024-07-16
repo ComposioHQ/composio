@@ -8,23 +8,31 @@ from composio.tools.local.base.utils.grep_ast import TreeContext
 from composio.tools.local.base.utils.parser import filename_to_lang
 
 
-def get_files_excluding_gitignore(root_path, no_gitignore=False):
+def get_files_excluding_gitignore(root_path, no_gitignore=False, file_patterns=None):
     """
-    Get all files in the given root path, excluding those specified in .gitignore.
+    Get all files matching the given patterns in the root path, excluding those specified in .gitignore.
 
     :param root_path: The root directory to start searching from.
     :param no_gitignore: If True, ignore .gitignore file.
-    :return: A list of file paths.
+    :param file_patterns: A list of file patterns to match. Defaults to ["*.py", "*.md"].
+    :return: A list of file paths matching the patterns.
     """
     root_path = Path(root_path).resolve()
     gitignore = None
 
     if not no_gitignore:
-        for parent in root_path.parents:
-            potential_gitignore = parent / ".gitignore"
-            if potential_gitignore.exists():
-                gitignore = potential_gitignore
-                break
+        # Check root_path first
+        potential_gitignore = root_path / ".gitignore"
+        if potential_gitignore.exists():
+            gitignore = potential_gitignore
+        else:
+            # Then check parent directories
+            for parent in root_path.parents:
+                potential_gitignore = parent / ".gitignore"
+                if potential_gitignore.exists():
+                    gitignore = potential_gitignore
+                    break
+
     import pathspec  # TODO: simplify import  # pylint: disable=C0415
 
     if gitignore:
@@ -33,13 +41,17 @@ def get_files_excluding_gitignore(root_path, no_gitignore=False):
     else:
         spec = pathspec.PathSpec.from_lines("gitwildmatch", [])
 
+    if file_patterns is None:
+        file_patterns = ["*.[pP][yY]", "*.[mM][dD]", "*.[rR][sS][tT]", "*.[tT][xX][tT]"]
+
     files = []
-    for path in root_path.rglob("*"):
-        # Exclude .git and other version control system folders
-        if any(part.startswith(".") and part != "." for part in path.parts):
-            continue
-        if path.is_file() and not spec.match_file(path):
-            files.append(str(path))
+    for pattern in file_patterns:
+        for path in root_path.rglob(pattern):
+            # Exclude .git and other version control system folders
+            if any(part.startswith(".") and part != "." for part in path.parts):
+                continue
+            if path.is_file() and not spec.match_file(path):
+                files.append(str(path))
 
     return files
 

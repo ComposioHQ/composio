@@ -26,6 +26,14 @@ class GetRepoMapRequest(BaseModel):
             ["main.py", "test_main.py", "README.md"],
         ],
     )
+    primary_file_paths: List[str] = Field(
+        default=[],
+        description="List of file paths (relative to repository root) that around which the repo map should be generated. Primary file won't be included in the repo map.",
+    )
+    mentioned_idents: List[str] = Field(
+        default=[],
+        description="List of identifiers (e.g. function names, class names) that the focus of the repo map should be on",
+    )
 
 
 class GetRepoMapResponse(BaseModel):
@@ -55,9 +63,9 @@ class GetRepoMap(Action[GetRepoMapRequest, GetRepoMapResponse]):
     _tool_name = "codemap"
 
     def execute(
-        self, request: GetRepoMapRequest, authorisation_data: dict = {}
+        self, request_data: GetRepoMapRequest, authorisation_data: dict = {}
     ) -> dict:
-        repo_root = Path(request.code_directory).resolve()
+        repo_root = Path(request_data.code_directory).resolve()
 
         if not repo_root.exists():
             return {
@@ -68,21 +76,27 @@ class GetRepoMap(Action[GetRepoMapRequest, GetRepoMapResponse]):
             # Retrieve all files in the repository, excluding those specified in .gitignore
             all_repository_files = get_files_excluding_gitignore(repo_root)
 
-            # Convert absolute paths to paths relative to the repository root
+            # Convert absolute paths to paths relative to the repository root, considering only .py files
             relative_file_paths = [
-                str(Path(file).relative_to(repo_root)) for file in all_repository_files
+                str(Path(file).relative_to(repo_root))
+                for file in all_repository_files
+                if file.endswith(".py")
             ]
 
             # Generate the repository map
             repo_map_generator = RepoMap(root=repo_root)
             generated_map = repo_map_generator.get_repo_map(
-                chat_files=[],  # No chat files are used in this context
+                chat_files=set(request_data.primary_file_paths),
                 other_files=relative_file_paths,
-                mentioned_fnames=set(request.files_of_interest),
-                mentioned_idents=set(),  # No specific identifiers are mentioned
+                mentioned_fnames=set(request_data.files_of_interest),
+                mentioned_idents=set(request_data.mentioned_idents),
             )
 
-            return {"repository_map": generated_map, "error_message": None}
+            return {
+                "status": "success",
+                "repository_map": generated_map,
+                "error_message": None,
+            }
 
         except Exception as e:
             return {

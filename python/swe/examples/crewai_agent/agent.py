@@ -1,5 +1,7 @@
 """CrewAI SWE Agent"""
 
+# isort: skip_file
+
 import os
 
 import dotenv
