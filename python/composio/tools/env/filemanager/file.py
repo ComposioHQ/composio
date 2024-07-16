@@ -87,6 +87,19 @@ class File(WithLogger):
         self._start += lines
         self._end += lines
 
+    def goto(
+        self,
+        line: int,
+    ) -> None:
+        """
+        Go to given line number.
+
+        :param line: Line number to go to.
+        :return: None
+        """
+        self._start = line
+        self._end = line + self._window
+
     def _find(self, buffer: str, pattern: str, lineno: int) -> t.List[Match]:
         """Find the occurences for given pattern in the buffer."""
         matches: t.List[Match] = []

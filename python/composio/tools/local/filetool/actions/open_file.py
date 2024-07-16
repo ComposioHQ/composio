@@ -45,6 +45,8 @@ class OpenFile(Action):
         workspace = t.cast(Workspace, authorisation_data["workspace"])
         try:
             file = workspace.file_manager.open(request_data.file_path)
+            if request_data.line_number > 0:
+                file.goto(request_data.line_number)
             return OpenFileResponse(lines=file.read())
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
