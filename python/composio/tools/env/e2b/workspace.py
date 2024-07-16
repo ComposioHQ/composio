@@ -122,8 +122,8 @@ class E2BWorkspace(Workspace):
         self.sandbox.process.start(cmd="sudo service ssh restart")
         self.sandbox.process.start(
             cmd=(
+                f"cd /home/{_ssh_username} && COMPOSIO_LOGGING_LEVEL=debug "
                 f"_SSH_USERNAME={_ssh_username} _SSH_PASSWORD={_ssh_password} "
-                f"/home/{_ssh_username} && COMPOSIO_LOGGING_LEVEL=debug "
                 f"composio serve -h '0.0.0.0' -p {self.port}"
             ),
         )
