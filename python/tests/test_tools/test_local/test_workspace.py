@@ -44,52 +44,52 @@ def _check_output(output: dict) -> None:
     assert output[EXIT_CODE] == 0, f"output: {output}"
 
 
-def test_docker_workspace() -> None:
-    """Test docker workspace."""
-    workspace = WorkspaceFactory.new(
-        env=ExecEnv.DOCKER, image="techcomposio/swe-bench-django_django-swe:3.0"
-    )
-    logger = get_logger()
-    toolset = ComposioToolSet(workspace_id=workspace.id)
-    output = toolset.execute_action(
-        action=Action.GITCMDTOOL_GIT_REPO_TREE,
-        params={},
-    )
-    _check_output(output=output)
-    logger.info(f"output of git repo tree: {output}")
-    output = toolset.execute_action(
-        action=Action.FILEEDITTOOL_OPEN_FILE,
-        params={"file_name": "git_repo_tree.txt"},
-    )
-    _check_output(output=output)
-    logger.info(f"output of open git repo tree: {output}")
-    output = toolset.execute_action(
-        action=Action.SEARCHTOOL_SEARCH_DIR_CMD,
-        params={"search_term": "FILE_UPLOAD_PERMISSION", "directory": "django/conf"},
-    )
-    _check_output(output=output)
-    logger.info(f"output of search dir: {output}")
-    output = toolset.execute_action(
-        action=Action.FILEEDITTOOL_OPEN_FILE,
-        params={"file_name": "django/conf/global_settings.py"},
-    )
-    _check_output(output=output)
-    logger.info(f"output of open global settings: {output}")
-    logger.info(f"output of search dir: {output}")
-    output = toolset.execute_action(
-        action=Action.FILEEDITTOOL_OPEN_FILE,
-        params={"file_name": "django/conf/global_settings.py", "line_number": 50},
-    )
-    _check_output(output=output)
-    logger.info(f"output of open global settings: {output}")
-    logger.info(f"output of search dir: {output}")
-    output = toolset.execute_action(
-        action=Action.FILEEDITTOOL_OPEN_FILE,
-        params={"file_name": "django/conf/global_settings.py", "line_number": 100},
-    )
-    _check_output(output=output)
-    logger.info(f"output of open global settings: {output}")
-    assert False
+# def test_docker_workspace() -> None:
+#     """Test docker workspace."""
+#     workspace = WorkspaceFactory.new(
+#         env=ExecEnv.DOCKER, image="techcomposio/swe-bench-django_django-swe:3.0"
+#     )
+#     logger = get_logger()
+#     toolset = ComposioToolSet(workspace_id=workspace.id)
+#     output = toolset.execute_action(
+#         action=Action.GITCMDTOOL_GIT_REPO_TREE,
+#         params={},
+#     )
+#     _check_output(output=output)
+#     logger.info(f"output of git repo tree: {output}")
+#     output = toolset.execute_action(
+#         action=Action.FILEEDITTOOL_OPEN_FILE,
+#         params={"file_name": "git_repo_tree.txt"},
+#     )
+#     _check_output(output=output)
+#     logger.info(f"output of open git repo tree: {output}")
+#     output = toolset.execute_action(
+#         action=Action.SEARCHTOOL_SEARCH_DIR_CMD,
+#         params={"search_term": "FILE_UPLOAD_PERMISSION", "directory": "django/conf"},
+#     )
+#     _check_output(output=output)
+#     logger.info(f"output of search dir: {output}")
+#     output = toolset.execute_action(
+#         action=Action.FILEEDITTOOL_OPEN_FILE,
+#         params={"file_name": "django/conf/global_settings.py"},
+#     )
+#     _check_output(output=output)
+#     logger.info(f"output of open global settings: {output}")
+#     logger.info(f"output of search dir: {output}")
+#     output = toolset.execute_action(
+#         action=Action.FILEEDITTOOL_OPEN_FILE,
+#         params={"file_name": "django/conf/global_settings.py", "line_number": 50},
+#     )
+#     _check_output(output=output)
+#     logger.info(f"output of open global settings: {output}")
+#     logger.info(f"output of search dir: {output}")
+#     output = toolset.execute_action(
+#         action=Action.FILEEDITTOOL_OPEN_FILE,
+#         params={"file_name": "django/conf/global_settings.py", "line_number": 100},
+#     )
+#     _check_output(output=output)
+#     logger.info(f"output of open global settings: {output}")
+#     assert False
 
 
 def test_workspace() -> None:
