@@ -32,6 +32,9 @@ class OpenFile(Action):
     Can result in:
     - ValueError: If file_path is not a string or if the file does not exist.
     - FileNotFoundError: If the file does not exist.
+    - IOError: If there's an issue reading the file.
+    - PermissionError: If the user doesn't have permission to read the file.
+    - IsADirectoryError: If the provided path is a directory.
     """
 
     _display_name = "Open File on workspace"
@@ -50,3 +53,9 @@ class OpenFile(Action):
             return OpenFileResponse(lines=file.read())
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
+        except IsADirectoryError as e:
+            return OpenFileResponse(error=f"Cannot open a directory: {str(e)}")
+        except PermissionError as e:
+            return OpenFileResponse(error=f"Permission denied: {str(e)}")
+        except IOError as e:
+            return OpenFileResponse(error=f"Error reading file: {str(e)}")
