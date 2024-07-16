@@ -142,13 +142,22 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     return workspace_id
 
 
-def build_image_and_container(repo, repo_to_workspace_map, base_commit):
+def build_image_and_container(
+    repo, base_commit, workspace_env: ExecEnv = ExecEnv.DOCKER
+):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
-    workspace = WorkspaceFactory.new(
-        env=ExecEnv.DOCKER,
-        image=DEFAULT_IMAGE,
-    )
+    if workspace_env == ExecEnv.DOCKER:
+        workspace = WorkspaceFactory.new(
+            env=ExecEnv.DOCKER,
+            image=DEFAULT_IMAGE,
+        )
+    elif workspace_env == ExecEnv.E2B:
+        workspace = WorkspaceFactory.new(
+            env=ExecEnv.E2B,
+        )
+    else:
+        raise ValueError(f"Unsupported workspace environment: {workspace_env}")
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
@@ -174,24 +183,34 @@ def build_image_and_container(repo, repo_to_workspace_map, base_commit):
         raise Exception(clone_resp["details"])
     git_clone_time = datetime.datetime.now() - start_time
     logger.info("git clone completed, time taken: %s", git_clone_time)
-    repo_to_workspace_map[repo] = workspace.id
     return workspace.id
 
 
-def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
+def setup_workspace(
+    repo,
+    repo_to_workspace_map,
+    repo_to_image_id_map,
+    base_commit,
+    workspace_env: ExecEnv = ExecEnv.DOCKER,
+):
     # workspace_id = get_workspace_from_repo_map(
     #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     # )
     # if workspace_id:
     #     return workspace_id
-    workspace_id = create_workspace_from_image(
-        repo=repo, repo_to_image_id_map=repo_to_image_id_map, base_commit=base_commit
+    if workspace_env == ExecEnv.DOCKER:
+        workspace_id = create_workspace_from_image(
+            repo=repo,
+            repo_to_image_id_map=repo_to_image_id_map,
+            base_commit=base_commit,
+        )
+        if workspace_id:
+            return workspace_id
+    workspace_id = build_image_and_container(
+        repo=repo, base_commit=base_commit, workspace_env=workspace_env
     )
-    if workspace_id:
-        return workspace_id
-    return build_image_and_container(
-        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
-    )
+    repo_to_workspace_map[repo] = workspace_id
+    return workspace_id
 
 
 def check_and_pull_image(image_name):
@@ -235,4 +254,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/1720733455")
+    get_score(logs_dir="/Users/karanvaidya/1720770557")
