@@ -14,6 +14,22 @@ Some Composio tools provide a wide array of over 100 actions. However, there are
 
 To address these issues, it is crucial to streamline the number of actions presented to agents. This can be effectively managed by employing various action filtering techniques.
 
+
+<Warning>
+    Directly invoking actions is generally discouraged as it can lead to significant performance issues when implemented in a production environment.
+    <CodeGroup>
+    ```python python
+    tools = composio_toolset.get_tools(apps=[App.ASANA])
+    // Not a good idea.
+    ```
+    ```javascript javascript
+    const tools = composio_toolset.get_tools(apps=[App.ASANA])
+    // Not a good idea.
+    ```
+    </CodeGroup>
+</Warning>
+
+
 ### Filter Actions by Tags
 
 Efficiency can be significantly enhanced by selectively filtering actions rather than assigning all available actions of an application to the agent. Here’s how this can be achieved:

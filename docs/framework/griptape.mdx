@@ -1,5 +1,5 @@
 ---
-title: "Using Composio With Griptape"
+title: "🧻 Using Composio With Griptape"
 sidebarTitle: "Griptape SDK"
 icon: "tape"
 description: "Integrate Composio with Griptape agents to let them seamlessly interact with external apps"
@@ -16,14 +16,13 @@ description: "Integrate Composio with Griptape agents to let them seamlessly int
 These commands prepare your environment for seamless interaction between Griptape and Github.
 
 <CodeGroup>
-``` bash Run command
-pip install composio_griptape
-# Connect your Github so agents can use it. 
-composio add github
-# Check all different apps which you can connect with
-composio show-apps
-
-````
+  ``` bash Run command
+  pip install composio_griptape
+  # Connect your Github so agents can use it. 
+  composio add github
+  # Check all different apps which you can connect with
+  composio show-apps
+  ```
 </CodeGroup>
 
 ### Goal: Use Agent to Interact with GitHub using Composio
@@ -32,15 +31,14 @@ composio show-apps
 <Step title="Import Base Packages">
 
 <CodeGroup>
-```python Default Imports
-from griptape.structures import Agent
-from griptape.utils import Chat
-from composio_griptape import App, Action, Tag, ComposioToolSet
-import dotenv
+  ```python Default Imports
+  from griptape.structures import Agent
+  from griptape.utils import Chat
+  from composio_griptape import App, Action, Tag, ComposioToolSet
+  import dotenv
 
-dotenv.load_dotenv()
-````
-
+  dotenv.load_dotenv()
+  ```
 </CodeGroup>
 
 </Step>
@@ -48,16 +46,14 @@ dotenv.load_dotenv()
 <Step title="Add Tools to agent">
 
 <CodeGroup>
-```python Prepare Griptape Agent
-composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(apps = [App.GITHUB])
+  ```python Prepare Griptape Agent
+  composio_toolset = ComposioToolSet()
+  tools = composio_toolset.get_tools(apps = [App.GITHUB])
 
-agent = Agent(
-tools=tools
-)
-
-````
-
+  agent = Agent(
+  tools=tools
+  )
+  ```
 </CodeGroup>
 
 </Step>
@@ -65,13 +61,13 @@ tools=tools
 <Step title="Start Agent Chat">
 
 <CodeGroup>
-```python Chat with Griptape Agent
-Chat(agent).start()
-````
-
+  ```python Chat with Griptape Agent
+  Chat(agent).start()
+  ```
 </CodeGroup>
 
 </Step>
+
 <Step title="Talk with Agent">
 <Tabs>
 <Tab title="Star Repository">
