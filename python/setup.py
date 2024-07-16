@@ -87,6 +87,8 @@ setup(
         "diskcache",
         "networkx",
         "ruff",
+        "scipy",
+        "transformers",
     ],
     include_package_data=True,
     package_data={
