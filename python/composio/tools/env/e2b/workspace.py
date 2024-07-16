@@ -5,6 +5,7 @@ import time
 import typing as t
 from pathlib import Path
 from uuid import uuid4
+from composio.tools.env.filemanager.manager import FileManager
 
 import requests
 from e2b import Sandbox
@@ -135,6 +136,12 @@ class E2BWorkspace(Workspace):
         """Create E2B shell."""
         raise NotImplementedError(
             "Creating shells for `E2B` workspaces is not allowed."
+        )
+
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
+        raise NotImplementedError(
+            "Creating file manager for `E2B` workspace is not allowed."
         )
 
     def _upload(self, action: Action) -> None:

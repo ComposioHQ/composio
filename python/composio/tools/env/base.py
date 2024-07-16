@@ -141,7 +141,7 @@ class Workspace(WithLogger, ABC):
     def file_manager(self) -> FileManager:
         """Returns file manager for current workspace."""
         if self._file_manager is None:
-            self._file_manager = FileManager()
+            self._file_manager = self._create_file_manager()
         return self._file_manager
 
     @property
@@ -156,6 +156,10 @@ class Workspace(WithLogger, ABC):
     @abstractmethod
     def _create_shell(self) -> Shell:
         """Create shell."""
+
+    @abstractmethod
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
 
     @abstractmethod
     def execute_action(

@@ -6,6 +6,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
+from composio.tools.env.filemanager.manager import FileManager
 
 from docker import DockerClient, from_env
 from docker.errors import DockerException
@@ -82,6 +83,12 @@ class DockerWorkspace(Workspace):
     def _create_shell(self) -> DockerShell:
         """Create docker shell."""
         return DockerShell(container=self._container)
+
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
+        raise NotImplementedError(
+            "Creating file manager for `Docker` workspace is not allowed."
+        )
 
     @property
     def client(self) -> DockerClient:

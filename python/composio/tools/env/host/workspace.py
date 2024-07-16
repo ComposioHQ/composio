@@ -87,6 +87,10 @@ class HostWorkspace(Workspace):
         if self._ssh is not None:
             return SSHShell(client=self._ssh)
         return HostShell()
+    
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
+        return FileManager(working_dir=self._working_dir)
 
     def execute_action(
         self,

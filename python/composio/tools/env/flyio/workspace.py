@@ -5,6 +5,7 @@ FlyIO workspace implementation.
 import typing as t
 from pathlib import Path
 from uuid import uuid4
+from composio.tools.env.filemanager.manager import FileManager
 
 import requests
 
@@ -60,6 +61,12 @@ class FlyIOWorkspace(Workspace):
         """Create FlyIO shell."""
         raise NotImplementedError(
             "Creating shells for `FlyIO` workspaces is not allowed."
+        )
+
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
+        raise NotImplementedError(
+            "Creating file manager for `FlyIO` workspace is not allowed."
         )
 
     def _upload(self, action: Action) -> None:
