@@ -1,0 +1,89 @@
+---
+title: "🛠️ Use Triggers"
+sidebarTitle: "Triggers"
+icon: "webhook"
+description: "Learn, how to use triggers in Connected Apps"
+---
+
+
+## Setting Up Triggers
+
+To set up triggers, follow these steps:
+
+1. Enable Trigger from Composio [Dashboard](app.composio.dev)
+
+<div
+  style={{
+    width: '100%',
+    position: 'relative',
+    paddingTop: '56.25%',
+  }}>
+  <iframe
+    src="https://app.supademo.com/embed/cly4qu1q001istgvzirl1sj8y"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+      position: 'absolute',
+      top: 0,left: 0, width: '100%', height: '100%',
+      border: '3px solid #5E43CE',
+      borderRadius: '10px',
+    }}/>
+</div>
+
+
+2. Add listener  
+
+<CodeGroup>
+```javascript javascript
+import { LangchainToolSet } from "composio-core"; // or any other toolset
+
+const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY }); /
+const composio_client = toolset.client
+
+// If not using LangchainToolSet
+// import {Composio} from "composio-core";  
+//const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
+
+
+// Subscribe to triggers and perform actions
+composio_client.triggers.subscribe((data) => {
+    console.log("trigger received", data);
+});
+```
+</CodeGroup>
+
+
+
+## Handling Triggers 
+
+After completing the setup, the specified webhook URL will begin to receive data. 
+
+This data includes the `connected_account_id` for account identification, `trigger_id` for trigger identification, and the `payload`, which adheres to the trigger's specified payload schema.
+<CodeGroup>
+``` JSON Sample Trigger Webhook, Received on Callback URL
+{
+	"trigger_name":"github_commit_event",
+    "trigger_id":"12310-sadas-12ad-sa",
+	"connected_account_id":"64184e1a-76bf-404b-bf8e-e9ce04fd7c9c",
+	"payload":{
+		"id":"ae4926ca23488ef488e76c8b39e2ad3ae9e58786",
+		"message":"Update README.md",
+		"timestamp":"2024-03-26T19:36:58+05:30",
+		"author":"kaavee315",
+		"url":"https://github.com/kaavee315/ML_assignment/commit/ae4926ca23488ef488e76c8b39e2ad3ae9e58786"
+	}
+}
+
+```
+</CodeGroup>
+
+
+
+
+
+
+Go to [Settings](app.composio.dev/settings) and setup callback URL.
