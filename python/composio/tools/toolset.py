@@ -194,7 +194,7 @@ class ComposioToolSet(WithLogger):
                 f"{action.name}_{entity_id}_{time.time()}", output
             )
             return output_modified
-        except Exception as e:
+        except Exception:
             pass
         return output
 
