@@ -5,6 +5,7 @@ from pathlib import Path
 
 from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
+from composio.tools.env.filemanager import FileManager
 from composio.tools.env.id import generate_id
 from composio.utils.logging import WithLogger
 
@@ -115,6 +116,7 @@ class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
 
     _shell_factory: t.Optional[ShellFactory] = None
+    _file_manager: t.Optional[FileManager] = None
 
     def __init__(
         self,
@@ -134,6 +136,13 @@ class Workspace(WithLogger, ABC):
         return f"Workspace(type={self.__class__.__name__}, id={self.id})"
 
     __repr__ = __str__
+
+    @property
+    def file_manager(self) -> FileManager:
+        """Returns file manager for current workspace."""
+        if self._file_manager is None:
+            self._file_manager = FileManager()
+        return self._file_manager
 
     @property
     def shells(self) -> ShellFactory:
