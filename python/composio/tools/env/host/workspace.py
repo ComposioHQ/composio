@@ -6,6 +6,7 @@ import os
 import typing as t
 
 import paramiko
+from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 from composio.client.enums import Action
 from composio.tools.env.base import Shell, Workspace
@@ -61,12 +62,12 @@ class HostWorkspace(Workspace):
                 username=ssh_username,
                 password=ssh_password,
             )
-        except paramiko.SSHException as e:
-            self._ssh = None
+        except (SSHException, NoValidConnectionsError) as e:
             self.logger.debug(
                 f"Setting up SSH client for workspace failed with error: {e}"
             )
             self.logger.debug("Using shell over `subprocess.Popen`")
+            self._ssh = None
 
     def _create_shell(self) -> Shell:
         """Create host shell."""
