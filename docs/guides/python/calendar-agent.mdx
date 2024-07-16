@@ -46,8 +46,12 @@ This project is an example which uses Composio to seamlessly convert your to-do 
     <CodeGroup>
         ```python Models and Tools
         load_dotenv()
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        model = os.getenv("MODEL")
+        openai_api_key = os.getenv("OPENAI_API_KEY","")
+        if(openai_api_key==""):
+            print("Please add openai key")
+        model = os.getenv("MODEL","")
+        if(model==""):
+            print("please add model name as env variable")
 
         # Initialize the language model
         llm = ChatOpenAI(model=model, api_key=openai_api_key)
