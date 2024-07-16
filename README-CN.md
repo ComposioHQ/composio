@@ -278,6 +278,6 @@ Composio 采用 Elastic 许可证 - 有关详细信息，请参阅 [LICENSE](htt
 
 ## 💪 感谢所有贡献者
 
-<a href="https://composio.dev/contributors?utm_source=github">
+<a href="https://github.com/ComposioHQ/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="贡献者名单"/>
 </a>

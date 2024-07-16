@@ -279,6 +279,6 @@ ComposioはElasticライセンスの下でライセンスされています - �
 
 ## 💪 すべての貢献者に感謝
 
-<a href="https://composio.dev/contributors?utm_source=github">
+<a href="https://github.com/ComposioHQ/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="貢献者のリスト"/>
 </a>
