@@ -1,3 +1,5 @@
+# isort: skip_file
+
 import argparse
 
 from swekit.benchmark.run_evaluation import evaluate

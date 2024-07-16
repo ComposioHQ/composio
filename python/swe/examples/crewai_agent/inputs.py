@@ -1,3 +1,5 @@
+# isort: skip_file
+
 import re
 import typing as t
 from pathlib import Path

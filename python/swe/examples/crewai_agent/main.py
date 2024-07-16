@@ -1,3 +1,5 @@
+# isort: skip_file
+
 from inputs import from_github
 
 from agent import composio_toolset, crew
