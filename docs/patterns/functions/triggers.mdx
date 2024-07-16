@@ -1,0 +1,162 @@
+---
+title: "Enabling a Specific Trigger for a User in Composio"
+sidebarTitle: "Specific Triggers for a User"
+icon: "webhook"
+description: "This guide provides step-by-step instructions for enabling a specific trigger for a user in Composio."
+---
+
+### Prerequisites
+
+1. Get the trigger name and required config from the UI: This step is common across all users.
+2. Set the webhook URL: This should be done once for a Composio account.
+3. Enable the trigger for the user: This is done for each user.
+
+### Step 1: Set Up the Composio Client
+
+First, initialize the Composio client using your API key.
+<CodeGroup>
+```python python
+from composio import Composio, App
+
+composio_client = Composio(api_key="API_KEY")
+```
+```javascript javascript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+```
+</CodeGroup>
+
+### Step 2: Define User and Trigger Information
+
+Specify the user and trigger details. Replace entity_id and selected_app with the relevant user ID and app.
+<CodeGroup>
+```python python
+entity_id = "soham"  # Unique user identifier in your app
+selected_app = App.GITHUB  # The app you are working with
+trigger_name = "github_commit_event"  # Trigger name from Composio UI
+trigger_config = {"owner": "ComposioHQ", "repo": "composio"}  # Trigger config from Composio UI
+```
+```javascript javascript
+const entity_id = "soham"  // Unique user identifier in your app
+const selected_app = App.GITHUB  // The app you are working with
+const trigger_name = "github_commit_event"  // Trigger name from Composio UI
+const trigger_config = {"owner": "ComposioHQ", "repo": "composio"}  // Trigger config from Composio UI
+```
+
+</CodeGroup>
+
+### Step 3: Retrieve User Entity and Connection
+
+Get the user entity and check the connection to the specified app.
+<CodeGroup>
+```python python
+entity = composio_client.get_entity(id=entity_id)
+connected_account = entity.get_connection(app=selected_app)  # Get connected account
+```
+```javascript javascript
+const entity = await toolset.client.getEntity(id=entity_id);
+const connected_account = entity.getConnection(app=selected_app);  // Get connected account
+```
+</CodeGroup>
+
+
+### Step 4: Retrieve and Verify Trigger
+Fetch the trigger using its name and verify if it exists.
+
+<CodeGroup>
+```python python
+triggers = composio_client.triggers.get(trigger_ids=[trigger_name])  # Get the triggers
+
+if len(triggers) == 0:
+    raise Exception("Trigger not found")  # Handle incorrect trigger name
+```
+```javascript javascript
+const triggers = await toolset.client.triggers.get(trigger_ids=[trigger_name]);  // Get the triggers
+
+if (triggers.length === 0) {
+    throw new Error("Trigger not found");  // Handle incorrect trigger name
+}
+```
+</CodeGroup>
+
+### Step 5: Check for Active Triggers
+Check if the trigger is already enabled for the user.
+<CodeGroup>
+```python python
+active_triggers = composio_client.active_triggers.get(
+    trigger_names=[trigger_name], connected_account_ids=[connected_account.id]
+)
+
+if len(active_triggers) > 0:
+    print(f"Trigger {trigger_name} is already enabled")
+    exit()
+```
+</CodeGroup>
+
+### Step 6: Enable the Trigger
+Enable the trigger for the user with the specified configuration.
+
+<CodeGroup>
+```python python
+print("Trigger config - ", trigger_config)
+
+entity.enable_trigger(
+    trigger_name=trigger_name, app=selected_app, config=trigger_config
+)
+
+print(f"Trigger {trigger_name} enabled")
+```
+</CodeGroup>
+
+
+
+### Ensuring the User is Connected to the App
+If the user is not connected to the app, the connection must be established. The following script helps to ensure the user is connected.
+
+<CodeGroup>
+```python python
+from composio import Composio, App
+
+composio_client = Composio(api_key="API_KEY")
+
+# get the user id
+entity_id = "Soham"  # Unique ID for the user
+app = App.GITHUB
+
+entity = composio_client.get_entity(id=entity_id)
+
+try:
+    print("Checking if user is connected to app...")
+    connection = entity.get_connection(app=app)
+    if connection:
+        print("User is connected to app")
+except Exception as e:
+    connection = None
+
+if not connection:
+    print("No connection found")
+    print("Initiating connection...")
+    connection_request = entity.initiate_connection(
+        app_name=app, redirect_url="https://www.google.com"
+    )  # Redirect URL is optional
+
+    if connection_request.redirectUrl:
+        print(f"Please visit {connection_request.redirectUrl} to connect {app}")
+    else:
+        print(f"Please provide your credentials to connect {app}")
+
+    connection_request.wait_until_active(client=composio_client, timeout=60)
+    # Polling until connection is active with a 60-second timeout
+
+print(f"User is already connected to {app}")
+# Connection object is now available
+
+```
+</CodeGroup>
+
+
+### Conclusion
+By following these steps, you can efficiently enable a specific trigger for a user in Composio, ensuring that the necessary app connections are established and maintained. This guide provides a structured approach to managing triggers and connections, enhancing the capabilities of your Composio setup.

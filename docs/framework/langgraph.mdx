@@ -1,0 +1,187 @@
+---
+title: "🦜🕸️ Using Composio With LangGraph"
+sidebarTitle: "LangGraph SDK"
+icon: "spider-web"
+description: "Integrate Composio with LangGraph Agentic workfows & enable them to interact seamlessly with external apps, enhancing their functionality and reach."
+---
+
+**Composio enables** your **LangGraph agents** to **connect** with many **tools**!
+
+<Tip>
+  Goal: Star a repository on GitHub using natural language commands through a LangGraph Agent.
+</Tip>
+
+### Install Packages & Connect a Tool
+
+Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
+
+<CodeGroup>
+    ``` bash Run command
+    pip install composio-langgraph
+    # login to composio
+    composio login
+    # Connect your GitHub using command below, so agents can use it. 
+    composio add github
+    # Check all different apps which you can connect with
+    composio apps
+    ```
+</CodeGroup>
+
+### Goal: Use LangGraph Agent to Interact with Github using Composio
+
+<Steps>
+<Step title="Import Base Packages">
+
+Prepare your environment by initializing necessary imports from LangGraph & LangChain for setting up your agent.
+
+<CodeGroup>
+    ```python Default Imports
+    import json
+    import operator
+    from typing import Annotated, Sequence, TypedDict
+
+    from langchain_core.messages import BaseMessage, FunctionMessage, HumanMessage
+    from langchain_core.utils.function_calling import convert_to_openai_function
+    from langchain_openai import ChatOpenAI
+    from langgraph.graph import END, StateGraph  # pylint: disable=no-name-in-module
+    from langgraph.prebuilt import (  # pylint: disable=no-name-in-module
+        ToolExecutor,
+        ToolInvocation,
+    )
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Fetch GitHub LangGraph Tools via Composio">
+
+Access GitHub tools provided by Composio for LangGraph, initialize a `tool_executor` and get OpenAI-format function schemas from the tools.
+
+<CodeGroup>
+    ```python Get tools
+    from composio_langgraph import Action, ComposioToolSet
+
+    # Initialize the toolset for GitHub
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_actions(
+        actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    )
+    tool_executor = ToolExecutor(tools)
+    functions = [convert_to_openai_function(t) for t in tools]
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Prepare the model">
+
+Initialize the LLM class and bind obtained functions to the model.
+
+<CodeGroup>
+    ```python Define model
+    model = ChatOpenAI(temperature=0, streaming=True)
+    model = model.bind_functions(functions)
+    ```
+</CodeGroup>
+
+</Step>
+
+
+<Step title="Define the Graph Nodes">
+
+LangGraph expects you to define different nodes of the agentic workflow as seperate functions. 
+
+Here we define one node for calling the LLM and another for executing the correct tool(function), with appropriate parameters.
+
+<CodeGroup>
+    ```python Define nodes
+    def function_1(state):
+        messages = state['messages']
+        response = model.invoke(messages)
+        return {"messages": [response]}
+
+
+    def function_2(state):
+        messages = state['messages']
+        last_message = messages[-1]
+
+        parsed_function_call = last_message.additional_kwargs["function_call"]
+
+        action = ToolInvocation(
+            tool=parsed_function_call["name"],
+            tool_input=json.loads(parsed_function_call["arguments"]),
+        )
+
+        response = tool_executor.invoke(action)
+
+        function_message = FunctionMessage(content=str(response), name=action.tool)
+
+        return {"messages": [function_message]}
+    ```
+</CodeGroup>
+
+</Step>
+
+
+<Step title="Define the Graph Edges">
+
+To establish the agent's workflow, we begin by initializing the workflow with an `AgentState` to maintain state, followed by specifying the connecting edges between nodes. These edges can be straightforward or conditional, depending on the workflow requirements.
+
+<CodeGroup>
+    ```python Define edges
+    def where_to_go(state):
+        messages = state['messages']
+        last_message = messages[-1]
+
+        if "function_call" in last_message.additional_kwargs:
+            return "continue"
+        else:
+            return "end"
+
+
+    class AgentState(TypedDict):
+        messages: Annotated[Sequence[BaseMessage], operator.add]
+
+
+    workflow = StateGraph(AgentState)
+    workflow.add_node("agent", function_1)
+    workflow.add_node("tool", function_2)
+    workflow.add_conditional_edges(
+        "agent",
+        where_to_go,
+        {
+            "continue": "tool",
+            "end": END
+        }
+    )
+    workflow.add_edge('tool', 'agent')
+    workflow.set_entry_point("agent")
+
+    app = workflow.compile()
+    ```
+</CodeGroup>
+
+</Step>
+
+
+
+<Step title="Invoke & Check Response">
+
+After the compilation of workflow, we invoke the LLM with a task, and print the final response. 
+
+<CodeGroup>
+    ```python Execute workflow
+    inputs = {
+        "messages": [
+            HumanMessage(
+                content="Star the Github repository ComposioHQ/composio"
+                )
+            ]
+        }
+    response = app.invoke(inputs)
+    print(response)
+    ```
+</CodeGroup>
+
+</Step>
+</Steps>
