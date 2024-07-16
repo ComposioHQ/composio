@@ -1,7 +1,6 @@
 import ast
 from pathlib import Path
-from typing import List, Optional, Type, Dict, Any
-import json
+from typing import Any, Dict, Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -46,12 +45,12 @@ def parse_python_file(file_path, file_content=None, include_content=False):
             with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
                 file_content = file.read()
                 parsed_data = ast.parse(file_content)
-        except Exception as e:  # Catch all types of exceptions
+        except Exception:  # Catch all types of exceptions
             return [], [], ""
     else:
         try:
             parsed_data = ast.parse(file_content)
-        except Exception as e:  # Catch all types of exceptions
+        except Exception:  # Catch all types of exceptions
             return [], [], ""
 
     class_info = []
@@ -69,7 +68,7 @@ def parse_python_file(file_path, file_content=None, include_content=False):
                     }
                     if include_content:
                         method_info["text"] = file_content.splitlines()[
-                            n.lineno - 1 : n.end_lineno
+                            n.lineno - 1 : n.end_lineno  # noqa: E203
                         ]
                     methods.append(method_info)
                     class_methods.add(n.name)
@@ -80,7 +79,7 @@ def parse_python_file(file_path, file_content=None, include_content=False):
             }
             if include_content:
                 class_info_dict["text"] = file_content.splitlines()[
-                    node.lineno - 1 : node.end_lineno
+                    node.lineno - 1 : node.end_lineno  # noqa: E203
                 ]
             class_info.append(class_info_dict)
         elif isinstance(node, ast.FunctionDef) and not isinstance(
@@ -92,7 +91,7 @@ def parse_python_file(file_path, file_content=None, include_content=False):
                         "name": node.name,
                         "start:end_line": f"{node.lineno}:{node.end_lineno}",
                         "text": file_content.splitlines()[
-                            node.lineno - 1 : node.end_lineno
+                            node.lineno - 1 : node.end_lineno  # noqa: E203
                         ],
                     }
                 )
@@ -128,9 +127,8 @@ class GetRepoStructure(Action[GetRepoStructureRequest, GetRepoStructureResponse]
             return GetRepoStructureResponse(error_message=error_message)
 
         try:
+            repo_structure = {}  # type: ignore
             all_repository_files = get_files_excluding_gitignore(repo_root)
-
-            repo_structure = {}
             for file_path in all_repository_files:
                 file_path = Path(file_path)  # Ensure file_path is a Path object
                 relative_path = file_path.relative_to(repo_root)

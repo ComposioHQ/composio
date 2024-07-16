@@ -10,8 +10,8 @@ from .actions import (
     DeleteRepoMap,
     GenerateRankedTags,
     GetRepoMap,
-    InitRepoMap,
     GetRepoStructure,
+    InitRepoMap,
 )
 
 

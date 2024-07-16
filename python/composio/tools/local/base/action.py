@@ -215,12 +215,10 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                 authorisation_data=metadata,
             )
         except json.JSONDecodeError as e:
-            # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
             return {
                 "status": "failure",
                 "details": f"Could not parse response with error: {e}. Please contact the tool developer.",
             }
-            # logger.error(f"Error executing {action.__name__} on Tool: {tool_name}: {e}\n{traceback.format_exc()}")
         except Exception as e:
             self.logger.error(
                 "Error while executing `%s` with parameters `%s`; Error: %s",
