@@ -91,9 +91,9 @@ class ComposioToolSet(WithLogger):
                 "to create a new workspace"
             )
             self.workspace = WorkspaceFactory.new(
-                env=workspace_env,
-                api_key=self.api_key,
-                base_url=base_url or get_api_url_base(),
+                wtype=workspace_env,
+                composio_api_key=self.api_key,
+                composio_base_url=base_url or get_api_url_base(),
             )
         else:
             self.logger.debug(f"Loading workspace with ID: {workspace_id}")
@@ -194,8 +194,8 @@ class ComposioToolSet(WithLogger):
                 f"{action.name}_{entity_id}_{time.time()}", output
             )
             return output_modified
-        except Exception as e:
-            print(f"Error checking file response: {e}")
+        except Exception:
+            pass
         return output
 
     def _save_var_files(self, file_name_prefix: str, output: dict) -> dict:

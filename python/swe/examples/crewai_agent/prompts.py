@@ -1,3 +1,5 @@
+# isort: skip_file
+
 ROLE = "Software Engineer"
 
 GOAL = "Fix the coding issues given by the user"

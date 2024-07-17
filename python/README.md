@@ -69,6 +69,7 @@
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
   - [Github to Trello](#github-to-trello)
+- [Star History](#star-history)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
 - [🔗 Links](#-links)
@@ -86,7 +87,7 @@ Composio is the best toolset to integrate AI Agents to best Agentic Tools and us
 
 - **100+ Tools**: Support for a range of different categories
 
-  - **Softwares**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
+  - **Software**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
   - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
   - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
   - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
@@ -210,6 +211,6 @@ Composio is licensed under the Elastic License - see the [LICENSE](https://githu
 
 ## 💪 Thanks To All Contributors
 
-<a href="https://composio.dev/contributors?utm_source=github">
+<a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
 </a>

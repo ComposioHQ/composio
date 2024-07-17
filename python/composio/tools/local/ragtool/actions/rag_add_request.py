@@ -26,7 +26,9 @@ class AddContentToRagTool(Action[RagToolAddRequest, RagToolAddResponse]):
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
 
-    def execute(self, request: RagToolAddRequest, authorisation_data: dict) -> dict:
+    def execute(
+        self, request_data: RagToolAddRequest, authorisation_data: dict
+    ) -> dict:
         """Add content to the knowledge base"""
         if authorisation_data is None:
             authorisation_data = {}
@@ -39,7 +41,7 @@ class AddContentToRagTool(Action[RagToolAddRequest, RagToolAddResponse]):
             return {"error": f"Failed to import App from embedchain: {e}"}
         try:
             embedchain_app = App()
-            content = request.content
+            content = request_data.content
             embedchain_app.add(content)
             return {"status": "Content added successfully"}
         except Exception as e:

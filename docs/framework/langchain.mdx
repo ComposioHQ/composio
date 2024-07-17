@@ -99,7 +99,7 @@ These commands prepare your environment for seamless interaction between Langcha
 Create an agent, set up an executor, and invoke tasks to perform GitHub API calls using Composio.
 <CodeGroup>
   ```python python
-  task = "Star a repo ComposioHQ/composio on GitHub"
+  task = "Star a repo composiohq/composio on GitHub"
 
   agent = create_openai_functions_agent(llm, tools, prompt)
   agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -119,7 +119,7 @@ Create an agent, set up an executor, and invoke tasks to perform GitHub API call
   const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
 
   // Invoke the agent to perform the task of starring a GitHub repository
-  const response = await agentExecutor.invoke({ input: "Star a repo ComposioHQ/composio on GitHub" });
+  const response = await agentExecutor.invoke({ input: "Star a repo composiohq/composio on GitHub" });
 
   // Output the response from the agent execution
   console.log(response);
@@ -130,10 +130,10 @@ Create an agent, set up an executor, and invoke tasks to perform GitHub API call
   ```bash Executing Agents
   > Entering new AgentExecutor chain...
 
-  Invoking: `github_star_repo` with `{'owner': 'ComposioHQ', 'repo': 'docs'}`
+  Invoking: `github_star_repo` with `{'owner': 'composiohq', 'repo': 'docs'}`
 
-  {'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'ComposioHQ', 'repo': 'docs'}}
-  {'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository ComposioHQ/composio on GitHub.
+  {'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'composiohq', 'repo': 'docs'}}
+  {'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository composiohq/composio on GitHub.
 
   ```
 </Step>

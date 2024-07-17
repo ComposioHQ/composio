@@ -74,9 +74,9 @@ class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsRes
     _tool_name = "codemap"
 
     def execute(
-        self, request: GenerateRankedTagsRequest, authorisation_data: dict = {}
+        self, request_data: GenerateRankedTagsRequest, authorisation_data: dict = {}
     ) -> GenerateRankedTagsResponse:
-        repo_root = Path(request.code_directory).resolve()
+        repo_root = Path(request_data.code_directory).resolve()
 
         if not repo_root.exists():
             print(f"Error: Repository root path {repo_root} does not exist")
@@ -90,15 +90,19 @@ class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsRes
                 root_path=repo_root, no_gitignore=False
             )
 
-            # Convert absolute paths to relative paths
-            all_files = [str(Path(file).relative_to(repo_root)) for file in all_files]
+            # Convert absolute paths to relative paths, only for .py files
+            all_files = [
+                str(Path(file).relative_to(repo_root))
+                for file in all_files
+                if file.endswith(".py")
+            ]
 
             # Generate ranked tags map
             repo_map = RepoMap(root=repo_root)
             ranked_tags_map = repo_map.get_ranked_tags_map(
                 chat_fnames=[],
                 other_fnames=all_files,
-                mentioned_fnames=set(request.files_of_interest),
+                mentioned_fnames=set(request_data.files_of_interest),
                 mentioned_idents=set(),
             )
 
