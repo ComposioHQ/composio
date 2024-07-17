@@ -33,6 +33,9 @@ TO_REPLACE = (
     "composio_openai==",
     "composio_claude==",
     "composio_griptape==",
+    "composio_langgraph==",
+    "composio_praisonai==",
+    "composio_camel==",
 )
 
 
