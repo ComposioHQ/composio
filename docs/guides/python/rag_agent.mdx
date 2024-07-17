@@ -7,24 +7,8 @@ description: "This guide provides detailed steps to create an agent that leverag
 
 This project involves setting up and running a system of agents to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to set up the tools and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project.
 
+
 <Steps>
-    <Step title="Run the `setup.sh` file">
-    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
-
-    `cd cookbook/examples/python/rag_agent`
-
-    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
-    <CodeGroup>
-        ```bash Run Command
-       chmod +x setup.sh
-
-       # run the setup.sh file
-       ./setup.sh
-        ```
-        Fill in the .env file after running the script.
-    </CodeGroup>
-    </Step>
-
     <Step title="Imports and Environment Setup">
     In your Python script, import the necessary libraries and set up your environment variables.
     <CodeGroup>
@@ -169,20 +153,20 @@ This project involves setting up and running a system of agents to add content t
     from composio_langchain import Action, App, ComposioToolSet
     from crewai import Agent, Crew, Process, Task
     from langchain_openai import ChatOpenAI
-    from composio.local_tools import ragtool
-
+    from composio.tools.local import ragtool
+    
     # Load environment variables from .env file
     dotenv.load_dotenv()
-
+    
     # Initialize the ComposioToolSet
     toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
-
+    
     # Get the RAG tool from the Composio ToolSet
     tools = toolset.get_tools(apps=[App.RAGTOOL])
-
+    
     # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
     llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
-
+    
     # User-provided description of the data to be added and the query
     additional_content_list = [
         "Paris is the capital of France. It is known for its art, fashion, and culture.",
@@ -191,9 +175,9 @@ This project involves setting up and running a system of agents to add content t
         "Canberra is the capital of Australia. It is known for its modern architecture and museums.",
         # Add more data as needed
     ]
-
+    
     user_query = "What is the capital of France?"  # Edit the query for the action you want it to perform
-
+    
     # Define the RAG Agent
     rag_agent = Agent(
         role="RAG Agent",
@@ -214,22 +198,24 @@ This project involves setting up and running a system of agents to add content t
         allow_delegation=False,
         tools=tools,
     )
-
+    
     # Define the task for adding content to the RAG tool
-    add_content_tasks = [
-        Task(
+    
+    
+    total_content = ""
+    for content in additional_content_list:
+      total_content +=content
+    
+    add_content_tasks = Task(
             description=dedent(
                 f"""\
-                Add the following content to the RAG tool to enrich its knowledge base: {content}"""
+                Add the following content to the RAG tool to enrich its knowledge base: {total_content}"""
             ),
             expected_output="Content was added to the RAG tool",
             tools=tools,
             agent=rag_agent,
             allow_delegation=False,
         )
-        for content in additional_content_list
-    ]
-
     # Define the task for executing the RAG tool query
     query_task = Task(
         description=dedent(
@@ -242,20 +228,19 @@ This project involves setting up and running a system of agents to add content t
         agent=rag_agent,
         allow_delegation=False,
     )
-
+    
     # Define the crew with the agent and tasks
     crew = Crew(
         agents=[rag_agent],
-        tasks=[add_content_tasks , query_task],
+        tasks=[add_content_tasks,query_task],
         process=Process.sequential,
     )
-
+    
     # Kickoff the process and print the result
     result = crew.kickoff()
     print(result)
+
     ```
 
 </CodeGroup>
 
-## Link to the Source Code
-- [GitHub]()

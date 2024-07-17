@@ -90,17 +90,17 @@ export type ListAllConnectionsData = {
     integrationId?: string;
 
     /**
-     * Filter by using specific entity id, seperated by comma
+     * Filter by using specific entity id, separated by comma
      */
     user_uuid?: string;
 
     /**
-     * Filter by using specific app names, seperated by comma
+     * Filter by using specific app names, separated by comma
      */
     appNames?: string[];
 
     /**
-     * Filter by using specific status, seperated by comma
+     * Filter by using specific status, separated by comma
      */
     status?: string;
 
@@ -717,7 +717,7 @@ export type ExecuteActionData = {
         };
         appName?: string;
         /**
-         * The text to supply to the action which will be automatically coverted to 
+         * The text to supply to the action which will be automatically converted to 
          * appropriate input parameters.
          */
         text?: string;
@@ -745,7 +745,7 @@ export type ExecuteActionResponse = {
 
 export type GetListActionsData = {
     /**
-     * Name of the apps like "github", "linear" seperated by a comma
+     * Name of the apps like "github", "linear" separated by a comma
      */
     apps?: string;
     /**
@@ -865,11 +865,11 @@ export type GetListActionsResponse = {
 
 export type ListTriggersData = {
     /**
-     * Name of the apps like "github", "linear" seperated by a comma
+     * Name of the apps like "github", "linear" separated by a comma
      */
     appNames?: string;
     /**
-     * Filter by Aonnected Account ids
+     * Filter by Connected Account ids
      */
     connectedAccountIds?: string;
     /**

@@ -15,7 +15,7 @@ claude_client = anthropic.Anthropic()
 composio_toolset = ComposioToolset()
 
 # Define task.
-task = "Star a repo SamparkAI/composio_sdk on GitHub"
+task = "Star a repo composiohq/composio on GitHub"
 
 # Get GitHub tools that are pre-configured
 actions = composio_toolset.get_tools(apps=[App.GITHUB])
@@ -26,7 +26,7 @@ response = claude_client.beta.tools.messages.create(
     max_tokens=1024,
     tools=actions,
     messages=[
-        {"role": "user", "content": "Star me SamparkAI/composio repo in github."},
+        {"role": "user", "content": "Star me composiohq/composio repo in github."},
     ],
 )
 

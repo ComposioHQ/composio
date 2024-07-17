@@ -106,7 +106,7 @@ class E2BWorkspace(Workspace):
             cmd="composio apps update",
         )
 
-        # TOFIX: Do not use random user everytime
+        # TOFIX: Do not use random user every time
         # Setup SSH server
         _ssh_username = uuid4().hex.replace("-", "")
         _ssh_password = uuid4().hex.replace("-", "")

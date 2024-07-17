@@ -6,24 +6,6 @@ description: "This is a simple guide to demonstrate how to use CODEINTERPRETER t
 ---
 
 <Steps>
-    <Step title="Set up the project">
-    > Fork and clone this [repository](https://git.new/composio), then navigate to the project directory:
-
-    ```bash
-    cd cookbook/examples/javascript/interpreter_agent
-    ```
-
-    Make the setup script executable (if necessary) and run it:
-    <CodeGroup>
-        ```bash Run Command
-        chmod +x setup.sh
-        ./setup.sh
-        ```
-    </CodeGroup>
-
-    After running the script, fill in the `.env` file with your API keys.
-    </Step>
-
     <Step title="Import Required Packages">
     Import necessary packages for the Code Execution Agent:
     <CodeGroup>
@@ -181,6 +163,3 @@ Here's the complete JavaScript code for the Code Execution Agent:
     executeCodeAgent(userProblem).catch(error => console.error("An error occurred:", error));
     ```
 </CodeGroup>
-
-## Link to the Source Code
-- [Github](https://github.com/your/repo)
