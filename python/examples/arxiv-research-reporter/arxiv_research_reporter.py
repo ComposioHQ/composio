@@ -1,3 +1,4 @@
+import os
 import dotenv
 from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
 from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
@@ -8,6 +9,10 @@ from llama_index.tools.arxiv.base import ArxivToolSpec
 # Load environment variables from .env
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key = input("Enter OpenAI key:")
+    os.environ['OPENAI_API_KEY']=api_key
 llm = OpenAI(model="gpt-4o")
 
 research_topic = "LLM agents function calling"

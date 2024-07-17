@@ -10,11 +10,14 @@ from langchain_openai import ChatOpenAI
 
 # Load environment variables
 load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("MODEL")
+openai_api_key = os.getenv("OPENAI_API_KEY","")
+if(openai_api_key==""):
+    openai_api_key=input("Enter OpenAI key:")
+    os.environ["OPENAI_API_KEY"] = openai_api_key
+
 
 # Initialize the language model
-llm = ChatOpenAI(model=model, api_key=openai_api_key)
+llm = ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
 
 # Define tools for the agents
 # We are using Google calendar tool from composio to connect to our calendar account.

@@ -37,7 +37,6 @@ researcher = Agent(
     ),
     verbose=True,
     allow_delegation=True,
-    tools=tools,
     llm=llm
 )
 
@@ -54,7 +53,6 @@ analyser = Agent(
         "SERP when you're writing the report."
     ),
     verbose=True,
-    tools=tools,
     llm=llm
 )
 
@@ -69,7 +67,6 @@ recommend = Agent(
         "bullet points."
     ),
     verbose=True,
-    tools=tools,
     llm=llm
 )
 
@@ -84,6 +81,8 @@ analyst_task = Task(
         "When the input is well researched, thoroughly analysed, and "
         "recommendation is offered"
     )
+    tools=tools,
+
 )
 
 # Create the investment crew with the defined agents and task
@@ -92,7 +91,6 @@ investment_crew = Crew(
     tasks=[analyst_task],
     verbose=1,
     # process=Process.sequential,  # Uncomment if sequential processing needed
-    full_output=True,
 )
 
 # Execute the investment crew workflow
