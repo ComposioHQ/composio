@@ -8,6 +8,16 @@ from llama_index.llms.openai import OpenAI
 from composio.tools.local import filetool, sqltool
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+composio_api_key = os.getenv("COMPOSIO_API_KEY","")
+if(composio_api_key==""):
+    composio_api_key=input("Enter Composio API Key:")
+    os.environ["COMPOSIO_API_KEY"] = composio_api_key
+
 toolset = ComposioToolSet(api_key=os.environ['COMPOSIO_API_KEY'])
 sql_tool = toolset.get_tools(apps=[App.SQLTOOL])
 file_tool = toolset.get_tools(apps=[App.FILETOOL])

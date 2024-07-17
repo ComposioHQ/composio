@@ -11,6 +11,16 @@ from composio.tools.local import embedtool
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+composio_api_key = os.getenv("COMPOSIO_API_KEY","")
+if(composio_api_key==""):
+    composio_api_key=input("Enter Composio API Key:")
+    os.environ["COMPOSIO_API_KEY"] = composio_api_key
+    
 # Define the LLM configuration with the model and API key
 llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]

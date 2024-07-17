@@ -6,6 +6,16 @@ from composio_autogen import Action, App, ComposioToolSet
 from composio.client.collections import TriggerEventData
 load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI api key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+bot_id = os.getenv("SLACK_BOT_ID","")
+if(bot_id==""):
+    bot_id=input("Enter Slack Bot id on your slack, check the readme to know how to find the bot id:")
+    os.environ["SLACK_BOT_ID"] = bot_id
+
 
 llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]

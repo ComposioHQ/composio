@@ -26,9 +26,16 @@ tools = composio_toolset.get_actions(
         Action.SLACKBOT_CHAT_POST_MESSAGE,
     ]
 )
-
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI key:")
+    os.environ["OPENAI_API_KEY"] = api_key
 # Initialize an OpenAI instance with the GPT-4o model
 llm = OpenAI(model="gpt-4o")
+
+channel_id = os.getenv("CHANNEL_ID","")
+if(channel_id==""):
+    channel_id=input("Enter Channel id:")
 
 # Define the system message for the agent
 prefix_messages = [
@@ -36,17 +43,17 @@ prefix_messages = [
         role="system",
         content=(
             """
-                You are an experienced code reviewer.
-                Your task is to review the provided file diff and give constructive feedback.
+        You are an experienced code reviewer.
+        Your task is to review the provided file diff and give constructive feedback.
 
-                Follow these steps:
-                1. Identify if the file contains significant logic changes.
-                2. Summarize the changes in the diff in clear and concise English, within 100 words.
-                3. Provide actionable suggestions if there are any issues in the code.
+        Follow these steps:
+        1. Identify if the file contains significant logic changes.
+        2. Summarize the changes in the diff in clear and concise English, within 100 words.
+        3. Provide actionable suggestions if there are any issues in the code.
 
-                Once you have decided on the changes, for any TODOs, create a Github issue.
-                And send the summary of the PR review to+"""+os.environ['CHANNEL_ID']+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
-                Also add the comprehensive review to the PR as a comment.
+        Once you have decided on the changes, for any TODOs, create a Github issue.
+        And send the summary of the PR review to """+channel_id+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
+        Also add the comprehensive review to the PR as a comment.
             """
 
         ),

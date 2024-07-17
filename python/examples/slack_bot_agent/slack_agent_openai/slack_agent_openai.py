@@ -12,6 +12,14 @@ load_dotenv()
 
 # api_key for OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+if(OPENAI_API_KEY==""):
+    OPENAI_API_KEY=input("Enter Openai Key:")
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+
+bot_id = os.getenv("SLACK_BOT_ID","")
+if(bot_id==""):
+    bot_id=input("Enter SLACK_BOT_ID:")
+    os.environ["SLACK_BOT_ID"] = bot_id
 
 # Configuration constants
 BOT_USER_ID = os.environ['SLACK_BOT_ID']  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.

@@ -13,9 +13,14 @@ from langchain_community.llms import HuggingFaceEndpoint
 
 dotenv.load_dotenv()
 
-llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
-chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+hf_key = os.getenv("HUGGINGFACEHUB_API_TOKEN","")
+if(hf_key==""):
+    hf_key = input("Enter huggingfacehub api key:")
 
+llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token=hf_key)
+
+chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=hf_key)
+# Import from composio_langchain
 # setup tools
 composio_toolset = ComposioToolSet()
 #we use composio to add the tools we need

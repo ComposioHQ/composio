@@ -7,7 +7,16 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
 
+composio_api_key = os.getenv("COMPOSIO_API_KEY","")
+if(composio_api_key==""):
+    composio_api_key=input("Enter Composio API Key:")
+    os.environ["COMPOSIO_API_KEY"] = composio_api_key
+    
 dotenv.load_dotenv()
 
 # Initialize the LLM with the OpenAI GPT-4o model and API key

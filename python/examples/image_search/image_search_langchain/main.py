@@ -19,6 +19,16 @@ from langchain_openai import ChatOpenAI
 # Load environment variables from a .env file (if applicable)
 dotenv.load_dotenv()  # Uncomment if you are using a .env file
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+composio_api_key = os.getenv("COMPOSIO_API_KEY","")
+if(composio_api_key==""):
+    composio_api_key=input("Enter Composio API Key:")
+    os.environ["COMPOSIO_API_KEY"] = composio_api_key
+    
 # Initialize a ChatOpenAI instance with GPT-4o model
 llm = ChatOpenAI(model="gpt-4o")
 

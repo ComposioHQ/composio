@@ -3,6 +3,7 @@ import operator
 import os
 from typing import Annotated, Sequence, TypedDict
 
+import dotenv
 from langchain_core.messages import BaseMessage, FunctionMessage, HumanMessage
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
@@ -10,6 +11,18 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolExecutor, ToolInvocation
 from composio.tools.local import embedtool
 from composio_langgraph import Action, ComposioToolSet, App
+
+dotenv.load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+composio_api_key = os.getenv("COMPOSIO_API_KEY","")
+if(composio_api_key==""):
+    composio_api_key=input("Enter Composio API Key:")
+    os.environ["COMPOSIO_API_KEY"] = composio_api_key
 
 composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 # Retrieve tools from Composio, specifically the EMBEDTOOL app

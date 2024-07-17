@@ -13,6 +13,10 @@ from langchain.chat_models import ChatOllama
 llm = ChatOllama(
     model="mistral",
 )
+bot_id = os.getenv("SLACK_BOT_ID","")
+if(bot_id==""):
+    bot_id=input("Enter SLACK_BOT_ID:")
+    os.environ["SLACK_BOT_ID"] = bot_id
 
 BOT_USER_ID = os.environ['SLACK_BOT_ID']  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
 RESPOND_ONLY_IF_TAGGED = (
