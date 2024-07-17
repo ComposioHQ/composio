@@ -14,7 +14,11 @@ from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import RemoteWorkspace
+from composio.tools.env.base import (
+    ENV_GITHUB_ACCESS_TOKEN,
+    RemoteWorkspace,
+    _read_env_var,
+)
 from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
 
 
@@ -64,7 +68,10 @@ class DockerWorkspace(RemoteWorkspace):
         super().__init__(
             composio_api_key=composio_api_key,
             composio_base_url=composio_base_url,
-            github_access_token=github_access_token,
+            github_access_token=_read_env_var(
+                name=ENV_GITHUB_ACCESS_TOKEN,
+                default=github_access_token,
+            ),
             environment=environment,
         )
         self.image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)

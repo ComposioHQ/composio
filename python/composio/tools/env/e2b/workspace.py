@@ -7,7 +7,11 @@ from uuid import uuid4
 
 from e2b import Sandbox
 
-from composio.tools.env.base import RemoteWorkspace
+from composio.tools.env.base import (
+    ENV_GITHUB_ACCESS_TOKEN,
+    RemoteWorkspace,
+    _read_env_var,
+)
 
 
 DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz"
@@ -35,7 +39,10 @@ class E2BWorkspace(RemoteWorkspace):
         super().__init__(
             composio_api_key=composio_api_key,
             composio_base_url=composio_base_url,
-            github_access_token=github_access_token,
+            github_access_token=_read_env_var(
+                name=ENV_GITHUB_ACCESS_TOKEN,
+                default=github_access_token,
+            ),
             environment=environment,
         )
 
