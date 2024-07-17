@@ -13,7 +13,6 @@ from composio.utils.shared import (
     json_schema_to_model,
 )
 
-from typing import Union, List, Dict, Any
 
 class ComposioToolSet(BaseComposioToolSet):
     """
@@ -46,7 +45,7 @@ class ComposioToolSet(BaseComposioToolSet):
         tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
         # Define task
-        task = "Star a repo composiohq/composio on GitHub"
+        task = "Star a repo SamparkAI/docs on GitHub"
 
         # Define agent
         agent = create_openai_functions_agent(openai_client, tools, prompt)
@@ -84,34 +83,6 @@ class ComposioToolSet(BaseComposioToolSet):
             workspace_id=workspace_id,
         )
 
-class ComposioToolSet(BaseComposioToolSet):
-    # ... existing code ...
-
-    def _serialize_notion_format(self, obj: Any) -> Union[Dict[str, Any], List[Dict[str, Any]], Any]:
-        """Helper function to serialize NotionAgentTextFormat objects."""
-        print(f"Serializing object: {obj}")
-        if isinstance(obj, list):
-            print("Object is a list")
-            return [self._serialize_notion_format(item) for item in obj]
-        elif hasattr(obj, '__slots__'):  # This is likely a NotionAgentTextFormat object
-            print("Object has __slots__")
-            return {
-                slot: self._serialize_notion_format(getattr(obj, slot))
-                for slot in obj.__slots__
-                if hasattr(obj, slot) and getattr(obj, slot) is not None
-            }
-        elif hasattr(obj, 'model_dump'):  # This is likely a Pydantic model
-            print("Object is a Pydantic model")
-            return obj.model_dump()
-        elif isinstance(obj, dict):
-            print("Object is a dictionary")
-            return {k: self._serialize_notion_format(v) for k, v in obj.items()}
-        else:
-            print("Object is a primitive type")
-            return obj  # Return primitive types as-is
-
-
-        
     def _wrap_action(
         self,
         action: str,
@@ -121,13 +92,9 @@ class ComposioToolSet(BaseComposioToolSet):
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
-            print("kwargs: ", kwargs)
-            # import pdb; pdb.set_trace()
-            serialized_kwargs = self._serialize_notion_format(kwargs)
-            print("serialized_kwargs: ", serialized_kwargs)
             return self.execute_action(
                 action=Action(value=action),
-                params=serialized_kwargs,
+                params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )
 
@@ -167,14 +134,12 @@ class ComposioToolSet(BaseComposioToolSet):
         parameters = json_schema_to_model(
             json_schema=schema_params,
         )
-        print("parameters: ", parameters)
         return StructuredTool.from_function(
             name=action,
             description=description,
             args_schema=parameters,
             return_schema=True,
             func=action_func,
-            infer_schema=False,
         )
 
     def get_actions(
