@@ -15,7 +15,7 @@ setup(
     description="Use Composio to get array of tools with LnagGraph Agent Workflows",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    url="https://github.com/composiohq/composio",
+    url="https://github.com/ComposioHQ/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
