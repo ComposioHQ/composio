@@ -8,11 +8,12 @@ from composio_langchain import App, ComposioToolSet
 # Load environment variables
 dotenv.load_dotenv()
 
+api_key=os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI key:")
+    os.environ["OPENAI_API_KEY"]=api_key
 # Initialize the language model with OpenAI API key and model name
-llm = ChatOpenAI(
-    openai_api_key=os.getenv(
-        "OPENAI_API_KEY",
-        "default_key"), model_name="gpt-4o")
+llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o")
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()

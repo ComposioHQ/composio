@@ -17,12 +17,9 @@ if(api_key==""):
     api_key=input("Enter OpenAI API Key:")
     os.environ["OPENAI_API_KEY"] = api_key
 
-composio_api_key = os.getenv("COMPOSIO_API_KEY","")
-if(composio_api_key==""):
-    composio_api_key=input("Enter Composio API Key:")
-    os.environ["COMPOSIO_API_KEY"] = composio_api_key
+
 # Initialize the ComposioToolSet
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Get the SQL and file tools from the ComposioToolSet
 tools = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])

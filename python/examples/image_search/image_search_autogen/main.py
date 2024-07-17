@@ -16,10 +16,6 @@ if(api_key==""):
     api_key=input("Enter OpenAI API Key:")
     os.environ["OPENAI_API_KEY"] = api_key
 
-composio_api_key = os.getenv("COMPOSIO_API_KEY","")
-if(composio_api_key==""):
-    composio_api_key=input("Enter Composio API Key:")
-    os.environ["COMPOSIO_API_KEY"] = composio_api_key
     
 # Define the LLM configuration with the model and API key
 llm_config = {
@@ -46,7 +42,7 @@ user_proxy = UserProxyAgent(
 )
 
 # Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+composio_toolset = ComposioToolSet()
 
 # Register tools with the ComposioToolSet, specifying the caller (chatbot) and executor (user_proxy)
 composio_toolset.register_tools(

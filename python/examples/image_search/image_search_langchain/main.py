@@ -24,11 +24,7 @@ if(api_key==""):
     api_key=input("Enter OpenAI API Key:")
     os.environ["OPENAI_API_KEY"] = api_key
 
-composio_api_key = os.getenv("COMPOSIO_API_KEY","")
-if(composio_api_key==""):
-    composio_api_key=input("Enter Composio API Key:")
-    os.environ["COMPOSIO_API_KEY"] = composio_api_key
-    
+
 # Initialize a ChatOpenAI instance with GPT-4o model
 llm = ChatOpenAI(model="gpt-4o")
 
@@ -36,7 +32,7 @@ llm = ChatOpenAI(model="gpt-4o")
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+composio_toolset = ComposioToolSet()
 # Retrieve tools from Composio, specifically the EMBEDTOOL apppip
 tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
 
