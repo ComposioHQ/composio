@@ -1,6 +1,7 @@
 """
 Langchain demo.
 """
+
 # isort: skip_file
 
 import os
