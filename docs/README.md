@@ -6,7 +6,7 @@
   <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>
   <p align="center">
-    <img alt="Tests" src="https://github.com/ComposioHQ/composio/actions/workflows/common.yml/badge.svg">
+    <img alt="Tests" src="https://github.com/composiohq/composio/actions/workflows/common.yml/badge.svg">
   <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
     <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
     <img alt="Twitter" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Ftwitter.com%2Fcomposiohq&label=Follow us">

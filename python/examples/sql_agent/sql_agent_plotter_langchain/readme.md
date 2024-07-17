@@ -4,10 +4,10 @@ This guide provides detailed steps to create a SQL agent that leverages Langchai
 Here's the coding guide in our documentation: [Guide](https://docs.composio.dev/guides/examples/sql-agent)
 
 # Sample Output:
-![](https://github.com/ComposioHQ/composio/blob/master/python/examples/sql_agent/sql_agent_plotter_langchain/sql_agent.gif)
+![](https://github.com/composiohq/composio/blob/master/python/examples/sql_agent/sql_agent_plotter_langchain/sql_agent.gif)
 
 ## Sample Output plot
-![](https://github.com/ComposioHQ/composio/blob/master/python/examples/sql_agent/sql_agent_plotter_langchain/example_plot_based_on_db.png)
+![](https://github.com/composiohq/composio/blob/master/python/examples/sql_agent/sql_agent_plotter_langchain/example_plot_based_on_db.png)
 ## Steps to Run
 
 **Navigate to the Project Directory:**

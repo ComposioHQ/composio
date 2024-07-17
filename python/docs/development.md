@@ -12,7 +12,7 @@
 - Make sure the methods are well documented with proper usage of [`doctrings`](https://peps.python.org/pep-0257/)
 - The codebase follows strict formatting guidelines so run `make format-code` or `tox -e isort` and `tox -e black` once you're done writing code to fix the formatting.
 - The framework and the plugins are strictly type checked, so make sure to run `tox -e mypy` to catch any typing errors and fix them before pushing the code to your PR.
-- Keep API compatibility in mind. Although `composio` does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/Composiohq/composio/blob/master/python/composio/utils/decorators.py#L15) on the existing API.
+- Keep API compatibility in mind. Although `composio` does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/composiohq/composio/blob/master/python/composio/utils/decorators.py#L15) on the existing API.
 
 ## Creating a PR
 

@@ -1,5 +1,5 @@
 <p>
-  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-JP.md">JP</a>
+  <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
 </p>
 
 <p align="center">
@@ -279,6 +279,6 @@ ComposioはElasticライセンスの下でライセンスされています - �
 
 ## 💪 すべての貢献者に感謝
 
-<a href="https://github.com/ComposioHQ/composio/graphs/contributors">
+<a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="貢献者のリスト"/>
 </a>

@@ -31,7 +31,7 @@ def main():
     )
 
     # Define task
-    task = "Star a repo ComposioHQ/composio on GitHub"
+    task = "Star a repo composiohq/composio on GitHub"
 
     # Define agent
     agent = create_openai_functions_agent(openai_client, tools, prompt)

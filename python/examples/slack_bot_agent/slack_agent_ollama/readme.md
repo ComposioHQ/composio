@@ -17,10 +17,10 @@ ollama serve & ollama pull mistral
 ```
 
 # Slack Bot Schematic 
-![alt text](https://github.com/ComposioHQ/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/schematic.png?raw=true)
+![alt text](https://github.com/composiohq/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/schematic.png?raw=true)
 
 ## Adding a Slackbot
-![alt text](https://github.com/ComposioHQ/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/adding_slack_bot.gif?raw=true)
+![alt text](https://github.com/composiohq/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/adding_slack_bot.gif?raw=true)
 
 ## Steps to perform before running
 

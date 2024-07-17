@@ -4,18 +4,18 @@ Contributions to the framework, its plugins, related tools and tools are welcome
 
 There are various ways to contribute:
 
-- If you need support, want to report a bug or ask for features, you can check the [Issues page](https://github.com/Composiohq/composio/issues) and raise an issue, if applicable.
-- If you would like to contribute a bug fix or feature then [Submit a pull request](https://github.com/Composiohq/composio/pulls).
-- If you have other kinds of feedback, you can contact one of the [authors](https://github.com/Composiohq/composio/blob/master/AUTHORS.md) by email.
+- If you need support, want to report a bug or ask for features, you can check the [Issues page](https://github.com/composiohq/composio/issues) and raise an issue, if applicable.
+- If you would like to contribute a bug fix or feature then [Submit a pull request](https://github.com/composiohq/composio/pulls).
+- If you have other kinds of feedback, you can contact one of the [authors](https://github.com/composiohq/composio/blob/master/AUTHORS.md) by email.
 
-> Before reading on, please have a look at the [code of conduct](https://github.com/Composiohq/composio/blob/master/CODE_OF_CONDUCT.md).
+> Before reading on, please have a look at the [code of conduct](https://github.com/composiohq/composio/blob/master/CODE_OF_CONDUCT.md).
 
 ## A few simple rules
 
 - Before working on a feature, reach out to one of the core developers or discuss the feature in an issue. The framework caters a diverse audience and new features require upfront coordination.
 - Include unit tests for 100% coverage if possible when you contribute new features, as they help to a) prove that your code works correctly, and b) guard against future breaking changes to lower the maintenance cost.
 - Bug fixes also generally require unit tests, because the presence of bugs usually indicates insufficient test coverage.
-- Keep API compatibility in mind when you change code in the `composio`. Although `composio` does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/Composiohq/composio/blob/master/python/composio/utils/decorators.py#L15) on the existing API and discussing the breaking changes with maintainers.
+- Keep API compatibility in mind when you change code in the `composio`. Although `composio` does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/composiohq/composio/blob/master/python/composio/utils/decorators.py#L15) on the existing API and discussing the breaking changes with maintainers.
 - When you contribute a new feature to `composio`, the maintenance burden is transferred to the core team. This means that the benefit of the contribution must be compared against the cost of maintaining the feature.
 - Before committing and opening a PR, run all tests locally. This saves CI hours and ensures you only commit clean code.
 

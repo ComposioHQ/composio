@@ -35,7 +35,7 @@ crewai_agent = Agent(
 
 # Define task
 task = Task(
-    description="Star a repo ComposioHQ/composio on GitHub",
+    description="Star a repo composiohq/composio on GitHub",
     agent=crewai_agent,
     expected_output="if the star happened",
 )

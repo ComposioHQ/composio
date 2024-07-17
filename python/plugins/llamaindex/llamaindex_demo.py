@@ -38,7 +38,7 @@ def main():
         verbose=True,
     ).as_agent()
 
-    response = agent.chat("Hello! I would like to star a repo ComposioHQ/composio on GitHub")
+    response = agent.chat("Hello! I would like to star a repo composiohq/composio on GitHub")
     print("Response:", response)
 
 

@@ -43,8 +43,8 @@ In addition to the existing tools, a user can easily create their own tool and u
 
 **Pre-requisites:**
 
-* [Clone the Composio repo](https://github.com/ComposioHQ/composio)
-* [Setting up the development environment](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md#development-setup)
+* [Clone the Composio repo](https://github.com/composiohq/composio)
+* [Setting up the development environment](https://github.com/composiohq/composio/blob/master/CONTRIBUTING.md#development-setup)
 
 Your local tool and its actions should be organized as follows:
 <CodeGroup>
@@ -213,8 +213,8 @@ class Action(tuple, Enum):
 
 There are lot of local tools available in `composio/tools/local` directory, that you can use as a reference. To get started, you should check out the below two tools:
 
-- [Mathematical tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/mathematical/tool.py): Simple tool to perform mathematical operations.
-- [Greptile tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/greptile/tool.py): Tool to integrate with [Greptile](https://www.greptile.com/) framework.
+- [Mathematical tool](https://github.com/composiohq/composio/blob/master/python/composio/tools/local/mathematical/tool.py): Simple tool to perform mathematical operations.
+- [Greptile tool](https://github.com/composiohq/composio/blob/master/python/composio/tools/local/greptile/tool.py): Tool to integrate with [Greptile](https://www.greptile.com/) framework.
 
 **Key Points:**
 

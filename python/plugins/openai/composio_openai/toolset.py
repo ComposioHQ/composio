@@ -41,7 +41,7 @@ class ComposioToolSet(BaseComposioToolSet):
         composio_tools = ComposioToolset()
 
         # Define task.
-        task = "Star a repo ComposioHq/composio on GitHub"
+        task = "Star a repo composiohq/composio on GitHub"
 
         # Get GitHub tools that are pre-configured
         actions = composio_toolset.get_tools(apps=[App.GITHUB])

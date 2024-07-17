@@ -84,7 +84,7 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO
 
 <CodeGroup>
 ```python python
-my_task = "Star a repo ComposioHQ/composio on GitHub"
+my_task = "Star a repo composiohq/composio on GitHub"
 
 # Setup openai assistant
 assistant_instruction = "You are a super intelligent personal assistant"
@@ -107,7 +107,7 @@ run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=as
 ```
 
 ```javascript javascript
-const instruction = "Star a repo ComposioHQ/composio on GitHub";
+const instruction = "Star a repo composiohq/composio on GitHub";
 
 // Initialise the Composio Tool Set
 const response = await openai_client.chat.completions.create({
@@ -195,7 +195,7 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO
 
 
 ## Step 5
-my_task = "Star a repo ComposioHQ/composio on GitHub"
+my_task = "Star a repo composiohq/composio on GitHub"
 
 # Create a chat completion request to decide on the action
 response = openai_client.chat.completions.create(
@@ -246,7 +246,7 @@ const tools = await composio_toolset.get_actions({
 });
 
 // Defining the user instruction for the OpenAI model
-const instruction = "Star a repo ComposioHQ/composio on GitHub";
+const instruction = "Star a repo composiohq/composio on GitHub";
 
 // Creating a chat completion request to the OpenAI model
 const response = await openai_client.chat.completions.create({
