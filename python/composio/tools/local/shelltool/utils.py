@@ -43,3 +43,6 @@ def git_clone_cmd(request_data):
 def git_tree_cmd() -> str:
     """Command for creating git tree."""
     return "git ls-tree -r HEAD --name-only > ./git_repo_tree.txt"
+
+
+# git clone --progress https://$GITHUB_ACCESS_TOKEN@github.com/ComposioHQ/composio.git

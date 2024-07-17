@@ -17,24 +17,35 @@ from composio.tools.local.handler import get_runtime_action
 class FlyIOWorkspace(Workspace):
     """FlyIO Workspace."""
 
+    flyio: FlyIO
+
     def __init__(
         self,
         image: t.Optional[str] = None,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
         flyio_token: t.Optional[str] = None,
-        env: t.Optional[t.Dict[str, str]] = None,
+        composio_api_key: t.Optional[str] = None,
+        composio_base_url: t.Optional[str] = None,
+        github_access_token: t.Optional[str] = None,
+        environment: t.Optional[t.Dict] = None,
     ):
         """Initialize FlyIO workspace."""
-        super().__init__(api_key=api_key, base_url=base_url)
+        super().__init__(
+            composio_api_key=composio_api_key,
+            composio_base_url=composio_base_url,
+            github_access_token=github_access_token,
+            environment=environment,
+        )
+        self.image = image
+        self.flyio_token = flyio_token
         self.access_token = "".join(uuid4().hex.split("-"))
+
+    def setup(self) -> None:
+        """Setup workspace."""
         self.flyio = FlyIO(
             access_token=self.access_token,
-            image=image,
-            api_key=api_key,
-            base_url=base_url,
-            flyio_token=flyio_token,
-            env=env,
+            image=self.image,
+            flyio_token=self.flyio_token,
+            environment=self.environment,
         )
         self.flyio.setup()
 

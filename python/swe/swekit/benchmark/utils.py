@@ -21,6 +21,7 @@ from composio import Action
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.tools.env.factory import ExecEnv, WorkspaceFactory
 from composio.utils.logging import get as get_logger
+from composio.utils.url import get_api_url_base
 
 
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
@@ -109,12 +110,19 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
+    composio_toolset = ComposioToolSet(workspace_env=ExecEnv.HOST)
     workspace = WorkspaceFactory.new(
-        env=ExecEnv.DOCKER, image=repo_to_image_id_map[repo]
+        wtype=ExecEnv.DOCKER,
+        image=repo_to_image_id_map[repo],
+        api_key=composio_toolset.api_key,
+        base_url=composio_toolset.base_url or get_api_url_base(),
     )
     workspace_id = workspace.id
+    composio_toolset.set_workspace_id(
+        workspace_id=workspace_id,
+    )
+
     workspace_creation_time = datetime.datetime.now() - start_time
-    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     cd_resp = composio_toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
         params={
@@ -147,14 +155,19 @@ def build_image_and_container(
 ):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
+    composio_toolset = ComposioToolSet()
     if workspace_env == ExecEnv.DOCKER:
         workspace = WorkspaceFactory.new(
-            env=ExecEnv.DOCKER,
+            wtype=ExecEnv.DOCKER,
             image=DEFAULT_IMAGE,
+            api_key=composio_toolset.api_key,
+            base_url=composio_toolset.base_url or get_api_url_base(),
         )
     elif workspace_env == ExecEnv.E2B:
         workspace = WorkspaceFactory.new(
-            env=ExecEnv.E2B,
+            wtype=ExecEnv.E2B,
+            api_key=composio_toolset.api_key,
+            base_url=composio_toolset.base_url or get_api_url_base(),
         )
     else:
         raise ValueError(f"Unsupported workspace environment: {workspace_env}")
@@ -164,9 +177,9 @@ def build_image_and_container(
         workspace.id,
         workspace_creation_time,
     )
-    composio_toolset = ComposioToolSet(workspace_id=workspace.id)
 
     start_time = datetime.datetime.now()
+    composio_toolset.set_workspace_id(workspace_id=workspace.id)
     clone_resp = composio_toolset.execute_action(
         entity_id="123",
         action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
@@ -198,14 +211,14 @@ def setup_workspace(
     # )
     # if workspace_id:
     #     return workspace_id
-    if workspace_env == ExecEnv.DOCKER:
-        workspace_id = create_workspace_from_image(
-            repo=repo,
-            repo_to_image_id_map=repo_to_image_id_map,
-            base_commit=base_commit,
-        )
-        if workspace_id:
-            return workspace_id
+    # if workspace_env == ExecEnv.DOCKER:
+    #     workspace_id = create_workspace_from_image(
+    #         repo=repo,
+    #         repo_to_image_id_map=repo_to_image_id_map,
+    #         base_commit=base_commit,
+    #     )
+    #     if workspace_id:
+    #         return workspace_id
     workspace_id = build_image_and_container(
         repo=repo, base_commit=base_commit, workspace_env=workspace_env
     )

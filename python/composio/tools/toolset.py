@@ -91,9 +91,9 @@ class ComposioToolSet(WithLogger):
                 "to create a new workspace"
             )
             self.workspace = WorkspaceFactory.new(
-                env=workspace_env,
-                api_key=self.api_key,
-                base_url=base_url or get_api_url_base(),
+                wtype=workspace_env,
+                composio_api_key=self.api_key,
+                composio_base_url=base_url or get_api_url_base(),
             )
         else:
             self.logger.debug(f"Loading workspace with ID: {workspace_id}")

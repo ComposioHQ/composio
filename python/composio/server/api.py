@@ -25,7 +25,7 @@ from composio import Action, App
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
-from composio.tools.env.e2b.workspace import ENV_ACCESS_TOKEN
+from composio.tools.env.base import ENV_ACCESS_TOKEN
 
 
 ResponseType = t.TypeVar("ResponseType")

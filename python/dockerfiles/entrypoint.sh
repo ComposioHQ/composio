@@ -28,7 +28,6 @@ if [ "$COMPOSIO_DEV_MODE" = 1 ]; then
     pip install -e /opt/composio-core
 fi
 
-
 # Update apps
 composio apps update
 
