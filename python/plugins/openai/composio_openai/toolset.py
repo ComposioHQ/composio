@@ -41,7 +41,7 @@ class ComposioToolSet(BaseComposioToolSet):
         composio_tools = ComposioToolset()
 
         # Define task.
-        task = "Star a repo SamparkAI/composio_sdk on GitHub"
+        task = "Star a repo composiohq/composio on GitHub"
 
         # Get GitHub tools that are pre-configured
         actions = composio_toolset.get_tools(apps=[App.GITHUB])
@@ -99,7 +99,7 @@ class ComposioToolSet(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "Seperate `entity_id` can not be provided during "
+                "separate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:

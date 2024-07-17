@@ -84,7 +84,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
         llm=llm,
     )
     task = Task(
-        description="Star a repo ComposioHQ/composio on GitHub",
+        description="Star a repo composiohq/composio on GitHub",
         agent=crewai_agent,
         expected_output="if the star happened"
     )
@@ -100,14 +100,14 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <CodeGroup>
     ```bash Executing Agents
     > Entering new CrewAgentExecutor chain...[0m
-    I need to star a repository on GitHub, specifically the repo "ComposioHQ/composio".
+    I need to star a repository on GitHub, specifically the repo "composiohq/composio".
 
     Action:
     github_star_repo
 
     Action Input:
     {
-    "owner": "ComposioHQ",
+    "owner": "composiohq",
     "repo": "composio"
     }
 

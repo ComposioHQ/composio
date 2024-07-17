@@ -26,8 +26,8 @@ roles:
     backstory: "A developer exploring new codebases and have certain tools available to execute different tasks."
     tasks:
       star_github:
-        description: "Star a repo ComposioHQ/composio on GitHub"
-        expected_output: "Response wheather the task was executed."
+        description: "Star a repo composiohq/composio on GitHub"
+        expected_output: "Response whether the task was executed."
 """
     + tool_section_str
 )

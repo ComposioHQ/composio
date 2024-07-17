@@ -34,7 +34,7 @@ agent = FunctionCallingAgentWorker(
     verbose=True,
 ).as_agent()
 
-human_description = "The database to use is company.db"
+human_description = "The database to use is companydb"
 human_input = "Query the table MOCK_DATA for all rows and plot a graph between first names and salary by using code interpretor"
 response = agent.chat(
     "Database description ="+ human_description +"Task to perform:" + human_input
