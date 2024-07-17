@@ -71,7 +71,7 @@ openai_client = OpenAI(api_key="******OPENAIKEY******")
 tool_set = ComposioToolSet(entity_id="melissa")
 actions = tool_set.get_tools(apps=[App.GITHUB])
 
-my_task = "Star a repo ComposioHQ/composio on GitHub"
+my_task = "Star a repo composiohq/composio on GitHub"
 
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
@@ -93,7 +93,7 @@ const toolset = new OpenAIToolSet({
 
 const tools = await toolset.get_actions({actions: ['github_star_repo']})
 
-const task = "Star a repo ComposioHQ/composio on GitHub"
+const task = "Star a repo composiohq/composio on GitHub"
 
 const response = await toolset.client.chat.completions.create({
     model: "gpt-4-turbo-preview",

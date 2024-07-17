@@ -1,15 +1,15 @@
 # SQL Agent Guide
 
-This guide provides detailed steps to create a SQL agent that leverages CrewAI, Composio, and ChatGPT to execute SQL queriesm, document them and plot graphs based on them. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a SQL agent that leverages CrewAI, Composio, and ChatGPT to execute SQL queries, document them and plot graphs based on them. Ensure you have Python 3.8 or higher installed.
 Here's the coding guide in our documentation: [Guide](https://docs.composio.dev/guides/examples/sql-agent)
 
 # Sample Output:
 
-![](https://github.com/ComposioHQ/composio/blob/24cdfdb3f2ae30f0ce3ea5f9b31a152f427a2a44/python/examples/sql_agent/sql_agent_plotter_langchain/sql_agent.gif)
+![](https://github.com/composiohq/composio/blob/24cdfdb3f2ae30f0ce3ea5f9b31a152f427a2a44/python/examples/sql_agent/sql_agent_plotter_langchain/sql_agent.gif)
 
 ## Sample Output plot
 
-![](https://github.com/ComposioHQ/composio/blob/24cdfdb3f2ae30f0ce3ea5f9b31a152f427a2a44/python/examples/sql_agent/sql_agent_plotter_langchain/example_plot_based_on_db.png)
+![](https://github.com/composiohq/composio/blob/24cdfdb3f2ae30f0ce3ea5f9b31a152f427a2a44/python/examples/sql_agent/sql_agent_plotter_langchain/example_plot_based_on_db.png)
 
 ## Steps to Run
 
