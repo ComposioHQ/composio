@@ -121,4 +121,5 @@ class FlyIOWorkspace(Workspace):
     def teardown(self) -> None:
         """Teardown E2B workspace."""
         super().teardown()
-        self.flyio.teardown()
+        if hasattr(self, "flyio"):
+            self.flyio.teardown()

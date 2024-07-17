@@ -233,15 +233,24 @@ class SSHShell(Shell):
         except ValueError:
             return 1
 
+    def _sanitize_output(self, output: str) -> str:
+        """Clean the output."""
+        lines = list(map(lambda x: x.rstrip(), output.split("\r\n")))
+        clean = "\n".join(lines[1:])
+        if clean.startswith("\r"):
+            clean = clean[1:]
+        return clean
+
     def exec(self, cmd: str) -> t.Dict:
         """Execute a command and return output and exit code."""
-        self._send(buffer=cmd)
+        output = ""
         for _cmd in cmd.split(" && "):
+            self._send(buffer=_cmd)
             self._wait(cmd=_cmd)
+            output += self._sanitize_output(output=self._read())
 
-        output = list(map(lambda x: x.rstrip(), self._read().split("\r\n")))
         return {
-            STDOUT: "\n".join(output[1:]),
+            STDOUT: output,
             STDERR: "",
             EXIT_CODE: str(self._exit_status()),
         }
