@@ -102,7 +102,7 @@ session = client.sessions.create(
     user_id=user.id, agent_id=agent.id, situation=situation_prompt
 )
 
-user_msg = "Hi, I am presenting my project, hosted at github repository SamparkAI/composio_sdk. If you like it, adding a star would be helpful "
+user_msg = "Hi, I am presenting my project, hosted at github repository ComposioHQ/composio. If you like it, adding a star would be helpful "
 
 # user_msg = "What do you like about tech?"
 

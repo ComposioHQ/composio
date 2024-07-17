@@ -49,7 +49,7 @@ actions = toolset.get_tools(tools=App.GITHUB)
 This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
 
 ```python
-my_task = "Star a repo SamparkAI/composio_sdk on GitHub"
+my_task = "Star a repo ComposioHQ/composio on GitHub"
 
 # Create a chat completion request to decide on the action
 response = client.beta.tools.messages.create(

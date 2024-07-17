@@ -59,7 +59,7 @@ task = Task(
         output_type=OutputType.TEXT,
         input_type=InputType.TEXT,
         model=open_ai_text_completion_model,
-        instructions="Star a repo SamparkAI/docs on GitHub",
+        instructions="Star a repo ComposioHQ/composio on GitHub",
         log_output=True,
         enhance_prompt=False,
 )

@@ -91,7 +91,7 @@ session = t.cast(
 
 user_msg = (
     "Hi, I am presenting my project, hosted at github repository "
-    "SamparkAI/composio_sdk. If you like it, adding a star would be helpful"
+    "ComposioHQ/composio. If you like it, adding a star would be helpful"
 )
 
 # Get LLM response

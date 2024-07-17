@@ -86,6 +86,6 @@ agent = FunctionCallingAgentWorker(
 Validate the execution and response from the agent to ensure the task was completed successfully.
 
 ```bash
-response = agent.chat("Hello! I would like to star a repo SamparkAI/docs on GitHub")
+response = agent.chat("Hello! I would like to star a repo ComposioHQ/composio on GitHub")
 print("Response:", response)
 ```

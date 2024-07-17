@@ -42,7 +42,7 @@ class ComposioToolSet(BaseComposioToolSet):
         tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
         # Define task
-        task = "Star a repo SamparkAI/docs on GitHub"
+        task = "Star a repo ComposioHQ/composio on GitHub"
 
         # Define agent
         agent = create_openai_functions_agent(openai_client, tools, prompt)

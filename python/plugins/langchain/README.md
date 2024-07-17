@@ -55,7 +55,7 @@ tools = ComposioToolset(apps=[App.GITHUB])
 Configure and execute the agent to perform tasks such as starring a repository on GitHub.
 
 ```python
-task = "Star a repo SamparkAI/docs on GitHub"
+task = "Star a repo ComposioHQ/composio on GitHub"
 
 # Create and set up the agent
 agent = create_openai_functions_agent(llm, tools, prompt)
@@ -71,9 +71,9 @@ Validate the execution and response from the agent to ensure the task was comple
 
 ```bash
 > Entering new AgentExecutor chain...
-> Invoking: `github_star_repo` with `{'owner': 'SamparkAI', 'repo': 'docs'}`
+> Invoking: `github_star_repo` with `{'owner': 'ComposioHQ', 'repo': 'composio'}`
 > {'execution_details': {'executed': True}, 'response_data': ''}
-> I have successfully starred the repository SamparkAI/docs on GitHub.
+> I have successfully starred the repository ComposioHQ/composio on GitHub.
 ```
 
 ### Advanced Configuration

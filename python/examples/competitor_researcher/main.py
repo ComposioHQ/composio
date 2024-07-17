@@ -1,25 +1,15 @@
 # Import necessary libraries
 import os
 from datetime import datetime
-
 import dotenv
 import requests
 from bs4 import BeautifulSoup
 from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
-from langchain_openai import ChatOpenAI
-from composio_openai import  ComposioToolSet as ComposioToolSetOpenAI,Action
 
-composio_toolset_openai = ComposioToolSetOpenAI()
-
-openai_notion_tools = composio_toolset_openai.get_tools(apps=[App.NOTION])
-
-print(openai_notion_tools)
 # Load environment variables
 dotenv.load_dotenv()
-
 openai_api_key = os.getenv("OPENAI_API_KEY")
-
 # URL of the competitor website
 url = os.getenv("URL")
 if not url:
@@ -38,7 +28,7 @@ llm = ChatOpenAI(model="gpt-4-turbo", api_key=openai_api_key)
 # Define tools for the agents using the ComposioToolSet
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps=[App.NOTION])
-print(tools)
+
 # Retrieve the current date and time
 date = datetime.today().strftime("%Y-%m-%d")
 timezone = datetime.now().astimezone().tzinfo

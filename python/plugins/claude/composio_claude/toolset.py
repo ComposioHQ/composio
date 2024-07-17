@@ -29,7 +29,7 @@ class ComposioToolset(BaseComposioToolSet):
         composio_tools = ComposioToolset()
 
         # Define task.
-        task = "Star a repo SamparkAI/composio_sdk on GitHub"
+        task = "Star a repo ComposioHQ/composio on GitHub"
 
         # Get GitHub tools that are pre-configured
         actions = composio_toolset.get_tools(tools=[App.GITHUB])

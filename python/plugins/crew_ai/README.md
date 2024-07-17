@@ -59,7 +59,7 @@ crewai_agent = Agent(
 
 # Define the task
 task = Task(
-    description="Star a repo SamparkAI/docs on GitHub",
+    description="Star a repo ComposioHQ/composio on GitHub",
     agent=crewai_agent,
     expected_output="if the star happened"
 )
@@ -74,7 +74,7 @@ Verify the agent's actions and responses to ensure the task was completed succes
 
 ```bash
 > Entering new CrewAgentExecutor chain...
-> I need to star the repository "SamparkAI/docs" on GitHub.
+> I need to star the repository "ComposioHQ/composio" on GitHub.
 > {'execution_details': {'executed': True}, 'response_data': ''}
 > Finished chain.
 ```
