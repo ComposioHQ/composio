@@ -87,11 +87,11 @@ agent.reset()
 
 ### Step 4: Execute with your prompt/task.
 
-Execute the following code to excute the agent, ensuring that the intended task has been successfully completed.
+Execute the following code to execute the agent, ensuring that the intended task has been successfully completed.
 
 ```python
 prompt = (
-    "I have craeted a new Github Repo,"
+    "I have created a new Github Repo,"
     "Please star my github repository: camel-ai/camel"
 )
 user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)

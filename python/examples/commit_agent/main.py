@@ -1,7 +1,7 @@
 # Import necessary libraries
 import os
 
-from composio_crewai import Action, App, ComposioToolSet
+from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
 from dotenv import load_dotenv
 from flask import Flask, request

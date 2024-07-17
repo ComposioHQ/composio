@@ -54,16 +54,16 @@ class FormatAndLintCodebase(Action[CodeFormatRequest, CodeFormatResponse]):
     _tool_name = "codeformat"
 
     def execute(
-        self, request: CodeFormatRequest, authorisation_data: dict = {}
+        self, request_data: CodeFormatRequest, authorisation_data: dict = {}
     ) -> CodeFormatResponse:
         try:
-            path = Path(request.path)
+            path = Path(request_data.path)
             results = []
 
             if not path.exists():
                 return CodeFormatResponse(
                     results=[],
-                    error=f"The specified path '{request.path}' does not exist or is not accessible.",
+                    error=f"The specified path '{request_data.path}' does not exist or is not accessible.",
                 )
 
             files_to_process = [path] if path.is_file() else list(path.rglob("*.py"))

@@ -8,7 +8,7 @@ uuid(){
 # Setup composio logging level
 export COMPOSIO_LOGGING_LEVEL=debug
 
-# TOFIX: Do not use random user everytime
+# TOFIX: Do not use random user every time
 # Setup credentials
 export _SSH_USERNAME=$(uuid)
 export _SSH_PASSWORD=$(uuid)

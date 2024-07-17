@@ -18,7 +18,7 @@ from composio.tools.env.base import RemoteWorkspace
 from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
 
 
-COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.resolve()
+COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.parent.resolve()
 COMPOSIO_CACHE = Path.home() / ".composio"
 CONTAINER_DEV_VOLUMES = {
     COMPOSIO_PATH: {

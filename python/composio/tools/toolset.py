@@ -194,8 +194,8 @@ class ComposioToolSet(WithLogger):
                 f"{action.name}_{entity_id}_{time.time()}", output
             )
             return output_modified
-        except Exception as e:
-            print(f"Error checking file response: {e}")
+        except Exception:
+            pass
         return output
 
     def _save_var_files(self, file_name_prefix: str, output: dict) -> dict:
