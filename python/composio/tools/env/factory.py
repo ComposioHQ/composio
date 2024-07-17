@@ -47,19 +47,21 @@ class WorkspaceFactory:
         return workspace
 
     @classmethod
-    def new(cls, env: ExecEnv, **kwargs: t.Any) -> Workspace:
+    def new(cls, wtype: ExecEnv, **kwargs: t.Any) -> Workspace:
         """Create a new workspace."""
-        get_logger().debug(f"Creating workspace with {env=} and {kwargs=}")
+        get_logger().debug(f"Creating workspace with {wtype=} and {kwargs=}")
         workspace: Workspace
-        if env == ExecEnv.HOST:
+        if wtype == ExecEnv.HOST:
             workspace = HostWorkspace(**kwargs)
-        elif env == ExecEnv.DOCKER:
+        elif wtype == ExecEnv.DOCKER:
             workspace = DockerWorkspace(**kwargs)
-        elif env == ExecEnv.E2B:
+        elif wtype == ExecEnv.E2B:
             workspace = E2BWorkspace(**kwargs)
         else:
             workspace = FlyIOWorkspace(**kwargs)
+
         cls._workspaces[workspace.id] = workspace
+        workspace.setup()
         return cls.set_recent_workspace(workspace=workspace)
 
     @classmethod

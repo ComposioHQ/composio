@@ -78,13 +78,13 @@ class SearchCodebase(Action[CodeSearchRequest, CodeSearchResponse]):
     _tool_name = "codegrep"
 
     def execute(
-        self, request: CodeSearchRequest, authorisation_data: dict = {}
+        self, request_data: CodeSearchRequest, authorisation_data: dict = {}
     ) -> CodeSearchResponse:
         try:
-            search_paths = request.file_paths or [request.code_directory]
+            search_paths = request_data.file_paths or [request_data.code_directory]
 
             grep_results = grep_util(
-                pattern=request.query, filenames=search_paths, no_gitignore=False
+                pattern=request_data.query, filenames=search_paths, no_gitignore=False
             )
             print("Grep results: ", grep_results)
             formatted_results = [

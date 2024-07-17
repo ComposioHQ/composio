@@ -25,7 +25,7 @@ from composio import Action, App
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
-from composio.tools.env.e2b.workspace import ENV_ACCESS_TOKEN
+from composio.tools.env.base import ENV_ACCESS_TOKEN
 
 
 ResponseType = t.TypeVar("ResponseType")
@@ -76,6 +76,10 @@ class ExecuteActionRequest(BaseModel):
     params: t.Dict = Field(
         ...,
         description="Parameters for executing the request.",
+    )
+    metadata: t.Dict = Field(
+        None,
+        description="Metadata for executing action.",
     )
     entity_id: str = Field(
         None,
@@ -186,6 +190,7 @@ def create_app() -> FastAPI:
         return get_context().toolset.execute_action(
             action=action,
             params=request.params,
+            metadata=request.metadata,
             entity_id=request.entity_id,
             connected_account_id=request.connected_account_id,
         )

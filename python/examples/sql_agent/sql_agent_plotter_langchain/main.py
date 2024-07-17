@@ -28,7 +28,7 @@ tools = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL, App.CODEINTERPRETER])
 # Define the task to execute
 # We have a dummy database called company.db which contains a table called MOCK_DATA
 # modify this task as per your own requirements
-query_task = "Write sqlite query to get top 10 rows from the only table MOCK_DATA and database company.db using sqltool, write the output in a file called log.txt and return the output"
+query_task = "Write sqlite query to get top 10 rows from the only table MOCK_DATA and database companydb using sqltool, write the output in a file called log.txt and return the output"
 
 # Create the agent for SQL and File operations and execute the task
 query_agent = create_openai_functions_agent(llm, sql_file_tool, prompt)

@@ -1,28 +1,29 @@
 # Import necessary libraries
 import os
 from datetime import datetime
-
 import dotenv
 import requests
 from bs4 import BeautifulSoup
-from composio_crewai import App, ComposioSDK, ComposioToolSet
+from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
-from flask import Flask, jsonify
-from langchain_openai import ChatOpenAI
-
 
 # Load environment variables
 dotenv.load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("MODEL")
 # URL of the competitor website
 url = os.getenv("URL")
+if not url:
+    raise ValueError("'URL' is not set. It represents the competitor's website.")
+
 # actual parent page in Notion
 parent_page = os.getenv("NOTION_PARENT_PAGE")
-
+if not parent_page:
+    raise ValueError(
+        "'NOTION_PARENT_PAGE' is not set. It represents the parent page in Notion under which the competitor's data is to be stored."
+    )
 
 # Initialize the language model
-llm = ChatOpenAI(model=model, api_key=openai_api_key)
+llm = ChatOpenAI(model="gpt-4-turbo", api_key=openai_api_key)
 
 # Define tools for the agents using the ComposioToolSet
 composio_toolset = ComposioToolSet()
@@ -66,8 +67,8 @@ competitor_data = scrape_website(url)
 
 # Define the task for the agent
 task = Task(
-    description=f"Create a page for the competitor with the specified name. If a page with the same name already exists, append a unique identifier as a prefix or suffix. Create the page under '{parent_page}', if the parent page '{parent_page}' doesn't exist, find the most suitable parent page among existing pages. Place the pointers given to you in the created page without altering them. \nPointers to be included in the page: {competitor_data}. \nYour task ends only after successfully putting in the pointers in the page that you created.",
-    expected_output="List down the contents of the page and title of the page created.",
+    description=f"Can you create a page with basic info on llms under parent page id 90842b92-0102-4254-840c-acc8aa6b0617",
+    expected_output="New page with content created. ",
     agent=agent,
     async_execution=True,
 )

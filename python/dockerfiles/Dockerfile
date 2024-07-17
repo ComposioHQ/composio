@@ -6,7 +6,7 @@ RUN apt update \
     && apt install openssh-server sudo python3-pip uuid-runtime -y
 
 # Install composio
-RUN /bin/python3 -m pip install composio-core==0.3.20rc1 fastapi
+RUN /bin/python3 -m pip install composio-core==0.3.23 fastapi
 
 # Define entry point
 COPY entrypoint.sh /root/entrypoint.sh

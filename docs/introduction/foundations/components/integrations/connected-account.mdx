@@ -35,7 +35,7 @@ Check the connection status. If the process was successful, the `connected_accou
 Example: API Key, Subdomain URL, Username.
 
 <CodeGroup>
-```python Printing Required Params
+```python python 
 from composio import Composio, App
 
 client = Composio(api_key="COMPOSIO_API_KEY")
@@ -50,7 +50,20 @@ integration = client.get_integration(integration_id)
 
 print(integration.get_required_variables())
 
-````
+```
+```javascript javascript
+import { Composio } from "composio-core";
+
+const client = new Composio({ apiKey: "COMPOSIO_API_KEY" });
+
+const entity = await client.getEntity({ id: "default" });
+
+// Integration chosen by the user to connect with
+const integration = await client.getIntegration({ id: "integration_id" });
+
+// List of params required from the user
+console.log(await integration.getRequiredVariables());
+```
 </CodeGroup>
 
 Response if `Zendesk` Integration was chosen.
@@ -66,15 +79,15 @@ Response if `Zendesk` Integration was chosen.
     "required": true
   }
 ]
-````
+```
 
 </CodeGroup>
 </Step>
 
 <Step title="Initiate Connection Request">
-
+Send Requested Params
 <CodeGroup>
-```python Send Requested Params
+```python python 
 # Collect the subdomain from your user via your platform's frontend
 params = {"subdomain":"***zendesk_sub_domain****"}
 
@@ -84,8 +97,22 @@ if connection_request.redirectUrl != "":
 print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
 else:
 print("The account status is: ",connection_request)
+```
+```javascript javascript
+// Collect the subdomain from your user via your platform's frontend
+const params = { subdomain: "***zendesk_sub_domain***" };
 
-````
+const connectionRequest = await integration.initiateConnection({
+  params: params,
+  entityId: ""
+});
+
+if (connectionRequest.redirectUrl !== "") {
+  console.log("Please complete the auth flow by opening this link: ", connectionRequest.redirectUrl);
+} else {
+  console.log("The account status is: ", connectionRequest);
+}
+```
 </CodeGroup>
 </Step>
 <Step title="Authorisation Flow Redirect (Optional)">
@@ -99,14 +126,13 @@ Redirect User for OAuth Authorisation Completion page.
 On approval, User will be redirected back to configured URL.
 
 <CodeGroup>
-```python Example Connection Request
+```bash Example Connection Request
 {
     "connectionStatus": "INITIATED",
     "connectedAccountId": "1f32dbf-f7cfec95e567",
     "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
 }
-````
-
+```
 </CodeGroup>
 
 </Step>

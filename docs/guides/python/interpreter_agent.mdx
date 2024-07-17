@@ -1,0 +1,143 @@
+---
+title: "Code Execution Agent"
+sidebarTitle: "Code Execution Agent"
+icon: "code"
+description: "This is a simple guide to demonstrate how to use CODEINTERPRETER tool by composio"
+---
+
+
+<Steps>
+    <Step title="Import Required Packages">
+    Import necessary packages for Python code execution:
+    <CodeGroup>
+        ```python Import statements
+        import os
+        import dotenv
+        from composio_langchain import Action, App, ComposioToolSet
+        from crewai import Agent, Crew, Process, Task
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Composio Toolset">
+    We'll initialize and set up the code interpreter tool for our agents.
+    Notice, here we arent intializing any llm. We will use by-default openai.     
+    <CodeGroup>
+        ```python Tools
+        dotenv.load_dotenv()
+
+        toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+        tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Python Code Executor Agent">
+    Define the agent responsible for executing Python code:
+    <CodeGroup>
+        ```python Agent 
+        python_executor_agent = Agent(
+            role="Python Code Executor",
+            goal="Execute Python code in a Jupyter notebook cell and return the results.",
+            verbose=True,
+            memory=True,
+            backstory="You are an expert in executing Python code and interpreting results in a sandbox environment.",
+            allow_delegation=False,
+            tools=tools,
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Python Code Execution Task">
+    Define the task for executing Python code:
+    <CodeGroup>
+        ```python Task
+        python_code = """
+        def calculate_sum(a, b):
+            return a + b
+
+        result = calculate_sum(5, 3)
+        print(result)
+        """
+
+        execute_code_task = Task(
+            description="Execute the following Python code and return the results:\n\n" + python_code,
+            expected_output="Execution of Python code returned the results.",
+            tools=tools,
+            agent=python_executor_agent,
+            allow_delegation=False,
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Execute Python Code">
+    Execute Python code using the defined agent and task:
+    <CodeGroup>
+        ```python Final Step
+        crew = Crew(
+            agents=[python_executor_agent],
+            tasks=[execute_code_task],
+            process=Process.sequential,
+        )
+
+        result = crew.kickoff()
+        print(result)
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+
+## Putting it All Together
+
+<CodeGroup>
+    ```python
+    import os
+    import dotenv
+    from composio_langchain import Action, App, ComposioToolSet
+    from crewai import Agent, Crew, Process, Task
+
+    dotenv.load_dotenv()
+
+    toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
+
+    python_executor_agent = Agent(
+        role="Python Code Executor",
+        goal="Execute Python code in a Jupyter notebook cell and return the results.",
+        verbose=True,
+        memory=True,
+        backstory="You are an expert in executing Python code and interpreting results in a sandbox environment.",
+        allow_delegation=False,
+        tools=tools,
+    )
+
+    python_code = """
+    def calculate_sum(a, b):
+        return a + b
+
+    result = calculate_sum(5, 3)
+    print(result)
+    """
+
+    execute_code_task = Task(
+        description="Execute the following Python code and return the results:\n\n" + python_code,
+        expected_output="Execution of Python code returned the results.",
+        tools=tools,
+        agent=python_executor_agent,
+        allow_delegation=False,
+    )
+
+    crew = Crew(
+        agents=[python_executor_agent],
+        tasks=[execute_code_task],
+        process=Process.sequential,
+    )
+
+    result = crew.kickoff()
+    print(result)
+    ```
+</CodeGroup>
+

@@ -27,7 +27,7 @@ open_ai_text_completion_model = OpenAIModel(
 composio_toolset = ComposioToolSet()
 
 # Define task
-instructions = "Star a repo SamparkAI/docs on GitHub"
+instructions = "Star a repo composiohq/composio on GitHub"
 
 # Get required tool
 (github_tool,) = composio_toolset.get_actions(
