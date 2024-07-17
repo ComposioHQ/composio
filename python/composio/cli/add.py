@@ -57,6 +57,12 @@ class AddIntegrationExamples(HelpfulCmd):
     type=str,
     help="Specify intgration ID to use existing integration",
 )
+@click.option(
+    "-a",
+    "--auth-mode",
+    type=str,
+    help="Specify auth mode for given app.",
+)
 @login_required
 @pass_entity_id
 @pass_context
@@ -66,6 +72,7 @@ def _add(
     entity_id: str,
     integration_id: t.Optional[str],
     no_browser: bool = False,
+    auth_mode: t.Optional[str] = None,
 ) -> None:
     """Add a new integration."""
     try:
@@ -75,6 +82,7 @@ def _add(
             entity_id=entity_id,
             integration_id=integration_id,
             no_browser=no_browser,
+            auth_mode=auth_mode,
         )
     except ComposioSDKError as e:
         raise click.ClickException(
@@ -142,6 +150,7 @@ def add_integration(
     entity_id: str = DEFAULT_ENTITY_ID,
     integration_id: t.Optional[str] = None,
     no_browser: bool = False,
+    auth_mode: t.Optional[str] = None,
 ) -> None:
     """
     Add integration.
@@ -150,6 +159,7 @@ def add_integration(
     :param context: CLI runtime context.
     :param entity_id: Entity ID to use for creating integration.
     :param no_browser: Don't open browser.
+    :param auth_mode: Preferred auth mode.
     """
     entity = context.client.get_entity(id=entity_id)
     integration = _load_integration(
@@ -179,31 +189,45 @@ def add_integration(
         raise click.ClickException(f"{app.name} does not require authentication")
 
     auth_schemes = app.auth_schemes or []
+    if len(auth_schemes) == 0:
+        return _handle_no_auth(
+            entity=entity,
+            client=context.client,
+            app_name=name,
+            no_browser=no_browser,
+            integration=integration,
+        )
+
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
-    if "API_KEY" in auth_modes:
-        return _handle_basic_auth(
-            entity=entity,
-            client=context.client,
-            app_name=name,
-            auth_mode="API_KEY",
-            auth_scheme=auth_modes["API_KEY"],
+    if auth_mode is not None and auth_mode not in auth_modes:
+        raise click.ClickException(
+            f"Invalid value for `auth_mode`, select from `{set(auth_modes)}`"
         )
 
-    if "BASIC" in auth_modes:
-        return _handle_basic_auth(
-            entity=entity,
-            client=context.client,
-            app_name=name,
-            auth_mode="BASIC",
-            auth_scheme=auth_modes["BASIC"],
+    if auth_mode is not None:
+        auth_scheme = auth_modes[auth_mode]
+    elif len(auth_modes) == 1:
+        ((auth_mode, auth_scheme),) = auth_modes.items()
+    else:
+        auth_mode = t.cast(
+            str,
+            click.prompt(
+                "Select auth mode: ",
+                type=click.Choice(
+                    choices=list(
+                        auth_modes,
+                    )
+                ),
+            ),
         )
+        auth_scheme = auth_modes[auth_mode]
 
-    return _handle_no_auth(
+    return _handle_basic_auth(
         entity=entity,
         client=context.client,
         app_name=name,
-        no_browser=no_browser,
-        integration=integration,
+        auth_mode=auth_mode,
+        auth_scheme=auth_scheme,
     )
 
 
