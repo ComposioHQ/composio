@@ -34,8 +34,8 @@ class CodeQueryRequest(BaseModel):
     )
     repository: str = Field(
         ...,
-        description="The repository to ask the question about. This should be a github repository. Example openai/docs, samparkai/composio",
-        examples=["openai/docs", "samparkai/composio"],
+        description="The repository to ask the question about. This should be a github repository. Example openai/docs, composiohq/composio",
+        examples=["openai/docs", "composiohq/composio"],
     )
 
 

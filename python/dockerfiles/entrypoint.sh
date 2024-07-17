@@ -8,7 +8,7 @@ uuid(){
 # Setup composio logging level
 export COMPOSIO_LOGGING_LEVEL=debug
 
-# TOFIX: Do not use random user everytime
+# TOFIX: Do not use random user every time
 # Setup credentials
 export _SSH_USERNAME=$(uuid)
 export _SSH_PASSWORD=$(uuid)
@@ -21,6 +21,12 @@ echo $_SSH_USERNAME:$_SSH_PASSWORD | sudo chpasswd
 
 # Start SSH Server
 service ssh restart
+
+# Install composio in dev mode if `COMPOSIO_DEV_MODE` is set to 1
+if [ "$COMPOSIO_DEV_MODE" = 1 ]; then
+    # Install composio-core in editable mode
+    pip install -e /opt/composio-core
+fi
 
 # Update apps
 composio apps update

@@ -9,6 +9,9 @@ File operations and plot insightful graphs on the data in the db"
 
 This project involves setting up and running a system of agents to conduct SQL queries, write the output to a file, and plot graphs based on the data. We use Composio to set up the tools and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project.
 
+## Link to the Source Code
+- [GitHub](https://git.new/SQLAgent)
+
 <Steps>
     <Step title="Run the `setup.sh` file">
     > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
@@ -80,7 +83,7 @@ This project involves setting up and running a system of agents to conduct SQL q
         # Define the task to execute
         query_task = (
             "Write sqlite query to get top 10 rows from the only table MOCK_DATA "
-            "and database company.db using sqltool, write the output in a file called log.txt and return the output"
+            "and database companydb using sqltool, write the output in a file called log.txt and return the output"
         )
 
         # Create the agent for SQL and File operations and execute the task
@@ -145,7 +148,7 @@ This project involves setting up and running a system of agents to conduct SQL q
     # Define the task to execute
     query_task = (
         "Write sqlite query to get top 10 rows from the only table MOCK_DATA "
-        "and database company.db using sqltool, write the output in a file called log.txt and return the output"
+        "and database companydb using sqltool, write the output in a file called log.txt and return the output"
     )
 
     # Create the agent for SQL and File operations and execute the task
@@ -172,6 +175,3 @@ This project involves setting up and running a system of agents to conduct SQL q
     ```
 
 </CodeGroup>
-
-## Link to the Source Code
-- [GitHub](https://git.new/SQLAgent)
