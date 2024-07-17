@@ -87,9 +87,11 @@ Get Action/s Input Schema
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { OpenAIToolSet } from "composio-core";
+import { OpenAIToolSet } from "composio-core"; // or any other toolset
 
-
+// If not using OpenAIToolSet
+// import { Composio } from "composio-core";  
+// const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
@@ -159,8 +161,11 @@ This is a demonstration on how to fetch actions based on specific use-cases usin
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { OpenAIToolSet } from "composio-core";
+import { OpenAIToolSet } from "composio-core"; // or any other toolset
 
+// If not using OpenAIToolSet
+// import { Composio } from "composio-core";  
+// const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
