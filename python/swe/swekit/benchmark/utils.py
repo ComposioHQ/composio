@@ -114,8 +114,8 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     workspace = WorkspaceFactory.new(
         wtype=ExecEnv.DOCKER,
         image=repo_to_image_id_map[repo],
-        api_key=composio_toolset.api_key,
-        base_url=composio_toolset.base_url or get_api_url_base(),
+        composio_api_key=composio_toolset.api_key,
+        composio_base_url=composio_toolset.base_url or get_api_url_base(),
     )
     workspace_id = workspace.id
     composio_toolset.set_workspace_id(
@@ -160,14 +160,14 @@ def build_image_and_container(
         workspace = WorkspaceFactory.new(
             wtype=ExecEnv.DOCKER,
             image=DEFAULT_IMAGE,
-            api_key=composio_toolset.api_key,
-            base_url=composio_toolset.base_url or get_api_url_base(),
+            composio_api_key=composio_toolset.api_key,
+            composio_base_url=composio_toolset.base_url or get_api_url_base(),
         )
     elif workspace_env == ExecEnv.E2B:
         workspace = WorkspaceFactory.new(
             wtype=ExecEnv.E2B,
-            api_key=composio_toolset.api_key,
-            base_url=composio_toolset.base_url or get_api_url_base(),
+            composio_api_key=composio_toolset.api_key,
+            composio_base_url=composio_toolset.base_url or get_api_url_base(),
         )
     else:
         raise ValueError(f"Unsupported workspace environment: {workspace_env}")

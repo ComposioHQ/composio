@@ -10,7 +10,7 @@ from pathlib import Path
 
 import requests
 from docker import DockerClient, from_env
-from docker.errors import DockerException
+from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 
 from composio.exceptions import ComposioSDKError
@@ -95,8 +95,8 @@ class DockerWorkspace(RemoteWorkspace):
         try:
             self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
-        except Exception as e:
-            raise Exception("Error starting workspace: ", e) from e
+        except DockerException as e:
+            raise ComposioSDKError("Error starting workspace: ", e) from e
 
         self._wait()
 
@@ -125,5 +125,8 @@ class DockerWorkspace(RemoteWorkspace):
     def teardown(self) -> None:
         """Teardown docker workspace factory."""
         super().teardown()
-        self._container.kill()
-        self._container.remove()
+        try:
+            self._container.kill()
+            self._container.remove()
+        except NotFound as e:
+            self.logger.debug(f"Error cleaning {self.id} - {e}")
