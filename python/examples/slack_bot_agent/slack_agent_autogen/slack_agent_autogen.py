@@ -52,25 +52,25 @@ listener = composio_toolset.create_trigger_listener()
 # Callback function for handling new messages in a Slack channel
 @listener.callback(filters={"trigger_name": "slackbot_receive_message"})
 def callback_new_message(event: TriggerEventData) -> None:
+    print("Recieved new messsage")
     payload = event.payload
-    user_id = payload.get("event", {}).get("user", "")
+    user_id = payload.get("user", "")
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return
+        return "Bot ignored"
 
-    message = payload.get("event", {}).get("text", "")
+    message = payload.get("text", "")
 
     # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
-        print("Bot not tagged, ignoring message")
-        return
+        print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
+        return f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
 
     # Extract channel and timestamp information from the event payload
-    channel_id = payload.get("event", {}).get("channel", "")
-    ts = payload.get("event", {}).get("ts", "")
-    thread_ts = payload.get("event", {}).get("thread_ts", ts)
-
+    channel_id = payload.get("channel", "")
+    ts = payload.get("ts", "")
+    thread_ts = payload.get("thread_ts", ts)
     # Process the message and post the response in the same channel or thread
     task = message
     result = user_proxy.initiate_chat(chatbot,message=task)

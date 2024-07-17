@@ -28,11 +28,8 @@ RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
 
-api_key = os.getenv("COMPOSIO_API_KEY","")
-if(api_key==""):
-  print("COMPOSIO API KEY NOT SET")
 # Initialize the Composio toolset for integration with OpenAI Assistant Framework
-composio_toolset = ComposioToolSet(api_key)
+composio_toolset = ComposioToolSet()
 composio_tools = composio_toolset.get_tools(
     apps=[App.CODEINTERPRETER, App.EXA, App.FIRECRAWL, App.TAVILY]
 )
