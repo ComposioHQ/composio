@@ -1,0 +1,182 @@
+---
+title: "🛠️ How to Use Actions"
+sidebarTitle: "Actions"
+icon: "wand-magic-sparkles"
+description: "Learn how to perform actions with a connected account."
+---
+
+## Using Actions
+
+**Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
+
+Actions are tasks which your agent can perform. Actions can be performed on the tools which are integrated. Some examples of actions: 
+* Create a Google Calendar Event 
+* Fetch all the Subtitles of a Youtube Video 
+* Send an email
+* Star a github repo, etc.
+
+Check out the coding guides provided in the examples section to have a better understanding.
+
+
+<div
+  style={{
+    width: '100%',
+    position: 'relative',
+    paddingTop: '56.25%',
+  }}>
+  <iframe
+    src="https://app.supademo.com/embed/clxuiweel0j7e12o2o1jhrk5t"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+      position: 'absolute',
+      top: 0,left: 0, width: '100%', height: '100%',
+      border: '3px solid #5E43CE',
+      borderRadius: '10px',
+    }}/>
+</div>
+
+
+## **Types of Actions**
+
+<Tabs>
+  <Tab title="Default Actions">
+    Composio supports a variety of default actions for each supported
+    application.
+  </Tab>
+  <Tab title="Custom Actions">
+    Our platform offers an extensible interface for defining custom actions for
+    both custom and default applications. [Learn
+    more.](https://app.composio.dev/apps/custom)
+  </Tab>
+  <Tab title="Local Code/Local Actions">
+    Composio enables fetching authentication parameters for any connection,
+    allowing you to execute code remotely and interact with API endpoints.
+    Example: Use the `getConnection` endpoint to call GitHub, create an issue on
+    your server, and fetch the access token. [Learn
+    more](https://docs.composio.dev/actions/local-code)
+
+    Local Actions are operations executed directly on the user's local system. 
+    This allows for performing tasks such as file manipulations, running scripts, 
+    or interacting with local resources, providing flexibility for scenarios where 
+    cloud execution is not suitable.
+
+    Local actions are particularly useful for:
+    - Managing and organizing files and directories
+    - Executing local scripts or programs
+    - Integrating with local development environments
+
+    By leveraging local actions, you can maintain control over your local 
+    resources while utilizing the powerful capabilities of Composio for remote interactions and executions.
+  </Tab>
+</Tabs>
+
+## Working with Actions (Fetch and Execute)
+
+<Steps>
+<Step title="Fetch Actions">
+<Tabs>
+<Tab title="Fetching Actions via Action ID">
+Get Action/s Input Schema
+<CodeGroup>
+```javascript javascript
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { OpenAIToolSet } from "composio-core";
+
+
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const tools = await toolset.get_actions({actions: ['github_issues_create']});
+console.log(tools)
+```
+</CodeGroup>
+
+The response will include the **Action's ID, Name and Input/Output schema** in **JSON Def**
+
+<CodeGroup>
+```JSON Sample Response
+[
+  {
+    "name": "github_create_issue",
+    "display_name": "Create Issue",
+    "description": "Create a new issue in a repository.",
+    "parameters": {
+      "properties": {
+        "owner": {
+          "description": "Owner of the repository",
+          "examples": [
+            "openai",
+            "facebook"
+          ],
+          "title": "Owner",
+          "type": "string"
+        }...
+      },
+      "required": [
+        "owner"...
+      ],
+      "title": "CreateIssueRequest",
+      "type": "object"
+    },
+    "response": {
+      "properties": {
+        ...
+      }
+    },
+    "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
+    "appKey": "github",
+    "logo": "https://i.imgur.com/FAXkSDq.png",
+    "appName": "Github",
+    "enabled": true
+  }
+]
+```
+</CodeGroup>
+</Tab>
+<Tab title="Fetching Actions via Use-Case">
+This is a demonstration on how to fetch actions based on specific use-cases using the CLI command. For example, to retrieve actions related to managing channel messages:
+  <CodeGroup>
+  ```bash bash
+  composio actions --use-case 'get channel messages'
+  ```
+  </CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+
+<Step title="Execute the action">
+<CodeGroup>
+```javascript javascript
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { OpenAIToolSet } from "composio-core";
+
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+toolset.execute_action({
+    action: 'slack_chat_post_message',
+    params: {
+        text: 'Hello, world!',
+        channel: 'D04N8SVQKKU'
+    },
+    entity_id: 'melissa'
+});
+```
+
+</CodeGroup>
+When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
+</Step>
+</Steps>

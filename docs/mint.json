@@ -162,7 +162,10 @@
       "group": "More",
                 "icon": "circle",
       "pages": [
-        "javascript/trigger"
+        "javascript/trigger",
+        "javascript/entity",
+        "javascript/action",
+        "javascript/account"
       ]
     }
       ]
