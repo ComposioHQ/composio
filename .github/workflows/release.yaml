@@ -48,7 +48,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
-        package: [autogen, camel, claude, crew_ai, griptape, julep, langchain, llamaindex, lyzr, openai]
+        package: [autogen, camel, claude, crew_ai, griptape, julep, langchain, llamaindex, lyzr, openai, praisonai, langgraph]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

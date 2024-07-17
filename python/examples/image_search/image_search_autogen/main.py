@@ -4,7 +4,7 @@ import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from Autogen and ComposioAutogen
-from autogen import AssistantAgent, UserProxyAgent
+from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 from composio.tools.local import embedtool
 

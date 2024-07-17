@@ -71,7 +71,7 @@ file_writer_agent = Agent(
 )
 
 # User-provided description of the database and input query
-user_description = "The database name is company.db"  # Edit the description for your database and tables
+user_description = "The database name is companydb"  # Edit the description for your database and tables
 user_input = "fetch the rows in the products table"  # Edit the input for the action you want it to perform
 
 

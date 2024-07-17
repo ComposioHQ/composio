@@ -10,7 +10,6 @@ import gql.transport
 import requests
 from gql.transport.requests import RequestsHTTPTransport
 
-from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.utils.logging import WithLogger
 
 
@@ -18,7 +17,7 @@ FLY_API = "https://api.machines.dev"
 FLY_GRAPHQL_API = "https://api.fly.io/graphql"
 API_VERSION = "/v1"
 BASE_URL = FLY_API + API_VERSION
-TOOLSERVER_IMAGE = "angrybayblade/composio"
+TOOLSERVER_IMAGE = "angrybayblade/composio:latest"
 
 
 ALLOCATE_IP_QUERY = """mutation {
@@ -51,9 +50,6 @@ RELEASE_IP_REQUEST = """mutation {
 """
 
 ENV_FLY_API_TOKEN = "FLY_API_TOKEN"
-ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
-ENV_ACCESS_TOKEN = "ACCESS_TOKEN"
-ENV_E2B_TEMPLATE = "E2B_TEMPLATE"
 
 
 class FlyIO(WithLogger):
@@ -66,34 +62,18 @@ class FlyIO(WithLogger):
         access_token: str,
         image: t.Optional[str] = None,
         flyio_token: t.Optional[str] = None,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        env: t.Optional[t.Dict[str, str]] = None,
+        environment: t.Optional[t.Dict] = None,
     ) -> None:
         """Initialize FlyIO client."""
         super().__init__()
-        api_key = api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
-        if api_key is None:
-            raise ValueError(
-                "`api_key` cannot be `None` when initializing E2BWorkspace"
-            )
-
-        base_url = base_url or os.environ.get(ENV_COMPOSIO_BASE_URL)
-        if base_url is None:
-            raise ValueError(
-                "`base_url` cannot be `None` when initializing E2BWorkspace"
-            )
-
-        github_access_token = os.environ.get(ENV_GITHUB_ACCESS_TOKEN)
-        if github_access_token is None:
-            raise ValueError(
-                f"Please export your github access token as `{ENV_GITHUB_ACCESS_TOKEN}`"
-            )
-
         flyio_token = flyio_token or os.environ.get(ENV_FLY_API_TOKEN)
         if flyio_token is None:
-            raise ValueError("FlyIO API Key is required for using FlyIO workspace")
+            raise ValueError(
+                "FlyIO API Key is required for using FlyIO workspace, "
+                f"You can export it as `{ENV_FLY_API_TOKEN}`"
+            )
 
+        self.environment = environment or {}
         self.flyio_token = flyio_token
         self.access_token = access_token
         self.image = image or TOOLSERVER_IMAGE
@@ -107,13 +87,6 @@ class FlyIO(WithLogger):
                 },
             )
         )
-        self.env = {
-            **(env or {}),
-            ENV_COMPOSIO_API_KEY: api_key,
-            ENV_COMPOSIO_BASE_URL: base_url,
-            ENV_GITHUB_ACCESS_TOKEN: github_access_token,
-            ENV_ACCESS_TOKEN: self.access_token,
-        }
 
     def _request(
         self,
@@ -209,7 +182,7 @@ class FlyIO(WithLogger):
                 json={
                     "config": {
                         "image": self.image,
-                        "env": self.env,
+                        "env": self.environment,
                         "services": [
                             {
                                 "ports": [

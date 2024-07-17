@@ -15,7 +15,7 @@ openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 
 # Define task.
-task = "Star a repo SamparkAI/composio_sdk on GitHub"
+task = "Star a repo composiohq/composio on GitHub"
 
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_tools(apps=[App.GITHUB])
@@ -24,6 +24,7 @@ tools = composio_toolset.get_tools(apps=[App.GITHUB])
 _ = composio_toolset.get_agent_instructions(
     apps=[App.GMAIL],
     actions=[
+        Action.MATHEMATICAL_CALCULATOR,
         Action.GITHUB_ACTIONS_ADD_CUSTOM_LABELS_TO_SELF_HOSTED_RUNNER_FOR_ORG,
         Action.ASANA_ALLOCATIONS_DELETE_ALLOCATION_BY_ID,
     ],

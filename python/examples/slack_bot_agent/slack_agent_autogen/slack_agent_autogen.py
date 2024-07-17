@@ -1,7 +1,7 @@
 # Import necessary libraries
 import os
 from dotenv import load_dotenv
-from autogen import AssistantAgent, UserProxyAgent
+from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 from composio.client.collections import TriggerEventData
 load_dotenv()
