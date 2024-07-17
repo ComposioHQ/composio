@@ -71,14 +71,9 @@
       "name": "Examples",
       "url": "guides"
     },
-
     {
       "name": "API",
       "url": "api-reference"
-    },
-    {
-      "name": "Tools",
-      "url": "apps"
     }
   ],
   "anchors": [],
@@ -229,113 +224,6 @@
       }
         ]
     },
-    
-    {
-      "group": "Tools",
-      "pages": [
-        {
-          "group":"Apps",
-          "pages":[
-                 
-        "apps/accelo",
-        "apps/adobe",
-        "apps/amazon",
-        "apps/amplitude",
-        "apps/apify",
-        "apps/ashby",
-        "apps/asana",
-        "apps/atlassian",
-        "apps/attio",
-        "apps/auth0",
-        "apps/bamboohr",
-        "apps/battle-net",
-        "apps/bitbucket",
-        "apps/blackbaud",
-        "apps/boldsign",
-        "apps/box",
-        "apps/braintree",
-        "apps/calendly",
-        "apps/clickup",
-        "apps/close",
-        "apps/deel",
-        "apps/discord",
-        "apps/dropbox",
-        "apps/epic-games",
-        "apps/eventbrite",
-        "apps/facebook",
-        "apps/figma",
-        "apps/freshbooks",
-        "apps/freshdesk",
-        "apps/front",
-        "apps/github",
-        "apps/gitlab",
-        "apps/gmail",
-        "apps/google-calendar",
-        "apps/google-docs",
-        "apps/google-drive",
-        "apps/google-sheets",
-        "apps/gorgias",
-        "apps/gumroad",
-        "apps/guru",
-        "apps/hackerrank-work",
-        "apps/harvest",
-        "apps/heroku",
-        "apps/highlevel",
-        "apps/hubspot",
-        "apps/intercom",
-        "apps/jira",
-        "apps/keap",
-        "apps/klaviyo",
-        "apps/linkhut",
-        "apps/linear",
-        "apps/mailchimp",
-        "apps/miro",
-        "apps/mixpanel",
-        "apps/monday",
-        "apps/mural",
-        "apps/notion",
-        "apps/okta",
-        "apps/one-drive",
-        "apps/pagerduty",
-        "apps/pandadoc",
-        "apps/pipedrive",
-        "apps/reddit",
-        "apps/sage",
-        "apps/salesforce",
-        "apps/servicem8",
-        "apps/shopify",
-        "apps/slack",
-        "apps/smugmug",
-        "apps/splitwise",
-        "apps/spotify",
-        "apps/stack-exchange",
-        "apps/strava",
-        "apps/survey-monkey",
-        "apps/taskade",
-        "apps/timely",
-        "apps/todoist",
-        "apps/trello",
-        "apps/twitch",
-        "apps/twitter",
-        "apps/typeform",
-        "apps/wakatime",
-        "apps/wave-accounting",
-        "apps/workable",
-        "apps/xero",
-        "apps/yandex",
-        "apps/youtube",
-        "apps/zendesk",
-        "apps/zoho",
-        "apps/zoho-bigin",
-        "apps/zoho-books",
-        "apps/zoho-desk",
-        "apps/zoho-invoice",
-        "apps/zoho-inventory",
-        "apps/zoho-mail",
-        "apps/zoom"
-        ]}
-      ]
-    },
     {
       "group": "Endpoints",
       "icon": "robot",
@@ -410,6 +298,10 @@
     },
     {
       "source": "/apps/usecases/autogen_blogs/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/:slug2*",
       "destination": "https://composio.dev/tools/:slug2*"
     }
   ]
