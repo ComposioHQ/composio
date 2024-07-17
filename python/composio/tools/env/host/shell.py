@@ -54,7 +54,7 @@ class HostShell(Shell):
             bufsize=1,
             env={
                 **(environment or {}),
-                **SHELL_ENV_VARS,
+                **{key: str(val) for key, val in SHELL_ENV_VARS.items()},
             },
         )
         self.logger.debug(
