@@ -10,7 +10,7 @@ import docker
 from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
 
-from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
+from composio import Action, WorkspaceFactory, WorkspaceType
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
