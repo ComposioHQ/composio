@@ -6,6 +6,7 @@ import os
 import socket
 import time
 import typing as t
+from dataclasses import dataclass
 from pathlib import Path
 
 import requests
@@ -14,11 +15,7 @@ from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import (
-    ENV_GITHUB_ACCESS_TOKEN,
-    RemoteWorkspace,
-    _read_env_var,
-)
+from composio.tools.env.base import RemoteWorkspace, WorkspaceConfig
 from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
 
 
@@ -48,6 +45,14 @@ def _get_free_port() -> int:
         sock.close()
 
 
+@dataclass
+class Config(WorkspaceConfig):
+    """Docker configuration type."""
+
+    image: t.Optional[str] = None
+    """Name of the docker image."""
+
+
 class DockerWorkspace(RemoteWorkspace):
     """Docker workspace implementation."""
 
@@ -56,29 +61,17 @@ class DockerWorkspace(RemoteWorkspace):
     _container: Container
     _client: t.Optional[DockerClient] = None
 
-    def __init__(
-        self,
-        image: t.Optional[str] = None,
-        composio_api_key: t.Optional[str] = None,
-        composio_base_url: t.Optional[str] = None,
-        github_access_token: t.Optional[str] = None,
-        environment: t.Optional[t.Dict] = None,
-    ) -> None:
+    def __init__(self, config: Config) -> None:
         """Create a docker workspace."""
-        super().__init__(
-            composio_api_key=composio_api_key,
-            composio_base_url=composio_base_url,
-            github_access_token=_read_env_var(
-                name=ENV_GITHUB_ACCESS_TOKEN,
-                default=github_access_token,
-            ),
-            environment=environment,
+        super().__init__(config=config)
+        self.image = config.image or os.environ.get(
+            ENV_COMPOSIO_SWE_AGENT,
+            DEFAULT_IMAGE,
         )
-        self.image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
 
     def setup(self) -> None:
         """Setup docker workspace."""
-        self.logger.info(f"Creating docker workspace with image: {self.image}")
+        self.logger.debug(f"Creating docker workspace with image: {self.image}")
         self.port = _get_free_port()
         self.url = f"http://localhost:{self.port}/api"
 
