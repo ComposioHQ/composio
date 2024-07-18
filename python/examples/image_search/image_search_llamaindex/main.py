@@ -16,8 +16,15 @@ from composio.tools.local import embedtool
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+
+    
 # Initialize a ComposioToolSet with the API key from environment variables
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
 tools = toolset.get_tools(apps=[App.EMBEDTOOL])

@@ -6,7 +6,17 @@ from composio_crewai import Action, ComposioToolSet
 from crewai import Agent, Crew, Task, Process
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-4-turbo", openai_api_key=os.environ["OPENAI_API_KEY"])
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI api key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+api_key = os.getenv("COMPOSIO_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter Composio api key:")
+    os.environ["COMPOSIO_API_KEY"] = api_key
+
+llm = ChatOpenAI(model="gpt-4-turbo", api_key=os.environ["OPENAI_API_KEY"])
 # llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
 composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))

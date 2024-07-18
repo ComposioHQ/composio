@@ -11,6 +11,12 @@ from composio.tools.local import embedtool
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+    
 # Define the LLM configuration with the model and API key
 llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]
@@ -36,7 +42,7 @@ user_proxy = UserProxyAgent(
 )
 
 # Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+composio_toolset = ComposioToolSet()
 
 # Register tools with the ComposioToolSet, specifying the caller (chatbot) and executor (user_proxy)
 composio_toolset.register_tools(
