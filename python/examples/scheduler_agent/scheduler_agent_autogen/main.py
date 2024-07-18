@@ -9,6 +9,10 @@ from composio.client.collections import TriggerEventData
 
 load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI api key:")
+    os.environ["OPENAI_API_KEY"] = api_key
 # Configuration for the language model
 llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]

@@ -45,6 +45,14 @@ class HostShell(Shell):
         """Initialize shell."""
         super().__init__()
         self._id = generate_id()
+        self.environment = {
+            **(environment or {}),
+            **{key: str(val) for key, val in SHELL_ENV_VARS.items()},
+        }
+
+    def setup(self) -> None:
+        """Setup host shell."""
+        self.logger.debug(f"Setting up shell: {self.id}")
         self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
@@ -52,20 +60,20 @@ class HostShell(Shell):
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
-            env={
-                **(environment or {}),
-                **{key: str(val) for key, val in SHELL_ENV_VARS.items()},
-            },
         )
         self.logger.debug(
-            f"Initial data from session: {self.id} - {self._read(wait=False)}"
+            "Initial data from session: %s - %s",
+            self.id,
+            self._read(wait=False),
         )
 
-    def setup(self) -> None:
-        """Setup host shell."""
-        self.logger.debug(f"Setting up shell: {self.id}")
+        for key, value in self.environment.items():
+            self.exec(f"export {key}={value}")
+            time.sleep(0.05)
+
         self.exec(cmd=SHELL_STATE_CMD)
         time.sleep(0.05)
+
         for file in SHELL_SOURCE_FILES:
             self.exec(cmd=f"source {file}")
             time.sleep(0.05)

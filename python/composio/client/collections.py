@@ -70,6 +70,7 @@ class ConnectedAccountModel(BaseModel):
     appUniqueId: str
     integrationId: str
     connectionParams: AuthConnectionParamsModel
+
     clientUniqueUserId: t.Optional[str] = None
 
     # Override arbitrary model config.
@@ -803,7 +804,6 @@ class ActionModel(BaseModel):
 
     name: str
     display_name: str
-    description: t.Optional[str]
     parameters: ActionParametersModel
     response: ActionResponseModel
     appKey: str
@@ -813,6 +813,7 @@ class ActionModel(BaseModel):
     enabled: bool
 
     logo: t.Optional[str] = None
+    description: t.Optional[str] = None
 
 
 class Actions(Collection[ActionModel]):

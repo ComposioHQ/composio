@@ -3,12 +3,20 @@
 import asyncio
 import datetime
 import os
+import typing as t
 from pathlib import Path
 
 import docker
-from composio_crewai import ComposioToolSet
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
+
+from composio import Action, WorkspaceFactory, WorkspaceType
+from composio.tools.env.constants import DEFAULT_IMAGE
+from composio.utils.logging import get as get_logger
+from composio.utils.url import get_api_url_base
+
+from composio_crewai import ComposioToolSet
+
 from swekit.benchmark.constants import MODEL_GPT4
 from swekit.benchmark.docker_utils.evaulate_on_docker import (
     EvaluateOnDockerArgs,
@@ -16,12 +24,6 @@ from swekit.benchmark.docker_utils.evaulate_on_docker import (
 )
 from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
-
-from composio import Action
-from composio.tools.env.constants import DEFAULT_IMAGE
-from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from composio.utils.logging import get as get_logger
-from composio.utils.url import get_api_url_base
 
 
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
@@ -31,10 +33,13 @@ PATH_TESTBED = "testbed/"
 logger = get_logger(name="run_evaluation")
 
 
-def get_issues_dataset(test_split, test_instance_ids=[]):
-    test_dataset = load_dataset(
-        DATASET_NAME,
-        split=f"test[{test_split}]",
+def get_issues_dataset(test_split, test_instance_ids=[]) -> Dataset:
+    test_dataset = t.cast(
+        Dataset,
+        load_dataset(
+            DATASET_NAME,
+            split=f"test[{test_split}]",
+        ),
     )
     print(f"Original test_dataset size: {len(test_dataset)}")
     print(f"Number of test_instance_ids: {len(test_instance_ids)}")
@@ -88,11 +93,9 @@ def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
     workspace_id = repo_to_workspace_map.get(repo)
     if not workspace_id or not workspace_id.strip():
         return None
-    composio_toolset = ComposioToolSet(
-        workspace_env=ExecEnv.DOCKER, workspace_id=workspace_id
-    )
+
     print("Resetting repository to base commit")
-    workspace_id = repo_to_workspace_map[repo]
+    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     composio_toolset.execute_action(
         action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
@@ -110,12 +113,14 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
-    composio_toolset = ComposioToolSet(workspace_env=ExecEnv.HOST)
+    composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
     workspace = WorkspaceFactory.new(
-        wtype=ExecEnv.DOCKER,
-        image=repo_to_image_id_map[repo],
-        composio_api_key=composio_toolset.api_key,
-        composio_base_url=composio_toolset.base_url or get_api_url_base(),
+        config=WorkspaceType.Docker(
+            image=repo_to_image_id_map[repo],
+            composio_api_key=composio_toolset.api_key,
+            composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
+        ),
     )
     workspace_id = workspace.id
     composio_toolset.set_workspace_id(
@@ -150,24 +155,25 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     return workspace_id
 
 
-def build_image_and_container(
-    repo, base_commit, workspace_env: ExecEnv = ExecEnv.DOCKER
-):
+def build_image_and_container(repo, base_commit, workspace_env=WorkspaceType.Docker):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
     composio_toolset = ComposioToolSet()
-    if workspace_env == ExecEnv.DOCKER:
+    if workspace_env == WorkspaceType.Docker:
         workspace = WorkspaceFactory.new(
-            wtype=ExecEnv.DOCKER,
-            image=DEFAULT_IMAGE,
-            composio_api_key=composio_toolset.api_key,
-            composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            WorkspaceType.Docker(
+                image=DEFAULT_IMAGE,
+                composio_api_key=composio_toolset.api_key,
+                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+                github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
+            ),
         )
-    elif workspace_env == ExecEnv.E2B:
+    elif workspace_env == WorkspaceType.E2B:
         workspace = WorkspaceFactory.new(
-            wtype=ExecEnv.E2B,
-            composio_api_key=composio_toolset.api_key,
-            composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            config=WorkspaceType.E2B(
+                composio_api_key=composio_toolset.api_key,
+                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            )
         )
     else:
         raise ValueError(f"Unsupported workspace environment: {workspace_env}")
@@ -204,7 +210,7 @@ def setup_workspace(
     repo_to_workspace_map,
     repo_to_image_id_map,
     base_commit,
-    workspace_env: ExecEnv = ExecEnv.DOCKER,
+    workspace_env=WorkspaceType.Docker,
 ):
     # workspace_id = get_workspace_from_repo_map(
     #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
