@@ -10,6 +10,7 @@ import click
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
 from rich.console import Console
+
 from swekit.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,

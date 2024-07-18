@@ -4,10 +4,11 @@ import typing as t
 from pathlib import Path
 
 import click
-from swekit.exceptions import SWEKitError
-from swekit.scaffold import AgenticFramework, scaffold
 
 from composio.cli.utils.params import EnumParam, PathParam
+
+from swekit.exceptions import SWEKitError
+from swekit.scaffold import AgenticFramework, scaffold
 
 
 @click.group(name="swekit")
