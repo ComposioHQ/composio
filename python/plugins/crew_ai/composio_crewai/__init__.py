@@ -1,6 +1,6 @@
 from composio_langchain import Action, App, ComposioToolSet, Tag, Trigger
 
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import WorkspaceConfig
 
 
 __all__ = (
@@ -8,6 +8,6 @@ __all__ = (
     "App",
     "Tag",
     "Trigger",
-    "ExecEnv",
+    "WorkspaceConfig",
     "ComposioToolSet",
 )

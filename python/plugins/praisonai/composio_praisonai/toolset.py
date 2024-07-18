@@ -1,12 +1,11 @@
 import os
 import typing as t
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType
+from composio import ComposioToolSet as BaseComposioToolSet
+from composio import TagType
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools import ComposioToolSet as BaseComposioToolSet
-
-
-# from composio.tools.env.factory import ExecEnv
+from composio.tools.env.base import WorkspaceConfig
 
 
 _openapi_to_python = {
@@ -28,8 +27,8 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        # workspace_env: ExecEnv = ExecEnv.DOCKER,
-        # workspace_id: t.Optional[str] = None,
+        workspace_config: t.Optional[WorkspaceConfig] = None,
+        workspace_id: t.Optional[str] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -45,8 +44,8 @@ class ComposioToolSet(BaseComposioToolSet):
             runtime="praisonai",
             entity_id=entity_id,
             output_in_file=output_in_file,
-            # workspace_env=workspace_env,
-            # workspace_id=workspace_id,
+            workspace_config=workspace_config,
+            workspace_id=workspace_id,
         )
 
         prefix_imports = [

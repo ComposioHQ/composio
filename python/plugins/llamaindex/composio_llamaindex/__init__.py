@@ -1,7 +1,7 @@
 from composio_llamaindex.toolset import ComposioToolSet  # pylint: disable=import-error
 
 from composio import Action, App, Tag, Trigger
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import WorkspaceConfig
 
 
 __all__ = (
@@ -10,5 +10,5 @@ __all__ = (
     "Tag",
     "Trigger",
     "ComposioToolSet",
-    "ExecEnv",
+    "WorkspaceConfig",
 )

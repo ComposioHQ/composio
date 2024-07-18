@@ -18,7 +18,7 @@ from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import WorkspaceConfig
 from composio.tools.schema import OpenAISchema, SchemaType
 
 
@@ -69,7 +69,7 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_env: ExecEnv = ExecEnv.HOST,
+        workspace_config: t.Optional[WorkspaceConfig] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """
@@ -86,7 +86,7 @@ class ComposioToolSet(BaseComposioToolSet):
             runtime="openai",
             entity_id=entity_id,
             output_in_file=output_in_file,
-            workspace_env=workspace_env,
+            workspace_config=workspace_config,
             workspace_id=workspace_id,
         )
         self.schema = SchemaType.OPENAI
