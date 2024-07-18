@@ -138,6 +138,24 @@ def test_workspace() -> None:
             params={"file_path": "random_file.txt", "text": "hello", "start_line": 1, "end_line": 1},
         )
         logger.info(f"output of edit file: {output_list}")
+
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_SEARCH_WORD,
+            params={"word": "BaseFileAction", "pattern": "*.py"},
+        )
+        logger.info(f"output of search word: {output_list}")
+
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_FIND_FILE,
+            params={
+                "pattern": "*file*.py",
+                "depth": None,
+                "case_sensitive": False,
+                "include": None,
+                "exclude": None
+            },
+        )
+        logger.info(f"output of find file: {output_list}")
         output = toolset.execute_action(
             action=Action.FILEEDITTOOL_OPEN_FILE,
             params={"file_name": "README.md"},

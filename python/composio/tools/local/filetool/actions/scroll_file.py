@@ -13,7 +13,7 @@ from composio.tools.local.filetool.actions.base_action import (
 
 class ScrollRequest(BaseFileRequest):
     """Request to scroll up/down in the editor."""
-    direction: ScrollDirection = Field(default=ScrollDirection.DOWN, description="The direction to scroll, by default it's down")
+    direction: ScrollDirection = Field(default=ScrollDirection.DOWN, description="The direction to scroll: up/down, by default it's down")
 
 
 class ScrollResponse(BaseFileResponse):
@@ -28,6 +28,12 @@ class ScrollResponse(BaseFileResponse):
 class Scroll(BaseFileAction):
     """
     Scrolls the view of the opened file up or down by 100 lines.
+    Returns:
+    - A dictionary of line numbers and their content for the new view window.
+    - An error message if no file is open or if the file is not found.
+
+    Raises:
+    - FileNotFoundError: If the file is not found.
     """
 
     _display_name = "Scroll up/down"
