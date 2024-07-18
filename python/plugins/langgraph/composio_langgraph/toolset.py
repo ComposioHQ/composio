@@ -1,9 +1,9 @@
 import typing as t
 
-from composio_langchain import ComposioToolSet as BaseComposioToolSet
-
+from composio import WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools.env.factory import WorkspaceConfig
+
+from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(BaseComposioToolSet):
@@ -101,7 +101,7 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfig] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """

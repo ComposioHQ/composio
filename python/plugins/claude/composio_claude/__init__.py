@@ -1,7 +1,6 @@
-from composio_claude.toolset import ComposioToolset
+from composio import Action, App, Tag, Trigger, WorkspaceType
 
-from composio import Action, App, Tag, Trigger
-from composio.tools.env.factory import WorkspaceConfig
+from composio_claude.toolset import ComposioToolset
 
 
 __all__ = (
@@ -9,6 +8,6 @@ __all__ = (
     "App",
     "Tag",
     "Trigger",
-    "WorkspaceConfig",
+    "WorkspaceType",
     "ComposioToolset",
 )

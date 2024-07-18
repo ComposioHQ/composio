@@ -134,7 +134,7 @@ class ShellFactory(WithLogger):
 
 
 @dataclass
-class WorkspaceConfig:
+class WorkspaceConfigType:
     """Workspace configuration."""
 
     composio_api_key: t.Optional[str] = None
@@ -155,7 +155,7 @@ class Workspace(WithLogger, ABC):
 
     _shell_factory: t.Optional[ShellFactory] = None
 
-    def __init__(self, config: WorkspaceConfig):
+    def __init__(self, config: WorkspaceConfigType):
         """Initialize workspace."""
         super().__init__()
         self.id = generate_id()

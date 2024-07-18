@@ -5,7 +5,7 @@ from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools.env.base import WorkspaceConfig
+from composio.tools.env.base import WorkspaceConfigType
 
 
 _openapi_to_python = {
@@ -27,7 +27,7 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfig] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """

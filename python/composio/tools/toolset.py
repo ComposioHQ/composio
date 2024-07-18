@@ -31,7 +31,11 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
-from composio.tools.env.base import ENV_GITHUB_ACCESS_TOKEN, Workspace, WorkspaceConfig
+from composio.tools.env.base import (
+    ENV_GITHUB_ACCESS_TOKEN,
+    Workspace,
+    WorkspaceConfigType,
+)
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local.base import Action as LocalAction
 from composio.tools.local.handler import LocalClient
@@ -58,7 +62,7 @@ class ComposioToolSet(WithLogger):
         output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
         workspace_id: t.Optional[str] = None,
-        workspace_config: t.Optional[WorkspaceConfig] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
     ) -> None:
         """
         Initialize composio toolset
@@ -101,14 +105,18 @@ class ComposioToolSet(WithLogger):
 
         self.logger.debug(f"Trying to get github access token for {self.entity_id=}")
         try:
-            auth_header = self.client.connected_accounts.get(
-                connection_id=self.client.get_entity(id=self.entity_id)
-                .get_connection(app=App.GITHUB)
-                .id
-            ).connectionParams.headers[  # type: ignore
-                "Authorization"
-            ]
-            return auth_header.replace("Bearer ", "")
+            account = self.client.get_entity(id=self.entity_id).get_connection(
+                app=App.GITHUB
+            )
+            token = (
+                self.client.connected_accounts.get(connection_id=account.id)
+                .connectionParams.headers["Authorization"]  # type: ignore
+                .replace("Bearer ", "")
+            )
+            self.logger.debug(
+                f"Using `{token}` with scopes: {account.connectionParams.scope}"
+            )
+            return token
         except ComposioClientError:
             return None
 

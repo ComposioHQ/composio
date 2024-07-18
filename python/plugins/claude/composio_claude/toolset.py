@@ -3,10 +3,9 @@ import typing as t
 from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
 from anthropic.types.beta.tools.tool_param import ToolParam
 
-from composio import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.tools.env.factory import WorkspaceConfig
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
@@ -57,7 +56,7 @@ class ComposioToolset(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfig] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """

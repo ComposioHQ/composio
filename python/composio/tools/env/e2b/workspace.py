@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from e2b import Sandbox
 
-from composio.tools.env.base import RemoteWorkspace, WorkspaceConfig
+from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 
 
 DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz"
@@ -21,7 +21,7 @@ ENV_E2B_TEMPLATE = "E2B_TEMPLATE"
 
 
 @dataclass
-class Config(WorkspaceConfig):
+class Config(WorkspaceConfigType):
     """Host configuration type."""
 
     template: t.Optional[str] = None

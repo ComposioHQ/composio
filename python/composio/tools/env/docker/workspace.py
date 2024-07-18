@@ -15,7 +15,7 @@ from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import RemoteWorkspace, WorkspaceConfig
+from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
 
 
@@ -46,7 +46,7 @@ def _get_free_port() -> int:
 
 
 @dataclass
-class Config(WorkspaceConfig):
+class Config(WorkspaceConfigType):
     """Docker configuration type."""
 
     image: t.Optional[str] = None

@@ -11,7 +11,7 @@ import typing_extensions as te
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 from composio.client.enums import Action
-from composio.tools.env.base import Shell, Workspace, WorkspaceConfig
+from composio.tools.env.base import Shell, Workspace, WorkspaceConfigType
 from composio.tools.env.host.shell import HostShell, SSHShell
 from composio.tools.local.handler import LocalClient
 
@@ -47,7 +47,7 @@ class SSHConfig(te.TypedDict):
 
 
 @dataclass
-class Config(WorkspaceConfig):
+class Config(WorkspaceConfigType):
     """Host configuration type."""
 
     ssh: t.Optional[SSHConfig] = None

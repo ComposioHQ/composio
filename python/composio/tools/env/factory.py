@@ -3,7 +3,7 @@ import threading
 import typing as t
 
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import Workspace, WorkspaceConfig
+from composio.tools.env.base import Workspace, WorkspaceConfigType
 from composio.tools.env.docker.workspace import Config as DockerWorkspaceConfig
 from composio.tools.env.docker.workspace import DockerWorkspace
 from composio.tools.env.e2b.workspace import Config as E2BWorkspaceConfig
@@ -53,7 +53,7 @@ class WorkspaceFactory:
         return workspace
 
     @classmethod
-    def _initialize_workspace(cls, config: WorkspaceConfig) -> Workspace:
+    def _initialize_workspace(cls, config: WorkspaceConfigType) -> Workspace:
         """Initialize a workspace from the config."""
         if isinstance(config, HostWorkspaceConfig):
             return HostWorkspace(config=config)
@@ -70,7 +70,7 @@ class WorkspaceFactory:
         raise ValueError(f"Invalid workspace config: {config}")
 
     @classmethod
-    def new(cls, config: WorkspaceConfig) -> Workspace:
+    def new(cls, config: WorkspaceConfigType) -> Workspace:
         """Create a new workspace."""
         logger = get_logger()
         logger.debug(f"Creating workspace with {config=}")

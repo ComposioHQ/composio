@@ -5,12 +5,12 @@ FlyIO workspace implementation.
 import typing as t
 from dataclasses import dataclass
 
-from composio.tools.env.base import RemoteWorkspace, WorkspaceConfig
+from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.flyio.client import FlyIO
 
 
 @dataclass
-class Config(WorkspaceConfig):
+class Config(WorkspaceConfigType):
     """Host configuration type."""
 
     image: t.Optional[str] = None

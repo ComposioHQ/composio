@@ -5,11 +5,12 @@ OpenAI demo.
 from pathlib import Path
 
 import dotenv
-from composio_openai import ComposioToolSet
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from composio import Shell, WorkspaceType, action
+
+from composio_openai import ComposioToolSet
 
 
 class GitRepoRequest(BaseModel):

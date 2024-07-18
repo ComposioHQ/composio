@@ -2,13 +2,13 @@ import types
 import typing as t
 from inspect import Signature
 
-from composio_langchain import ComposioToolSet as BaseComposioToolSet
 from llama_index.core.tools import FunctionTool
 
-from composio import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools.env.factory import WorkspaceConfig
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
+
+from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(BaseComposioToolSet):
@@ -58,7 +58,7 @@ class ComposioToolSet(BaseComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_config: t.Optional[WorkspaceConfig] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """

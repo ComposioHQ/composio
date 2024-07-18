@@ -1,7 +1,6 @@
 from composio_julep.toolset import ComposioToolSet
 
-from composio import Action, App, Tag, Trigger
-from composio.tools.env.factory import WorkspaceConfig
+from composio import Action, App, Tag, Trigger, WorkspaceType
 
 
 __all__ = (
@@ -9,6 +8,6 @@ __all__ = (
     "App",
     "Tag",
     "Trigger",
-    "WorkspaceConfig",
+    "WorkspaceType",
     "ComposioToolSet",
 )

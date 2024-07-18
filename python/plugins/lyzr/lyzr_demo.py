@@ -5,11 +5,12 @@ Lyzr plugin demo.
 import os
 
 import dotenv
-from composio_lyzr import Action, ComposioToolSet
 from lyzr_automata import Agent, Task
 from lyzr_automata.ai_models.openai import OpenAIModel
 from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
 from lyzr_automata.tasks.task_literals import InputType, OutputType
+
+from composio_lyzr import Action, ComposioToolSet
 
 
 # Load environment variables from .env

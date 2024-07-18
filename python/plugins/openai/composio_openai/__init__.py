@@ -1,7 +1,6 @@
-from composio_openai.toolset import ComposioToolSet
+from composio import Action, App, Tag, Trigger, WorkspaceType
 
-from composio import Action, App, Tag, Trigger
-from composio.tools.env.factory import WorkspaceConfig
+from composio_openai.toolset import ComposioToolSet
 
 
 __all__ = (
@@ -10,5 +9,5 @@ __all__ = (
     "Tag",
     "ComposioToolSet",
     "Trigger",
-    "WorkspaceConfig",
+    "WorkspaceType",
 )
