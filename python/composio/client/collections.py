@@ -70,6 +70,7 @@ class ConnectedAccountModel(BaseModel):
     appUniqueId: str
     integrationId: str
     connectionParams: AuthConnectionParamsModel
+
     clientUniqueUserId: t.Optional[str] = None
 
     # Override arbitrary model config.

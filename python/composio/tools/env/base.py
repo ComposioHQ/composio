@@ -2,6 +2,7 @@ import os
 import threading
 import typing as t
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 
@@ -21,6 +22,9 @@ ENV_ACCESS_TOKEN = "ACCESS_TOKEN"
 
 def _read_env_var(name: str, default: t.Any) -> str:
     """Read environment variable."""
+    if default is not None:
+        return default
+
     value = os.environ.get(name, default)
     if value is None:
         raise ValueError(f"Please provide value for `{name}`")
@@ -129,38 +133,50 @@ class ShellFactory(WithLogger):
         self._recent = None
 
 
+@dataclass
+class WorkspaceConfigType:
+    """Workspace configuration."""
+
+    composio_api_key: t.Optional[str] = None
+    """Composio API Key."""
+
+    composio_base_url: t.Optional[str] = None
+    """Base URL for composio backend."""
+
+    github_access_token: t.Optional[str] = None
+    """Github access token agent workspace, if not provided the access token from the active composio account will be used."""
+
+    environment: t.Optional[t.Dict[str, str]] = None
+    """Environment config for workspace."""
+
+
 class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
 
     _shell_factory: t.Optional[ShellFactory] = None
 
-    def __init__(
-        self,
-        composio_api_key: t.Optional[str] = None,
-        composio_base_url: t.Optional[str] = None,
-        github_access_token: t.Optional[str] = None,
-        environment: t.Optional[t.Dict] = None,
-    ):
+    def __init__(self, config: WorkspaceConfigType):
         """Initialize workspace."""
         super().__init__()
         self.id = generate_id()
         self.access_token = uuid4().hex.replace("-", "")
         self.composio_api_key = _read_env_var(
             name=ENV_COMPOSIO_API_KEY,
-            default=composio_api_key,
+            default=config.composio_api_key,
         )
         self.composio_base_url = _read_env_var(
             name=ENV_COMPOSIO_BASE_URL,
-            default=composio_base_url,
+            default=config.composio_base_url,
         )
-        self.github_access_token = github_access_token or os.environ.get(
+        self.github_access_token = config.github_access_token or os.environ.get(
             ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
         )
         self.environment = {
-            **(environment or {}),
+            **(config.environment or {}),
             ENV_COMPOSIO_API_KEY: self.composio_api_key,
             ENV_COMPOSIO_BASE_URL: self.composio_base_url,
             ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
+            f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
             ENV_ACCESS_TOKEN: self.access_token,
         }
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from composio import Action, ComposioToolSet
 from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import WorkspaceType
 from composio.utils.logging import get as get_logger
 
 
@@ -16,7 +16,7 @@ PATH = Path(__file__).parent
 def test_outputs() -> None:
     """Test outputs."""
     toolset = ComposioToolSet(
-        workspace_env=ExecEnv.HOST,
+        workspace_config=WorkspaceType.Host(),
     )
     output = toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
@@ -30,7 +30,7 @@ def test_outputs() -> None:
 def test_stderr() -> None:
     """Test outputs."""
     toolset = ComposioToolSet(
-        workspace_env=ExecEnv.HOST,
+        workspace_config=WorkspaceType.Host(),
     )
     output = toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
@@ -99,7 +99,7 @@ def test_workspace() -> None:
     os.environ["ALLOW_CLONE_WITHOUT_REPO"] = "true"
     try:
         toolset = ComposioToolSet(
-            workspace_env=ExecEnv.HOST,
+            workspace_config=WorkspaceType.Host(),
         )
         _check_output(
             output=toolset.execute_action(
