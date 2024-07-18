@@ -1,6 +1,8 @@
 """Virtual file pointer implementation."""
 
 import re
+import subprocess
+import sys
 import typing as t
 from enum import Enum
 from pathlib import Path
@@ -246,6 +248,48 @@ class File(WithLogger):
 
         self.path.write_text(data=buffer, encoding="utf-8")
         return {"replaced_text": replaced, "replaced_with": text}
+
+    def run_lint(self) -> str:
+        """Run lint on the file."""
+        if self.path.suffix == '.py':
+            venv_python = sys.executable
+            try:
+                result = subprocess.run(
+                    [
+                        venv_python,
+                        "-m",
+                        "flake8",
+                        "--isolated",
+                        "--select=F821,F822,F831,E111,E112,E113,E999,E902",
+                        str(self.path)
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                lint_output = result.stdout
+            except subprocess.CalledProcessError as e:
+                # If flake8 returns a non-zero exit code, it will raise this exception
+                lint_output = e.stdout  # Use stdout for linting errors
+                if e.stderr:  # Check if there's any stderr output
+                    lint_output += f"\nError running flake8: {e.stderr}"
+
+            formatted_output = ""
+            for value in lint_output.split("\n"):
+                parts = value.split()
+                if parts:
+                    formatted_output += f"- {' '.join(parts[1:])}\n"
+            return formatted_output.strip()
+        return ""
+
+    def write_and_run_lint(self, text: str, start: int, end: int) -> str:
+        """Write and run lint on the file. If linting fails, revert the changes."""
+        older_file_text = self.path.read_text(encoding="utf-8")
+        self.write(text=text, start=start, end=end)
+        lint_output = self.run_lint()
+        if lint_output:
+            self.path.write_text(older_file_text, encoding="utf-8")
+        return lint_output
 
     def replace(self, string: str, replacement: str) -> TextReplacement:
         """Replace given string with replacement."""
