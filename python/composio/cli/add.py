@@ -63,12 +63,21 @@ class AddIntegrationExamples(HelpfulCmd):
     type=str,
     help="Specify auth mode for given app.",
 )
+@click.option(
+    "-s",
+    "--scope",
+    "scopes",
+    type=str,
+    help="Specify scopes for the connection.",
+    multiple=True,
+)
 @login_required
 @pass_entity_id
 @pass_context
 def _add(
     context: Context,
     name: str,
+    scopes: t.Tuple[str, ...],
     entity_id: str,
     integration_id: t.Optional[str],
     no_browser: bool = False,
@@ -83,6 +92,7 @@ def _add(
             integration_id=integration_id,
             no_browser=no_browser,
             auth_mode=auth_mode,
+            scopes=scopes,
         )
     except ComposioSDKError as e:
         raise click.ClickException(
@@ -151,6 +161,7 @@ def add_integration(
     integration_id: t.Optional[str] = None,
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
+    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
     """
     Add integration.
@@ -160,6 +171,7 @@ def add_integration(
     :param entity_id: Entity ID to use for creating integration.
     :param no_browser: Don't open browser.
     :param auth_mode: Preferred auth mode.
+    :param scopes: List of scopes for the connected account.
     """
     entity = context.client.get_entity(id=entity_id)
     integration = _load_integration(
@@ -213,11 +225,7 @@ def add_integration(
             str,
             click.prompt(
                 "Select auth mode: ",
-                type=click.Choice(
-                    choices=list(
-                        auth_modes,
-                    )
-                ),
+                type=click.Choice(choices=list(auth_modes)),
             ),
         )
         auth_scheme = auth_modes[auth_mode]
@@ -228,7 +236,23 @@ def add_integration(
         app_name=name,
         auth_mode=auth_mode,
         auth_scheme=auth_scheme,
+        scopes=scopes,
     )
+
+
+def _get_auth_config(
+    scopes: t.Optional[t.Tuple[str, ...]] = None
+) -> t.Optional[t.Dict]:
+    """Get auth config."""
+    scopes = scopes or ()
+    if len(scopes) == 0:
+        return None
+
+    return {
+        "client_id": "*************",
+        "client_secret": "*************",
+        "scopes": ",".join(scopes),
+    }
 
 
 def _handle_no_auth(
@@ -269,11 +293,13 @@ def _handle_basic_auth(
     auth_mode: str,
     auth_scheme: AppAuthScheme,
     integration: t.Optional[IntegrationModel] = None,
+    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
     """Handle basic auth."""
     entity.initiate_connection(
         app_name=app_name.lower(),
         auth_mode=auth_mode,
+        auth_config=_get_auth_config(scopes=scopes),
         integration=integration,
     ).save_user_access_data(
         client=client,
