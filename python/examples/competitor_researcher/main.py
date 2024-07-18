@@ -1,30 +1,30 @@
-# Import necessary libraries
 import os
 from datetime import datetime
-
 import dotenv
 import requests
 from bs4 import BeautifulSoup
-from composio_crewai import App, ComposioSDK, ComposioToolSet
-from crewai import Agent, Task
-from flask import Flask, jsonify
-from langchain_openai import ChatOpenAI
-
+from composio_openai import Action, ComposioToolSet, App
+from openai import OpenAI
 
 # Load environment variables
 dotenv.load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("MODEL")
+openai_api_key = os.getenv("OPENAI_API_KEY","")
+if(openai_api_key == ""):
+    openai_api_key = input("Enter your OpenAI API Key: ")
+model = os.getenv("MODEL","gpt-4o")
+if(model=="gpt-4o"):
+  print("model is set to gpt-4o")
 # URL of the competitor website
-url = os.getenv("URL")
+url = os.getenv("URL","")
+if(url == ""):
+    url = input("Enter the URL of the competitor website: ")
 # actual parent page in Notion
-parent_page = os.getenv("NOTION_PARENT_PAGE")
+parent_page = os.getenv("NOTION_PARENT_PAGE","")
+if(parent_page == ""):
+    parent_page = input("Enter the actual parent page in Notion: ")
 
+openai_client = OpenAI()
 
-# Initialize the language model
-llm = ChatOpenAI(model=model, api_key=openai_api_key)
-
-# Define tools for the agents using the ComposioToolSet
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps=[App.NOTION])
 
@@ -32,8 +32,6 @@ tools = composio_toolset.get_tools(apps=[App.NOTION])
 date = datetime.today().strftime("%Y-%m-%d")
 timezone = datetime.now().astimezone().tzinfo
 
-
-# Function to remove HTML tags from a string using BeautifulSoup
 def remove_tags(html):
     soup = BeautifulSoup(html, "html.parser")
     return soup.get_text()
@@ -50,27 +48,30 @@ def scrape_website(url):
     except requests.exceptions.RequestException as e:
         return f"An error occurred while requesting the URL: {e}"
 
-
-# Initialize the agent with specific role and goal
-agent = Agent(
-    role="Notion Agent",
-    goal="Take action on Notion.",
-    backstory="You are an AI Agent with access to Notion",
-    verbose=True,
-    tools=tools,
-    llm=llm,
-)
-
-# Scrape data from the competitor website
 competitor_data = scrape_website(url)
 
-# Define the task for the agent
-task = Task(
-    description=f"Create a page for the competitor with the specified name. If a page with the same name already exists, append a unique identifier as a prefix or suffix. Create the page under '{parent_page}', if the parent page '{parent_page}' doesn't exist, find the most suitable parent page among existing pages. Place the pointers given to you in the created page without altering them. \nPointers to be included in the page: {competitor_data}. \nYour task ends only after successfully putting in the pointers in the page that you created.",
-    expected_output="List down the contents of the page and title of the page created.",
-    agent=agent,
-    async_execution=True,
+assistant = openai_client.beta.assistants.create(
+    name="PR Review Assistant",
+    description="You are an AI Agent with access to Notion.",
+    instructions=f"Create a page for the competitor with the specified name. If a page with the same name already exists, append a unique identifier as a prefix or suffix. Create the page under '{parent_page}', if the parent page '{parent_page}' doesn't exist, find the most suitable parent page among existing pages. Place the pointers given to you in the created page without altering them. \nPointers to be included in the page: {competitor_data}. \nYour task ends only after successfully putting in the pointers in the page that you created.",
+    model="gpt-4o",
+    tools=tools,
 )
 
-# Execute the task, and see the page in notion get populated!
-task.execute()
+thread = openai_client.beta.threads.create()
+openai_client.beta.threads.messages.create(
+        thread_id=thread.id, role="user", content=competitor_data
+    )
+
+url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
+print("Visit this URL to view the thread: ", url)
+
+run = openai_client.beta.threads.runs.create(
+        thread_id=thread.id, assistant_id=assistant.id
+    )
+
+composio_toolset.wait_and_handle_assistant_tool_calls(
+        client=openai_client,
+        run=run,
+        thread=thread,
+    )

@@ -62,7 +62,13 @@ class File(WithLogger):
         workdir: Path,
         window: t.Optional[int] = None,
     ) -> None:
-        """Initialize file object."""
+        """
+        Initialize file object
+
+        :param path: Path to file.
+        :param workdir: Current working directory.
+        :param window: Size of the view window, default is 100.
+        """
         super().__init__()
         self.path = path
         self.workdir = workdir
@@ -229,7 +235,10 @@ class File(WithLogger):
         replaced = ""
         with self.path.open(mode="r") as fp:
             if scope == FileOperationScope.WINDOW:
-                fp.seek(self._start)
+                while cursor < self._start:
+                    _ = fp.readline()
+                    cursor += 1
+                cursor = 0
 
             while cursor < (start - 1):
                 buffer += fp.readline()

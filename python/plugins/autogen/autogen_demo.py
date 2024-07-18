@@ -2,6 +2,7 @@ import os
 
 import dotenv
 from autogen import AssistantAgent, UserProxyAgent
+
 from composio_autogen import App, ComposioToolSet
 
 
@@ -42,7 +43,7 @@ def main():
     )
 
     # Define task.
-    task = "Star a repo ComposioHQ/composio on GitHub"
+    task = "Star a repo composiohq/composio on GitHub"
 
     # Execute task.
     response = user_proxy.initiate_chat(chatbot, message=task)

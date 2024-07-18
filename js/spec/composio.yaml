@@ -1398,7 +1398,7 @@ paths:
       parameters:
         - name: appNames
           in: query
-          description: 'Name of the apps like "github", "linear" seperated by a comma'
+          description: 'Name of the apps like "github", "linear" separated by a comma'
           schema:
             type: string
             examples:
@@ -1410,7 +1410,7 @@ paths:
             type: boolean
         - name: connectedAccountIds
           in: query
-          description: Filter by Aonnected Account ids
+          description: Filter by Connected Account ids
           schema:
             type: string
             examples:

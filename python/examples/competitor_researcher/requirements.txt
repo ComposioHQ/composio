@@ -3,5 +3,4 @@ requests
 beautifulsoup4
 composio-crewai
 crewai
-flask
 langchain-openai

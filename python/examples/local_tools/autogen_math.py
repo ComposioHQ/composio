@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from autogen import AssistantAgent, UserProxyAgent
+from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import App, ComposioToolSet
 
 

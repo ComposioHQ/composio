@@ -12,11 +12,11 @@ from swebench_docker.constants import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     MAP_VERSION_TO_INSTALL,
-    PatchType,
     TESTS_ERROR,
     TESTS_FAILED,
     TESTS_PASSED,
     TESTS_TIMEOUT,
+    PatchType,
 )
 
 

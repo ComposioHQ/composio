@@ -25,6 +25,7 @@ tools = composio_toolset.get_tools(
         App.GITCMDTOOL,
         App.FILEEDITTOOL,
         App.HISTORYFETCHERTOOL,
+        App.SHELLEXEC,
     ]
 )
 

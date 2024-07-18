@@ -9,6 +9,10 @@ from langchain_openai import ChatOpenAI
 # Load environment variables
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI api key:")
+    os.environ["OPENAI_API_KEY"] = api_key
 # Initialize the language model with OpenAI API key and model name
 llm = ChatOpenAI(
     openai_api_key=os.environ["OPENAI_API_KEY"],

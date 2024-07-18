@@ -31,9 +31,9 @@ class InitRepoMap(Action[InitRepoMapRequest, InitRepoMapResponse]):
     _tool_name = "codemap"
 
     def execute(
-        self, request: InitRepoMapRequest, authorisation_data: dict = {}
+        self, request_data: InitRepoMapRequest, authorisation_data: dict = {}
     ) -> dict:
-        root_path = Path(request.code_directory).resolve()
+        root_path = Path(request_data.code_directory).resolve()
         if not root_path.exists():
             return {"success": False, "error": f"Path {root_path} does not exist"}
 

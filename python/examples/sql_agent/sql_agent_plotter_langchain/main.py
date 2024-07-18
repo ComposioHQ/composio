@@ -7,6 +7,11 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
 
 dotenv.load_dotenv()
 
@@ -17,7 +22,7 @@ llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize the Composio ToolSet with the API key
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Get tools for SQL and File operations
 sql_file_tool = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])
@@ -28,7 +33,7 @@ tools = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL, App.CODEINTERPRETER])
 # Define the task to execute
 # We have a dummy database called company.db which contains a table called MOCK_DATA
 # modify this task as per your own requirements
-query_task = "Write sqlite query to get top 10 rows from the only table MOCK_DATA and database company.db using sqltool, write the output in a file called log.txt and return the output"
+query_task = "Write sqlite query to get top 10 rows from the only table MOCK_DATA and database companydb using sqltool, write the output in a file called log.txt and return the output"
 
 # Create the agent for SQL and File operations and execute the task
 query_agent = create_openai_functions_agent(llm, sql_file_tool, prompt)

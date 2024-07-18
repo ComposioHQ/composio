@@ -1,0 +1,96 @@
+---
+title: "🧑‍🤝‍🧑 Entity"
+sidebarTitle: "Entity"
+icon: "users"
+description: "Manage all the tools of your Users & Organizations 🧑‍🤝‍🧑 via entities"
+---
+
+## Introduction to Entities
+
+In Composio, an entity represents either a user or an organization, encapsulating all associated accounts under a single management umbrella. 
+This consolidation simplifies the administration of multiple accounts.
+
+
+## Make your user do a task on Github
+
+
+### Default Imports
+<CodeGroup>
+```javascript javascript
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core"; // or any other toolset
+
+// If not using OpenAIToolSet
+// import { Composio } from "composio-core";  
+// const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAIKEY
+});
+```
+</CodeGroup>
+
+Let's create an entity for a user via their email. Email is just an example, you can use any unique identifier for the entity.
+### Create or get an entity
+<CodeGroup>
+```javascript javascript
+const entity = await toolset.client.getEntity(id='user_email_id');
+```
+</CodeGroup>
+
+Now, let's get the connected account for the entity. If the connected account does not exist, let's get the user to connect their account.
+### Get Connected accounts 
+<CodeGroup>
+```javascript javascript
+const connected_account  = await entity.getConnection("slack");
+```
+</CodeGroup>
+
+Now, let's get all the actions that can be performed on the entity on GitHub. You can avoid filtering via Github if you want to see all the actions.
+### Get all actions
+<CodeGroup>
+```javascript javascript
+const actions = entity.get_action({actions: ['github_issues_create']})
+```
+</CodeGroup>
+
+Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
+### Agent Execution
+<CodeGroup>
+```javascript javascript
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core"; // or any other toolset
+
+// If not using OpenAIToolSet
+// import { Composio } from "composio-core";  
+// const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const tools = await toolset.get_actions({actions: ['github_star_repo']})
+
+const task = "Star a repo ComposioHQ/composio on GitHub"
+
+const response = await toolset.client.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    tools: tools,
+    messages: [
+        {role: "system", content: "You are a helpful assistant."},
+        {role: "user", content: task},
+    ],
+});
+
+await toolset.handle_tool_call(response, entity.id="melissa");
+```
+</CodeGroup>
+
+You can use the above pattern to make agents at a user level to perform tasks on their behalf.

@@ -12,8 +12,14 @@ from composio.tools.local import filetool, sqltool
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
+
 # Initialize the ComposioToolSet
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Get the SQL and file tools from the ComposioToolSet
 tools = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])
@@ -71,7 +77,7 @@ file_writer_agent = Agent(
 )
 
 # User-provided description of the database and input query
-user_description = "The database name is company.db"  # Edit the description for your database and tables
+user_description = "The database name is companydb"  # Edit the description for your database and tables
 user_input = "fetch the rows in the products table"  # Edit the input for the action you want it to perform
 
 
