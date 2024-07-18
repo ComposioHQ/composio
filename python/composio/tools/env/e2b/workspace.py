@@ -3,15 +3,12 @@
 import os
 import time
 import typing as t
+from dataclasses import dataclass
 from uuid import uuid4
 
 from e2b import Sandbox
 
-from composio.tools.env.base import (
-    ENV_GITHUB_ACCESS_TOKEN,
-    RemoteWorkspace,
-    _read_env_var,
-)
+from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 
 
 DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz"
@@ -23,44 +20,50 @@ TOOLSERVER_URL = "https://{host}/api"
 ENV_E2B_TEMPLATE = "E2B_TEMPLATE"
 
 
+@dataclass
+class Config(WorkspaceConfigType):
+    """Host configuration type."""
+
+    template: t.Optional[str] = None
+    """Template ID for creating the sandbox, if not provided the composio tooling server template will be used."""
+
+    api_key: t.Optional[str] = None
+    """E2B API Key."""
+
+    port: t.Optional[int] = None
+    """Port for launching the toolserver on the E2B sandbox."""
+
+
 class E2BWorkspace(RemoteWorkspace):
     """Create and manage E2B workspace."""
 
-    def __init__(
-        self,
-        port: t.Optional[int] = None,
-        template: t.Optional[str] = None,
-        composio_api_key: t.Optional[str] = None,
-        composio_base_url: t.Optional[str] = None,
-        github_access_token: t.Optional[str] = None,
-        environment: t.Optional[t.Dict] = None,
-    ):
-        """Initialize E2B workspace."""
-        super().__init__(
-            composio_api_key=composio_api_key,
-            composio_base_url=composio_base_url,
-            github_access_token=_read_env_var(
-                name=ENV_GITHUB_ACCESS_TOKEN,
-                default=github_access_token,
-            ),
-            environment=environment,
-        )
+    sandbox: Sandbox
 
+    def __init__(self, config: Config):
+        """Initialize E2B workspace."""
+        super().__init__(config=config)
+        template = config.template
         if template is None:
             template = os.environ.get(ENV_E2B_TEMPLATE)
             if template is not None:
                 self.logger.debug(f"Using E2B template `{template}` from environment")
             template = template or DEFAULT_TEMPLATE
 
-        self.port = port or TOOLSERVER_PORT
         self.template = template
-        self.setup()
+        self.api_key = config.api_key
+        self.port = config.port or TOOLSERVER_PORT
 
     def setup(self) -> None:
         """Start toolserver."""
         # Start sandbox
-        self.sandbox = Sandbox(template=self.template, env_vars=self.environment)
-        self.url = TOOLSERVER_URL.format(host=self.sandbox.get_hostname(self.port))
+        self.sandbox = Sandbox(
+            template=self.template,
+            env_vars=self.environment,
+            api_key=self.api_key,
+        )
+        self.url = TOOLSERVER_URL.format(
+            host=self.sandbox.get_hostname(self.port),
+        )
 
         # Start app update in background
         process = self.sandbox.process.start(

@@ -5,7 +5,7 @@
 import os
 
 import dotenv
-from composio_crewai import App, ComposioToolSet, ExecEnv
+from composio_crewai import App, ComposioToolSet, WorkspaceType
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
@@ -18,7 +18,7 @@ dotenv.load_dotenv()
 openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"], model="gpt-4-turbo"  # type: ignore
 )
-composio_toolset = ComposioToolSet(workspace_env=ExecEnv.DOCKER)
+composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
 
 # Get required tools
 tools = composio_toolset.get_tools(

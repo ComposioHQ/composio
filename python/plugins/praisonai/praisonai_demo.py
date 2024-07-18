@@ -1,6 +1,7 @@
 # pylint: disable=E0611
-from composio_praisonai import Action, ComposioToolSet
 from praisonai import PraisonAI
+
+from composio_praisonai import Action, ComposioToolSet
 
 
 # pylint: enable=E0611
