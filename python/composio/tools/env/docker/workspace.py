@@ -8,7 +8,6 @@ import time
 import typing as t
 from dataclasses import dataclass
 from pathlib import Path
-from composio.tools.env.filemanager.manager import FileManager
 
 import requests
 from docker import DockerClient, from_env

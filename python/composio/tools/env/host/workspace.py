@@ -59,8 +59,6 @@ class HostWorkspace(Workspace):
     """Host workspace implementation."""
 
     _ssh: t.Optional[paramiko.SSHClient] = None
-    _file_managers: t.List[FileManager] = []
-    _recent_file_manager_index: int = -1
 
     def __init__(self, config: Config):
         """Initialize host workspace."""
@@ -112,10 +110,7 @@ class HostWorkspace(Workspace):
     
     def _create_file_manager(self) -> FileManager:
         """Create file manager for the workspace."""
-        if self._recent_file_manager_index == -1:
-            self._recent_file_manager_index = len(self._file_managers)
-            self._file_managers.append(FileManager(working_dir=self._working_dir))
-        return self._file_managers[self._recent_file_manager_index]
+        return FileManager(working_dir=self._working_dir)
 
     def execute_action(
         self,
