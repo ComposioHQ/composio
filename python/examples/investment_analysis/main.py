@@ -8,11 +8,12 @@ from composio_langchain import App, ComposioToolSet
 # Load environment variables
 dotenv.load_dotenv()
 
+api_key=os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI key:")
+    os.environ["OPENAI_API_KEY"]=api_key
 # Initialize the language model with OpenAI API key and model name
-llm = ChatOpenAI(
-    openai_api_key=os.getenv(
-        "OPENAI_API_KEY",
-        "default_key"), model_name="gpt-4o")
+llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o")
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
@@ -36,7 +37,6 @@ researcher = Agent(
     ),
     verbose=True,
     allow_delegation=True,
-    tools=tools,
     llm=llm
 )
 
@@ -53,7 +53,6 @@ analyser = Agent(
         "SERP when you're writing the report."
     ),
     verbose=True,
-    tools=tools,
     llm=llm
 )
 
@@ -68,7 +67,6 @@ recommend = Agent(
         "bullet points."
     ),
     verbose=True,
-    tools=tools,
     llm=llm
 )
 
@@ -83,6 +81,8 @@ analyst_task = Task(
         "When the input is well researched, thoroughly analysed, and "
         "recommendation is offered"
     )
+    tools=tools,
+
 )
 
 # Create the investment crew with the defined agents and task
@@ -91,7 +91,6 @@ investment_crew = Crew(
     tasks=[analyst_task],
     verbose=1,
     # process=Process.sequential,  # Uncomment if sequential processing needed
-    full_output=True,
 )
 
 # Execute the investment crew workflow

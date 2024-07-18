@@ -9,14 +9,19 @@ from composio.tools.local import ragtool
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
+api_key=os.getenv("OPENAI_API_KEY","")
+if(api_key=""):
+    api_key=input("Enter OpenAI key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
 # Initialize the ComposioToolSet
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Get the RAG tool from the Composio ToolSet
 tools = toolset.get_tools(apps=[App.RAGTOOL])
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
-llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4o")
 
 # User-provided description of the data to be added and the query
 additional_content_list = [

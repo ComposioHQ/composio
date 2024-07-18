@@ -12,7 +12,14 @@ load_dotenv()
 # Initialize the ComposioToolSet
 composio_toolset = ComposioToolSet()
 
-# Define the code review assistant prompt
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+    
+channel_id = os.getenv("CHANNEL_ID","")
+if(channel_id==""):
+    channel_id=input("Enter Channel id:")
 code_review_assistant_prompt = """
         You are an experienced code reviewer.
         Your task is to review the provided file diff and give constructive feedback.
@@ -23,10 +30,9 @@ code_review_assistant_prompt = """
         3. Provide actionable suggestions if there are any issues in the code.
 
         Once you have decided on the changes, for any TODOs, create a Github issue.
-        And send the summary of the PR review to """+os.environ['CHANNEL_ID']+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
+        And send the summary of the PR review to """+channel_id+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
         Also add the comprehensive review to the PR as a comment.
 """
-
 # Define the tools
 pr_agent_tools = composio_toolset.get_actions(
     actions=[
@@ -38,6 +44,7 @@ pr_agent_tools = composio_toolset.get_actions(
 )
 
 
+
 # Initialize the language model
 llm = ChatOpenAI(model="gpt-4")
 
@@ -45,7 +52,7 @@ llm = ChatOpenAI(model="gpt-4")
 prompt = hub.pull("hwchase17/openai-functions-agent")
 combined_prompt = prompt+code_review_assistant_prompt
 query_agent = create_openai_functions_agent(llm, pr_agent_tools, combined_prompt)
-agent_executor = AgentExecutor(agent=query_agent, tools=pr_agent_tools, verbose=True)
+agent_executor = AgentExecutor(agent=query_agent, tools=pr_agent_tools, verbose=True) # type: ignore
 
 print("Assistant is ready")
 

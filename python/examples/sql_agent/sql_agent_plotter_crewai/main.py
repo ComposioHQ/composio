@@ -7,6 +7,11 @@ from langchain_openai import ChatOpenAI
 
 from composio import Action, App
 
+api_key = os.getenv("OPENAI_API_KEY","")
+if(api_key==""):
+    api_key=input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
