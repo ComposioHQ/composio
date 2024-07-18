@@ -1,13 +1,15 @@
-from composio.tools.env.base import Workspace
-from composio.tools.local.base.action import Action
+from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.local.filetool.actions.base_action import (
+    BaseFileAction,
+    BaseFileRequest,
+    BaseFileResponse,
+)
 
-from pydantic import BaseModel, Field
-import typing as t
+from pydantic import Field
 
 
-class EditFileRequest(BaseModel):
+class EditFileRequest(BaseFileRequest):
     """Request to edit a file."""
-
     start_line: int = Field(
         ..., description="The line number at which the file edit will start"
     )
@@ -27,7 +29,7 @@ class EditFileRequest(BaseModel):
     )
 
 
-class EditFileResponse(BaseModel):
+class EditFileResponse(BaseFileResponse):
     """Response to edit a file."""
 
     updated_changes: str = Field(
@@ -37,7 +39,7 @@ class EditFileResponse(BaseModel):
     error: str = Field(default="", description="Error message if any")
 
 
-class EditFile(Action):
+class EditFile(BaseFileAction):
     """
     Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
 
@@ -55,19 +57,17 @@ class EditFile(Action):
     """
 
     _display_name = "Edit a file"
-    _tool_name = "filemanagertool"
     _request_schema = EditFileRequest
     _response_schema = EditFileResponse
 
-    def execute(
-        self, request_data: EditFileRequest, authorisation_data: dict
+    def execute_on_file_manager(
+        self, file_manager: FileManager, request_data: EditFileRequest
     ) -> EditFileResponse:
-        workspace = t.cast(Workspace, authorisation_data["workspace"])
         try:
             if request_data.file_path is None:
-                file = workspace.file_manager._recent
+                file = file_manager._recent # type: ignore
             else:
-                file = workspace.file_manager.open(request_data.file_path)
+                file = file_manager.open(request_data.file_path) # type: ignore
             if file is None:
                 return EditFileResponse(
                     error=f"File {request_data.file_path} not found"
@@ -77,7 +77,7 @@ class EditFile(Action):
                 start=request_data.start_line,
                 end=request_data.end_line,
             )
-            if tr["error"]:
+            if tr.get("error"):
                 return EditFileResponse(error=tr["error"])
             # TODO: Add lint changes to detect python issues.
             return EditFileResponse(updated_changes=tr["replaced_text"])

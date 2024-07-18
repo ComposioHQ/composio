@@ -1,18 +1,22 @@
-from composio.tools.env.base import Workspace
 from composio.tools.env.filemanager.file import ScrollDirection
-from composio.tools.local.base.action import Action
+from composio.tools.env.filemanager.manager import FileManager
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 import typing as t
 
+from composio.tools.local.filetool.actions.base_action import (
+    BaseFileAction,
+    BaseFileRequest,
+    BaseFileResponse,
+)
 
-class ScrollRequest(BaseModel):
+
+class ScrollRequest(BaseFileRequest):
     """Request to scroll up/down in the editor."""
+    direction: ScrollDirection = Field(default=ScrollDirection.DOWN, description="The direction to scroll, by default it's down")
 
-    direction: ScrollDirection = Field(..., description="The direction to scroll")
 
-
-class ScrollResponse(BaseModel):
+class ScrollResponse(BaseFileResponse):
     """Response to scroll up/down in the editor."""
 
     lines: t.Dict[int, str] = Field(
@@ -21,22 +25,20 @@ class ScrollResponse(BaseModel):
     error: str = Field(default="", description="Error message if any")
 
 
-class Scroll(Action):
+class Scroll(BaseFileAction):
     """
     Scrolls the view of the opened file up or down by 100 lines.
     """
 
     _display_name = "Scroll up/down"
-    _tool_name = "filemanagertool"
     _request_schema = ScrollRequest
     _response_schema = ScrollResponse
 
-    def execute(
-        self, request_data: ScrollRequest, authorisation_data: dict
+    def execute_on_file_manager(
+        self, file_manager: FileManager, request_data: ScrollRequest
     ) -> ScrollResponse:
-        workspace = t.cast(Workspace, authorisation_data["workspace"])
         try:
-            recent_file = workspace.file_manager._recent
+            recent_file = file_manager._recent
             if recent_file is None:
                 return ScrollResponse(error="No file opened")
             recent_file.scroll(direction=request_data.direction)

@@ -5,8 +5,8 @@ import tempfile
 from pathlib import Path
 
 from composio import Action, ComposioToolSet
-from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
-from composio.tools.env.factory import WorkspaceType
+from composio.tools.env.constants import DEFAULT_IMAGE, EXIT_CODE, STDERR, STDOUT
+from composio.tools.env.factory import WorkspaceFactory, WorkspaceType
 from composio.utils.logging import get as get_logger
 
 
@@ -44,52 +44,46 @@ def _check_output(output: dict) -> None:
     assert output[EXIT_CODE] == 0, f"output: {output}"
 
 
-# def test_docker_workspace() -> None:
-#     """Test docker workspace."""
-#     workspace = WorkspaceFactory.new(
-#         env=ExecEnv.DOCKER, image="techcomposio/swe-bench-django_django-swe:3.0"
-#     )
-#     logger = get_logger()
-#     toolset = ComposioToolSet(workspace_id=workspace.id)
-#     output = toolset.execute_action(
-#         action=Action.GITCMDTOOL_GIT_REPO_TREE,
-#         params={},
-#     )
-#     _check_output(output=output)
-#     logger.info(f"output of git repo tree: {output}")
-#     output = toolset.execute_action(
-#         action=Action.FILEEDITTOOL_OPEN_FILE,
-#         params={"file_name": "git_repo_tree.txt"},
-#     )
-#     _check_output(output=output)
-#     logger.info(f"output of open git repo tree: {output}")
-#     output = toolset.execute_action(
-#         action=Action.SEARCHTOOL_SEARCH_DIR_CMD,
-#         params={"search_term": "FILE_UPLOAD_PERMISSION", "directory": "django/conf"},
-#     )
-#     _check_output(output=output)
-#     logger.info(f"output of search dir: {output}")
-#     output = toolset.execute_action(
-#         action=Action.FILEEDITTOOL_OPEN_FILE,
-#         params={"file_name": "django/conf/global_settings.py"},
-#     )
-#     _check_output(output=output)
-#     logger.info(f"output of open global settings: {output}")
-#     logger.info(f"output of search dir: {output}")
-#     output = toolset.execute_action(
-#         action=Action.FILEEDITTOOL_OPEN_FILE,
-#         params={"file_name": "django/conf/global_settings.py", "line_number": 50},
-#     )
-#     _check_output(output=output)
-#     logger.info(f"output of open global settings: {output}")
-#     logger.info(f"output of search dir: {output}")
-#     output = toolset.execute_action(
-#         action=Action.FILEEDITTOOL_OPEN_FILE,
-#         params={"file_name": "django/conf/global_settings.py", "line_number": 100},
-#     )
-#     _check_output(output=output)
-#     logger.info(f"output of open global settings: {output}")
-#     assert False
+def test_docker_workspace() -> None:
+    """Test docker workspace."""
+    workspace = WorkspaceFactory.new(config=WorkspaceType.Docker())
+    logger = get_logger()
+    toolset = ComposioToolSet(workspace_id=workspace.id)
+    output = toolset.execute_action(
+        action=Action.SHELL_EXEC_COMMAND,
+        params={"cmd": "ls"},
+    )
+    output = toolset.execute_action(
+        action=Action.FILETOOL_OPEN_FILE,
+        params={"file_name": "git_repo_tree.txt"},
+    )
+    logger.info("output of open git repo tree:", output)
+    output = toolset.execute_action(
+        action=Action.SEARCHTOOL_SEARCH_DIR_CMD,
+        params={"search_term": "FILE_UPLOAD_PERMISSION", "directory": "django/conf"},
+    )
+    logger.info(f"output of search dir: {output}")
+    output = toolset.execute_action(
+        action=Action.FILEEDITTOOL_OPEN_FILE,
+        params={"file_name": "django/conf/global_settings.py"},
+    )
+    _check_output(output=output)
+    logger.info(f"output of open global settings: {output}")
+    logger.info(f"output of search dir: {output}")
+    output = toolset.execute_action(
+        action=Action.FILEEDITTOOL_OPEN_FILE,
+        params={"file_name": "django/conf/global_settings.py", "line_number": 50},
+    )
+    _check_output(output=output)
+    logger.info(f"output of open global settings: {output}")
+    logger.info(f"output of search dir: {output}")
+    output = toolset.execute_action(
+        action=Action.FILEEDITTOOL_OPEN_FILE,
+        params={"file_name": "django/conf/global_settings.py", "line_number": 100},
+    )
+    _check_output(output=output)
+    logger.info(f"output of open global settings: {output}")
+    assert False
 
 
 def test_workspace() -> None:
@@ -119,7 +113,31 @@ def test_workspace() -> None:
         )
         logger = get_logger()
         logger.info("output of open wrong file", output)
-        # assert output[EXIT_CODE] == 0, output
+        output_open_file = toolset.execute_action(
+            action=Action.FILETOOL_OPEN_FILE,
+            params={"file_path": "README.md"},
+        )
+        logger.info(f"output of open file: {output_open_file}")
+        output_scroll_file = toolset.execute_action(
+            action=Action.FILETOOL_SCROLL,
+            params={},
+        )
+        logger.info(f"output of scroll file: {output_scroll_file}")
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_LIST_FILES,
+            params={},
+        )
+        logger.info(f"output of list files: {output_list}")
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_CREATE_FILE,
+            params={"file_path": "random_file.txt"},
+        )
+        logger.info(f"output of create file: {output_list}")
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_EDIT_FILE,
+            params={"file_path": "random_file.txt", "text": "hello", "start_line": 1, "end_line": 1},
+        )
+        logger.info(f"output of edit file: {output_list}")
         output = toolset.execute_action(
             action=Action.FILEEDITTOOL_OPEN_FILE,
             params={"file_name": "README.md"},

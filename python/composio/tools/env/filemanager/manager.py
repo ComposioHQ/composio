@@ -217,6 +217,6 @@ class FileManager(WithLogger):
             exclude=list(map(Path, exclude or [])) + [Path(".git").resolve()],
         )
 
-    def ls(self) -> t.List[str]:
-        """List contents of the current directory."""
-        return list(map(str, self.working_dir.iterdir()))
+    def ls(self) -> t.List[t.Tuple[str, str]]:
+        """List contents of the current directory with their types."""
+        return [(str(path), 'dir' if path.is_dir() else 'file') for path in self.working_dir.iterdir()]

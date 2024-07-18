@@ -110,12 +110,6 @@ class DockerWorkspace(RemoteWorkspace):
             except requests.ConnectionError:
                 time.sleep(0.1)
 
-    def _create_file_manager(self) -> FileManager:
-        """Create file manager for the workspace."""
-        raise NotImplementedError(
-            "Creating file manager for `Docker` workspace is not allowed."
-        )
-
     @property
     def client(self) -> DockerClient:
         """Docker client object."""

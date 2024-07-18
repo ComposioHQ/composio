@@ -1,11 +1,15 @@
-from pydantic import BaseModel, Field
+from composio.tools.env.filemanager.manager import FileManager
+from pydantic import Field
 import typing as t
 
-from composio.tools.local.base.action import Action
-from composio.tools.env.base import Workspace
+from composio.tools.local.filetool.actions.base_action import (
+    BaseFileAction,
+    BaseFileRequest,
+    BaseFileResponse,
+)
 
 
-class OpenFileRequest(BaseModel):
+class OpenFileRequest(BaseFileRequest):
     """Request to open a file."""
 
     file_path: str = Field(..., description="file path to open in the editor")
@@ -15,7 +19,7 @@ class OpenFileRequest(BaseModel):
     )
 
 
-class OpenFileResponse(BaseModel):
+class OpenFileResponse(BaseFileResponse):
     """Response to open a file."""
 
     lines: t.Dict[int, str] = Field(
@@ -24,7 +28,7 @@ class OpenFileResponse(BaseModel):
     error: str = Field(default="", description="Error message if any")
 
 
-class OpenFile(Action):
+class OpenFile(BaseFileAction):
     """
     Opens a file in the editor based on the provided file path,
     If line_number is provided, the window will be move to include that line
@@ -38,16 +42,14 @@ class OpenFile(Action):
     """
 
     _display_name = "Open File on workspace"
-    _tool_name = "filemanagertool"
     _request_schema = OpenFileRequest
     _response_schema = OpenFileResponse
 
-    def execute(
-        self, request_data: OpenFileRequest, authorisation_data: dict
+    def execute_on_file_manager(
+        self, file_manager: FileManager, request_data: OpenFileRequest
     ) -> OpenFileResponse:
-        workspace = t.cast(Workspace, authorisation_data["workspace"])
         try:
-            file = workspace.file_manager.open(request_data.file_path)
+            file = file_manager.open(request_data.file_path)
             if request_data.line_number > 0:
                 file.goto(request_data.line_number)
             return OpenFileResponse(lines=file.read())

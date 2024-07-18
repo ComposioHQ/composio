@@ -1,11 +1,10 @@
-from composio.tools.env.base import Workspace
-from composio.tools.local.base.action import Action
+from composio.tools.env.filemanager.manager import FileManager
+from pydantic import Field, field_validator
 
-from pydantic import BaseModel, Field, field_validator
-import typing as t
+from composio.tools.local.filetool.actions.base_action import BaseFileAction, BaseFileRequest, BaseFileResponse
 
 
-class CreateFileRequest(BaseModel):
+class CreateFileRequest(BaseFileRequest):
     """Request to create a file."""
 
     file_path: str = Field(
@@ -24,16 +23,14 @@ class CreateFileRequest(BaseModel):
         return v
 
 
-class CreateFileResponse(BaseModel):
+class CreateFileResponse(BaseFileResponse):
     """Response to create a file."""
-
     success: bool = Field(
         default=False, description="Whether the file was created successfully"
     )
-    error: str = Field(default="", description="Error message if any")
 
 
-class CreateFile(Action):
+class CreateFile(BaseFileAction):
     """
     Creates a new file within a shell session.
     Example:
@@ -49,17 +46,15 @@ class CreateFile(Action):
     """
 
     _display_name = "Create a new file"
-    _tool_name = "filemanagertool"
     _request_schema = CreateFileRequest
     _response_schema = CreateFileResponse
 
-    def execute(
-        self, request_data: CreateFileRequest, authorisation_data: dict
+    def execute_on_file_manager(
+        self, file_manager: FileManager, request_data: CreateFileRequest
     ) -> CreateFileResponse:
-        workspace = t.cast(Workspace, authorisation_data["workspace"])
         try:
-            workspace.file_manager.create(request_data.file_path)
-            return CreateFileResponse(success=True)
+            file_manager.create(request_data.file_path) # type: ignore
+            return CreateFileResponse(success=True, current_working_directory=str(file_manager._pwd))
         except FileExistsError as e:
             return CreateFileResponse(error=f"File already exists: {str(e)}")
         except PermissionError as e:
