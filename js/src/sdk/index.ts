@@ -40,7 +40,10 @@ export class Composio {
         this.config = {
             ...OpenAPI,
             HEADERS: {
-                'X-API-Key': `${this.apiKey}`
+                'X-API-Key': `${this.apiKey}`,
+                'X-SOURCE': 'js_sdk',
+                // @ts-ignore
+                'X-RUNTIME': runtime
             }
         }
 
