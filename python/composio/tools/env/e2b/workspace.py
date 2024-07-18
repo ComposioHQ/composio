@@ -5,7 +5,6 @@ import time
 import typing as t
 from dataclasses import dataclass
 from uuid import uuid4
-from composio.tools.env.filemanager.manager import FileManager
 
 from e2b import Sandbox
 

@@ -3,9 +3,6 @@ FlyIO workspace implementation.
 """
 
 import typing as t
-from pathlib import Path
-from uuid import uuid4
-from composio.tools.env.filemanager.manager import FileManager
 from dataclasses import dataclass
 
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
