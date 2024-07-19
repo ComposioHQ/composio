@@ -129,6 +129,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 f"Use `{OLD_ACTIONS[self._slug.lower()].upper()}` instead.",
                 UserWarning,
             )
+            self._slug = OLD_ACTIONS[self._slug.lower()].upper()
             return
 
         if (
