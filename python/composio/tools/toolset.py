@@ -11,6 +11,7 @@ import time
 import typing as t
 
 from pydantic import BaseModel
+from pydantic.v1.main import BaseModel as V1BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio
@@ -43,6 +44,8 @@ from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
 from composio.utils.url import get_api_url_base
 
+
+ParamType = t.TypeVar("ParamType")
 
 output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
 
@@ -280,6 +283,28 @@ class ComposioToolSet(WithLogger):
             "file": str(outfile.resolve()),
         }
 
+    def _serialize_execute_params(self, param: ParamType) -> ParamType:
+        """Returns a serialized version of the parameters object."""
+        if isinstance(param, (int, float, str, bool)):
+            return param  # type: ignore
+
+        if isinstance(param, BaseModel):
+            return param.model_dump_json()  # type: ignore
+
+        if isinstance(param, V1BaseModel):
+            return param.dict()  # type: ignore
+
+        if isinstance(param, list):
+            return [self._serialize_execute_params(p) for p in param]  # type: ignore
+
+        if isinstance(param, dict):
+            return {key: self._serialize_execute_params(val) for key, val in param.items()}  # type: ignore
+
+        raise ValueError(
+            "Invalid value found for execute parameters"
+            f"\ntype={type(param)} \nvalue={param}"
+        )
+
     def execute_action(
         self,
         action: ActionType,
@@ -301,6 +326,7 @@ class ComposioToolSet(WithLogger):
         :return: Output object from the function call
         """
         action = Action(action)
+        params = self._serialize_execute_params(param=params)
         if action.is_local:
             return self._execute_local(
                 action=action,
