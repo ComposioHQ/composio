@@ -16,7 +16,7 @@ async function setupUserConnectionIfNotExists(entityId) {
     return connection;
 }
 
-async function executeAgent(entityName,url) {
+async function executeAgent(entityName) {
     // Create entity and get tools
     const entity = await toolset.client.getEntity(entityName)
     await setupUserConnectionIfNotExists(entity.id);
@@ -29,7 +29,7 @@ async function executeAgent(entityName,url) {
     });
 
 
-    const body = `TITLE: ${url}, DESCRIPTION: ${url} for the repo - himanshu-dixit/custom-repo-breaking`
+    const body = `TITLE: Sample issue, DESCRIPTION: Sample issue for the repo - himanshu-dixit/custom-repo-breaking`
     const agent = await createOpenAIFunctionsAgent({
         llm,
         tools: tools,
@@ -44,16 +44,4 @@ async function executeAgent(entityName,url) {
     console.log(result.output)
 }
 
-toolset.client.triggers.subscribe(async (data) => {
-    console.log("DATA for himanshu",data)
-    // executeAgent("himanshu",data.payload.repository.html_url)
-},{
-    entityId: "himanshu"
-})
-
-toolset.client.triggers.subscribe(async (data) => {
-    console.log("DATA for default",data)
-    // executeAgent("himanshu",data.payload.repository.html_url)
-},{
-    entityId: "default"
-})
+executeAgent("himanshu")
