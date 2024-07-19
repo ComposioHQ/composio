@@ -138,7 +138,7 @@ composio_tool_set = ComposioToolSet()
 
 # 获取预配置的 GitHub 工具
 actions = composio_tool_set.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
 my_task = "Star a repo composiodev/composio on GitHub"
