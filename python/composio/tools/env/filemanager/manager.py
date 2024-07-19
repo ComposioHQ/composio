@@ -1,8 +1,10 @@
 """File manager."""
 
 import os
+import re
 import threading
 import typing as t
+from fnmatch import translate
 from pathlib import Path
 
 import typing_extensions as te
@@ -52,6 +54,11 @@ class FileManager(WithLogger):
 
         self._files = {}
 
+    @property
+    def recent(self) -> t.Optional[File]:
+        """Get the most recent file."""
+        return self._recent
+
     def __enter__(self) -> te.Self:
         """Enter workspace context."""
         active_manager = get_current_file_manager()
@@ -68,6 +75,10 @@ class FileManager(WithLogger):
         if self._pwd is not None:
             os.chdir(self._pwd)
         set_current_file_manager(manager=None)
+
+    def chdir(self, path: t.Union[Path, str]) -> None:
+        """Change the current working directory."""
+        self.working_dir = Path(path).resolve()
 
     def open(self, path: t.Union[Path, str], window: t.Optional[int] = None) -> File:
         """
@@ -106,70 +117,138 @@ class FileManager(WithLogger):
         self._recent = self._files[path]
         return self._recent
 
-    def _find_recursively(
+    def search_word(
         self,
-        name: str,
-        strict: bool,
-        directory: Path,
-        level: int,
-        depth: int,
-        exclude: t.List[Path],
-    ) -> t.List[str]:
-        """Auxiliary method for searching a directory recursively."""
-        if directory in exclude:
-            return []
+        word: str,
+        pattern: t.Optional[t.Union[str, Path]] = None,
+        recursive: bool = True,
+    ) -> t.Dict[str, t.List[t.Tuple[int, str]]]:
+        """
+        Search for a word in files matching the given pattern.
 
-        if depth != -1 and level > depth:
-            return []
+        :param word: The term to search for
+        :param pattern: The file, directory, or glob pattern to search in (if not provided, searches in the current working directory)
+        :param recursive: If True, search recursively in subdirectories
+        :return: A dictionary with file paths as keys and lists of (line number, line content) tuples as values
 
-        matches = []
-        for child in directory.iterdir():
-            if child.is_dir():
-                matches += self._find_recursively(
-                    name=name,
-                    strict=strict,
-                    directory=child,
-                    level=level + 1,
-                    depth=depth,
-                    exclude=exclude,
-                )
-                continue
+        Examples of patterns:
+        - "*.py" : Search in all Python files in the current directory
+        - "src/*.txt" : Search in all text files in the 'src' directory
+        - "**/*.md" : Search in all Markdown files in the current directory and all subdirectories
+        - "/path/to/specific/file.js" : Search in a specific file
+        - "/path/to/directory" : Search in all files in a specific directory
+        """
+        if pattern is None:
+            pattern = self.working_dir
+        else:
+            pattern = Path(pattern)
 
-            if name in (child.name if strict else child.name.lower()):
-                matches.append(str(child.relative_to(self.working_dir)))
-        return matches
+        results: t.Dict[str, t.List[t.Tuple[int, str]]] = {}
+        paths_to_search: t.List[Path] = []
+
+        if pattern.is_file():
+            paths_to_search = [pattern]
+        elif pattern.is_dir():
+            if recursive:
+                paths_to_search = list(pattern.rglob("*"))
+            else:
+                paths_to_search = list(pattern.glob("*"))
+        else:
+            if recursive:
+                paths_to_search = list(self.working_dir.rglob(str(pattern)))
+            else:
+                paths_to_search = list(self.working_dir.glob(str(pattern)))
+
+        for file_path in paths_to_search:
+            if file_path.is_file() and not file_path.name.startswith("."):
+                try:
+                    with file_path.open("r", encoding="utf-8") as f:
+                        for i, line in enumerate(f, 1):
+                            if word in line:
+                                rel_path = str(file_path.relative_to(self.working_dir))
+                                if rel_path not in results:
+                                    results[rel_path] = []
+                                results[rel_path].append((i, line.strip()))
+                except UnicodeDecodeError:
+                    # Skip binary files
+                    pass
+
+        if not results:
+            print(f'No matches found for "{word}" in {pattern}')
+            return {}
+
+        num_matches: int = sum(len(matches) for matches in results.values())
+        num_files: int = len(results)
+
+        if num_files > 100:
+            print(
+                f'More than {num_files} files matched for "{word}" in {pattern}. Please narrow your search.'
+            )
+            return {}
+
+        self.logger.info(f'Found {num_matches} matches for "{word}" in {pattern}')
+        return results
 
     def find(
         self,
-        name: str,
+        pattern: str,
         depth: t.Optional[int] = None,
-        strict: bool = False,
+        case_sensitive: bool = False,
         include: t.Optional[t.List[t.Union[str, Path]]] = None,
         exclude: t.Optional[t.List[t.Union[str, Path]]] = None,
     ) -> t.List[str]:
         """
-        Find file or directory with given name
+        Find files or directories matching the given pattern
 
-        :param name: Name of the file to search for
-        :param depth: Max depth to search for
-        :param strict: If set `True` the search will be case sensitive
+        :param pattern: Pattern to search for (supports wildcards)
+            Examples:
+            - "*.py" : Find all Python files
+            - "test_*.txt" : Find all text files starting with "test_"
+            - "**/*.md" : Find all Markdown files in any subdirectory
+            - "data???.csv" : Find CSV files with names like "data001.csv", "data002.csv", etc.
+            - "src/**/main.js" : Find all "main.js" files in the "src" directory and its subdirectories
+        :param depth: Max depth to search for (None for unlimited)
+        :param case_sensitive: If set `True` the search will be case sensitive
         :param include: List of directories to search in
         :param exclude: List of directories to exclude from the search
         :return: List of file paths matching the search pattern
         """
-        found = []
-        include = list(map(Path, (include or []) or [str(self.working_dir)]))
-        exclude = list(map(Path, exclude or [])) + [".git"]
-        for directory in include:
-            found += self._find_recursively(
-                name=name if strict else name.lower(),
-                strict=strict,
-                directory=Path(directory),
-                level=-1,
-                depth=depth or -1,
-                exclude=exclude,  # type: ignore
-            )
-        return found
+
+        include_paths = [Path(dir).resolve() for dir in (include or [self.working_dir])]
+        exclude_paths = [Path(dir).resolve() for dir in (exclude or [])] + [
+            Path(".git").resolve()
+        ]
+
+        if case_sensitive:
+            regex = re.compile(translate(pattern))
+        else:
+            regex = re.compile(translate(pattern), re.IGNORECASE)
+
+        matches = []
+
+        def search_recursive(directory: Path, current_depth: int):
+            if depth is not None and current_depth > depth:
+                return
+
+            try:
+                for item in directory.iterdir():
+                    if item.resolve() in exclude_paths or any(
+                        ex in item.resolve().parents for ex in exclude_paths
+                    ):
+                        continue
+
+                    if regex.match(item.name):
+                        matches.append(str(item.relative_to(self.working_dir)))
+
+                    if item.is_dir():
+                        search_recursive(item, current_depth + 1)
+            except PermissionError:
+                pass  # Skip directories we don't have permission to access
+
+        for directory in include_paths:
+            search_recursive(directory, 0)
+
+        return matches
 
     def _tree(
         self,
@@ -217,6 +296,9 @@ class FileManager(WithLogger):
             exclude=list(map(Path, exclude or [])) + [Path(".git").resolve()],
         )
 
-    def ls(self) -> t.List[str]:
-        """List contents of the current directory."""
-        return list(map(str, self.working_dir.iterdir()))
+    def ls(self) -> t.List[t.Tuple[str, str]]:
+        """List contents of the current directory with their types."""
+        return [
+            (str(path), "dir" if path.is_dir() else "file")
+            for path in self.working_dir.iterdir()
+        ]

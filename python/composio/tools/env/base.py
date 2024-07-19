@@ -11,6 +11,7 @@ import requests
 from composio.client.enums import Action
 from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
+from composio.tools.env.filemanager import FileManager
 from composio.tools.env.id import generate_id
 from composio.tools.local.handler import get_runtime_action
 from composio.utils.logging import WithLogger
@@ -133,6 +134,60 @@ class ShellFactory(WithLogger):
         self._recent = None
 
 
+class FileManagerFactory(WithLogger):
+    """File manager factory."""
+
+    _recent: t.Optional[FileManager] = None
+    _file_managers: t.Dict[str, FileManager] = {}
+    _lock: threading.Lock = threading.Lock()
+
+    def __init__(self, factory: t.Callable[[], FileManager]) -> None:
+        """Create file manager factory"""
+        super().__init__()
+        self._factory = factory
+
+    @property
+    def recent(self) -> FileManager:
+        """Get most recent file manager."""
+        with self._lock:
+            file_manager = self._recent
+        if file_manager is None:
+            file_manager = self.new()
+            with self._lock:
+                self._recent = file_manager
+        return file_manager
+
+    @recent.setter
+    def recent(self, file_manager: FileManager) -> None:
+        """Set most recent file manager."""
+        with self._lock:
+            self._recent = file_manager
+
+    def new(self) -> FileManager:
+        """Create a new file manager."""
+        file_manager = self._factory()
+        self._file_managers[file_manager.id] = file_manager
+        self.recent = file_manager
+        return file_manager
+
+    def get(self, id: t.Optional[str] = None) -> FileManager:
+        """Get file manager instance."""
+        if id is None or id == "":
+            return self.recent
+        if id not in self._file_managers:
+            raise ComposioSDKError(
+                message=f"No file manager found with ID: {id}",
+            )
+        file_manager = self._file_managers[id]
+        self.recent = file_manager
+        return file_manager
+
+    def teardown(self) -> None:
+        """Clean up all file managers."""
+        self._file_managers.clear()
+        self._recent = None
+
+
 @dataclass
 class WorkspaceConfigType:
     """Workspace configuration."""
@@ -154,6 +209,7 @@ class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
 
     _shell_factory: t.Optional[ShellFactory] = None
+    _file_manager_factory: t.Optional[FileManagerFactory] = None
 
     def __init__(self, config: WorkspaceConfigType):
         """Initialize workspace."""
@@ -191,6 +247,15 @@ class Workspace(WithLogger, ABC):
         """Setup workspace."""
 
     @property
+    def file_managers(self) -> FileManagerFactory:
+        """Returns file manager for current workspace."""
+        if self._file_manager_factory is None:
+            self._file_manager_factory = FileManagerFactory(
+                factory=self._create_file_manager,
+            )
+        return self._file_manager_factory
+
+    @property
     def shells(self) -> ShellFactory:
         """Returns shell factory for current workspace."""
         if self._shell_factory is None:
@@ -202,6 +267,10 @@ class Workspace(WithLogger, ABC):
     @abstractmethod
     def _create_shell(self) -> Shell:
         """Create shell."""
+
+    @abstractmethod
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
 
     @abstractmethod
     def execute_action(
@@ -243,6 +312,11 @@ class RemoteWorkspace(Workspace):
     def _create_shell(self) -> Shell:
         raise NotImplementedError(
             "Creating shells for remote workspaces is not allowed."
+        )
+
+    def _create_file_manager(self) -> FileManager:
+        raise NotImplementedError(
+            "Creating file manager for remote workspaces is not allowed."
         )
 
     def _upload(self, action: Action) -> None:

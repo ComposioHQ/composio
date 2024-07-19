@@ -25,7 +25,7 @@ tools = composio_toolset.get_tools(
     apps=[
         App.SEARCHTOOL,
         App.GITCMDTOOL,
-        App.FILEEDITTOOL,
+        App.FILETOOL,
         App.HISTORYFETCHERTOOL,
         App.SHELLEXEC,
     ]

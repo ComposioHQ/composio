@@ -1,6 +1,8 @@
 """Virtual file pointer implementation."""
 
 import re
+import subprocess
+import sys
 import typing as t
 from enum import Enum
 from pathlib import Path
@@ -93,15 +95,18 @@ class File(WithLogger):
         self._start += lines
         self._end += lines
 
-    def goto(self, line: int) -> None:
+    def goto(
+        self,
+        line: int,
+    ) -> None:
         """
-        Go to the given line number.
+        Go to given line number.
 
-        :param line: Number of lines to scroll.
+        :param line: Line number to go to.
         :return: None
         """
         self._start = line
-        self._end = self._start + self._window
+        self._end = line + self._window
 
     def _find(self, buffer: str, pattern: str, lineno: int) -> t.List[Match]:
         """Find the occurences for given pattern in the buffer."""
@@ -191,16 +196,19 @@ class File(WithLogger):
             return self._iter_window()
         return self._iter_file()
 
-    def read(self) -> str:
+    def read(self) -> t.Dict[int, str]:
         """Read data from file."""
         cursor = 0
-        buffer = ""
+        buffer = {}
         with self.path.open("r") as fp:
             while cursor < self._start:
                 _ = fp.readline()
                 cursor += 1
             while cursor < self._end:
-                buffer += fp.readline()
+                line = fp.readline()
+                if not line:
+                    break
+                buffer[cursor] = line
                 cursor += 1
         return buffer
 
@@ -249,6 +257,48 @@ class File(WithLogger):
 
         self.path.write_text(data=buffer, encoding="utf-8")
         return {"replaced_text": replaced, "replaced_with": text}
+
+    def run_lint(self) -> str:
+        """Run lint on the file."""
+        if self.path.suffix == ".py":
+            venv_python = sys.executable
+            try:
+                result = subprocess.run(
+                    [
+                        venv_python,
+                        "-m",
+                        "flake8",
+                        "--isolated",
+                        "--select=F821,F822,F831,E111,E112,E113,E999,E902",
+                        str(self.path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                lint_output = result.stdout
+            except subprocess.CalledProcessError as e:
+                # If flake8 returns a non-zero exit code, it will raise this exception
+                lint_output = e.stdout  # Use stdout for linting errors
+                if e.stderr:  # Check if there's any stderr output
+                    lint_output += f"\nError running flake8: {e.stderr}"
+
+            formatted_output = ""
+            for value in lint_output.split("\n"):
+                parts = value.split()
+                if parts:
+                    formatted_output += f"- {' '.join(parts[1:])}\n"
+            return formatted_output.strip()
+        return ""
+
+    def write_and_run_lint(self, text: str, start: int, end: int) -> str:
+        """Write and run lint on the file. If linting fails, revert the changes."""
+        older_file_text = self.path.read_text(encoding="utf-8")
+        self.write(text=text, start=start, end=end)
+        lint_output = self.run_lint()
+        if lint_output:
+            self.path.write_text(older_file_text, encoding="utf-8")
+        return lint_output
 
     def replace(self, string: str, replacement: str) -> TextReplacement:
         """Replace given string with replacement."""

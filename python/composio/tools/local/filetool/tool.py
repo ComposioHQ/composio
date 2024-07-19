@@ -6,7 +6,15 @@ import typing as t
 
 from composio.tools.local.base import Action, Tool
 
-from .actions import ReadFile, WriteFile
+from .actions import (
+    CreateFile,
+    EditFile,
+    FindFile,
+    ListFiles,
+    OpenFile,
+    Scroll,
+    SearchWord,
+)
 
 
 class FileTool(Tool):
@@ -14,7 +22,7 @@ class FileTool(Tool):
 
     def actions(self) -> t.List[t.Type[Action]]:
         """Return the list of actions."""
-        return [ReadFile, WriteFile]
+        return [OpenFile, EditFile, CreateFile, Scroll, ListFiles, SearchWord, FindFile]
 
     def triggers(self) -> t.List:
         """Return the list of triggers."""
