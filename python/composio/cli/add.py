@@ -202,13 +202,8 @@ def add_integration(
 
     auth_schemes = app.auth_schemes or []
     if len(auth_schemes) == 0:
-        return _handle_no_auth(
-            entity=entity,
-            client=context.client,
-            app_name=name,
-            no_browser=no_browser,
-            integration=integration,
-        )
+        context.console.print(f"{app.name} does not need authentication")
+        return None
 
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
     if auth_mode is not None and auth_mode not in auth_modes:
@@ -230,13 +225,21 @@ def add_integration(
         )
         auth_scheme = auth_modes[auth_mode]
 
-    return _handle_basic_auth(
+    if auth_mode.lower() in ("basic", "api_key"):
+        return _handle_basic_auth(
+            entity=entity,
+            client=context.client,
+            app_name=name,
+            auth_mode=auth_mode,
+            auth_scheme=auth_scheme,
+            scopes=scopes,
+        )
+    return _handle_oauth(
         entity=entity,
         client=context.client,
         app_name=name,
-        auth_mode=auth_mode,
-        auth_scheme=auth_scheme,
-        scopes=scopes,
+        no_browser=no_browser,
+        integration=integration,
     )
 
 
@@ -255,7 +258,7 @@ def _get_auth_config(
     }
 
 
-def _handle_no_auth(
+def _handle_oauth(
     entity: Entity,
     client: Composio,
     app_name: str,
