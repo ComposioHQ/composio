@@ -37,18 +37,34 @@ class SqlQuery(Action):
         # response_data = {"result": "Processed text: " + request_data.text}
         # Implement logic to process input and return output
         import sqlite3  # pylint: disable=import-outside-toplevel
+        import os
 
-        # Connect to the database
-        connection = sqlite3.connect(request_data.connection_string)
-        cursor = connection.cursor()
+        # Check if the database file exists
+        if not os.path.exists(request_data.connection_string):
+            return {
+                "execution_details": {"executed": False},
+                "response_data": f"Error: Database file '{request_data.connection_string}' does not exist."
+            }
 
-        # Execute the query
-        cursor.execute(request_data.query)
+        try:
+            # Connect to the database
+            connection = sqlite3.connect(request_data.connection_string)
+            cursor = connection.cursor()
 
-        response_data = cursor.fetchall()
-        connection.commit()
-        # Close the connection
-        connection.close()
+            # Execute the query
+            cursor.execute(request_data.query)
 
-        # Prepare the response data
-        return {"execution_details": {"executed": True}, "response_data": response_data}
+            response_data = cursor.fetchall()
+            connection.commit()
+
+            # Prepare the response data
+            return {"execution_details": {"executed": True}, "response_data": response_data}
+        except sqlite3.Error as e:
+            return {
+                "execution_details": {"executed": False},
+                "response_data": f"SQLite error: {str(e)}"
+            }
+        finally:
+            # Close the connection if it was successfully opened
+            if "connection" in locals():
+                connection.close()  # pylint: disable=no-member
