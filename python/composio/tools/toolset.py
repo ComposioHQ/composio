@@ -289,10 +289,10 @@ class ComposioToolSet(WithLogger):
             return param  # type: ignore
 
         if isinstance(param, BaseModel):
-            return param.model_dump_json()  # type: ignore
+            return param.model_dump_json(exclude_none=True)  # type: ignore
 
         if isinstance(param, V1BaseModel):
-            return param.dict()  # type: ignore
+            return param.dict(exclude_none=True)  # type: ignore
 
         if isinstance(param, list):
             return [self._serialize_execute_params(p) for p in param]  # type: ignore
