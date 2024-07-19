@@ -48,7 +48,12 @@ def test_docker_workspace() -> None:
     """Test docker workspace."""
     workspace = WorkspaceFactory.new(config=WorkspaceType.Docker())
     logger = get_logger()
+    import time
+
+    start_time = time.time()
     toolset = ComposioToolSet(workspace_id=workspace.id)
+    end_time = time.time()
+    print(f"Time taken to initialize ComposioToolSet: {end_time - start_time:.4f} seconds")
     output = toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
         params={"cmd": "ls"},
