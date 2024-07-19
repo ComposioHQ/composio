@@ -46,7 +46,7 @@ Learn more about Entities [here](introduction/foundations/components/entity/enti
 
 <CodeGroup>
       ```typescript Define your Agent to create issues on Github
-async function executeGithubAgent (entityName){
+async function executeAgent (entityName){
         // Create entity and get tools
         const entity = await toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
@@ -84,7 +84,7 @@ async function executeGithubAgent (entityName){
 
 <CodeGroup>
       ```typescript  Invoke the agent
-      executeGithubAgent("himanshu")
+      executeAgent("himanshu")
       ```
     </CodeGroup>
 
