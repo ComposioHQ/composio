@@ -69,6 +69,7 @@
   - [Competitor Researcher](#competitor-researcher)
   - [Todolist to Calendar](#todolist-to-calendar)
   - [Github to Trello](#github-to-trello)
+- [Star History](#star-history)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
 - [🔗 Links](#-links)
@@ -134,7 +135,7 @@ composio_tool_set = ComposioToolSet()
 
 # Get GitHub tools that are pre-configured
 actions = composio_tool_set.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
 my_task = "Star a repo composiodev/composio on GitHub"

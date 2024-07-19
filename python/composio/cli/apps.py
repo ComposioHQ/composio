@@ -16,6 +16,7 @@ from composio.cli.context import Context, get_context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
+from composio.client.enums._patch import ACTIONS as OLD_ACTIONS
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 from composio.tools.local.handler import LocalClient
@@ -205,6 +206,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
     _update_annotations(
         cls=enums.Action,
         attributes=action_names,
+        deprecated=OLD_ACTIONS,
     )
 
 
@@ -269,7 +271,11 @@ def _update_triggers(
     )
 
 
-def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
+def _update_annotations(
+    cls: t.Type,
+    attributes: t.List[str],
+    deprecated: t.Optional[t.Dict[str, str]] = None,
+) -> None:
     """Update annontations for `cls`"""
     console = get_context().console
     file = Path(inspect.getmodule(cls).__file__)  # type: ignore
@@ -287,6 +293,23 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
                 simple=1,
             ),
         )
+
+    _deprecated = []
+    _deprecated_names = []
+    for old, new in (deprecated or {}).items():
+        if old.lower() == new.lower():
+            continue
+
+        if new.upper() not in attributes:
+            continue
+
+        _deprecated.append(
+            _build_deprecated_node(
+                old=old,
+                new=new,
+            )
+        )
+        _deprecated_names.append(old.upper())
 
     tree = ast.parse(file.read_text(encoding="utf-8"))
     for node in tree.body:
@@ -306,13 +329,57 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             )
             return
 
-        node.body = (
-            node.body[:1]
-            + annotations
-            + [child for child in node.body[1:] if not isinstance(child, ast.AnnAssign)]
-        )
+        body = [
+            child for child in node.body[1:] if not isinstance(child, ast.AnnAssign)
+        ]
+        body = [
+            child
+            for child in body
+            if not (
+                isinstance(child, ast.FunctionDef) and child.name in _deprecated_names
+            )
+        ]
+        node.body = node.body[:1] + annotations + _deprecated + body
         break
 
     with file.open("w", encoding="utf-8") as fp:
         fp.write(ast.unparse(tree))
     console.print(f"[green]✔ {cls.__name__}s updated[/green]")
+
+
+def _build_deprecated_node(old: str, new: str) -> ast.FunctionDef:
+    """Function definition."""
+    return ast.FunctionDef(
+        name=old.upper(),
+        args=ast.arguments(
+            posonlyargs=[],
+            args=[ast.arg(arg="cls")],
+            kwonlyargs=[],
+            kw_defaults=[],
+            defaults=[],
+        ),
+        body=[
+            ast.Return(
+                value=ast.Attribute(
+                    value=ast.Name(id="cls", ctx=ast.Load()),
+                    attr=new.upper(),
+                    ctx=ast.Load(),
+                )
+            )
+        ],
+        decorator_list=[
+            ast.Name(id="classmethod", ctx=ast.Load()),
+            ast.Name(id="property", ctx=ast.Load()),
+            ast.Call(
+                func=ast.Attribute(
+                    value=ast.Name(id="te", ctx=ast.Load()),
+                    attr="deprecated",
+                    ctx=ast.Load(),
+                ),
+                args=[ast.Constant(value=f"Use {new.upper()} instead.")],
+                keywords=[],
+            ),
+        ],
+        returns=ast.Constant(value="Action"),
+        lineno=0,
+    )

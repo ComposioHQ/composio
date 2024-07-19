@@ -3,10 +3,12 @@ Enum helper base.
 """
 
 import typing as t
+import warnings
 from pathlib import Path
 
 import typing_extensions as te
 
+from composio.client.enums._patch import ACTIONS as OLD_ACTIONS
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
@@ -26,6 +28,12 @@ TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
 
 class MetadataFileNotFound(ComposioSDKError):
     """Raise when matadata file is missing."""
+
+
+class SentinalObject:
+    """Sentinal object."""
+
+    sentinal = None
 
 
 class TagData(LocalStorage):
@@ -91,7 +99,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     _model: t.Type[EntityType]
     _path: Path
 
-    def __new__(cls, value: t.Any):
+    def __new__(cls, value: t.Any, warn: bool = True):
         (base,) = t.cast(t.Tuple[t.Any], getattr(cls, "__orig_bases__"))
         (model,) = t.get_args(base)
         instance = super().__new__(cls)
@@ -102,15 +110,32 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         cls._path = path
         return super().__init_subclass__()
 
-    def __init__(self, value: t.Union[str, te.Self]) -> None:
+    def __init__(
+        self,
+        value: t.Union[str, te.Self, t.Type[SentinalObject]],
+        warn: bool = True,
+    ) -> None:
         """Create an Enum"""
+        if hasattr(value, "sentinal"):
+            value = value().get_tool_merged_action_name()  # type: ignore
+
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
 
-        value = t.cast(str, value).upper()
-        if value not in self.__annotations__ and value not in _runtime_actions:
+        self._slug = t.cast(str, value).upper()
+        if self._slug.lower() in OLD_ACTIONS and warn:
+            warnings.warn(
+                f"`{self._slug}` is deprecated and will be removed. "
+                f"Use `{OLD_ACTIONS[self._slug.lower()].upper()}` instead.",
+                UserWarning,
+            )
+            return
+
+        if (
+            self._slug not in self.__annotations__
+            and self._slug not in _runtime_actions
+        ):
             raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
-        self._slug = value
 
     @property
     def slug(self) -> str:
@@ -159,7 +184,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 def enum(cls: ClassType) -> ClassType:
     """Decorate class."""
     for attr in cls.__annotations__:
-        setattr(cls, attr, cls(attr))
+        setattr(cls, attr, cls(attr, warn=False))
     return cls
 
 

@@ -15,7 +15,7 @@ from langgraph.prebuilt import (  # pylint: disable=no-name-in-module
 
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 tool_executor = ToolExecutor(tools)
 functions = [convert_to_openai_function(t) for t in tools]

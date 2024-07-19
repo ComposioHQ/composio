@@ -6,6 +6,7 @@ import typing as t
 from asyncio import AbstractEventLoop
 
 from aiohttp import ClientSession as AsyncSession
+from requests import ReadTimeout
 from requests import Session as SyncSession
 
 from composio.utils import logging
@@ -105,11 +106,17 @@ class HttpClient(SyncSession, logging.WithLogger):
             self._logger.debug(
                 f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
-            return method(
-                url=f"{self.base_url}{url}",
-                timeout=self.timeout,
-                **kwargs,
-            )
+            retries = 0
+            while retries < 3:
+                try:
+                    return method(
+                        url=f"{self.base_url}{url}",
+                        timeout=self.timeout,
+                        **kwargs,
+                    )
+                except ReadTimeout:
+                    retries += 1
+            raise TimeoutError("Timed out while waiting for request to complete")
 
         return request
 
