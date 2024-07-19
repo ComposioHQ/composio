@@ -92,6 +92,8 @@ class HostWorkspace(Workspace):
             self.logger.debug("Using shell over `subprocess.Popen`")
             self._ssh = None
 
+    _file_manager: t.Optional[FileManager] = None
+
     @property
     def file_manager(self) -> FileManager:
         """File manager for the workspace."""
@@ -107,7 +109,7 @@ class HostWorkspace(Workspace):
                 environment=self.environment,
             )
         return HostShell()
-    
+
     def _create_file_manager(self) -> FileManager:
         """Create file manager for the workspace."""
         return FileManager(working_dir=self._working_dir)

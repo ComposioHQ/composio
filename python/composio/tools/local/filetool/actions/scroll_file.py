@@ -1,9 +1,9 @@
-from composio.tools.env.filemanager.file import ScrollDirection
-from composio.tools.env.filemanager.manager import FileManager
-
-from pydantic import Field
 import typing as t
 
+from pydantic import Field
+
+from composio.tools.env.filemanager.file import ScrollDirection
+from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileAction,
     BaseFileRequest,
@@ -13,7 +13,11 @@ from composio.tools.local.filetool.actions.base_action import (
 
 class ScrollRequest(BaseFileRequest):
     """Request to scroll up/down in the editor."""
-    direction: ScrollDirection = Field(default=ScrollDirection.DOWN, description="The direction to scroll: up/down, by default it's down")
+
+    direction: ScrollDirection = Field(
+        default=ScrollDirection.DOWN,
+        description="The direction to scroll: up/down, by default it's down",
+    )
 
 
 class ScrollResponse(BaseFileResponse):
@@ -41,10 +45,10 @@ class Scroll(BaseFileAction):
     _response_schema = ScrollResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: ScrollRequest
+        self, file_manager: FileManager, request_data: ScrollRequest  # type: ignore
     ) -> ScrollResponse:
         try:
-            recent_file = file_manager._recent
+            recent_file = file_manager.recent
             if recent_file is None:
                 return ScrollResponse(error="No file opened")
             recent_file.scroll(direction=request_data.direction)

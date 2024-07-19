@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileAction,
@@ -5,11 +7,10 @@ from composio.tools.local.filetool.actions.base_action import (
     BaseFileResponse,
 )
 
-from pydantic import Field
-
 
 class EditFileRequest(BaseFileRequest):
     """Request to edit a file."""
+
     start_line: int = Field(
         ..., description="The line number at which the file edit will start"
     )
@@ -22,7 +23,7 @@ class EditFileRequest(BaseFileRequest):
     )
     file_path: str = Field(
         default=None,
-        description="""The path to the file that will be edited. 
+        description="""The path to the file that will be edited.
         If not provided, THE CURRENTLY OPEN FILE will be edited.
         If provided, the file at the provided path will be OPENED 
         and edited, changing the opened file.""",
@@ -61,13 +62,13 @@ class EditFile(BaseFileAction):
     _response_schema = EditFileResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: EditFileRequest
+        self, file_manager: FileManager, request_data: EditFileRequest  # type: ignore
     ) -> EditFileResponse:
         try:
             if request_data.file_path is None:
-                file = file_manager._recent # type: ignore
+                file = file_manager.recent  # type: ignore
             else:
-                file = file_manager.open(request_data.file_path) # type: ignore
+                file = file_manager.open(request_data.file_path)  # type: ignore
             if file is None:
                 return EditFileResponse(
                     error=f"File {request_data.file_path} not found"

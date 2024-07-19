@@ -1,11 +1,11 @@
 """File manager."""
 
 import os
+import re
 import threading
 import typing as t
-from pathlib import Path
-import re
 from fnmatch import translate
+from pathlib import Path
 
 import typing_extensions as te
 
@@ -53,6 +53,11 @@ class FileManager(WithLogger):
         self.working_dir = Path(working_dir or "./").resolve()
 
         self._files = {}
+
+    @property
+    def recent(self) -> t.Optional[File]:
+        """Get the most recent file."""
+        return self._recent
 
     def __enter__(self) -> te.Self:
         """Enter workspace context."""
@@ -138,16 +143,16 @@ class FileManager(WithLogger):
         else:
             pattern = Path(pattern)
 
-        results = {}
-        paths_to_search = []
+        results: t.Dict[str, t.List[t.Tuple[int, str]]] = {}
+        paths_to_search: t.List[Path] = []
 
         if pattern.is_file():
             paths_to_search = [pattern]
         elif pattern.is_dir():
             if recursive:
-                paths_to_search = list(pattern.rglob('*'))
+                paths_to_search = list(pattern.rglob("*"))
             else:
-                paths_to_search = list(pattern.glob('*'))
+                paths_to_search = list(pattern.glob("*"))
         else:
             if recursive:
                 paths_to_search = list(self.working_dir.rglob(str(pattern)))
@@ -155,9 +160,9 @@ class FileManager(WithLogger):
                 paths_to_search = list(self.working_dir.glob(str(pattern)))
 
         for file_path in paths_to_search:
-            if file_path.is_file() and not file_path.name.startswith('.'):
+            if file_path.is_file() and not file_path.name.startswith("."):
                 try:
-                    with file_path.open('r') as f:
+                    with file_path.open("r", encoding="utf-8") as f:
                         for i, line in enumerate(f, 1):
                             if word in line:
                                 rel_path = str(file_path.relative_to(self.working_dir))
@@ -172,18 +177,16 @@ class FileManager(WithLogger):
             print(f'No matches found for "{word}" in {pattern}')
             return {}
 
-        num_matches = sum(len(matches) for matches in results.values())
-        num_files = len(results)
+        num_matches: int = sum(len(matches) for matches in results.values())
+        num_files: int = len(results)
 
         if num_files > 100:
-            print(f'More than {num_files} files matched for "{word}" in {pattern}. Please narrow your search.')
+            print(
+                f'More than {num_files} files matched for "{word}" in {pattern}. Please narrow your search.'
+            )
             return {}
 
-        print(f'Found {num_matches} matches for "{word}" in {pattern}:')
-        for file_path, matches in results.items():
-            print(f'{file_path} ({len(matches)} matches)')
-
-        print(f'End of matches for "{word}" in {pattern}')
+        self.logger.info(f'Found {num_matches} matches for "{word}" in {pattern}')
         return results
 
     def find(
@@ -212,7 +215,9 @@ class FileManager(WithLogger):
         """
 
         include_paths = [Path(dir).resolve() for dir in (include or [self.working_dir])]
-        exclude_paths = [Path(dir).resolve() for dir in (exclude or [])] + [Path(".git").resolve()]
+        exclude_paths = [Path(dir).resolve() for dir in (exclude or [])] + [
+            Path(".git").resolve()
+        ]
 
         if case_sensitive:
             regex = re.compile(translate(pattern))
@@ -227,7 +232,9 @@ class FileManager(WithLogger):
 
             try:
                 for item in directory.iterdir():
-                    if item.resolve() in exclude_paths or any(ex in item.resolve().parents for ex in exclude_paths):
+                    if item.resolve() in exclude_paths or any(
+                        ex in item.resolve().parents for ex in exclude_paths
+                    ):
                         continue
 
                     if regex.match(item.name):
@@ -291,4 +298,7 @@ class FileManager(WithLogger):
 
     def ls(self) -> t.List[t.Tuple[str, str]]:
         """List contents of the current directory with their types."""
-        return [(str(path), 'dir' if path.is_dir() else 'file') for path in self.working_dir.iterdir()]
+        return [
+            (str(path), "dir" if path.is_dir() else "file")
+            for path in self.working_dir.iterdir()
+        ]

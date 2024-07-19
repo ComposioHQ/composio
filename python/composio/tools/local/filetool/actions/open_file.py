@@ -1,7 +1,8 @@
-from composio.tools.env.filemanager.manager import FileManager
-from pydantic import Field
 import typing as t
 
+from pydantic import Field
+
+from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileAction,
     BaseFileRequest,
@@ -46,7 +47,7 @@ class OpenFile(BaseFileAction):
     _response_schema = OpenFileResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: OpenFileRequest
+        self, file_manager: FileManager, request_data: OpenFileRequest  # type: ignore
     ) -> OpenFileResponse:
         try:
             file = file_manager.open(request_data.file_path)

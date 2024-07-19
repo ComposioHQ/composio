@@ -1,7 +1,6 @@
-from composio.tools.env.filemanager.manager import FileManager
 from pydantic import Field
-import typing as t
 
+from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileAction,
     BaseFileRequest,
@@ -11,11 +10,15 @@ from composio.tools.local.filetool.actions.base_action import (
 
 class ChwdirRequest(BaseFileRequest):
     """Request to change the current working directory."""
-    path: str = Field(..., description="The path to change the current working directory to")
+
+    path: str = Field(
+        ..., description="The path to change the current working directory to"
+    )
 
 
 class ChwdirResponse(BaseFileResponse):
     """Response to change the current working directory."""
+
 
 class ChangeWorkingDirectory(BaseFileAction):
     """
@@ -32,7 +35,7 @@ class ChangeWorkingDirectory(BaseFileAction):
     _response_schema = ChwdirResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: ChwdirRequest
+        self, file_manager: FileManager, request_data: ChwdirRequest  # type: ignore
     ) -> ChwdirResponse:
         try:
             file_manager.chdir(request_data.path)

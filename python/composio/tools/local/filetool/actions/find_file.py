@@ -1,3 +1,8 @@
+import typing as t
+from pathlib import Path
+
+from pydantic import Field
+
 from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileAction,
@@ -5,37 +10,30 @@ from composio.tools.local.filetool.actions.base_action import (
     BaseFileResponse,
 )
 
-from pydantic import Field
-import typing as t
-
 
 class FindFileRequest(BaseFileRequest):
     """Request to find files matching a pattern."""
+
     pattern: str = Field(..., description="Pattern to search for (supports wildcards)")
     depth: t.Optional[int] = Field(
-        default=None,
-        description="Max depth to search for (None for unlimited)",
-        ge=0
+        default=None, description="Max depth to search for (None for unlimited)", ge=0
     )
     case_sensitive: bool = Field(
-        default=False,
-        description="If set True the search will be case sensitive"
+        default=False, description="If set True the search will be case sensitive"
     )
-    include: t.Optional[t.List[str]] = Field(
-        default=None,
-        description="List of directories to search in"
+    include: t.Optional[t.List[t.Union[str, Path]]] = Field(
+        default=None, description="List of directories to search in"
     )
-    exclude: t.Optional[t.List[str]] = Field(
-        default=None,
-        description="List of directories to exclude from the search"
+    exclude: t.Optional[t.List[t.Union[str, Path]]] = Field(
+        default=None, description="List of directories to exclude from the search"
     )
 
 
 class FindFileResponse(BaseFileResponse):
     """Response to find files matching a pattern."""
+
     results: t.List[str] = Field(
-        default=[],
-        description="List of file paths matching the search pattern"
+        default=[], description="List of file paths matching the search pattern"
     )
     error: str = Field(default="", description="Error message if any")
 
@@ -79,7 +77,7 @@ class FindFile(BaseFileAction):
     _response_schema = FindFileResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: FindFileRequest
+        self, file_manager: FileManager, request_data: FindFileRequest  # type: ignore
     ) -> FindFileResponse:
         try:
             results = file_manager.find(
@@ -87,7 +85,7 @@ class FindFile(BaseFileAction):
                 depth=request_data.depth,
                 case_sensitive=request_data.case_sensitive,
                 include=request_data.include,
-                exclude=request_data.exclude
+                exclude=request_data.exclude,
             )
             return FindFileResponse(results=results)
         except ValueError as e:

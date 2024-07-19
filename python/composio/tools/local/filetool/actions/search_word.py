@@ -1,3 +1,7 @@
+import typing as t
+
+from pydantic import Field
+
 from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileAction,
@@ -5,12 +9,10 @@ from composio.tools.local.filetool.actions.base_action import (
     BaseFileResponse,
 )
 
-from pydantic import Field
-import typing as t
-
 
 class SearchWordRequest(BaseFileRequest):
     """Request to search for a word in files."""
+
     word: str = Field(..., description="The term to search for")
     pattern: str = Field(
         default=None,
@@ -21,19 +23,19 @@ class SearchWordRequest(BaseFileRequest):
         - "src/*.txt" : Search in all text files in the 'src' directory
         - "**/*.md" : Search in all Markdown files in the current directory and all subdirectories
         - "/path/to/specific/file.js" : Search in a specific file
-        - "/path/to/directory" : Search in all files in a specific directory"""
+        - "/path/to/directory" : Search in all files in a specific directory""",
     )
     recursive: bool = Field(
-        default=True,
-        description="If True, search recursively in subdirectories"
+        default=True, description="If True, search recursively in subdirectories"
     )
 
 
 class SearchWordResponse(BaseFileResponse):
     """Response to search for a word in files."""
+
     results: t.Dict[str, t.List[t.Tuple[int, str]]] = Field(
         default={},
-        description="A dictionary with file paths as keys and lists of (line number, line content) tuples as values"
+        description="A dictionary with file paths as keys and lists of (line number, line content) tuples as values",
     )
     error: str = Field(default="", description="Error message if any")
 
@@ -73,19 +75,21 @@ class SearchWord(BaseFileAction):
     _response_schema = SearchWordResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: SearchWordRequest
+        self, file_manager: FileManager, request_data: SearchWordRequest  # type: ignore
     ) -> SearchWordResponse:
         try:
             results = file_manager.search_word(
                 word=request_data.word,
                 pattern=request_data.pattern,
-                recursive=request_data.recursive
+                recursive=request_data.recursive,
             )
             return SearchWordResponse(results=results)
         except ValueError as e:
             return SearchWordResponse(error=f"Invalid search parameters: {str(e)}")
         except FileNotFoundError as e:
-            return SearchWordResponse(error=f"No files found matching the pattern: {str(e)}")
+            return SearchWordResponse(
+                error=f"No files found matching the pattern: {str(e)}"
+            )
         except PermissionError as e:
             return SearchWordResponse(error=f"Permission denied: {str(e)}")
         except IOError as e:

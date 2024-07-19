@@ -2,10 +2,11 @@
 
 import os
 import tempfile
+import time
 from pathlib import Path
 
 from composio import Action, ComposioToolSet
-from composio.tools.env.constants import DEFAULT_IMAGE, EXIT_CODE, STDERR, STDOUT
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.factory import WorkspaceFactory, WorkspaceType
 from composio.utils.logging import get as get_logger
 
@@ -48,12 +49,13 @@ def test_docker_workspace() -> None:
     """Test docker workspace."""
     workspace = WorkspaceFactory.new(config=WorkspaceType.Docker())
     logger = get_logger()
-    import time
 
     start_time = time.time()
     toolset = ComposioToolSet(workspace_id=workspace.id)
     end_time = time.time()
-    print(f"Time taken to initialize ComposioToolSet: {end_time - start_time:.4f} seconds")
+    print(
+        f"Time taken to initialize ComposioToolSet: {end_time - start_time:.4f} seconds"
+    )
     output = toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
         params={"cmd": "ls"},
@@ -140,7 +142,12 @@ def test_workspace() -> None:
         logger.info(f"output of create file: {output_list}")
         output_list = toolset.execute_action(
             action=Action.FILETOOL_EDIT_FILE,
-            params={"file_path": "random_file.txt", "text": "hello", "start_line": 1, "end_line": 1},
+            params={
+                "file_path": "random_file.txt",
+                "text": "hello",
+                "start_line": 1,
+                "end_line": 1,
+            },
         )
         logger.info(f"output of edit file: {output_list}")
 
@@ -157,7 +164,7 @@ def test_workspace() -> None:
                 "depth": None,
                 "case_sensitive": False,
                 "include": None,
-                "exclude": None
+                "exclude": None,
             },
         )
         logger.info(f"output of find file: {output_list}")

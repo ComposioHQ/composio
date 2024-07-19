@@ -260,7 +260,7 @@ class File(WithLogger):
 
     def run_lint(self) -> str:
         """Run lint on the file."""
-        if self.path.suffix == '.py':
+        if self.path.suffix == ".py":
             venv_python = sys.executable
             try:
                 result = subprocess.run(
@@ -270,11 +270,11 @@ class File(WithLogger):
                         "flake8",
                         "--isolated",
                         "--select=F821,F822,F831,E111,E112,E113,E999,E902",
-                        str(self.path)
+                        str(self.path),
                     ],
                     capture_output=True,
                     text=True,
-                    check=True
+                    check=True,
                 )
                 lint_output = result.stdout
             except subprocess.CalledProcessError as e:

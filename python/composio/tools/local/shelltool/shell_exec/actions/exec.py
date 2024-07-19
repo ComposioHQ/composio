@@ -122,6 +122,6 @@ def exec_cmd(
 ) -> t.Dict[str, str]:
     """Execute a shell command."""
     shell_id = shell_id or ""
-    shell = authorisation_data.get("workspace").shells.get(id=shell_id if len(shell_id) > 0 else None) # type: ignore
+    shell = authorisation_data.get("workspace").shells.get(id=shell_id if len(shell_id) > 0 else None)  # type: ignore
     get_logger(name="exec_cmd").debug(f"Executing {cmd} @ {shell}")
     return shell.exec(cmd=cmd)

@@ -132,7 +132,8 @@ class ShellFactory(WithLogger):
             self._shells.pop(id).stop()
             self.logger.debug(f"Stopped shell with ID: {id}")
         self._recent = None
-        
+
+
 class FileManagerFactory(WithLogger):
     """File manager factory."""
 
@@ -185,7 +186,6 @@ class FileManagerFactory(WithLogger):
         """Clean up all file managers."""
         self._file_managers.clear()
         self._recent = None
-
 
 
 @dataclass
@@ -313,7 +313,7 @@ class RemoteWorkspace(Workspace):
         raise NotImplementedError(
             "Creating shells for remote workspaces is not allowed."
         )
-        
+
     def _create_file_manager(self) -> FileManager:
         raise NotImplementedError(
             "Creating file manager for remote workspaces is not allowed."

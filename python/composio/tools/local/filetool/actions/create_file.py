@@ -1,7 +1,11 @@
-from composio.tools.env.filemanager.manager import FileManager
 from pydantic import Field, field_validator
 
-from composio.tools.local.filetool.actions.base_action import BaseFileAction, BaseFileRequest, BaseFileResponse
+from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.local.filetool.actions.base_action import (
+    BaseFileAction,
+    BaseFileRequest,
+    BaseFileResponse,
+)
 
 
 class CreateFileRequest(BaseFileRequest):
@@ -9,7 +13,7 @@ class CreateFileRequest(BaseFileRequest):
 
     file_path: str = Field(
         ...,
-        description="""File path to create in the editor. 
+        description="""File path to create in the editor.
         If file already exists, it will be overwritten""",
     )
 
@@ -25,6 +29,7 @@ class CreateFileRequest(BaseFileRequest):
 
 class CreateFileResponse(BaseFileResponse):
     """Response to create a file."""
+
     success: bool = Field(
         default=False, description="Whether the file was created successfully"
     )
@@ -50,11 +55,11 @@ class CreateFile(BaseFileAction):
     _response_schema = CreateFileResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: CreateFileRequest
+        self, file_manager: FileManager, request_data: CreateFileRequest  # type: ignore
     ) -> CreateFileResponse:
         try:
-            file_manager.create(request_data.file_path) # type: ignore
-            return CreateFileResponse(success=True, current_working_directory=str(file_manager._pwd))
+            file_manager.create(request_data.file_path)  # type: ignore
+            return CreateFileResponse(success=True)
         except FileExistsError as e:
             return CreateFileResponse(error=f"File already exists: {str(e)}")
         except PermissionError as e:
