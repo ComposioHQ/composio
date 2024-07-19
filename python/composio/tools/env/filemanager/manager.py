@@ -64,16 +64,16 @@ class FileManager(WithLogger):
         os.chdir(self.working_dir)
         set_current_file_manager(manager=self)
         return self
-    
-    def chdir(self, path: t.Union[Path, str]) -> None:
-        """Change the current working directory."""
-        self.working_dir = Path(path).resolve()
 
     def __exit__(self, *args: t.Any, **kwargs: t.Any) -> None:
         """Exit from workspace context."""
         if self._pwd is not None:
             os.chdir(self._pwd)
         set_current_file_manager(manager=None)
+
+    def chdir(self, path: t.Union[Path, str]) -> None:
+        """Change the current working directory."""
+        self.working_dir = Path(path).resolve()
 
     def open(self, path: t.Union[Path, str], window: t.Optional[int] = None) -> File:
         """
