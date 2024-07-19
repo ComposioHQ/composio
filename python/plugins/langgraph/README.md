@@ -1,6 +1,6 @@
 ## 🦜🕸️ Using Composio With LangGraph
 
-Integrate Composio with LangGraph Agentic workfows & enable them to interact seamlessly with external apps, enhancing their functionality and reach.
+Integrate Composio with LangGraph Agentic workflows & enable them to interact seamlessly with external apps, enhancing their functionality and reach.
 
 ### Goal
 
@@ -67,7 +67,7 @@ model = model.bind_functions(functions)
 ```
 #### 4. Define the Graph Nodes
 
-LangGraph expects you to define different nodes of the agentic workflow as seperate functions. 
+LangGraph expects you to define different nodes of the agentic workflow as separate functions. 
 
 Here we define one node for calling the LLM and another for executing the correct tool(function), with appropriate parameters.
 

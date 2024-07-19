@@ -4,11 +4,14 @@ Host workspace.
 
 import os
 import typing as t
+from dataclasses import dataclass
 
 import paramiko
+import typing_extensions as te
+from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 from composio.client.enums import Action
-from composio.tools.env.base import Shell, Workspace
+from composio.tools.env.base import Shell, Workspace, WorkspaceConfigType
 from composio.tools.env.host.shell import HostShell, SSHShell
 from composio.tools.local.handler import LocalClient
 
@@ -30,21 +33,39 @@ def _read_ssh_config(
     )
 
 
+class SSHConfig(te.TypedDict):
+    """SSH configuration for creating interactive shell sessions."""
+
+    username: te.NotRequired[str]
+    """Username for SSH connection"""
+
+    password: te.NotRequired[str]
+    """Password for SSH connection"""
+
+    hostname: te.NotRequired[str]
+    """Host for SSH connection"""
+
+
+@dataclass
+class Config(WorkspaceConfigType):
+    """Host configuration type."""
+
+    ssh: t.Optional[SSHConfig] = None
+    """SSH configuration for creating interactive shell sessions."""
+
+
 class HostWorkspace(Workspace):
     """Host workspace implementation."""
 
     _ssh: t.Optional[paramiko.SSHClient] = None
 
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        ssh_username: t.Optional[str] = None,
-        ssh_password: t.Optional[str] = None,
-        ssh_hostname: t.Optional[str] = None,
-    ):
+    def __init__(self, config: Config):
         """Initialize host workspace."""
-        super().__init__(api_key=api_key, base_url=base_url)
+        super().__init__(config=config)
+        self.ssh_config = config.ssh or {}
+
+    def setup(self) -> None:
+        """Setup workspace."""
         try:
             self.logger.debug(f"Setting up SSH client for workspace {self.id}")
             self._ssh = paramiko.SSHClient()
@@ -52,26 +73,29 @@ class HostWorkspace(Workspace):
                 policy=paramiko.AutoAddPolicy(),
             )
             ssh_username, ssh_password, ssh_hostname = _read_ssh_config(
-                username=ssh_username,
-                password=ssh_password,
-                hostname=ssh_hostname,
+                username=self.ssh_config.get("username"),
+                password=self.ssh_config.get("password"),
+                hostname=self.ssh_config.get("hostname"),
             )
             self._ssh.connect(
                 hostname=ssh_hostname or LOOPBACK_ADDRESS,
                 username=ssh_username,
                 password=ssh_password,
             )
-        except paramiko.SSHException as e:
-            self._ssh = None
+        except (SSHException, NoValidConnectionsError) as e:
             self.logger.debug(
                 f"Setting up SSH client for workspace failed with error: {e}"
             )
             self.logger.debug("Using shell over `subprocess.Popen`")
+            self._ssh = None
 
     def _create_shell(self) -> Shell:
         """Create host shell."""
         if self._ssh is not None:
-            return SSHShell(client=self._ssh)
+            return SSHShell(
+                client=self._ssh,
+                environment=self.environment,
+            )
         return HostShell()
 
     def execute_action(

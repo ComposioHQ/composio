@@ -17,7 +17,7 @@ description: "Enable OpenAI assistants to seamlessly interact with external apps
 These steps prepare your environment to enable interactions between OpenAI and GitHub through Composio.
 
 <CodeGroup>
-  ```bash Run Command 
+  ```bash python 
   pip install composio-openai
 
   # Connect your GitHub so agents can interact with it
@@ -28,13 +28,24 @@ These steps prepare your environment to enable interactions between OpenAI and G
 
   composio apps
   ```
+  ```javascript javascript
+  npm install openai
+  npm install composio-core
+  // Connect your GitHub so agents can interact with it
+
+  composio add github
+
+  // Check all supported apps
+
+  composio apps
+  ```
 </CodeGroup>
 
 <Steps>
 
 <Step title="Import Base Packages & Configure OpenAI Client">
 <CodeGroup>
-  ```python Default Imports & Configuration
+  ```python python
   from openai import OpenAI
   from composio_openai import ComposioToolSet, App
 
@@ -42,22 +53,45 @@ These steps prepare your environment to enable interactions between OpenAI and G
   # Initialise the Composio Tool Set
   composio_toolset = ComposioToolSet()
   ```
+  ```javascript javascript
+  import dotenv from 'dotenv';
+  dotenv.config();
 
+  import { OpenAI } from "openai";
+  import { OpenAIToolSet } from "composio-core";
+
+  // Initializing the OpenAI client with the API key from environment variables
+  const openai_client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+  });
+
+  // Initializing the Composio ToolSet with the API key from environment variables
+  const composio_toolset = new OpenAIToolSet({
+      apiKey: process.env.COMPOSIO_API_KEY
+  });
+  ```
 </CodeGroup>
 </Step>
 <Step title="Fetch All GitHub Tools via Composio">
 <CodeGroup>
-  ```python Tools For GitHub
+  ```python python
   # Get GitHub tools that are pre-configured
   # Retrieve actions
   actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+  ```
+  ```javascript javascript
+  // Get GitHub tools that are pre-configured
+  // Retrieve actions
+  const tools = await composio_toolset.get_actions({
+      actions: ["github_start_repo"]
+  });
   ```
 </CodeGroup>
 </Step>
 <Step title="Execute the Task via OpenAI Assistant APIs"> 
 <CodeGroup>
-  ```python OpenAI Agent Executes the Task
-  my_task = "Star a repo ComposioHQ/composio on GitHub"
+  ```python python
+  my_task = "Star a repo composiohq/composio on GitHub"
 
   # Setup openai assistant
 
@@ -82,11 +116,22 @@ These steps prepare your environment to enable interactions between OpenAI and G
   run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
 
   ```
-</CodeGroup>
+  ```javascript javascript
+  const instruction = "Star a repo composiohq/composio on GitHub";
+  
+  // Creating a chat completion request to the OpenAI model
+  const response = await openai_client.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages: [{ role: "user", content: instruction }],
+      tools: tools,
+      tool_choice: "auto",
+  });
+  ```
+  </CodeGroup>
 </Step>
 <Step title="Handle Tool Calls and Check Response">
 <CodeGroup>
-  ```python Handling Tool Responses
+  ```python python
 
   # Execute function calls
   response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
@@ -96,6 +141,14 @@ These steps prepare your environment to enable interactions between OpenAI and G
   )
 
   print(response_after_tool_calls)
+  ```
+  ```javascript javascript
+  // Extracting tool calls from the response and logging them
+  var resp = response.choices[0].message.tool_calls 
+  console.log(resp);
+
+  // Handling the tool call using Composio ToolSet
+  await composio_toolset.handle_tool_call(response);
   ```
 </CodeGroup>
 </Step>

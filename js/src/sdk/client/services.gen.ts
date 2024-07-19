@@ -324,9 +324,9 @@ export const executeAction = (data: ExecuteActionData, config: typeof OpenAPI): 
  *
  * Use this endpoint to explore and discover the triggers supported by the Composio platform and showcase them to end user.
  * @param data The data for the request.
- * @param data.appNames Name of the apps like "github", "linear" seperated by a comma
+ * @param data.appNames Name of the apps like "github", "linear" separated by a comma
  * @param data.showEnabledOnly Show triggers enabled for the API Key
- * @param data.connectedAccountIds Filter by Aonnected Account ids
+ * @param data.connectedAccountIds Filter by Connected Account ids
  * @param config The OpenAPI configuration.
  * @returns unknown OK
  * @throws ApiError

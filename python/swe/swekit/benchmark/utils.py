@@ -3,12 +3,20 @@
 import asyncio
 import datetime
 import os
+import typing as t
 from pathlib import Path
 
 import docker
-from composio_crewai import ComposioToolSet
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
+
+from composio import Action, WorkspaceFactory, WorkspaceType
+from composio.tools.env.constants import DEFAULT_IMAGE
+from composio.utils.logging import get as get_logger
+from composio.utils.url import get_api_url_base
+
+from composio_crewai import ComposioToolSet
+
 from swekit.benchmark.constants import MODEL_GPT4
 from swekit.benchmark.docker_utils.evaulate_on_docker import (
     EvaluateOnDockerArgs,
@@ -16,11 +24,6 @@ from swekit.benchmark.docker_utils.evaulate_on_docker import (
 )
 from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
-
-from composio import Action
-from composio.tools.env.constants import DEFAULT_IMAGE
-from composio.tools.env.factory import ExecEnv, WorkspaceFactory
-from composio.utils.logging import get as get_logger
 
 
 DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
@@ -30,10 +33,13 @@ PATH_TESTBED = "testbed/"
 logger = get_logger(name="run_evaluation")
 
 
-def get_issues_dataset(test_split, test_instance_ids=[]):
-    test_dataset = load_dataset(
-        DATASET_NAME,
-        split=f"test[{test_split}]",
+def get_issues_dataset(test_split, test_instance_ids=[]) -> Dataset:
+    test_dataset = t.cast(
+        Dataset,
+        load_dataset(
+            DATASET_NAME,
+            split=f"test[{test_split}]",
+        ),
     )
     print(f"Original test_dataset size: {len(test_dataset)}")
     print(f"Number of test_instance_ids: {len(test_instance_ids)}")
@@ -87,11 +93,9 @@ def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
     workspace_id = repo_to_workspace_map.get(repo)
     if not workspace_id or not workspace_id.strip():
         return None
-    composio_toolset = ComposioToolSet(
-        workspace_env=ExecEnv.DOCKER, workspace_id=workspace_id
-    )
+
     print("Resetting repository to base commit")
-    workspace_id = repo_to_workspace_map[repo]
+    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     composio_toolset.execute_action(
         action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
         params={
@@ -109,12 +113,21 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         return ""
     logger.info("Using saved image")
     start_time = datetime.datetime.now()
+    composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
     workspace = WorkspaceFactory.new(
-        env=ExecEnv.DOCKER, image=repo_to_image_id_map[repo]
+        config=WorkspaceType.Docker(
+            image=repo_to_image_id_map[repo],
+            composio_api_key=composio_toolset.api_key,
+            composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
+        ),
     )
     workspace_id = workspace.id
+    composio_toolset.set_workspace_id(
+        workspace_id=workspace_id,
+    )
+
     workspace_creation_time = datetime.datetime.now() - start_time
-    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     cd_resp = composio_toolset.execute_action(
         action=Action.SHELL_EXEC_COMMAND,
         params={
@@ -142,22 +155,37 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     return workspace_id
 
 
-def build_image_and_container(repo, repo_to_workspace_map, base_commit):
+def build_image_and_container(repo, base_commit, workspace_env=WorkspaceType.Docker):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
-    workspace = WorkspaceFactory.new(
-        env=ExecEnv.DOCKER,
-        image=DEFAULT_IMAGE,
-    )
+    composio_toolset = ComposioToolSet()
+    if workspace_env == WorkspaceType.Docker:
+        workspace = WorkspaceFactory.new(
+            WorkspaceType.Docker(
+                image=DEFAULT_IMAGE,
+                composio_api_key=composio_toolset.api_key,
+                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+                github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
+            ),
+        )
+    elif workspace_env == WorkspaceType.E2B:
+        workspace = WorkspaceFactory.new(
+            config=WorkspaceType.E2B(
+                composio_api_key=composio_toolset.api_key,
+                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            )
+        )
+    else:
+        raise ValueError(f"Unsupported workspace environment: {workspace_env}")
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
         workspace.id,
         workspace_creation_time,
     )
-    composio_toolset = ComposioToolSet(workspace_id=workspace.id)
 
     start_time = datetime.datetime.now()
+    composio_toolset.set_workspace_id(workspace_id=workspace.id)
     clone_resp = composio_toolset.execute_action(
         entity_id="123",
         action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
@@ -174,24 +202,34 @@ def build_image_and_container(repo, repo_to_workspace_map, base_commit):
         raise Exception(clone_resp["details"])
     git_clone_time = datetime.datetime.now() - start_time
     logger.info("git clone completed, time taken: %s", git_clone_time)
-    repo_to_workspace_map[repo] = workspace.id
     return workspace.id
 
 
-def setup_workspace(repo, repo_to_workspace_map, repo_to_image_id_map, base_commit):
+def setup_workspace(
+    repo,
+    repo_to_workspace_map,
+    repo_to_image_id_map,
+    base_commit,
+    workspace_env=WorkspaceType.Docker,
+):
     # workspace_id = get_workspace_from_repo_map(
     #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
     # )
     # if workspace_id:
     #     return workspace_id
-    workspace_id = create_workspace_from_image(
-        repo=repo, repo_to_image_id_map=repo_to_image_id_map, base_commit=base_commit
+    # if workspace_env == ExecEnv.DOCKER:
+    #     workspace_id = create_workspace_from_image(
+    #         repo=repo,
+    #         repo_to_image_id_map=repo_to_image_id_map,
+    #         base_commit=base_commit,
+    #     )
+    #     if workspace_id:
+    #         return workspace_id
+    workspace_id = build_image_and_container(
+        repo=repo, base_commit=base_commit, workspace_env=workspace_env
     )
-    if workspace_id:
-        return workspace_id
-    return build_image_and_container(
-        repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
-    )
+    repo_to_workspace_map[repo] = workspace_id
+    return workspace_id
 
 
 def check_and_pull_image(image_name):
@@ -235,4 +273,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/1720733455")
+    get_score(logs_dir="/Users/karanvaidya/1720770557")

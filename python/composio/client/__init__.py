@@ -231,7 +231,7 @@ class Entity:
 
     def get_connection(
         self,
-        app: t.Optional[t.Union[str, App]] = None,
+        app: t.Optional[AppType] = None,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
@@ -253,6 +253,7 @@ class Entity:
             entity_ids=[self.id],
             active=True,
         )
+        app = str(app).lower()
         for connected_account in connected_accounts:
             if app == connected_account.appUniqueId:
                 creation_date = datetime.fromisoformat(
@@ -261,6 +262,7 @@ class Entity:
                 if latest_account is None or creation_date > latest_creation_date:
                     latest_creation_date = creation_date
                     latest_account = connected_account
+
         if latest_account is None:
             raise ComposioClientError(
                 f"Could not find a connection with app='{app}',"

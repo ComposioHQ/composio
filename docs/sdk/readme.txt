@@ -1,7 +1,7 @@
 Feeling I want to convey 
 
 
-First the CLI installtion guide - -> 
+First the CLI installation guide - -> 
 
 python sdk 
 

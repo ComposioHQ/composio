@@ -1,5 +1,5 @@
 <p>
-  <a href="https://github.com/ComposioHQ/composio/blob/master/README.md">EN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/ComposioHQ/composio/blob/master/README-JP.md">JP</a>
+  <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
 </p>
 
 
@@ -64,18 +64,20 @@
 
 - [📋 目录](#-目录)
 - [🤔 为什么选择 Composio？](#-为什么选择-composio)
-- [🔥 主要特性](#-主要特性)  
+- [🔥 主要特性](#-主要特性)
 - [🚀 Python 快速入门](#-python-快速入门)
   - [1. 安装](#1-安装)
   - [2. Composio 实战测试](#2-composio-实战测试)
-- [🚀 Javascript 快速入门 ](#-javascript-快速入门) 
-  - [1. 安装 Composio SDK](#1-安装-composio-sdk)
-  - [2. 配置 OpenAI 和 Composio 工具集](#2-配置-openai-和-composio-工具集)
+- [🚀 Javascript 快速入门](#-javascript-快速入门)
+  - [1. **安装 Composio SDK**：](#1-安装-composio-sdk)
+  - [2. **配置 OpenAI 和 Composio 工具集**：](#2-配置-openai-和-composio-工具集)
+  - [3. **运行您的脚本**：](#3-运行您的脚本)
 - [💡 示例](#-示例)
-  - [竞争对手研究员](#竞争对手研究员) 
+  - [竞争对手研究员](#竞争对手研究员)
   - [待办事项列表转日历](#待办事项列表转日历)
   - [Github 到 Trello](#github-到-trello)
-- [📋 阅读我们的行为准则](#-阅读我们的行为准则) 
+- [Star 历史](#star-历史)
+- [📋 阅读我们的行为准则](#-阅读我们的行为准则)
 - [🤗 贡献](#-贡献)
 - [🔗 链接](#-链接)
 - [🛡️ 许可证](#️-许可证)
@@ -278,6 +280,6 @@ Composio 采用 Elastic 许可证 - 有关详细信息，请参阅 [LICENSE](htt
 
 ## 💪 感谢所有贡献者
 
-<a href="https://composio.dev/contributors?utm_source=github">
+<a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="贡献者名单"/>
 </a>
