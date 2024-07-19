@@ -11,8 +11,8 @@ dotenv.load_dotenv()
 
 # Initialize the language model with OpenAI API key and model name
 llm = ChatOpenAI(
-    openai_api_key=os.environ["OPENAI_API_KEY"],
-    model_name="gpt-4o"
+    api_key=os.environ["OPENAI_API_KEY"],
+    model="gpt-4o"
 )
 
 # Setup tools using ComposioToolSet
@@ -49,4 +49,4 @@ task1 = Task(
 task1.execute()
 
 # Print the result of the task execution
-print(task1.result)
+print(task1.output)
