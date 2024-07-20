@@ -6,6 +6,7 @@ import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
 import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
+import { getEnvVariable } from '../utils/shared';
 
 export class Composio {
     public apiKey: string;
@@ -22,7 +23,7 @@ export class Composio {
     config: typeof OpenAPI;
 
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-        this.apiKey = apiKey || process.env.ENV_COMPOSIO_API_KEY || '';
+        this.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
         if (!this.apiKey) {
             throw new Error('API key is missing');
         }
