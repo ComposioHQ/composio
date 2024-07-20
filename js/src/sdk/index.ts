@@ -28,7 +28,7 @@ export class Composio {
             throw new Error('API key is missing');
         }
 
-        this.baseUrl = baseUrl || this.getApiUrlBase();
+        this.baseUrl = baseUrl || Composio.getApiUrlBase();
         this.http = axios.create({
             baseURL: this.baseUrl,
             headers: {
@@ -40,6 +40,7 @@ export class Composio {
 
         this.config = {
             ...OpenAPI,
+            BASE: this.baseUrl,
             HEADERS: {
                 'X-API-Key': `${this.apiKey}`,
                 'X-SOURCE': 'js_sdk',
@@ -69,13 +70,13 @@ export class Composio {
         return response.data.client.id;
     }
 
-    private getApiUrlBase(): string {
-        return 'https://backend.composio.dev/api';
+    static getApiUrlBase(): string {
+        return getEnvVariable("COMPOSIO_BASE_URL", 'https://backend.composio.dev/api') as string;
     }
 
     static async generateAuthKey(baseUrl?: string): Promise<string> {
         const http = axios.create({
-            baseURL: baseUrl || 'https://backend.composio.dev/api',
+            baseURL: baseUrl || this.getApiUrlBase(),
             headers: {
                 'Authorization': ''
             }
@@ -89,7 +90,7 @@ export class Composio {
 
     static async validateAuthSession(key: string, code: string, baseUrl?: string): Promise<string> {
         const http = axios.create({
-            baseURL: baseUrl || 'https://backend.composio.dev/api',
+            baseURL: baseUrl || this.getApiUrlBase(),
             headers: {
                 'Authorization': ''
             }
