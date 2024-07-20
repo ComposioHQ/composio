@@ -6,6 +6,9 @@ description: "Use Composio JS SDK with OpenAI to create a powerful Agent"
 ---
 
 <Steps>
+<Step title="Get Composio API Key">
+Follow this [Get API Key](/introduction/foundations/howtos/get_api_key) to get your Composio API Key
+</Step>
 <Step title="Install Dependencies">
 <CodeGroup>
       ```bash Install dependencies
@@ -23,9 +26,9 @@ pnpm add composio-core openai
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
 
-const toolset = new OpenAIToolSet({
-        apiKey: process.env.COMPOSIO_API_KEY,
-});
+const COMPOSIO_API_KEY = "<your-composio-api-key>"
+const OPEN_AI_API_KEY = "<your-openai-api-key>"
+const toolset = new OpenAIToolSet({apiKey: COMPOSIO_API_KEY,});
 
 const appName = 'github';
 
@@ -59,7 +62,7 @@ async function executeAgent(repo,entityName="default") {
         const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
         const instruction = `Make an issue with sample title in the repo - ${repo}`
 
-        const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
+        const client = new OpenAI({ apiKey: OPEN_AI_API_KEY })
         const response = await client.chat.completions.create({
             model: "gpt-4-turbo",
             messages: [{
