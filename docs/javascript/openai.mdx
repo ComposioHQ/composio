@@ -1,34 +1,40 @@
 ---
 title: "Using Composio JS SDK with OpenAI"
-sidebarTitle: "OpenAI"
+sidebarTitle: "Quickstart"
 icon: "code"
-description: "Use Composio JS SDK with OpenAI"
+description: "Use Composio JS SDK with OpenAI to create a powerful Agent"
 ---
 
 <Steps>
-<Step title="Import Dependencies">
- <CodeGroup>
-      ```javascript Import OpenAI and OpenAIToolSet
-import { OpenAI } from "openai";
-import { OpenAIToolSet } from "composio-core";
+<Step title="Install Dependencies">
+<CodeGroup>
+      ```bash Install dependencies
+npm install composio-core openai 
+yarn add composio-core openai 
+pnpm add composio-core openai
       ```
     </CodeGroup>
 </Step>
+
 <Step title="Define method to let user connect their GitHub account">
 
  <CodeGroup>
-      ```typescript Define method to let user connect their GitHub account
+      ```typescript index.mjs
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
 const toolset = new OpenAIToolSet({
         apiKey: process.env.COMPOSIO_API_KEY,
 });
 
+const appName = 'github';
+
 async function setupUserConnectionIfNotExists(entityId) {
         const entity = await toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection('github');
+        const connection = await entity.getConnection(appName);
 
         if (!connection) {
-            // If this entity/user hasn't already connected the account
-            const connection = await entity.initiateConnection('github');
+            const connection = await entity.initiateConnection(appName);
             console.log("Log in via: ", connection.redirectUrl);
             return connection.waitUntilActive(60);
         }
@@ -45,13 +51,13 @@ Learn more about entities [here](introduction/foundations/components/entity/enti
 <Step title="Setup Agent with Langchain">
 
 <CodeGroup>
-      ```typescript Define your Agent
-async function executeAgent(entityName) {
+      ```typescript index.mjs
+async function executeAgent(repo,entityName="default") {
         const entity = await toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
 
         const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
-        const instruction = "Make an issue with sample title in the repo - himanshu-dixit/custom-repo-breaking"
+        const instruction = `Make an issue with sample title in the repo - ${repo}`
 
         const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
         const response = await client.chat.completions.create({
@@ -76,8 +82,8 @@ async function executeAgent(entityName) {
 <Step title="Invoke Your Agent">
 
 <CodeGroup>
-      ```typescript  Invoke the Agent
-      executeGithubAgent("himanshu")
+      ```typescript  index.mjs
+      executeGithubAgent("himanshu-dixit/custom-repo-breaking")
       ```
     </CodeGroup>
 
