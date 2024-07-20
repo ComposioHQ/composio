@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   composio-core:
-    specifier: ^0.1.5
-    version: 0.1.5
+    specifier: 0.1.6-2
+    version: 0.1.6-2
   hono:
     specifier: ^4.2.5
     version: 4.4.12
@@ -541,8 +541,8 @@ packages:
     engines: {node: '>=14'}
     dev: false
 
-  /composio-core@0.1.5:
-    resolution: {integrity: sha512-Va39xYGppk7i3Sm/pEpJjEljXSlw8ENX0PsuPeULQ/us6zQR6U7PvBjkwJlw5K92IiPjkO9LFur6ELvFH5lUfA==}
+  /composio-core@0.1.6-2:
+    resolution: {integrity: sha512-f6ot6y/xQC+zMmRKgaCihaHr3U8yyjOYrCMTGhSvTnfYj8jqR70SFBo3Gg8Vk0kpEXHadLocP/BjBCyHZ/6+fA==}
     dependencies:
       '@cloudflare/workers-types': github.com/cloudflare/workers-types/c8d9533caa4415c2156d2cf1daca75289d01ae70
       '@faker-js/faker': 8.4.1
