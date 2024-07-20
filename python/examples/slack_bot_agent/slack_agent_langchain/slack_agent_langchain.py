@@ -10,20 +10,18 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI api key:")
-    os.environ["OPENAI_API_KEY"] = api_key
 
-llm = ChatOpenAI(model="gpt-4-turbo")
+llm = ChatOpenAI(model="gpt-4o")
 
 # Bot configuration constants
-BOT_USER_ID = os.getenv("BOT_USER_ID","")  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
-if(BOT_USER_ID==""):
-  print("BOT USER ID NOT SET")
-  bot_user_id = input("Enter Bot user id:")
-  os.environ["BOT_USER_ID"]=bot_user_id
-  
+BOT_USER_ID = os.getenv(
+    "BOT_USER_ID", ""
+)  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
+if BOT_USER_ID == "":
+    print("BOT USER ID NOT SET")
+    bot_user_id = input("Enter Bot user id:")
+    os.environ["BOT_USER_ID"] = bot_user_id
+
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
@@ -57,7 +55,9 @@ def callback_new_message(event: TriggerEventData) -> None:
     # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
-        return f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        return (
+            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        )
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
@@ -70,16 +70,18 @@ def callback_new_message(event: TriggerEventData) -> None:
     result = agent_executor.invoke({"input": message})
 
     from composio_langchain import Action, App, ComposioToolSet
+
     composio_toolset = ComposioToolSet()
     composio_toolset.execute_action(
         action=Action.SLACKBOT_CHAT_POST_MESSAGE,
         entity_id="default",
         params={
             "channel": channel_id,
-            "text": result['output'],
+            "text": result["output"],
             "thread_ts": thread_ts,
         },
     )
     return result["output"]
+
 
 listener.listen()

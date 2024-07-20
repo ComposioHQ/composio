@@ -1,5 +1,6 @@
 import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
+
 # Import modules from Composio and LlamaIndex
 import re
 from composio_llamaindex import App, ComposioToolSet, Action
@@ -10,30 +11,16 @@ from datetime import datetime
 from composio.client.collections import TriggerEventData
 
 # Load environment variables from a .env file
-dotenv.load_dotenv()
-
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI api key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
-api_key = os.getenv("COMPOSIO_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter Composio api key:")
-    os.environ["COMPOSIO_API_KEY"] = api_key
 
 # Initialize a ComposioToolSet with the API key from environment variables
 composio_toolset = ComposioToolSet()
-openai_api_key = os.getenv("OPENAI_API_KEY","")
-if(openai_api_key==""):
-    print("OpenAI key not found in env")
-
 llm = OpenAI(model="gpt-4o")
+
 schedule_tool = composio_toolset.get_actions(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
-        Action.GMAIL_CREATE_EMAIL_DRAFT
+        Action.GMAIL_CREATE_EMAIL_DRAFT,
     ]
 )
 
@@ -45,13 +32,15 @@ prefix_messages = [
     ChatMessage(
         role="system",
         content=(
-                f"""Analyze email, and create event on calendar depending on the email content. 
+            f"""Analyze email, and create event on calendar depending on the email content. 
                 You should also draft an email in response to the sender of the previous email
                 Current DateTime: {date_time}. All the conversations happen in IST timezone.
                 Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config."""
         ),
     )
 ]
+
+
 def extract_sender_email(payload):
     delivered_to_header_found = False
     for header in payload["headers"]:
@@ -68,6 +57,7 @@ def extract_sender_email(payload):
                 return match.group(0)
     return None
 
+
 agent = FunctionCallingAgentWorker(
     tools=schedule_tool,  # Tools available for the agent to use
     llm=llm,  # Language model for processing requests
@@ -78,8 +68,8 @@ agent = FunctionCallingAgentWorker(
 ).as_agent()
 
 
-
 listener = composio_toolset.create_trigger_listener()
+
 
 @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:

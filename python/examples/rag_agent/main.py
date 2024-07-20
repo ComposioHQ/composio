@@ -9,10 +9,6 @@ from composio.tools.local import ragtool
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
-api_key=os.getenv("OPENAI_API_KEY","")
-if(api_key=""):
-    api_key=input("Enter OpenAI key:")
-    os.environ["OPENAI_API_KEY"] = api_key
 
 # Initialize the ComposioToolSet
 toolset = ComposioToolSet()
@@ -52,7 +48,7 @@ rag_agent = Agent(
     ),
     llm=llm,
     allow_delegation=False,
-    #tools=tools,
+    # tools=tools,
 )
 
 # Define the task for adding content to the RAG tool
@@ -60,18 +56,18 @@ rag_agent = Agent(
 
 total_content = ""
 for content in additional_content_list:
-    total_content +=content
+    total_content += content
 
 add_content_tasks = Task(
-        description=dedent(
-            f"""\
+    description=dedent(
+        f"""\
             Add the following content to the RAG tool to enrich its knowledge base: {total_content}"""
-        ),
-        expected_output="Content was added to the RAG tool",
-        tools=tools,
-        agent=rag_agent,
-        allow_delegation=False,
-    )
+    ),
+    expected_output="Content was added to the RAG tool",
+    tools=tools,
+    agent=rag_agent,
+    allow_delegation=False,
+)
 # Define the task for executing the RAG tool query
 query_task = Task(
     description=dedent(
@@ -88,7 +84,7 @@ query_task = Task(
 # Define the crew with the agent and tasks
 crew = Crew(
     agents=[rag_agent],
-    tasks=[add_content_tasks,query_task],
+    tasks=[add_content_tasks, query_task],
     process=Process.sequential,
 )
 

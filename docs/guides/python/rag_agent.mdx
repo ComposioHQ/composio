@@ -7,6 +7,14 @@ description: "This guide provides detailed steps to create an agent that leverag
 
 This project involves setting up and running a system of agents to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to set up the tools and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project.
 
+<Card title="RAG Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/rag_agent/">
+  Explore the complete source code for the RAG Agent project. This repository contains all the necessary files and scripts to set up and run the RAG system using CrewAI and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the RAG Agent
+  </CardBody>
+</Card>
 
 <Steps>
     <Step title="Imports and Environment Setup">
@@ -31,10 +39,10 @@ This project involves setting up and running a system of agents to add content t
     <CodeGroup>
         ```python LLM and Tools
         # Initialize the LLM with the OpenAI GPT-4o model and API key
-        llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
+        llm = ChatOpenAI(model="gpt-4o")
 
-        # Initialize the Composio ToolSet with the API key
-        toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
+        # Initialize the Composio ToolSet
+        toolset = ComposioToolSet()
 
         # Get the RAG tool from the Composio ToolSet
         tools = toolset.get_tools(apps=[App.RAGTOOL])
@@ -159,7 +167,7 @@ This project involves setting up and running a system of agents to add content t
     dotenv.load_dotenv()
     
     # Initialize the ComposioToolSet
-    toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    toolset = ComposioToolSet()
     
     # Get the RAG tool from the Composio ToolSet
     tools = toolset.get_tools(apps=[App.RAGTOOL])

@@ -6,8 +6,15 @@ description: "This guide provides detailed steps to create an Investment Analyst
 to perform investment research, analyze stocks, and offer recommendations based on user input"
 ---
 This project involves setting up and running a system of agents to conduct investment research, analyze the research, and provide investment recommendations. We use Crewai to setup the Agents, Composio is used to add the tools we need, in this case we need SERP. Follow this guide to set up and run the project.
-## Link to the Source Code
-- [Github](https://git.new/investment-analyst)
+
+<Card title="Investment Analyst GitHub Repository" icon="github" href="https://git.new/investment-analyst">
+  Explore the complete source code for the Investment Analyst project. This repository contains all the necessary files and scripts to set up and run the investment analysis system using CrewAI and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the investment analysis agents
+  </CardBody>
+</Card>
 
 <Steps>
     <Step title="Run the `setup.sh` file">
@@ -49,7 +56,7 @@ This project involves setting up and running a system of agents to conduct inves
         dotenv.load_dotenv()
 
         # Initialize the language model with OpenAI API key and model name
-        llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY", "default_key"), model_name="gpt-4o")
+        llm = ChatOpenAI(model="gpt-4o")
 
         # Setup tools using ComposioToolSet
         composio_toolset = ComposioToolSet()
@@ -154,7 +161,7 @@ This project involves setting up and running a system of agents to conduct inves
     dotenv.load_dotenv()
 
     # Initialize the language model with OpenAI API key and model name
-    llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY", "default_key"), model_name="gpt-4o")
+    llm = ChatOpenAI(model="gpt-4o")
 
     # Setup tools using ComposioToolSet
     composio_toolset = ComposioToolSet()

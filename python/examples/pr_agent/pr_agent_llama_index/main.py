@@ -1,6 +1,7 @@
 # Import necessary libraries
 import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
+
 # Import modules from Composio and LlamaIndex
 from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
@@ -26,16 +27,16 @@ tools = composio_toolset.get_actions(
         Action.SLACKBOT_CHAT_POST_MESSAGE,
     ]
 )
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI key:")
+api_key = os.getenv("OPENAI_API_KEY", "")
+if api_key == "":
+    api_key = input("Enter OpenAI key:")
     os.environ["OPENAI_API_KEY"] = api_key
 # Initialize an OpenAI instance with the GPT-4o model
 llm = OpenAI(model="gpt-4o")
 
-channel_id = os.getenv("CHANNEL_ID","")
-if(channel_id==""):
-    channel_id=input("Enter Channel id:")
+channel_id = os.getenv("CHANNEL_ID", "")
+if channel_id == "":
+    channel_id = input("Enter Channel id:")
 
 # Define the system message for the agent
 prefix_messages = [
@@ -52,10 +53,11 @@ prefix_messages = [
         3. Provide actionable suggestions if there are any issues in the code.
 
         Once you have decided on the changes, for any TODOs, create a Github issue.
-        And send the summary of the PR review to """+channel_id+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
+        And send the summary of the PR review to """
+            + channel_id
+            + """ channel on slack. Slack doesn't have markdown and so send a plain text message.
         Also add the comprehensive review to the PR as a comment.
             """
-
         ),
     )
 ]
@@ -83,12 +85,15 @@ pr_agent_tools = composio_toolset.get_actions(
 
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
+
+
 @listener.callback(filters={"trigger_name": "github_pull_request_event"})
 def review_new_pr(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     code_to_review = str(event.payload)
-    response = agent.chat("Review the following pr:"+code_to_review)
+    response = agent.chat("Review the following pr:" + code_to_review)
     print(response)
+
 
 print("Listener started!")
 print("Create a pr to get the review")
