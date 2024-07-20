@@ -208,7 +208,6 @@
             "guides/python/investment-analyst",
             "guides/python/research-assistant",
             "guides/python/sql-agent",
-            "guides/python/commit-agent",
             "guides/python/competitor-researcher",
             "guides/python/rag_agent",
             "guides/python/interpreter_agent",
