@@ -112,4 +112,10 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
     return z.object(zodSchema);
 }
 
-
+export const getEnvVariable = (name: string, defaultValue: string | undefined = undefined): string | undefined => {
+    try {
+        return process.env[name] || defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
+}
