@@ -20,7 +20,7 @@ dotenv.load_dotenv()
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize tools.
-openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+openai_client = ChatOpenAI(model="gpt-4o")
 
 
 def main():
