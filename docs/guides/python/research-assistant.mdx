@@ -51,13 +51,10 @@ description: "This guide provides detailed steps to create a research assistant 
         ```python LLM and Tools 
         # Load environment variables
         dotenv.load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY","")
-        if(api_key==""):
-            print("openai key not added as env variable")
+
         # Initialize the language model with OpenAI API key and model name
         llm = ChatOpenAI(
-            openai_api_key=api_key,
-            model_name="gpt-4o"
+            model="gpt-4o"
         )
         # Setup tools using ComposioToolSet
         composio_toolset = ComposioToolSet()
@@ -94,13 +91,15 @@ description: "This guide provides detailed steps to create a research assistant 
     Create and execute a task for the agent:
     <CodeGroup>
         ```python Execute
-        task1 = Task( description="""Research about open source LLMs vs
+        task = Task( description="""Research about open source LLMs vs
             closed source LLMs. Your final answer MUST be a full analysis report""", #To
             change the topic, edit the text after 'Research about' in the description
             parameter of task1 expected_output='When the research report is ready',
             agent=researcher
         )
-        task1.execute()
+        crew = Crew(agents=[researcher], tasks=[task])
+        result = crew.kickoff()
+        print(result)
         ```
     </CodeGroup>
     </Step>
@@ -149,7 +148,7 @@ Below is the complete code snippet combining all the steps:
     )
 
     # Define the research task with its description and expected output
-    task1 = Task(
+    task = Task(
         description="""
         Research about open source LLMs vs closed source LLMs.
         Your final answer MUST be a full analysis report
@@ -159,10 +158,9 @@ Below is the complete code snippet combining all the steps:
     )
 
     # Execute the task
-    task1.execute()
-
-    # Print the result of the task execution
-    print(task1.result)
+    crew = Crew(agents=[researcher], tasks=[task])
+    result = crew.kickoff()
+    print(result)
     ```
 
 </CodeGroup>
