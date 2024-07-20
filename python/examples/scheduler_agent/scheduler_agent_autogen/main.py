@@ -9,9 +9,9 @@ from composio.client.collections import TriggerEventData
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI api key:")
+api_key = os.getenv("OPENAI_API_KEY", "")
+if api_key == "":
+    api_key = input("Enter OpenAI api key:")
     os.environ["OPENAI_API_KEY"] = api_key
 # Configuration for the language model
 llm_config = {
@@ -23,14 +23,14 @@ schedule_tool = composio_toolset.register_actions(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
-        Action.GMAIL_CREATE_EMAIL_DRAFT
+        Action.GMAIL_CREATE_EMAIL_DRAFT,
     ]
 )
 
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
 
-prompt=f"""Analyze email, and create event on calendar depending on the email content. 
+prompt = f"""Analyze email, and create event on calendar depending on the email content. 
                 You should also draft an email in response to the sender of the previous email
                 Current DateTime: {date_time}. All the conversations happen in IST timezone.
                 Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config."""
@@ -45,10 +45,12 @@ chatbot = AssistantAgent(
 # Creating a UserProxyAgent instance for user interactions
 user_proxy = UserProxyAgent(
     "user_proxy",
-    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x.get("content", ""),
+    is_termination_msg=lambda x: x.get("content", "")
+    and "TERMINATE" in x.get("content", ""),
     human_input_mode="NEVER",
     code_execution_config={"use_docker": False},
 )
+
 
 def extract_sender_email(payload):
     delivered_to_header_found = False
@@ -68,6 +70,7 @@ def extract_sender_email(payload):
 
 
 listener = composio_toolset.create_trigger_listener()
+
 
 @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:

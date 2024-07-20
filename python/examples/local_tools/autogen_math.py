@@ -36,7 +36,9 @@ user_proxy = UserProxyAgent(
 )
 
 # Register the preferred Applications, with right executor.
-composio_toolset.register_tools(tools=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy)
+composio_toolset.register_tools(
+    tools=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy
+)
 
 # Define task.
 task = "What is 230 multiplied by 52 and added with 233 divided by 91?"

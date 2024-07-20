@@ -4,7 +4,7 @@ import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from Composio and LangChain
-from composio_langchain import ComposioToolSet, App,Action
+from composio_langchain import ComposioToolSet, App, Action
 from composio.tools.local import embedtool  # For embedding tool
 from langchain import hub  # For accessing LangChain hub
 from langchain.agents import (  # For creating agents
@@ -19,9 +19,9 @@ from langchain_openai import ChatOpenAI
 # Load environment variables from a .env file (if applicable)
 dotenv.load_dotenv()  # Uncomment if you are using a .env file
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
+api_key = os.getenv("OPENAI_API_KEY", "")
+if api_key == "":
+    api_key = input("Enter OpenAI API Key:")
     os.environ["OPENAI_API_KEY"] = api_key
 
 
@@ -40,7 +40,11 @@ tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
 # Define the images path and query string
 images_path = input("Enter the path to the images folder:")
 search_prompt = input("Enter the image description for the image you want to search:")
-top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
+top_no_of_images = int(
+    input(
+        "What number of images that are closest to the description that should be returned:"
+    )
+)  # returns n closest images to the search
 
 task_description = f"""
     Check if a Vector Store exists for the image directory
@@ -55,11 +59,10 @@ task_description = f"""
 query_agent = create_openai_functions_agent(llm, tools, prompt)
 
 # Initialize an AgentExecutor with the agent and tools
-agent_executor = AgentExecutor(agent=query_agent, tools=tools, verbose=True) # type: ignore
+agent_executor = AgentExecutor(agent=query_agent, tools=tools, verbose=True)  # type: ignore
 
 # Execute the query task and get the result
 res = agent_executor.invoke({"input": task_description})
 
 # Print the result
 print(res)
-

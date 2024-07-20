@@ -10,26 +10,23 @@ from composio.client.collections import TriggerEventData
 
 load_dotenv()
 
-# api_key for OpenAI
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-if(OPENAI_API_KEY==""):
-    OPENAI_API_KEY=input("Enter Openai Key:")
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
-bot_id = os.getenv("SLACK_BOT_ID","")
-if(bot_id==""):
-    bot_id=input("Enter SLACK_BOT_ID:")
+bot_id = os.getenv("SLACK_BOT_ID", "")
+if bot_id == "":
+    bot_id = input("Enter SLACK_BOT_ID:")
     os.environ["SLACK_BOT_ID"] = bot_id
 
 # Configuration constants
-BOT_USER_ID = os.environ['SLACK_BOT_ID']  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.
+BOT_USER_ID = os.environ[
+    "SLACK_BOT_ID"
+]  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.
 RESPOND_ONLY_IF_TAGGED = (
     True  # IF you want the bot to respond only when tagged, set this to True
 )
 
 # Step 2: Initialize clients and toolsets
 # Initialize OpenAI client
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI()
 
 # Initialize Composio OpenAI toolset
 # This toolset provides integration between Composio and OpenAI Assistant Framework
@@ -100,7 +97,9 @@ def process_message(event: TriggerEventData, is_new_message: bool) -> None:
     # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
-        return f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        return (
+            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        )
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")

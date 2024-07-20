@@ -7,8 +7,14 @@ You will build a system capable of converting roughly written todo items into Go
 ---
 This project is an example which uses Composio to seamlessly convert your to-do lists into Google Calendar events. It automatically schedules tasks with specified labels and times, ensuring your calendar is always up-to-date and organized.
 
-## Link to the Source Code 
-- [Github](https://git.new/calendar-agent)
+<Card title="Calendar Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/calendar_agent/">
+  Explore the complete source code for the Calendar Agent project. This repository contains all the necessary files and scripts to set up and run the Calendar Agent using CrewAI and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the Calendar Agent
+  </CardBody>
+</Card>
 
 <Steps>
     <Step title="Run the `setup.sh` file">
@@ -49,15 +55,9 @@ This project is an example which uses Composio to seamlessly convert your to-do 
     <CodeGroup>
         ```python Models and Tools
         load_dotenv()
-        openai_api_key = os.getenv("OPENAI_API_KEY","")
-        if(openai_api_key==""):
-            print("Please add openai key")
-        model = os.getenv("MODEL","")
-        if(model==""):
-            print("please add model name as env variable")
 
         # Initialize the language model
-        llm = ChatOpenAI(model=model, api_key=openai_api_key)
+        llm = ChatOpenAI(model="gpt-4o")
 
         # Define tools for the agents
         # We are using Google calendar tool from composio to connect to our calendar account.
@@ -106,10 +106,9 @@ This project is an example which uses Composio to seamlessly convert your to-do 
             agent=calendar_agent,
             expected_output="if free slot is found",
         )
-        task.execute()
-        return "Crew run initiated", 200
-
-        run_crew()        
+        crew = Crew(agents=[calendar_agent], tasks=[task])
+        result = crew.kickoff()
+        print(result) 
         ```
     </CodeGroup>
     </Step>
@@ -120,7 +119,7 @@ This project is an example which uses Composio to seamlessly convert your to-do 
 
 <CodeGroup>
     ```python Final Code
-    # Import base packages
+# Import base packages
     import os
     from datetime import datetime
 
@@ -131,11 +130,9 @@ This project is an example which uses Composio to seamlessly convert your to-do 
 
     # Load environment variables
     load_dotenv()
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    model = os.getenv("MODEL")
 
     # Initialize the language model
-    llm = ChatOpenAI(model=model, api_key=openai_api_key)
+    llm = ChatOpenAI(model="gpt-4o")
 
     # Define tools for the agents
     # We are using Google calendar tool from composio to connect to our calendar account.
@@ -159,7 +156,7 @@ This project is an example which uses Composio to seamlessly convert your to-do 
         calendar_agent = Agent(
             role="Google Calendar Agent",
             goal="""You take action on Google Calendar using Google Calendar APIs""",
-            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
+            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf.
             You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.""",
             verbose=True,
             tools=tools,
@@ -170,7 +167,7 @@ This project is an example which uses Composio to seamlessly convert your to-do 
             agent=calendar_agent,
             expected_output="if free slot is found",
         )
-        task.execute()
+        task.execute_sync()
         return "Crew run initiated", 200
 
     run_crew()    
