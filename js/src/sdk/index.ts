@@ -40,6 +40,7 @@ export class Composio {
 
         this.config = {
             ...OpenAPI,
+            BASE: this.baseUrl,
             HEADERS: {
                 'X-API-Key': `${this.apiKey}`,
                 'X-SOURCE': 'js_sdk',
@@ -70,7 +71,7 @@ export class Composio {
     }
 
     static getApiUrlBase(): string {
-        return process.env.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api';
+        return getEnvVariable("COMPOSIO_BASE_URL", 'https://backend.composio.dev/api') as string;
     }
 
     static async generateAuthKey(baseUrl?: string): Promise<string> {
