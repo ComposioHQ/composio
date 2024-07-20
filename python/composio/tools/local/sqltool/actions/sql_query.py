@@ -1,7 +1,5 @@
 from pydantic import BaseModel, Field
-
 from composio.tools.local.base import Action
-
 
 class SqlQueryRequest(BaseModel):
     # Define input schema for your action
@@ -36,35 +34,37 @@ class SqlQuery(Action):
         # Example:
         # response_data = {"result": "Processed text: " + request_data.text}
         # Implement logic to process input and return output
+        
         import sqlite3  # pylint: disable=import-outside-toplevel
-        import os
+        from pathlib import Path
 
         # Check if the database file exists
-        if not os.path.exists(request_data.connection_string):
+        if not Path(request_data.connection_string).exists():
             return {
                 "execution_details": {"executed": False},
-                "response_data": f"Error: Database file '{request_data.connection_string}' does not exist."
+                "response_data": f"Error: Database file '{request_data.connection_string}' does not exist.",
             }
 
         try:
-            # Connect to the database
-            connection = sqlite3.connect(request_data.connection_string)
-            cursor = connection.cursor()
+            # Use 'with' statement to manage the database connection
+            with sqlite3.connect(request_data.connection_string) as connection:
+                cursor = connection.cursor()
 
-            # Execute the query
-            cursor.execute(request_data.query)
+                # Execute the query
+                cursor.execute(request_data.query)
 
-            response_data = cursor.fetchall()
-            connection.commit()
+                response_data = cursor.fetchall()
+                connection.commit()
 
             # Prepare the response data
-            return {"execution_details": {"executed": True}, "response_data": response_data}
+            return {
+                "execution_details": {"executed": True},
+                "response_data": response_data,
+            }
         except sqlite3.Error as e:
+            print(f"SQLite error: {str(e)}")
+
             return {
                 "execution_details": {"executed": False},
-                "response_data": f"SQLite error: {str(e)}"
+                "response_data": f"SQLite error: {str(e)}",
             }
-        finally:
-            # Close the connection if it was successfully opened
-            if "connection" in locals():
-                connection.close()  # pylint: disable=no-member
