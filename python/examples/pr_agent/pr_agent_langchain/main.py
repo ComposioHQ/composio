@@ -45,7 +45,7 @@ pr_agent_tools = composio_toolset.get_actions(
 
 
 # Initialize the language model
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-4o")
 
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
