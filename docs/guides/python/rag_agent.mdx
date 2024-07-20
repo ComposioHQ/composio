@@ -167,7 +167,7 @@ This project involves setting up and running a system of agents to add content t
     dotenv.load_dotenv()
     
     # Initialize the ComposioToolSet
-    toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    toolset = ComposioToolSet()
     
     # Get the RAG tool from the Composio ToolSet
     tools = toolset.get_tools(apps=[App.RAGTOOL])

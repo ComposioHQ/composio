@@ -34,7 +34,7 @@ description: "This is a simple guide to demonstrate how to use CODEINTERPRETER t
         ```python Tools
         dotenv.load_dotenv()
 
-        toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+        toolset = ComposioToolSet()
         tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
         ```
     </CodeGroup>
@@ -109,7 +109,7 @@ description: "This is a simple guide to demonstrate how to use CODEINTERPRETER t
 
     dotenv.load_dotenv()
 
-    toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    toolset = ComposioToolSet()
     tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
 
     python_executor_agent = Agent(

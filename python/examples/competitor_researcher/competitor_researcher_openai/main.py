@@ -8,19 +8,14 @@ from openai import OpenAI
 
 # Load environment variables
 dotenv.load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY","")
-if(openai_api_key == ""):
-    openai_api_key = input("Enter your OpenAI API Key: ")
-model = os.getenv("MODEL","gpt-4o")
-if(model=="gpt-4o"):
-  print("model is set to gpt-4o")
+
 # URL of the competitor website
-url = os.getenv("URL","")
-if(url == ""):
-    url = input("Enter the URL of the competitor website: ")
+competitor_url = os.getenv("URL", "")
+if competitor_url == "":
+    competitor_url = input("Enter the URL of the competitor website: ")
 # actual parent page in Notion
-parent_page = os.getenv("NOTION_PARENT_PAGE","")
-if(parent_page == ""):
+parent_page = os.getenv("NOTION_PARENT_PAGE", "")
+if parent_page == "":
     parent_page = input("Enter the actual parent page in Notion: ")
 
 openai_client = OpenAI()
@@ -31,6 +26,7 @@ tools = composio_toolset.get_tools(apps=[App.NOTION])
 # Retrieve the current date and time
 date = datetime.today().strftime("%Y-%m-%d")
 timezone = datetime.now().astimezone().tzinfo
+
 
 def remove_tags(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -48,7 +44,8 @@ def scrape_website(url):
     except requests.exceptions.RequestException as e:
         return f"An error occurred while requesting the URL: {e}"
 
-competitor_data = scrape_website(url)
+
+competitor_data = scrape_website(competitor_url)
 
 assistant = openai_client.beta.assistants.create(
     name="PR Review Assistant",
@@ -60,18 +57,18 @@ assistant = openai_client.beta.assistants.create(
 
 thread = openai_client.beta.threads.create()
 openai_client.beta.threads.messages.create(
-        thread_id=thread.id, role="user", content=competitor_data
-    )
+    thread_id=thread.id, role="user", content=competitor_data
+)
 
-url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
-print("Visit this URL to view the thread: ", url)
+competitor_url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
+print("Visit this URL to view the thread: ", competitor_url)
 
 run = openai_client.beta.threads.runs.create(
-        thread_id=thread.id, assistant_id=assistant.id
-    )
+    thread_id=thread.id, assistant_id=assistant.id
+)
 
 composio_toolset.wait_and_handle_assistant_tool_calls(
-        client=openai_client,
-        run=run,
-        thread=thread,
-    )
+    client=openai_client,
+    run=run,
+    thread=thread,
+)

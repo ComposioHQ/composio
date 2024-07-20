@@ -10,6 +10,7 @@ from composio.tools.local import embedtool
 # Load environment variables
 dotenv.load_dotenv()
 
+
 # Streamlit app
 def main():
     st.title("Image Search App")
@@ -17,8 +18,12 @@ def main():
     # Sidebar for API key input
     # Main app
     images_path = st.text_input("Enter the path to the images folder:")
-    search_prompt = st.text_input("Enter the image description for the image you want to search:")
-    top_no_of_images = st.number_input("Number of closest images to return:", min_value=1, value=5)
+    search_prompt = st.text_input(
+        "Enter the image description for the image you want to search:"
+    )
+    top_no_of_images = st.number_input(
+        "Number of closest images to return:", min_value=1, value=5
+    )
 
     if st.button("Search Images"):
         if not images_path or not search_prompt:
@@ -29,6 +34,7 @@ def main():
             st.success("Search completed!")
             st.write(results)
 
+
 def search_images(images_path, search_prompt, top_no_of_images):
     # Initialize LLM
     llm = ChatOpenAI(model="gpt-4")
@@ -37,7 +43,7 @@ def search_images(images_path, search_prompt, top_no_of_images):
     prompt = hub.pull("hwchase17/openai-functions-agent")
 
     # Initialize ComposioToolSet
-    composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
 
     task_description = f"""
@@ -56,6 +62,7 @@ def search_images(images_path, search_prompt, top_no_of_images):
     # Execute the query task and get the result
     res = agent_executor.invoke({"input": task_description})
     return res
+
 
 if __name__ == "__main__":
     main()

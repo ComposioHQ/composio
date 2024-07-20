@@ -82,7 +82,8 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-                {
+        "introduction/intro/quickstart",
+        {
           "group": "Core Concepts",
           "pages": [
             "introduction/foundations/basic",
@@ -101,7 +102,6 @@
       "group": "Python",
 
       "pages": [
-        "introduction/intro/quickstart",
         {
           "group": "With Frameworks",
           "icon": "code",

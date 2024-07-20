@@ -12,11 +12,6 @@ from composio.tools.local import filetool, sqltool
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
 
 # Initialize the ComposioToolSet
 toolset = ComposioToolSet()
@@ -26,7 +21,7 @@ tools = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])
 file_tool = toolset.get_tools(apps=[App.FILETOOL])
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
-llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4o")
 
 # Define the Query Writer Agent
 query_writer_agent = Agent(

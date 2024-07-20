@@ -6,13 +6,8 @@ from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
 from composio.tools.local import filetool, sqltool
+
 dotenv.load_dotenv()
-
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
 toolset = ComposioToolSet()
 sql_tool = toolset.get_tools(apps=[App.SQLTOOL])
 file_tool = toolset.get_tools(apps=[App.FILETOOL])
@@ -42,6 +37,6 @@ agent = FunctionCallingAgentWorker(
 human_description = "The database to use is companydb"
 human_input = "Query the table MOCK_DATA for all rows and plot a graph between first names and salary by using code interpretor"
 response = agent.chat(
-    "Database description ="+ human_description +"Task to perform:" + human_input
+    "Database description =" + human_description + "Task to perform:" + human_input
 )
 print("Response:", response)
