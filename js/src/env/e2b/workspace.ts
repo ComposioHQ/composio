@@ -6,7 +6,6 @@ const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
 const TOOLSERVER_PORT = 8000;
 const TOOLSERVER_URL = "https://{host}/api";
 
-const DUMMY_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN";
 
 export class E2BWorkspace {
 	apiKey: string;

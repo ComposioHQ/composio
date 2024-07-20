@@ -13,6 +13,7 @@
   "license": "ISC",
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.46.3",
+    "@types/dockerode": "^3.3.30",
     "@types/node": "^20.14.2",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
@@ -34,6 +35,7 @@
     "@langchain/openai": "^0.1.2",
     "@types/uuid": "^10.0.0",
     "axios": "^1.7.2",
+    "dockerode": "^4.0.2",
     "enumify": "^2.0.0",
     "hono": "^4.4.11",
     "langchain": "^0.2.5",
