@@ -29,7 +29,7 @@ from composio_autogen import ComposioToolset, App, Action
 import os
 
 # Configuration for the language model
-llm_config = {"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]}
+llm_config = {"config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]}
 
 # Initialize the AssistantAgent
 chatbot = AssistantAgent(
