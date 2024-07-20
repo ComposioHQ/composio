@@ -14,11 +14,6 @@ from composio_langgraph import Action, ComposioToolSet, App
 
 dotenv.load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
 
 composio_toolset = ComposioToolSet()
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
@@ -26,7 +21,7 @@ tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
 tool_executor = ToolExecutor(tools)
 functions = [convert_to_openai_function(t) for t in tools]
 
-model = ChatOpenAI(model='gpt-4', temperature=0, streaming=True)
+model = ChatOpenAI(model='gpt-4o', temperature=0, streaming=True)
 model = model.bind_functions(functions)
 
 def process_agent_response(state):

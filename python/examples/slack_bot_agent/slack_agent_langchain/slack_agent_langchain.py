@@ -10,10 +10,6 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI api key:")
-    os.environ["OPENAI_API_KEY"] = api_key
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 

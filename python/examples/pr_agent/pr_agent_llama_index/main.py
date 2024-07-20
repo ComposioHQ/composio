@@ -26,10 +26,7 @@ tools = composio_toolset.get_actions(
         Action.SLACKBOT_CHAT_POST_MESSAGE,
     ]
 )
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI key:")
-    os.environ["OPENAI_API_KEY"] = api_key
+
 # Initialize an OpenAI instance with the GPT-4o model
 llm = OpenAI(model="gpt-4o")
 

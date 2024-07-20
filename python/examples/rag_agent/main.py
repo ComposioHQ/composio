@@ -9,11 +9,6 @@ from composio.tools.local import ragtool
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
-api_key=os.getenv("OPENAI_API_KEY","")
-if(api_key=""):
-    api_key=input("Enter OpenAI key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
 # Initialize the ComposioToolSet
 toolset = ComposioToolSet()
 

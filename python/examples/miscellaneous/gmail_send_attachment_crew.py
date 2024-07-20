@@ -6,7 +6,7 @@ import os
 
 import dotenv
 from composio_crewai import Action, ComposioToolSet
-from crewai import Agent, Task
+from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
 
 
@@ -14,7 +14,7 @@ from langchain_openai import ChatOpenAI
 dotenv.load_dotenv()
 
 # Initialize tools.
-openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+openai_client = ChatOpenAI()
 composio_toolset = ComposioToolSet()
 
 # Get All the tools
@@ -41,5 +41,7 @@ task = Task(
     expected_output="if the action successfully executed.",
 )
 
+my_crew = Crew(agents=[crewai_agent], tasks=[task])
 # Execute task
-task.execute()
+result = my_crew.kickoff()
+print(result)

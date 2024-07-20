@@ -12,11 +12,6 @@ load_dotenv()
 # Initialize the ComposioToolSet
 composio_toolset = ComposioToolSet()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-    
 channel_id = os.getenv("CHANNEL_ID","")
 if(channel_id==""):
     channel_id=input("Enter Channel id:")

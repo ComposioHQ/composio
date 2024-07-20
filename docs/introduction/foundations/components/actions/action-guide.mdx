@@ -212,11 +212,8 @@ When executed successfully, action's response will be output. Output schema as r
       from langchain import hub
       from langchain_openai import ChatOpenAI
       from composio_langchain import ComposioToolSet, Action, App
-      import os
 
-      # add OPENAI_API_KEY to env variables.
-      # openai_api_key = os.getenv("OPENAI_API_KEY")
-      llm = ChatOpenAI(model="gpt-4o", api_key='YOUR_OPENAI_API_KEY')
+      llm = ChatOpenAI(model="gpt-4o")
 
       prompt = hub.pull("hwchase17/openai-functions-agent")
 

@@ -10,11 +10,6 @@ from composio.client.collections import TriggerEventData
 
 load_dotenv()
 
-# api_key for OpenAI
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-if(OPENAI_API_KEY==""):
-    OPENAI_API_KEY=input("Enter Openai Key:")
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
 bot_id = os.getenv("SLACK_BOT_ID","")
 if(bot_id==""):
@@ -29,7 +24,7 @@ RESPOND_ONLY_IF_TAGGED = (
 
 # Step 2: Initialize clients and toolsets
 # Initialize OpenAI client
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI()
 
 # Initialize Composio OpenAI toolset
 # This toolset provides integration between Composio and OpenAI Assistant Framework

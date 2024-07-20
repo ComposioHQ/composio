@@ -49,7 +49,7 @@ This project involves setting up and running a system of agents to conduct inves
         dotenv.load_dotenv()
 
         # Initialize the language model with OpenAI API key and model name
-        llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY", "default_key"), model_name="gpt-4o")
+        llm = ChatOpenAI(model="gpt-4o")
 
         # Setup tools using ComposioToolSet
         composio_toolset = ComposioToolSet()
@@ -154,7 +154,7 @@ This project involves setting up and running a system of agents to conduct inves
     dotenv.load_dotenv()
 
     # Initialize the language model with OpenAI API key and model name
-    llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY", "default_key"), model_name="gpt-4o")
+    llm = ChatOpenAI(model="gpt-4o")
 
     # Setup tools using ComposioToolSet
     composio_toolset = ComposioToolSet()

@@ -7,16 +7,11 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
 
 dotenv.load_dotenv()
 
 # Initialize the LLM with the OpenAI GPT-4o model and API key
-llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4o")
 
 # Pull the prompt template for the agent
 prompt = hub.pull("hwchase17/openai-functions-agent")

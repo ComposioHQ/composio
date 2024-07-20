@@ -46,13 +46,10 @@ description: "This guide provides detailed steps to create a research assistant 
         ```python LLM and Tools 
         # Load environment variables
         dotenv.load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY","")
-        if(api_key==""):
-            print("openai key not added as env variable")
+
         # Initialize the language model with OpenAI API key and model name
         llm = ChatOpenAI(
-            openai_api_key=api_key,
-            model_name="gpt-4o"
+            model="gpt-4o"
         )
         # Setup tools using ComposioToolSet
         composio_toolset = ComposioToolSet()
@@ -119,8 +116,7 @@ Below is the complete code snippet combining all the steps:
 
     # Initialize the language model with OpenAI API key and model name
     llm = ChatOpenAI(
-        openai_api_key=os.environ["OPENAI_API_KEY"],
-        model_name="gpt-4o"
+        model="gpt-4o"
     )
 
     # Setup tools using ComposioToolSet

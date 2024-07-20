@@ -82,13 +82,11 @@ This project is an example which uses Composio to help you keep your GitHub repo
         ```python LLM and Tools
         # Load environment variables
         load_dotenv()
-        openai_api_key = os.getenv("OPENAI_API_KEY")
         trello_todo_list_id = os.getenv("TRELLO_TODO_LIST_ID")
         trello_done_list_id = os.getenv("TRELLO_DONE_LIST_ID")
-        model = os.getenv("MODEL")
 
         # Initialize the language model
-        llm = ChatOpenAI(model=model, api_key=openai_api_key)
+        llm = ChatOpenAI(model="gpt-4o")
 
         # Define tools for the agents
         # We are using Trello tool from composio to connect to our trello account.
@@ -178,13 +176,12 @@ This project is an example which uses Composio to help you keep your GitHub repo
 
     # Load environment variables
     load_dotenv()
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+
     trello_todo_list_id = os.getenv("TRELLO_TODO_LIST_ID")
     trello_done_list_id = os.getenv("TRELLO_DONE_LIST_ID")
-    model = os.getenv("MODEL")
 
     # Initialize the language model
-    llm = ChatOpenAI(model=model, api_key=openai_api_key)
+    llm = ChatOpenAI(model="gpt-4o")
 
     # Define tools for the agents
     # We are using Trello tool from composio to connect to our trello account.

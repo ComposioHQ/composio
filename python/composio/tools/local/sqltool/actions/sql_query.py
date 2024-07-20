@@ -10,10 +10,8 @@ class SqlQueryRequest(BaseModel):
 
 
 class SqlQueryResponse(BaseModel):
-    # Define output schema for your action
-    # Example:
-    # result: str = Field(..., description="Result of the action")
-    result: str = Field(..., description="Result after executing the query")
+    execution_details: dict = Field(..., description="Execution details")
+    response_data: str = Field(..., description="Result after executing the query")
 
 
 class SqlQuery(Action):

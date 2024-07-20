@@ -49,7 +49,7 @@ from crewai import Agent, Task
         # Load environment variables
         # Load environment variables
         dotenv.load_dotenv()
-        openai_api_key = os.getenv("OPENAI_API_KEY")
+
         # URL of the competitor website
         url = os.getenv("URL")
         if not url:
@@ -64,7 +64,7 @@ from crewai import Agent, Task
 
 
         # Initialize the language model
-        llm = ChatOpenAI(model=model, api_key=openai_api_key)
+        llm = ChatOpenAI(model="gpt-4o")
 
         # Define tools for the agents using the ComposioToolSet
         composio_toolset = ComposioToolSet()
@@ -159,7 +159,7 @@ from crewai import Agent, Task
 
 # Load environment variables
 dotenv.load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
+
 # URL of the competitor website
 url = os.getenv("URL")
 if not url:
@@ -173,7 +173,7 @@ if not parent_page:
     )
 
 # Initialize the language model
-llm = ChatOpenAI(model="gpt-4-turbo", api_key=openai_api_key)
+llm = ChatOpenAI(model="gpt-4o")
 
 # Define tools for the agents using the ComposioToolSet
 composio_toolset = ComposioToolSet()

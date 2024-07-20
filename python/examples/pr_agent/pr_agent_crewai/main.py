@@ -39,10 +39,6 @@ code_review_assistant_prompt = """
         Also add the comprehensive review to the PR as a comment.
 """
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OPENAI API KEY:")
-    os.environ["OPENAI_API_KEY"]=api_key
 
 # Initialize the language model
 llm = ChatOpenAI(model="gpt-4")

@@ -10,10 +10,6 @@ from langchain_openai import ChatOpenAI
 
 # Load environment variables
 load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY","")
-if(openai_api_key==""):
-    openai_api_key=input("Enter OpenAI key:")
-    os.environ["OPENAI_API_KEY"] = openai_api_key
 
 trello_todo_list_id = os.getenv("TRELLO_TODO_LIST_ID","")
 if(trello_todo_list_id==""):
@@ -26,7 +22,7 @@ if(trello_done_list_id==""):
     os.environ["TRELLO_DONE_LIST_ID"] = trello_done_list_id
 
 # Initialize the language model
-llm = ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
+llm = ChatOpenAI(model="gpt-4o")
 
 # Define tools for the agents
 # We are using Trello tool from composio to connect to our trello account.

@@ -8,15 +8,9 @@ from langchain_openai import ChatOpenAI
 
 # Load environment variables
 dotenv.load_dotenv()
-
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI api key:")
-    os.environ["OPENAI_API_KEY"] = api_key
 # Initialize the language model with OpenAI API key and model name
 llm = ChatOpenAI(
-    openai_api_key=os.environ["OPENAI_API_KEY"],
-    model_name="gpt-4o"
+    model="gpt-4o"
 )
 
 # Setup tools using ComposioToolSet
@@ -40,7 +34,7 @@ researcher = Agent(
 )
 
 # Define the research task with its description and expected output
-task1 = Task(
+task = Task(
     description="""
     Research about open source LLMs vs closed source LLMs.
     Your final answer MUST be a full analysis report
@@ -49,8 +43,9 @@ task1 = Task(
     agent=researcher  # Assign the task to the researcher agent
 )
 
+crew = Crew(agents=[researcher], tasks=[task])
 # Execute the task
-task1.execute()
+result = crew.kickoff()
 
 # Print the result of the task execution
-print(task1.result)
+print(result)
