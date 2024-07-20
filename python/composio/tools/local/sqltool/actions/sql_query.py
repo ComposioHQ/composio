@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from composio.tools.local.base import Action
 
+
 class SqlQueryRequest(BaseModel):
     # Define input schema for your action
     # Example:
@@ -10,10 +11,8 @@ class SqlQueryRequest(BaseModel):
 
 
 class SqlQueryResponse(BaseModel):
-    # Define output schema for your action
-    # Example:
-    # result: str = Field(..., description="Result of the action")
-    result: str = Field(..., description="Result after executing the query")
+    execution_details: dict = Field(..., description="Execution details")
+    response_data: str = Field(..., description="Result after executing the query")
 
 
 class SqlQuery(Action):
@@ -34,7 +33,7 @@ class SqlQuery(Action):
         # Example:
         # response_data = {"result": "Processed text: " + request_data.text}
         # Implement logic to process input and return output
-        
+
         import sqlite3  # pylint: disable=import-outside-toplevel
         from pathlib import Path
 
