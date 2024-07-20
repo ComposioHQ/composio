@@ -37,7 +37,7 @@ def main():
 
 def search_images(images_path, search_prompt, top_no_of_images):
     # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4")
+    llm = ChatOpenAI(model="gpt-4o")
 
     # Get prompt from LangChain hub
     prompt = hub.pull("hwchase17/openai-functions-agent")

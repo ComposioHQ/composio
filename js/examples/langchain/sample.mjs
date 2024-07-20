@@ -24,7 +24,7 @@ async function executeAgent(entityName) {
 
     const prompt = await pull("hwchase17/openai-functions-agent");
     const llm = new ChatOpenAI({
-        model: "gpt-4",
+        model: "gpt-4o",
         apiKey: process.env.OPEN_AI_API_KEY
     });
 
