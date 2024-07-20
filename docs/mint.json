@@ -58,11 +58,6 @@
   },
   "tabs": [
     {
-      "name": "SDK",
-      "url": "sdk"
-    },
-
-    {
       "name": "Guides",
       "url": "patterns"
     },
@@ -123,12 +118,12 @@
 
             {
       "group": "More",
-                "icon": "circle",
+      "icon": "circle",
       "pages": [
-        "introduction/python/trigger",
         "python/introduction",
         "python/configuration",
         "python/actions",
+        "python/trigger",
         "python/local_tools"
       ]
     }
@@ -143,28 +138,25 @@
           "icon": "code",
           "iconType": "solid",
           "pages": [
-              
         "javascript/langchain",
         "javascript/openai",
         "javascript/cloudflare"
           ]
         },
-                    {
+        {
       "group": "More",
-                "icon": "circle",
+      "icon": "circle",
       "pages": [
-        "javascript/trigger",
+        "javascript/account",
         "javascript/entity",
         "javascript/action",
-        "javascript/account"
+        "javascript/trigger"
       ]
     }
       ]
     },
-
-
     {
-      "group": "CLI API",
+      "group": "CLI",
       "pages": [
         "sdk/cli/install",
         "sdk/cli/account",
