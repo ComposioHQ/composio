@@ -2,6 +2,7 @@ import os
 
 import dotenv
 from autogen import AssistantAgent, UserProxyAgent
+
 from composio_autogen import App, ComposioToolSet
 
 
@@ -15,7 +16,7 @@ chatbot = AssistantAgent(
     system_message="Reply TERMINATE when the task is done or when user's content is empty",
     llm_config={
         "config_list": [
-            {"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]},
+            {"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]},
         ]
     },
 )
@@ -42,7 +43,7 @@ def main():
     )
 
     # Define task.
-    task = "Star a repo ComposioHQ/composio on GitHub"
+    task = "Star a repo composiohq/composio on GitHub"
 
     # Execute task.
     response = user_proxy.initiate_chat(chatbot, message=task)

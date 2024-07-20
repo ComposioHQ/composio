@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "composio-core": "0.1.6-1",
     "express": "^4.19.2",
     "pusher-js": "8.4.0-rc2"
   }

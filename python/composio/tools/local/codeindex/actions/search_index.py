@@ -74,14 +74,14 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
     _tool_name = "codeindex"
 
     def execute(
-        self, request: SearchCodebaseRequest, authorisation_data: dict = {}
+        self, request_data: SearchCodebaseRequest, authorisation_data: dict = {}
     ) -> SearchCodebaseResponse:
         import chromadb  # pylint: disable=C0415
         from chromadb.errors import ChromaError  # pylint: disable=C0415
 
         # Verify index existence
         index_creator = CreateIndex()
-        index_status = index_creator.check_status(request.codebase_directory)
+        index_status = index_creator.check_status(request_data.codebase_directory)
         if index_status["status"] != "completed":
             return SearchCodebaseResponse(
                 matched_snippets=[],
@@ -91,7 +91,7 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
         # Configure Chroma client and collection
         index_storage_path = Path.home() / ".composio" / "index_storage"
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
-        collection_name = Path(request.codebase_directory).name
+        collection_name = Path(request_data.codebase_directory).name
 
         embedding_type = index_status.get("embedding_type", "local")
         embedding_function = index_creator.create_embedding_function(embedding_type)
@@ -103,22 +103,22 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
 
             # Set up file type filter if specified
             file_type_filter = None
-            if request.file_extension:
+            if request_data.file_extension:
                 file_type_filter = {
-                    "file_type": {"$eq": request.file_extension.upper()}
+                    "file_type": {"$eq": request_data.file_extension.upper()}
                 }
 
             # Execute the search query
             if file_type_filter:
                 search_results = chroma_collection.query(
-                    query_texts=[request.search_query],
-                    n_results=request.max_results,
+                    query_texts=[request_data.search_query],
+                    n_results=request_data.max_results,
                     where=file_type_filter,
                 )
             else:
                 search_results = chroma_collection.query(
-                    query_texts=[request.search_query],
-                    n_results=request.max_results,
+                    query_texts=[request_data.search_query],
+                    n_results=request_data.max_results,
                 )
 
             # Process and format the search results

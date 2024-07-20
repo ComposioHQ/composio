@@ -26,5 +26,3 @@ Now, fill in the `.env` file with your secrets.
 ```shell
 python cookbook/examples/scheduler_agent/main.py
 ```
-
-

@@ -3,24 +3,24 @@ import re
 from datetime import datetime
 from dotenv import load_dotenv
 from composio_langchain import Action, ComposioToolSet
+from composio_langchain import ComposioToolSet, Action, App
+from langchain_openai import ChatOpenAI
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
 
-load_dotenv()
-
-llm = ChatOpenAI(model="gpt-4-turbo", api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4-turbo")
 # llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
-composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
+composio_toolset = ComposioToolSet()
 
 schedule_tool = composio_toolset.get_actions(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
-        Action.GMAIL_CREATE_EMAIL_DRAFT
+        Action.GMAIL_CREATE_EMAIL_DRAFT,
     ]
 )
 email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
@@ -47,12 +47,12 @@ def extract_sender_email(payload):
                 return match.group(0)
     return None
 
+
 listener = composio_toolset.create_trigger_listener()
 
 
-@listener.callback(filters={"trigger_name": "github_pull_request_event"})
-def review_new_pr(event: TriggerEventData) -> None:
-    # Using the information from Trigger, execute the agent
+@listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
+def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
@@ -62,24 +62,24 @@ def review_new_pr(event: TriggerEventData) -> None:
         print("No sender email found")
         return
     print(sender_mail)
-    # Correct the description by concatenating strings
-    analyze_email_task = f"""
-        1. Analyze the email content and decide if an event should be created. 
+
+    query_task = f"""
+            1. Analyze the email content and decide if an event should be created. 
                 a. The email was received from {sender_mail} 
                 b. The content of the email is: {message} 
                 c. The thread id is: {thread_id}.
-        2. If you decide to create an event, try to find a free slot 
+            2. If you decide to create an event, try to find a free slot 
             using Google Calendar Find Free Slots action.
-        3. Once you find a free slot, use Google Calendar Create Event 
+            3. Once you find a free slot, use Google Calendar Create Event 
             action to create the event at a free slot and send the invite to {sender_mail}.
-
-        If an event was created, draft a confirmation email for the created event. 
-        The receiver of the mail is: {sender_mail}, the subject should be meeting scheduled and body
-        should describe what the meeting is about
-        """
-    res = agent_executor.invoke({"input": analyze_email_task})
+            If an event was created, draft a confirmation email for the created event. 
+            The receiver of the mail is: {sender_mail}, the subject should be meeting scheduled and body
+            should describe what the meeting is about
+            """
+    # Execute the agent
+    res = agent_executor.invoke({"input": query_task})
     print(res)
 
-print("Listener started!")
-print("Create a pr to get the review")
+
+print("Subscription created!")
 listener.listen()

@@ -1,4 +1,5 @@
 import { Composio } from "../sdk";
+import { getEnvVariable } from "../utils/shared";
 
 class UserData {
     apiKey: string | undefined;
@@ -22,7 +23,7 @@ class UserData {
 const getUserPath = () => {
     try{
         const path = require("path");
-        return path.join(process.env.HOME || "", ".composio", "userData.json");
+        return path.join(getEnvVariable("HOME", ""), ".composio", "userData.json");
     } catch {
        return null;
     }
@@ -40,7 +41,7 @@ export class ComposioToolSet {
         runtime: string | null = null,
         entityId: string = "default"
     ) {  
-        const clientApiKey: string | undefined = apiKey || process.env["COMPOSIO_API_KEY"] || UserData.load(getUserPath()).apiKey;
+        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || UserData.load(getUserPath()).apiKey;
         if (!clientApiKey) {
             throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
         }

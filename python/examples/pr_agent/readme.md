@@ -1,6 +1,6 @@
 # PR Agent Guide
 
-This guide provides detailed steps to create a PR agent that leverages Composio, agentic frameworks such as Langchain, LlamaIndex, CrewAI, Autogen, OpenAI and ChatGPT to review PRs everytime they're created. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a PR agent that leverages Composio, agentic frameworks such as Langchain, LlamaIndex, CrewAI, Autogen, OpenAI and ChatGPT to review PRs every time they're created. Ensure you have Python 3.8 or higher installed.
 
 # PR Agent Schematic 
 ![alt text](https://github.com/ComposioHQ/composio/blob/master/python/examples/pr_agent/schematic.png?raw=true)

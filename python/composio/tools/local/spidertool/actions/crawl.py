@@ -22,9 +22,9 @@ class Crawl(Action[CrawlToolRequest, CrawlToolResponse]):
     _tags = ["Web"]
     _tool_name = "spidertool"
 
-    def execute(self, request: CrawlToolRequest, authorisation_data: dict) -> dict:
+    def execute(self, request_data: CrawlToolRequest, authorisation_data: dict) -> dict:
         """Crawl a website and return its content in markdown format"""
-        url = request.url
+        url = request_data.url
         try:
             # pylint: disable=import-outside-toplevel
             from spider import Spider

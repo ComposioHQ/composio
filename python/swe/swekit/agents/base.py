@@ -8,13 +8,15 @@ import typing as t
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from composio_crewai import ComposioToolSet
 from pydantic import BaseModel, Field
-from swekit.config.store import IssueConfig
-from swekit.exceptions import SWEKitError
 
 from composio import Action
 from composio.utils import logging
+
+from composio_crewai import ComposioToolSet
+
+from swekit.config.store import IssueConfig
+from swekit.exceptions import SWEKitError
 
 
 AGENT_LOGS_JSON_PATH = "agent_logs.json"

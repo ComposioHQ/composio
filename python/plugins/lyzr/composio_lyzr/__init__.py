@@ -1,7 +1,6 @@
-from composio_lyzr.toolset import ComposioToolSet
+from composio import Action, App, Tag, Trigger, WorkspaceType
 
-from composio import Action, App, Tag, Trigger
-from composio.tools.env.factory import ExecEnv
+from composio_lyzr.toolset import ComposioToolSet
 
 
 __all__ = (
@@ -9,6 +8,6 @@ __all__ = (
     "App",
     "Action",
     "ComposioToolSet",
-    "ExecEnv",
+    "WorkspaceType",
     "Trigger",
 )

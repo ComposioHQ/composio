@@ -4,12 +4,18 @@ import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 
 # Import modules from Autogen and ComposioAutogen
-from autogen import AssistantAgent, UserProxyAgent
+from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 from composio.tools.local import embedtool
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY", "")
+if api_key == "":
+    api_key = input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
+
 
 # Define the LLM configuration with the model and API key
 llm_config = {
@@ -36,7 +42,7 @@ user_proxy = UserProxyAgent(
 )
 
 # Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+composio_toolset = ComposioToolSet()
 
 # Register tools with the ComposioToolSet, specifying the caller (chatbot) and executor (user_proxy)
 composio_toolset.register_tools(
@@ -47,7 +53,11 @@ composio_toolset.register_tools(
 
 images_path = input("Enter the path to the images folder:")
 search_prompt = input("Enter the image description for the image you want to search:")
-top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
+top_no_of_images = int(
+    input(
+        "What number of images that are closest to the description that should be returned:"
+    )
+)  # returns n closest images to the search
 
 task_description = f"""
     Check if a Vector Store exists for the image directory

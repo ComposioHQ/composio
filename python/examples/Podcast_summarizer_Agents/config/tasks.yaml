@@ -1,0 +1,11 @@
+summarize_podcast_task:
+  description: >
+    Transcribe the podcast from the given URL and summarize the key points.
+  expected_output: >
+    A comprehensive and clear summary of the youtube podcast.
+
+send_message_to_slack_task:
+  description: >
+    Send the summary to slack.
+  expected_output: >
+    A Confirmation that message has been sent to slack channel.

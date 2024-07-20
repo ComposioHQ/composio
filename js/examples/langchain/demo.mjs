@@ -15,7 +15,7 @@ app.get('/webhook', async (req, res) => {
         const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
 
         const llm = new ChatOpenAI({
-            model: "gpt-4",
+            model: "gpt-4o",
         });
 
         const toolset = new LangchainToolSet({

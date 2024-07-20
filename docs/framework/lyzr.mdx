@@ -63,7 +63,7 @@ These commands prepare your environment for seamless interaction between Lyzr an
             agent=lyzr_agent,
             tool=composio_toolset,
             model=open_ai_text_completion_model,
-            instructions="Star a repo ComposioHQ/composio on GitHub",
+            instructions="Star a repo composiohq/composio on GitHub",
         )
 
         LinearSyncPipeline(name="Composio Lyzr", completion_message="Task completed",tasks=[task]).run()

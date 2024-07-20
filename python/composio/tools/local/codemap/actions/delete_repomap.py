@@ -28,9 +28,9 @@ class DeleteRepoMap(Action[DeleteRepoMapRequest, DeleteRepoMapResponse]):
     _tool_name = "codemap"
 
     def execute(
-        self, request: DeleteRepoMapRequest, authorisation_data: dict = {}
+        self, request_data: DeleteRepoMapRequest, authorisation_data: dict = {}
     ) -> dict:
-        root_path = Path(request.root_path).resolve()
+        root_path = Path(request_data.root_path).resolve()
         if not root_path.exists():
             return {"success": False, "error": f"Path {root_path} does not exist"}
 
