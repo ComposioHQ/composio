@@ -240,6 +240,7 @@ def add_integration(
         app_name=name,
         no_browser=no_browser,
         integration=integration,
+        scopes=scopes,
     )
 
 
@@ -264,12 +265,14 @@ def _handle_oauth(
     app_name: str,
     no_browser: bool = False,
     integration: t.Optional[IntegrationModel] = None,
+    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
     """Handle basic auth."""
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
         integration=integration,
+        auth_config=_get_auth_config(scopes=scopes),
     )
     if not no_browser:
         webbrowser.open(
