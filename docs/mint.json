@@ -81,6 +81,7 @@
         {
           "group": "Core Concepts",
           "pages": [
+             "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/basic",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/entity/entity-guide",
@@ -132,14 +133,13 @@
             {
       "group": "Javascript",
       "pages": [
-       "javascript/introduction",
+       "javascript/openai",
         {
           "group": "With frameworks",
           "icon": "code",
           "iconType": "solid",
           "pages": [
         "javascript/langchain",
-        "javascript/openai",
         "javascript/cloudflare"
           ]
         },

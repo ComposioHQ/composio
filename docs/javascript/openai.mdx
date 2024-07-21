@@ -1,34 +1,59 @@
 ---
 title: "Using Composio JS SDK with OpenAI"
-sidebarTitle: "OpenAI"
+sidebarTitle: "Quickstart"
 icon: "code"
-description: "Use Composio JS SDK with OpenAI"
+description: "Use Composio JS SDK with OpenAI to create a powerful Agent"
 ---
 
+## Demo
+
+ <iframe
+    src="https://codesandbox.io/p/devbox/test-wnktj6?embed=1&file=%2Findex.mjs&showConsole=true"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+    width: '100%',
+    height: '500px',
+    border: '3px solid #5E43CE',
+    borderRadius: '10px',
+    }}/>
 <Steps>
-<Step title="Import Dependencies">
- <CodeGroup>
-      ```javascript Import OpenAI and OpenAIToolSet
-import { OpenAI } from "openai";
-import { OpenAIToolSet } from "composio-core";
+<Step title="Get Composio API Key">
+Follow this [Get API Key](/introduction/foundations/howtos/get_api_key) to get your Composio API Key
+</Step>
+<Step title="Install Dependencies">
+<CodeGroup>
+      ```bash Install dependencies
+npm install composio-core openai 
+yarn add composio-core openai 
+pnpm add composio-core openai
       ```
     </CodeGroup>
 </Step>
+
 <Step title="Define method to let user connect their GitHub account">
 
  <CodeGroup>
-      ```typescript Define method to let user connect their GitHub account
-const toolset = new OpenAIToolSet({
-        apiKey: process.env.COMPOSIO_API_KEY,
-});
+      ```typescript index.mjs
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+const COMPOSIO_API_KEY = "<your-composio-api-key>"
+const OPEN_AI_API_KEY = "<your-openai-api-key>"
+const toolset = new OpenAIToolSet({apiKey: COMPOSIO_API_KEY,});
+
+const appName = 'github';
 
 async function setupUserConnectionIfNotExists(entityId) {
         const entity = await toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection('github');
+        const connection = await entity.getConnection(appName);
 
         if (!connection) {
-            // If this entity/user hasn't already connected the account
-            const connection = await entity.initiateConnection('github');
+            const connection = await entity.initiateConnection(appName);
             console.log("Log in via: ", connection.redirectUrl);
             return connection.waitUntilActive(60);
         }
@@ -45,15 +70,15 @@ Learn more about entities [here](introduction/foundations/components/entity/enti
 <Step title="Setup Agent with Langchain">
 
 <CodeGroup>
-      ```typescript Define your Agent
-async function executeAgent(entityName) {
+      ```typescript index.mjs
+async function executeAgent(repo,entityName="default") {
         const entity = await toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
 
         const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
-        const instruction = "Make an issue with sample title in the repo - himanshu-dixit/custom-repo-breaking"
+        const instruction = `Make an issue with sample title in the repo - ${repo}`
 
-        const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
+        const client = new OpenAI({ apiKey: OPEN_AI_API_KEY })
         const response = await client.chat.completions.create({
             model: "gpt-4-turbo",
             messages: [{
@@ -76,8 +101,8 @@ async function executeAgent(entityName) {
 <Step title="Invoke Your Agent">
 
 <CodeGroup>
-      ```typescript  Invoke the Agent
-      executeGithubAgent("himanshu")
+      ```typescript  index.mjs
+      executeAgent("himanshu-dixit/custom-repo-breaking")
       ```
     </CodeGroup>
 
