@@ -5,7 +5,7 @@ import {
   // @ts-ignore
 } from "@cloudflare/workers-types";
 import { GetListActionsResponse } from "../sdk/client";
-import { ExecEnv } from "../utils/workspaceFactory";
+import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { LocalActions } from "../utils/localTools";
 import { ComposioServer } from "../sdk/models/composioServer";
@@ -40,6 +40,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   async get_actions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
+    await this.setup();
+
     let actions =  (await this.client.actions.list({
       actions: filters.actions?.join(","),
       showAll: true
@@ -85,6 +87,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     tags: Optional<Array<string>>;
     useCase: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
+    await this.setup();
+
     return (
       (
         await this.client.actions.list({
@@ -124,7 +128,6 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<string> {
-    console.log(tool);
     return JSON.stringify(
       await this.execute_action(
         tool.name,

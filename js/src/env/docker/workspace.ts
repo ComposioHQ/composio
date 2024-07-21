@@ -3,6 +3,8 @@ import Docker from "dockerode";
 import os from "os";
 import path from "path";
 import { promises as fs } from "fs";
+import { RemoteWorkspace, WorkspaceConfig } from "../base";
+import cliProgress from "cli-progress";
 
 const COMPOSIO_PATH = path.resolve(__dirname, "../../../../../../");
 const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
@@ -23,17 +25,18 @@ function getFreePort(): Promise<number> {
     });
 }
 
-export class DockerWorkspace {
-    private docker: Docker;
-    private container: Docker.Container | null = null;
-    private id: string;
-    private port: number = DEFAULT_PORT;
-    private image: string;
-    private url: string = "";
+export class DockerWorkspace extends RemoteWorkspace {
+    public docker: Docker;
+    public container: Docker.Container | null = null;
+    public id: string;
+    public port: number = DEFAULT_PORT;
+    public image: string;
+    public url: string = "";
 
-    constructor() {
+    constructor(kwargs: WorkspaceConfig) {
+        super(kwargs);
         this.docker = new Docker();
-        this.id = uuidv4();
+        this.id = `composio-${uuidv4()}`;
         this.image = process.env[ENV_COMPOSIO_SWE_AGENT] || DEFAULT_IMAGE;
     }
 
@@ -41,46 +44,106 @@ export class DockerWorkspace {
         this.port = await getFreePort();
         this.url = `http://localhost:${this.port}/api`;
 
-        const containerOptions: Docker.ContainerCreateOptions = {
-            Image: this.image,
-            name: this.id,
-            Cmd: ["/root/entrypoint.sh"],
-            Tty: true,
-            AttachStdin: true,
-            AttachStdout: true,
-            AttachStderr: true,
-            OpenStdin: true,
-            StdinOnce: false,
-            ExposedPorts: {
-                "8000/tcp": {},
-            },
-            HostConfig: {
-                PortBindings: {
-                    "8000/tcp": [
-                        {
-                            HostPort: this.port.toString(),
-                        },
+        const images = await this.docker.listImages();
+        const imageExists = images.some(image => image.RepoTags && image.RepoTags.find(tag => tag.startsWith(this.image)));
+
+
+        if (!imageExists) {
+            console.log(`Pulling Docker image ${this.image}...`);
+
+            const bar = new cliProgress.SingleBar({
+                format: '{bar} | {percentage}% | {status}',
+                hideCursor: true
+            }, cliProgress.Presets.shades_classic);
+    
+            bar.start(100, 0, { status: 'Initializing...' });
+            bar.update({ status: `Image ${this.image} not found locally. Pulling from Docker Hub...` });
+            await new Promise((resolve, reject) => {
+                this.docker.pull(this.image, (err: any, stream: any) => {
+                    if (err) {
+                        bar.stop();
+                        console.error('Failed to pull Docker image.');
+                        return reject(err);
+                    }
+                    this.docker.modem.followProgress(stream, onFinished, onProgress);
+
+                    function onFinished(err: any, output: any) {
+                        if (err) {
+                            bar.stop();
+                            console.error('Failed to pull Docker image.');
+                            return reject(err);
+                        }
+                        bar.update(100, { status: 'Docker image pulled successfully.' });
+                        bar.stop();
+                        resolve(output);
+                    }
+
+                    function onProgress(event: any) {
+                        bar.update({ status: event.status });
+                    }
+                });
+            });
+        } else {
+            console.debug(`Image ${this.image} found locally.`);
+        }
+
+        const containers = await this.docker.listContainers({ all: true });
+        const existingContainer = containers.find(container => container.Names.find(name => name.startsWith(`/composio-`)));
+
+        if (existingContainer) {
+            console.debug(`Container with name ${this.id} is already running.`);
+            this.container = this.docker.getContainer(existingContainer.Id);
+            this.port = existingContainer.Ports.find(port => port.PrivatePort === 8000)?.PublicPort!;
+            this.url = `http://localhost:${this.port}/api`;
+        } else {
+            const containerOptions: Docker.ContainerCreateOptions = {
+                Image: this.image,
+                name: this.id,
+                Cmd: ["/root/entrypoint.sh"],
+                Tty: true,
+                AttachStdin: true,
+                AttachStdout: true,
+                AttachStderr: true,
+                OpenStdin: true,
+                StdinOnce: false,
+                ExposedPorts: {
+                    "8000/tcp": {},
+                },
+                HostConfig: {
+                    PortBindings: {
+                        "8000/tcp": [
+                            {
+                                HostPort: this.port.toString(),
+                            },
+                        ],
+                    },
+                    Binds: [
+                        `${COMPOSIO_PATH}:/opt/composio-core:rw`,
+                        `${COMPOSIO_CACHE}:/root/.composio:rw`,
                     ],
                 },
-                Binds: [
-                    `${COMPOSIO_PATH}:/opt/composio-core:rw`,
-                    `${COMPOSIO_CACHE}:/root/.composio:rw`,
+                Env: [
+                    ...Object.entries(this.environment).map(([key, value]) => `${key}=${value}`),
+                    `${ENV_COMPOSIO_DEV_MODE}=${process.env[ENV_COMPOSIO_DEV_MODE] || "0"}`,
                 ],
-            },
-            Env: [
-                `${ENV_COMPOSIO_DEV_MODE}=${process.env[ENV_COMPOSIO_DEV_MODE] || "0"}`,
-            ],
-        };
+            };
 
-        this.container = await this.docker.createContainer(containerOptions);
-        await this.container.start();
+            this.container = await this.docker.createContainer(containerOptions);
+            await this.container.start();
+        }
         await this.waitForContainer();
     }
 
     private async waitForContainer() {
         while (true) {
             try {
-                const response = await fetch(this.url);
+                const response = await fetch(this.url, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": this.environment.composioAPIKey,
+                    },
+                });
                 if (response.ok) {
                     return;
                 }
@@ -90,32 +153,15 @@ export class DockerWorkspace {
         }
     }
 
-    async execute(command: string): Promise<string> {
-        if (!this.container) {
-            throw new Error("Container not initialized");
-        }
-
-        const exec = await this.container.exec({
-            Cmd: ["/bin/bash", "-c", command],
-            AttachStdout: true,
-            AttachStderr: true,
-        });
-
-        const stream = await exec.start({ Detach: false });
-        return new Promise((resolve, reject) => {
-            let output = "";
-            stream.on("data", (data: Buffer) => {
-                output += data.toString();
-            });
-            stream.on("end", () => resolve(output));
-            stream.on("error", reject);
-        });
-    }
-
     async teardown() {
         if (this.container) {
-            await this.container.stop();
-            await this.container.remove();
+            console.log(`Stopping container ${this.container.id}...`);
+            try {
+                await this.container.kill();
+                await this.container.remove();
+            } catch (error) {
+                console.debug("Failed to stop and remove container:", error);
+            }
         }
     }
 }

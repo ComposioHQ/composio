@@ -1,6 +1,6 @@
 import { Composio } from "../sdk";
 import { LocalActions } from "../utils/localTools";
-import { ExecEnv, WorkspaceFactory } from "../utils/workspaceFactory";
+import { ExecEnv, WorkspaceFactory } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 
 class UserData {
@@ -57,40 +57,34 @@ export class ComposioToolSet {
         this.workspace = new WorkspaceFactory(
             workspaceEnv,
             {
-                apiKey: this.apiKey,
-                baseUrl: baseUrl,
-                port: 8812
+                composioAPIKey: this.apiKey,
+                composioBaseURL: baseUrl,
             }
         )
         this.workspaceEnv = workspaceEnv;
 
-        process.on("exit", () => {
-            this.workspace.workspace?.teardown();
-        });
-        process.on("SIGINT", () => {
-            this.workspace.workspace?.teardown();
-        });
-        process.on('SIGUSR1', () => {
-            this.workspace.workspace?.teardown();
-        });
-        process.on('SIGUSR2', () => {
-            this.workspace.workspace?.teardown();
+        process.on("exit", async () => {
+            await this.workspace.workspace?.teardown();
         });
     }
 
-
+    async setup() {
+        await this.workspace.new(this.workspaceEnv, {
+            composioAPIKey: this.apiKey,
+            composioBaseURL: COMPOSIO_BASE_URL,
+        });
+    }
 
     async execute_action(
         action: string,
         params: Record<string, any>,
         entityId: string = "default"
     ): Promise<Record<string, any>> {
-        if(LocalActions.includes(action)) {
-            if (this.workspaceEnv === ExecEnv.HOST) {
-                throw new Error("Local tools are not supported in host environment");
-            }
+        if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
             const workspace = await this.workspace.get();
-            return workspace.executeAction(action, params);
+            return workspace.executeAction(action, params, {
+                entityId: this.entityId
+            });
         }
         return this.client.getEntity(entityId).execute(action, params);
     }

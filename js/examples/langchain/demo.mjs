@@ -20,31 +20,33 @@ app.use(express.json());
 
         const toolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY,
-            workspaceEnv: ExecEnv.E2B
+            workspaceEnv: ExecEnv.DOCKER
         });
 
         const tools = await toolset.get_actions({
-            actions: ["FILETOOL_READ_FILE".toLowerCase()]
-        });
-        const prompt = await pull(
-            "hwchase17/openai-functions-agent"
-        );
-
-        const agent = await createOpenAIFunctionsAgent({
-            llm,
-            tools,
-            prompt,
+            actions: ["github_issues_create".toLowerCase()]
         });
 
-        const agentExecutor = new AgentExecutor({
-            agent,
-            tools,
-            verbose: true,
-        });
+        // await toolset.workspace.workspace.teardown();
+        // const prompt = await pull(
+        //     "hwchase17/openai-functions-agent"
+        // );
 
-        const result = await agentExecutor.invoke({
-            input: "Get contents of README.md in the current folder"
-        });
+        // const agent = await createOpenAIFunctionsAgent({
+        //     llm,
+        //     tools,
+        //     prompt,
+        // });
+
+        // const agentExecutor = new AgentExecutor({
+        //     agent,
+        //     tools,
+        //     verbose: true,
+        // });
+
+        // const result = await agentExecutor.invoke({
+        //     input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
+        // });
 
     } catch (error) {
         console.error(error);

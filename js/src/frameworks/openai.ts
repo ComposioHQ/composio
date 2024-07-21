@@ -1,6 +1,6 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
-import { ExecEnv } from "../utils/workspaceFactory";
+import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { LocalActions } from "../utils/localTools";
 import { ComposioServer } from "../sdk/models/composioServer";
@@ -39,6 +39,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             actions: Sequence<string>
         }
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
+        await this.setup();
+
         let mainActions = (await this.client.actions.list({})).items?.filter((a) => {
             return filters.actions.includes(a!.name!);
         });
@@ -74,6 +76,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             useCase: Optional<string>;
         }
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
+        await this.setup();
+
         return (await this.client.actions.list({
             apps: filters.apps.join(","),
             tags: filters.tags?.join(","),

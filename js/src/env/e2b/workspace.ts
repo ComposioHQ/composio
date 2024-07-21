@@ -1,146 +1,76 @@
 import { v4 as uuidv4 } from "uuid";
-import { Sandbox } from "@e2b/code-interpreter";
-import axios from 'axios';
+import { Sandbox } from "@e2b/sdk";
+import { RemoteWorkspace, WorkspaceConfig } from "../base";
 
 const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
 const TOOLSERVER_PORT = 8000;
 const TOOLSERVER_URL = "https://{host}/api";
 
+const ENV_E2B_TEMPLATE = "E2B_TEMPLATE";
 
-export class E2BWorkspace {
-	apiKey: string;
-	baseUrl: string;
-	githubAccessToken: string;
-	accessToken: string;
-	port: number;
-	sandbox: Sandbox | null = null;
-	url: string | null = null;
-	id: string | null = null;
-    options: any;
-    isReady: boolean = false;
+interface Config extends WorkspaceConfig {
+    template?: string;
+    api_key?: string;
+    port?: number;
+}
 
-	constructor(options: {
-		apiKey?: string | null,
-		baseUrl?: string | null,
-		template?: string | null,
-		port?: number | null,
-		env?: Record<string, string> | null
-	} = {}) {
-		this.apiKey = options.apiKey || process.env.COMPOSIO_API_KEY!;
-		if (!this.apiKey) {
-			throw new Error("`apiKey` cannot be `None` when initializing E2BWorkspace");
-		}
+export class E2BWorkspace extends RemoteWorkspace {
+    sandbox: Sandbox | undefined;
+    template: string;
+    api_key?: string;
+    port: number;
 
-		this.baseUrl = options.baseUrl || process.env.COMPOSIO_BASE_URL!;
-		if (!this.baseUrl) {
-			throw new Error("`baseUrl` cannot be `None` when initializing E2BWorkspace");
-		}
+    constructor(config: Config) {
+        super(config);
+        this.template = config.template || process.env[ENV_E2B_TEMPLATE] || DEFAULT_TEMPLATE;
+        this.api_key = config.api_key;
+        this.port = config.port || TOOLSERVER_PORT;
+    }
 
-		this.githubAccessToken = process.env.GITHUB_ACCESS_TOKEN!;
-		if (!this.githubAccessToken) {
-			console.log(`Warning: Please set GITHUB_ACCESS_TOKEN environment variable to allow github functionality inside sandbox environment`);
-		}
+    async setup(): Promise<void> {
+        this.sandbox = new Sandbox({
+            template: this.template,
+            envVars: this.environment,
+            apiKey: this.api_key,
+        });
 
-		if (!options.template) {
-			options.template = process.env.E2B_TEMPLATE!;
-			if (options.template) {
-				console.debug(`Using E2B template \`${options.template}\` from environment`);
-			}
-			options.template = options.template || DEFAULT_TEMPLATE!;
-		}
+        this.url = TOOLSERVER_URL.replace("{host}", await this.sandbox.getHostname(this.port));
 
-		this.accessToken = uuidv4().replace(/-/g, '');
-		this.port = options.port || TOOLSERVER_PORT;
-        this.options = options;
-	}
+        const process = await this.sandbox.process.start({
+            cmd: "composio apps update",
+        });
 
-	async new() {
-		this.sandbox = await Sandbox.create({
-			template: this.options.template,
-            timeout: process.env.WORKSPACE_TIMEOUT ? parseInt(process.env.WORKSPACE_TIMEOUT) : undefined,
-			envVars: {
-				...this.options.env,
-				COMPOSIO_API_KEY: this.apiKey,
-				COMPOSIO_BASE_URL: this.baseUrl,
-				GITHUB_ACCESS_TOKEN: this.githubAccessToken,
-				ACCESS_TOKEN: this.accessToken,
-			},
-		} as any);
-		this.id = this.sandbox.id;
-		this.url = TOOLSERVER_URL.replace("{host}", this.sandbox.getHostname(this.port));
-		await this._startToolserver();
-	}
+        const _ssh_username = uuidv4().replace(/-/g, "");
+        const _ssh_password = uuidv4().replace(/-/g, "");
 
-	async _request(endpoint : string, method : string, json : any | null = null, timeout = 15000) {
-		const config = {
-			url: `${this.url}${endpoint}`,
-			method: method,
-			headers: {
-				"x-api-key": this.accessToken,
-			},
-			timeout: timeout,
-			data: json
-		};
-		return axios(config);
-	}
+        await this.sandbox.process.start({
+            cmd: `sudo useradd -rm -d /home/${_ssh_username} -s /bin/bash -g root -G sudo ${_ssh_username}`,
+        });
 
-	async _startToolserver() {
-        console.log(`Starting toolserver on port ${this.port}`);
-		await this.sandbox?.process.startAndWait("composio apps update");
-        console.log(`Starting toolserver on port ${this.port}`);
-		await this.sandbox?.process.start(`composio serve --host 0.0.0.0 --port ${this.port}`);
-        console.log(`Toolserver started on port ${this.port}`);
+        await this.sandbox.process.start({
+            cmd: `echo ${_ssh_username}:${_ssh_password} | sudo chpasswd`,
+        });
 
-		let retries = 0;
-		const maxRetries = 10;
-		while (retries < maxRetries) {
-			try {
-				const response = await this._request("", "get");
-				if (response.status === 200) {
-                    this.isReady = true;
-					break;
-				}
-			} catch (error) {
-				console.error(`Error checking toolserver status: ${error}`);
-			}
-			retries++;
-			await new Promise(resolve => setTimeout(resolve, 1000));
-		}
-		if (retries === maxRetries) {
-			throw new Error("Failed to start toolserver after multiple retries");
-		}
-	}
+        await this.sandbox.process.start({
+            cmd: "sudo service ssh restart",
+        });
 
-	_createShell() {
-		throw new Error("Creating shells for `E2B` workspaces is not allowed.");
-	}
+        await this.sandbox.process.start({
+            cmd: `_SSH_USERNAME=${_ssh_username} _SSH_PASSWORD=${_ssh_password} COMPOSIO_LOGGING_LEVEL=debug composio serve -h '0.0.0.0' -p ${this.port}`,
+        });
 
-	async _upload(action: any) {
-		console.log(`Uploading ${action.slug} actions not supported for JS SDK`);
-	}
+        while ((await this._request("", "get")).status !== 200) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
 
-	async executeAction(action: any, requestData: any) {
-		while (!this.isReady) {
-			await new Promise(resolve => setTimeout(resolve, 200));
-		}
-		// @TODO: isRuntime is not supported from JS SDK at the moment
-		if (action.isRuntime) {
-			await this._upload(action);
-		}
+        await process.wait();
+    }
 
-		const request = await this._request(
-			`/actions/execute/${action.slug}`,
-			"post",
-			{ params: requestData }
-		);
-		const response = request.data;
-		if (!response.error) {
-			return response.data;
-		}
-		throw new Error(`Error while executing ${action.slug}: ${response.error}`);
-	}
-
-	teardown() {
-		this.sandbox?.close();
-	}
+    async teardown(): Promise<void> {
+        if (!this.sandbox) {
+            throw new Error("Sandbox not initialized");
+        }
+        await super.teardown();
+        await this.sandbox.close();
+    }
 }

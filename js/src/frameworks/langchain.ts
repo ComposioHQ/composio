@@ -1,7 +1,7 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import { ExecEnv } from "../utils/workspaceFactory";
+import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { LocalActions } from "../utils/localTools";
 import { ComposioServer } from "../sdk/models/composioServer";
@@ -96,6 +96,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         } = {},
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
+        await this.setup();
         let actions =  (await this.client.actions.list({
             actions: filters.actions?.join(","),
             showAll: true
@@ -129,6 +130,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
+        await this.setup();
+
         const apps =  await this.client.actions.list({
             apps: filters.apps.join(","),
             tags: filters.tags?.join(","),
