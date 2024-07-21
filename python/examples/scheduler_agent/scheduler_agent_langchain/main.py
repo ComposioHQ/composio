@@ -1,6 +1,8 @@
 import os
 import re
 from datetime import datetime
+from dotenv import load_dotenv
+from composio_langchain import Action, ComposioToolSet
 from composio_langchain import ComposioToolSet, Action, App
 from langchain_openai import ChatOpenAI
 from langchain import hub
@@ -28,7 +30,6 @@ timezone = datetime.now().astimezone().tzinfo
 prompt = hub.pull("hwchase17/openai-functions-agent")
 query_agent = create_openai_functions_agent(llm, schedule_tool, prompt)
 agent_executor = AgentExecutor(agent=query_agent, tools=schedule_tool, verbose=True)
-
 
 def extract_sender_email(payload):
     delivered_to_header_found = False

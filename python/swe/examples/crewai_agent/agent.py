@@ -14,9 +14,7 @@ from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 dotenv.load_dotenv()
 
 # Initialize tool.
-openai_client = ChatOpenAI(
-    model="gpt-4o"  # type: ignore
-)
+openai_client = ChatOpenAI(model="gpt-4o")  # type: ignore
 composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
 
 # Get required tools
