@@ -9,6 +9,7 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     """Trigger object."""
 
     GITHUB_COMMIT_EVENT: "Trigger"
+    GITHUB_FOLLOWER_EVENT: "Trigger"
     GITHUB_ISSUE_ADDED_EVENT: "Trigger"
     GITHUB_LABEL_ADDED_EVENT: "Trigger"
     GITHUB_PULL_REQUEST_EVENT: "Trigger"
