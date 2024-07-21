@@ -117,7 +117,7 @@ class FileManager(WithLogger):
         self._recent = self._files[path]
         return self._recent
 
-    def search_word(
+    def grep(
         self,
         word: str,
         pattern: t.Optional[t.Union[str, Path]] = None,

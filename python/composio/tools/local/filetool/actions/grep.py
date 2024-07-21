@@ -78,7 +78,7 @@ class SearchWord(BaseFileAction):
         self, file_manager: FileManager, request_data: SearchWordRequest  # type: ignore
     ) -> SearchWordResponse:
         try:
-            results = file_manager.search_word(
+            results = file_manager.grep(
                 word=request_data.word,
                 pattern=request_data.pattern,
                 recursive=request_data.recursive,

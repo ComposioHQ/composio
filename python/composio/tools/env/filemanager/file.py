@@ -36,10 +36,11 @@ class FileOperationScope(str, Enum):
 class Match(te.TypedDict):
     """Match object."""
 
-    start: int
-    end: int
-    lineno: int
     content: str
+    match: str
+    end: int
+    start: int
+    lineno: int
 
 
 class TextReplacement(te.TypedDict):
@@ -116,7 +117,8 @@ class File(WithLogger):
             end = match.end()
             matches.append(
                 {
-                    "content": match.string[start:end],
+                    "content": match.string,
+                    "match": match.string[start:end],
                     "end": end,
                     "start": start,
                     "lineno": lineno,
@@ -229,7 +231,6 @@ class File(WithLogger):
         :return: Replaced text
         """
         scope = scope or FileOperationScope.FILE
-
         cursor = 0
         buffer = ""
         replaced = ""

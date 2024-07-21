@@ -23,10 +23,12 @@ class EditFileRequest(BaseFileRequest):
     )
     file_path: str = Field(
         default=None,
-        description="""The path to the file that will be edited.
-        If not provided, THE CURRENTLY OPEN FILE will be edited.
-        If provided, the file at the provided path will be OPENED 
-        and edited, changing the opened file.""",
+        description=(
+            "The path to the file that will be edited. If not provided, "
+            "THE CURRENTLY OPEN FILE will be edited. If provided, the "
+            "file at the provided path will be OPENED and edited, changing "
+            "the opened file."
+        ),
     )
 
 
@@ -68,7 +70,9 @@ class EditFile(BaseFileAction):
             if request_data.file_path is None:
                 file = file_manager.recent  # type: ignore
             else:
-                file = file_manager.open(request_data.file_path)  # type: ignore
+                file = file_manager.open(  # type: ignore
+                    path=request_data.file_path,
+                )
             if file is None:
                 return EditFileResponse(
                     error=f"File {request_data.file_path} not found"
