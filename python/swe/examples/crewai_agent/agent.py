@@ -1,14 +1,13 @@
 """CrewAI SWE Agent"""
 
-# isort: skip_file
-
 import os
 
 import dotenv
-from composio_crewai import App, ComposioToolSet, WorkspaceType
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
+
+from composio_crewai import App, ComposioToolSet, WorkspaceType
 
 
 # Load environment variables from .env
