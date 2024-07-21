@@ -30,7 +30,7 @@ email_assistant = Agent(
     Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.""",
     verbose=True,
     llm=llm,
-    tools=schedule_tool,
+    tools=[schedule_tool],
     allow_delegation=False,
 )
 
@@ -88,7 +88,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         should describe what the meeting is about""",
         expected_output="emails was drafted",
         agent=email_assistant,
-        tools=email_tool,
+        tools=[email_tool],
         context=[analyze_email_task],
     )
 
