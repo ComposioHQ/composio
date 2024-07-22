@@ -4,11 +4,8 @@ import {
   AiTextGenerationToolInput,
   // @ts-ignore
 } from "@cloudflare/workers-types";
-import { GetListActionsResponse } from "../sdk/client";
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { LocalActions } from "../utils/localTools";
-import { ComposioServer } from "../sdk/models/composioServer";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
