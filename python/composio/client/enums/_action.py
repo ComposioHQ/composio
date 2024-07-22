@@ -1,6 +1,9 @@
 """
 Action enums.
 """
+
+# pylint: disable=too-many-public-methods
+
 import typing as t
 
 import typing_extensions as te
@@ -21,10 +24,7 @@ class SentinalObject:
 
 
 @enum
-class Action(  # pylint: disable=too-many-public-methods
-    _AnnotatedEnum[ActionData],
-    path=ACTIONS_CACHE,
-):
+class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     """Class to represent `Action` entity."""
 
     APIFY_CREATE_APIFY_ACTOR: "Action"
@@ -3246,8 +3246,6 @@ class Action(  # pylint: disable=too-many-public-methods
     TASKADE_RETRIEVE_PROJECT_TASKS_WITH_PAGINATION_OPTIONS: "Action"
     TASKADE_RETRIEVE_USER_S_WORKSPACES: "Action"
     TAVILY_TAVILY_SEARCH: "Action"
-    TEST_ASANA_CREATE_SUBTASK: "Action"
-    TEST_ASANA_GET_SUBTASKS: "Action"
     TRELLO_ADD_BOARDS: "Action"
     TRELLO_ADD_BOARDS_CALENDAR_KEY_GENERATE_BY_ID_BOARD: "Action"
     TRELLO_ADD_BOARDS_CHECKLISTS_BY_ID_BOARD: "Action"

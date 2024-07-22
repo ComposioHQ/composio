@@ -342,8 +342,17 @@ def _update_annotations(
         node.body = node.body[:1] + annotations + _deprecated + body
         break
 
+    code = ast.unparse(tree)
+    code = code.replace(
+        "@classmethod",
+        "@classmethod  # type: ignore",
+    )
+    code = code.replace(
+        "import typing as t",
+        "\n# pylint: disable=too-many-public-methods\n\nimport typing as t",
+    )
     with file.open("w", encoding="utf-8") as fp:
-        fp.write(ast.unparse(tree))
+        fp.write(code)
     console.print(f"[green]✔ {cls.__name__}s updated[/green]")
 
 

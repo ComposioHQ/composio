@@ -102,14 +102,17 @@ class WorkspaceFactory:
     @classmethod
     def teardown(cls) -> None:
         """Teardown the workspace factory."""
+        if len(cls._workspaces) == 0:
+            return
+
+        logger = get_logger(name="atexit")
+        logger.debug("Tearing down workspace factory")
         for workspace in cls._workspaces.values():
-            get_logger(name="factory").debug("Tearing down %s", workspace)
+            logger.debug("Tearing down %s", workspace)
             workspace.teardown()
 
 
 @atexit.register
 def _teardown() -> None:
     """Teardown the workspace factory at exit."""
-    logger = get_logger(name="atexit")
-    logger.debug("Tearing down workspace factory")
     WorkspaceFactory.teardown()
