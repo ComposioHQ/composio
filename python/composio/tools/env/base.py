@@ -109,6 +109,9 @@ class ShellFactory(WithLogger):
 
     def get(self, id: t.Optional[str] = None) -> Shell:
         """Get shell instance."""
+        if self.recent is None:
+            print("Recent workspace is none")
+        return self.recent
         if id is None or id == "":
             return self.recent
         if id not in self._shells:

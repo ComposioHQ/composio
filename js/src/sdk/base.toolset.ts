@@ -68,9 +68,11 @@ export class ComposioToolSet {
         )
         this.workspaceEnv = workspaceEnv;
 
-        process.on("exit", async () => {
-            await this.workspace.workspace?.teardown();
-        });
+        if (typeof process !== 'undefined') {
+            process.on("exit", async () => {
+                await this.workspace.workspace?.teardown();
+            });
+        }
     }
 
     async setup() {
