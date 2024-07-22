@@ -167,14 +167,14 @@ def create_app() -> FastAPI:
     def _get_actions_by_name(name: str) -> ActionModel:
         """Get list of all available apps."""
         return get_context().client.actions.get(actions=[name])[0]
-    
-    @app.get("/api/local_actions")
+
+    @app.get("/api/local_actions", response_model=APIResponse[t.List[ActionModel]])
     @with_exception_handling
-    def _get_local_actions() -> t.List[t.Dict]:
+    def _get_local_actions() -> t.List[ActionModel]:
         """Get list of all available actions."""
-        local_actions = [action.slug for action in Action.all() if action.is_local]
-        actions = get_context().toolset.get_action_schemas(actions=local_actions)
-        return APIResponse[t.List[t.Dict]](data=actions)
+        return get_context().toolset.get_action_schemas(
+            actions=[action.slug for action in Action.all() if action.is_local]
+        )
 
     @app.get("/api/enums/actions", response_model=APIResponse[t.List[str]])
     @with_exception_handling
