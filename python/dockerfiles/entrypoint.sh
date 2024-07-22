@@ -15,6 +15,7 @@ export _SSH_PASSWORD=$(uuid)
 
 # Setup user
 sudo useradd -rm -d /home/$_SSH_USERNAME -s /bin/bash -g root -G sudo -u 1000 $_SSH_USERNAME
+cd /home/$_SSH_USERNAME
 
 # Setup password
 echo $_SSH_USERNAME:$_SSH_PASSWORD | sudo chpasswd
