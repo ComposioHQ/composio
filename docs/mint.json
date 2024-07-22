@@ -213,7 +213,10 @@
       {
         "group":"Javascript Guides",
         "pages":[
-          "guides/javascript/interpreter-agent"
+          "guides/javascript/calendar-agent",
+          "guides/javascript/code-execution-agent",
+          "guides/javascript/rag_agent",
+          "guides/javascript/investment-analyst"
         ]
       }
         ]
