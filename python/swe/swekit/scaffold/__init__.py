@@ -1,6 +1,6 @@
 """Scaffolding Utilities."""
 
-from ._scaffold import AgenticFramework, AgentType, scaffold
+from ._scaffold import AgentType, AgenticFramework, scaffold
 
 
 __all__ = (

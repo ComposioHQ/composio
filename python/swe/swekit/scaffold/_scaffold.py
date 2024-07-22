@@ -7,11 +7,13 @@ from pathlib import Path
 from swekit.exceptions import SWEKitError
 from swekit.scaffold.templates import PATH as TEMPLATES_PATH
 
+
 class AgentType(Enum):
     """Agent type."""
 
     SWE = "swe"
     PR_REVIEW = "pr_review"
+
 
 class AgenticFramework(Enum):
     """Agent framework name."""
@@ -24,14 +26,15 @@ class AgenticFramework(Enum):
         if agent_type == AgentType.SWE:
             return {
                 file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
-            for file in (TEMPLATES_PATH / self.value).glob("*.template")
-        }
+                for file in (TEMPLATES_PATH / self.value).glob("*.template")
+            }
         elif agent_type == AgentType.PR_REVIEW:
             return {
                 file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
-            for file in (TEMPLATES_PATH / "pr_review" / self.value).glob("*.template")
-        }
-
+                for file in (TEMPLATES_PATH / "pr_review" / self.value).glob(
+                    "*.template"
+                )
+            }
 
 
 def scaffold(

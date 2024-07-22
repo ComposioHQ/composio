@@ -8,7 +8,7 @@ import click
 from composio.cli.utils.params import EnumParam, PathParam
 
 from swekit.exceptions import SWEKitError
-from swekit.scaffold import AgenticFramework, scaffold, AgentType
+from swekit.scaffold import AgentType, AgenticFramework, scaffold
 
 
 @click.group(name="swekit")
@@ -55,7 +55,6 @@ def _scaffold(
         click.echo(f"🤖 Scaffolded agent @ {output}")
     except SWEKitError as e:
         raise click.ClickException(str(e)) from e
-
 
 
 if __name__ == "__main__":
