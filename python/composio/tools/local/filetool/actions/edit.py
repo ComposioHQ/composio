@@ -81,7 +81,7 @@ class EditFile(BaseFileAction):
     def execute_on_file_manager(
         self,
         file_manager: FileManager,
-        request_data: EditFileRequest,
+        request_data: EditFileRequest,  # type: ignore
     ) -> EditFileResponse:
         try:
             file = (

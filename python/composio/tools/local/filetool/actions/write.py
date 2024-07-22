@@ -52,7 +52,7 @@ class Write(BaseFileAction):
     def execute_on_file_manager(
         self,
         file_manager: FileManager,
-        request_data: WriteRequest,
+        request_data: WriteRequest,  # type: ignore
     ) -> WriteResponse:
         try:
             (

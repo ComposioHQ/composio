@@ -15,7 +15,7 @@ from composio.tools.local.shelltool.file_cmds import FileEditTool
 from composio.tools.local.shelltool.find_cmds import SearchTool
 from composio.tools.local.shelltool.git_cmds import GitCmdTool
 from composio.tools.local.shelltool.history_keeper import HistoryFetcherTool
-from composio.tools.local.shelltool.shell_exec import ShellExec
+from composio.tools.local.shelltool.shell_exec import ShellTool
 from composio.tools.local.spidertool import SpiderTool
 from composio.tools.local.sqltool import SqlTool
 from composio.tools.local.webtool import WebTool
@@ -38,7 +38,7 @@ TOOLS = [
     SearchTool,
     GitCmdTool,
     HistoryFetcherTool,
-    ShellExec,
+    ShellTool,
     SpiderTool,
     SqlTool,
     WebTool,
