@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Sandbox } from "@e2b/sdk";
 import { RemoteWorkspace, WorkspaceConfig } from "../base";
+import { getEnvVariable } from "../../utils/shared";
 
 const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
 const TOOLSERVER_PORT = 8000;
@@ -22,7 +23,7 @@ export class E2BWorkspace extends RemoteWorkspace {
 
     constructor(config: Config) {
         super(config);
-        this.template = config.template || process.env[ENV_E2B_TEMPLATE] || DEFAULT_TEMPLATE;
+        this.template = config.template || getEnvVariable(ENV_E2B_TEMPLATE, DEFAULT_TEMPLATE)!;
         this.api_key = config.api_key;
         this.port = config.port || TOOLSERVER_PORT;
     }

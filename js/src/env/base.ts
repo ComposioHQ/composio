@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosResponse } from "axios";
 import { EventEmitter } from "events";
 import { IPythonActionDetails } from "../sdk/types";
+import { getEnvVariable } from "../utils/shared";
 
 const ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN";
 const ENV_ACCESS_TOKEN = "ACCESS_TOKEN";
@@ -9,7 +10,7 @@ const ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY";
 const ENV_COMPOSIO_BASE_URL = "COMPOSIO_BASE_URL";
 
 function _readEnvVar(name: string, defaultValue: string | null): string {
-    const value = process.env[name] || defaultValue;
+    const value = getEnvVariable(name, defaultValue!) || defaultValue;
     if (value === undefined) {
         throw new Error(`Please provide value for \`${name}\``);
     }
@@ -135,7 +136,7 @@ export class Workspace {
         this.accessToken = uuidv4().replace(/-/g, "");
         this.composioAPIKey = _readEnvVar(ENV_COMPOSIO_API_KEY, config.composioAPIKey!);
         this.composioBaseURL = _readEnvVar(ENV_COMPOSIO_BASE_URL, config.composioBaseURL!);
-        this.githubAccessToken = config.githubAccessToken || process.env[ENV_GITHUB_ACCESS_TOKEN] || "NO_VALUE";
+        this.githubAccessToken = config.githubAccessToken || getEnvVariable(ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE")!;
         this.environment = {
             ...config.environment,
             [ENV_COMPOSIO_API_KEY]: this.composioAPIKey,

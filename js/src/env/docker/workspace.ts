@@ -5,6 +5,7 @@ import path from "path";
 import { promises as fs } from "fs";
 import { RemoteWorkspace, WorkspaceConfig } from "../base";
 import cliProgress from "cli-progress";
+import { getEnvVariable } from "../../utils/shared";
 
 const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
 const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
@@ -37,7 +38,7 @@ export class DockerWorkspace extends RemoteWorkspace {
         super(kwargs);
         this.docker = new Docker();
         this.id = `composio-${uuidv4()}`;
-        this.image = process.env[ENV_COMPOSIO_SWE_AGENT] || DEFAULT_IMAGE;
+        this.image = getEnvVariable(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)!;
     }
 
     async setup() {
@@ -124,7 +125,7 @@ export class DockerWorkspace extends RemoteWorkspace {
                 },
                 Env: [
                     ...Object.entries(this.environment).map(([key, value]) => `${key}=${value}`),
-                    `${ENV_COMPOSIO_DEV_MODE}=${process.env[ENV_COMPOSIO_DEV_MODE] || "0"}`,
+                    `${ENV_COMPOSIO_DEV_MODE}=${getEnvVariable(ENV_COMPOSIO_DEV_MODE, "0")}`,
                 ],
             };
 
