@@ -213,7 +213,9 @@
       {
         "group":"Javascript Guides",
         "pages":[
-          "guides/javascript/interpreter-agent"
+          "guides/javascript/code-execution-agent",
+          "guides/javascript/sql-agent",
+          "guides/javascript/calendar-agent"
         ]
       }
         ]
