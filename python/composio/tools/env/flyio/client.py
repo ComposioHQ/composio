@@ -85,8 +85,8 @@ class PortRequest(te.TypedDict):
     internal_port: int
     """Internal port number (Port 8000 is reserved for the tooling server)."""
 
-    protocol: str
-    """List of protocol handlers (`tcp` will be used if not provided)."""
+    protocol: t.Literal["tcp", "udp"]
+    """List of protocol handlers."""
 
 
 class FlyIO(WithLogger):

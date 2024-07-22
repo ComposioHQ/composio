@@ -214,7 +214,11 @@ class File(WithLogger):
                 cursor += 1
         return buffer
 
-    def write(
+    def write(self, text: str) -> None:
+        """Write the given content to the file."""
+        self.path.write_text(text)
+
+    def edit(
         self,
         text: str,
         start: int,
@@ -295,7 +299,7 @@ class File(WithLogger):
     def write_and_run_lint(self, text: str, start: int, end: int) -> str:
         """Write and run lint on the file. If linting fails, revert the changes."""
         older_file_text = self.path.read_text(encoding="utf-8")
-        self.write(text=text, start=start, end=end)
+        self.edit(text=text, start=start, end=end)
         lint_output = self.run_lint()
         if lint_output:
             self.path.write_text(older_file_text, encoding="utf-8")

@@ -204,6 +204,9 @@ class WorkspaceConfigType:
     environment: t.Optional[t.Dict[str, str]] = None
     """Environment config for workspace."""
 
+    persistent: bool = False
+    """Set `True` to make this workspace persistent."""
+
 
 class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
@@ -245,6 +248,7 @@ class Workspace(WithLogger, ABC):
             f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
             ENV_ACCESS_TOKEN: self.access_token,
         }
+        self.persistent = config.persistent
 
     def __str__(self) -> str:
         """String representation."""
