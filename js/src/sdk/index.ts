@@ -7,6 +7,7 @@ import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
 import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
 import { getEnvVariable } from '../utils/shared';
+import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
 
 export class Composio {
     public apiKey: string;
@@ -71,7 +72,7 @@ export class Composio {
     }
 
     static getApiUrlBase(): string {
-        return getEnvVariable("COMPOSIO_BASE_URL", 'https://backend.composio.dev/api') as string;
+        return getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) as string;
     }
 
     static async generateAuthKey(baseUrl?: string): Promise<string> {
