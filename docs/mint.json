@@ -294,6 +294,10 @@
     {
       "source": "/apps/:slug2*",
       "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps",
+      "destination": "https://composio.dev/tools/"
     }
   ]
 }
