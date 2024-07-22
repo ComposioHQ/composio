@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
-import { Sandbox } from "@e2b/sdk";
 import { RemoteWorkspace, WorkspaceConfig } from "../base";
-import { getEnvVariable } from "../../utils/shared";
+import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
+import type {Sandbox} from "@e2b/sdk";
 
 const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
 const TOOLSERVER_PORT = 8000;
@@ -29,34 +29,35 @@ export class E2BWorkspace extends RemoteWorkspace {
     }
 
     async setup(): Promise<void> {
+        const { Sandbox } = nodeExternalRequire("@e2b/sdk");
         this.sandbox = new Sandbox({
             template: this.template,
             envVars: this.environment,
             apiKey: this.api_key,
         });
 
-        this.url = TOOLSERVER_URL.replace("{host}", await this.sandbox.getHostname(this.port));
+        this.url = TOOLSERVER_URL.replace("{host}", await this.sandbox!.getHostname(this.port));
 
-        const process = await this.sandbox.process.start({
+        const process = await this.sandbox!.process.start({
             cmd: "composio apps update",
         });
 
         const _ssh_username = uuidv4().replace(/-/g, "");
         const _ssh_password = uuidv4().replace(/-/g, "");
 
-        await this.sandbox.process.start({
+        await this.sandbox!.process.start({
             cmd: `sudo useradd -rm -d /home/${_ssh_username} -s /bin/bash -g root -G sudo ${_ssh_username}`,
         });
 
-        await this.sandbox.process.start({
+        await this.sandbox!.process.start({
             cmd: `echo ${_ssh_username}:${_ssh_password} | sudo chpasswd`,
         });
 
-        await this.sandbox.process.start({
+        await this.sandbox!.process.start({
             cmd: "sudo service ssh restart",
         });
 
-        await this.sandbox.process.start({
+        await this.sandbox!.process.start({
             cmd: `_SSH_USERNAME=${_ssh_username} _SSH_PASSWORD=${_ssh_password} COMPOSIO_LOGGING_LEVEL=debug composio serve -h '0.0.0.0' -p ${this.port}`,
         });
 
