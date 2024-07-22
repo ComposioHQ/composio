@@ -8,7 +8,7 @@
   - [Dependencies](#dependencies)
   - [Getting Started](#getting-started)
     - [Creating a new agent](#creating-a-new-agent)
-    - [Docker Environment](#docker-environment)
+    - [Workspace Environment](#workspace-environment)
     - [Running the Benchmark](#running-the-benchmark)
 
 ## Overview
@@ -67,11 +67,92 @@ Before getting started, ensure you have the following set up:
    ```
    You'll be prompted for the repository name and issue.
 
-### Docker Environment
+### Workspace Environment
 
 The SWE-agent runs in Docker by default for security and isolation. This sandboxes the agent's operations, protecting against unintended consequences of arbitrary code execution.
 
-To run locally instead, modify `workspace_env` in `agent/agent.py`. Use caution, as this bypasses Docker's protective layer.
+The composio toolset has support for different types of workspaces.
+
+1. Host - This will run on the host machine.
+
+```python
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Host()
+)
+```
+
+2. Docker - This will run inside a docker container
+
+```python
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker()
+)
+```
+
+On the docker container you can configure and expose the port for development
+as per your requirements. You can also use `workspace.as_prompt()` method to
+generate a workspace description for setting up your agent.
+
+```python
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker(
+        ports={
+            8001: 8001,
+        }
+    )
+)
+```
+
+You can read more about configuring docker ports [here](https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run).
+
+3. E2B - This will run inside a E2B Sandbox
+
+```python
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.E2B(),
+)
+```
+
+4. FlyIO - This will run inside a FlyIO machine
+
+```python
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.FlyIO(),
+)
+```
+
+FlyIO also allows for configuring ports for development/deployment.
+
+```python
+from composio import ComposioToolSet, WorkspaceType
+
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.FlyIO(
+        image="angrybayblade/composio:dev",
+        ports=[
+            {
+                "ports": [
+                    {"port": 443, "handlers": ["tls", "http"]},
+                ],
+                "internal_port": 80,
+                "protocol": "tcp",
+            }
+        ],
+    )
+)
+```
+
+You can read more abour configuring network ports on flyio machine [here](https://fly.io/docs/machines/api/machines-resource/#create-a-machine-with-services)
 
 ### Running the Benchmark
 

@@ -20,6 +20,11 @@ from composio.utils.logging import WithLogger
 ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
 ENV_ACCESS_TOKEN = "ACCESS_TOKEN"
 
+WORKSPACE_PROMPT = """You have access to a workspace with open {ports} network
+ports being available publicly and hostname to reach this machine is {host}, 
+you can use this for development and deployment purposes.
+"""
+
 
 def _read_env_var(name: str, default: t.Any) -> str:
     """Read environment variable."""
@@ -204,11 +209,24 @@ class WorkspaceConfigType:
     environment: t.Optional[t.Dict[str, str]] = None
     """Environment config for workspace."""
 
+    persistent: bool = False
+    """Set `True` to make this workspace persistent."""
+
 
 class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
 
+    url: str
+    """URL for the tooling server (Only applicable for remote workspace)."""
+
+    host: str
+    """Host string for the workspace."""
+
+    ports: t.List[int]
+    """List of available ports on the workspace, if empty all of the ports are available."""
+
     _shell_factory: t.Optional[ShellFactory] = None
+
     _file_manager_factory: t.Optional[FileManagerFactory] = None
 
     def __init__(self, config: WorkspaceConfigType):
@@ -235,12 +253,17 @@ class Workspace(WithLogger, ABC):
             f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
             ENV_ACCESS_TOKEN: self.access_token,
         }
+        self.persistent = config.persistent
 
     def __str__(self) -> str:
         """String representation."""
         return f"Workspace(type={self.__class__.__name__}, id={self.id})"
 
     __repr__ = __str__
+
+    def as_prompt(self) -> str:
+        """Format current workspace details for the agentic use."""
+        return WORKSPACE_PROMPT.format(ports=self.ports, host=self.host)
 
     @abstractmethod
     def setup(self) -> None:
@@ -288,8 +311,6 @@ class Workspace(WithLogger, ABC):
 
 class RemoteWorkspace(Workspace):
     """Remote workspace client."""
-
-    url: str
 
     def _request(
         self,

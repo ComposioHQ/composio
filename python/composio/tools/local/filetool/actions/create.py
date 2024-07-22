@@ -30,8 +30,13 @@ class CreateFileRequest(BaseFileRequest):
 class CreateFileResponse(BaseFileResponse):
     """Response to create a file."""
 
+    file: str = Field(
+        default=None,
+        description="Path the created file.",
+    )
     success: bool = Field(
-        default=False, description="Whether the file was created successfully"
+        default=False,
+        description="Whether the file was created successfully",
     )
 
 
@@ -58,8 +63,14 @@ class CreateFile(BaseFileAction):
         self, file_manager: FileManager, request_data: CreateFileRequest  # type: ignore
     ) -> CreateFileResponse:
         try:
-            file_manager.create(request_data.file_path)  # type: ignore
-            return CreateFileResponse(success=True)
+            return CreateFileResponse(
+                file=str(
+                    file_manager.create(
+                        path=request_data.file_path,
+                    ).path
+                ),
+                success=True,
+            )
         except FileExistsError as e:
             return CreateFileResponse(error=f"File already exists: {str(e)}")
         except PermissionError as e:

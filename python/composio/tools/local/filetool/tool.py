@@ -15,6 +15,7 @@ from .actions import (
     OpenFile,
     Scroll,
     SearchWord,
+    Write,
 )
 
 
@@ -31,6 +32,7 @@ class FileTool(Tool):
             ListFiles,
             SearchWord,
             FindFile,
+            Write,
             ChangeWorkingDirectory,
         ]
 

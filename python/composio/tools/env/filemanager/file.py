@@ -19,11 +19,11 @@ SCOPE_FILE = "file"
 SCOPE_WINDOW = "window"
 
 
-class ScrollDirection(Enum):
+class ScrollDirection(str, Enum):
     UP = "up"
     DOWN = "down"
 
-    def __mul__(self, lines: int) -> int:
+    def offset(self, lines: int) -> int:
         """Multiply the window by scroll direction."""
         return lines * (-1 if self.value == "up" else 1)
 
@@ -92,7 +92,7 @@ class File(WithLogger):
         :return: None
         """
         direction = direction or ScrollDirection.DOWN
-        lines = direction * (lines or self._window)
+        lines = direction.offset(lines or self._window)
         self._start += lines
         self._end += lines
 
@@ -214,11 +214,15 @@ class File(WithLogger):
                 cursor += 1
         return buffer
 
+    def write(self, text: str) -> None:
+        """Write the given content to the file."""
+        self.path.write_text(text)
+
     def total_lines(self) -> int:
         """Total number of lines in the file."""
         return sum(1 for _ in self._iter_file())
 
-    def write(
+    def edit(
         self,
         text: str,
         start: int,
@@ -263,7 +267,7 @@ class File(WithLogger):
         self.path.write_text(data=buffer, encoding="utf-8")
         return {"replaced_text": replaced, "replaced_with": text}
 
-    def run_lint(self) -> str:
+    def lint(self) -> str:
         """Run lint on the file."""
         if self.path.suffix == ".py":
             venv_python = sys.executable
@@ -296,56 +300,14 @@ class File(WithLogger):
             return formatted_output.strip()
         return ""
 
-    # def lint_code(self, temp_name, code, prev_code="") -> tuple[bool, set, set]:
-
-    #     # lint the code
-    #     # check for fatal errors
-    #     fatal = "E9,F821,F823,F831,F406,F407,F701,F702,F704,F706"
-    #     o = subprocess.run(
-    #         f"flake8 --select={fatal} --isolated {repo_playground}/{temp_name}",
-    #         shell=True,
-    #         capture_output=True,
-    #     )
-    #     s = o.stdout.decode("utf-8")
-
-    #     prev_errors = set()
-    #     if s != "":
-    #         for error in s.split(f"{repo_playground}/{temp_name}:")[1:]:
-    #             num_free_error = ":".join(error.split(":")[2:]).strip()
-    #             prev_errors.add(num_free_error)
-
-    #     with open(f"{repo_playground}/{temp_name}", "w") as f:
-    #         f.write(code)
-
-    #     o = subprocess.run(
-    #         f"flake8 --select={fatal} --isolated {repo_playground}/{temp_name}",
-    #         shell=True,
-    #         capture_output=True,
-    #     )
-    #     s = o.stdout.decode("utf-8")
-
-    #     # remove playground
-    #     subprocess.run(f"rm -rf {repo_playground}", shell=True)
-
-    #     errors = set()
-    #     if s != "":
-    #         for error in s.split(f"{repo_playground}/{temp_name}:")[1:]:
-    #             num_free_error = ":".join(error.split(":")[2:]).strip()
-    #             errors.add(num_free_error)
-
-    #     if len(errors - prev_errors) > 0:
-    #         return False, prev_errors, errors
-
-    #     return True, set(), set()
-
     def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:
         """Write and run lint on the file. If linting fails, revert the changes."""
         older_file_text = self.path.read_text(encoding="utf-8")
-        write_response = self.write(text=text, start=start, end=end)
+        write_response = self.edit(text=text, start=start, end=end)
         if write_response.get("error"):
             self.path.write_text(data=older_file_text, encoding="utf-8")
             return write_response
-        lint_output = self.run_lint()
+        lint_output = self.lint()
         if lint_output:
             self.path.write_text(data=older_file_text, encoding="utf-8")
             return {

@@ -67,6 +67,9 @@ class HostWorkspace(Workspace):
         # TODO: Make this configurable
         self._working_dir = None
 
+        self.ports = []
+        self.host = "localhost"
+
     def setup(self) -> None:
         """Setup workspace."""
         try:
