@@ -1,0 +1,100 @@
+---
+title: "SWE Development Kit"
+sidebarTitle: "Introduction"
+icon: "code"
+description: "Build and benchmark Software Engineering agents with Composio's tooling ecosystem"
+---
+
+## Overview
+
+SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. 
+It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell Manager, and more.
+
+## Key Features
+
+- **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like CrewAI, LlamaIndex, and more.
+- **Flexible Workspace Environments**: Run your agents in various environments including Docker, E2B, and FlyIO for security and isolation.
+- **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
+- **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
+
+
+## Getting Started
+
+<Steps>
+<Step title="Installation">
+  Install the core packages:
+  <CodeGroup>
+  ```bash Installing SweKit
+  pip install swekit composio-core
+  ```
+  </CodeGroup>
+  
+  Install additional packages for your chosen framework (e.g., CrewAI):
+  <CodeGroup>
+  ```bash Installing CrewAI and Composio CrewAI Plugin
+  pip install crewai composio-crewai
+  ```
+  </CodeGroup>
+</Step>
+
+<Step title="Connect your Github Account">
+  In Case, you want to use Github Issues as a source of tasks, you need to connect your Github account.
+  <Tabs>
+  <Tab title="Composio CLI">
+  <CodeGroup>
+  ```bash Use Composio CLI
+  composio add github
+  ```
+  </CodeGroup>
+  </Tab>
+  <Tab title="Locally using Github Auth Token">
+  <CodeGroup>
+  ```bash Use Github Auth Token
+  export GITHUB_ACCESS_TOKEN=<your_token>
+  ```
+  </CodeGroup>
+  </Tab>
+  </Tabs>
+</Step>
+
+<Step title="Create a New Agent">
+  Scaffold your agent:
+  <CodeGroup>
+  ```bash Create a new Folder with basic SWE agent code
+  swekit scaffold crewai -o <path>
+  ```
+  </CodeGroup>
+  
+  This creates a new agent in `<path>/agent` with key files:
+  - `main.py`: Entry point to run the agent
+  - `agent.py`: Agent definition
+  - `prompts.py`: Agent prompts
+  - `benchmark.py`: SWE-Bench benchmark runner
+</Step>
+
+<Step title="Run the Agent">
+  Navigate to the agent directory and run:
+  <CodeGroup>
+  ```bash Run the agent
+  cd <path>/agent
+  python main.py
+  ```
+  </CodeGroup>
+  
+  You'll be prompted for the repository name and issue to work on.
+</Step>
+</Steps>
+
+## Next Steps
+
+- Explore different workspace environments
+- Learn how to run benchmarks
+- Customize your agent's behavior
+
+For more detailed information on these topics, check out the following sections.
+
+#### Other Sections
+
+- Workspace Environments
+- Running the Benchmark
+- Development Guide

@@ -63,7 +63,6 @@
       "name": "Guides",
       "url": "patterns"
     },
-
     {
       "name": "Examples",
       "url": "guides"
@@ -99,7 +98,6 @@
     },
     {
       "group": "Python",
-
       "pages": [
         {
           "group": "With Frameworks",
@@ -156,6 +154,14 @@
         "javascript/trigger"
       ]
     }
+      ]
+    },
+    {
+      "group": "SweKit",
+      "pages": [
+        "swekit/introduction",
+        "swekit/workspace-env",
+        "swekit/benchmarks"
       ]
     },
     {
