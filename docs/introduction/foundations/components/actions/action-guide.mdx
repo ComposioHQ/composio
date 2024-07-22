@@ -99,8 +99,6 @@ dotenv.config();
 
 import { OpenAIToolSet } from "composio-core";
 
-
-
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
@@ -186,19 +184,19 @@ dotenv.config();
 
 import { OpenAIToolSet } from "composio-core";
 
-
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-toolset.execute_action({
-    action: 'slack_chat_post_message',
-    params: {
+const entity = await composio_client.getEntity('user_email_id');
+toolset.execute_action(
+   'slack_chat_post_message',
+    {
         text: 'Hello, world!',
         channel: 'D04N8SVQKKU'
     },
-    entity_id: 'melissa'
-});
+   entity.id
+);
 ```
 
 </CodeGroup>
