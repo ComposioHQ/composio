@@ -39,8 +39,10 @@ export type OpenAPIConfig = {
 	};
 };
 
+export const COMPOSIO_BASE_URL = "https://backend.composio.dev/api";
+
 export const OpenAPI: OpenAPIConfig = {
-	BASE: 'https://backend.composio.dev/api',
+	BASE: COMPOSIO_BASE_URL,
 	CREDENTIALS: 'include',
 	ENCODE_PATH: undefined,
 	HEADERS: undefined,
@@ -54,5 +56,3 @@ export const OpenAPI: OpenAPIConfig = {
 		response: new Interceptors(),
 	},
 };
-
-export const COMPOSIO_BASE_URL = "https://backend.composio.dev/api";
