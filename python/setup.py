@@ -34,7 +34,7 @@ def scan_for_package_data(
 
 setup(
     name="composio_core",
-    version="0.3.23",
+    version="0.3.25",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

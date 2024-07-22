@@ -8,20 +8,20 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI api key:")
-    os.environ["OPENAI_API_KEY"] = api_key
 
-bot_id = os.getenv("SLACK_BOT_ID","")
-if(bot_id==""):
-    bot_id=input("Enter Slack Bot id on your slack, check the readme to know how to find the bot id:")
+bot_id = os.getenv("SLACK_BOT_ID", "")
+if bot_id == "":
+    bot_id = input(
+        "Enter Slack Bot id on your slack, check the readme to know how to find the bot id:"
+    )
     os.environ["SLACK_BOT_ID"] = bot_id
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
 # Bot configuration constants
-BOT_USER_ID = os.environ['SLACK_BOT_ID']  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
+BOT_USER_ID = os.environ[
+    "SLACK_BOT_ID"
+]  # Bot ID for Composio. Replace with your own bot member ID, once bot joins the channel.
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
@@ -70,7 +70,9 @@ def callback_new_message(event: TriggerEventData) -> None:
     # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
-        return f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        return (
+            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        )
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")

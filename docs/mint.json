@@ -1,5 +1,6 @@
 {
   "name": "Composio",
+  "theme": "venus",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
@@ -10,12 +11,13 @@
   "favicon": "/favicon1.png",
   "colors": {
     "primary": "#343434",
-    "light": "#34AAFF",
-    "dark": "#355cff",
-    "ultraLight": "#E4DAFF",
-    "ultraDark": "#270A7A",
+    "light": "#fff",
+    "dark": "#9a4dff",
+    "ultraLight": "#9a4dff",
+    "ultraDark": "#9a4dff",
     "background": {
-      "dark": "#0b0b0d"
+      "dark": "#181818",
+      "light": "#fafafa"
     }
   },
   "seo": {
@@ -58,11 +60,6 @@
   },
   "tabs": [
     {
-      "name": "SDK",
-      "url": "sdk"
-    },
-
-    {
       "name": "Guides",
       "url": "patterns"
     },
@@ -76,15 +73,18 @@
       "url": "api-reference"
     }
   ],
-  "anchors": [],
+  "anchors": [
+  ],
   "navigation": [
     {
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-                {
+        "introduction/intro/quickstart",
+        {
           "group": "Core Concepts",
           "pages": [
+             "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/basic",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/entity/entity-guide",
@@ -101,7 +101,6 @@
       "group": "Python",
 
       "pages": [
-        "introduction/intro/quickstart",
         {
           "group": "With Frameworks",
           "icon": "code",
@@ -123,12 +122,12 @@
 
             {
       "group": "More",
-                "icon": "circle",
+      "icon": "circle",
       "pages": [
-        "introduction/python/trigger",
         "python/introduction",
         "python/configuration",
         "python/actions",
+        "python/trigger",
         "python/local_tools"
       ]
     }
@@ -137,34 +136,30 @@
             {
       "group": "Javascript",
       "pages": [
-       "javascript/introduction",
+       "javascript/openai",
         {
           "group": "With frameworks",
           "icon": "code",
           "iconType": "solid",
           "pages": [
-              
         "javascript/langchain",
-        "javascript/openai",
         "javascript/cloudflare"
           ]
         },
-                    {
+        {
       "group": "More",
-                "icon": "circle",
+      "icon": "circle",
       "pages": [
-        "javascript/trigger",
+        "javascript/account",
         "javascript/entity",
         "javascript/action",
-        "javascript/account"
+        "javascript/trigger"
       ]
     }
       ]
     },
-
-
     {
-      "group": "CLI API",
+      "group": "CLI",
       "pages": [
         "sdk/cli/install",
         "sdk/cli/account",
@@ -172,7 +167,7 @@
         "sdk/cli/actions"
       ]
     },
-    {
+     {
       "group": "Guides",
       "pages": [
       {
@@ -197,7 +192,7 @@
         ]
       }
     ]
-    }, 
+    },
     {
       "group": "Examples",
       "pages": [
@@ -208,7 +203,6 @@
             "guides/python/investment-analyst",
             "guides/python/research-assistant",
             "guides/python/sql-agent",
-            "guides/python/commit-agent",
             "guides/python/competitor-researcher",
             "guides/python/rag_agent",
             "guides/python/interpreter_agent",
@@ -303,6 +297,10 @@
     {
       "source": "/apps/:slug2*",
       "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps",
+      "destination": "https://composio.dev/tools/"
     }
   ]
 }

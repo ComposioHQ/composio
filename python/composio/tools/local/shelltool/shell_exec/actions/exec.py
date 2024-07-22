@@ -47,7 +47,7 @@ class ShellExecResponse(BaseModel):
     )
 
     def something(self):
-        print('hello')
+        print("hello")
 
 
 class BaseExecCommand(Action):

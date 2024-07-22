@@ -2,12 +2,11 @@
 
 import os
 import tempfile
-import time
 from pathlib import Path
 
 from composio import Action, ComposioToolSet
 from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
-from composio.tools.env.factory import WorkspaceFactory, WorkspaceType
+from composio.tools.env.factory import WorkspaceType
 from composio.utils.logging import get as get_logger
 
 
