@@ -5,6 +5,10 @@ icon: "gear"
 description: "Get an API key to start using Composio"
 ---
 
+<Note>
+If you're using the Composio CLI, you can easily retrieve your API key by running the following command in your terminal:
+`composio whoami`
+</Note>
 
 #### Login on composio.dev and Get the API Key
 
@@ -15,6 +19,9 @@ description: "Get an API key to start using Composio"
 
 
 Keep the API key in a secure location, it will be used to authenticate your requests to the Composio API.
+<Warning>
+If you are using the CLI, you don't need to manually set the API key as the CLI manages authentication automatically.
+</Warning>
 
 #### Export to your environment
 
@@ -22,4 +29,4 @@ Keep the API key in a secure location, it will be used to authenticate your requ
 export COMPOSIO_API_KEY="your_api_key"
 ```
 
-or you can also pass it while invoking composio toolset or client
+or you can also pass it while invoking composio toolset or client. 

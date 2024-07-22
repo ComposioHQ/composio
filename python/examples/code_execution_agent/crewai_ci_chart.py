@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 llm = ChatOpenAI(model="gpt-4-turbo")
 
 while True:
-    main_task = input("Enter the task you want to perform (or type 'exit' to quit): ")
+    main_task = input("Enter any code execution task you want to perform (or type 'exit' to quit): ")
     if main_task.lower() == "exit":
         break
 
