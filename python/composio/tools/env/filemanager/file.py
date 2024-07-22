@@ -23,7 +23,7 @@ class ScrollDirection(str, Enum):
     UP = "up"
     DOWN = "down"
 
-    def __mul__(self, lines: int) -> int:
+    def offset(self, lines: int) -> int:
         """Multiply the window by scroll direction."""
         return lines * (-1 if self.value == "up" else 1)
 
@@ -92,7 +92,7 @@ class File(WithLogger):
         :return: None
         """
         direction = direction or ScrollDirection.DOWN
-        lines = direction * (lines or self._window)
+        lines = direction.offset(lines or self._window)
         self._start += lines
         self._end += lines
 

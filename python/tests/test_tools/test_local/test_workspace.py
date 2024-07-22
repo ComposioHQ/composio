@@ -152,7 +152,7 @@ def test_workspace() -> None:
 
         output_list = toolset.execute_action(
             action=Action.FILETOOL_SEARCH_WORD,
-            params={"word": "BaseFileAction", "pattern": "*.py"},
+            params={"word": "BaseFileAction", "pattern": "*.py", "exclude": [".tox"]},
         )
         logger.info(f"output of search word: {output_list}")
 
@@ -187,7 +187,6 @@ def test_workspace() -> None:
             params={},
         )
         logger.info(f"output of list files: {output_list}")
-        assert False
         output = toolset.execute_action(
             action=Action.FILEEDITTOOL_OPEN_FILE,
             params={"file_name": "README.md"},
