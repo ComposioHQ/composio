@@ -4,8 +4,6 @@ Langchain demo.
 
 # isort: skip_file
 
-import os
-
 import dotenv
 from composio_langchain import Action, ComposioToolSet
 from langchain import hub  # type: ignore
