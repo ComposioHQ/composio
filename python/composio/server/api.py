@@ -5,6 +5,7 @@ API Endpoints.
 # pylint: disable=consider-using-with, subprocess-run-check, unspecified-encoding
 
 import importlib
+import json
 import os
 import subprocess
 import sys
@@ -18,7 +19,7 @@ from pathlib import Path
 
 import typing_extensions as te
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from composio import Action, App
@@ -166,6 +167,14 @@ def create_app() -> FastAPI:
     def _get_actions_by_name(name: str) -> ActionModel:
         """Get list of all available apps."""
         return get_context().client.actions.get(actions=[name])[0]
+    
+    @app.get("/api/local_actions")
+    @with_exception_handling
+    def _get_local_actions() -> t.List[t.Dict]:
+        """Get list of all available actions."""
+        local_actions = [action.slug for action in Action.all() if action.is_local]
+        actions = get_context().toolset.get_action_schemas(actions=local_actions)
+        return APIResponse[t.List[t.Dict]](data=actions)
 
     @app.get("/api/enums/actions", response_model=APIResponse[t.List[str]])
     @with_exception_handling
