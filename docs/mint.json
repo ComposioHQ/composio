@@ -12,11 +12,12 @@
   "colors": {
     "primary": "#343434",
     "light": "#fff",
-    "dark": "#fff",
-    "ultraLight": "#fff",
-    "ultraDark": "#fff",
+    "dark": "#9a4dff",
+    "ultraLight": "#9a4dff",
+    "ultraDark": "#9a4dff",
     "background": {
-      "dark": "#181818"
+      "dark": "#181818",
+      "light": "#fafafa"
     }
   },
   "seo": {
