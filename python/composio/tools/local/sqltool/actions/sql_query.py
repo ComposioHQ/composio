@@ -36,7 +36,7 @@ class SqlQuery(Action):
         # Implement logic to process input and return output
 
         import sqlite3  # pylint: disable=import-outside-toplevel
-        from pathlib import Path # pylint: disable=import-outside-toplevel
+        from pathlib import Path  # pylint: disable=import-outside-toplevel
 
         # Check if the database file exists
         if not Path(request_data.connection_string).exists():
