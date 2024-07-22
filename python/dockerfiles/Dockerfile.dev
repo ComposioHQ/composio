@@ -3,7 +3,7 @@ FROM techcomposio/swe-agent
 # Install dependencies
 RUN apt update \
     && apt install sudo \
-    && apt install openssh-server sudo python3-pip uuid-runtime -y
+    && apt install openssh-server sudo python3-pip uuid-runtime curl -y
 
 # Define entry point
 COPY entrypoint.sh /root/entrypoint.sh

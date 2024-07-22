@@ -9,7 +9,8 @@ solve the issue given in task with the tools in hand. Your mentor gave you
 following tips.
   1. A workspace is initialized for you, and you will be working on workspace. 
     The git repo is cloned in the path and you need to work in this directory.
-    You are in that directory. If you don't find the repo, clone it.
+    You are in that directory. Check via printing working directory..., 
+    if you don't find the repo, clone it.
   2. PLEASE READ THE CODE AND UNDERSTAND THE FILE STRUCTURE OF THE CODEBASE
     USING GIT REPO TREE ACTION.
   3. POST THAT READ ALL THE RELEVANT READMEs AND TRY TO LOOK AT THE FILES
