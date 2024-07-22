@@ -73,12 +73,6 @@
     }
   ],
   "anchors": [
-    {
-      "name": "SWE Kit Guide",
-       "url": "patterns", 
-       "icon": "code",
-       "iconType": "sharp-solid"
-    }
   ],
   "navigation": [
     {
@@ -172,23 +166,6 @@
         "sdk/cli/actions"
       ]
     },
-    {
-      "group": "Build w SWE Kit",
-      "pages": [
-      {
-        "group": "Simple Guide",
-        "pages": [
-         "patterns/swe-kit/getting-started"
-        ]
-      },
-        {
-        "group": "Advanced Guide",
-        "pages": [
-         "patterns/swe-kit/agent-creation"
-        ]
-      }
-    ]
-    }, 
      {
       "group": "Guides",
       "pages": [
