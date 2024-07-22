@@ -3,19 +3,18 @@ import json
 import os
 import typing as t
 from pathlib import Path
-from composio.tools.env.constants import DEFAULT_IMAGE
 
 from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 from composio_crewai import ComposioToolSet
 
 from swekit.benchmark.utils import (
     build_issue_description,
-    check_and_pull_image,
     get_issues_dataset,
     get_score,
     setup_workspace,
@@ -186,10 +185,10 @@ class EvaluationManager(WithLogger):
         ):
             try:
                 repo = issue["repo"]
-                version = issue.get("version")
-                image_name = (
-                    f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
-                )
+                # version = issue.get("version")
+                # image_name = (
+                #     f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
+                # )
                 # if version and check_and_pull_image(image_name):
                 #     self.repo_to_image_id_map.setdefault(repo, image_name)
                 self.logger.info(

@@ -155,7 +155,9 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     return workspace_id
 
 
-def build_image_and_container(repo, base_commit, workspace_env=WorkspaceType.Docker, image_name=DEFAULT_IMAGE):
+def build_image_and_container(
+    repo, base_commit, workspace_env=WorkspaceType.Docker, image_name=DEFAULT_IMAGE
+):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
     composio_toolset = ComposioToolSet()
@@ -200,7 +202,7 @@ def build_image_and_container(repo, base_commit, workspace_env=WorkspaceType.Doc
         and clone_resp["status"] == "failure"
     ):
         raise Exception(clone_resp["details"])
-    
+
     chwdir_resp = composio_toolset.execute_action(
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
         params={"path": repo.split("/")[-1]},
@@ -234,7 +236,10 @@ def setup_workspace(
     #     if workspace_id:
     #         return workspace_id
     workspace_id = build_image_and_container(
-        repo=repo, base_commit=base_commit, workspace_env=workspace_env, image_name=image_name
+        repo=repo,
+        base_commit=base_commit,
+        workspace_env=workspace_env,
+        image_name=image_name,
     )
     repo_to_workspace_map[repo] = workspace_id
     return workspace_id

@@ -46,6 +46,9 @@ class ShellExecResponse(BaseModel):
         description="Exit code of the command",
     )
 
+    def something(self):
+        print('hello')
+
 
 class BaseExecCommand(Action):
     """

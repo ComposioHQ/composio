@@ -18,24 +18,22 @@ dotenv.load_dotenv()
 openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"], model="gpt-4-turbo"  # type: ignore
 )
-composio_toolset = ComposioToolSet(
-    workspace_config=WorkspaceType.Host()
-)
+composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
 
 # Get required tools
 tools = [
     *composio_toolset.get_tools(
-    apps=[
-        App.GITCMDTOOL,
-        App.FILETOOL,
-        App.HISTORYFETCHERTOOL,
+        apps=[
+            App.GITCMDTOOL,
+            App.FILETOOL,
+            App.HISTORYFETCHERTOOL,
         ]
     ),
     *composio_toolset.get_actions(
-    actions=[
-        Action.SHELL_EXEC_COMMAND,
+        actions=[
+            Action.SHELL_EXEC_COMMAND,
         ]
-    )
+    ),
 ]
 
 # Define agent
