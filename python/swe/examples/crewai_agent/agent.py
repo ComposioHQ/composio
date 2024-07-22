@@ -18,7 +18,13 @@ dotenv.load_dotenv()
 openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"], model="gpt-4-turbo"  # type: ignore
 )
-composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker(
+        environment={
+            "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
+        }
+    )
+)
 
 # Get required tools
 tools = composio_toolset.get_tools(
