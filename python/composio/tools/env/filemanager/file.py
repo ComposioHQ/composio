@@ -1,5 +1,6 @@
 """Virtual file pointer implementation."""
 
+import os
 import re
 import subprocess
 import sys
@@ -295,6 +296,59 @@ class File(WithLogger):
                     formatted_output += f"- {' '.join(parts[1:])}\n"
             return formatted_output.strip()
         return ""
+    
+    def lint_code(self, temp_name, code, prev_code="") -> tuple[bool, set, set]:
+        # Generate a temperary folder and add uuid to avoid collision
+        repo_playground = os.path.join(self.workdir, str(uuid.uuid4()))
+
+        # assert playground doesn't exist
+        assert not os.path.exists(repo_playground), f"{repo_playground} already exists"
+
+        # create playground
+        os.makedirs(repo_playground)
+
+        with open(f"{repo_playground}/{temp_name}", "w") as f:
+            f.write(prev_code)
+
+        # lint the code
+        # check for fatal errors
+        fatal = "E9,F821,F823,F831,F406,F407,F701,F702,F704,F706"
+        o = subprocess.run(
+            f"flake8 --select={fatal} --isolated {repo_playground}/{temp_name}",
+            shell=True,
+            capture_output=True,
+        )
+        s = o.stdout.decode("utf-8")
+
+        prev_errors = set()
+        if s != "":
+            for error in s.split(f"{repo_playground}/{temp_name}:")[1:]:
+                num_free_error = ":".join(error.split(":")[2:]).strip()
+                prev_errors.add(num_free_error)
+
+        with open(f"{repo_playground}/{temp_name}", "w") as f:
+            f.write(code)
+
+        o = subprocess.run(
+            f"flake8 --select={fatal} --isolated {repo_playground}/{temp_name}",
+            shell=True,
+            capture_output=True,
+        )
+        s = o.stdout.decode("utf-8")
+
+        # remove playground
+        subprocess.run(f"rm -rf {repo_playground}", shell=True)
+
+        errors = set()
+        if s != "":
+            for error in s.split(f"{repo_playground}/{temp_name}:")[1:]:
+                num_free_error = ":".join(error.split(":")[2:]).strip()
+                errors.add(num_free_error)
+
+        if len(errors - prev_errors) > 0:
+            return False, prev_errors, errors
+
+        return True, set(), set()
 
     def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:
         """Write and run lint on the file. If linting fails, revert the changes."""

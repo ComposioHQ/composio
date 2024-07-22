@@ -14,6 +14,7 @@ from .actions import (
     OpenFile,
     Scroll,
     SearchWord,
+    ChangeWorkingDirectory,
 )
 
 
@@ -22,7 +23,16 @@ class FileTool(Tool):
 
     def actions(self) -> t.List[t.Type[Action]]:
         """Return the list of actions."""
-        return [OpenFile, EditFile, CreateFile, Scroll, ListFiles, SearchWord, FindFile]
+        return [
+            OpenFile,
+            EditFile,
+            CreateFile,
+            Scroll,
+            ListFiles,
+            SearchWord,
+            FindFile,
+            ChangeWorkingDirectory,
+        ]
 
     def triggers(self) -> t.List:
         """Return the list of triggers."""

@@ -5,7 +5,7 @@
 import os
 
 import dotenv
-from composio_crewai import App, ComposioToolSet, WorkspaceType
+from composio_crewai import App, Action, ComposioToolSet, WorkspaceType
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
@@ -23,14 +23,20 @@ composio_toolset = ComposioToolSet(
 )
 
 # Get required tools
-tools = composio_toolset.get_tools(
+tools = [
+    *composio_toolset.get_tools(
     apps=[
         App.GITCMDTOOL,
         App.FILETOOL,
         App.HISTORYFETCHERTOOL,
-        App.SHELLEXEC,
-    ]
-)
+        ]
+    ),
+    *composio_toolset.get_actions(
+    actions=[
+        Action.SHELL_EXEC_COMMAND,
+        ]
+    )
+]
 
 # Define agent
 agent = Agent(

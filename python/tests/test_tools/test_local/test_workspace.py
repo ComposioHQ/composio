@@ -176,6 +176,18 @@ def test_workspace() -> None:
             },
         )
         logger.info(f"output of find file *run_evaluation.py: {output_list}")
+        
+        output_chdir = toolset.execute_action(
+            action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+            params={"path": "swe/swekit/benchmark"},
+        )
+        logger.info(f"output of change working directory: {output_chdir}")
+        
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_LIST_FILES,
+            params={},
+        )
+        logger.info(f"output of list files: {output_list}")
         assert False
         output = toolset.execute_action(
             action=Action.FILEEDITTOOL_OPEN_FILE,
