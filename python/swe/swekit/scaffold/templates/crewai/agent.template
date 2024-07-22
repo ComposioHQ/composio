@@ -3,7 +3,7 @@
 import os
 
 import dotenv
-from composio_crewai import App, ComposioToolSet, ExecEnv
+from composio_crewai import Action, App, ComposioToolSet, ExecEnv
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE

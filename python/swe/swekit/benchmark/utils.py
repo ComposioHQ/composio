@@ -205,7 +205,7 @@ def build_image_and_container(
 
     chwdir_resp = composio_toolset.execute_action(
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
-        params={"path": repo.split("/")[-1]},
+        params={"path": repo.lstrip().rstrip().split("/")},
     )
     if isinstance(chwdir_resp, dict) and chwdir_resp.get("status") == "failure":
         raise Exception(f"Error changing directory: {chwdir_resp['details']}")
