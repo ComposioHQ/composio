@@ -1,7 +1,9 @@
 import { Composio } from "../sdk";
-import { LocalActions } from "../utils/localTools";
 import { ExecEnv, WorkspaceFactory } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
+import { RemoteWorkspace } from "../env/base";
+import type { IPythonActionDetails, Optional, Sequence } from "./types";
+import { GetListActionsResponse } from "./client";
 
 class UserData {
     apiKey: string | undefined;
@@ -39,6 +41,8 @@ export class ComposioToolSet {
     workspace: WorkspaceFactory;
     workspaceEnv: ExecEnv;
 
+    localActions: IPythonActionDetails["data"] | undefined;
+
     constructor(
         apiKey: string | null,
         baseUrl: string | null = COMPOSIO_BASE_URL,
@@ -73,9 +77,85 @@ export class ComposioToolSet {
             composioAPIKey: this.apiKey,
             composioBaseURL: COMPOSIO_BASE_URL,
         });
+
+        if(!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
+            this.localActions = await (this.workspace.workspace as RemoteWorkspace).getLocalActionsSchema();
+        }
     }
 
-    async execute_action(
+    async getActionsSchema(
+        filters: { actions?: Optional<Sequence<string>> } = {},
+        entityId?: Optional<string>
+    ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
+        await this.setup();
+        let actions: GetListActionsResponse["items"] = (await this.client.actions.list({
+            actions: filters.actions?.join(","),
+            showAll: true
+        })).items;
+        const localActionsMap = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
+        filters.actions?.forEach(action => {
+            const actionData = this.localActions?.find((a: any) => a.name === action);
+            if (actionData) {
+                localActionsMap.set(actionData.name!, actionData);
+            }
+        });
+        const uniqueLocalActions = Array.from(localActionsMap.values());
+        return [...actions!, ...uniqueLocalActions];
+    }
+
+    async getToolsSchema(
+        filters: {
+            apps: Sequence<string>;
+            tags: Optional<Array<string>>;
+            useCase: Optional<string>;
+        },
+        entityId?: Optional<string>
+    ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
+        await this.setup();
+
+        const apps =  await this.client.actions.list({
+            apps: filters.apps.join(","),
+            tags: filters.tags?.join(","),
+            showAll: true,
+            filterImportantActions: !filters.tags && !filters.useCase,
+            useCase: filters.useCase || undefined
+         });
+        const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
+        for (const appName of filters.apps!) {
+            const actionData = this.localActions?.filter((a: any) => a.appName === appName);
+            if(actionData) {
+                for (const action of actionData) {
+                    localActions.set(action.name, action);
+                }
+            }
+        }
+        const uniqueLocalActions = Array.from(localActions.values());
+        const toolsActions = [...apps.items!, ...uniqueLocalActions];
+        return toolsActions;
+    }
+
+
+    async getActions(
+        filters: {
+            actions?: Optional<Sequence<string>>
+        } = {},
+        entityId?: Optional<string>
+    ): Promise<any> {
+        throw new Error("Not implemented");
+    }
+
+    async getTools(
+        filters: {
+            apps: Sequence<string>;
+            tags: Optional<Array<string>>;
+            useCase: Optional<string>;
+        },
+        entityId?: Optional<string>
+    ): Promise<any> {
+        throw new Error("Not implemented");
+    }
+
+    async executeAction(
         action: string,
         params: Record<string, any>,
         entityId: string = "default"
@@ -87,5 +167,14 @@ export class ComposioToolSet {
             });
         }
         return this.client.getEntity(entityId).execute(action, params);
+    }
+
+    async execute_action(
+        action: string,
+        params: Record<string, any>,
+        entityId: string = "default"
+    ): Promise<Record<string, any>> {
+        console.warn("execute_action is deprecated, use executeAction instead");
+        return this.executeAction(action, params, entityId);
     }
 }

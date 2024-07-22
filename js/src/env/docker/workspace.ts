@@ -6,7 +6,7 @@ import { promises as fs } from "fs";
 import { RemoteWorkspace, WorkspaceConfig } from "../base";
 import cliProgress from "cli-progress";
 
-const COMPOSIO_PATH = path.resolve(__dirname, "../../../../../../");
+const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
 const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
 const ENV_COMPOSIO_SWE_AGENT = "COMPOSIO_SWE_AGENT";

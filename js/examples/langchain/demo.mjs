@@ -24,29 +24,27 @@ app.use(express.json());
         });
 
         const tools = await toolset.get_actions({
-            actions: ["github_issues_create".toLowerCase()]
+            actions: ["FILETOOL_WRITE_FILE".toLowerCase()]
+        });
+        const prompt = await pull(
+            "hwchase17/openai-functions-agent"
+        );
+
+        const agent = await createOpenAIFunctionsAgent({
+            llm,
+            tools,
+            prompt,
         });
 
-        // await toolset.workspace.workspace.teardown();
-        // const prompt = await pull(
-        //     "hwchase17/openai-functions-agent"
-        // );
+        const agentExecutor = new AgentExecutor({
+            agent,
+            tools,
+            verbose: true,
+        });
 
-        // const agent = await createOpenAIFunctionsAgent({
-        //     llm,
-        //     tools,
-        //     prompt,
-        // });
-
-        // const agentExecutor = new AgentExecutor({
-        //     agent,
-        //     tools,
-        //     verbose: true,
-        // });
-
-        // const result = await agentExecutor.invoke({
-        //     input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
-        // });
+        const result = await agentExecutor.invoke({
+            input: "Write a file named test.txt with the content Hello World"
+        });
 
     } catch (error) {
         console.error(error);

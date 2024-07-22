@@ -3,12 +3,7 @@ import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { LocalActions } from "../utils/localTools";
-import { ComposioServer } from "../sdk/models/composioServer";
-
-type Optional<T> = T | null;
-type Dict<T> = { [key: string]: T };
-type Sequence<T> = Array<T>;
+import type { Optional, Dict, Sequence } from "../sdk/types";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
@@ -63,7 +58,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         );
     }
 
-    private _wrap_tool(
+    private _wrapTool(
         schema: Dict<any>,
         entityId: Optional<string> = null
     ): DynamicStructuredTool {
@@ -72,7 +67,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         const description = schema["description"];
 
         const func = async (...kwargs: any[]): Promise<any> => {
-            return JSON.stringify(await this.execute_action(
+            return JSON.stringify(await this.executeAction(
                 action,
                 kwargs[0],
                 entityId || this.entityId
@@ -90,39 +85,29 @@ export class LangchainToolSet extends BaseComposioToolSet {
         });
     }
 
-    async get_actions(
+    async getActions(
         filters: {
             actions?: Optional<Sequence<string>>
         } = {},
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
-        await this.setup();
-        let actions =  (await this.client.actions.list({
-            actions: filters.actions?.join(","),
-            showAll: true
-        })).items?.filter((a) => {
-            return filters.actions
-        });
-
-        const localActionsArr = [];
-        for (const action of filters.actions!) {
-            if (LocalActions.includes(action.toLowerCase())) {
-                const actionData = await ComposioServer.getAction(action);
-                if(actionData) {
-                    localActionsArr.push(actionData);
-                }
-            }
-        }
-        actions = [...actions!, ...localActionsArr];
+        const actions = await this.getActionsSchema(filters as any, entityId);
         return actions!.map(tool =>
-            this._wrap_tool(
+            this._wrapTool(
                 tool,
                 entityId || this.entityId
             )
-        );
+        ) as any;
     }
 
-    async get_tools(
+    async get_actions(filters: {
+        actions?: Optional<Sequence<string>>
+    } = {}, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
+        console.warn("get_actions is deprecated, use getActions instead");
+        return this.getActions(filters, entityId);
+    }
+
+    async getTools(
         filters: {
             apps: Sequence<string>;
             tags: Optional<Array<string>>;
@@ -130,20 +115,21 @@ export class LangchainToolSet extends BaseComposioToolSet {
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
-        await this.setup();
-
-        const apps =  await this.client.actions.list({
-            apps: filters.apps.join(","),
-            tags: filters.tags?.join(","),
-            showAll: true,
-            filterImportantActions: !filters.tags && !filters.useCase,
-            useCase: filters.useCase || undefined
-         });
-        return apps.items!.map(tool =>
-            this._wrap_tool(
+        const tools = await this.getToolsSchema(filters, entityId);
+        return tools.map(tool =>
+            this._wrapTool(
                 tool,
                 entityId || this.entityId
             )
         );
+    }
+
+    async get_tools(filters: {
+        apps: Sequence<string>;
+        tags: Optional<Array<string>>;
+        useCase: Optional<string>;
+    }, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
+        console.warn("get_tools is deprecated, use getTools instead");
+        return this.getTools(filters, entityId);
     }
 }

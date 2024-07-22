@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosResponse } from "axios";
 import { EventEmitter } from "events";
+import { IPythonActionDetails } from "../sdk/types";
 
 const ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN";
 const ENV_ACCESS_TOKEN = "ACCESS_TOKEN";
@@ -199,6 +200,11 @@ export class RemoteWorkspace extends Workspace {
 
     _upload(action: any): void {
         throw new Error("Method '_upload()' must be implemented.");
+    }
+
+    async getLocalActionsSchema(): Promise<IPythonActionDetails["data"]> {
+        const request = await this._request("/local_actions", "get");
+        return (request.data as IPythonActionDetails).data;
     }
 
     async executeAction(action: string, request_data: any, metadata: IExecuteActionMetadata = {}): Promise<any> {

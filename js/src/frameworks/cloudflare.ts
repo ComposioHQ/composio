@@ -37,28 +37,10 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     );
   }
 
-  async get_actions(filters: {
+  async getActions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    await this.setup();
-
-    let actions =  (await this.client.actions.list({
-      actions: filters.actions?.join(","),
-      showAll: true
-    })).items?.filter((a) => {
-        return filters.actions
-    });
-
-    const localActionsArr = [];
-    for (const action of filters.actions!) {
-        if (LocalActions.includes(action.toLowerCase())) {
-            const actionData = await ComposioServer.getAction(action);
-            if(actionData) {
-                localActionsArr.push(actionData);
-            }
-        }
-    }
-    actions = [...actions!, ...localActionsArr];
+    const actions = await this.getActionsSchema(filters);
     return actions.map((action) => {
           const formattedSchema: AiTextGenerationToolInput["function"] = {
             name: action.name!,
@@ -82,22 +64,20 @@ export class CloudflareToolSet extends BaseComposioToolSet {
         }) || [];
   }
 
-  async get_tools(filters: {
+  async get_actions(filters: {
+    actions: Sequence<string>;
+  }): Promise<Sequence<AiTextGenerationToolInput>> {
+    console.warn("get_actions is deprecated, use getActions instead");
+    return this.getActions(filters);
+  }
+
+  async getTools(filters: {
     apps: Sequence<string>;
     tags: Optional<Array<string>>;
     useCase: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    await this.setup();
-
-    return (
-      (
-        await this.client.actions.list({
-          apps: filters.apps.join(","),
-          tags: filters.tags?.join(","),
-          filterImportantActions: !filters.tags && !filters.useCase,
-          useCase: filters.useCase || undefined,
-        })
-      ).items?.map((action) => {
+    const actions = await this.getToolsSchema(filters);
+    return actions.map((action) => {
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
           description: action.description!,
@@ -117,7 +97,31 @@ export class CloudflareToolSet extends BaseComposioToolSet {
           function: formattedSchema,
         };
         return tool;
-      }) || []
+      }) || [];
+  }
+
+  async get_tools(filters: {
+    apps: Sequence<string>;
+    tags: Optional<Array<string>>;
+    useCase: Optional<string>;
+  }): Promise<Sequence<AiTextGenerationToolInput>> {
+    console.warn("get_tools is deprecated, use getTools instead");
+    return this.getTools(filters);
+  }
+
+  async executeToolCall(
+    tool: {
+      name: string;
+      arguments: unknown;
+    },
+    entityId: Optional<string> = null
+  ): Promise<string> {
+    return JSON.stringify(
+      await this.executeAction(
+        tool.name,
+        typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
+        entityId || this.entityId
+      )
     );
   }
 
@@ -128,16 +132,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<string> {
-    return JSON.stringify(
-      await this.execute_action(
-        tool.name,
-        typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
-        entityId || this.entityId
-      )
-    );
+    console.warn("execute_tool_call is deprecated, use executeToolCall instead");
+    return this.executeToolCall(tool, entityId);
   }
 
-  async handle_tool_call(
+  async handleToolCall(
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
@@ -149,10 +148,18 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     } else if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
       for (const tool_call of result.tool_calls) {
         if (tool_call.name) {
-          outputs.push(await this.execute_tool_call(tool_call, entityId));
+          outputs.push(await this.executeToolCall(tool_call, entityId));
         }
       }
     }
     return outputs;
+  }
+
+  async handle_tool_call(
+    result: AiTextGenerationOutput,
+    entityId: Optional<string> = null
+  ): Promise<Sequence<string>> {
+    console.warn("handle_tool_call is deprecated, use handleToolCall instead");
+    return this.handleToolCall(result, entityId);
   }
 }
