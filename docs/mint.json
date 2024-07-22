@@ -213,9 +213,9 @@
       {
         "group":"Javascript Guides",
         "pages":[
+          "guides/javascript/calendar-agent",
           "guides/javascript/code-execution-agent",
           "guides/javascript/rag_agent",
-          "guides/javascript/sql-agent",
           "guides/javascript/investment-analyst"
         ]
       }
