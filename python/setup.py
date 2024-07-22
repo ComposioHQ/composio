@@ -89,6 +89,7 @@ setup(
         "ruff",
         "scipy",
         "transformers",
+        "flake8"
     ],
     include_package_data=True,
     package_data={

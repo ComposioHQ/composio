@@ -4,9 +4,10 @@ FlyIO workspace implementation.
 
 import typing as t
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
-from composio.tools.env.flyio.client import FlyIO
+from composio.tools.env.flyio.client import FlyIO, PortRequest
 
 
 @dataclass
@@ -19,6 +20,9 @@ class Config(WorkspaceConfigType):
     token: t.Optional[str] = None
     """FlyIO API token."""
 
+    ports: t.Optional[t.List[PortRequest]] = None
+    """Port requests."""
+
 
 class FlyIOWorkspace(RemoteWorkspace):
     """FlyIO Workspace."""
@@ -30,6 +34,7 @@ class FlyIOWorkspace(RemoteWorkspace):
         super().__init__(config=config)
         self.image = config.image
         self.token = config.token
+        self._port_requests = config.ports or []
 
     def setup(self) -> None:
         """Setup workspace."""
@@ -38,9 +43,16 @@ class FlyIOWorkspace(RemoteWorkspace):
             image=self.image,
             flyio_token=self.token,
             environment=self.environment,
+            ports=self._port_requests,
         )
         self.flyio.setup()
         self.url = self.flyio.url
+        self.host = t.cast(str, urlparse(url=self.url).hostname)
+
+        ports = []
+        for r in self._port_requests:
+            ports += [p["port"] for p in r["ports"]]
+        self.ports = ports
 
     def teardown(self) -> None:
         """Teardown E2B workspace."""

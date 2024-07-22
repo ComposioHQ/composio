@@ -285,6 +285,9 @@ class ComposioToolSet(WithLogger):
 
     def _serialize_execute_params(self, param: ParamType) -> ParamType:
         """Returns a serialized version of the parameters object."""
+        if param is None:
+            return param  # type: ignore
+
         if isinstance(param, (int, float, str, bool)):
             return param  # type: ignore
 

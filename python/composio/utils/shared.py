@@ -8,6 +8,10 @@ from inspect import Parameter
 from pydantic.v1 import BaseModel, Field, create_model
 from pydantic.v1.fields import FieldInfo
 
+from composio.utils.logging import get as get_logger
+
+
+logger = get_logger(__name__)
 
 PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "string": str,
@@ -173,6 +177,8 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     """
     required_fields = {}
     optional_fields = {}
+    if "title" not in param_schema:
+        raise ValueError(f"Missing 'title' in param_schema: {param_schema}")
     param_title = str(param_schema["title"]).replace(" ", "")
     required_props = param_schema.get("required", [])
 
@@ -253,6 +259,9 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
         param_type = param_schema.get("type", None)
         param_oneOf = param_schema.get("oneOf", None)
         param_anyOf = param_schema.get("anyOf", None)
+        param_allOf = param_schema.get("allOf", None)
+        if param_allOf is not None and len(param_allOf) == 1:
+            param_type = param_allOf[0].get("type", None)
         if param_oneOf is not None or param_anyOf is not None:
             param_types = [ptype.get("type") for ptype in (param_oneOf or param_anyOf)]
             if len(param_types) == 1:
