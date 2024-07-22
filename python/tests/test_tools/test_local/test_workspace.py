@@ -160,14 +160,23 @@ def test_workspace() -> None:
         output_list = toolset.execute_action(
             action=Action.FILETOOL_FIND_FILE,
             params={
-                "pattern": "*file*.py",
+                "pattern": "run_evaluation.py",
                 "depth": None,
                 "case_sensitive": False,
-                "include": None,
-                "exclude": None,
             },
         )
-        logger.info(f"output of find file: {output_list}")
+        logger.info(f"output of find file run_evaluation.py: {output_list}")
+        
+        output_list = toolset.execute_action(
+            action=Action.FILETOOL_FIND_FILE,
+            params={
+                "pattern": "*run_evaluation.py",
+                "depth": None,
+                "case_sensitive": False,
+            },
+        )
+        logger.info(f"output of find file *run_evaluation.py: {output_list}")
+        assert False
         output = toolset.execute_action(
             action=Action.FILEEDITTOOL_OPEN_FILE,
             params={"file_name": "README.md"},

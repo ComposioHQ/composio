@@ -19,17 +19,12 @@ openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"], model="gpt-4-turbo"  # type: ignore
 )
 composio_toolset = ComposioToolSet(
-    workspace_config=WorkspaceType.Docker(
-        environment={
-            "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
-        }
-    )
+    workspace_config=WorkspaceType.Host()
 )
 
 # Get required tools
 tools = composio_toolset.get_tools(
     apps=[
-        App.SEARCHTOOL,
         App.GITCMDTOOL,
         App.FILETOOL,
         App.HISTORYFETCHERTOOL,

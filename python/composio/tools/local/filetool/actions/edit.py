@@ -77,7 +77,7 @@ class EditFile(BaseFileAction):
                 return EditFileResponse(
                     error=f"File {request_data.file_path} not found"
                 )
-            tr = file.write(
+            tr = file.write_and_run_lint(
                 text=request_data.text,
                 start=request_data.start_line,
                 end=request_data.end_line,
