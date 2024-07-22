@@ -5,7 +5,6 @@ API Endpoints.
 # pylint: disable=consider-using-with, subprocess-run-check, unspecified-encoding
 
 import importlib
-import json
 import os
 import subprocess
 import sys
@@ -19,7 +18,7 @@ from pathlib import Path
 
 import typing_extensions as te
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from composio import Action, App
