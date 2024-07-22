@@ -1,5 +1,7 @@
 """CrewAI SWE Agent"""
 
+# isort: skip_file
+
 import dotenv
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI

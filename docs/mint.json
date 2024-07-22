@@ -1,5 +1,6 @@
 {
   "name": "Composio",
+  "theme": "venus",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
@@ -10,12 +11,13 @@
   "favicon": "/favicon1.png",
   "colors": {
     "primary": "#343434",
-    "light": "#34AAFF",
-    "dark": "#355cff",
-    "ultraLight": "#E4DAFF",
-    "ultraDark": "#270A7A",
+    "light": "#fff",
+    "dark": "#9a4dff",
+    "ultraLight": "#9a4dff",
+    "ultraDark": "#9a4dff",
     "background": {
-      "dark": "#0b0b0d"
+      "dark": "#181818",
+      "light": "#fafafa"
     }
   },
   "seo": {
@@ -71,7 +73,8 @@
       "url": "api-reference"
     }
   ],
-  "anchors": [],
+  "anchors": [
+  ],
   "navigation": [
     {
       "group": "Introduction",
@@ -164,7 +167,7 @@
         "sdk/cli/actions"
       ]
     },
-    {
+     {
       "group": "Guides",
       "pages": [
       {
@@ -189,7 +192,7 @@
         ]
       }
     ]
-    }, 
+    },
     {
       "group": "Examples",
       "pages": [
@@ -294,6 +297,10 @@
     {
       "source": "/apps/:slug2*",
       "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps",
+      "destination": "https://composio.dev/tools/"
     }
   ]
 }
