@@ -5,27 +5,42 @@ icon: "database"
 description: "This guide provides detailed steps to create an agent that leverages Composio to add content to a RAG tool, perform retrieval-augmented generation queries, and return relevant information based on user input."
 ---
 
-This project involves setting up and running an agent to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to set up the tools and OpenAI GPT-4o to power the agent. Follow this guide to set up and run the project.
+This project involves setting up and running an agent to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to set up the tools and OpenAI GPT-4-turbo to power the agent. Follow this guide to set up and run the project.
 
-<Card color="#7bee0c" title="RAG Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/javascript/examples/rag_agent/">
+<Card color="#7bee0c" title="RAG Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/js/examples/docs-example/rag_tool_agent">
   Explore the complete source code for the RAG Agent project. This repository contains all the necessary files and scripts to set up and run the RAG system using LangChain and Composio.
   <CardBody>
     - Clone the repository to get started
-    - Follow the setup instructions in the README
     - Experiment with and customize the RAG Agent
   </CardBody>
 </Card>
 
 <Steps>
+    <Step title="Project Setup">
+    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
+
+    `cd cookbook/examples/javascript/investment_analyst`
+
+    Install the required dependencies:
+    <CodeGroup>
+        ```bash Install Dependencies
+        ## Any of the following commands will install the required dependencies
+        npm install
+        yarn install 
+        pnpm install
+        ```
+
+    </CodeGroup>
+    </Step>
     <Step title="Imports and Environment Setup">
     In your JavaScript file, import the necessary libraries and set up your environment variables.
     <CodeGroup>
-        ```javascript
+        ```javascript Import statements
         import dotenv from 'dotenv';
-        import { ChatOpenAI } from "@langchain/openai";
-        import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-        import { ComposioToolSet, App } from "composio-core";
-        import { pull } from "langchain/hub";
+        import { ExecEnv, LangchainToolSet } from 'composio-core';
+        import { ChatOpenAI } from '@langchain/openai';
+        import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
+        import { pull } from 'langchain/hub';
 
         // Load environment variables
         dotenv.config();
@@ -37,25 +52,30 @@ This project involves setting up and running an agent to add content to a RAG (R
     Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agent.
     <CodeGroup>
         ```javascript LLM and Tools
-        // Initialize the LLM with the OpenAI GPT-4o model and API key
-        const llm = new ChatOpenAI({ model: "gpt-4o" });
+        // Initialize the LLM with the OpenAI GPT-4-turbo model
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
         // Initialize the Composio ToolSet
-        const composioToolset = new ComposioToolSet();
+        const composioToolset = new LangchainToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+            workspaceEnv: ExecEnv.DOCKER
+        });
 
-        // Get the RAG tool from the Composio ToolSet
-        const tools = await composioToolset.getTools({ apps: ["ragtool"] });
+        // Get the RAG tool actions from the Composio ToolSet
+        const tools = await composioToolset.get_actions({
+            actions: ["ragtool_add_content", "ragtool_query"]
+        });
         ```
     </CodeGroup>
     </Step>
 
     <Step title="Define the RAG Agent">
-    Define the RAG agent using LangChain's createOpenAIFunctionsAgent.
+    Define the RAG agent using LangChain's createOpenAIToolsAgent.
     <CodeGroup>
         ```javascript Agent
         const prompt = await pull("hwchase17/openai-functions-agent");
         
-        const agent = await createOpenAIFunctionsAgent({
+        const agent = await createOpenAIToolsAgent({
             llm,
             tools,
             prompt,
@@ -125,20 +145,27 @@ This project involves setting up and running an agent to add content to a RAG (R
 <CodeGroup>
     ```javascript
     import dotenv from 'dotenv';
-    import { ChatOpenAI } from "@langchain/openai";
-    import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-    import { ComposioToolSet } from "composio-core";
-    import { pull } from "langchain/hub";
+    import { ExecEnv, LangchainToolSet } from 'composio-core';
+    import { ChatOpenAI } from '@langchain/openai';
+    import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
+    import { pull } from 'langchain/hub';
 
     dotenv.config();
 
-    const llm = new ChatOpenAI({ model: "gpt-4o" });
-    const composioToolset = new ComposioToolSet();
-    const tools = await composioToolset.getTools({ apps: ["ragtool"] });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+    const composioToolset = new LangchainToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+        workspaceEnv: ExecEnv.DOCKER
+    });
+
+    const tools = await composioToolset.get_actions({
+        actions: ["ragtool_add_content", "ragtool_query"]
+    });
 
     const prompt = await pull("hwchase17/openai-functions-agent");
     
-    const agent = await createOpenAIFunctionsAgent({
+    const agent = await createOpenAIToolsAgent({
         llm,
         tools,
         prompt,

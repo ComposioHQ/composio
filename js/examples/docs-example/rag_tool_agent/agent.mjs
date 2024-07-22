@@ -1,21 +1,27 @@
 import dotenv from 'dotenv';
-import { ChatOpenAI } from "@langchain/openai";
-import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-import { LangchainToolSet } from "composio-core";
-import { pull } from "langchain/hub";
-
 dotenv.config();
+
+import { ExecEnv, LangchainToolSet } from 'composio-core';
+import { ChatOpenAI } from '@langchain/openai';
+import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
+import { pull } from 'langchain/hub';
 
 // Initialize the language model with OpenAI API key and model name
 const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
 // Setup tools using ComposioToolSet
 const composioToolset = new LangchainToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY
+    apiKey: process.env.COMPOSIO_API_KEY,
+    workspaceEnv: ExecEnv.DOCKER
 });
+
+const tools = await composioToolset.get_actions({
+    actions: ["ragtool_add_content", "ragtool_query"]
+});
+
 const prompt = await pull("hwchase17/openai-functions-agent");
 
-const agent = await createOpenAIFunctionsAgent({
+const agent = await createOpenAIToolsAgent({
     llm,
     tools,
     prompt,
