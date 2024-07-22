@@ -71,7 +71,7 @@ agent = client.agents.create(
     name=name,
     about=about,
     default_settings=default_settings,
-    model="gpt-4",
+    model="gpt-4o",
     tools=composio_tools,
 )
 ```

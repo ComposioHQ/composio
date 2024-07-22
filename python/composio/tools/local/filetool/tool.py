@@ -7,6 +7,7 @@ import typing as t
 from composio.tools.local.base import Action, Tool
 
 from .actions import (
+    ChangeWorkingDirectory,
     CreateFile,
     EditFile,
     FindFile,
@@ -32,6 +33,7 @@ class FileTool(Tool):
             SearchWord,
             FindFile,
             Write,
+            ChangeWorkingDirectory,
         ]
 
     def triggers(self) -> t.List:

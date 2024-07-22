@@ -1,3 +1,4 @@
+from .chwdir import ChangeWorkingDirectory
 from .create import CreateFile
 from .edit import EditFile
 from .find import FindFile

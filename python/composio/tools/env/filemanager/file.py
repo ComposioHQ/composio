@@ -218,6 +218,10 @@ class File(WithLogger):
         """Write the given content to the file."""
         self.path.write_text(text)
 
+    def total_lines(self) -> int:
+        """Total number of lines in the file."""
+        return sum(1 for _ in self._iter_file())
+
     def edit(
         self,
         text: str,
@@ -263,7 +267,7 @@ class File(WithLogger):
         self.path.write_text(data=buffer, encoding="utf-8")
         return {"replaced_text": replaced, "replaced_with": text}
 
-    def run_lint(self) -> str:
+    def lint(self) -> str:
         """Run lint on the file."""
         if self.path.suffix == ".py":
             venv_python = sys.executable
@@ -296,14 +300,22 @@ class File(WithLogger):
             return formatted_output.strip()
         return ""
 
-    def write_and_run_lint(self, text: str, start: int, end: int) -> str:
+    def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:
         """Write and run lint on the file. If linting fails, revert the changes."""
         older_file_text = self.path.read_text(encoding="utf-8")
-        self.edit(text=text, start=start, end=end)
-        lint_output = self.run_lint()
+        write_response = self.edit(text=text, start=start, end=end)
+        if write_response.get("error"):
+            self.path.write_text(data=older_file_text, encoding="utf-8")
+            return write_response
+        lint_output = self.lint()
         if lint_output:
-            self.path.write_text(older_file_text, encoding="utf-8")
-        return lint_output
+            self.path.write_text(data=older_file_text, encoding="utf-8")
+            return {
+                "replaced_text": "",
+                "replaced_with": "",
+                "error": f"Linting failed: {lint_output}",
+            }
+        return write_response
 
     def replace(self, string: str, replacement: str) -> TextReplacement:
         """Replace given string with replacement."""

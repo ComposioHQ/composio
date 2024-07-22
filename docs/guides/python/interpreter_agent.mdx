@@ -5,6 +5,14 @@ icon: "code"
 description: "This is a simple guide to demonstrate how to use CODEINTERPRETER tool by composio"
 ---
 
+<Card color="#7bee0c" title="Code Execution Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/code_execution_agent/">
+  Explore the complete source code for the Code Execution Agent project. This repository contains all the necessary files and scripts to set up and run the investment analysis system using CrewAI and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the Code Execution Agent
+  </CardBody>
+</Card>
 
 <Steps>
     <Step title="Import Required Packages">
@@ -26,7 +34,7 @@ description: "This is a simple guide to demonstrate how to use CODEINTERPRETER t
         ```python Tools
         dotenv.load_dotenv()
 
-        toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+        toolset = ComposioToolSet()
         tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
         ```
     </CodeGroup>
@@ -101,7 +109,7 @@ description: "This is a simple guide to demonstrate how to use CODEINTERPRETER t
 
     dotenv.load_dotenv()
 
-    toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    toolset = ComposioToolSet()
     tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
 
     python_executor_agent = Agent(

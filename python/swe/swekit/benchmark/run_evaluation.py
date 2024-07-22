@@ -8,13 +8,13 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 from composio_crewai import ComposioToolSet
 
 from swekit.benchmark.utils import (
     build_issue_description,
-    check_and_pull_image,
     get_issues_dataset,
     get_score,
     setup_workspace,
@@ -63,6 +63,10 @@ class EvaluationConfig(BaseModel):
         default=WorkspaceType.Docker,
         description="workspace environment",
     )
+    image_name: str = Field(
+        default=DEFAULT_IMAGE,
+        description="image name",
+    )
 
 
 class EvaluationManager(WithLogger):
@@ -81,6 +85,7 @@ class EvaluationManager(WithLogger):
         self.logs_dir = os.path.expanduser(config.logs_dir)
         self.repo_to_workspace_map = {}
         self.repo_to_image_id_map = {}
+        self.image_name = config.image_name
         self.workspace_env = config.workspace_type
         logs_dir = Path(config.logs_dir)
         if not logs_dir.exists():
@@ -180,12 +185,12 @@ class EvaluationManager(WithLogger):
         ):
             try:
                 repo = issue["repo"]
-                version = issue.get("version")
-                image_name = (
-                    f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
-                )
-                if version and check_and_pull_image(image_name):
-                    self.repo_to_image_id_map.setdefault(repo, image_name)
+                # version = issue.get("version")
+                # image_name = (
+                #     f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
+                # )
+                # if version and check_and_pull_image(image_name):
+                #     self.repo_to_image_id_map.setdefault(repo, image_name)
                 self.logger.info(
                     f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map}"
                     f"Repo: {repo}"
@@ -198,6 +203,7 @@ class EvaluationManager(WithLogger):
                     self.repo_to_image_id_map,
                     issue["base_commit"],
                     self.workspace_env,
+                    self.image_name,
                 )
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(
@@ -228,6 +234,7 @@ def evaluate(
     logs_dir: Path = _get_logs_dir(),
     generate_report: bool = True,
     test_instance_ids: t.List[str] = [],
+    image_name: str = DEFAULT_IMAGE,
 ) -> None:
     """Evaluate a callable."""
     if not os.path.exists(logs_dir):
@@ -242,6 +249,7 @@ def evaluate(
             generate_report=generate_report,
             test_instance_ids=test_instance_ids,
             workspace_type=workspace_type,
+            image_name=image_name,
         )
     )
     manager.run(runnable)

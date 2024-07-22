@@ -37,7 +37,7 @@ class EditFileRequest(BaseFileRequest):
 class EditFileResponse(BaseFileResponse):
     """Response to edit a file."""
 
-    updated_changes: str = Field(
+    old_text: str = Field(
         default=None,
         description=(
             "The updated changes. If the file was not edited, the original file "
@@ -47,6 +47,10 @@ class EditFileResponse(BaseFileResponse):
     error: str = Field(
         default=None,
         description="Error message if any",
+    )
+    updated_text: str = Field(
+        default=None,
+        description="The updated text. If the file was not edited, this will be empty.",
     )
 
 
@@ -91,15 +95,15 @@ class EditFile(BaseFileAction):
                     path=request_data.file_path,
                 )
             )
-            response = file.edit(
+            response = file.write_and_run_lint(
                 text=request_data.text,
                 start=request_data.start_line,
                 end=request_data.end_line,
             )
-            # TODO: Add lint changes to detect python issues.
-            if response.get("error"):
-                return EditFileResponse(error=response.get("error", ""))
-            return EditFileResponse(updated_changes=response["replaced_text"])
+            return EditFileResponse(
+                old_text=response["replaced_text"],
+                updated_text=response["replaced_with"],
+            )
         except FileNotFoundError as e:
             return EditFileResponse(error=f"File not found: {str(e)}")
         except PermissionError as e:

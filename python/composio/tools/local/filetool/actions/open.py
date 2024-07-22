@@ -26,6 +26,7 @@ class OpenFileResponse(BaseFileResponse):
     lines: t.Dict[int, str] = Field(
         default={}, description="File content with their line numbers"
     )
+    total_lines: int = Field(default=0, description="Total number of lines in the file")
     error: str = Field(default="", description="Error message if any")
 
 
@@ -53,7 +54,7 @@ class OpenFile(BaseFileAction):
             file = file_manager.open(request_data.file_path)
             if request_data.line_number > 0:
                 file.goto(request_data.line_number)
-            return OpenFileResponse(lines=file.read())
+            return OpenFileResponse(lines=file.read(), total_lines=file.total_lines())
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
         except IsADirectoryError as e:

@@ -1,5 +1,4 @@
 import typing as t
-from pathlib import Path
 
 from pydantic import Field
 
@@ -22,10 +21,12 @@ class FindFileRequest(BaseFileRequest):
         default=False, description="If set True the search will be case sensitive"
     )
     include: t.List[str] = Field(
-        default=None, description="List of directories to search in"
+        default=None,
+        description="List of directories to search in",
     )
-    exclude: t.List[Path] = Field(
-        default=None, description="List of directories to exclude from the search"
+    exclude: t.List[str] = Field(
+        default=None,
+        description="List of directories to exclude from the search",
     )
 
 

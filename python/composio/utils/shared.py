@@ -8,6 +8,10 @@ from inspect import Parameter
 from pydantic.v1 import BaseModel, Field, create_model
 from pydantic.v1.fields import FieldInfo
 
+from composio.utils.logging import get as get_logger
+
+
+logger = get_logger(__name__)
 
 PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "string": str,

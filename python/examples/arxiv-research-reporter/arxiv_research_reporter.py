@@ -9,10 +9,6 @@ from llama_index.tools.arxiv.base import ArxivToolSpec
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key = input("Enter OpenAI key:")
-    os.environ['OPENAI_API_KEY']=api_key
 llm = OpenAI(model="gpt-4o")
 
 research_topic = "LLM agents function calling"
@@ -23,11 +19,7 @@ n_issues = 3
 def main():
     # Get All the tools
     composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_actions(
-        actions=[
-            Action.GITHUB_ISSUES_CREATE
-            ]
-    )
+    tools = composio_toolset.get_actions(actions=[Action.GITHUB_ISSUES_CREATE])
     arxiv_tool = ArxivToolSpec()
 
     prefix_messages = [
@@ -47,7 +39,7 @@ def main():
         max_function_calls=10,
         allow_parallel_tool_calls=False,
         verbose=True,
-        )
+    )
 
     response = agent.chat(
         f"Please research on Arxiv about `{research_topic}`, Organize "
@@ -56,7 +48,7 @@ def main():
         f"title, body, implementation guidance and reference in "
         f"{target_repo} repo,  as well as relevant tags and assignee as "
         "the repo owner."
-        )
+    )
 
     print("Response:", response)
 
