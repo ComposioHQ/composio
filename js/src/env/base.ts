@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosResponse } from "axios";
-import { EventEmitter } from "events";
 import { IPythonActionDetails } from "../sdk/types";
 import { getEnvVariable } from "../utils/shared";
 
@@ -17,11 +16,10 @@ function _readEnvVar(name: string, defaultValue: string | null): string {
     return value as string;
 }
 
-class Shell extends EventEmitter {
+class Shell {
     private _id: string;
 
     constructor() {
-        super();
         this._id = uuidv4();
     }
 

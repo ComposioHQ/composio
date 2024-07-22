@@ -119,3 +119,15 @@ export const getEnvVariable = (name: string, defaultValue: string | undefined = 
         return defaultValue;
     }
 }
+
+export const nodeExternalRequire = (name: string) => {
+    try {
+        if (typeof process !== 'undefined') {
+            return require(name);
+        } else {
+            return require(`external:${name}`);
+        }
+    } catch(err) {
+        console.error(`Error while loading ${name}`, err);
+    }
+}
