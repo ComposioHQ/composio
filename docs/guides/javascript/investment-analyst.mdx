@@ -2,17 +2,17 @@
 title: "Investment Analyst"
 sidebarTitle: "Investment Analyst"
 icon: "money-bill-trend-up"
-description: "This guide provides detailed steps to create an Investment Analyst Agent that leverages LangChain, Composio 
+description: "This guide provides detailed steps to create an Investment Analyst Agent that leverages LangChain and Composio 
 to perform investment research, analyze stocks, and offer recommendations based on user input"
 ---
-This project involves setting up and running a system of agents to conduct investment research, analyze the research, and provide investment recommendations. We use LangChain to setup the Agents, and Composio is used to add the tools we need, in this case we need SERP. Follow this guide to set up and run the project.
+This project involves setting up and running an agent to conduct investment research, analyze the research, and provide investment recommendations. We use LangChain to set up the Agent, and Composio is used to add the tools we need, in this case, we need SERP. Follow this guide to set up and run the project.
 
-<Card color="#7bee0c" title="Investment Analyst GitHub Repository" icon="github" href="https://git.new/investment-analyst">
+<Card color="#7bee0c" title="Investment Analyst GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/js/examples/docs-example/investment_analyst">
   Explore the complete source code for the Investment Analyst project. This repository contains all the necessary files and scripts to set up and run the investment analysis system using LangChain and Composio.
   <CardBody>
     - Clone the repository to get started
     - Follow the setup instructions in the README
-    - Experiment with and customize the investment analysis agents
+    - Experiment with and customize the investment analysis agent
   </CardBody>
 </Card>
 
@@ -38,7 +38,7 @@ This project involves setting up and running a system of agents to conduct inves
         import dotenv from 'dotenv';
         import { ChatOpenAI } from "@langchain/openai";
         import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-        import { ComposioToolSet } from "composio-core";
+        import { LangchainToolSet } from "composio-core";
         import { pull } from "langchain/hub";
 
         dotenv.config();
@@ -47,18 +47,20 @@ This project involves setting up and running a system of agents to conduct inves
     </Step>
 
     <Step title="Initialize Language Model and Define tools">
-    We'll initialize our language model and set up the necessary tools for our agents.
+    We'll initialize our language model and set up the necessary tools for our agent.
     We will be using the SERP tool, so that our agent can execute actions using this tool.    
     <CodeGroup>
         ```javascript LLM and Tools
         // Initialize the language model with OpenAI API key and model name
-        const llm = new ChatOpenAI({ model: "gpt-4o" });
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
         // Setup tools using ComposioToolSet
-        const composioToolset = new ComposioToolSet();
-        // Using .getTools we are able to add various tools needed by the agents to execute its objective
-        // in this case it's SERP, giving the agent access to the internet
-        const tools = await composioToolset.getTools({ apps: ["serpapi"] });
+        const composioToolset = new LangchainToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY
+        });
+        const tools = await composioToolset.get_actions({
+            actions: ["serpapi_search"]
+        });
         ```
     </CodeGroup>
     </Step>
@@ -98,6 +100,7 @@ This project involves setting up and running a system of agents to conduct inves
 
             console.log(result.output);
             return result.output;
+        }
 
         // Example usage
         const topic = "Tesla stock";
@@ -114,17 +117,21 @@ This project involves setting up and running a system of agents to conduct inves
     import dotenv from 'dotenv';
     import { ChatOpenAI } from "@langchain/openai";
     import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-    import { ComposioToolSet, App } from "composio-core";
+    import { LangchainToolSet } from "composio-core";
     import { pull } from "langchain/hub";
 
     dotenv.config();
 
     // Initialize the language model with OpenAI API key and model name
-    const llm = new ChatOpenAI({ model: "gpt-4o" });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
     // Setup tools using ComposioToolSet
-    const composioToolset = new ComposioToolSet();
-    const tools = await composioToolset.getTools({ apps: [App.SERPAPI] });
+    const composioToolset = new LangchainToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY
+    });
+    const tools = await composioToolset.get_actions({
+        actions: ["serpapi_search"]
+    });
 
     const prompt = await pull("hwchase17/openai-functions-agent");
     
