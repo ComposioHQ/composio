@@ -208,7 +208,17 @@ class WorkspaceConfigType:
 class Workspace(WithLogger, ABC):
     """Workspace abstraction for executing tools."""
 
+    url: str
+    """URL for the tooling server (Only applicable for remote workspace)."""
+
+    host: str
+    """Host string for the workspace."""
+
+    ports: t.List[int]
+    """List of available ports on the workspace, if empty all of the ports are available."""
+
     _shell_factory: t.Optional[ShellFactory] = None
+
     _file_manager_factory: t.Optional[FileManagerFactory] = None
 
     def __init__(self, config: WorkspaceConfigType):
@@ -288,8 +298,6 @@ class Workspace(WithLogger, ABC):
 
 class RemoteWorkspace(Workspace):
     """Remote workspace client."""
-
-    url: str
 
     def _request(
         self,

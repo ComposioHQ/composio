@@ -79,14 +79,18 @@ class E2BWorkspace(RemoteWorkspace):
                 f"sudo useradd -rm -d /home/{_ssh_username} -s "
                 f"/bin/bash -g root -G sudo {_ssh_username}"
             ),
+            on_stderr=lambda o: print(o.line),
+            on_stdout=lambda o: print(o.line),
         )
         self.sandbox.process.start(
-            cmd=f"echo {_ssh_username}:{_ssh_password} | sudo chpasswd"
+            cmd=f"echo {_ssh_username}:{_ssh_password} | sudo chpasswd",
         )
-        self.sandbox.process.start(cmd="sudo service ssh restart")
+        self.sandbox.process.start(
+            cmd="sudo service ssh restart",
+        )
         self.sandbox.process.start(
             cmd=(
-                f"cd /home/{_ssh_username} && COMPOSIO_LOGGING_LEVEL=debug "
+                f"COMPOSIO_LOGGING_LEVEL=debug "
                 f"_SSH_USERNAME={_ssh_username} _SSH_PASSWORD={_ssh_password} "
                 f"composio serve -h '0.0.0.0' -p {self.port}"
             ),
@@ -94,6 +98,9 @@ class E2BWorkspace(RemoteWorkspace):
         while self._request(endpoint="", method="get").status_code != 200:
             time.sleep(1)
         process.wait()
+
+        self.host = self.sandbox.get_hostname()
+        self.ports = []
 
     def teardown(self) -> None:
         """Teardown E2B workspace."""
