@@ -15,7 +15,7 @@
     "ultraLight": "#E4DAFF",
     "ultraDark": "#270A7A",
     "background": {
-      "dark": "#0b0b0d"
+      "dark": "#131313"
     }
   },
   "seo": {
@@ -71,7 +71,14 @@
       "url": "api-reference"
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "name": "SWE Kit Guide",
+       "url": "patterns", 
+       "icon": "code",
+       "iconType": "sharp-solid"
+    }
+  ],
   "navigation": [
     {
       "group": "Introduction",
@@ -165,6 +172,23 @@
       ]
     },
     {
+      "group": "Build w SWE Kit",
+      "pages": [
+      {
+        "group": "Simple Guide",
+        "pages": [
+         "patterns/swe-kit/getting-started"
+        ]
+      },
+        {
+        "group": "Advanced Guide",
+        "pages": [
+         "patterns/swe-kit/agent-creation"
+        ]
+      }
+    ]
+    }, 
+     {
       "group": "Guides",
       "pages": [
       {
@@ -189,7 +213,7 @@
         ]
       }
     ]
-    }, 
+    },
     {
       "group": "Examples",
       "pages": [

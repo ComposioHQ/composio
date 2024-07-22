@@ -1,0 +1,52 @@
+---
+title: "Getting Started with SWE Kit"
+sidebarTitle: "Getting Started"
+icon: "code"
+description: "In Composio, managing and monitoring your connections is essential for maintaining an organized and efficient workflow. This page will help you list and manage the connections associated with your account, allowing you to keep track of the active Connections and their details."
+---
+
+### Listing All Connections
+To view all the connections associated with your Composio account, use the following command:
+<CodeGroup>
+```bash bash
+composio connections
+```
+</CodeGroup>
+
+This command will display a comprehensive list of all connections, providing an overview of the various users linked to your account.
+
+
+### Listing Active Connections
+If you only want to see the connections that are currently active, you can use the --active option:
+<CodeGroup>
+```bash bash
+composio connections --active
+```
+</CodeGroup>
+This command filters the list to show only the active connections, making it easier to identify which users are currently active.
+
+### Getting Connection Details
+To get detailed information about a specific connection, use the get command followed by the connection ID. For example, to get details of a connection with the ID 123, you would use:
+<CodeGroup>
+```bash bash
+composio connections get 123
+```
+</CodeGroup>
+
+This command provides detailed information about the specified connection, including its status, configuration, and other relevant details.
+
+### Deleting a Connection
+If you need to remove a connection from your account, use the delete command followed by the connection ID. For example, to delete a connection with the ID 456, you would use:
+<CodeGroup>
+```bash bash
+composio connections delete 456
+```
+</CodeGroup>
+This command deletes the specified connection, removing it from your list of integrations.
+
+
+### Conclusion
+Managing connections in Composio is straightforward with the provided commands. 
+By listing all connections, filtering for active ones, 
+retrieving detailed information, and deleting unnecessary connections, 
+you can efficiently manage your users and ensure that your account remains organized and up-to-date.
