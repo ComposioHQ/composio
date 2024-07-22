@@ -214,6 +214,10 @@ class File(WithLogger):
                 cursor += 1
         return buffer
 
+    def total_lines(self) -> int:
+        """Total number of lines in the file."""
+        return sum(1 for _ in self._iter_file())
+
     def write(
         self,
         text: str,

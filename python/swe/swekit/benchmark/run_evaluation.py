@@ -184,8 +184,8 @@ class EvaluationManager(WithLogger):
                 image_name = (
                     f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
                 )
-                if version and check_and_pull_image(image_name):
-                    self.repo_to_image_id_map.setdefault(repo, image_name)
+                # if version and check_and_pull_image(image_name):
+                #     self.repo_to_image_id_map.setdefault(repo, image_name)
                 self.logger.info(
                     f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map}"
                     f"Repo: {repo}"

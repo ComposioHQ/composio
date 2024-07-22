@@ -21,11 +21,11 @@ class FindFileRequest(BaseFileRequest):
     case_sensitive: bool = Field(
         default=False, description="If set True the search will be case sensitive"
     )
-    include: t.Optional[t.List[t.Union[str, Path]]] = Field(
-        default=None, description="List of directories to search in"
+    include: t.List[t.Union[str, Path]] = Field(
+        default=[], description="List of directories to search in"
     )
-    exclude: t.Optional[t.List[t.Union[str, Path]]] = Field(
-        default=None, description="List of directories to exclude from the search"
+    exclude: t.List[t.Union[str, Path]] = Field(
+        default=[], description="List of directories to exclude from the search"
     )
 
 
@@ -84,8 +84,8 @@ class FindFile(BaseFileAction):
                 pattern=request_data.pattern,
                 depth=request_data.depth,
                 case_sensitive=request_data.case_sensitive,
-                include=request_data.include,
-                exclude=request_data.exclude,
+                include=request_data.include if len(request_data.include) > 0 else None,
+                exclude=request_data.exclude if len(request_data.exclude) > 0 else None,
             )
             return FindFileResponse(results=results)
         except ValueError as e:
