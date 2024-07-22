@@ -22,7 +22,7 @@ const client = new Composio({ apiKey: "COMPOSIO_API_KEY" });
 const entity = await client.getEntity({ id: "default" });
 
 // Integration chosen by the user to connect with
-const integration = await client.getIntegration({ id: "integration_id" });
+const integration = await client.integrations.get({ integrationId: "integration_id" });
 
 // List of params required from the user
 console.log(await integration.getRequiredVariables());
@@ -54,10 +54,8 @@ Send Requested Params
 // Collect the subdomain from your user via your platform's frontend
 const params = { subdomain: "***zendesk_sub_domain***" };
 
-const connectionRequest = await integration.initiateConnection({
-  params: params,
-  entityId: ""
-});
+const entity = await composio_client.getEntity('user_email_id');
+const connection = await entity.initiateConnection('github', params);
 
 if (connectionRequest.redirectUrl !== "") {
   console.log("Please complete the auth flow by opening this link: ", connectionRequest.redirectUrl);
