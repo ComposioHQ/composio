@@ -9,6 +9,7 @@
   - [Getting Started](#getting-started)
     - [Creating a new agent](#creating-a-new-agent)
     - [Workspace Environment](#workspace-environment)
+    - [Customising the workspace environment](#customising-the-workspace-environment)
     - [Running the Benchmark](#running-the-benchmark)
 
 ## Overview
@@ -138,7 +139,7 @@ from composio import ComposioToolSet, WorkspaceType
 
 composio_toolset = ComposioToolSet(
     workspace_config=WorkspaceType.FlyIO(
-        image="angrybayblade/composio:dev",
+        image="angrybayblade/composio",
         ports=[
             {
                 "ports": [
@@ -153,6 +154,28 @@ composio_toolset = ComposioToolSet(
 ```
 
 You can read more abour configuring network ports on flyio machine [here](https://fly.io/docs/machines/api/machines-resource/#create-a-machine-with-services)
+
+
+### Customising the workspace environment
+
+The workspace environment contains following environment variables by default
+
+- `COMPOSIO_API_KEY`: The composio API key for interacting with composio API.
+- `COMPOSIO_BASE_URL`: Base URL for composio API server.
+- `GITHUB_ACCESS_TOKEN`: Github access token for the agent.
+- `ACCESS_TOKEN`: Access token for composio tooling server.
+
+If you want to provide addional environment configuration you can use `environment` argument when creating a workspace configuration.
+
+```python
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker(
+        environment={
+            "SOME_API_TOKEN": "<SOME_API_TOKEN>",
+        }
+    )
+)
+```
 
 ### Running the Benchmark
 
@@ -173,7 +196,7 @@ To run the benchmarks in `E2B` or `FlyIO` sandbox, you can set the `workspace_en
 
 
 ```python
-from composio import ExecEnv
+from composio import WorkspaceType
 
 (...)
 
@@ -182,7 +205,7 @@ from composio import ExecEnv
         dry_run=False,
         test_range=test_range,
         test_instance_ids=test_instance_ids_list,
-        workspace_env=ExecEnv.E2B
+        workspace_env=WorkspaceType.E2B
     )
 ```
 
