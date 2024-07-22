@@ -6,6 +6,7 @@ import {
 } from "@cloudflare/workers-types";
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
+import { GetListActionsResponse } from "../sdk/client";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -38,7 +39,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getActionsSchema(filters);
-    return actions.map((action) => {
+    return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
           const formattedSchema: AiTextGenerationToolInput["function"] = {
             name: action.name!,
             description: action.description!,
@@ -74,7 +75,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     useCase: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action) => {
+    return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
           description: action.description!,

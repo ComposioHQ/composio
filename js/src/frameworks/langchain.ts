@@ -4,6 +4,7 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Dict, Sequence } from "../sdk/types";
+import { GetListActionsResponse } from "../sdk/client";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
@@ -92,7 +93,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
         const actions = await this.getActionsSchema(filters as any, entityId);
-        return actions!.map(tool =>
+        return actions!.map((tool: NonNullable<GetListActionsResponse["items"]>[0]) =>
             this._wrapTool(
                 tool,
                 entityId || this.entityId
@@ -116,7 +117,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
         const tools = await this.getToolsSchema(filters, entityId);
-        return tools.map(tool =>
+        return tools.map((tool: NonNullable<GetListActionsResponse["items"]>[0]) =>
             this._wrapTool(
                 tool,
                 entityId || this.entityId
