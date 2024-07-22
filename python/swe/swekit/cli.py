@@ -32,7 +32,7 @@ def swekit() -> None:
 )
 @click.option(
     "-t",
-    "--agent_type",
+    "--type",
     type=EnumParam(cls=AgentType),
     help="Type of agent to scaffold, defaults to SWE",
     default=AgentType.SWE,
