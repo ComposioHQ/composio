@@ -1,0 +1,125 @@
+---
+title: "Connected Accounts"
+sidebarTitle: "Accounts"
+icon: "plug"
+description: "Authorize Users Seamlessly 🌐"
+---
+
+When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
+
+## Add account via Javascript SDK
+
+<Steps>
+<Step title="Gather Integration Parameters">
+Example: API Key, Subdomain URL, Username.
+
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+
+const client = new Composio({ apiKey: "COMPOSIO_API_KEY" });
+
+const entity = await client.getEntity({ id: "default" });
+
+// Integration chosen by the user to connect with
+const integration = await client.getIntegration({ id: "integration_id" });
+
+// List of params required from the user
+console.log(await integration.getRequiredVariables());
+```
+</CodeGroup>
+
+Response if `Zendesk` Integration was chosen.
+<CodeGroup>
+```json Example Response
+[
+  {
+    "name": "subdomain",
+    "expected_from_customer": true,
+    "displayName": "Zendesk Subdomain",
+    "description": "Your Zendesk subdomain (e.g., your-company-name in your-company-name.zendesk.com)",
+    "type": "string",
+    "required": true
+  }
+]
+```
+
+</CodeGroup>
+</Step>
+
+<Step title="Initiate Connection Request">
+Send Requested Params
+<CodeGroup>
+```javascript javascript
+// Collect the subdomain from your user via your platform's frontend
+const params = { subdomain: "***zendesk_sub_domain***" };
+
+const connectionRequest = await integration.initiateConnection({
+  params: params,
+  entityId: ""
+});
+
+if (connectionRequest.redirectUrl !== "") {
+  console.log("Please complete the auth flow by opening this link: ", connectionRequest.redirectUrl);
+} else {
+  console.log("The account status is: ", connectionRequest);
+}
+```
+</CodeGroup>
+</Step>
+<Step title="Authorisation Flow Redirect (Optional)">
+
+In case of **OAuth Flow**, _redirectUrl_ will be returned.
+
+<Tip>
+Redirect User for OAuth Authorisation Completion page.
+</Tip>
+
+On approval, User will be redirected back to configured URL.
+
+<CodeGroup>
+```bash Example Connection Request
+{
+    "connectionStatus": "INITIATED",
+    "connectedAccountId": "1f32dbf-f7cfec95e567",
+    "redirectUrl": "https://ghghghh.zendesk.com/oauth/authorizations/new?client_id=test_aa&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth"
+}
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Validate Connection Request">
+
+Check if the status has been updated.
+
+<AccordionGroup title="Get Status of Connection Request">
+<Accordion title="Fetch ConnectedAccount">
+Get Connected Account using ID & Verify value of status
+<CodeGroup>
+```javascript Get Connected Account Object
+connected_account = composio.getConnection(connection_request.id)
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="Poll using `Wait` Method">
+<CodeGroup>
+```javascript Polling until Expiry
+connected_account = connection_request.waitUntilActive(timeout=60)
+```
+</CodeGroup>
+</Accordion>
+</AccordionGroup>
+Print Status 
+<CodeGroup>
+```javascript Print ConnectedAccount Status
+console.log(connected_account.connectionStatus)
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+## Using Connected Accounts
+
+By leveraging the `connected_account.id`, you can execute actions or configure triggers. For example, if you need to create a repository on GitHub, you can use the Composio SDK or the Action API. Simply provide the `connection_id` to enable this operation.

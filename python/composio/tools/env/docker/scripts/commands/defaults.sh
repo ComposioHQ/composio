@@ -42,6 +42,7 @@ open() {
         echo "Usage: open <file>"
         return
     fi
+    echo "Opening $1"
     # Check if the second argument is provided
     if [ -n "$2" ]; then
         # Check if the provided argument is a valid number
@@ -74,8 +75,10 @@ open() {
         _print
     elif [ -d "$1" ]; then
         echo "Error: $1 is a directory. You can only open files. Use cd or ls to navigate directories."
+        return 1
     else
-        echo "File $1 not found"
+        echo "File $1 not found, check the path" >&2
+        return 1
     fi
 }
 

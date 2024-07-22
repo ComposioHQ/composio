@@ -2,14 +2,15 @@
 Langchain demo.
 """
 
+# isort: skip_file
+
 import os
 
 import dotenv
 from composio_langchain import Action, ComposioToolSet
+from langchain import hub  # type: ignore
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-
-from langchain import hub  # type: ignore
 
 
 # Load environment variables from .env
@@ -19,7 +20,7 @@ dotenv.load_dotenv()
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize tools.
-openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+openai_client = ChatOpenAI(model="gpt-4o")
 
 
 def main():
@@ -31,7 +32,7 @@ def main():
     )
 
     # Define task
-    task = "Star a repo SamparkAI/docs on GitHub"
+    task = "Star a repo composiohq/composio on GitHub"
 
     # Define agent
     agent = create_openai_functions_agent(openai_client, tools, prompt)

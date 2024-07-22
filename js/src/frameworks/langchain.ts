@@ -31,7 +31,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
      * const tools = composio_toolset.get_tools({ apps: [App.GITHUB] });
      *
      * // Define task
-     * const task = "Star a repo SamparkAI/docs on GitHub";
+     * const task = "Star a repo composiohq/composio on GitHub";
      *
      * // Define agent
      * const agent = create_openai_functions_agent(openai_client, tools, prompt);

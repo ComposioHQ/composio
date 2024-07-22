@@ -61,7 +61,11 @@ class CreateImageVectorStore(
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
 
         # Create embedding function for images
-        image_embedding_function = embedding_functions.OpenCLIPEmbeddingFunction()
+        image_embedding_function = (
+            embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name="clip-ViT-B-32"
+            )
+        )
 
         image_collection = chroma_client.get_or_create_collection(
             name=image_collection_name,

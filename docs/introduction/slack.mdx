@@ -18,7 +18,7 @@ Just use `TestIntegration.AppName` to use default integrations.
 <CodeGroup>
 ```bash Install Composio SDK
 pip install composio-core
-````
+```
 </CodeGroup>
 Use `Slack Integration` to Connect your `Slack Account`
 Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/settings).
@@ -32,7 +32,7 @@ integration = client.get_integration(TestIntegration.SLACK)
 #Trying to initiate a new connection
 connected_account = integration.initiate_connection(entity_id = None)
 print("Complete the auth flow, link: ", connected_account.redirectUrl)
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Wait for Connected Account Status to be 'Active'">
@@ -68,7 +68,7 @@ messages=[
     {"role": "user", "content": my_task}
   ]
 )
-````
+```
 </CodeGroup>
 </Step>
 <Step title="Handle Tool Calls - Execute Actions">
@@ -78,7 +78,7 @@ messages=[
 execution_details = connected_account.handle_tools_calls(response)
 print(execution_details)
 print("Completed Task")
-````
+```
 </CodeGroup>
 </Step>
 </Steps>
@@ -118,5 +118,5 @@ messages=[
 execution_details = connected_account.handle_tools_calls(response)
 print(execution_details)
 print("Completed Task")
-````
+```
 </CodeGroup>

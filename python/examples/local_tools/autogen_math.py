@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from autogen import AssistantAgent, UserProxyAgent
+from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import App, ComposioToolSet
 
 
@@ -15,7 +15,7 @@ chatbot = AssistantAgent(
     system_message="Reply TERMINATE when the task is done or when user's content is empty",
     llm_config={
         "config_list": [
-            {"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]},
+            {"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]},
         ]
     },
 )
@@ -36,7 +36,9 @@ user_proxy = UserProxyAgent(
 )
 
 # Register the preferred Applications, with right executor.
-composio_toolset.register_tools(tools=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy)
+composio_toolset.register_tools(
+    tools=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy
+)
 
 # Define task.
 task = "What is 230 multiplied by 52 and added with 233 divided by 91?"

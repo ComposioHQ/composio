@@ -50,7 +50,7 @@ agent = t.cast(
         name=name,
         about=about,
         default_settings=default_settings,
-        model="gpt-4",
+        model="gpt-4o",
         tools=composio_tools,
     ),
 )
@@ -91,7 +91,7 @@ session = t.cast(
 
 user_msg = (
     "Hi, I am presenting my project, hosted at github repository "
-    "SamparkAI/composio_sdk. If you like it, adding a star would be helpful"
+    "composiohq/composio. If you like it, adding a star would be helpful"
 )
 
 # Get LLM response

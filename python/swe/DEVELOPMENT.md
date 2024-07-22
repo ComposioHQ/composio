@@ -39,6 +39,6 @@ For tools that need to execute in the active shell session (e.g., `git` commands
 
 ### Example Implementation
 
-For a practical example of implementing a shell tool, refer to the [Git Patch Tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/shelltool/git_cmds/actions/get_patch.py). This example demonstrates how to structure your tool and integrate it with the agent's shell capabilities.
+For a practical example of implementing a shell tool, refer to the [Git Patch Tool](https://github.com/composiohq/composio/blob/master/python/composio/tools/local/shelltool/git_cmds/actions/get_patch.py). This example demonstrates how to structure your tool and integrate it with the agent's shell capabilities.
 
 By following these guidelines, you can effectively extend the SWE agent's functionality to suit your specific development needs.

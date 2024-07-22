@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_autogen",
-    version="0.3.20",
+    version="0.3.25",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Autogen agent.",
@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core==0.3.20", "pyautogen>=0.2.19"],
+    install_requires=["composio_core==0.3.25", "pyautogen>=0.2.19"],
     include_package_data=True,
 )

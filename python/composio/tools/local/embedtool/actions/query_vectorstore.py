@@ -47,7 +47,7 @@ class QueryImageVectorStore(Action):
 
         text_embedding_function = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name="distiluse-base-multilingual-cased-v2"
+                model_name="clip-ViT-B-32"
             )
         )
         query_embeddings = text_embedding_function([request_data.search_query])
