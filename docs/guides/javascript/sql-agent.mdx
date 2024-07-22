@@ -1,15 +1,48 @@
 ---
 title: "SQL Agent"
 sidebarTitle: "SQL Agent"
-icon: "code"
-description: "This is a simple guide to demonstrate how to use SQL tool by composio. This example is written in javascript"
+icon: "database"
+description: "This guide provides detailed steps to create an agent that leverages 
+Composio to perform SQL queries and file operations to perform sql queries and 
+File operations and plot insightful graphs on the data in the db"
 ---
 
+This project involves setting up and running a system of agents to conduct SQL queries, write the output to a file, and plot graphs based on the data. We use Composio to set up the tools and OpenAI GPT-4 to power the agents. Follow this guide to set up and run the project.
+
+<Card color="#7bee0c" title="SQL Agent GitHub Repository" icon="github" href="https://git.new/SQLAgent">
+  Explore the complete source code for the SQL Agent project. This repository contains all the necessary files and scripts to set up and run the SQL Agent system using Langchain and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the SQL Agent
+  </CardBody>
+</Card>
+
 <Steps>
-    <Step title="Import Required Packages">
-    Import necessary packages for the Code Execution Agent:
+    <Step title="Set up the project">
+    Clone the repository and install dependencies:
     <CodeGroup>
-        ```javascript Import statements
+        ```bash
+        git clone https://github.com/your-repo/sql-agent.git
+        cd sql-agent
+        npm install
+        ```
+    </Step>
+
+    <Step title="Configure environment variables">
+    Create a `.env` file in the project root and add your API keys:
+    <CodeGroup>
+        ```bash
+        COMPOSIO_API_KEY=your_composio_api_key
+        OPENAI_API_KEY=your_openai_api_key
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Imports and Environment Setup">
+    In your JavaScript file, import the necessary libraries and set up your environment variables:
+    <CodeGroup>
+        ```javascript
         import dotenv from 'dotenv';
         import { ChatOpenAI } from "@langchain/openai";
         import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
@@ -21,96 +54,68 @@ description: "This is a simple guide to demonstrate how to use SQL tool by compo
     </CodeGroup>
     </Step>
 
-    <Step title="Initialize Composio Toolset">
-    Set up the Composio toolset and get the required tools:
+    <Step title="Initialize Language Model and Define Tools">
+    Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agents:
     <CodeGroup>
-        ```javascript Tools
+        ```javascript
+        const llm = new ChatOpenAI({ 
+            model: "gpt-4",
+            apiKey: process.env.OPENAI_API_KEY
+        });
+
         const toolset = new LangchainToolSet({ 
             apiKey: process.env.COMPOSIO_API_KEY
         });
 
-        const tools = await toolset.get_actions({ 
-            actions: ["codeinterpreter_create_sandbox", "codeinterpreter_execute_code"] 
+        const sqlFileTool = await toolset.get_actions({ 
+            actions: ["sqltool_execute_query", "filetool_write"] 
+        });
+
+        const allTools = await toolset.get_actions({ 
+            actions: ["sqltool_execute_query", "filetool_write", "codeinterpreter_execute_code"] 
         });
         ```
     </CodeGroup>
     </Step>
 
-    <Step title="Set up the AI Model">
-    Initialize the OpenAI ChatGPT model:
+    <Step title="Define the Task and Execute SQL Query">
+    Define the task to execute a SQL query and write the output to a file:
     <CodeGroup>
-        ```javascript Model
-        const llm = new ChatOpenAI({ 
-            model: "gpt-4o",
-            apiKey: process.env.OPEN_AI_API_KEY
-        });
-        ```
-    </CodeGroup>
-    </Step>
-
-    <Step title="Create the AI Agent">
-    Set up the agent's prompt and create the OpenAI Functions Agent:
-    <CodeGroup>
-        ```javascript Agent
+        ```javascript
         const prompt = await pull("hwchase17/openai-functions-agent");
-        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+
+        const queryTask = "Write sqlite query to get top 10 rows from the only table MOCK_DATA " +
+                          "and database companydb using sqltool, write the output in a file called log.txt and return the output";
+
+        const queryAgent = await createOpenAIFunctionsAgent({ llm, tools: sqlFileTool, prompt });
+        const agentExecutor = new AgentExecutor({ agent: queryAgent, tools: sqlFileTool, verbose: true });
+        const res = await agentExecutor.invoke({ input: queryTask });
         ```
     </CodeGroup>
     </Step>
 
-    <Step title="Set up the Agent Executor">
-    Create the AgentExecutor to run the agent:
+    <Step title="Define and Execute Code Interpreter Task">
+    Create and execute the agent for Code Interpreter operations to plot a graph based on the extracted data:
     <CodeGroup>
-        ```javascript Executor
-        const agentExecutor = new AgentExecutor({ 
-            agent, 
-            tools, 
-            verbose: true,
+        ```javascript
+        const codeTool = await toolset.get_actions({ 
+            actions: ["codeinterpreter_execute_code"] 
         });
+
+        const codeAgent = await createOpenAIFunctionsAgent({ llm, tools: codeTool, prompt });
+        const codeExecutor = new AgentExecutor({ agent: codeAgent, tools: codeTool, verbose: true });
+
+        const plotTask = "Using the following extracted information, plot the graph between first name and salary: " +
+                         res.output;
+
+        const finalRes = await codeExecutor.invoke({ input: plotTask });
         ```
     </CodeGroup>
     </Step>
 
-    <Step title="Define the Code Execution Function">
-    Create the main function to generate and execute code:
-    <CodeGroup>
-        ```javascript Main Function
-        async function executeCodeAgent(userProblem) {
-            // Generate code
-            console.log("Generating code for the problem...");
-            const codeGenerationResult = await agentExecutor.invoke({ 
-                input: `Generate Python code to solve the following problem: ${userProblem}. 
-                        Only provide the code, no explanations.`
-            });
-            const generatedCode = codeGenerationResult.output;
-            console.log("Generated Code:", generatedCode);
-
-            // Execute code
-            console.log("\nExecuting the generated code...");
-            const executionResult = await agentExecutor.invoke({ 
-                input: `Execute the following Python code:\n${generatedCode}`
-            });
-            console.log("\nExecution Result:", executionResult.output);
-        }
-        ```
-    </CodeGroup>
-    </Step>
-
-    <Step title="Run the Code Execution Agent">
-    Execute the agent with a sample problem:
-    <CodeGroup>
-        ```javascript Run
-        const userProblem = "Create a list of prime numbers up to 50";
-        executeCodeAgent(userProblem).catch(error => console.error("An error occurred:", error));
-        ```
-    </CodeGroup>
-    </Step>
 </Steps>
 
-## Complete Code
-
-Here's the complete JavaScript code for the Code Execution Agent:
-
+## Putting it All Together
 <CodeGroup>
     ```javascript
     import dotenv from 'dotenv';
@@ -121,45 +126,48 @@ Here's the complete JavaScript code for the Code Execution Agent:
 
     dotenv.config();
 
-    async function executeCodeAgent(userProblem) {
+    async function runSQLAgent() {
+        const llm = new ChatOpenAI({ 
+            model: "gpt-4",
+            apiKey: process.env.OPENAI_API_KEY
+        });
+
         const toolset = new LangchainToolSet({ 
             apiKey: process.env.COMPOSIO_API_KEY
         });
 
-        const tools = await toolset.get_actions({ 
-            actions: ["codeinterpreter_create_sandbox", "codeinterpreter_execute_code"] 
+        const sqlFileTool = await toolset.get_actions({ 
+            actions: ["sqltool_execute_query", "filetool_write"] 
         });
 
-        const llm = new ChatOpenAI({ 
-            model: "gpt-4o",
-            apiKey: process.env.OPEN_AI_API_KEY
+        const allTools = await toolset.get_actions({ 
+            actions: ["sqltool_execute_query", "filetool_write", "codeinterpreter_execute_code"] 
         });
 
         const prompt = await pull("hwchase17/openai-functions-agent");
-        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
 
-        const agentExecutor = new AgentExecutor({ 
-            agent, 
-            tools, 
-            verbose: true,
+        const queryTask = "Write sqlite query to get top 10 rows from the only table MOCK_DATA " +
+                          "and database companydb using sqltool, write the output in a file called log.txt and return the output";
+
+        const queryAgent = await createOpenAIFunctionsAgent({ llm, tools: sqlFileTool, prompt });
+        const agentExecutor = new AgentExecutor({ agent: queryAgent, tools: sqlFileTool, verbose: true });
+        const res = await agentExecutor.invoke({ input: queryTask });
+
+        const codeTool = await toolset.get_actions({ 
+            actions: ["codeinterpreter_execute_code"] 
         });
 
-        console.log("Generating code for the problem...");
-        const codeGenerationResult = await agentExecutor.invoke({ 
-            input: `Generate Python code to solve the following problem: ${userProblem}. 
-                    Only provide the code, no explanations.`
-        });
-        const generatedCode = codeGenerationResult.output;
-        console.log("Generated Code:", generatedCode);
+        const codeAgent = await createOpenAIFunctionsAgent({ llm, tools: codeTool, prompt });
+        const codeExecutor = new AgentExecutor({ agent: codeAgent, tools: codeTool, verbose: true });
 
-        console.log("\nExecuting the generated code...");
-        const executionResult = await agentExecutor.invoke({ 
-            input: `Execute the following Python code:\n${generatedCode}`
-        });
-        console.log("\nExecution Result:", executionResult.output);
+        const plotTask = "Using the following extracted information, plot the graph between first name and salary: " +
+                         res.output;
+
+        const finalRes = await codeExecutor.invoke({ input: plotTask });
+
+        console.log(finalRes);
     }
 
-    const userProblem = "Create a list of prime numbers up to 50";
-    executeCodeAgent(userProblem).catch(error => console.error("An error occurred:", error));
+    runSQLAgent().catch(console.error);
     ```
 </CodeGroup>

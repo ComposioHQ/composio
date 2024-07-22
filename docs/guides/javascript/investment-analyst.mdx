@@ -1,0 +1,161 @@
+---
+title: "Investment Analyst"
+sidebarTitle: "Investment Analyst"
+icon: "money-bill-trend-up"
+description: "This guide provides detailed steps to create an Investment Analyst Agent that leverages LangChain, Composio 
+to perform investment research, analyze stocks, and offer recommendations based on user input"
+---
+This project involves setting up and running a system of agents to conduct investment research, analyze the research, and provide investment recommendations. We use LangChain to setup the Agents, and Composio is used to add the tools we need, in this case we need SERP. Follow this guide to set up and run the project.
+
+<Card color="#7bee0c" title="Investment Analyst GitHub Repository" icon="github" href="https://git.new/investment-analyst">
+  Explore the complete source code for the Investment Analyst project. This repository contains all the necessary files and scripts to set up and run the investment analysis system using LangChain and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the investment analysis agents
+  </CardBody>
+</Card>
+
+<Steps>
+    <Step title="Project Setup">
+    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
+
+    `cd cookbook/examples/javascript/investment_analyst`
+
+    Install the necessary dependencies:
+    <CodeGroup>
+        ```bash Run Command
+        npm install dotenv @langchain/openai langchain composio-core
+        ```
+        Create a .env file and add your API keys.
+    </CodeGroup>
+    </Step>
+
+    <Step title="Imports and Environment Setup">
+    In your JavaScript file, import the necessary libraries and set up your environment variables.
+    <CodeGroup>
+        ```javascript Import statements
+        import dotenv from 'dotenv';
+        import { ChatOpenAI } from "@langchain/openai";
+        import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+        import { ComposioToolSet } from "composio-core";
+        import { pull } from "langchain/hub";
+
+        dotenv.config();
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Language Model and Define tools">
+    We'll initialize our language model and set up the necessary tools for our agents.
+    We will be using the SERP tool, so that our agent can execute actions using this tool.    
+    <CodeGroup>
+        ```javascript LLM and Tools
+        // Initialize the language model with OpenAI API key and model name
+        const llm = new ChatOpenAI({ model: "gpt-4o" });
+
+        // Setup tools using ComposioToolSet
+        const composioToolset = new ComposioToolSet();
+        // Using .getTools we are able to add various tools needed by the agents to execute its objective
+        // in this case it's SERP, giving the agent access to the internet
+        const tools = await composioToolset.getTools({ apps: ["serpapi"] });
+        ```
+    </CodeGroup>
+    </Step>
+
+   <Step title="Defining the Agent">
+   Define the roles and goals of our agent. We'll create a single agent that combines the roles of researcher, analyst, and recommender.
+   <CodeGroup>
+       ```javascript Agent
+        const prompt = await pull("hwchase17/openai-functions-agent");
+        
+        const agent = await createOpenAIFunctionsAgent({
+            llm,
+            tools,
+            prompt,
+        });
+
+        const agentExecutor = new AgentExecutor({
+            agent,
+            tools,
+            verbose: true,
+        });
+        ```
+   </CodeGroup>
+   </Step>
+
+    <Step title="Executing the Agent">
+    Create a function to run the agent and execute the process.
+    <CodeGroup>
+        ```javascript Execute
+        async function runInvestmentAnalysis(topic) {
+            const result = await agentExecutor.invoke({
+                input: `Conduct a comprehensive investment analysis on ${topic}. 
+                        First, research the topic using SERP to get the latest information. 
+                        Then, analyze the gathered information for investment insights. 
+                        Finally, provide investment recommendations, listing pros and cons as bullet points.`
+            });
+
+            console.log(result.output);
+            return result.output;
+
+        // Example usage
+        const topic = "Tesla stock";
+        runInvestmentAnalysis(topic);
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+
+## Putting it All Together
+<CodeGroup>
+    ```javascript Final Code
+    import dotenv from 'dotenv';
+    import { ChatOpenAI } from "@langchain/openai";
+    import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+    import { ComposioToolSet, App } from "composio-core";
+    import { pull } from "langchain/hub";
+
+    dotenv.config();
+
+    // Initialize the language model with OpenAI API key and model name
+    const llm = new ChatOpenAI({ model: "gpt-4o" });
+
+    // Setup tools using ComposioToolSet
+    const composioToolset = new ComposioToolSet();
+    const tools = await composioToolset.getTools({ apps: [App.SERPAPI] });
+
+    const prompt = await pull("hwchase17/openai-functions-agent");
+    
+    const agent = await createOpenAIFunctionsAgent({
+        llm,
+        tools,
+        prompt,
+    });
+
+    const agentExecutor = new AgentExecutor({
+        agent,
+        tools,
+        verbose: true,
+    });
+
+    async function runInvestmentAnalysis(topic) {
+        const result = await agentExecutor.invoke({
+            input: `Conduct a comprehensive investment analysis on ${topic}. 
+                    First, research the topic using SERP to get the latest information. 
+                    Then, analyze the gathered information for investment insights. 
+                    Finally, provide investment recommendations, listing pros and cons as bullet points.`
+        });
+
+        console.log(result.output);
+        return result.output;
+    }
+
+    // Example usage
+    const topic = "Tesla stock";
+    runInvestmentAnalysis(topic);
+    ```
+</CodeGroup>
+
+This JavaScript implementation uses LangChain to create an agent that performs investment research, analysis, and recommendations. It utilizes the Composio toolset to access the SERP tool for web searches. The agent combines the roles of researcher, analyst, and recommender into a single entity, streamlining the process while still achieving the desired outcome.
