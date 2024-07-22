@@ -5,3 +5,4 @@ from .grep import SearchWord
 from .list import ListFiles
 from .open import OpenFile
 from .scroll import Scroll
+from .write import Write
