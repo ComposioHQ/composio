@@ -14,9 +14,10 @@ from composio.tools.local.filetool.actions.base_action import (
 class ScrollRequest(BaseFileRequest):
     """Request to scroll up/down in the editor."""
 
-    direction: ScrollDirection = Field(
-        default=ScrollDirection.DOWN,
+    direction: str = Field(
+        default="down",
         description="The direction to scroll: up/down, by default it's down",
+        title="ScrollDirection",
     )
 
 
@@ -24,10 +25,17 @@ class ScrollResponse(BaseFileResponse):
     """Response to scroll up/down in the editor."""
 
     lines: t.Dict[int, str] = Field(
-        default={}, description="File content with their line numbers"
+        default={},
+        description="File content with their line numbers",
     )
-    total_lines: int = Field(default=0, description="Total number of lines in the file")
-    error: str = Field(default="", description="Error message if any")
+    total_lines: int = Field(
+        default=0,
+        description="Total number of lines in the file",
+    )
+    error: str = Field(
+        default="",
+        description="Error message if any",
+    )
 
 
 class Scroll(BaseFileAction):
@@ -52,9 +60,10 @@ class Scroll(BaseFileAction):
             recent_file = file_manager.recent
             if recent_file is None:
                 return ScrollResponse(error="No file opened")
-            recent_file.scroll(direction=request_data.direction)
+            recent_file.scroll(direction=ScrollDirection(request_data.direction))
             return ScrollResponse(
-                lines=recent_file.read(), total_lines=recent_file.total_lines()
+                lines=recent_file.read(),
+                total_lines=recent_file.total_lines(),
             )
         except FileNotFoundError as e:
             return ScrollResponse(error=f"File not found: {str(e)}")

@@ -19,7 +19,7 @@ SCOPE_FILE = "file"
 SCOPE_WINDOW = "window"
 
 
-class ScrollDirection(Enum):
+class ScrollDirection(str, Enum):
     UP = "up"
     DOWN = "down"
 

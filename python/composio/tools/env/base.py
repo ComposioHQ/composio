@@ -20,7 +20,7 @@ from composio.utils.logging import WithLogger
 ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
 ENV_ACCESS_TOKEN = "ACCESS_TOKEN"
 
-WORKSPACE_PROMPT = """You have access to a workspace with open {port} network
+WORKSPACE_PROMPT = """You have access to a workspace with open {ports} network
 ports being available publicly and hostname to reach this machine is {host}, 
 you can use this for development and deployment purposes.
 """
