@@ -9,8 +9,15 @@ File operations and plot insightful graphs on the data in the db"
 
 This project involves setting up and running a system of agents to conduct SQL queries, write the output to a file, and plot graphs based on the data. We use Composio to set up the tools and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project.
 
-## Link to the Source Code
-- [GitHub](https://git.new/SQLAgent)
+
+<Card title="SQL Agent GitHub Repository" icon="github" href="https://git.new/SQLAgent">
+  Explore the complete source code for the SQL Agent project. This repository contains all the necessary files and scripts to set up and run the SQL Agent system using Langchain and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the SQL Agent
+  </CardBody>
+</Card>
 
 <Steps>
     <Step title="Run the `setup.sh` file">
@@ -52,17 +59,10 @@ This project involves setting up and running a system of agents to conduct SQL q
     Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agents.
     <CodeGroup>
         ```python
-        api_key = os.getenv("OPENAI_API_KEY","")
-        if(api_key==""):
-            print("OpenAI API Key not found in env")
-        # Initialize the LLM with the OpenAI GPT-4o model and API key
-        llm = ChatOpenAI(model="gpt-4o", openai_api_key=api_key)
+        llm = ChatOpenAI(model="gpt-4o")
 
-        # Initialize the Composio ToolSet with the API key
-        composio_api_key = os.getenv("COMPOSIO_API_KEY","")
-        if(composio_api_key==""):
-            print("Composio api key not found")
-        composio_toolset = ComposioToolSet(api_key=composio_api_key)
+        # Initialize the Composio ToolSet
+        composio_toolset = ComposioToolSet()
 
         # Get tools for SQL and File operations
         sql_file_tool = composio_toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])
@@ -131,10 +131,10 @@ This project involves setting up and running a system of agents to conduct SQL q
     dotenv.load_dotenv()
 
     # Initialize the LLM with the OpenAI GPT-4o model and API key
-    llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
+    llm = ChatOpenAI(model="gpt-4o")
 
-    # Initialize the Composio ToolSet with the API key
-    composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
+    # Initialize the Composio ToolSet
+    composio_toolset = ComposioToolSet()
 
     # Get tools for SQL and File operations
     sql_file_tool = composio_toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])

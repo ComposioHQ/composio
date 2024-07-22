@@ -8,12 +8,9 @@ from composio_langchain import App, ComposioToolSet
 # Load environment variables
 dotenv.load_dotenv()
 
-api_key=os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI key:")
-    os.environ["OPENAI_API_KEY"]=api_key
+
 # Initialize the language model with OpenAI API key and model name
-llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o")
+llm = ChatOpenAI(model="gpt-4o")
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
@@ -24,7 +21,7 @@ tools = composio_toolset.get_tools(apps=[App.SERPAPI])
 
 # Define the Investment Researcher agent
 researcher = Agent(
-    role='Investment Researcher',
+    role="Investment Researcher",
     goal=(
         "Use SERP to research the top 2 results based on the input "
         "given to you and provide a report"
@@ -37,29 +34,28 @@ researcher = Agent(
     ),
     verbose=True,
     allow_delegation=True,
-    llm=llm
+    llm=llm,
 )
 
 # Define the Investment Analyst agent
 analyser = Agent(
-    role='Investment Analyst',
+    role="Investment Analyst",
     goal=(
-        "Analyse the stock based on information available to it, use all "
-        "the tools"
-        ),
+        "Analyse the stock based on information available to it, use all " "the tools"
+    ),
     backstory=(
         "You are an expert Investment Analyst. You research on the given "
         "topic and analyse your research for insights. Note: Do not use "
         "SERP when you're writing the report."
     ),
     verbose=True,
-    llm=llm
+    llm=llm,
 )
 
 # Define the Investment Recommendation agent
 recommend = Agent(
-    role='Investment Recommendation',
-    goal='Based on the analyst insights, you offer recommendations',
+    role="Investment Recommendation",
+    goal="Based on the analyst insights, you offer recommendations",
     backstory=(
         "You are an expert Investment Recommender. You understand "
         "the analyst insights and with your expertise suggest and offer "
@@ -67,7 +63,7 @@ recommend = Agent(
         "bullet points."
     ),
     verbose=True,
-    llm=llm
+    llm=llm,
 )
 
 # Get user input for the research topic
@@ -75,14 +71,13 @@ user_input = input("Please provide a topic: ")
 
 # Define the task for the analyst agent
 analyst_task = Task(
-    description=f'Research on {user_input}',
+    description=f"Research on {user_input}",
     agent=analyser,
     expected_output=(
         "When the input is well researched, thoroughly analysed, and "
         "recommendation is offered"
-    )
+    ),
     tools=tools,
-
 )
 
 # Create the investment crew with the defined agents and task

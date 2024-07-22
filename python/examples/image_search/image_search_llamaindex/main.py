@@ -16,13 +16,6 @@ from composio.tools.local import embedtool
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
-    os.environ["OPENAI_API_KEY"] = api_key
-
-
-    
 # Initialize a ComposioToolSet with the API key from environment variables
 toolset = ComposioToolSet()
 
@@ -54,7 +47,11 @@ agent = FunctionCallingAgentWorker(
 
 images_path = input("Enter the path to the images folder:")
 search_prompt = input("Enter the image description for the image you want to search:")
-top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
+top_no_of_images = int(
+    input(
+        "What number of images that are closest to the description that should be returned:"
+    )
+)  # returns n closest images to the search
 
 task_description = f"""
     Check if a Vector Store exists for the image directory

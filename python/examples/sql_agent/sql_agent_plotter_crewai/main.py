@@ -7,10 +7,6 @@ from langchain_openai import ChatOpenAI
 
 from composio import Action, App
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OpenAI API Key:")
-    os.environ["OPENAI_API_KEY"] = api_key
 
 
 llm = ChatOpenAI(model="gpt-4-turbo")
@@ -44,7 +40,7 @@ while True:
         goal=f"""Run SQL queries to get acheive a task given by the user""",
         backstory=(
             "You are an agent that helps users run SQL queries. "
-            "Connect to the local SQlite DB at connection string = companydb"
+            "Connect to the local SQlite DB at connection string = company.db"
             "Try to analyze the tables first by listing all the tables and columns "
             "and doing distinct values for each column and once sure, make a query to get the data you need."
         ),

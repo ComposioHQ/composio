@@ -5,6 +5,7 @@ from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
+
 load_dotenv()
 
 
@@ -22,10 +23,11 @@ pr_agent_tools = composio_toolset.get_actions(
     ]
 )
 
-channel_id = os.getenv("CHANNEL_ID","")
-if(channel_id==""):
-    channel_id=input("Enter Channel id:")
-code_review_assistant_prompt = """
+channel_id = os.getenv("CHANNEL_ID", "")
+if channel_id == "":
+    channel_id = input("Enter Channel id:")
+code_review_assistant_prompt = (
+    """
         You are an experienced code reviewer.
         Your task is to review the provided file diff and give constructive feedback.
 
@@ -35,17 +37,17 @@ code_review_assistant_prompt = """
         3. Provide actionable suggestions if there are any issues in the code.
 
         Once you have decided on the changes, for any TODOs, create a Github issue.
-        And send the summary of the PR review to """+channel_id+""" channel on slack. Slack doesn't have markdown and so send a plain text message.
+        And send the summary of the PR review to """
+    + channel_id
+    + """ channel on slack. Slack doesn't have markdown and so send a plain text message.
         Also add the comprehensive review to the PR as a comment.
 """
+)
 
-api_key = os.getenv("OPENAI_API_KEY","")
-if(api_key==""):
-    api_key=input("Enter OPENAI API KEY:")
-    os.environ["OPENAI_API_KEY"]=api_key
+
 
 # Initialize the language model
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-4o")
 
 # Create CrewAI agent
 code_reviewer = Agent(
@@ -57,6 +59,7 @@ code_reviewer = Agent(
     tools=pr_agent_tools,
     llm=llm,
 )
+
 
 # Create a task for the agent
 def review_code_task(code_to_review):
