@@ -20,6 +20,11 @@ from composio.utils.logging import WithLogger
 ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
 ENV_ACCESS_TOKEN = "ACCESS_TOKEN"
 
+WORKSPACE_PROMPT = """You have access to a workspace with open {port} network
+ports being available publicly and hostname to reach this machine is {host}, 
+you can use this for development and deployment purposes.
+"""
+
 
 def _read_env_var(name: str, default: t.Any) -> str:
     """Read environment variable."""
@@ -255,6 +260,10 @@ class Workspace(WithLogger, ABC):
         return f"Workspace(type={self.__class__.__name__}, id={self.id})"
 
     __repr__ = __str__
+
+    def as_prompt(self) -> str:
+        """Format current workspace details for the agentic use."""
+        return WORKSPACE_PROMPT.format(ports=self.ports, host=self.host)
 
     @abstractmethod
     def setup(self) -> None:
