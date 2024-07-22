@@ -1,5 +1,6 @@
 {
   "name": "Composio",
+  "theme": "venus",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
@@ -10,12 +11,12 @@
   "favicon": "/favicon1.png",
   "colors": {
     "primary": "#343434",
-    "light": "#34AAFF",
-    "dark": "#355cff",
-    "ultraLight": "#E4DAFF",
-    "ultraDark": "#270A7A",
+    "light": "#fff",
+    "dark": "#fff",
+    "ultraLight": "#fff",
+    "ultraDark": "#fff",
     "background": {
-      "dark": "#131313"
+      "dark": "#181818"
     }
   },
   "seo": {
