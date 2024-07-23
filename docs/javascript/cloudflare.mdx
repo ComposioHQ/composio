@@ -46,7 +46,7 @@ const config = {
 };
 
 async function setupUserConnectionIfNotExists(toolset, entityId, c) {
-        const entity = await toolset.client.getEntity(entityId);
+        const entity = toolset.client.getEntity(entityId);
         const connection = await entity.getConnection('github');
 
         if (!connection) {
@@ -76,7 +76,7 @@ app.post('/', async (c) => {
         });
 
         try {
-            const entity = await toolset.client.getEntity('default');
+            const entity = toolset.client.getEntity('default');
             await setupUserConnectionIfNotExists(toolset, entity.id, c);
             // Get the required tools for the AI task
             const tools = await toolset.get_actions({ actions: ['github_issues_create'] }, entity.id);

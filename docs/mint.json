@@ -148,9 +148,6 @@
       "group": "More",
       "icon": "circle",
       "pages": [
-        "javascript/account",
-        "javascript/entity",
-        "javascript/action",
         "javascript/trigger"
       ]
     }
