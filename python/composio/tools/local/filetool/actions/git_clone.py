@@ -1,5 +1,6 @@
-import typing as t
 import os
+import pathlib
+import typing as t
 
 from pydantic import Field
 
@@ -9,12 +10,15 @@ from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
 )
-import pathlib
+
 
 class GitCloneRequest(BaseFileRequest):
     """Request to clone a Git repository."""
 
-    repo_name: str = Field(..., description="The Git repository to clone. ex composiohq/composio or django/django")
+    repo_name: str = Field(
+        ...,
+        description="The Git repository to clone. ex composiohq/composio or django/django",
+    )
     destination: t.Optional[str] = Field(
         None,
         description="""The local directory to clone the repository into. If not provided, it will clone into the current working directory.
@@ -36,6 +40,7 @@ class GitCloneResponse(BaseFileResponse):
     success: bool = Field(False, description="Whether the clone was successful")
     message: str = Field("", description="Status message or error description")
 
+
 def git_reset_cmd(commit_id: str) -> str:
     """Commands to reset git repository state."""
     reset_commands = [
@@ -47,26 +52,27 @@ def git_reset_cmd(commit_id: str) -> str:
     ]
     return " && ".join(reset_commands)
 
+
 def git_clone_cmd(repo: str, commit_id: str) -> str:
     """Commands to clone github repository."""
     # repo is in the format of "composiohq/composio" or "django/django"
-    repo_name = repo.split('/')[-1]
-    
+    repo_name = repo.split("/")[-1]
+
     github_access_token = os.environ.get("GITHUB_ACCESS_TOKEN", "").strip()
-    
+
     if not github_access_token and os.environ.get("ALLOW_CLONE_WITHOUT_REPO") != "true":
         raise RuntimeError("Cannot clone github repository without github access token")
-    
+
     clone_url = f"https://{github_access_token+'@' if github_access_token else ''}github.com/{repo}.git"
-    
+
     commands = [
         f"git clone {clone_url} -q",
         f"cd {repo_name}",
     ]
-    
+
     if commit_id:
         commands.append(f"git reset --hard {commit_id}")
-    
+
     commands.append("git status")
     return " && ".join(commands)
 
@@ -112,14 +118,23 @@ class GitClone(BaseFileAction):
                 command = git_clone_cmd(request_data.repo_name, request_data.commit_id)
             # Check if folder already exists
             current_dir = file_manager.current_dir()
-            if pathlib.Path(current_dir, '.git').exists():
-                return GitCloneResponse(success=False, message=f"The directory '{current_dir}' is already a git repository.")
-                                
-            if pathlib.Path(current_dir, repo_dir, '.git').is_dir():
-                file_manager.chdir(os.path.join(file_manager.current_dir(), repo_dir))
-                return GitCloneResponse(success=False, message=f"The directory '{repo_dir}' is already a git repository.")                    
+            if pathlib.Path(current_dir, ".git").exists():
+                return GitCloneResponse(
+                    success=False,
+                    message=f"The directory '{current_dir}' is already a git repository.",
+                )
 
-            if pathlib.Path(current_dir, repo_dir).exists() and not request_data.just_reset:
+            if pathlib.Path(current_dir, repo_dir, ".git").is_dir():
+                file_manager.chdir(os.path.join(file_manager.current_dir(), repo_dir))
+                return GitCloneResponse(
+                    success=False,
+                    message=f"The directory '{repo_dir}' is already a git repository.",
+                )
+
+            if (
+                pathlib.Path(current_dir, repo_dir).exists()
+                and not request_data.just_reset
+            ):
                 # Check if the directory is a git repository
                 raise FileExistsError(
                     f"The directory '{repo_dir}' already exists. Clone failed."
@@ -127,11 +142,18 @@ class GitClone(BaseFileAction):
             output, error = file_manager.execute_command(command)
             if error:
                 return GitCloneResponse(success=False, error=error, message="")
-              
-            if pathlib.Path(current_dir, repo_dir).exists() and not request_data.just_reset:                
+
+            if (
+                pathlib.Path(current_dir, repo_dir).exists()
+                and not request_data.just_reset
+            ):
                 file_manager.chdir(os.path.join(file_manager.current_dir(), repo_dir))
                 return GitCloneResponse(success=True, message=output)
             else:
-                raise FileExistsError(f"After cloning, the directory '{repo_dir}' does not exist. Clone failed.")
+                raise FileExistsError(
+                    f"After cloning, the directory '{repo_dir}' does not exist. Clone failed."
+                )
         except Exception as e:
-            return GitCloneResponse(success=False, message=f"Error cloning repository: {str(e)}")
+            return GitCloneResponse(
+                success=False, message=f"Error cloning repository: {str(e)}"
+            )

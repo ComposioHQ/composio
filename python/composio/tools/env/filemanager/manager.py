@@ -2,6 +2,7 @@
 
 import os
 import re
+import subprocess
 import threading
 import typing as t
 from fnmatch import translate
@@ -12,7 +13,7 @@ import typing_extensions as te
 from composio.tools.env.filemanager.file import File
 from composio.tools.env.id import generate_id
 from composio.utils.logging import WithLogger
-import subprocess
+
 
 _active_manager: t.Optional["FileManager"] = None
 _manager_lock = threading.Lock()
@@ -178,8 +179,6 @@ class FileManager(WithLogger):
             else:
                 paths_to_search = list(self.working_dir.glob(str(pattern)))
 
-
-
         for file_path in paths_to_search:
             if file_path.is_file() and not file_path.name.startswith("."):
                 try:
@@ -188,13 +187,17 @@ class FileManager(WithLogger):
                             if case_insensitive:
                                 word_lower = word.lower()
                                 if word_lower in line.lower():
-                                    rel_path = str(file_path.relative_to(self.working_dir))
+                                    rel_path = str(
+                                        file_path.relative_to(self.working_dir)
+                                    )
                                     if rel_path not in results:
                                         results[rel_path] = []
                                     results[rel_path].append((i, line.strip()))
                             else:
                                 if word in line:
-                                    rel_path = str(file_path.relative_to(self.working_dir))
+                                    rel_path = str(
+                                        file_path.relative_to(self.working_dir)
+                                    )
                                     if rel_path not in results:
                                         results[rel_path] = []
                                     results[rel_path].append((i, line.strip()))
@@ -335,7 +338,7 @@ class FileManager(WithLogger):
     def current_dir(self) -> str:
         """Get the current working directory."""
         return str(self.working_dir)
-    
+
     def execute_command(self, command: str) -> t.Tuple[str, t.Optional[str]]:
         """Execute a command in the current working directory."""
         try:
@@ -346,7 +349,7 @@ class FileManager(WithLogger):
                 capture_output=True,
                 text=True,
                 timeout=360,
-                cwd=self.working_dir
+                cwd=self.working_dir,
             )
             return result.stdout, None
         except subprocess.CalledProcessError as e:

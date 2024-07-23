@@ -16,7 +16,7 @@ def main() -> None:
         }
     )
     response = composio_toolset.execute_action(
-    action=Action.FILETOOL_GIT_PATCH,
+        action=Action.FILETOOL_GIT_PATCH,
         params={},
     )
     if response.get("error") and len(response["error"]) > 0:

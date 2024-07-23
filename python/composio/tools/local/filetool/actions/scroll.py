@@ -27,6 +27,7 @@ class ScrollRequest(BaseFileRequest):
 
 class ScrollResponse(BaseFileResponse):
     """Response to scroll up/down in the editor."""
+
     message: str = Field(
         default="",
         description="Message to display to the user",

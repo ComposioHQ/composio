@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 from pydantic import Field
 
 from composio.tools.env.filemanager.manager import FileManager
@@ -13,7 +14,10 @@ from composio.tools.local.filetool.actions.base_action import (
 class GitRepoTreeRequest(BaseFileRequest):
     """Request to create a Git repository tree."""
 
-    git_repo_path: str = Field(default=".", description="Relative path to the git repository. Default is current directory.")
+    git_repo_path: str = Field(
+        default=".",
+        description="Relative path to the git repository. Default is current directory.",
+    )
 
 
 class GitRepoTreeResponse(BaseFileResponse):
@@ -53,31 +57,27 @@ class GitRepoTree(BaseFileAction):
     ) -> GitRepoTreeResponse:
         try:
             repo_path = Path(file_manager.working_dir) / request_data.git_repo_path
-            
-            if not (repo_path / '.git').is_dir():
+
+            if not (repo_path / ".git").is_dir():
                 return GitRepoTreeResponse(
                     success=False,
-                    message=f"Error: The directory '{repo_path}' is not the root of a git repository."
+                    message=f"Error: The directory '{repo_path}' is not the root of a git repository.",
                 )
 
             original_dir = file_manager.working_dir
             file_manager.chdir(repo_path)
-            
+
             command = git_tree_cmd(str(repo_path))
             output, error = file_manager.execute_command(command)
-            
+
             if error:
-                return GitRepoTreeResponse(
-                    success=False,
-                    error=error,
-                    message=""
-                )
-            
+                return GitRepoTreeResponse(success=False, error=error, message="")
+
             tree_file_path = repo_path / "git_repo_tree.txt"
             if not tree_file_path.exists():
                 return GitRepoTreeResponse(
                     success=False,
-                    message="Error: Failed to create git_repo_tree.txt file."
+                    message="Error: Failed to create git_repo_tree.txt file.",
                 )
 
             try:
@@ -85,14 +85,12 @@ class GitRepoTree(BaseFileAction):
                     tree_content = f.read()
             except IOError as e:
                 return GitRepoTreeResponse(
-                    success=False,
-                    message=f"Error reading git_repo_tree.txt: {str(e)}"
+                    success=False, message=f"Error reading git_repo_tree.txt: {str(e)}"
                 )
-            
+
             if not tree_content.strip():
                 return GitRepoTreeResponse(
-                    success=False,
-                    message="The repository tree is empty."
+                    success=False, message="The repository tree is empty."
                 )
 
             # Change back to the original directory
@@ -100,10 +98,9 @@ class GitRepoTree(BaseFileAction):
 
             return GitRepoTreeResponse(
                 success=True,
-                message=f"{self._output_text} Check git_repo_tree.txt in the repository root for the results."
+                message=f"{self._output_text} Check git_repo_tree.txt in the repository root for the results.",
             )
         except Exception as e:
             return GitRepoTreeResponse(
-                success=False,
-                message=f"Error creating repository tree: {str(e)}"
+                success=False, message=f"Error creating repository tree: {str(e)}"
             )

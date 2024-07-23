@@ -281,7 +281,7 @@ class File(WithLogger):
 
         # Compare lint results
         new_lint_errors = self._compare_lint_results(before_lint, after_lint)
-        
+
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
             self.path.write_text(data=original_content, encoding="utf-8")
@@ -294,7 +294,7 @@ class File(WithLogger):
         return {
             "replaced_text": replaced,
             "replaced_with": text,
-            "error": "No lint errors found"
+            "error": "No lint errors found",
         }
 
     def lint(self) -> t.List[str]:
@@ -325,11 +325,13 @@ class File(WithLogger):
             return [line.strip() for line in lint_output.split("\n") if line.strip()]
         return []
 
-    def _compare_lint_results(self, before: t.List[str], after: t.List[str]) -> t.List[str]:
+    def _compare_lint_results(
+        self, before: t.List[str], after: t.List[str]
+    ) -> t.List[str]:
         """Compare lint results before and after edit."""
         new_errors = set(after) - set(before)
         return list(new_errors)
-    
+
     def _format_lint_errors(self, errors: t.List[str]) -> str:
         """Format lint errors."""
         formatted_output = ""
@@ -337,7 +339,9 @@ class File(WithLogger):
             parts = error.split(":", 3)
             if len(parts) >= 4:
                 file_path, line_num, col_num, error_msg = parts[:4]
-                formatted_output += f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
+                formatted_output += (
+                    f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
+                )
         return formatted_output.rstrip()
 
     def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:

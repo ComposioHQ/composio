@@ -62,8 +62,7 @@ class GitPatch(BaseFileAction):
             git_root = self._find_git_root(file_manager.current_dir())
             if not git_root:
                 return GitPatchResponse(
-                    error="Not in a git repository or its subdirectories",
-                    patch=""
+                    error="Not in a git repository or its subdirectories", patch=""
                 )
 
             # Change to the git root directory
@@ -75,12 +74,13 @@ class GitPatch(BaseFileAction):
                 for file_path in request_data.new_file_paths:
                     relative_path = Path(original_dir) / file_path
                     git_relative_path = relative_path.relative_to(git_root)
-                    _, error = file_manager.execute_command(f"git add {git_relative_path}")
+                    _, error = file_manager.execute_command(
+                        f"git add {git_relative_path}"
+                    )
                     if error:
                         file_manager.chdir(original_dir)
                         return GitPatchResponse(
-                            error=f"Error adding new file: {error}",
-                            patch=""
+                            error=f"Error adding new file: {error}", patch=""
                         )
 
             # Stage all changes
@@ -88,8 +88,7 @@ class GitPatch(BaseFileAction):
             if error:
                 file_manager.chdir(original_dir)
                 return GitPatchResponse(
-                    error=f"Error staging changes: {error}",
-                    patch=""
+                    error=f"Error staging changes: {error}", patch=""
                 )
 
             # Generate the patch
@@ -99,7 +98,9 @@ class GitPatch(BaseFileAction):
             file_manager.chdir(original_dir)
 
             if error:
-                return GitPatchResponse(error=f"Error generating patch: {error}", patch="")
+                return GitPatchResponse(
+                    error=f"Error generating patch: {error}", patch=""
+                )
 
             if not patch.strip():
                 return GitPatchResponse(patch="No changes to commit.")
@@ -107,8 +108,7 @@ class GitPatch(BaseFileAction):
             return GitPatchResponse(patch=patch)
         except Exception as e:
             return GitPatchResponse(
-                error=f"Error generating Git patch: {str(e)}",
-                patch=""
+                error=f"Error generating Git patch: {str(e)}", patch=""
             )
 
     def _find_git_root(self, path: str) -> t.Optional[Path]:
