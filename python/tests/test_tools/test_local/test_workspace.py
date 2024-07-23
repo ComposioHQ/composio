@@ -109,7 +109,7 @@ def test_workspace() -> None:
         )
         _check_output(
             output=toolset.execute_action(
-                action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+                action=Action.FILETOOL_GIT_CLONE,
                 params={"repo_name": "angrybayblade/web"},
             )
         )
@@ -204,7 +204,7 @@ def test_workspace() -> None:
         )
 
         output = toolset.execute_action(
-            action=Action.GITCMDTOOL_GET_PATCH_CMD,
+            action=Action.FILETOOL_GIT_PATCH,
             params={},
         )
         assert output[EXIT_CODE] == 0, output

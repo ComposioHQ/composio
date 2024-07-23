@@ -97,7 +97,7 @@ def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
     print("Resetting repository to base commit")
     composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+        action=Action.FILETOOL_GIT_CLONE,
         params={
             "repo_name": repo,
             "just_reset": True,
@@ -143,7 +143,7 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     )
     logger.info("Resetting repository to base commit")
     reset_resp = composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+        action=Action.FILETOOL_GIT_CLONE,
         params={
             "repo_name": repo,
             "just_reset": True,
@@ -190,7 +190,7 @@ def build_image_and_container(
     composio_toolset.set_workspace_id(workspace_id=workspace.id)
     clone_resp = composio_toolset.execute_action(
         entity_id="123",
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+        action=Action.FILETOOL_GIT_CLONE,
         params={
             "repo_name": repo,
             "commit_id": base_commit,
@@ -203,12 +203,12 @@ def build_image_and_container(
     ):
         raise Exception(clone_resp["details"])
 
-    chwdir_resp = composio_toolset.execute_action(
-        action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
-        params={"path": repo.lstrip().rstrip().split("/")},
-    )
-    if isinstance(chwdir_resp, dict) and chwdir_resp.get("status") == "failure":
-        raise Exception(f"Error changing directory: {chwdir_resp['details']}")
+    # chwdir_resp = composio_toolset.execute_action(
+    #     action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+    #     params={"path": repo.lstrip().rstrip().split("/")[-1]},  # todo: verify this
+    # )
+    # if isinstance(chwdir_resp, dict) and chwdir_resp.get("status") == "failure":
+    #     raise Exception(f"Error changing directory: {chwdir_resp['details']}")
     git_clone_time = datetime.datetime.now() - start_time
     logger.info("git clone completed, time taken: %s", git_clone_time)
     return workspace.id

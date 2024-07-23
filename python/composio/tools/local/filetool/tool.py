@@ -16,6 +16,9 @@ from .actions import (
     Scroll,
     SearchWord,
     Write,
+    GitClone,
+    GitRepoTree,
+    GitPatch,
 )
 
 
@@ -34,6 +37,9 @@ class FileTool(Tool):
             FindFile,
             Write,
             ChangeWorkingDirectory,
+            GitClone,
+            GitRepoTree,
+            GitPatch,
         ]
 
     def triggers(self) -> t.List:

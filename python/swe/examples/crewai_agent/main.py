@@ -16,7 +16,7 @@ def main() -> None:
         }
     )
     response = composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GET_PATCH_CMD,
+    action=Action.FILETOOL_GIT_PATCH,
         params={},
     )
     if response.get("stderr") and len(response["stderr"]) > 0:

@@ -108,7 +108,7 @@ class EvaluationManager(WithLogger):
             f"Agent run finished, getting path for issue: {issue['instance_id']}"
         )
         get_patch_resp = composio_toolset.execute_action(
-            action=Action.GITCMDTOOL_GET_PATCH_CMD,
+            action=Action.FILETOOL_GIT_PATCH,
             params={},
         )
         if (

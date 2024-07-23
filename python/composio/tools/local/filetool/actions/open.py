@@ -54,7 +54,10 @@ class OpenFile(BaseFileAction):
             file = file_manager.open(request_data.file_path)
             if request_data.line_number > 0:
                 file.goto(request_data.line_number)
-            return OpenFileResponse(lines=file.read(), total_lines=file.total_lines())
+            content = file.read()
+            if content == {}:
+                return OpenFileResponse(error="File is empty")
+            return OpenFileResponse(lines=content, total_lines=len(content))
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
         except IsADirectoryError as e:

@@ -12,7 +12,7 @@ import typing_extensions as te
 from composio.tools.env.filemanager.file import File
 from composio.tools.env.id import generate_id
 from composio.utils.logging import WithLogger
-
+import subprocess
 
 _active_manager: t.Optional["FileManager"] = None
 _manager_lock = threading.Lock()
@@ -77,8 +77,25 @@ class FileManager(WithLogger):
         set_current_file_manager(manager=None)
 
     def chdir(self, path: t.Union[Path, str]) -> None:
-        """Change the current working directory."""
-        self.working_dir = Path(path).resolve()
+        """
+        Change the current working directory.
+
+        Args:
+            path (Union[Path, str]): The path to the new working directory.
+
+        Raises:
+            FileNotFoundError: If the specified directory does not exist.
+            PermissionError: If the user doesn't have permission to access the directory.
+        """
+        try:
+            new_dir = Path(path).resolve()
+            if not new_dir.is_dir():
+                raise FileNotFoundError(f"'{new_dir}' is not a valid directory.")
+            if not os.access(new_dir, os.R_OK | os.X_OK):
+                raise PermissionError(f"Permission denied: Cannot access '{new_dir}'")
+            self.working_dir = new_dir
+        except OSError as e:
+            raise Exception(f"OS error: {str(e)}")
 
     def open(self, path: t.Union[Path, str], window: t.Optional[int] = None) -> File:
         """
@@ -302,3 +319,25 @@ class FileManager(WithLogger):
             (str(path), "dir" if path.is_dir() else "file")
             for path in self.working_dir.iterdir()
         ]
+
+    def current_dir(self) -> str:
+        """Get the current working directory."""
+        return str(self.working_dir)
+    
+    def execute_command(self, command: str) -> str:
+        """Execute a command in the current working directory."""
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                cwd=self.working_dir
+            )
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            return f"Error executing command: {e.stderr}"
+        except subprocess.TimeoutExpired:
+            return "Command execution timed out after 120 seconds"

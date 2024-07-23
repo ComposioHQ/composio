@@ -7,3 +7,6 @@ from .list import ListFiles
 from .open import OpenFile
 from .scroll import Scroll
 from .write import Write
+from .git_clone import GitClone
+from .git_repo_tree import GitRepoTree
+from .git_patch import GitPatch

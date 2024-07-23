@@ -79,7 +79,7 @@ class BaseSWEAgent(ABC, logging.WithLogger):
 
         self.logger.info("Getting patch")
         get_patch_resp = composio_toolset.execute_action(
-            action=Action.GITCMDTOOL_GET_PATCH_CMD,
+            action=Action.FILETOOL_GIT_PATCH,
             params={},
         )
         if (
