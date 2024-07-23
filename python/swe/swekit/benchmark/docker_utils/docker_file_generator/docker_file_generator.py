@@ -182,7 +182,6 @@ class DockerfileGenerator:
         )
 
         path_to_reqs = None
-        path_to_env_file = None
         install_cmds = []
 
         testbed_dir = f"{self.docker_dir}/{repo_name}/{version}"
@@ -214,22 +213,11 @@ class DockerfileGenerator:
 
             if "no_use_env" in specifications and specifications["no_use_env"]:
                 # Create environment from yml
-                path_to_env_file = get_environment_yml(
-                    setup_ref_instance, env_name, save_path=test_bed_dir
-                )
                 conda_create_cmd = f"conda create -c conda-forge -n {env_name} python={specifications['python']} -y"
-
                 # Install dependencies
                 install_cmds.append("conda env update -f environment.yml")
             else:
                 # Create environment from yml
-                path_to_env_file = get_environment_yml(
-                    setup_ref_instance,
-                    env_name,
-                    save_path=test_bed_dir,
-                    python_version=specifications["python"],
-                )
-
                 conda_create_cmd = "conda env create -f environment.yml"
         elif use_conda:
             conda_create_cmd = f"conda create -n {env_name} python={specifications['python']} {pkgs} -y"
