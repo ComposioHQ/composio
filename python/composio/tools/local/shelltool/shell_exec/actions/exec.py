@@ -45,6 +45,10 @@ class ShellExecResponse(BaseModel):
         ...,
         description="Exit code of the command",
     )
+    current_shell_pwd: str = Field(
+        default="",
+        description="Current shell's working directory",
+    )
 
     def something(self):
         print("hello")
@@ -113,10 +117,14 @@ class ExecCommand(BaseExecCommand):
         shell = authorisation_data.get("workspace").shells.get(id=request_data.shell_id)  # type: ignore
         self.logger.debug(f"Executing {request_data.cmd} @ {shell}")
         output = shell.exec(cmd=request_data.cmd)
+        # run pwd
+        output_dir = shell.exec(cmd="pwd")
+        pwd = output_dir[STDOUT]
         return ShellExecResponse(
             stdout=output[STDOUT],
             stderr=output[STDERR],
             exit_code=int(output[EXIT_CODE]),
+            current_shell_pwd=f"Currently in {pwd}",
         )
 
 

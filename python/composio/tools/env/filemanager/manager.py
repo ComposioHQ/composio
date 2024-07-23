@@ -139,6 +139,7 @@ class FileManager(WithLogger):
         word: str,
         pattern: t.Optional[t.Union[str, Path]] = None,
         recursive: bool = True,
+        case_insensitive: bool = True,
     ) -> t.Dict[str, t.List[t.Tuple[int, str]]]:
         """
         Search for a word in files matching the given pattern.
@@ -146,6 +147,7 @@ class FileManager(WithLogger):
         :param word: The term to search for
         :param pattern: The file, directory, or glob pattern to search in (if not provided, searches in the current working directory)
         :param recursive: If True, search recursively in subdirectories
+        :param case_insensitive: If True, perform case-insensitive search (default is True)
         :return: A dictionary with file paths as keys and lists of (line number, line content) tuples as values
 
         Examples of patterns:
@@ -176,16 +178,26 @@ class FileManager(WithLogger):
             else:
                 paths_to_search = list(self.working_dir.glob(str(pattern)))
 
+
+
         for file_path in paths_to_search:
             if file_path.is_file() and not file_path.name.startswith("."):
                 try:
                     with file_path.open("r", encoding="utf-8") as f:
                         for i, line in enumerate(f, 1):
-                            if word in line:
-                                rel_path = str(file_path.relative_to(self.working_dir))
-                                if rel_path not in results:
-                                    results[rel_path] = []
-                                results[rel_path].append((i, line.strip()))
+                            if case_insensitive:
+                                word_lower = word.lower()
+                                if word_lower in line.lower():
+                                    rel_path = str(file_path.relative_to(self.working_dir))
+                                    if rel_path not in results:
+                                        results[rel_path] = []
+                                    results[rel_path].append((i, line.strip()))
+                            else:
+                                if word in line:
+                                    rel_path = str(file_path.relative_to(self.working_dir))
+                                    if rel_path not in results:
+                                        results[rel_path] = []
+                                    results[rel_path].append((i, line.strip()))
                 except UnicodeDecodeError:
                     # Skip binary files
                     pass

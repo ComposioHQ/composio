@@ -22,7 +22,7 @@ class OpenFileRequest(BaseFileRequest):
 
 class OpenFileResponse(BaseFileResponse):
     """Response to open a file."""
-
+    message: str = Field(default="", description="Message to display to the user")
     lines: t.Dict[int, str] = Field(
         default={}, description="File content with their line numbers"
     )
@@ -57,7 +57,7 @@ class OpenFile(BaseFileAction):
             content = file.read()
             if content == {}:
                 return OpenFileResponse(error="File is empty")
-            return OpenFileResponse(lines=content, total_lines=len(content))
+            return OpenFileResponse(message="File opened successfully. 100 lines after the cursor displayed.", lines=content, total_lines=len(content))
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
         except IsADirectoryError as e:

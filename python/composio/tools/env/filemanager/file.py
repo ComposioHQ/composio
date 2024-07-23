@@ -110,7 +110,7 @@ class File(WithLogger):
         self._end = line + self._window
 
     def _find(self, buffer: str, pattern: str, lineno: int) -> t.List[Match]:
-        """Find the occurences for given pattern in the buffer."""
+        """Find the occurrences for given pattern in the buffer."""
         matches: t.List[Match] = []
         for match in re.finditer(pattern=pattern, string=buffer):
             start = match.start()
@@ -161,13 +161,13 @@ class File(WithLogger):
         Find pattern in the given file.
 
         :param pattern: Pattern to search for
-        :param scope: Scope for the search, choose between `file` and `windows`.
+        :param scope: Scope for the search, choose between `file` and `window`.
             if you choose `file`, the search will be performed across the file else
             the search will be performed over the current view window.
         :return: List of matches found for the given pattern
         """
         scope = scope or FileOperationScope.FILE
-        if scope == SCOPE_FILE:
+        if scope == FileOperationScope.FILE:
             return self._find_file(pattern=pattern)
         return self._find_window(pattern=pattern)
 
@@ -179,7 +179,10 @@ class File(WithLogger):
                 _ = fp.readline()
                 cursor += 1
             while cursor < self._end:
-                yield fp.readline()
+                line = fp.readline()
+                if not line:
+                    break
+                yield line
                 cursor += 1
 
     def _iter_file(self) -> t.Iterable[str]:
@@ -192,7 +195,7 @@ class File(WithLogger):
                 yield line
 
     def iter(self, scope: t.Optional[FileOperationScope] = None) -> t.Iterable[str]:
-        """Iter data from the current window."""
+        """Iter data from the current window or file."""
         scope = scope or FileOperationScope.FILE
         if scope == FileOperationScope.WINDOW:
             return self._iter_window()
@@ -216,7 +219,7 @@ class File(WithLogger):
 
     def write(self, text: str) -> None:
         """Write the given content to the file."""
-        self.path.write_text(text)
+        self.path.write_text(text, encoding="utf-8")
 
     def total_lines(self) -> int:
         """Total number of lines in the file."""
@@ -239,6 +242,13 @@ class File(WithLogger):
         :return: Replaced text
         """
         scope = scope or FileOperationScope.FILE
+
+        # Store original content
+        original_content = self.path.read_text(encoding="utf-8")
+
+        # Run lint before edit
+        before_lint = self.lint()
+
         cursor = 0
         buffer = ""
         replaced = ""
@@ -265,9 +275,29 @@ class File(WithLogger):
                 buffer += line
 
         self.path.write_text(data=buffer, encoding="utf-8")
-        return {"replaced_text": replaced, "replaced_with": text}
 
-    def lint(self) -> str:
+        # Run lint after edit
+        after_lint = self.lint()
+
+        # Compare lint results
+        new_lint_errors = self._compare_lint_results(before_lint, after_lint)
+        
+        if len(new_lint_errors) > 0:
+            # Revert changes if new lint errors are found
+            self.path.write_text(data=original_content, encoding="utf-8")
+            formatted_errors = self._format_lint_errors(new_lint_errors)
+            return {
+                "replaced_text": "",
+                "replaced_with": "",
+                "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
+            }
+        return {
+            "replaced_text": replaced,
+            "replaced_with": text,
+            "error": "No lint errors found"
+        }
+
+    def lint(self) -> t.List[str]:
         """Run lint on the file."""
         if self.path.suffix == ".py":
             venv_python = sys.executable
@@ -278,7 +308,7 @@ class File(WithLogger):
                         "-m",
                         "flake8",
                         "--isolated",
-                        "--select=F821,F822,F831,E111,E112,E113,E999,E902",
+                        "--select=E9,F821,F823,F831,F406,F407,F701,F702,F704,F706,E999,E902,E111,E112,E113",
                         str(self.path),
                     ],
                     capture_output=True,
@@ -292,17 +322,23 @@ class File(WithLogger):
                 if e.stderr:  # Check if there's any stderr output
                     lint_output += f"\nError running flake8: {e.stderr}"
 
-            formatted_output = ""
-            for line in lint_output.split("\n"):
-                if line.strip():
-                    parts = line.split(":")
-                    if len(parts) >= 4:
-                        file_path, line_num, col_num, error_msg = parts[:4]
-                        formatted_output += f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
-                    else:
-                        formatted_output += f"- {line.strip()}\n"
-            return formatted_output.strip()
-        return ""
+            return [line.strip() for line in lint_output.split("\n") if line.strip()]
+        return []
+
+    def _compare_lint_results(self, before: t.List[str], after: t.List[str]) -> t.List[str]:
+        """Compare lint results before and after edit."""
+        new_errors = set(after) - set(before)
+        return list(new_errors)
+    
+    def _format_lint_errors(self, errors: t.List[str]) -> str:
+        """Format lint errors."""
+        formatted_output = ""
+        for error in errors:
+            parts = error.split(":", 3)
+            if len(parts) >= 4:
+                file_path, line_num, col_num, error_msg = parts[:4]
+                formatted_output += f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
+        return formatted_output.rstrip()
 
     def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:
         """Write and run lint on the file. If linting fails, revert the changes."""
@@ -311,14 +347,6 @@ class File(WithLogger):
         if write_response.get("error"):
             self.path.write_text(data=older_file_text, encoding="utf-8")
             return write_response
-        lint_output = self.lint()
-        if lint_output:
-            self.path.write_text(data=older_file_text, encoding="utf-8")
-            return {
-                "replaced_text": "",
-                "replaced_with": "",
-                "error": f"Linting failed:\n{lint_output}",
-            }
         return write_response
 
     def replace(self, string: str, replacement: str) -> TextReplacement:
