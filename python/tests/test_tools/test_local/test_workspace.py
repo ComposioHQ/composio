@@ -94,7 +94,6 @@ def _check_output(output: dict) -> None:
 #     assert False
 
 
-
 @pytest.mark.skip
 def test_workspace() -> None:
     """Test workspace tools."""
