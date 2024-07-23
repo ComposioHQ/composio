@@ -149,14 +149,15 @@ jobs:
           
           # Build CLI
           pyinstaller composio/cli/__main__.py
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-          cd dist/
 
       # Ubuntu Release
       - if: matrix.os == 'ubuntu-latest'
         run: |
-          cd python/dist
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__ dist/bin/composio
+          
+          cd dist/
           zip -r composio-linux-amd64.zip bin/*
           rm -rf bin/
       - if: matrix.os == 'ubuntu-latest'
@@ -168,7 +169,11 @@ jobs:
       # Mac Intel Release
       - if: matrix.os == 'macos-12'
         run: |
-          cd python/dist
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__ dist/bin/composio
+          
+          cd dist/
           zip -r composio-darwin-amd64.zip bin/*
           rm -rf bin/
       - if: matrix.os == 'macos-12'
@@ -180,7 +185,11 @@ jobs:
       # Mac ARM Release
       - if: matrix.os == 'macos-14'
         run: |
-          cd python/dist
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__ dist/bin/composio
+          
+          cd dist/
           zip -r composio-darwin-arm64.zip bin/*
           rm -rf bin/
       - if: matrix.os == 'macos-14'
@@ -192,7 +201,11 @@ jobs:
       # Windows release
       - if: matrix.os == 'windows-latest'
         run: |
-          cd python/dist
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__.exe dist/bin/composio.exe
+          
+          cd dist/
           zip -r composio-win.zip bin/*
           rm -rf bin/
       - if: matrix.os == 'windows-latest'
