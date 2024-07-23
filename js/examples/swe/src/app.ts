@@ -10,7 +10,7 @@ async function main() {
     repo
   });
 
-  const response = await toolset.executeAction("gitcmdtool_get_patch_cmd", {});
+  const response = await toolset.executeAction("filetool_git_patch", {});
 
   if (response.stderr && response.stderr.length > 0) {
     console.log('Error:', response.stderr);

@@ -20,9 +20,7 @@ const composioToolset = new LangchainToolSet({ workspaceEnv: ExecEnv.DOCKER });
 export async function initSWEAgent() {
     const tools = await composioToolset.getTools({
         apps: [
-            "searchtool",
-            "gitcmdtool",
-            "fileedittool",
+            "filetool",
             "shelltool"
         ],
         tags: null,
