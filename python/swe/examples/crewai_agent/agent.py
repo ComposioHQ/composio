@@ -16,22 +16,6 @@ from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 dotenv.load_dotenv()
 
 
-@action(toolname="math")
-def calculate_operation(num1: float, num2: float, operation: str) -> float:
-    """
-    Calculate the sum of two numbers
-    """
-    if operation == "add":
-        return num1 + num2
-    if operation == "subtract":
-        return num1 - num2
-    if operation == "multiply":
-        return num1 * num2
-    if operation == "divide":
-        return num1 / num2
-    raise ValueError(f"Invalid operation: {operation}")
-
-
 # Initialize tool.
 def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
     helicone_api_key = os.environ.get("HELICONE_API_KEY")
@@ -73,21 +57,12 @@ def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
 composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
 
 # Get required tools
-tools = [
-    *composio_toolset.get_tools(
-        apps=[
-            App.FILETOOL,
-            App.SEARCHTOOL,
-        ]
-    ),
-    *composio_toolset.get_actions(
-        actions=[
-            Action.SHELL_EXEC_COMMAND,
-        ]
-    ),
-]
-
-tools.append(*composio_toolset.get_actions(actions=[calculate_operation]))
+tools = composio_toolset.get_tools(
+    apps=[
+        App.FILETOOL,
+        App.SHELLTOOL
+    ]
+)
 
 # Define agent
 agent = Agent(

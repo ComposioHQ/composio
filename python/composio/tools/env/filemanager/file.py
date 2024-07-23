@@ -259,20 +259,21 @@ class File(WithLogger):
                     cursor += 1
                 cursor = 0
 
+            # Read lines before the edit
             while cursor < (start - 1):
                 buffer += fp.readline()
                 cursor += 1
 
-            while cursor < (end - 1):
+            # Read lines to be replaced
+            while cursor < end:
                 replaced += fp.readline()
                 cursor += 1
 
+            # Add the new text
             buffer += text
-            while True:
-                line = fp.readline()
-                if not line:
-                    break
-                buffer += line
+
+            # Read the rest of the file
+            buffer += fp.read()
 
         self.path.write_text(data=buffer, encoding="utf-8")
 
