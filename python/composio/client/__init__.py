@@ -320,6 +320,8 @@ class Entity:
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
+        use_composio_auth: bool = False,
+        force_new_integration: bool = False,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -342,14 +344,16 @@ class Entity:
                 name=f"integration_{timestamp}",
                 auth_mode=auth_mode,
                 auth_config=auth_config,
-                use_composio_auth=False,
+                use_composio_auth=use_composio_auth,
+                force_new_integration=force_new_integration,
             )
 
         if integration is None and auth_mode is None:
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"integration_{timestamp}",
-                use_composio_auth=True,
+                use_composio_auth=use_composio_auth,
+                force_new_integration=force_new_integration,
             )
 
         return self.client.connected_accounts.initiate(
