@@ -14,7 +14,7 @@ const issue = "update readme.md and fix all typos";
     repo
   });
 
-  const response = await toolset.executeAction("GITCMDTOOL_GET_PATCH_CMD".toLocaleLowerCase(), {});
+  const response = await toolset.executeAction("gitcmdtool_get_patch_cmd", {});
   console.log("Response is ", response);
   if (response.stderr && response.stderr.length > 0) {
     console.log('Error:', response.stderr);

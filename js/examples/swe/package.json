@@ -11,9 +11,11 @@
   "license": "ISC",
   "dependencies": {
     "@langchain/anthropic": "^0.2.6",
+    "@langchain/core": "^0.2.18",
     "@langchain/openai": "^0.2.4",
     "composio-core": "0.1.7",
     "dotenv": "^16.4.5",
+    "langchain": "^0.2.10",
     "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {

@@ -47,12 +47,11 @@ function createGithubIssueValidator(owner: string, name: string, toolset: Compos
     }
 
     if (/^\d+$/.test(value)) {
-      const responseData = await toolset.executeAction('GITHUB_ISSUES_GET'.toLocaleLowerCase(), {
+      const responseData = await toolset.executeAction('github_issues_get', {
         owner,
         repo: name,
         issue_number: parseInt(value, 10),
       });
-      console.log("Resposne data is", responseData);
       return responseData.body as string;
     }
 

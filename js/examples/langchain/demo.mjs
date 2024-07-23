@@ -24,7 +24,7 @@ app.use(express.json());
         });
 
         const tools = await toolset.get_actions({
-            actions: ["FILETOOL_WRITE_FILE".toLowerCase()]
+            actions: ["filetool_write_file"]
         });
         const prompt = await pull(
             "hwchase17/openai-functions-agent"
