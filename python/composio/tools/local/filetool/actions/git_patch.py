@@ -58,23 +58,48 @@ class GitPatch(BaseFileAction):
         self, file_manager: FileManager, request_data: GitPatchRequest
     ) -> GitPatchResponse:
         try:
-            # Ensure we're in a git repository
-            if not Path(file_manager.working_dir, ".git").is_dir():
-                raise ValueError("Not a git repository")
+            # Check if we're in a git repository or in a subdirectory of one
+            git_root = self._find_git_root(file_manager.current_dir())
+            if not git_root:
+                return GitPatchResponse(
+                    error="Not in a git repository or its subdirectories",
+                    patch=""
+                )
+
+            # Change to the git root directory
+            original_dir = file_manager.current_dir()
+            file_manager.chdir(str(git_root))
 
             # Add new files if specified
             if request_data.new_file_paths:
                 for file_path in request_data.new_file_paths:
-                    file_manager.execute_command(f"git add {file_path}")
+                    relative_path = Path(original_dir) / file_path
+                    git_relative_path = relative_path.relative_to(git_root)
+                    _, error = file_manager.execute_command(f"git add {git_relative_path}")
+                    if error:
+                        file_manager.chdir(original_dir)
+                        return GitPatchResponse(
+                            error=f"Error adding new file: {error}",
+                            patch=""
+                        )
 
             # Stage all changes
-            file_manager.execute_command("git add -u")
+            _, error = file_manager.execute_command("git add -u")
+            if error:
+                file_manager.chdir(original_dir)
+                return GitPatchResponse(
+                    error=f"Error staging changes: {error}",
+                    patch=""
+                )
 
             # Generate the patch
             patch, error = file_manager.execute_command("git diff --cached")
 
+            # Change back to the original directory
+            file_manager.chdir(original_dir)
+
             if error:
-                return GitPatchResponse(error=error, patch="")
+                return GitPatchResponse(error=f"Error generating patch: {error}", patch="")
 
             if not patch.strip():
                 return GitPatchResponse(patch="No changes to commit.")
@@ -83,5 +108,14 @@ class GitPatch(BaseFileAction):
         except Exception as e:
             return GitPatchResponse(
                 error=f"Error generating Git patch: {str(e)}",
-                patch="No patch generated."
+                patch=""
             )
+
+    def _find_git_root(self, path: str) -> t.Optional[Path]:
+        """Find the root of the git repository."""
+        current = Path(path).resolve()
+        while current != current.parent:
+            if (current / ".git").is_dir():
+                return current
+            current = current.parent
+        return None
