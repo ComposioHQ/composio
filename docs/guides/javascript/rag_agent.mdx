@@ -62,7 +62,7 @@ This project involves setting up and running an agent to add content to a RAG (R
         });
 
         // Get the RAG tool actions from the Composio ToolSet
-        const tools = await composioToolset.get_actions({
+        const tools = await composioToolset.getActions({
             actions: ["ragtool_add_content", "ragtool_query"]
         });
         ```
@@ -159,7 +159,7 @@ This project involves setting up and running an agent to add content to a RAG (R
         workspaceEnv: ExecEnv.DOCKER
     });
 
-    const tools = await composioToolset.get_actions({
+    const tools = await composioToolset.getActions({
         actions: ["ragtool_add_content", "ragtool_query"]
     });
 

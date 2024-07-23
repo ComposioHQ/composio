@@ -60,7 +60,7 @@ This project involves setting up and running an agent to conduct investment rese
         const composioToolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY
         });
-        const tools = await composioToolset.get_actions({
+        const tools = await composioToolset.getActions({
             actions: ["serpapi_search"]
         });
         ```
@@ -131,7 +131,7 @@ This project involves setting up and running an agent to conduct investment rese
     const composioToolset = new LangchainToolSet({
         apiKey: process.env.COMPOSIO_API_KEY
     });
-    const tools = await composioToolset.get_actions({
+    const tools = await composioToolset.getActions({
         actions: ["serpapi_search"]
     });
 

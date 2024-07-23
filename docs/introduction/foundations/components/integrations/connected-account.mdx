@@ -58,10 +58,10 @@ const client = new Composio();
 
 const entity = await client.getEntity({ id: "default" });
 
-// Integration chosen by the user to connect with
+// Get the integration id from the dashboard
 const integration = await client.integrations.get({ integrationId: "{{integration_id}}" });
 
-console.log(integration.expectedInputFields)
+console.log("integration.expectedInputFields", integration.expectedInputFields)
 ```
 </CodeGroup>
 

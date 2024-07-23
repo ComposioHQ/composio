@@ -26,7 +26,7 @@ import { OpenAIToolSet } from "composio-core";
 const openai_client = new OpenAI({
     apiKey: process.env.OPENAIKEY
 });
-const entity = await toolset.client.getEntity(id='user_email_id');
+const entity = toolset.client.getEntity(id='user_email_id');
 ```
 </CodeGroup>
 

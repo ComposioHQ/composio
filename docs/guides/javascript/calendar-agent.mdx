@@ -61,7 +61,7 @@ This project is an example which uses Composio to seamlessly convert your to-do 
         const composioToolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY
         });
-        const tools = await composioToolset.get_actions({
+        const tools = await composioToolset.getActions({
             actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
         });
 
@@ -143,7 +143,7 @@ const llm = new ChatOpenAI({ model: "gpt-4-turbo"});
 const composioToolset = new LangchainToolSet({
     apiKey: process.env.COMPOSIO_API_KEY
 });
-const tools = await composioToolset.get_actions({
+const tools = await composioToolset.getActions({
     actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
 });
 
