@@ -4,130 +4,130 @@ on:
     types: [published]
 
 jobs:
-  # publish-core:
-  #   name: Create Framework & Plugin Releases
-  #   defaults:
-  #     run:
-  #       working-directory: ./python
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest]
-  #       python-version: ["3.10"]
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@master
-  #     - uses: actions/setup-python@v3
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Build
-  #       run: |
-  #         sudo apt-get update --fix-missing
-  #         sudo apt-get autoremove
-  #         sudo apt-get autoclean
-  #         python -m pip install --upgrade pip
-  #         pip install twine build
+  publish-core:
+    name: Create Framework & Plugin Releases
+    defaults:
+      run:
+        working-directory: ./python
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          python -m pip install --upgrade pip
+          pip install twine build
 
-  #         # Build dist
-  #         python -m build
-  #     - name: Publish Core to PyPI
-  #       uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         user: ${{ secrets.PYPI_USERNAME }}
-  #         password: ${{ secrets.PYPI_PASSWORD }}
-  #         skip-existing: true
-  #         packages-dir: python/dist/
+          # Build dist
+          python -m build
+      - name: Publish Core to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
+          skip-existing: true
+          packages-dir: python/dist/
 
-  # publish-plugins:
-  #   needs: publish-core
-  #   name: Create Plugin Releases
-  #   defaults:
-  #     run:
-  #       working-directory: ./python
-  #   strategy:
-  #     max-parallel: 1
-  #     matrix:
-  #       os: [ubuntu-latest]
-  #       python-version: ["3.10"]
-  #       package:
-  #         [
-  #           autogen,
-  #           camel,
-  #           claude,
-  #           crew_ai,
-  #           griptape,
-  #           julep,
-  #           langchain,
-  #           llamaindex,
-  #           lyzr,
-  #           openai,
-  #           praisonai,
-  #           langgraph,
-  #         ]
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Build ${{ matrix.package }}
-  #       run: |
-  #         sudo apt-get update --fix-missing
-  #         sudo apt-get autoremove
-  #         sudo apt-get autoclean
-  #         python -m pip install --upgrade pip
-  #         pip install twine build
+  publish-plugins:
+    needs: publish-core
+    name: Create Plugin Releases
+    defaults:
+      run:
+        working-directory: ./python
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        package:
+          [
+            autogen,
+            camel,
+            claude,
+            crew_ai,
+            griptape,
+            julep,
+            langchain,
+            llamaindex,
+            lyzr,
+            openai,
+            praisonai,
+            langgraph,
+          ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build ${{ matrix.package }}
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          python -m pip install --upgrade pip
+          pip install twine build
 
-  #         # Build dist
-  #         cd plugins/${{ matrix.package }}
-  #         python -m build
-  #     - name: Publish ${{ matrix.package }} to PyPI
-  #       uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         user: ${{ secrets.PYPI_USERNAME }}
-  #         password: ${{ secrets.PYPI_PASSWORD }}
-  #         skip-existing: true
-  #         packages-dir: python/plugins/${{ matrix.package }}/dist/
+          # Build dist
+          cd plugins/${{ matrix.package }}
+          python -m build
+      - name: Publish ${{ matrix.package }} to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
+          skip-existing: true
+          packages-dir: python/plugins/${{ matrix.package }}/dist/
 
-  # publish-swe:
-  #   needs: publish-core
-  #   name: Create SWE Toolkit Release
-  #   defaults:
-  #     run:
-  #       working-directory: ./python/swe
-  #   strategy:
-  #     max-parallel: 1
-  #     matrix:
-  #       os: [ubuntu-latest]
-  #       python-version: ["3.10"]
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Build
-  #       run: |
-  #         sudo apt-get update --fix-missing
-  #         sudo apt-get autoremove
-  #         sudo apt-get autoclean
-  #         python -m pip install --upgrade pip
-  #         pip install twine build
+  publish-swe:
+    needs: publish-core
+    name: Create SWE Toolkit Release
+    defaults:
+      run:
+        working-directory: ./python/swe
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          python -m pip install --upgrade pip
+          pip install twine build
 
-  #         # Build dist
-  #         python -m build
-  #     - name: Publish SWE Kit to PyPI
-  #       uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         user: ${{ secrets.PYPI_USERNAME }}
-  #         password: ${{ secrets.PYPI_PASSWORD }}
-  #         skip-existing: true
-  #         packages-dir: python/swe/dist/
+          # Build dist
+          python -m build
+      - name: Publish SWE Kit to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
+          skip-existing: true
+          packages-dir: python/swe/dist/
 
   publish-cli:
     name: Build and upload CLI
-    # needs: publish-core
+    needs: publish-core
     permissions: write-all
     strategy:
       matrix:
@@ -198,19 +198,19 @@ jobs:
         with:
           files: python/dist/composio-darwin-arm64.zip
       
-      # Windows release
-      - if: matrix.os == 'windows-latest'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__.exe dist/bin/composio.exe
+      # # Windows release
+      # - if: matrix.os == 'windows-latest'
+      #   run: |
+      #     cd python/
+      #     mv dist/__main__ dist/bin
+      #     mv dist/bin/__main__.exe dist/bin/composio.exe
           
-          cd dist/
-          zip -r composio-win.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'windows-latest'
-        name: Upload artifact
-        uses: softprops/action-gh-release@v2
-        with:
-          files: python/dist/composio-win.zip
+      #     cd dist/
+      #     zip -r composio-win.zip bin/*
+      #     rm -rf bin/
+      # - if: matrix.os == 'windows-latest'
+      #   name: Upload artifact
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: python/dist/composio-win.zip
 
