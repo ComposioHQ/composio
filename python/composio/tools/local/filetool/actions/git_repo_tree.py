@@ -64,7 +64,14 @@ class GitRepoTree(BaseFileAction):
             file_manager.chdir(repo_path)
             
             command = git_tree_cmd(str(repo_path))
-            output = file_manager.execute_command(command)
+            output, error = file_manager.execute_command(command)
+            
+            if error:
+                return GitRepoTreeResponse(
+                    success=False,
+                    error=error,
+                    message=""
+                )
             
             tree_file_path = repo_path / "git_repo_tree.txt"
             if not tree_file_path.exists():

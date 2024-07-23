@@ -71,7 +71,10 @@ class GitPatch(BaseFileAction):
             file_manager.execute_command("git add -u")
 
             # Generate the patch
-            patch = file_manager.execute_command("git diff --cached")
+            patch, error = file_manager.execute_command("git diff --cached")
+
+            if error:
+                return GitPatchResponse(error=error, patch="")
 
             if not patch.strip():
                 return GitPatchResponse(patch="No changes to commit.")

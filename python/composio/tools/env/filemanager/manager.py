@@ -324,7 +324,7 @@ class FileManager(WithLogger):
         """Get the current working directory."""
         return str(self.working_dir)
     
-    def execute_command(self, command: str) -> str:
+    def execute_command(self, command: str) -> t.Tuple[str, t.Optional[str]]:
         """Execute a command in the current working directory."""
         try:
             result = subprocess.run(
@@ -333,11 +333,11 @@ class FileManager(WithLogger):
                 check=True,
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=360,
                 cwd=self.working_dir
             )
-            return result.stdout
+            return result.stdout, None
         except subprocess.CalledProcessError as e:
-            return f"Error executing command: {e.stderr}"
+            return "", f"Error executing command: {e.stderr}"
         except subprocess.TimeoutExpired:
-            return "Command execution timed out after 120 seconds"
+            return "", "TIMEOUT: Command execution timed out after 120 seconds"

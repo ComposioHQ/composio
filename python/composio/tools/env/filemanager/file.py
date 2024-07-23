@@ -293,10 +293,14 @@ class File(WithLogger):
                     lint_output += f"\nError running flake8: {e.stderr}"
 
             formatted_output = ""
-            for value in lint_output.split("\n"):
-                parts = value.split()
-                if parts:
-                    formatted_output += f"- {' '.join(parts[1:])}\n"
+            for line in lint_output.split("\n"):
+                if line.strip():
+                    parts = line.split(":")
+                    if len(parts) >= 4:
+                        file_path, line_num, col_num, error_msg = parts[:4]
+                        formatted_output += f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
+                    else:
+                        formatted_output += f"- {line.strip()}\n"
             return formatted_output.strip()
         return ""
 
@@ -313,7 +317,7 @@ class File(WithLogger):
             return {
                 "replaced_text": "",
                 "replaced_with": "",
-                "error": f"Linting failed: {lint_output}",
+                "error": f"Linting failed:\n{lint_output}",
             }
         return write_response
 

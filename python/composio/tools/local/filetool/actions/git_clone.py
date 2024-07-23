@@ -112,15 +112,22 @@ class GitClone(BaseFileAction):
                 command = git_clone_cmd(request_data.repo_name, request_data.commit_id)
             # Check if folder already exists
             current_dir = file_manager.current_dir()
+            if pathlib.Path(current_dir, '.git').exists():
+                return GitCloneResponse(success=False, message=f"The directory '{current_dir}' is already a git repository.")
+                                
+            if pathlib.Path(current_dir, repo_dir, '.git').is_dir():
+                file_manager.chdir(os.path.join(file_manager.current_dir(), repo_dir))
+                return GitCloneResponse(success=False, message=f"The directory '{repo_dir}' is already a git repository.")                    
 
             if pathlib.Path(current_dir, repo_dir).exists() and not request_data.just_reset:
                 # Check if the directory is a git repository
-                if pathlib.Path(current_dir, repo_dir, '.git').is_dir():
-                    return GitCloneResponse(success=False, message=f"The directory '{repo_dir}' is already a git repository.")                    
                 raise FileExistsError(
                     f"The directory '{repo_dir}' already exists. Clone failed."
                 )
-            output = file_manager.execute_command(command)
+            output, error = file_manager.execute_command(command)
+            if error:
+                return GitCloneResponse(success=False, error=error, message="")
+              
             if pathlib.Path(current_dir, repo_dir).exists() and not request_data.just_reset:                
                 file_manager.chdir(os.path.join(file_manager.current_dir(), repo_dir))
                 return GitCloneResponse(success=True, message=output)
