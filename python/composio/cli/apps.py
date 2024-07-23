@@ -301,7 +301,9 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             if isinstance(child, ast.AnnAssign)
         ]
         if set(cls_attributes) == set(attributes):
-            console.print(f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]")
+            console.print(
+                f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]"
+            )
             return
 
         node.body = (

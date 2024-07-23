@@ -144,15 +144,15 @@ def generate_scorecard(predictions_dir, log_dir, swe_bench_path, model):
                 + diff_obj.added_files
                 + diff_obj.removed_files
             ]
-            scorecard["patch_lines_add"] = (
-                sum(  # pylint: disable=consider-using-generator
-                    [f.added for f in diff_obj]
-                )
+            scorecard[
+                "patch_lines_add"
+            ] = sum(  # pylint: disable=consider-using-generator
+                [f.added for f in diff_obj]
             )
-            scorecard["patch_lines_del"] = (
-                sum(  # pylint: disable=consider-using-generator
-                    [f.removed for f in diff_obj]
-                )
+            scorecard[
+                "patch_lines_del"
+            ] = sum(  # pylint: disable=consider-using-generator
+                [f.removed for f in diff_obj]
             )
         except Exception as e:
             logger.error(
