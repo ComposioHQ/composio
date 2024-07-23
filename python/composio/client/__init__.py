@@ -320,7 +320,7 @@ class Entity:
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
-        use_composio_auth: bool=False,
+        use_composio_auth: bool = False,
         force_new_integration: bool = False,
     ) -> ConnectionRequestModel:
         """
