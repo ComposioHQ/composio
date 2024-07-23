@@ -13,7 +13,7 @@ from composio.tools.local.filetool.actions.base_action import (
 class OpenFileRequest(BaseFileRequest):
     """Request to open a file."""
 
-    file_path: str = Field(..., description="file path to open in the editor")
+    file_path: str = Field(..., description="file path to open in the editor. This is a relative path to the current directory")
     line_number: int = Field(
         default=0,
         description="If file-number is given, file will be opened from that line number",

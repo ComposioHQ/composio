@@ -150,8 +150,8 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
             "commit_id": base_commit,
         },
     )
-    if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
-        raise Exception(f"Error resetting repository: {reset_resp['details']}")
+    if isinstance(reset_resp, dict) and not reset_resp.get("success"):
+        raise Exception(f"Error resetting repository: {reset_resp['error']}")
     return workspace_id
 
 
@@ -198,10 +198,10 @@ def build_image_and_container(
     )
     if (
         isinstance(clone_resp, dict)
-        and "status" in clone_resp
-        and clone_resp["status"] == "failure"
+        and "success" in clone_resp
+        and not clone_resp["success"]
     ):
-        raise Exception(clone_resp["details"])
+        raise Exception(clone_resp["error"])
 
     # chwdir_resp = composio_toolset.execute_action(
     #     action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
