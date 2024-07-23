@@ -8,8 +8,6 @@ import { BACKSTORY, DESCRIPTION, GOAL } from '../prompts';
 import { AgentExecutor, createStructuredChatAgent } from 'langchain/agents';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 
-// Load environment variables from .env
-
 // Initialize tool.
 const llm = new ChatAnthropic({
     model: "claude-3-5-sonnet-20240620",
