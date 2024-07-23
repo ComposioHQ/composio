@@ -16,7 +16,11 @@ from docker.models.containers import Container
 
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
-from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
+from composio.tools.env.constants import (
+    ENV_COMPOSIO_DEV_MODE,
+    ENV_COMPOSIO_TOOLSERVER_IMAGE,
+    DEFAULT_IMAGE,
+)
 
 
 COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.parent.resolve()
@@ -32,7 +36,6 @@ CONTAINER_DEV_VOLUMES = {
     },
 }
 DEV_MODE = os.environ.get(ENV_COMPOSIO_DEV_MODE, "0") == "1"
-DEFAULT_IMAGE = "angrybayblade/composio"
 DEFAULT_PORT = 54321
 
 
@@ -74,7 +77,7 @@ class DockerWorkspace(RemoteWorkspace):
         """Create a docker workspace."""
         super().__init__(config=config)
         self.image = config.image or os.environ.get(
-            ENV_COMPOSIO_SWE_AGENT,
+            ENV_COMPOSIO_TOOLSERVER_IMAGE,
             DEFAULT_IMAGE,
         )
         self._port_requests = config.ports or {}

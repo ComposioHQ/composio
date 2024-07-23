@@ -1,9 +1,16 @@
-FROM techcomposio/swe-agent
+FROM python:slim
 
 # Install dependencies
 RUN apt update \
-    && apt install sudo \
-    && apt install openssh-server sudo python3-pip uuid-runtime curl -y
+    && apt install  -y \
+    git \
+    curl \
+    sudo \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    uuid-runtime \
+    openssh-server
 
 # Define entry point
 COPY entrypoint.sh /root/entrypoint.sh

@@ -21,7 +21,7 @@ from composio.cli.whoami import _whoami
 from composio.core.cls.catch_all_exceptions import CatchAllExceptions, handle_exceptions
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.utils import logging
-
+from composio import __version__
 
 class HelpDYMGroup(DYMGroup):
     def format_help(self, ctx, formatter):
@@ -52,7 +52,14 @@ class HelpDYMGroup(DYMGroup):
         handler=handle_exceptions,
     ),
 )
-@click.help_option("--help", "-help", "-h")
+@click.help_option(
+    "-h",
+    "-help",
+    "--help",
+)
+@click.version_option(
+    version=__version__,
+)
 @click.option(
     "-v",
     "level",
