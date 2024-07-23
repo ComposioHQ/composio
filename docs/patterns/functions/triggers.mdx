@@ -58,7 +58,7 @@ connected_account = entity.get_connection(app=selected_app)  # Get connected acc
 ```
 ```javascript javascript
 const entity = toolset.client.getEntity(id=entity_id);
-const connected_account = entity.getConnection(app=selected_app);  // Get connected account
+const connected_account = await entity.getConnection(selected_app);  // Get connected account
 ```
 </CodeGroup>
 
