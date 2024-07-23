@@ -41,7 +41,7 @@ trigger_config = {"owner": "composiohq", "repo": "composio"}  # Trigger config f
 ```
 ```javascript javascript
 const entity_id = "soham"  // Unique user identifier in your app
-const selected_app = App.GITHUB  // The app you are working with
+const selected_app = "github"  // The app you are working with
 const trigger_name = "github_commit_event"  // Trigger name from Composio UI
 const trigger_config = {"owner": "composiohq", "repo": "composio"}  // Trigger config from Composio UI
 ```
@@ -74,11 +74,14 @@ if len(triggers) == 0:
     raise Exception("Trigger not found")  # Handle incorrect trigger name
 ```
 ```javascript javascript
-const triggers = await toolset.client.triggers.get(trigger_ids=[trigger_name]);  // Get the triggers
+const triggersData = await toolset.client.activeTriggers.list({
+  triggerIds: [trigger_id].join(",") // separated by comma
+});  // Get the active triggers
 
-if (triggers.length === 0) {
+if (triggersData.triggers?.length === 0) {
     throw new Error("Trigger not found");  // Handle incorrect trigger name
 }
+
 ```
 </CodeGroup>
 
