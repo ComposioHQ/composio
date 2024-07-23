@@ -26,7 +26,7 @@ jobs:
           sudo apt-get autoclean
           python -m pip install --upgrade pip
           pip install twine build
-          
+
           # Build dist
           python -m build
       - name: Publish Core to PyPI
@@ -48,7 +48,21 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
-        package: [autogen, camel, claude, crew_ai, griptape, julep, langchain, llamaindex, lyzr, openai, praisonai, langgraph]
+        package:
+          [
+            autogen,
+            camel,
+            claude,
+            crew_ai,
+            griptape,
+            julep,
+            langchain,
+            llamaindex,
+            lyzr,
+            openai,
+            praisonai,
+            langgraph,
+          ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -110,3 +124,93 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
           packages-dir: python/swe/dist/
+
+  publish-cli:
+    name: Build and upload CLI
+    needs: publish-core
+    permissions: write-all
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Build for ${{ matrix.os }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+          cd python/
+          pip3 install .
+          
+          # Build CLI
+          pyinstaller composio/cli/__main__.py
+
+      # Ubuntu Release
+      - if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__ dist/bin/composio
+          
+          cd dist/
+          zip -r composio-linux-amd64.zip bin/*
+          rm -rf bin/
+      - if: matrix.os == 'ubuntu-latest'
+        name: Upload artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: python/dist/composio-linux-amd64.zip
+      
+      # Mac Intel Release
+      - if: matrix.os == 'macos-12'
+        run: |
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__ dist/bin/composio
+          
+          cd dist/
+          zip -r composio-darwin-amd64.zip bin/*
+          rm -rf bin/
+      - if: matrix.os == 'macos-12'
+        name: Upload artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: python/dist/composio-darwin-amd64.zip
+      
+      # Mac ARM Release
+      - if: matrix.os == 'macos-14'
+        run: |
+          cd python/
+          mv dist/__main__ dist/bin
+          mv dist/bin/__main__ dist/bin/composio
+          
+          cd dist/
+          zip -r composio-darwin-arm64.zip bin/*
+          rm -rf bin/
+      - if: matrix.os == 'macos-14'
+        name: Upload artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: python/dist/composio-darwin-arm64.zip
+      
+      # # Windows release
+      # - if: matrix.os == 'windows-latest'
+      #   run: |
+      #     cd python/
+      #     mv dist/__main__ dist/bin
+      #     mv dist/bin/__main__.exe dist/bin/composio.exe
+          
+      #     cd dist/
+      #     zip -r composio-win.zip bin/*
+      #     rm -rf bin/
+      # - if: matrix.os == 'windows-latest'
+      #   name: Upload artifact
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: python/dist/composio-win.zip
+
