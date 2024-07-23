@@ -214,3 +214,43 @@ jobs:
       #   with:
       #     files: python/dist/composio-win.zip
 
+  publish-images:
+    name: Build and publish docker images
+    needs: publish-core
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Docker login
+        env:
+          DOCKER_USER: ${{secrets.DOCKER_USER}}
+          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+        run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - name: Set up support for multi platform build
+        run: |
+          docker run --privileged --rm tonistiigi/binfmt --install all
+          docker buildx create --use --name multibuild
+          docker buildx inspect --bootstrap
+      - name: Publishing tool server images
+        run: |
+          cd dockerfiles/
+          make publish
+
+  publish-e2b:
+    name: Publish E2B template
+    needs: publish-core
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+      - name: Install E2B
+        run: |
+          npm install -g @e2b/cli@latest
+      - name: Publishing Template
+        env:
+          E2B_API_KEY: ${{secrets.E2B_API_KEY}}
+        run: |
+          cd dockerfiles/
+          make e2b
