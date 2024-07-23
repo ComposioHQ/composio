@@ -1,6 +1,7 @@
 name = "composio-cloudflare"
 main = "js/src/cloudflare-example.mjs"
 compatibility_date = "2024-06-06"
+node_compat = true
 
 [ai]
 binding = "AI"

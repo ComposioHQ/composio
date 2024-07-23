@@ -6,6 +6,7 @@ from camel.models import ModelFactory
 from camel.types import ModelPlatformType, ModelType
 from camel.utils import print_text_animated
 from colorama import Fore
+
 from composio_camel import Action, ComposioToolSet
 
 

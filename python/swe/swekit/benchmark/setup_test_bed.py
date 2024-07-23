@@ -6,6 +6,7 @@ from pathlib import Path
 
 from datasets import load_dataset
 from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
+
 from swekit.benchmark.constants import (
     MODEL_GPT4,
     PATH_PATCHES_JSON,
@@ -106,7 +107,7 @@ def create_patches_file(predictions_dir, dataset_path_or_name):
         f_out.write(json.dumps(all_patches))
 
     print(
-        f"Found {pred_total} total predictions, will evaluate {pred_will_eval} ({pred_total-pred_will_eval} are empty)"
+        f"Found {pred_total} total predictions, will evaluate {pred_will_eval} ({pred_total - pred_will_eval} are empty)"
     )
     return pred_path_orig, dataset_on_disk
 

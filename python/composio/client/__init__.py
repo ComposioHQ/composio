@@ -231,7 +231,7 @@ class Entity:
 
     def get_connection(
         self,
-        app: t.Optional[t.Union[str, App]] = None,
+        app: t.Optional[AppType] = None,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
@@ -253,6 +253,7 @@ class Entity:
             entity_ids=[self.id],
             active=True,
         )
+        app = str(app).lower()
         for connected_account in connected_accounts:
             if app == connected_account.appUniqueId:
                 creation_date = datetime.fromisoformat(
@@ -261,6 +262,7 @@ class Entity:
                 if latest_account is None or creation_date > latest_creation_date:
                     latest_creation_date = creation_date
                     latest_account = connected_account
+
         if latest_account is None:
             raise ComposioClientError(
                 f"Could not find a connection with app='{app}',"
@@ -318,6 +320,8 @@ class Entity:
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
+        use_composio_auth: bool = False,
+        force_new_integration: bool = False,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -340,14 +344,16 @@ class Entity:
                 name=f"integration_{timestamp}",
                 auth_mode=auth_mode,
                 auth_config=auth_config,
-                use_composio_auth=False,
+                use_composio_auth=use_composio_auth,
+                force_new_integration=force_new_integration,
             )
 
         if integration is None and auth_mode is None:
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"integration_{timestamp}",
-                use_composio_auth=True,
+                use_composio_auth=use_composio_auth,
+                force_new_integration=force_new_integration,
             )
 
         return self.client.connected_accounts.initiate(

@@ -3,18 +3,16 @@ import os
 from datetime import datetime
 
 from composio_crewai import App, ComposioToolSet
-from crewai import Agent, Task
+from crewai import Agent, Task, Crew
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
 
 # Load environment variables
 load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("MODEL")
 
 # Initialize the language model
-llm = ChatOpenAI(model=model, api_key=openai_api_key)
+llm = ChatOpenAI(model="gpt-4o")
 
 # Define tools for the agents
 # We are using Google calendar tool from composio to connect to our calendar account.
@@ -44,13 +42,16 @@ def run_crew():
         verbose=True,
         tools=tools,
         llm=llm,
+        cache=False,
     )
     task = Task(
         description=f"Book slots according to {todo}. Label them with the work provided to be done in that time period. Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
         agent=calendar_agent,
         expected_output="if free slot is found",
     )
-    task.execute()
+    crew = Crew(agents=[calendar_agent], tasks=[task])
+    result = crew.kickoff()
+    print(result)
     return "Crew run initiated", 200
 
 

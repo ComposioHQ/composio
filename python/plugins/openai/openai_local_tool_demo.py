@@ -5,11 +5,12 @@ OpenAI demo.
 from pathlib import Path
 
 import dotenv
-from composio_openai import ComposioToolSet
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from composio import ExecEnv, Shell, action
+from composio import Shell, WorkspaceType, action
+
+from composio_openai import ComposioToolSet
 
 
 class GitRepoRequest(BaseModel):
@@ -37,7 +38,7 @@ def get_git_repo(request_data: GitRepoRequest, metadata: dict) -> GitRepoRespons
         shell.exec("git config --get remote.origin.url").get("stdout").lstrip().rstrip()
     )
     _, repo = output.split(":")
-    author, name = repo.split("/")
+    *_, author, name = repo.split("/")
     return GitRepoResponse(name=name, author=author)
 
 
@@ -60,7 +61,7 @@ dotenv.load_dotenv()
 
 # Initialize tools.
 openai_client = OpenAI()
-composio_toolset = ComposioToolSet(workspace_env=ExecEnv.HOST)
+composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
 
 # Define task.
 task = "Can you give me the name of the git repository working directory"

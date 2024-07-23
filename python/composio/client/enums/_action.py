@@ -1,7 +1,6 @@
 """
 Action enums.
 """
-
 import typing as t
 
 import typing_extensions as te
@@ -10,7 +9,7 @@ from composio.client.enums.base import (
     ACTIONS_CACHE,
     ActionData,
     _AnnotatedEnum,
-    add_action,
+    add_runtime_action,
     enum,
 )
 
@@ -617,10 +616,19 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     CLICKUP_WEB_HOOKS_REMOVE_WEB_HOOK_BY_ID: "Action"
     CLICKUP_WEB_HOOKS_UPDATE_EVENTS_TO_MONITOR: "Action"
     CLICKUP_WEB_HOOKS_WORK_SPACE_GET: "Action"
-    CODEINTERPRETER_CREATE_SANDBOX: "Action"
+    CODEFORMAT_FORMAT_AND_LINT_CODEBASE: "Action"
+    CODEGREP_SEARCH_CODEBASE: "Action"
+    CODEINDEX_CREATE_INDEX: "Action"
+    CODEINDEX_INDEX_STATUS: "Action"
+    CODEINDEX_SEARCH_CODEBASE: "Action"
     CODEINTERPRETER_EXECUTE_CODE: "Action"
     CODEINTERPRETER_GET_FILE_CMD: "Action"
     CODEINTERPRETER_RUN_TERMINAL_CMD: "Action"
+    CODEMAP_DELETE_REPO_MAP: "Action"
+    CODEMAP_GENERATE_RANKED_TAGS: "Action"
+    CODEMAP_GET_REPO_MAP: "Action"
+    CODEMAP_GET_REPO_STRUCTURE: "Action"
+    CODEMAP_INIT_REPO_MAP: "Action"
     COMPOSIO_CHECK_ACTIVE_CONNECTION: "Action"
     COMPOSIO_INITIATE_CONNECTION: "Action"
     COMPOSIO_RETRIEVE_ACTIONS: "Action"
@@ -850,6 +858,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     ELEVENLABS_TEXT_TO_SPEECH_V_1_TEXT_TO_SPEECH_VOICE_ID_STREAM_POST: "Action"
     ELEVENLABS_UPDATE_PRONUNCIATION_DICTIONARIES_V_1_PROJECTS_PROJECT_ID_UPDATE_PRONUNCIATION_DICTIONARIES_POST: "Action"
     ELEVENLABS_VOICE_GENERATION_PARAMETERS_V_1_VOICE_GENERATION_GENERATE_VOICE_PARAMETERS_GET: "Action"
+    EMBEDTOOL_CREATE_IMAGE_VECTOR_STORE: "Action"
+    EMBEDTOOL_QUERY_IMAGE_VECTOR_STORE: "Action"
     EXA_SEARCH: "Action"
     EXA_SIMILARLINK: "Action"
     FIGMA_DELETED_EV_RESOURCE: "Action"
@@ -894,17 +904,15 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     FILEEDITTOOL_EDIT_FILE: "Action"
     FILEEDITTOOL_OPEN_FILE: "Action"
     FILEEDITTOOL_SCROLL: "Action"
-    FILEMANAGER_CLOSE_SHELL_ACTION: "Action"
-    FILEMANAGER_CREATE_FILE_ACTION: "Action"
-    FILEMANAGER_CREATE_SHELL_ACTION: "Action"
-    FILEMANAGER_EDIT_FILE_ACTION: "Action"
-    FILEMANAGER_GOTO_LINE_ACTION: "Action"
-    FILEMANAGER_OPEN_FILE_ACTION: "Action"
-    FILEMANAGER_RUN_COMMAND_ACTION: "Action"
-    FILEMANAGER_SCROLL_ACTION: "Action"
-    FILEMANAGER_SET_ENV_VAR_ACTION: "Action"
-    FILETOOL_READ_FILE: "Action"
-    FILETOOL_WRITE_FILE: "Action"
+    FILETOOL_CHANGE_WORKING_DIRECTORY: "Action"
+    FILETOOL_CREATE_FILE: "Action"
+    FILETOOL_EDIT_FILE: "Action"
+    FILETOOL_FIND_FILE: "Action"
+    FILETOOL_LIST_FILES: "Action"
+    FILETOOL_OPEN_FILE: "Action"
+    FILETOOL_SCROLL: "Action"
+    FILETOOL_SEARCH_WORD: "Action"
+    FILETOOL_WRITE: "Action"
     FIRECRAWL_CHECK_CRAWL_STATUS: "Action"
     FIRECRAWL_CRAWL: "Action"
     FIRECRAWL_EXTRACT: "Action"
@@ -1847,11 +1855,11 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     GITHUB_USER_SUN_FOLLOW: "Action"
     GMAIL_ADD_LABEL_TO_EMAIL: "Action"
     GMAIL_CREATE_EMAIL_DRAFT: "Action"
-    GMAIL_FETCH_EMAILS_WITH_LABEL: "Action"
-    GMAIL_FETCH_LAST_THREE_MESSAGES: "Action"
+    GMAIL_CREATE_LABEL: "Action"
+    GMAIL_FETCH_EMAILS: "Action"
     GMAIL_FETCH_MESSAGE_BY_THREAD_ID: "Action"
-    GMAIL_FIND_EMAIL_ID: "Action"
     GMAIL_LIST_LABELS: "Action"
+    GMAIL_LIST_THREADS: "Action"
     GMAIL_REPLY_TO_THREAD: "Action"
     GMAIL_SEND_EMAIL: "Action"
     GOOGLECALENDAR_CREATE_EVENT: "Action"
@@ -1859,6 +1867,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     GOOGLECALENDAR_DUPLICATE_CALENDAR: "Action"
     GOOGLECALENDAR_FIND_EVENT: "Action"
     GOOGLECALENDAR_FIND_FREE_SLOTS: "Action"
+    GOOGLECALENDAR_GET_CALENDAR: "Action"
     GOOGLECALENDAR_GET_CURRENT_DATE_TIME: "Action"
     GOOGLECALENDAR_LIST_CALENDARS: "Action"
     GOOGLECALENDAR_PATCH_CALENDAR: "Action"
@@ -2669,6 +2678,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     SERPAPI_TRENDS_SEARCH: "Action"
     SHELL_CREATE_SHELL: "Action"
     SHELL_EXEC_COMMAND: "Action"
+    SHELL_SPAWN_PROCESS: "Action"
     SLACKBOT_API_TEST: "Action"
     SLACKBOT_APPS_EVENT_AUTHORIZATIONS_GET_LIST: "Action"
     SLACKBOT_APPS_PERMISSIONS_ADDITIONAL_SCOPES_REQUEST: "Action"
@@ -3171,6 +3181,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     TASKADE_REMOVE_ASSIGNEE_FROM_TASK: "Action"
     TASKADE_TASK_ASSIGNMENT: "Action"
     TAVILY_TAVILY_SEARCH: "Action"
+    TEST_ASANA_CREATE_SUBTASK: "Action"
+    TEST_ASANA_GET_SUBTASKS: "Action"
     TRELLO_ACTION_GET_BOARD_BY_ID_ACTION: "Action"
     TRELLO_ACTION_GET_BOARD_BY_ID_ACTION_BY_FIELD: "Action"
     TRELLO_ACTION_GET_BY_ID: "Action"
@@ -3761,7 +3773,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            raise ValueError()
+            value = value().get_tool_merged_action_name()  # type: ignore
         super().__init__(value=value)  # type: ignore
 
     @property
@@ -3802,4 +3814,4 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     @classmethod
     def add(cls, name: str, data: ActionData) -> None:
         """Add a new action."""
-        add_action(name=name, data=data)
+        add_runtime_action(name=name, data=data)

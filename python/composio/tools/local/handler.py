@@ -88,3 +88,8 @@ class LocalClient(WithLogger):
 def add_runtime_action(name: str, cls: t.Type[LocalActionType]) -> None:
     """Add runtime action."""
     _runtime_actions[name] = cls()
+
+
+def get_runtime_action(name: str) -> LocalActionType:
+    """Get a runtime action."""
+    return _runtime_actions[name]

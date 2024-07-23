@@ -20,7 +20,7 @@ from composio.constants import (
 )
 from composio.core.cls.catch_all_exceptions import init_sentry
 from composio.storage.user import UserData
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import WorkspaceType
 from composio.tools.toolset import ComposioToolSet
 from composio.utils import logging
 
@@ -99,7 +99,7 @@ class Context(logging.WithLogger):
         if self._toolset is None:
             self._toolset = ComposioToolSet(
                 api_key=self.user_data.api_key,
-                workspace_env=ExecEnv.HOST,
+                workspace_config=WorkspaceType.Host(),
             )
         return self._toolset
 

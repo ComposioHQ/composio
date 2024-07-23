@@ -35,7 +35,7 @@ if __name__ == "__main__":
     )
 
     task = Task(
-        description="Can you tell me in which file enums are stored? for repo samparkai/composio. ",
+        description="Can you tell me in which file enums are stored? for repo composiohq/composio. ",
         agent=agent_1,
         expected_output="Name of the file",
     )

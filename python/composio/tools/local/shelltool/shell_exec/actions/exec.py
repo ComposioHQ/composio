@@ -46,6 +46,9 @@ class ShellExecResponse(BaseModel):
         description="Exit code of the command",
     )
 
+    def something(self):
+        print("hello")
+
 
 class BaseExecCommand(Action):
     """
@@ -118,7 +121,9 @@ class ExecCommand(BaseExecCommand):
 
 
 def exec_cmd(
-    cmd: str, authorisation_data: dict, shell_id: t.Optional[str] = None
+    cmd: str,
+    authorisation_data: dict,
+    shell_id: t.Optional[str] = None,
 ) -> t.Dict[str, str]:
     """Execute a shell command."""
     shell_id = shell_id or ""

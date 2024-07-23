@@ -107,7 +107,7 @@ class FindFileCmd(BaseExecCommand):
     """
     Searches for files by name within a specified directory or the current directory if none is specified.
     Example:
-        - To find a file, provide the workspace ID, the file name, and optionally a directory.
+        - To find a file, provide the file name, and optionally a directory.
         - The response will list any files found and indicate whether the search was successful.
     """
 

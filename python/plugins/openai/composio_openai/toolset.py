@@ -15,10 +15,9 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from composio import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.tools.env.factory import ExecEnv
 from composio.tools.schema import OpenAISchema, SchemaType
 
 
@@ -41,7 +40,7 @@ class ComposioToolSet(BaseComposioToolSet):
         composio_tools = ComposioToolset()
 
         # Define task.
-        task = "Star a repo SamparkAI/composio_sdk on GitHub"
+        task = "Star a repo composiohq/composio on GitHub"
 
         # Get GitHub tools that are pre-configured
         actions = composio_toolset.get_tools(apps=[App.GITHUB])
@@ -69,7 +68,7 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_env: ExecEnv = ExecEnv.HOST,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """
@@ -86,7 +85,7 @@ class ComposioToolSet(BaseComposioToolSet):
             runtime="openai",
             entity_id=entity_id,
             output_in_file=output_in_file,
-            workspace_env=workspace_env,
+            workspace_config=workspace_config,
             workspace_id=workspace_id,
         )
         self.schema = SchemaType.OPENAI
@@ -99,7 +98,7 @@ class ComposioToolSet(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "Seperate `entity_id` can not be provided during "
+                "separate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:

@@ -4,7 +4,7 @@ import { Composio } from "composio-core";
 const TRIGGER_CONFIGS = {
     GITHUB: {
       triggerName: "github_issue_added_event",
-      config: {"owner": "ComposioHQ", "repo": "composio"}
+      config: {"owner": "composiohq", "repo": "composio"}
     }
 };
 

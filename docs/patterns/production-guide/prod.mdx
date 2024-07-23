@@ -1,0 +1,44 @@
+---
+title: "Using Composio in Production"
+sidebarTitle: "Using Composio in Production"
+icon: "user"
+description: "In this section, we will guide you through deploying your application to production"
+---
+When deploying your application to production, it is crucial to configure your 
+Composio API key correctly to ensure smooth operation. 
+Follow these steps to use the Composio SDK in production:
+
+### Step 1: Set Your Composio API Key
+Ensure that your COMPOSIO_API_KEY is set as an environment variable in your production environment. 
+This can be done through the platform's UI or via your deployment scripts.
+
+### Step 2: Initialize the Composio Client
+In your application code, initialize the Composio client using the environment variable for the API key. 
+Here is an example in Python:
+<CodeGroup>
+```python python
+import os
+from composio import Composio
+
+composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
+```
+```javascript javascript
+import { OpenAIToolSet } from "composio-core";
+
+const composio_toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY
+});
+```
+</CodeGroup>
+
+### Step 3: Provide an Entity ID for User-Specific Actions
+Whenever you perform actions using the Composio SDK, make sure to provide the entity ID of the user. 
+Here is an example of enabling a GitHub commit hook for a user:
+<CodeGroup>
+```python python
+entity = composio_client.get_entity(user_id="user_123")
+```
+```javascript javascript
+entity = composio_client.client.get_entity("user_123");
+```
+</CodeGroup>
