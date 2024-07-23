@@ -55,7 +55,9 @@ class GitPatch(BaseFileAction):
     _response_schema = GitPatchResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: GitPatchRequest
+        self,
+        file_manager: FileManager,
+        request_data: GitPatchRequest,  # type: ignore
     ) -> GitPatchResponse:
         try:
             # Check if we're in a git repository or in a subdirectory of one

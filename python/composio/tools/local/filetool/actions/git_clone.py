@@ -106,7 +106,9 @@ class GitClone(BaseFileAction):
     _response_schema = GitCloneResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: GitCloneRequest
+        self,
+        file_manager: FileManager,
+        request_data: GitCloneRequest,  # type: ignore
     ) -> GitCloneResponse:
         try:
             repo_dir = request_data.repo_name.split("/")[-1]

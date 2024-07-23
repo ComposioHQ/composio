@@ -1,7 +1,6 @@
 """
 App enums.
 """
-
 import typing as t
 
 from composio.client.enums._action import Action
@@ -71,6 +70,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     STRAVA: "App"
     TASKADE: "App"
     TAVILY: "App"
+    TEST_ASANA: "App"
     TRELLO: "App"
     TWILIO: "App"
     TYPEFORM: "App"
