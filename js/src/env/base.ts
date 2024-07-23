@@ -217,7 +217,6 @@ export class RemoteWorkspace extends Workspace {
         });
         const response = request.data;
         if (!response.error) {
-            console.log("Response of function is", response.data);
             return response.data;
         }
         throw new Error(`Error while executing ${action}: ${response.error}`);

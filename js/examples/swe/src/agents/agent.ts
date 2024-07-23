@@ -3,17 +3,20 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { ExecEnv, LangchainToolSet } from 'composio-core';
-import { ChatOpenAI } from '@langchain/openai';
-import { BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE } from '../prompts';
-import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
+import { ChatAnthropic } from '@langchain/anthropic';
+import { BACKSTORY, DESCRIPTION, GOAL } from '../prompts';
+import { AgentExecutor, createStructuredChatAgent } from 'langchain/agents';
 import { pull } from 'langchain/hub';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { ChatPromptTemplate, SystemMessagePromptTemplate } from '@langchain/core/prompts';
 
 // Load environment variables from .env
 
 // Initialize tool.
-const openaiClient = new ChatOpenAI({ modelName: "gpt-4o", apiKey: process.env.OPEN_AI_API_KEY });
-const composioToolset = new LangchainToolSet({ workspaceEnv: ExecEnv.DOCKER });
+    const llm = new ChatAnthropic({
+        model: "claude-3-5-sonnet-20240620",
+        apiKey: process.env.ANTHROPIC_API_KEY
+    });
+    const composioToolset = new LangchainToolSet({ workspaceEnv: ExecEnv.DOCKER });
 
 export async function initSWEAgent() {
     // Get required tools
@@ -22,8 +25,7 @@ export async function initSWEAgent() {
             "SEARCHTOOL",
             "GITCMDTOOL",
             "FILEEDITTOOL",
-            "HISTORYFETCHERTOOL",
-            "SHELLEXEC",
+            "SHELLTOOL",
         ].map((a) => a.toLocaleLowerCase()),
         tags: null,
         useCase: null
@@ -31,19 +33,14 @@ export async function initSWEAgent() {
 
     // Define agent
 
-    const agent = await createOpenAIToolsAgent({
-         // @ts-ignore
-        llm: openaiClient,
+    const chatPrompt = ChatPromptTemplate.fromTemplate(`${BACKSTORY}
+    ${GOAL}
+    ${DESCRIPTION}
+    {agent_scratchpad}`);
+    const agent = await createStructuredChatAgent({
+        llm: llm,
         tools,
-        prompt: ChatPromptTemplate.fromTemplate(`System: You are an AI assistant helping a software engineer solve coding issues. You have access to various tools like code search, file editing, shell execution, etc. Use these tools judiciously to understand and fix the issue.
-
-${BACKSTORY}
-
-Goal: ${GOAL}
-Description: ${DESCRIPTION}
-Expected output: ${EXPECTED_OUTPUT}
-
-Agent Scratchpad: {agent_scratchpad}`)
+        prompt: chatPrompt,
     });
     const agent_executor = new AgentExecutor({ agent, tools, verbose: true});
 
