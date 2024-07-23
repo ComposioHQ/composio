@@ -1,0 +1,158 @@
+---
+title: "Workspace Environments"
+sidebarTitle: "Workspace Environments"
+icon: "server"
+description: "Configure and utilize different workspace environments for running your SWE agents"
+---
+
+## Overview
+
+SWE Development Kit (swekit) supports various workspace environments to run your agents. This flexibility allows you to choose the most suitable environment for your specific needs, balancing factors such as security, isolation, and ease of use.
+
+## Supported Environments
+
+<CardGroup cols={2}>
+  <Card
+    title="Local"
+    icon="laptop"
+    href="#local-environment"
+  >
+    Run agents directly on your local machine.
+  </Card>
+  <Card
+    title="Docker"
+    icon="docker"
+    href="#docker-environment"
+  >
+    Isolate agents in Docker containers for enhanced security.
+  </Card>
+  <Card
+    title="E2B"
+    icon="cloud"
+    href="#e2b-environment"
+  >
+    Utilize E2B sandboxes for cloud-based execution.
+  </Card>
+  <Card
+    title="Fly.io"
+    icon="plane"
+    href="#flyio-environment"
+  >
+    Deploy agents on Fly.io for scalable, distributed execution.
+  </Card>
+</CardGroup>
+
+## Configuring Workspace Environments
+
+### Local Environment
+
+To run your agent on the local machine:
+
+<CodeGroup>
+  ```python Local Environment
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Host()
+)
+```
+</CodeGroup>
+
+
+### Docker Environment
+
+For enhanced security and isolation, use Docker:
+<CodeGroup>
+  ```python Docker Environment
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker()
+)
+```
+</CodeGroup>
+
+You can configure exposed ports for development:
+<CodeGroup>
+```python Opening ports on Docker for web apps
+toolset = ComposioToolSet(
+  workspace_config=WorkspaceType.Docker(
+    ports={
+      8001: 8001,
+    }
+  )
+)
+```
+</CodeGroup>
+<Info>
+  For more details on configuring Docker ports, refer to the [Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run).
+</Info>
+
+### E2B Environment
+
+To use E2B sandboxes for cloud-based execution:
+<CodeGroup>
+```python E2B Environment
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.E2B(),
+)
+
+```
+</CodeGroup>
+
+<Warning>
+  To use E2B sandboxes, you need to set the `E2B_API_KEY` environment variable with your E2B API key.
+</Warning>
+
+### FlyIO Environment
+
+For scalable, distributed execution on Fly.io:
+
+<CodeGroup>
+```python Fly.io Environment
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.FlyIO(),
+)
+```
+</CodeGroup>
+
+You can configure ports for development or deployment:
+
+<CodeGroup>
+```python
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.FlyIO(
+        image="angrybayblade/composio:dev",
+        ports=[{
+            "ports": [{"port": 443, "handlers": ["tls", "http"]}],
+            "internal_port": 80,
+            "protocol": "tcp"
+        }],
+    )
+)
+```
+</CodeGroup>
+
+<Info>
+  For more information on configuring network ports on Fly.io machines, check the [Fly.io Machines API documentation](https://fly.io/docs/machines/api/machines-resource/#create-a-machine-with-services).
+</Info>
+
+<Warning>
+  To use Fly.io, you need to set the `FLY_API_TOKEN` environment variable with your Fly.io API token.
+</Warning>
+
+## Customizing Workspace Environments
+
+You can customize the workspace environment by adding environment variables while creating workspace.
+<CodeGroup>
+``` python Add environment variables to workspace
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker(
+        environment={
+            "SOME_API_TOKEN": "<SOME_API_TOKEN>",
+        }
+    )
+)
+```
+</CodeGroup>
