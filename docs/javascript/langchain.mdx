@@ -24,7 +24,7 @@ import { LangchainToolSet } from "composio-core";
 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY, });
 
 async function setupUserConnectionIfNotExists(entityId) {
-        const entity = await toolset.client.getEntity(entityId);
+        const entity = toolset.client.getEntity(entityId);
         const connection = await entity.getConnection('github');
 
         if (!connection) {
@@ -48,7 +48,7 @@ Learn more about Entities [here](introduction/foundations/components/entity/enti
       ```typescript Define your Agent to create issues on Github
 async function executeAgent (entityName){
         // Create entity and get tools
-        const entity = await toolset.client.getEntity(entityName)
+        const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
         const tools = await toolset.get_actions({ actions: ["github_issues_create"] },entity.id);
 
