@@ -60,7 +60,7 @@ This project involves setting up and running an agent to conduct investment rese
         const composioToolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY
         });
-        const tools = await composioToolset.get_actions({
+        const tools = await composioToolset.getActions({
             actions: ["serpapi_search"]
         });
         ```
@@ -131,9 +131,6 @@ This project involves setting up and running an agent to conduct investment rese
     const composioToolset = new LangchainToolSet({
         apiKey: process.env.COMPOSIO_API_KEY
     });
-    const tools = await composioToolset.get_actions({
-        actions: ["serpapi_search"]
-    });
 
     const prompt = await pull("hwchase17/openai-functions-agent");
     
@@ -150,6 +147,9 @@ This project involves setting up and running an agent to conduct investment rese
     });
 
     async function runInvestmentAnalysis(topic) {
+            const tools = await composioToolset.getActions({
+            actions: ["serpapi_search"]
+        });
         const result = await agentExecutor.invoke({
             input: `Conduct a comprehensive investment analysis on ${topic}. 
                     First, research the topic using SERP to get the latest information. 

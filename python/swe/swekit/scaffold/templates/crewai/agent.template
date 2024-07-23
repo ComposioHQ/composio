@@ -8,7 +8,6 @@ from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 
-
 # Load environment variables from .env
 dotenv.load_dotenv()
 

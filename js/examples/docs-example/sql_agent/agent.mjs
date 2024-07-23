@@ -7,15 +7,13 @@ import { pull } from "langchain/hub";
 dotenv.config();
 
 const composioToolset = new ComposioToolSet();
-const sqlTools = await composioToolset.getTools({ apps: ["sqltool", "filetool"] });
-const allTools = await composioToolset.getTools({ apps: ["sqltool", "filetool", "codeinterpreter"] });
-
-const llm = new ChatOpenAI({ model: "gpt-4o" });
-
-const prompt = await pull("hwchase17/openai-functions-agent");
-const agent = await createOpenAIFunctionsAgent({ llm, tools: sqlTools, prompt });
 
 async function executeSQLQuery(query) {
+    const sqlTools = await composioToolset.getTools({ apps: ["sqltool", "filetool"] });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+    const prompt = await pull("hwchase17/openai-functions-agent");
+    const agent = await createOpenAIFunctionsAgent({ llm, tools: sqlTools, prompt });
+
     const agentExecutor = new AgentExecutor({
         agent,
         tools: sqlTools,
@@ -31,6 +29,9 @@ async function executeSQLQuery(query) {
 }
 
 async function plotGraph(data) {
+    const allTools = await composioToolset.getTools({ apps: ["sqltool", "filetool", "codeinterpreter"] });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+    const prompt = await pull("hwchase17/openai-functions-agent");
     const codeAgent = await createOpenAIFunctionsAgent({ llm, tools: allTools, prompt });
     const codeExecutor = new AgentExecutor({
         agent: codeAgent,

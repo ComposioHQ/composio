@@ -52,7 +52,9 @@ class GitRepoTree(BaseFileAction):
     _output_text = "Git repository tree has been generated successfully."
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: GitRepoTreeRequest
+        self,
+        file_manager: FileManager,
+        request_data: GitRepoTreeRequest,  # type: ignore
     ) -> GitRepoTreeResponse:
         try:
             repo_path = Path(file_manager.working_dir) / request_data.git_repo_path

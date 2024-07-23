@@ -139,7 +139,7 @@ from composio import ComposioToolSet, WorkspaceType
 
 composio_toolset = ComposioToolSet(
     workspace_config=WorkspaceType.FlyIO(
-        image="angrybayblade/composio",
+        image="composio/composio",
         ports=[
             {
                 "ports": [

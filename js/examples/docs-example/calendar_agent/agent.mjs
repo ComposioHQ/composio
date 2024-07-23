@@ -13,9 +13,6 @@ const llm = new ChatOpenAI({ model: "gpt-4-turbo"});
 const composioToolset = new LangchainToolSet({
     apiKey: process.env.COMPOSIO_API_KEY
 });
-const tools = await composioToolset.get_actions({
-    actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
-});
 
 // Retrieve the current date and time
 const getCurrentDate = () => new Date().toISOString().split('T')[0];
@@ -30,6 +27,10 @@ const todo = `
 `;
 
 async function runAgent() {
+    const tools = await composioToolset.get_actions({
+        actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
+    });
+
     const prompt = await pull("hwchase17/openai-functions-agent");
     const agent = await createOpenAIFunctionsAgent({
         llm,

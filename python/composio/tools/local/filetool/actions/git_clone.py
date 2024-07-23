@@ -45,7 +45,7 @@ def git_reset_cmd(commit_id: str) -> str:
     """Commands to reset git repository state."""
     reset_commands = [
         "git remote get-url origin",
-        "git fetch --all",
+        f"git fetch --depth 1 origin {commit_id}",
         f"git reset --hard {commit_id}",
         "git clean -fdx",
         "git status",
@@ -65,13 +65,18 @@ def git_clone_cmd(repo: str, commit_id: str) -> str:
 
     clone_url = f"https://{github_access_token+'@' if github_access_token else ''}github.com/{repo}.git"
 
-    commands = [
-        f"git clone {clone_url} -q",
-        f"cd {repo_name}",
-    ]
-
     if commit_id:
-        commands.append(f"git reset --hard {commit_id}")
+        commands = [
+            f"git clone --depth 1 {clone_url} -q",
+            f"cd {repo_name}",
+            f"git fetch --depth 1 origin {commit_id}",
+            f"git checkout {commit_id}",
+        ]
+    else:
+        commands = [
+            f"git clone --depth 1 {clone_url} -q",
+            f"cd {repo_name}",
+        ]
 
     commands.append("git status")
     return " && ".join(commands)
@@ -106,7 +111,9 @@ class GitClone(BaseFileAction):
     _response_schema = GitCloneResponse
 
     def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: GitCloneRequest
+        self,
+        file_manager: FileManager,
+        request_data: GitCloneRequest,  # type: ignore
     ) -> GitCloneResponse:
         try:
             repo_dir = request_data.repo_name.split("/")[-1]
