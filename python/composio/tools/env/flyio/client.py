@@ -5,13 +5,13 @@ import time
 import typing as t
 import uuid
 
-from composio.tools.env.constants import DEFAULT_IMAGE
 import gql
 import gql.transport
 import requests
 import typing_extensions as te
 from gql.transport.requests import RequestsHTTPTransport
 
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 

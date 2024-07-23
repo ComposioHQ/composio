@@ -17,9 +17,9 @@ from docker.models.containers import Container
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.constants import (
+    DEFAULT_IMAGE,
     ENV_COMPOSIO_DEV_MODE,
     ENV_COMPOSIO_TOOLSERVER_IMAGE,
-    DEFAULT_IMAGE,
 )
 
 

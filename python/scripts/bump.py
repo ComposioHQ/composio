@@ -14,7 +14,6 @@ from semver import VersionInfo
 
 
 class BumpType(Enum):
-
     MAJOR = "major"
     MINOR = "minor"
     PATCH = "patch"
@@ -72,17 +71,21 @@ def _bump_setup(file: Path, bump_type: BumpType) -> None:
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
 
+
 def _bump_setups(bump_type: BumpType) -> None:
     cwd = Path.cwd()
     for setup in (cwd / "setup.py", *(cwd / "plugins").glob("**/setup.py")):
         _bump_setup(file=setup, bump_type=bump_type)
+
 
 def _bump_dockerfile(file: Path, bump_type: BumpType) -> None:
     print("=" * 64)
     print(f"Bumping {file}")
     content = file.read_text(encoding="utf-8")
     try:
-        (version_str,) = re.findall(pattern=r"composio-core==(\d+.\d+.\d+) ", string=content)
+        (version_str,) = re.findall(
+            pattern=r"composio-core==(\d+.\d+.\d+) ", string=content
+        )
     except ValueError as error:
         print(f"{error=}")
         return
@@ -97,6 +100,7 @@ def _bump_dockerfile(file: Path, bump_type: BumpType) -> None:
 
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
+
 
 def _bump_dockerfiles(bump_type: BumpType) -> None:
     cwd = Path.cwd()
@@ -118,9 +122,11 @@ def _bump_init(bump_type: BumpType) -> None:
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
 
+
 def bump(bump_type: BumpType) -> None:
     for _bump in (_bump_setups, _bump_dockerfiles, _bump_init):
         _bump(bump_type=bump_type)
+
 
 if __name__ == "__main__":
     bump(
