@@ -294,7 +294,7 @@ class File(WithLogger):
         return {
             "replaced_text": replaced,
             "replaced_with": text,
-            "error": "No lint errors found",
+            "error": "",
         }
 
     def lint(self) -> t.List[str]:

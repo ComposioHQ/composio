@@ -94,6 +94,7 @@ def _check_output(output: dict) -> None:
 #     assert False
 
 
+
 @pytest.mark.skip
 def test_workspace() -> None:
     """Test workspace tools."""
@@ -115,7 +116,7 @@ def test_workspace() -> None:
 
         assert toolset.execute_action(
             action=Action.FILETOOL_GIT_CLONE,
-            params={"repo_name": "angrybayblade/web"},
+            params={"repo_name": "ComposioHQ/composio"},
         ).get("success")
 
         output = toolset.execute_action(
@@ -126,14 +127,19 @@ def test_workspace() -> None:
         logger.info("output of open wrong file", output)
         output_open_file = toolset.execute_action(
             action=Action.FILETOOL_OPEN_FILE,
-            params={"file_path": "README.md"},
+            params={"file_path": "python/composio/client/enums/_action.py"},
         )
         logger.info(f"output of open file: {output_open_file}")
         output_scroll_file = toolset.execute_action(
             action=Action.FILETOOL_SCROLL,
             params={},
         )
-        logger.info(f"output of scroll file: {output_scroll_file}")
+        logger.info(f"output of scroll file 1: {output_scroll_file}")
+        output_scroll_file = toolset.execute_action(
+            action=Action.FILETOOL_SCROLL,
+            params={},
+        )
+        logger.info(f"output of scroll file 2: {output_scroll_file}")
         output_list = toolset.execute_action(
             action=Action.FILETOOL_LIST_FILES,
             params={},
