@@ -9,7 +9,6 @@ import typing as t
 import webbrowser
 
 import click
-from beaupy.spinners import DOTS, Spinner
 
 from composio.cli.context import Context, login_required, pass_context
 from composio.cli.utils.decorators import pass_entity_id
@@ -178,6 +177,7 @@ def add_integration(
         context=context,
         integration_id=integration_id,
     )
+
     try:
         existing_connection = entity.get_connection(app=name)
     except ComposioClientError:
@@ -253,8 +253,6 @@ def _get_auth_config(
         return None
 
     return {
-        "client_id": "*************",
-        "client_secret": "*************",
         "scopes": ",".join(scopes),
     }
 
@@ -272,7 +270,10 @@ def _handle_oauth(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
         integration=integration,
+        auth_mode="OAUTH2",
         auth_config=_get_auth_config(scopes=scopes),
+        use_composio_auth=True,
+        force_new_integration=len(scopes or []) > 0,
     )
     if not no_browser:
         webbrowser.open(
@@ -282,13 +283,8 @@ def _handle_oauth(
         f"Please authenticate {app_name} in the browser and come back here. "
         f"URL: {connection.redirectUrl}"
     )
-    spinner = Spinner(
-        DOTS,
-        f"⚠ Waiting for {app_name} authentication...",
-    )
-    spinner.start()
+    click.echo(f"⚠ Waiting for {app_name} authentication...")
     connection.wait_until_active(client=client)
-    spinner.stop()
     click.echo(f"✔ {app_name} added successfully!")
 
 
@@ -307,6 +303,8 @@ def _handle_basic_auth(
         auth_mode=auth_mode,
         auth_config=_get_auth_config(scopes=scopes),
         integration=integration,
+        use_composio_auth=True,
+        force_new_integration=len(scopes or []) > 0,
     ).save_user_access_data(
         client=client,
         field_inputs=_collect_input_fields(
