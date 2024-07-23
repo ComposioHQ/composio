@@ -13,7 +13,10 @@ from composio.tools.local.filetool.actions.base_action import (
 class OpenFileRequest(BaseFileRequest):
     """Request to open a file."""
 
-    file_path: str = Field(..., description="file path to open in the editor")
+    file_path: str = Field(
+        ...,
+        description="file path to open in the editor. This is a relative path to the current directory",
+    )
     line_number: int = Field(
         default=0,
         description="If file-number is given, file will be opened from that line number",
@@ -23,6 +26,7 @@ class OpenFileRequest(BaseFileRequest):
 class OpenFileResponse(BaseFileResponse):
     """Response to open a file."""
 
+    message: str = Field(default="", description="Message to display to the user")
     lines: t.Dict[int, str] = Field(
         default={}, description="File content with their line numbers"
     )
@@ -54,7 +58,14 @@ class OpenFile(BaseFileAction):
             file = file_manager.open(request_data.file_path)
             if request_data.line_number > 0:
                 file.goto(request_data.line_number)
-            return OpenFileResponse(lines=file.read(), total_lines=file.total_lines())
+            content = file.read()
+            if content == {}:
+                return OpenFileResponse(error="File is empty")
+            return OpenFileResponse(
+                message="File opened successfully. 100 lines after the cursor displayed.",
+                lines=content,
+                total_lines=len(content),
+            )
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
         except IsADirectoryError as e:

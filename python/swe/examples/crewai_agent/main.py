@@ -16,13 +16,13 @@ def main() -> None:
         }
     )
     response = composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GET_PATCH_CMD,
+        action=Action.FILETOOL_GIT_PATCH,
         params={},
     )
-    if response.get("stderr") and len(response["stderr"]) > 0:
-        print("Error:", response["stderr"])
-    elif response.get("stdout"):
-        print("=== Generated Patch ===\n" + response["stdout"])
+    if response.get("error") and len(response["error"]) > 0:
+        print("Error:", response["error"])
+    elif response.get("patch"):
+        print("=== Generated Patch ===\n" + response["patch"])
     else:
         print("No output available")
 

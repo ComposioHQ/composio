@@ -19,9 +19,8 @@ composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
 tools = [
     *composio_toolset.get_tools(
         apps=[
-            App.GITCMDTOOL,
             App.FILETOOL,
-            App.HISTORYFETCHERTOOL,
+            App.SEARCHTOOL,
         ]
     ),
     *composio_toolset.get_actions(
