@@ -19,7 +19,7 @@ RUN /bin/python3 -m venv .composio/venv
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio
-RUN python -m pip install composio-core==0.3.25 fastapi
+RUN python -m pip install composio-core==0.3.26 fastapi
 
 # Define entry point
 COPY entrypoint.sh /root/entrypoint.sh
