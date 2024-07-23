@@ -1,5 +1,6 @@
 import os
 import re
+import dotenv
 from typing import Dict, List, Tuple
 
 from composio import Composio
@@ -8,6 +9,8 @@ from composio.client.collections import TriggerEventData
 from composio.tools import ComposioToolSet
 
 from agents import agent
+
+dotenv.load_dotenv()
 
 BOT_ID = os.environ["BOT_ID"]
 
@@ -62,7 +65,7 @@ def run_agent(text: str, channel: str) -> Tuple[str, int]:
     user_ids = extract_user_ids(text)
     uid_to_email = fetch_user_details(user_ids)
     text_with_emails = replace_user_ids_with_emails(text, uid_to_email)
-    
+
     response = agent.chat(text_with_emails)
     reply_with_usernames = replace_emails_with_uids(response.response, uid_to_email)
     reply_with_formatted_url = remove_url_brackets(reply_with_usernames)
@@ -74,8 +77,8 @@ def run_agent(text: str, channel: str) -> Tuple[str, int]:
 
 @listner.callback(filters={"trigger_name": "slackbot_receive_message"})
 def event_handler(event: TriggerEventData) -> Tuple:
-    message = event.payload['event']['text']
-    channel = event.payload['event']['channel']
+    message = event.payload['text']
+    channel = event.payload['channel']
     if BOT_ID not in message:
         return "Ignored", 204
 
