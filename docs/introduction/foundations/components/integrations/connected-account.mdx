@@ -101,10 +101,9 @@ print("The account status is: ",connection_request)
 const entity = await client.getEntity({ id: "default" });
 
 const params = {
-    "github_username": "melissachen123",
-    "github_password": "password"
+    "api_key": "YOUR_API_KEY"
 }
-const connection = await entity.initiateConnection('github',null, params);
+const connection = await entity.initiateConnection('serpapi',null, params);
 
 ```
 </CodeGroup>
