@@ -96,7 +96,7 @@ class FileManager(WithLogger):
                 raise PermissionError(f"Permission denied: Cannot access '{new_dir}'")
             self.working_dir = new_dir
         except OSError as e:
-            raise Exception(f"OS error: {str(e)}")
+            raise Exception(f"OS error: {str(e)}") from e
 
     def open(self, path: t.Union[Path, str], window: t.Optional[int] = None) -> File:
         """

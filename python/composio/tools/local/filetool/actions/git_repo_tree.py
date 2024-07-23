@@ -70,7 +70,7 @@ class GitRepoTree(BaseFileAction):
             output, error = file_manager.execute_command(command)
 
             if error:
-                return GitRepoTreeResponse(success=False, error=error, message="")
+                return GitRepoTreeResponse(success=False, error=error, message=output)
 
             tree_file_path = repo_path / "git_repo_tree.txt"
             if not tree_file_path.exists():
@@ -80,7 +80,7 @@ class GitRepoTree(BaseFileAction):
                 )
 
             try:
-                with open(tree_file_path, "r") as f:
+                with open(tree_file_path, "r", encoding="utf-8") as f:
                     tree_content = f.read()
             except IOError as e:
                 return GitRepoTreeResponse(

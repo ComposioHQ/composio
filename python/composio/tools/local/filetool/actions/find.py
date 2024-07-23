@@ -88,7 +88,7 @@ class FindFile(BaseFileAction):
                 include=request_data.include,  # type: ignore
                 exclude=request_data.exclude,  # type: ignore
             )
-            if results is []:
+            if results == []:
                 return FindFileResponse(error="No results found.")
             return FindFileResponse(results=results)
         except ValueError as e:

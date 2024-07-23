@@ -39,7 +39,7 @@ def print_if_verbose(text, verbose=True):
 
 # Replace the existing token_count function with this:
 def token_count(text):
-    import tiktoken
+    import tiktoken  # pylint: disable=C0415
 
     enc = tiktoken.encoding_for_model("gpt-4o")
     max_length = 1024

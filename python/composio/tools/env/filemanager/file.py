@@ -338,7 +338,7 @@ class File(WithLogger):
         for error in errors:
             parts = error.split(":", 3)
             if len(parts) >= 4:
-                file_path, line_num, col_num, error_msg = parts[:4]
+                _, line_num, col_num, error_msg = parts[:4]
                 formatted_output += (
                     f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
                 )

@@ -149,10 +149,9 @@ class GitClone(BaseFileAction):
             ):
                 file_manager.chdir(os.path.join(file_manager.current_dir(), repo_dir))
                 return GitCloneResponse(success=True, message=output)
-            else:
-                raise FileExistsError(
-                    f"After cloning, the directory '{repo_dir}' does not exist. Clone failed."
-                )
+            raise FileExistsError(
+                f"After cloning, the directory '{repo_dir}' does not exist. Clone failed."
+            )
         except Exception as e:
             return GitCloneResponse(
                 success=False, message=f"Error cloning repository: {str(e)}"
