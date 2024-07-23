@@ -12,6 +12,12 @@ RUN apt update \
     uuid-runtime \
     openssh-server
 
+# Create Venv
+RUN /bin/python3 -m venv .composio/venv
+
+# Setup path
+RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
+
 # Define entry point
 COPY entrypoint.sh /root/entrypoint.sh
 
@@ -22,7 +28,7 @@ WORKDIR /root
 COPY ./composio /root/composio
 
 # Install from source
-RUN /bin/python3 -m pip install /root/composio/
+RUN python3 -m pip install /root/composio/
 
 # Remove cache
 RUN rm -rf /root/composio/
