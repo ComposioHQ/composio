@@ -36,3 +36,5 @@ __all__ = (
     "Shell",
     "action",
 )
+
+__version__ = "0.3.25"
