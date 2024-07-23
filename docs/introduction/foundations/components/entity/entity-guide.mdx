@@ -68,16 +68,14 @@ Now, let's get all the actions that can be performed on the entity on GitHub. Yo
 actions = entity.get_actions(app_name = App.GITHUB)
 ```
 ```javascript javascript
-// Import the ComposioToolSet class
-import { OpenAIToolSet, LangchainToolSet } from "composio-core";
+import { OpenAIToolSet } from "composio-core";
 
-// Instantiate the OpenAIToolSet class 
-// You can also use LangchainToolSet for Langchain agents
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
+const entity = await toolset.client.getEntity('default');
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
 
@@ -113,22 +111,23 @@ const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const entity = await composio_client.getEntity('user_email_id');
+const openai = new OpenAI();
+const entity = await toolset.client.getEntity('default');
 
-const tools = await toolset.get_actions({actions: ['github_star_repo']}, entity.id)
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id)
 
 const task = "Star a repo composiohq/composio on GitHub"
 
-const response = await toolset.client.chat.completions.create({
+const response = await openai.chat.completions.create({
     model: "gpt-4-turbo-preview",
     tools: tools,
     messages: [
-        {role: "system", content: "You are a helpful assistant."},
-        {role: "user", content: task},
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: task },
     ],
 });
 
-await toolset.handle_tool_call(response, entity.id="melissa");
+await toolset.handle_tool_call(response, entity.id);
 ```
 </CodeGroup>
 

@@ -54,15 +54,14 @@ print(integration.get_required_variables())
 ```javascript javascript
 import { Composio } from "composio-core";
 
-const client = new Composio({ apiKey: "COMPOSIO_API_KEY" });
+const client = new Composio();
 
 const entity = await client.getEntity({ id: "default" });
 
 // Integration chosen by the user to connect with
-const integration = await client.integrations.get({ integrationId: "integration_id" });
+const integration = await client.integrations.get({ integrationId: "{{integration_id}}" });
 
-// List of params required from the user
-console.log(await integration.getRequiredVariables());
+console.log(integration.expectedInputFields)
 ```
 </CodeGroup>
 
@@ -99,11 +98,13 @@ else:
 print("The account status is: ",connection_request)
 ```
 ```javascript javascript
-// Collect the subdomain from your user via your platform's frontend
-const params = { subdomain: "***zendesk_sub_domain***" };
+const entity = await client.getEntity({ id: "default" });
 
-const entity = await composio_client.getEntity('user_email_id');
-const connection = await entity.initiateConnection('github', params);
+const params = {
+    "github_username": "melissachen123",
+    "github_password": "password"
+}
+const connection = await entity.initiateConnection('github',null, params);
 
 ```
 </CodeGroup>
