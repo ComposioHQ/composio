@@ -11,6 +11,7 @@ import requests
 import typing_extensions as te
 from gql.transport.requests import RequestsHTTPTransport
 
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 
@@ -18,7 +19,6 @@ FLY_API = "https://api.machines.dev"
 FLY_GRAPHQL_API = "https://api.fly.io/graphql"
 API_VERSION = "/v1"
 BASE_URL = FLY_API + API_VERSION
-TOOLSERVER_IMAGE = "angrybayblade/composio:latest"
 
 
 ALLOCATE_IP_QUERY = """mutation {
@@ -115,7 +115,7 @@ class FlyIO(WithLogger):
         self.environment = environment or {}
         self.flyio_token = flyio_token
         self.access_token = access_token
-        self.image = image or TOOLSERVER_IMAGE
+        self.image = image or DEFAULT_IMAGE
         self.app_name = f"composio-{uuid.uuid4().hex.replace('-', '')}"
         self.url = f"https://{self.app_name}.fly.dev:8000/api"
         self.gql = gql.Client(
