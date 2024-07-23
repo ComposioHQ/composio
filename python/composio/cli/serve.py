@@ -1,6 +1,5 @@
 """Serve the tooling server."""
 
-
 import click
 from uvicorn import run
 
