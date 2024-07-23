@@ -3,22 +3,36 @@ import { initSWEAgent } from './agents/swe';
 
 async function main() {
   /**Run the agent.**/
-  const { agent_executor, agent, tools, toolset } = await initSWEAgent();
-  const { repo, issue } = await fromGithub(toolset);
-  await agent_executor.invoke({
-    issue,
-    repo
+  const { assistantThread, llm, tools, composioToolset } = await initSWEAgent();
+  // const { repo, issue } = await fromGithub(toolset);
+  const repo = "utkarsh-dixit/speedy";
+  const issue = "update readme.md and fix all typos";
+  const assistant = await llm.beta.assistants.create({
+    name: "SWE agent",
+    instructions: `Repo is: ${repo} and your goal is to ${issue}`,
+    model: "gpt-4-turbo",
+    tools: tools
   });
 
-  const response = await toolset.executeAction("filetool_git_patch", {});
+  const message = await llm.beta.threads.messages.create(
+    assistantThread.id,
+    {
+      role: "user",
+      content: issue
+    }
+  );
 
-  if (response.stderr && response.stderr.length > 0) {
-    console.log('Error:', response.stderr);
-  } else if (response.stdout) {
-    console.log('=== Generated Patch ===\n' + response.stdout);
-  } else {
-    console.log('No output available');
-  }
+  const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
+    assistant_id: assistant.id,
+    instructions: `Repo is: ${repo} and your goal is to ${issue}`,
+    tool_choice: "required"
+  });
+
+  // stream.on("textCreated", (text) => process.stdout.write('\nassistant > ')).on("toolCallCreated", (toolCall) => process.stdout.write(`\nassistant > ${toolCall.id}\n\n`))
+
+  composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
+
+
 }
 
 main();

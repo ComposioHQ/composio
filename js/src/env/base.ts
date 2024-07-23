@@ -216,6 +216,8 @@ export class RemoteWorkspace extends Workspace {
             metadata: metadata
         });
         const response = request.data;
+
+        console.log(`Executing response for ${action}: `, response);
         if (!response.error) {
             return response.data;
         }

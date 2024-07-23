@@ -329,9 +329,9 @@ class FileManager(WithLogger):
         )
 
     def ls(self) -> t.List[t.Tuple[str, str]]:
-        """List contents of the current directory with their types."""
+        """List contents of the current directory with their types, returning only relative paths."""
         return [
-            (str(path), "dir" if path.is_dir() else "file")
+            (str(path.relative_to(self.working_dir)), "dir" if path.is_dir() else "file")
             for path in self.working_dir.iterdir()
         ]
 

@@ -16,6 +16,7 @@
     "composio-core": "0.1.7",
     "dotenv": "^16.4.5",
     "langchain": "^0.2.10",
+    "openai": "^4.53.0",
     "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
