@@ -41,41 +41,45 @@ To run the SWE-Bench benchmark on your agent:
 You can run the benchmarks in different sandbox environments:
 
 <Tabs>
-<Tab title="Docker (Default)">
-No additional configuration required.
+  <Tab title="Docker (Default)">
+  No additional configuration required.
 </Tab>
 <Tab title="E2B">
 <CodeGroup>
 ```python Modify benchmark.py
 from composio import WorkspaceType
-EXISTING Code
+
+# existing benchmark code
+
 evaluate(
-bench,
-dry_run=False,
-test_range=test_range,
-test_instance_ids=test_instance_ids_list,
-workspace_env=WorkspaceType.E2B
+    bench,
+    dry_run=False,
+    test_range=test_range,
+    test_instance_ids=test_instance_ids_list,
+    workspace_env=WorkspaceType.E2B
 )
 ```
 </CodeGroup>
-Export your E2B API key:
+  Export your E2B API key:
 <CodeGroup>
-```bash Set E2B API key
-export E2B_API_KEY=<your_e2b_api_key>
-```
+  ```bash Set E2B API key
+  export E2B_API_KEY=<your_e2b_api_key>
+  ```
 </CodeGroup>
 </Tab>
 <Tab title="FlyIO">
 <CodeGroup>
 ```python Modify benchmark.py
 from composio import WorkspaceType
-EXISTING Code
+
+# existing benchmark code
+
 evaluate(
-bench,
-dry_run=False,
-test_range=test_range,
-test_instance_ids=test_instance_ids_list,
-workspace_env=WorkspaceType.FLYIO
+    bench,
+    dry_run=False,
+    test_range=test_range,
+    test_instance_ids=test_instance_ids_list,
+    workspace_env=WorkspaceType.FLYIO
 )
 ```
 </CodeGroup>
