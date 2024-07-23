@@ -235,7 +235,7 @@ jobs:
       - name: Publishing tool server images
         run: |
           cd dockerfiles/
-          make publish
+          VERSION=$(cat ../composio/__init__.py | grep version | cut -b 16- | rev | cut -b 2- | rev) make publish
 
   publish-e2b:
     name: Publish E2B template
