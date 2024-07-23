@@ -19,11 +19,19 @@ class ScrollRequest(BaseFileRequest):
         description="The direction to scroll: up/down, by default it's down",
         title="ScrollDirection",
     )
+    lines: int = Field(
+        default=0,
+        description="How many lines to scroll by. Choose between 1 to 1000. 1 means scroll by 1 line, 100 means scroll by 100 lines.",
+    )
 
 
 class ScrollResponse(BaseFileResponse):
     """Response to scroll up/down in the editor."""
 
+    message: str = Field(
+        default="",
+        description="Message to display to the user",
+    )
     lines: t.Dict[int, str] = Field(
         default={},
         description="File content with their line numbers",
@@ -60,8 +68,12 @@ class Scroll(BaseFileAction):
             recent_file = file_manager.recent
             if recent_file is None:
                 return ScrollResponse(error="No file opened")
-            recent_file.scroll(direction=ScrollDirection(request_data.direction))
+            recent_file.scroll(
+                lines=request_data.lines,
+                direction=ScrollDirection(request_data.direction),
+            )
             return ScrollResponse(
+                message="Scroll successful.",
                 lines=recent_file.read(),
                 total_lines=recent_file.total_lines(),
             )

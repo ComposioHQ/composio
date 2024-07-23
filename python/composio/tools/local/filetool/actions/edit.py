@@ -100,6 +100,10 @@ class EditFile(BaseFileAction):
                 start=request_data.start_line,
                 end=request_data.end_line,
             )
+            if response.get("error") and len(response["error"]) > 0:
+                return EditFileResponse(
+                    error="No Update, found error: " + response["error"]
+                )
             return EditFileResponse(
                 old_text=response["replaced_text"],
                 updated_text=response["replaced_with"],

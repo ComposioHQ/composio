@@ -2,6 +2,7 @@
 
 import os
 import re
+import subprocess
 import threading
 import typing as t
 from fnmatch import translate
@@ -77,8 +78,25 @@ class FileManager(WithLogger):
         set_current_file_manager(manager=None)
 
     def chdir(self, path: t.Union[Path, str]) -> None:
-        """Change the current working directory."""
-        self.working_dir = Path(path).resolve()
+        """
+        Change the current working directory.
+
+        Args:
+            path (Union[Path, str]): The path to the new working directory.
+
+        Raises:
+            FileNotFoundError: If the specified directory does not exist.
+            PermissionError: If the user doesn't have permission to access the directory.
+        """
+        try:
+            new_dir = Path(path).resolve()
+            if not new_dir.is_dir():
+                raise FileNotFoundError(f"'{new_dir}' is not a valid directory.")
+            if not os.access(new_dir, os.R_OK | os.X_OK):
+                raise PermissionError(f"Permission denied: Cannot access '{new_dir}'")
+            self.working_dir = new_dir
+        except OSError as e:
+            raise Exception(f"OS error: {str(e)}") from e
 
     def open(self, path: t.Union[Path, str], window: t.Optional[int] = None) -> File:
         """
@@ -122,6 +140,7 @@ class FileManager(WithLogger):
         word: str,
         pattern: t.Optional[t.Union[str, Path]] = None,
         recursive: bool = True,
+        case_insensitive: bool = True,
     ) -> t.Dict[str, t.List[t.Tuple[int, str]]]:
         """
         Search for a word in files matching the given pattern.
@@ -129,6 +148,7 @@ class FileManager(WithLogger):
         :param word: The term to search for
         :param pattern: The file, directory, or glob pattern to search in (if not provided, searches in the current working directory)
         :param recursive: If True, search recursively in subdirectories
+        :param case_insensitive: If True, perform case-insensitive search (default is True)
         :return: A dictionary with file paths as keys and lists of (line number, line content) tuples as values
 
         Examples of patterns:
@@ -164,11 +184,23 @@ class FileManager(WithLogger):
                 try:
                     with file_path.open("r", encoding="utf-8") as f:
                         for i, line in enumerate(f, 1):
-                            if word in line:
-                                rel_path = str(file_path.relative_to(self.working_dir))
-                                if rel_path not in results:
-                                    results[rel_path] = []
-                                results[rel_path].append((i, line.strip()))
+                            if case_insensitive:
+                                word_lower = word.lower()
+                                if word_lower in line.lower():
+                                    rel_path = str(
+                                        file_path.relative_to(self.working_dir)
+                                    )
+                                    if rel_path not in results:
+                                        results[rel_path] = []
+                                    results[rel_path].append((i, line.strip()))
+                            else:
+                                if word in line:
+                                    rel_path = str(
+                                        file_path.relative_to(self.working_dir)
+                                    )
+                                    if rel_path not in results:
+                                        results[rel_path] = []
+                                    results[rel_path].append((i, line.strip()))
                 except UnicodeDecodeError:
                     # Skip binary files
                     pass
@@ -302,3 +334,25 @@ class FileManager(WithLogger):
             (str(path), "dir" if path.is_dir() else "file")
             for path in self.working_dir.iterdir()
         ]
+
+    def current_dir(self) -> str:
+        """Get the current working directory."""
+        return str(self.working_dir)
+
+    def execute_command(self, command: str) -> t.Tuple[str, t.Optional[str]]:
+        """Execute a command in the current working directory."""
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=360,
+                cwd=self.working_dir,
+            )
+            return result.stdout, None
+        except subprocess.CalledProcessError as e:
+            return "", f"Error executing command: {e.stderr}"
+        except subprocess.TimeoutExpired:
+            return "", "TIMEOUT: Command execution timed out after 120 seconds"

@@ -79,16 +79,16 @@ class BaseSWEAgent(ABC, logging.WithLogger):
 
         self.logger.info("Getting patch")
         get_patch_resp = composio_toolset.execute_action(
-            action=Action.GITCMDTOOL_GET_PATCH_CMD,
+            action=Action.FILETOOL_GIT_PATCH,
             params={},
         )
         if (
             isinstance(get_patch_resp, dict)
-            and get_patch_resp.get("status") == "failure"
+            and len(get_patch_resp.get("error", "")) > 0
         ):
-            raise SWEKitError(get_patch_resp["details"])
+            raise SWEKitError(get_patch_resp["error"])
         self.logger.info(f"Get patch response: {get_patch_resp}")
-        patch = get_patch_resp.get("stdout")  # type: ignore
+        patch = get_patch_resp.get("patch")  # type: ignore
         self.logger.info(f"Final Patch: {patch}")
         self.current_logs.append(
             {

@@ -28,6 +28,9 @@ class SearchWordRequest(BaseFileRequest):
     recursive: bool = Field(
         default=True, description="If True, search recursively in subdirectories"
     )
+    case_insensitive: bool = Field(
+        default=True, description="If True, perform case-insensitive search"
+    )
 
 
 class SearchWordResponse(BaseFileResponse):
@@ -82,6 +85,7 @@ class SearchWord(BaseFileAction):
                 word=request_data.word,
                 pattern=request_data.pattern,
                 recursive=request_data.recursive,
+                case_insensitive=request_data.case_insensitive,
             )
             return SearchWordResponse(results=results)
         except ValueError as e:
