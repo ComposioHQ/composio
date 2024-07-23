@@ -16,8 +16,7 @@ class ShellRequest(BaseModel):
         default="",
         description=(
             "ID of the shell where this command will be executed, if not "
-            "provided the recent shell will be used to execute the action. This is OPTIONAL"
-            "and is not required to be provided."
+            "provided the recent shell will be used to execute the action"
         ),
     )
 
