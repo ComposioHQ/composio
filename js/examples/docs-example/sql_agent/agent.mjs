@@ -10,7 +10,7 @@ const composioToolset = new ComposioToolSet();
 
 async function executeSQLQuery(query) {
     const sqlTools = await composioToolset.getTools({ apps: ["sqltool", "filetool"] });
-    const llm = new ChatOpenAI({ model: "gpt-4o" });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
     const prompt = await pull("hwchase17/openai-functions-agent");
     const agent = await createOpenAIFunctionsAgent({ llm, tools: sqlTools, prompt });
 
@@ -30,7 +30,7 @@ async function executeSQLQuery(query) {
 
 async function plotGraph(data) {
     const allTools = await composioToolset.getTools({ apps: ["sqltool", "filetool", "codeinterpreter"] });
-    const llm = new ChatOpenAI({ model: "gpt-4o" });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
     const prompt = await pull("hwchase17/openai-functions-agent");
     const codeAgent = await createOpenAIFunctionsAgent({ llm, tools: allTools, prompt });
     const codeExecutor = new AgentExecutor({
