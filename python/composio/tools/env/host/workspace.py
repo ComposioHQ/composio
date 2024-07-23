@@ -13,6 +13,7 @@ from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 from composio.client.enums import Action
 from composio.tools.env.base import Shell, Workspace, WorkspaceConfigType
 from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.env.host.shell import HostShell, SSHShell
 from composio.tools.local.handler import LocalClient
 
@@ -96,6 +97,7 @@ class HostWorkspace(Workspace):
             self._ssh = None
 
     _file_manager: t.Optional[FileManager] = None
+    _browser_manager: t.Optional[BrowserManager] = None
 
     @property
     def file_manager(self) -> FileManager:
@@ -103,6 +105,13 @@ class HostWorkspace(Workspace):
         if self._file_manager is None:
             self._file_manager = FileManager(working_dir=self._working_dir)
         return self._file_manager
+
+    @property
+    def browser_manager(self) -> BrowserManager:
+        """Browser manager for the workspace."""
+        if self._browser_manager is None:
+            self._browser_manager = BrowserManager()
+        return self._browser_manager
 
     def _create_shell(self) -> Shell:
         """Create host shell."""
@@ -116,6 +125,10 @@ class HostWorkspace(Workspace):
     def _create_file_manager(self) -> FileManager:
         """Create file manager for the workspace."""
         return FileManager(working_dir=self._working_dir)
+
+    def _create_browser_manager(self) -> BrowserManager:
+        """Create browser manager for the workspace."""
+        return BrowserManager()
 
     def execute_action(
         self,
@@ -134,3 +147,5 @@ class HostWorkspace(Workspace):
         super().teardown()
         if self._ssh is not None:
             self._ssh.close()
+        if self._browser_manager is not None:
+            self._browser_manager.cleanup()

@@ -12,6 +12,7 @@ from composio.client.enums import Action
 from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.filemanager import FileManager
+from composio.tools.env.browsermanager import BrowserManager
 from composio.tools.env.id import generate_id
 from composio.tools.local.handler import get_runtime_action
 from composio.utils.logging import WithLogger
@@ -192,6 +193,58 @@ class FileManagerFactory(WithLogger):
         self._file_managers.clear()
         self._recent = None
 
+class BrowserManagerFactory(WithLogger):
+    """Browser manager factory."""
+
+    _recent: t.Optional[BrowserManager] = None
+    _browser_managers: t.Dict[str, BrowserManager] = {}
+    _lock: threading.Lock = threading.Lock()
+
+    def __init__(self, factory: t.Callable[[], BrowserManager]) -> None:
+        """Create browser manager factory"""
+        super().__init__()
+        self._factory = factory
+
+    @property
+    def recent(self) -> BrowserManager:
+        """Get most recent browser manager."""
+        with self._lock:
+            browser_manager = self._recent
+        if browser_manager is None:
+            browser_manager = self.new()
+            with self._lock:
+                self._recent = browser_manager
+        return browser_manager
+
+    @recent.setter
+    def recent(self, browser_manager: BrowserManager) -> None:
+        """Set most recent browser manager."""
+        with self._lock:
+            self._recent = browser_manager
+
+    def new(self) -> BrowserManager:
+        """Create a new browser manager."""
+        browser_manager = self._factory()
+        self._browser_managers[browser_manager.id] = browser_manager
+        self.recent = browser_manager
+        return browser_manager
+
+    def get(self, id: t.Optional[str] = None) -> BrowserManager:
+        """Get browser manager instance."""
+        if id is None or id == "":
+            return self.recent
+        if id not in self._browser_managers:
+            raise ComposioSDKError(
+                message=f"No browser manager found with ID: {id}",
+            )
+        browser_manager = self._browser_managers[id]
+        self.recent = browser_manager
+        return browser_manager
+
+    def teardown(self) -> None:
+        """Clean up all browser managers."""
+        self._browser_managers.clear()
+        self._recent = None
 
 @dataclass
 class WorkspaceConfigType:

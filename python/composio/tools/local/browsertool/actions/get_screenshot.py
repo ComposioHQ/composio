@@ -2,57 +2,56 @@
 Action for getting a screenshot of a webpage.
 """
 
+from pathlib import Path
+from pydantic import Field
+import random
+import string
 import os
-import typing as t
-from pydantic import BaseModel
-from playwright.sync_api import sync_playwright
 
-from composio.tools.local.base.action import Action
+from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse
+from composio.tools.env.browsermanager.manager import BrowserManager
 
 
-class GetScreenshotRequest(BaseModel):
+class GetScreenshotRequest(BaseBrowserRequest):
     """Request schema for getting a screenshot."""
 
-    url: str
-    output_path: str
+    url: str = Field(..., description="Full URL of the webpage to screenshot, including the protocol (e.g., 'https://www.example.com')")
+    output_path: str = Field(default="", description="Optional path to save the screenshot. If not provided, a default path will be used. Example: '/path/to/save/screenshot.png'")
 
 
-class GetScreenshotResponse(BaseModel):
+class GetScreenshotResponse(BaseBrowserResponse):
     """Response schema for getting a screenshot."""
 
-    success: bool
-    message: str
+    screenshot_path: str = Field(default="", description="Path where the screenshot was saved")
 
 
-class GetScreenshot(Action):
+class GetScreenshot(BaseBrowserAction):
     """Get a screenshot of a webpage."""
 
     _display_name = "Get Webpage Screenshot"
-    _request_schema = GetScreenshotRequest
-    _response_schema = GetScreenshotResponse
     _tags = ["browser", "screenshot"]
-    _tool_name = "browsertool"
 
-    def execute(
+    def execute_on_browser_manager(
         self,
-        request_data: GetScreenshotRequest,
-        authorisation_data: dict,
+        browser_manager: BrowserManager,
+        request_data: GetScreenshotRequest
     ) -> GetScreenshotResponse:
         """Execute the screenshot action."""
-        try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch()
-                page = browser.new_page()
-                page.goto(request_data.url)
-                page.screenshot(path=request_data.output_path)
-                browser.close()
+        response = GetScreenshotResponse()
 
-            return GetScreenshotResponse(
-                success=True,
-                message=f"Screenshot saved to {request_data.output_path}"
-            )
+        try:
+            browser_manager.goto(request_data.url)
+            if not request_data.output_path:
+                home_dir = Path.home()
+                browser_media_dir = home_dir / ".browser_media"
+                browser_media_dir.mkdir(parents=True, exist_ok=True)
+                random_string = ''.join(random.choices(string.ascii_lowercase, k=6))
+                output_path = browser_media_dir / f"screenshot_{random_string}.png"
+            else:
+                output_path = Path(request_data.output_path)
+            browser_manager.take_screenshot(output_path)
+            response.screenshot_path = str(output_path)
         except Exception as e:
-            return GetScreenshotResponse(
-                success=False,
-                message=f"Failed to get screenshot: {str(e)}"
-            )
+            response.error = f"Failed to get screenshot: {str(e)}"
+
+        return response
