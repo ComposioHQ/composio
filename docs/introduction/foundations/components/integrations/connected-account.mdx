@@ -54,7 +54,9 @@ print(integration.get_required_variables())
 ```javascript javascript
 import { Composio } from "composio-core";
 
-const client = new Composio();
+const client = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
 
 const entity = await client.getEntity({ id: "default" });
 
