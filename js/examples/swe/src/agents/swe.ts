@@ -3,9 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { ExecEnv, OpenAIToolSet } from 'composio-core';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { BACKSTORY, DESCRIPTION, GOAL } from '../prompts';
-import { AgentExecutor, createStructuredChatAgent } from 'langchain/agents';
 import OpenAI from 'openai';
 
 // Initialize tool.
@@ -19,8 +17,6 @@ export async function initSWEAgent() {
             "fileedittool",
             "shelltool"
         ],
-        tags: null,
-        useCase: null
     });
 
     tools = tools.map((a) => {
@@ -45,9 +41,6 @@ export async function initSWEAgent() {
         return tool;
     });
 
-    console.log("tools", JSON.stringify(tools.find((a) => a.function.name == "filetool_git_patch")!.function.parameters, null, 2));
-
-
     const assistantThread = await llm.beta.threads.create({
         messages: [
             {
@@ -59,20 +52,4 @@ export async function initSWEAgent() {
 
 
     return { assistantThread, llm, tools, composioToolset };
-    
-    // const chatPrompt = ChatPromptTemplate.fromTemplate(`
-    //     You are a Software Engineer. Your goal is to fix the coding issues given by the user.
-    //     ${BACKSTORY}
-    //     ${GOAL}
-    //     ${DESCRIPTION}
-    //     Agent's Scratchpad: {agent_scratchpad}
-    // `);
-    // const agent = await createStructuredChatAgent({
-    //     llm: llm,
-    //     tools,
-    //     prompt: chatPrompt,
-    // });
-    // const agent_executor = new AgentExecutor({ agent, tools, verbose: true, maxIterations: 30});
-
-    // return {agent_executor, agent, tools, toolset: composioToolset};
 }

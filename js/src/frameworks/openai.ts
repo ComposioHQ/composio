@@ -62,8 +62,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     async getTools(
         filters: {
             apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
@@ -84,8 +84,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
     async get_tools(filters: {
         apps: Sequence<string>;
-        tags: Optional<Array<string>>;
-        useCase: Optional<string>;
+        tags?: Optional<Array<string>>;
+        useCase?: Optional<string>;
     }, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         console.warn("get_tools is deprecated, use getTools instead");
         return this.getTools(filters, entityId);

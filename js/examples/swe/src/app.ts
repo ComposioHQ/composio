@@ -1,13 +1,12 @@
-import { fromGithub } from './agents/inputs';
+import { fromGithub } from './utils';
 import { initSWEAgent } from './agents/swe';
 import { GOAL } from './prompts';
 
 async function main() {
   /**Run the agent.**/
   const { assistantThread, llm, tools, composioToolset } = await initSWEAgent();
-  // const { repo, issue } = await fromGithub(toolset);
-  const repo = "utkarsh-dixit/speedy";
-  const issue = "create a file api.rs in my project implementing API Client that implements all it's methods.";
+  const { repo, issue } = await fromGithub(composioToolset);
+
   const assistant = await llm.beta.assistants.create({
     name: "SWE agent",
     instructions: GOAL + `\nRepo is: ${repo} and your goal is to ${issue}`,
@@ -15,7 +14,7 @@ async function main() {
     tools: tools
   });
 
-  const message = await llm.beta.threads.messages.create(
+  await llm.beta.threads.messages.create(
     assistantThread.id,
     {
       role: "user",
@@ -29,8 +28,6 @@ async function main() {
     tool_choice: "required"
   });
  
-  // stream.on("textCreated", (text) => process.stdout.write('\nassistant > ')).on("toolCallCreated", (toolCall) => process.stdout.write(`\nassistant > ${toolCall.id}\n\n`))
-
   await composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
 
   const response = await composioToolset.executeAction("filetool_git_patch", {
@@ -45,7 +42,7 @@ async function main() {
     console.log('No output available');
   }
 
-  await composioToolset.workspace.workspace?.teardown();
+  await composioToolset.workspace.close();
 }
 
 main();

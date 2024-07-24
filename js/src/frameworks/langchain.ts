@@ -111,8 +111,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
     async getTools(
         filters: {
             apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
@@ -127,8 +127,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
     async get_tools(filters: {
         apps: Sequence<string>;
-        tags: Optional<Array<string>>;
-        useCase: Optional<string>;
+        tags?: Optional<Array<string>>;
+        useCase?: Optional<string>;
     }, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
         console.warn("get_tools is deprecated, use getTools instead");
         return this.getTools(filters, entityId);

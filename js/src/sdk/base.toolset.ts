@@ -109,8 +109,8 @@ export class ComposioToolSet {
     async getToolsSchema(
         filters: {
             apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
@@ -150,8 +150,8 @@ export class ComposioToolSet {
     async getTools(
         filters: {
             apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
         },
         entityId?: Optional<string>
     ): Promise<any> {
