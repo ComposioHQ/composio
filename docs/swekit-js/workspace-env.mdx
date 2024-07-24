@@ -37,6 +37,30 @@ SWE Development Kit (swekit) supports various workspace environments to run your
 
 ## Configuring Workspace Environments
 
+### Configurable Parameters
+
+When configuring your workspace environment, consider the following customizable parameters to tailor the environment to your SWE agents' needs:
+
+- **`GITHUB_ACCESS_TOKEN`**: Optional. This token is used for GitHub operations. Use `GITHUB_ACCESS_TOKEN` environment variable to provide it.
+- **`environment`**: Optional. A set of key-value pairs representing environment variables specific to the workspace's needs.
+- **`persistent`**: A boolean flag, when set to `True`, ensures that the workspace persists beyond the execution of an agent. This is particularly useful for scenarios where you want your agent to deploy a service, such as a website, and require that the service remains active and accessible after the agent's task is complete.
+- **`ports`**: Optional. A dictionary specifying the port mappings for services that need to be publicly accessible. For example, if your agent is running a web server, you can map the internal port to an external one to allow public access.
+
+These parameters empower you to customize the security, configuration, resource allocation, and networking aspects of your workspace environment, ensuring optimal conditions for your SWE agents' operation.
+
+### Local Environment
+
+To run your agent on the local machine:
+
+<CodeGroup>
+  ```python Local Environment
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Host()
+)
+```
+</CodeGroup>
+
 
 ### Docker Environment
 
