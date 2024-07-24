@@ -25,7 +25,7 @@ class ScrollRequest(BaseFileRequest):
     )
     scroll_id: int = Field(
         default=0,
-        description="""Unique ID for each scroll request. 
+        description="""Unique ID for each scroll request.
         Enables consecutive scrolls in agentic frameworks that block same function calls consecutively.
         Increment for each consecutive request.""",
     )

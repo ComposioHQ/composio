@@ -213,7 +213,7 @@ class File(WithLogger):
                 line = fp.readline()
                 if not line:
                     break
-                buffer[cursor+1] = line
+                buffer[cursor + 1] = line
                 cursor += 1
         return buffer
 
@@ -266,7 +266,7 @@ class File(WithLogger):
                 cursor += 1
 
             # Read lines to be replaced
-            while cursor < end: 
+            while cursor < end:
                 replaced += fp.readline()
                 cursor += 1
 
@@ -333,6 +333,7 @@ class File(WithLogger):
         self, before: t.List[str], after: t.List[str]
     ) -> t.List[str]:
         """Compare lint results before and after edit."""
+
         def parse_lint_error(error: str) -> t.Tuple[str, str]:
             """Parse a lint error into (error_code, error_message)."""
             parts = error.split(":", 3)
@@ -355,7 +356,7 @@ class File(WithLogger):
             parts = error.split(":", 3)
             if len(parts) >= 4:
                 file_path, line, column, message = parts
-                formatted_output += f"- Line {line.strip()}, Column {column.strip()}: {message.strip()}\n"
+                formatted_output += f"- File: {file_path.strip()}, Line {line.strip()}, Column {column.strip()}: {message.strip()}\n"
             else:
                 formatted_output += f"- {error}\n"
         return formatted_output.rstrip()

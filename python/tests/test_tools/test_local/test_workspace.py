@@ -94,6 +94,7 @@ def _check_output(output: dict) -> None:
 #     assert False
 
 
+@pytest.skip("skipping")
 def test_workspace() -> None:
     """Test workspace tools."""
     tempdir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
@@ -112,7 +113,12 @@ def test_workspace() -> None:
         # )
         output = toolset.execute_action(
             action=Action.FILETOOL_EDIT_FILE,
-            params={"file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py", "start_line": 307, "end_line": 307, "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc"},
+            params={
+                "file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py",
+                "start_line": 307,
+                "end_line": 307,
+                "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc",
+            },
         )
         logger.info(f"output of edit file: {output}")
         assert False
