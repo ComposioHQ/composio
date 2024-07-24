@@ -23,40 +23,18 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 <Steps>
 <Step title="Installation">
   Install the core packages:
-  <Tabs>
-  <Tab title="Python">
   <CodeGroup>
   ```bash Installing SweKit
   pip install swekit composio-core
   ```
   </CodeGroup>
-  </Tab>
-  <Tab title="JavaScript">
-  <CodeGroup>
-  ```bash Installing SweKit
-  npm install swekit composio-core
-  ```
-  </CodeGroup>
-  </Tab>
-  </Tabs>
   
   Install additional packages for your chosen framework (e.g., CrewAI):
-  <Tabs>
-  <Tab title="Python">
   <CodeGroup>
   ```bash Installing CrewAI and Composio CrewAI Plugin
   pip install crewai composio-crewai
   ```
   </CodeGroup>
-  </Tab>
-  <Tab title="JavaScript">
-  <CodeGroup>
-  ```bash Installing CrewAI and Composio CrewAI Plugin
-  npm install crewai composio-crewai
-  ```
-  </CodeGroup>
-  </Tab>
-  </Tabs>
 </Step>
 
 <Step title="Connect your Github Account">
@@ -81,50 +59,27 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 
 <Step title="Create a New Agent">
   Scaffold your agent:
-  <Tabs>
-  <Tab title="Python">
   <CodeGroup>
   ```bash Create a new Folder with basic SWE agent code
   swekit scaffold crewai -o <path>
   ```
   </CodeGroup>
-  </Tab>
-  <Tab title="JavaScript">
-  <CodeGroup>
-  ```bash Create a new Folder with basic SWE agent code
-  npx swekit scaffold crewai -o <path>
-  ```
-  </CodeGroup>
-  </Tab>
-  </Tabs>
   
   This creates a new agent in `<path>/agent` with key files:
-  - `main.py` or `main.js`: Entry point to run the agent
-  - `agent.py` or `agent.js`: Agent definition
-  - `prompts.py` or `prompts.js`: Agent prompts
-  - `benchmark.py` or `benchmark.js`: SWE-Bench benchmark runner
+  - `main.py`: Entry point to run the agent
+  - `agent.py`: Agent definition
+  - `prompts.py`: Agent prompts
+  - `benchmark.py`: SWE-Bench benchmark runner
 </Step>
 
 <Step title="Run the Agent">
   Navigate to the agent directory and run:
-  <Tabs>
-  <Tab title="Python">
   <CodeGroup>
   ```bash Run the agent
   cd <path>/agent
   python main.py
   ```
   </CodeGroup>
-  </Tab>
-  <Tab title="JavaScript">
-  <CodeGroup>
-  ```bash Run the agent
-  cd <path>/agent
-  node main.js
-  ```
-  </CodeGroup>
-  </Tab>
-  </Tabs>
   
   You'll be prompted for the repository name and issue to work on.
 </Step>
