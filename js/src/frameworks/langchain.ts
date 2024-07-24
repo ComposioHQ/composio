@@ -5,6 +5,7 @@ import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Dict, Sequence } from "../sdk/types";
 import { GetListActionsResponse } from "../sdk/client";
+import logger from "../utils/logger";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
@@ -104,7 +105,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
     async get_actions(filters: {
         actions?: Optional<Sequence<string>>
     } = {}, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
-        console.warn("get_actions is deprecated, use getActions instead");
+        logger.warn("get_actions is deprecated, use getActions instead");
         return this.getActions(filters, entityId);
     }
 
@@ -130,7 +131,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         tags: Optional<Array<string>>;
         useCase: Optional<string>;
     }, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
-        console.warn("get_tools is deprecated, use getTools instead");
+        logger.warn("get_tools is deprecated, use getTools instead");
         return this.getTools(filters, entityId);
     }
 }

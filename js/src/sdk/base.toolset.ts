@@ -5,6 +5,7 @@ import { RemoteWorkspace } from "../env/base";
 import type { IPythonActionDetails, Optional, Sequence } from "./types";
 import { GetListActionsResponse } from "./client";
 import { getEnvVariable } from "../utils/shared";
+import logger from "../utils/logger";
 
 class UserData {
     apiKey: string | undefined;
@@ -177,7 +178,7 @@ export class ComposioToolSet {
         params: Record<string, any>,
         entityId: string = "default"
     ): Promise<Record<string, any>> {
-        console.warn("execute_action is deprecated, use executeAction instead");
+        logger.warn("execute_action is deprecated, use executeAction instead");
         return this.executeAction(action, params, entityId);
     }
 }

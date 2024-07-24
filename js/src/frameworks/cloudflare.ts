@@ -7,6 +7,7 @@ import {
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { GetListActionsResponse } from "../sdk/client";
+import logger from "../utils/logger";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -65,7 +66,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   async get_actions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    console.warn("get_actions is deprecated, use getActions instead");
+    logger.warn("get_actions is deprecated, use getActions instead");
     return this.getActions(filters);
   }
 
@@ -103,7 +104,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     tags: Optional<Array<string>>;
     useCase: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    console.warn("get_tools is deprecated, use getTools instead");
+    logger.warn("get_tools is deprecated, use getTools instead");
     return this.getTools(filters);
   }
 
@@ -130,7 +131,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<string> {
-    console.warn("execute_tool_call is deprecated, use executeToolCall instead");
+    logger.warn("execute_tool_call is deprecated, use executeToolCall instead");
     return this.executeToolCall(tool, entityId);
   }
 
@@ -157,7 +158,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
-    console.warn("handle_tool_call is deprecated, use handleToolCall instead");
+    logger.warn("handle_tool_call is deprecated, use handleToolCall instead");
     return this.handleToolCall(result, entityId);
   }
 }
