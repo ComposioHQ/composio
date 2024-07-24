@@ -105,7 +105,7 @@ class GitPatch(BaseFileAction):
                 )
 
             if not patch.strip():
-                return GitPatchResponse(patch="No changes to commit.")
+                return GitPatchResponse(patch="")
 
             return GitPatchResponse(patch=patch)
         except Exception as e:

@@ -105,7 +105,7 @@ class EvaluationManager(WithLogger):
     def get_patch_for_issue(self, workspace_id: str, issue):
         composio_toolset = ComposioToolSet(workspace_id=workspace_id)
         self.logger.info(
-            f"Agent run finished, getting path for issue: {issue['instance_id']}"
+            f"Agent run finished, getting patch for issue: {issue['instance_id']}"
         )
         get_patch_resp = composio_toolset.execute_action(
             action=Action.FILETOOL_GIT_PATCH,

@@ -19,7 +19,7 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
         inputs={
             "repo": issue_config.repo_name,
             "issue": issue_config.issue_desc,
-        }
+        },
     )
 
 
