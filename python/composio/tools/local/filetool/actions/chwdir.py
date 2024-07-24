@@ -12,7 +12,9 @@ class ChwdirRequest(BaseFileRequest):
     """Request to change the current working directory."""
 
     path: str = Field(
-        ..., description="The path to change the current working directory to"
+        ...,
+        description="The path to change the current working directory to. "
+        "Can be absolute, relative to the current working directory, or use '..' to navigate up the directory tree.",
     )
 
 
@@ -45,4 +47,6 @@ class ChangeWorkingDirectory(BaseFileAction):
         except FileNotFoundError as e:
             return ChwdirResponse(error=f"Directory not found: {str(e)}")
         except RuntimeError as e:
+            return ChwdirResponse(error=f"Unable to resolve path: {str(e)}")
+        except OSError as e:
             return ChwdirResponse(error=f"Unable to resolve path: {str(e)}")
