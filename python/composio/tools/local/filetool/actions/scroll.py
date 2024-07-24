@@ -23,6 +23,12 @@ class ScrollRequest(BaseFileRequest):
         default=0,
         description="How many lines to scroll by. Choose between 1 to 1000. 1 means scroll by 1 line, 100 means scroll by 100 lines.",
     )
+    scroll_id: int = Field(
+        default=0,
+        description="""Unique ID for each scroll request.
+        Enables consecutive scrolls in agentic frameworks that block same function calls consecutively.
+        Please increment and pass if you are calling this function consecutively.""",
+    )
 
 
 class ScrollResponse(BaseFileResponse):

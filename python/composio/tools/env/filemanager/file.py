@@ -213,7 +213,7 @@ class File(WithLogger):
                 line = fp.readline()
                 if not line:
                     break
-                buffer[cursor] = line
+                buffer[cursor + 1] = line
                 cursor += 1
         return buffer
 
@@ -241,6 +241,7 @@ class File(WithLogger):
         :param end: Line number where to end the edit
         :return: Replaced text
         """
+        text = text + "\n"
         scope = scope or FileOperationScope.FILE
 
         # Store original content
@@ -259,26 +260,29 @@ class File(WithLogger):
                     cursor += 1
                 cursor = 0
 
+            # Read lines before the edit
             while cursor < (start - 1):
                 buffer += fp.readline()
                 cursor += 1
 
-            while cursor < (end - 1):
+            # Read lines to be replaced
+            while cursor < end:
                 replaced += fp.readline()
                 cursor += 1
 
+            # Add the new text
             buffer += text
-            while True:
-                line = fp.readline()
-                if not line:
-                    break
-                buffer += line
+
+            # Read the rest of the file
+            buffer += fp.read()
 
         self.path.write_text(data=buffer, encoding="utf-8")
 
         # Run lint after edit
         after_lint = self.lint()
 
+        self.logger.debug(f"Before lint: {before_lint}")
+        self.logger.debug(f"After lint: {after_lint}")
         # Compare lint results
         new_lint_errors = self._compare_lint_results(before_lint, after_lint)
 
@@ -329,8 +333,21 @@ class File(WithLogger):
         self, before: t.List[str], after: t.List[str]
     ) -> t.List[str]:
         """Compare lint results before and after edit."""
-        new_errors = set(after) - set(before)
-        return list(new_errors)
+
+        def parse_lint_error(error: str) -> t.Tuple[str, str]:
+            """Parse a lint error into (error_code, error_message)."""
+            parts = error.split(":", 3)
+            if len(parts) >= 4:
+                error_code = parts[3].split()[0]
+                error_message = ":".join(parts[3:]).strip()
+                return error_code, error_message
+            return "", error
+
+        before_errors = set(parse_lint_error(error) for error in before)
+        after_errors = set(parse_lint_error(error) for error in after)
+
+        new_errors = after_errors - before_errors
+        return [f"{code}: {message}" for code, message in new_errors]
 
     def _format_lint_errors(self, errors: t.List[str]) -> str:
         """Format lint errors."""
@@ -338,10 +355,10 @@ class File(WithLogger):
         for error in errors:
             parts = error.split(":", 3)
             if len(parts) >= 4:
-                _, line_num, col_num, error_msg = parts[:4]
-                formatted_output += (
-                    f"- Line {line_num}, Column {col_num}: {error_msg.strip()}\n"
-                )
+                file_path, line, column, message = parts
+                formatted_output += f"- File: {file_path.strip()}, Line {line.strip()}, Column {column.strip()}: {message.strip()}\n"
+            else:
+                formatted_output += f"- {error}\n"
         return formatted_output.rstrip()
 
     def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:
