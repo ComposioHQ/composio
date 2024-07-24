@@ -2,12 +2,20 @@
 title: "Workspace Environments"
 sidebarTitle: "Workspace Environments"
 icon: "server"
-description: "Configure and utilize different workspace environments for running your SWE agents"
+description: "Configure and utilize different workspace environments for running your SWE agents securely and with custom configurations."
 ---
 
 ## Overview
 
-SWE Development Kit (swekit) supports various workspace environments to run your agents. This flexibility allows you to choose the most suitable environment for your specific needs, balancing factors such as security, isolation, and ease of use.
+Workspace environments facilitate **isolated** and **secure** execution of tools with **customizable configurations**. The SWE Development Kit (swekit) provides a range of environments tailored to your agents' needs, encompassing **security**, **configuration**, **CPU allocation**, and **network port access** for public services.
+
+## Why Workspace Environments Matters?
+
+Workspace environments are essential for:
+- **Security**: Isolating execution to protect the host system and sensitive data.
+- **Specific Configuration Needs**: Tailoring the environment to the requirements of different agents.
+- **Resource Allocation**: Allocating specific CPU and memory resources to agents.
+- **Networking**: Configuring open ports for services that need to be accessible publicly.
 
 ## Supported Environments
 
@@ -43,6 +51,17 @@ SWE Development Kit (swekit) supports various workspace environments to run your
 </CardGroup>
 
 ## Configuring Workspace Environments
+
+### Configurable Parameters
+
+When configuring your workspace environment, consider the following customizable parameters to tailor the environment to your SWE agents' needs:
+
+- **`github_access_token`**: Optional. This token is used for GitHub operations. If not provided, the token from the active composio account will be utilized.
+- **`environment`**: Optional. A set of key-value pairs representing environment variables specific to the workspace's needs.
+- **`persistent`**: A boolean flag, when set to `True`, ensures that the workspace persists beyond the execution of an agent. This is particularly useful for scenarios where you want your agent to deploy a service, such as a website, and require that the service remains active and accessible after the agent's task is complete.
+- **`ports`**: Optional. A dictionary specifying the port mappings for services that need to be publicly accessible. For example, if your agent is running a web server, you can map the internal port to an external one to allow public access.
+
+These parameters empower you to customize the security, configuration, resource allocation, and networking aspects of your workspace environment, ensuring optimal conditions for your SWE agents' operation.
 
 ### Local Environment
 
@@ -142,7 +161,7 @@ composio_toolset = ComposioToolSet(
   To use Fly.io, you need to set the `FLY_API_TOKEN` environment variable with your Fly.io API token.
 </Warning>
 
-## Customizing Workspace Environments
+### Customizing Workspace Environment Variables
 
 You can customize the workspace environment by adding environment variables while creating workspace.
 <CodeGroup>
@@ -156,3 +175,24 @@ composio_toolset = ComposioToolSet(
 )
 ```
 </CodeGroup>
+
+
+### Retrieve Workspace Network Details
+
+To effectively manage and interact with your workspace configuration, the `ComposioToolSet()` object exposes several properties:
+
+<AccordionGroup>
+  <Accordion title="Workspace Host" defaultOpen>
+    Access the workspace's hostname using `toolset.workspace.host`. This hostname, which is typically `localhost` for Docker and local environments, becomes a publicly accessible address for E2B and Fly.io workspaces. It's vital for hosting services and establishing network connections. Retrieve it manually or programmatically with `as_prompt`.
+  </Accordion>
+
+  <Accordion title="Workspace Ports">
+    The `toolset.workspace.ports` property lists the workspace's open ports, informing you about the available network interfaces for your services. This knowledge is key for communication setup and service hosting.
+  </Accordion>
+
+  <Accordion title="Workspace Summary">
+    Invoke `toolset.workspace.as_prompt()` to generate a summary of the workspace details, including hostname and open ports. Ideal for support agents, this method provides a quick and clear overview of the workspace configuration.
+  </Accordion>
+</AccordionGroup>
+
+These tools are designed to provide you with all the necessary details for efficient workspace management and service deployment.
