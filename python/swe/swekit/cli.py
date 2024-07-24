@@ -42,7 +42,7 @@ def _scaffold(
     framework: AgenticFramework,
     name: t.Optional[str] = None,
     outdir: t.Optional[Path] = None,
-    agent_type: AgentType = AgentType.SWE,
+    type: AgentType = AgentType.SWE,
 ) -> None:
     """🤖 Scaffold agent using composio toolset."""
     try:
@@ -50,7 +50,7 @@ def _scaffold(
             framework=framework,
             name=name,
             outdir=outdir,
-            agent_type=agent_type,
+            agent_type=type,
         )
         click.echo(f"🤖 Scaffolded agent @ {output}")
     except SWEKitError as e:
