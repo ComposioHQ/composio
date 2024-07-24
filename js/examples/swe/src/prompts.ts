@@ -45,7 +45,7 @@ following tips.
     or to write code with incorrect indentation. Always check the code after
     you issue an edit to make sure that it reflects what you wanted to accomplish.
     If it didn't, issue another command to fix it.
-  11. When you finish working on the issue, use the get patch action with the
+  11. When you FINISH WORKING on the issue, USE THE 'filetool_git_patch' action with the
     new files created to create the final patch to be submitted to fix the issue.
 `;
 
