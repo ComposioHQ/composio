@@ -7,7 +7,15 @@ description: "Configure and utilize different workspace environments for running
 
 ## Overview
 
-SWE Development Kit (swekit) supports various workspace environments to run your agents. This flexibility allows you to choose the most suitable environment for your specific needs, balancing factors such as security, isolation, and ease of use.
+Workspace environments facilitate **isolated** and **secure** execution of tools with **customizable configurations**. The SWE Development Kit (swekit) provides a range of environments tailored to your agents' needs, encompassing **security**, **configuration**, **CPU allocation**, and **network port access** for public services.
+
+## Why Workspace Environments Matters?
+
+Workspace environments are essential for:
+- **Security**: Isolating execution to protect the host system and sensitive data.
+- **Specific Configuration Needs**: Tailoring the environment to the requirements of different agents.
+- **Resource Allocation**: Allocating specific CPU and memory resources to agents.
+- **Networking**: Configuring open ports for services that need to be accessible publicly.
 
 ## Supported Environments
 
@@ -35,7 +43,7 @@ SWE Development Kit (swekit) supports various workspace environments to run your
   </Card>
 </CardGroup>
 
-## Configuring Workspace Environments
+## Configuring Workspace Environment Variables
 
 ### Configurable Parameters
 
@@ -94,7 +102,7 @@ toolset = new OpenAIToolset({
   To use E2B sandboxes, you need to set the `E2B_API_KEY` environment variable with your E2B API key.
 </Warning>
 
-## Customizing Workspace Environments
+## Customizing Workspace Environments Variables
 
 You can customize the workspace environment by adding environment variables while creating workspace.
 <CodeGroup>
