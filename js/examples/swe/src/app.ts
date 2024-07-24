@@ -27,12 +27,10 @@ async function main() {
     instructions: `Repo is: ${repo} and your goal is to ${issue}`,
     tool_choice: "required"
   });
-
+ 
   // stream.on("textCreated", (text) => process.stdout.write('\nassistant > ')).on("toolCallCreated", (toolCall) => process.stdout.write(`\nassistant > ${toolCall.id}\n\n`))
 
   composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
-
-
 }
 
 main();

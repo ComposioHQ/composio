@@ -1,5 +1,0 @@
-
-> swe@1.0.0 start /Users/utkarsh/Desktop/composio/composio_sdk/js/examples/swe
-> ts-node-dev --transpile-only src/app.ts
-
-[INFO] 01:26:00 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.5.3)
