@@ -226,7 +226,7 @@ jobs:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+          echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
       - name: Set up support for multi platform build
         run: |
           docker run --privileged --rm tonistiigi/binfmt --install all
@@ -252,5 +252,5 @@ jobs:
         env:
           E2B_API_KEY: ${{secrets.E2B_API_KEY}}
         run: |
-          cd dockerfiles/
+          cd python/dockerfiles/
           make e2b
