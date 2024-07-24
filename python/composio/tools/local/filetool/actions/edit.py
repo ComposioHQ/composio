@@ -26,11 +26,11 @@ class EditFileRequest(BaseFileRequest):
     )
     start_line: int = Field(
         ...,
-        description="The line number at which the file edit will start (REQUIRED)",
+        description="The line number at which the file edit will start (REQUIRED). Inclusive - the start line will be included in the edit.",
     )
     end_line: int = Field(
         ...,
-        description="The line number at which the file edit will end (REQUIRED).",
+        description="The line number at which the file edit will end (REQUIRED). Inclusive - the end line will be included in the edit.",
     )
 
 
@@ -95,6 +95,8 @@ class EditFile(BaseFileAction):
                     path=request_data.file_path,
                 )
             )
+            if file is None:
+                raise FileNotFoundError(f"File not found: {request_data.file_path}")
             response = file.write_and_run_lint(
                 text=request_data.text,
                 start=request_data.start_line,
