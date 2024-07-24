@@ -24,11 +24,14 @@ COPY entrypoint.sh /root/entrypoint.sh
 # Set working dir
 WORKDIR /root
 
+# Install dependencies
+RUN python3 -m pip install composio-core==0.3.27
+
 # Copy source
 COPY ./composio /root/composio
 
 # Install from source
-RUN python3 -m pip install /root/composio/
+RUN python3 -m pip install /root/composio/ --no-deps --force-reinstall
 
 # Remove cache
 RUN rm -rf /root/composio/
