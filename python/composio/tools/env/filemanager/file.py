@@ -223,8 +223,7 @@ class File(WithLogger):
 
     def total_lines(self) -> int:
         """Total number of lines in the file."""
-        with self.path.open('r') as file:
-            return sum(1 for _ in file)
+        return sum(1 for _ in self._iter_file())
 
     def edit(
         self,
