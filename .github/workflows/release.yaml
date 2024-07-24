@@ -250,7 +250,7 @@ jobs:
           npm install -g @e2b/cli@latest
       - name: Publishing Template
         env:
-          E2B_ACCESS_TOKEN: ${{secrets.E2B_API_KEY}}
+          E2B_ACCESS_TOKEN: ${{secrets.E2B_ACCESS_TOKEN}}
         run: |
           cd python/dockerfiles/
           make e2b
