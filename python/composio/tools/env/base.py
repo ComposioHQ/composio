@@ -349,7 +349,7 @@ class RemoteWorkspace(Workspace):
             json={
                 "content": Path(str(obj.module)).read_text(encoding="utf-8"),
                 "filename": Path(str(obj.module)).name,
-                "dependencies": obj.requires or {},
+                "dependencies": obj.requires or [],
             },
         )
         response = request.json()
