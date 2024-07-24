@@ -83,13 +83,25 @@ class FileManager(WithLogger):
 
         Args:
             path (Union[Path, str]): The path to the new working directory.
+                Can be absolute, relative to the current working directory,
+                or use '..' to navigate up the directory tree.
 
         Raises:
             FileNotFoundError: If the specified directory does not exist.
             PermissionError: If the user doesn't have permission to access the directory.
         """
         try:
-            new_dir = Path(path).resolve()
+            # Handle absolute, relative, and parent directory navigation
+            new_dir = Path(path)
+            if not new_dir.is_absolute():
+                new_dir = (self.working_dir / new_dir).resolve()
+            else:
+                new_dir = new_dir.resolve()
+
+            # Ensure the resolved path is within the allowed directory structure
+            if not new_dir.is_relative_to(self.working_dir.anchor):
+                raise PermissionError(f"Access denied: Cannot navigate to '{new_dir}'")
+
             if not new_dir.is_dir():
                 raise FileNotFoundError(f"'{new_dir}' is not a valid directory.")
             if not os.access(new_dir, os.R_OK | os.X_OK):

@@ -64,7 +64,7 @@ class OpenFile(BaseFileAction):
             return OpenFileResponse(
                 message="File opened successfully. 100 lines after the cursor displayed.",
                 lines=content,
-                total_lines=len(content),
+                total_lines=file.total_lines(),
             )
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")

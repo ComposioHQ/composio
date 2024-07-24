@@ -28,7 +28,7 @@ WORKDIR /root
 COPY ./composio /root/composio
 
 # Install from source
-RUN python3 -m pip install /root/composio/
+RUN python3 -m pip install /root/composio[all]
 
 # Remove cache
 RUN rm -rf /root/composio/
