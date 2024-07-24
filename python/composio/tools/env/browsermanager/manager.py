@@ -31,13 +31,13 @@ class BrowserManager(WithLogger):
         self.browser = Browser(headless=headless, window=window)
         self.headless = headless
         self.window = window
+        
 
     def __enter__(self) -> "BrowserManager":
         """Enter browser manager context."""
         active_manager = get_current_browser_manager()
         if active_manager is not None and active_manager.id != self.id:
             raise RuntimeError("Another manager already activated via context.")
-
         try:
             self.browser.setup()
             set_current_browser_manager(manager=self)
@@ -80,10 +80,10 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to navigate forward: {str(e)}")
             raise
 
-    def refresh(self) -> None:
+    def refresh(self, ignore_cache: bool = False) -> None:
         """Reload the current page."""
         try:
-            self.browser.refresh()
+            self.browser.refresh(ignore_cache=ignore_cache)
         except BrowserError as e:
             self.logger.error(f"Failed to refresh page: {str(e)}")
             raise
@@ -96,28 +96,36 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to get page content: {str(e)}")
             raise
 
-    def find_element(self, selector: str) -> t.Optional[ElementHandle]:
+    def find_element(self, selector: str, selector_type: str = "css") -> t.Optional[ElementHandle]:
         """Find an element on the page."""
         try:
-            return self.browser.find_element(selector)
+            return self.browser.find_element(selector,selector_type)
         except BrowserError as e:
             self.logger.error(f"Failed to find element with selector '{selector}': {str(e)}")
             raise
 
-    def click(self, selector: str) -> None:
+    def click(self, selector: str, selector_type: str = "css") -> None:
         """Click on an element."""
         try:
-            self.browser.click(selector)
+            self.browser.click(selector, selector_type)
         except BrowserError as e:
             self.logger.error(f"Failed to click element with selector '{selector}': {str(e)}")
             raise
 
-    def type(self, selector: str, text: str) -> None:
+    def type(self, selector: str, text: str, selector_type: str = "css") -> None:
         """Type text into an input field."""
         try:
-            self.browser.type(selector, text)
+            self.browser.type(selector, text, selector_type)
         except BrowserError as e:
             self.logger.error(f"Failed to type text into element with selector '{selector}': {str(e)}")
+            raise
+
+    def clear(self, selector: str, selector_type: str = "css") -> None:
+        """Clear the text from an input field."""
+        try:
+            self.browser.clear(selector, selector_type)
+        except BrowserError as e:
+            self.logger.error(f"Failed to clear text from element with selector '{selector}': {str(e)}")
             raise
 
     def select(self, selector: str, value: str) -> None:
@@ -136,10 +144,10 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to scroll {direction.value} by {amount} pixels: {str(e)}")
             raise
 
-    def scroll_to_element(self, selector: str) -> None:
+    def scroll_to_element(self, selector: str, selector_type: str = "css") -> None:
         """Scroll to a specific element."""
         try:
-            self.browser.scroll_to_element(selector)
+            self.browser.scroll_to_element(selector, selector_type)
         except BrowserError as e:
             self.logger.error(f"Failed to scroll to element with selector '{selector}': {str(e)}")
             raise
@@ -190,6 +198,22 @@ class BrowserManager(WithLogger):
             return self.browser.execute_script(script, *args)
         except BrowserError as e:
             self.logger.error(f"Failed to execute script: {str(e)}")
+            raise
+
+    def get_element_attribute(self, selector: str, attribute: str, selector_type: str = "css") -> t.Optional[str]:
+        """Get the value of an attribute for a specific element."""
+        try:
+            return self.browser.get_element_attribute(selector, attribute, selector_type)
+        except BrowserError as e:
+            self.logger.error(f"Failed to get attribute '{attribute}' for element with selector '{selector}': {str(e)}")
+            raise
+    
+    def get_element_text(self, selector: str, selector_type: str = "css") -> t.Optional[str]:
+        """Get the text content of a specific element."""
+        try:
+            return self.browser.get_element_text(selector, selector_type)
+        except BrowserError as e:
+            self.logger.error(f"Failed to get text for element with selector '{selector}': {str(e)}")
             raise
 
     def __str__(self) -> str:

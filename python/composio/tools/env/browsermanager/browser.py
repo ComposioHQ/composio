@@ -4,47 +4,61 @@ import typing as t
 from enum import Enum
 from pathlib import Path
 import random
+from contextlib import contextmanager
 
 from playwright.sync_api import sync_playwright, Browser as PlaywrightBrowser, Page, Playwright
 
 from composio.utils.logging import WithLogger
 
+selector_map = {
+    "css": lambda s: s,
+    "xpath": lambda s: f"xpath={s}",
+    "id": lambda s: f"#{s}",
+    "name": lambda s: f"[name='{s}']",
+    "tag": lambda s: f"//{s}",
+    "class": lambda s: f".{s}"
+}
 
-class ScrollDirection(str, Enum):
-    UP = "up"
-    DOWN = "down"
-
-    def offset(self, amount: int) -> int:
-        """Multiply the amount by scroll direction."""
-        return amount * (-1 if self.value == "up" else 1)
+class ScrollDirection(Enum):
+    UP = -1
+    DOWN = 1
 
 
 class BrowserError(Exception):
     """Exception raised for browser-related errors."""
-    pass
 
 
 class Browser(WithLogger):
     """Browser object for browser manager using Chromium."""
 
-    def __init__(self, headless: bool = True, window: t.Optional[int] = None) -> None:
+    def __init__(self, headless: bool = True, window_size: t.Tuple[int, int] = (1920, 1080)) -> None:
         """
         Initialize browser object
 
         :param headless: Whether to run browser in headless mode.
-        :param window: Size of the view window, default is 100.
+        :param window_size: Size of the browser window as (width, height).
         """
         super().__init__()
         self.headless = headless
+        self.window_size = window_size
         self.playwright: t.Optional[Playwright] = None
         self.browser: t.Optional[PlaywrightBrowser] = None
         self.page: t.Optional[Page] = None
-        self._window = window or 100
         self.user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36"
         ]
+        self.current_url: str = ""
+
+    @contextmanager
+    def managed_browser(self):
+        """Context manager for browser setup and cleanup."""
+        self.setup()
+        try:
+            yield self
+        finally:
+            self.cleanup()
 
     def setup(self) -> None:
         """Set up the Chromium browser."""
@@ -52,91 +66,181 @@ class Browser(WithLogger):
         user_agent = random.choice(self.user_agents)
         self.browser = self.playwright.chromium.launch(
             headless=self.headless,
-            args=[
-                f'--user-agent={user_agent}',
-                '--disable-blink-features=AutomationControlled'
-            ]
+            args=self._get_browser_args(user_agent)
         )
         self.page = self.browser.new_page(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent=user_agent
+            viewport={'width': self.window_size[0], 'height': self.window_size[1]},
+            user_agent=user_agent,
+            locale='en-US',
+            timezone_id='America/New_York',
+            geolocation={'latitude': 40.7128, 'longitude': -74.0060},
+            permissions=['geolocation']
         )
-        self.page.evaluate("""
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            })
-        """)
+        self._setup_browser_environment()
 
-    def goto(self, url: str) -> None:
-        """
-        Navigate to a specific URL.
+    def _get_browser_args(self, user_agent: str) -> t.List[str]:
+        """Get browser launch arguments."""
+        return [
+            f'--user-agent={user_agent}',
+            '--disable-blink-features=AutomationControlled',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--lang=en-US,en;q=0.9',
+            '--disable-extensions',
+            '--mute-audio'
+        ]
 
-        :param url: URL to navigate to.
-        """
+    def _setup_browser_environment(self) -> None:
+        """Set up browser environment to mimic real user."""
+        if self.page:
+            self.page.evaluate("""
+                () => {
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                    });
+                    Object.defineProperty(navigator, 'languages', {
+                        get: () => ['en-US', 'en']
+                    });
+                    Object.defineProperty(navigator, 'plugins', {
+                        get: () => [1, 2, 3, 4, 5]
+                    });
+                }
+            """)
+
+    def _ensure_page_initialized(self) -> Page:
+        """Ensure page is initialized before operations."""
         if self.page is None:
             raise BrowserError("Page is not initialized")
-        self.page.goto(url, wait_until="networkidle")
+        return self.page
+
+    def goto(self, url: str) -> None:
+        """Navigate to a specific URL."""
+        page = self._ensure_page_initialized()
+        page.goto(url, wait_until="networkidle")
+        self.current_url = page.url
         self._add_random_delay()
 
     def back(self) -> None:
         """Navigate back in browser history."""
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.go_back()
+        page = self._ensure_page_initialized()
+        page.go_back()
+        self.current_url = page.url
         self._add_random_delay()
 
     def forward(self) -> None:
         """Navigate forward in browser history."""
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.go_forward()
+        page = self._ensure_page_initialized()
+        page.go_forward()
+        self.current_url = page.url
         self._add_random_delay()
 
-    def refresh(self) -> None:
-        """Reload the current page."""
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.reload()
+    def refresh(self, ignore_cache: bool = False) -> None:
+        """
+        Reload the current page.
+
+        :param ignore_cache: If True, the page is loaded in a new context to bypass caching.
+        """
+        page = self._ensure_page_initialized()
+        current_url = page.url
+
+        if ignore_cache and self.browser:
+            # Create a new context and page
+            context = self.browser.new_context()
+            new_page = context.new_page()
+
+            # Navigate to the current URL in the new page
+            new_page.goto(current_url, wait_until="networkidle", timeout=30000)
+
+            # Close the old page and context
+            page.close()
+            page.context.close()
+
+            # Update the current page
+            self.page = new_page
+        else:
+            # Regular reload if ignore_cache is False
+            page.reload(wait_until="networkidle", timeout=30000)
+        page = self._ensure_page_initialized()
+        self.current_url = page.url
         self._add_random_delay()
 
     def get_content(self) -> str:
         """Get the current page's HTML content."""
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        return self.page.content()
+        page = self._ensure_page_initialized()
+        return page.content()
 
-    def find_element(self, selector: str) -> t.Any:
+    def find_element(self, selector: str, selector_type: str = "css") -> t.Any:
         """
         Find an element on the page.
 
-        :param selector: CSS selector for the element.
+        :param selector: Selector for the element.
+        :param selector_type: Type of selector (CSS, XPATH, ID, NAME, TAG, CLASS). Defaults to "css".
         :return: The found element.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        return self.page.query_selector(selector)
+        page = self._ensure_page_initialized()
+        try:
 
-    def click(self, selector: str) -> None:
+            selector_func = selector_map.get(selector_type.lower())
+            if not selector_func:
+                raise ValueError(f"Unsupported selector type: {selector_type}")
+            return page.query_selector(selector_func(selector))
+        except Exception as e:
+            raise BrowserError(f"Failed to find element with selector '{selector}': {str(e)}")
+
+    def click(self, selector: str, selector_type: str = "css") -> None:
         """
         Click an element on the page.
 
-        :param selector: CSS selector for the element to click.
+        :param selector: Selector for the element to click.
+        :param selector_type: Type of selector (CSS, XPATH, ID, NAME, TAG, CLASS).
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.click(selector)
-        self._add_random_delay()
+        page = self._ensure_page_initialized()
+        try:
+            selector_func = selector_map.get(selector_type.lower())
+            if not selector_func:
+                raise ValueError(f"Unsupported selector type: {selector_type}")
+            element = page.query_selector(selector_func(selector))
+            if element:
+                element.click()
+                self.current_url = page.url
+                self._add_random_delay()
+            else:
+                raise BrowserError(f"Element not found with selector '{selector}'")
+        except Exception as e:
+            raise BrowserError(f"Failed to click element with selector '{selector}': {str(e)}")
 
-    def type(self, selector: str, text: str) -> None:
+    def type(self, selector: str, text: str, selector_type: str = "css") -> None:
         """
         Type text into an input field.
 
         :param selector: CSS selector for the input field.
         :param text: Text to type.
+        :param selector_type: Type of selector (CSS, XPATH, ID, NAME, TAG, CLASS). Defaults to "css".
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.fill(selector, text)
+        page = self._ensure_page_initialized()
+        selector_func = selector_map.get(selector_type.lower())
+        if not selector_func:
+            raise ValueError(f"Unsupported selector type: {selector_type}")
+        page.fill(selector_func(selector), text)
+        self._add_random_delay()
+
+    def clear(self, selector: str, selector_type: str = "css") -> None:
+        """
+        Clear the text from an input field.
+
+        :param selector: CSS selector for the input field.
+        :param selector_type: Type of selector (CSS, XPATH, ID, NAME, TAG, CLASS). Defaults to "css".
+        """
+        page = self._ensure_page_initialized()
+        selector_func = selector_map.get(selector_type.lower())
+        if not selector_func:
+            raise ValueError(f"Unsupported selector type: {selector_type}")
+        page.fill(selector_func(selector), "")
         self._add_random_delay()
 
     def select(self, selector: str, value: str) -> None:
@@ -146,33 +250,33 @@ class Browser(WithLogger):
         :param selector: CSS selector for the dropdown.
         :param value: Value to select.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.select_option(selector, value)
+        page = self._ensure_page_initialized()
+        page.select_option(selector, value)
         self._add_random_delay()
 
     def scroll(self, direction: ScrollDirection, amount: int) -> None:
         """
         Scroll the page.
 
-        :param direction: Direction to scroll (up or down).
+        :param direction: Direction to scroll (UP or DOWN).
         :param amount: Number of pixels to scroll.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        scroll_amount = direction.offset(amount)
-        self.page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+        page = self._ensure_page_initialized()
+        scroll_amount = direction.value * amount
+        page.evaluate(f"window.scrollBy(0, {scroll_amount})")
         self._add_random_delay()
 
-    def scroll_to_element(self, selector: str) -> None:
+    def scroll_to_element(self, selector: str, selector_type: str = "css") -> None:
         """
         Scroll to a specific element.
 
         :param selector: CSS selector for the element to scroll to.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.evaluate(f"document.querySelector('{selector}').scrollIntoView({{behavior: 'smooth'}})")
+        page = self._ensure_page_initialized()
+        selector_func = selector_map.get(selector_type.lower())
+        if not selector_func:
+            raise ValueError(f"Unsupported selector type: {selector_type}")
+        page.evaluate(f"document.querySelector('{selector_func(selector)}').scrollIntoView({{behavior: 'smooth'}})")
         self._add_random_delay()
 
     def new_tab(self) -> None:
@@ -180,6 +284,7 @@ class Browser(WithLogger):
         if self.browser is None:
             raise BrowserError("Browser is not initialized")
         self.page = self.browser.new_page()
+        self.current_url = self.page.url
 
     def switch_tab(self, index: int) -> None:
         """
@@ -192,15 +297,18 @@ class Browser(WithLogger):
         pages = self.browser.contexts[0].pages
         if 0 <= index < len(pages):
             self.page = pages[index]
+            self.current_url = self.page.url
         else:
             raise IndexError("Tab index out of range")
 
     def close_tab(self) -> None:
         """Close the current tab."""
-        if self.page is None or self.browser is None:
-            raise BrowserError("Page or browser is not initialized")
-        self.page.close()
+        page = self._ensure_page_initialized()
+        if self.browser is None:
+            raise BrowserError("Browser is not initialized")
+        page.close()
         self.page = self.browser.contexts[0].pages[-1]
+        self.current_url = self.page.url
 
     def take_screenshot(self, path: Path) -> None:
         """
@@ -208,9 +316,8 @@ class Browser(WithLogger):
 
         :param path: Path to save the screenshot.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.screenshot(path=str(path), full_page=True)
+        page = self._ensure_page_initialized()
+        page.screenshot(path=str(path), full_page=True)
 
     def press_key(self, key: str) -> None:
         """
@@ -218,9 +325,8 @@ class Browser(WithLogger):
 
         :param key: Key to press.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.keyboard.press(key)
+        page = self._ensure_page_initialized()
+        page.keyboard.press(key)
         self._add_random_delay()
 
     def execute_script(self, script: str, *args) -> t.Any:
@@ -231,13 +337,41 @@ class Browser(WithLogger):
         :param args: Arguments to pass to the script.
         :return: Result of the script execution.
         """
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        return self.page.evaluate(script, *args)
+        page = self._ensure_page_initialized()
+        return page.evaluate(script, *args)
+
+    def get_element_attribute(self, selector: str, attribute: str, selector_type: str = "css") -> t.Optional[str]:
+        """
+        Get the value of an attribute for a specific element.
+
+        :param selector: Selector to find the element.
+        :param attribute: Name of the attribute to get.
+        :param selector_type: Type of selector (default is "css").
+        :return: Value of the attribute or None if not found.
+        """
+        page = self._ensure_page_initialized()
+        element = self.find_element(selector, selector_type)
+        if element:
+            return element.get_attribute(attribute)
+        return None
+
+    def get_element_text(self, selector: str, selector_type: str = "css") -> t.Optional[str]:
+        """
+        Get the text content of a specific element.
+
+        :param selector: Selector to find the element.
+        :param selector_type: Type of selector (default is "css").
+        :return: Text content of the element or None if not found.
+        """
+        page = self._ensure_page_initialized()
+        element = self.find_element(selector, selector_type)
+        if element:
+            return element.inner_text()
+        return None
 
     def __str__(self) -> str:
         """String representation."""
-        return f"Browser(type=chromium, headless={self.headless})"
+        return f"Browser(type=chromium, headless={self.headless}, current_url={self.current_url})"
 
     def cleanup(self) -> None:
         """Clean up resources."""
@@ -245,6 +379,11 @@ class Browser(WithLogger):
             self.browser.close()
         if self.playwright:
             self.playwright.stop()
+
+    def _add_random_delay(self):
+        """Add a random delay to mimic human behavior."""
+        page = self._ensure_page_initialized()
+        page.wait_for_timeout(random.uniform(100, 600))
 
     def __enter__(self):
         """Context manager entry."""
@@ -254,9 +393,3 @@ class Browser(WithLogger):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.cleanup()
-
-    def _add_random_delay(self):
-        """Add a random delay to mimic human behavior."""
-        if self.page is None:
-            raise BrowserError("Page is not initialized")
-        self.page.wait_for_timeout(random.uniform(500, 2000))

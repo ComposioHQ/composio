@@ -281,6 +281,8 @@ class Workspace(WithLogger, ABC):
     _shell_factory: t.Optional[ShellFactory] = None
 
     _file_manager_factory: t.Optional[FileManagerFactory] = None
+    
+    _browser_manager_factory: t.Optional[BrowserManagerFactory] = None
 
     def __init__(self, config: WorkspaceConfigType):
         """Initialize workspace."""
@@ -330,6 +332,15 @@ class Workspace(WithLogger, ABC):
                 factory=self._create_file_manager,
             )
         return self._file_manager_factory
+    
+    @property
+    def browser_managers(self) -> BrowserManagerFactory:
+        """Returns browser manager for current workspace."""
+        if self._browser_manager_factory is None:
+            self._browser_manager_factory = BrowserManagerFactory(
+                factory=self._create_browser_manager,
+            )
+        return self._browser_manager_factory
 
     @property
     def shells(self) -> ShellFactory:
@@ -347,6 +358,10 @@ class Workspace(WithLogger, ABC):
     @abstractmethod
     def _create_file_manager(self) -> FileManager:
         """Create file manager for the workspace."""
+
+    @abstractmethod
+    def _create_browser_manager(self) -> BrowserManager:
+        """Create browser manager for the workspace."""
 
     @abstractmethod
     def execute_action(
@@ -391,6 +406,11 @@ class RemoteWorkspace(Workspace):
     def _create_file_manager(self) -> FileManager:
         raise NotImplementedError(
             "Creating file manager for remote workspaces is not allowed."
+        )
+
+    def _create_browser_manager(self) -> BrowserManager:
+        raise NotImplementedError(
+            "Creating browser manager for remote workspaces is not allowed."
         )
 
     def _upload(self, action: Action) -> None:

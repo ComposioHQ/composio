@@ -1,11 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.local.base import Action
 from composio.exceptions import ComposioSDKError
+from enum import Enum
+
+class SelectorType(str, Enum):
+    CSS = "css"
+    XPATH = "xpath"
+    ID = "id"
+    NAME = "name"
+    TAG = "tag"
+    CLASS = "class"
 
 
 class BaseBrowserRequest(BaseModel):
@@ -47,10 +56,20 @@ class BaseBrowserAction(Action, ABC):
         browser_manager = browser_managers.get(request_data.browser_manager_id)
 
         if not browser_manager:
-            raise ComposioSDKError("No valid browser manager found")
+            if not browser_managers:
+                raise ComposioSDKError("No browser managers available")
+            browser_manager = next(iter(browser_managers.values()))
 
-        resp = self.execute_on_browser_manager(
-            browser_manager=browser_manager, request_data=request_data
-        )
-        resp.current_url = browser_manager.browser.current_url
-        return resp
+        try:
+            resp = self.execute_on_browser_manager(
+                browser_manager=browser_manager, request_data=request_data
+            )
+            resp.current_url = browser_manager.browser.current_url
+            return resp
+        except Exception as e:
+            error_message = f"An error occurred while executing the browser action: {str(e)}"
+            self.logger.error(error_message, exc_info=True)
+            return self._response_schema(
+                error=error_message,
+                current_url=browser_manager.browser.current_url if browser_manager and browser_manager.browser else ""
+            )
