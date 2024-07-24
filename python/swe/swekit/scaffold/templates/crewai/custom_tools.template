@@ -1,4 +1,3 @@
-import cowsay
 
 from composio import action
 
