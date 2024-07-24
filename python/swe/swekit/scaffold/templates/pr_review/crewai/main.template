@@ -1,13 +1,17 @@
 import os
-from dotenv import load_dotenv
-from composio_openai import Action, ComposioToolSet
+
 from crewai import Agent, Crew, Process, Task
+from custom_tools import say
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
 
-load_dotenv()
+from composio_openai import Action, ComposioToolSet
 
+
+# Load .env file
+load_dotenv()
 
 # Initialize the ComposioToolSet
 composio_toolset = ComposioToolSet()
@@ -20,6 +24,7 @@ pr_agent_tools = composio_toolset.get_actions(
         Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,
         Action.GITHUB_ISSUES_CREATE,
         Action.SLACKBOT_CHAT_POST_MESSAGE,
+        say,  # This is just here as an example of a custom tool, you can remove it
     ]
 )
 
@@ -43,7 +48,6 @@ code_review_assistant_prompt = (
         Also add the comprehensive review to the PR as a comment.
 """
 )
-
 
 
 # Initialize the language model

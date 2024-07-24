@@ -5,11 +5,12 @@
 import dotenv
 import os
 import typing as t
-from composio_crewai import App, ComposioToolSet, WorkspaceType
+from composio_crewai import App, Action, ComposioToolSet, WorkspaceType
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
+from tools import calculate_operation
 
 # Load environment variables from .env
 dotenv.load_dotenv()
@@ -56,7 +57,21 @@ def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
 composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
 
 # Get required tools
-tools = composio_toolset.get_tools(apps=[App.FILETOOL, App.SHELLTOOL])
+tools = [
+    *composio_toolset.get_tools(
+        apps=[
+            App.FILETOOL,
+            App.SEARCHTOOL,
+        ]
+    ),
+    *composio_toolset.get_actions(
+        actions=[
+            Action.SHELL_EXEC_COMMAND,
+        ]
+    ),
+]
+
+tools.append(*composio_toolset.get_actions(actions=[calculate_operation]))
 
 # Define agent
 agent = Agent(
@@ -78,6 +93,7 @@ crew = Crew(
     agents=[agent],
     tasks=[task],
     process=Process.sequential,
+    full_output=True,
     verbose=True,
     cache=False,
     memory=True,
