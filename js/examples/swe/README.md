@@ -37,21 +37,21 @@ export GITHUB_ACCESS_TOKEN=<github_access_token>
 
 To quickly get started, clone the template from GitHub using the command below:
 ```bash Clon and setup SWE Template
-  git clone https://github.com/ComposioHQ/swe-js-template.git swe-js
+git clone https://github.com/ComposioHQ/swe-js-template.git swe-js
 ```
 
 ### Install all the dependencies
 
 Install all the required dependencies for the SWE agent using `pnpm`, which is the recommended package manager:
- ```bash Install all the dependencies
-  cd swe-js && pnpm i
+```bash Install all the dependencies
+cd swe-js && pnpm i
 ```
 
 ### Run your SWE agent
 
 To start the agent, just run the following command:
 ```bash Run the agent
-  pnpm start
+pnpm start
 ```
 You will be prompted to specify the repository and issue for the agent to address.
 
