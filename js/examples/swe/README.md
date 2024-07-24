@@ -1,75 +1,57 @@
-# SWE Development Kit
+# SWE Development Kit (SWEKit.js)
 
-## Table of Contents
-
-- [SWE Development Kit](#swe-development-kit)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Dependencies](#dependencies)
-  - [Getting Started](#getting-started)
-    - [Creating a new agent](#creating-a-new-agent)
-    - [Workspace Environment](#workspace-environment)
-    - [Customising the workspace environment](#customising-the-workspace-environment)
-    - [Running the Benchmark](#running-the-benchmark)
+Build and benchmark Software Engineering agents with Composio's tooling ecosystem using JavaScript
 
 ## Overview
 
-`swekit` is a framework for building SWE agents by utilizing the composio tooling ecosystem. SWE Kit allows you to:
+SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. 
+It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell Manager, and more.
 
-- Scaffold agents that work out-of-the-box with your choice of agentic framework, such as `crewai`, `llamaindex`, etc.
-- Add or optimize your agent's abilities with various tools.
-- Benchmark your agents against `SWE-bench`.
+## Key Features
 
-## Dependencies
-
-Before getting started, ensure you have the following set up:
-
-1. **Installation**:
-
-   ```
-   npm install swekit composio-core
-   ```
-
-2. **Install the agentic framework of your choice and the Composio plugin for it**:
-   Here we're using `crewai` for the example:
-
-   ```
-   npm install crewai composio-crewai
-   ```
-
-3. **GitHub Access Token**:
-
-   The agent requires a GitHub access token to work with your repositories. You can create one at https://github.com/settings/tokens with the necessary permissions and export it as an environment variable using `export GITHUB_ACCESS_TOKEN=<your_token>`.
-
-4. **LLM Configuration**:
-   You also need to set up an API key for the LLM provider you're planning to use. By default, the agents scaffolded by `swekit` use the `openai` client, so export `OPENAI_API_KEY` before running your agent.
+- **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like OpenAI, Langchain, and more.
+- **Flexible Workspace Environments**: Operate your agents within a variety of secure and isolated environments including Docker, E2B, and FlyIO for security and isolation.
+- **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
+- **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
 
 ## Getting Started
+### Installation
 
-### Creating a new agent
+Begin by installing the core packages using your favourite package manager. The recommended method is using `pnpm`, but you can also use `npm` or `yarn`.
 
-1. Scaffold your agent using:
+``` bash
+pnpm install -g composio-core
+```
 
-   ```
-   swekit scaffold crewai -o <path> -l js swe-js
-   ```
+### Connect your Github Account
+To utilize Github Issues as a task source, link your Github account by setting the `GITHUB_ACCESS_TOKEN` environment variable with your personal access token. Run the following command in your terminal:
 
-   This creates a new agent in `<path>/swe/` with four key files:
+```
+export GITHUB_ACCESS_TOKEN=<github_access_token>
+```
 
-   - `src/app.ts`: Entry point to run the agent on your issue.
-   - `src/prompts.ts`: Agent prompts.
-   - `src/agents/swe.ts`: Agent definition (edit this to customize behavior).
 
-2. Run the agent:
-   ```
-   pnpm start
-   ```
-   You'll be prompted for the repository name and issue.
+### Clone SWE Template for JS
 
-### Workspace Environment
+> **Warning**: To use Docker as the default workspace environment, ensure your Docker server is running.
 
-The SWE-agent runs in Docker by default for security and isolation. This sandboxes the agent's operations, protecting against unintended consequences of arbitrary code execution.
+To quickly get started, clone the template from GitHub using the command below:
+```bash Clon and setup SWE Template
+git clone https://github.com/ComposioHQ/swe-js-template.git swe-js
+```
 
-The composio toolset supports different types of workspaces.
+### Install all the dependencies
 
-1. Host - This will run on the host machine.
+Install all the required dependencies for the SWE agent using `pnpm`, which is the recommended package manager:
+```bash Install all the dependencies
+cd swe-js && pnpm i
+```
+
+### Run your SWE agent
+
+To start the agent, just run the following command:
+```bash Run the agent
+pnpm start
+```
+You will be prompted to specify the repository and issue for the agent to address.
+

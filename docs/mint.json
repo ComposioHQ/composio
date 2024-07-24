@@ -163,6 +163,13 @@
       ]
     },
     {
+      "group": "SweKit.js",
+      "pages": [
+        "swekit-js/introduction",
+        "swekit-js/workspace-env"
+      ]
+    },
+    {
       "group": "CLI",
       "pages": [
         "sdk/cli/install",
