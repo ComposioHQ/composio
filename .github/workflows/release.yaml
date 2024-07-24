@@ -234,7 +234,7 @@ jobs:
           docker buildx inspect --bootstrap
       - name: Publishing tool server images
         run: |
-          cd dockerfiles/
+          cd python/dockerfiles/
           VERSION=$(cat ../composio/__init__.py | grep version | cut -b 16- | rev | cut -b 2- | rev) make publish
 
   publish-e2b:
@@ -250,7 +250,7 @@ jobs:
           npm install -g @e2b/cli@latest
       - name: Publishing Template
         env:
-          E2B_API_KEY: ${{secrets.E2B_API_KEY}}
+          E2B_ACCESS_TOKEN: ${{secrets.E2B_API_KEY}}
         run: |
           cd python/dockerfiles/
           make e2b
