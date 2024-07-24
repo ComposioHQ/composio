@@ -6,30 +6,14 @@ import dotenv
 import os
 import typing as t
 from composio_crewai import App, Action, ComposioToolSet, WorkspaceType
-from composio import action
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
+from tools import calculate_operation
 
 # Load environment variables from .env
 dotenv.load_dotenv()
-
-
-@action(toolname="math")
-def calculate_operation(num1: float, num2: float, operation: str) -> float:
-    """
-    Calculate the sum of two numbers
-    """
-    if operation == "add":
-        return num1 + num2
-    if operation == "subtract":
-        return num1 - num2
-    if operation == "multiply":
-        return num1 * num2
-    if operation == "divide":
-        return num1 / num2
-    raise ValueError(f"Invalid operation: {operation}")
 
 
 # Initialize tool.
