@@ -1,4 +1,4 @@
-# SWE Development Kit
+# SWE Development Kit (SWEKit.js)
 
 Build and benchmark Software Engineering agents with Composio's tooling ecosystem using JavaScript
 
