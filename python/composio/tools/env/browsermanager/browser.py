@@ -19,14 +19,8 @@ selector_map = {
     "class": lambda s: f".{s}"
 }
 
-class ScrollDirection(Enum):
-    UP = -1
-    DOWN = 1
-
-
 class BrowserError(Exception):
     """Exception raised for browser-related errors."""
-
 
 class Browser(WithLogger):
     """Browser object for browser manager using Chromium."""
@@ -51,15 +45,6 @@ class Browser(WithLogger):
         ]
         self.current_url: str = ""
 
-    @contextmanager
-    def managed_browser(self):
-        """Context manager for browser setup and cleanup."""
-        self.setup()
-        try:
-            yield self
-        finally:
-            self.cleanup()
-
     def setup(self) -> None:
         """Set up the Chromium browser."""
         self.playwright = sync_playwright().start()
@@ -77,6 +62,11 @@ class Browser(WithLogger):
             permissions=['geolocation']
         )
         self._setup_browser_environment()
+
+        # Navigate to Google.com after setting up the browser
+        self.page.goto("https://www.google.com", wait_until="networkidle")
+        self.current_url = self.page.url
+        self._add_random_delay()
 
     def _get_browser_args(self, user_agent: str) -> t.List[str]:
         """Get browser launch arguments."""
@@ -118,12 +108,32 @@ class Browser(WithLogger):
             raise BrowserError("Page is not initialized")
         return self.page
 
-    def goto(self, url: str) -> None:
+    def goto(self, url: str,timeout:int=60000) -> None:
         """Navigate to a specific URL."""
         page = self._ensure_page_initialized()
-        page.goto(url, wait_until="networkidle")
+
+        # try:
+        page.goto(url, wait_until="networkidle",timeout=timeout)
+        # except Exception as e:
+        #     self.logger.warning(
+        #         f"Timeout or error occurred while waiting for networkidle: {str(e)}"
+        #     )
+
         self.current_url = page.url
         self._add_random_delay()
+
+    def get_page_viewport(self) -> t.Dict[str, int]:
+        """Get the viewport of the current page."""
+        try:
+            page = self._ensure_page_initialized()
+            viewport = page.viewport_size
+            if viewport:
+                return viewport # type: ignore
+            else:
+                raise BrowserError("Failed to get page viewport")
+        except BrowserError as e:
+            self.logger.error(f"Failed to get page viewport: {str(e)}")
+            raise
 
     def back(self) -> None:
         """Navigate back in browser history."""
@@ -254,16 +264,22 @@ class Browser(WithLogger):
         page.select_option(selector, value)
         self._add_random_delay()
 
-    def scroll(self, direction: ScrollDirection, amount: int) -> None:
+    def scroll(self, direction: str, amount: int) -> None:
         """
         Scroll the page.
 
-        :param direction: Direction to scroll (UP or DOWN).
+        :param direction: Direction to scroll ('UP', 'DOWN', 'LEFT', or 'RIGHT').
         :param amount: Number of pixels to scroll.
         """
         page = self._ensure_page_initialized()
-        scroll_amount = direction.value * amount
-        page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+        if direction.upper() in ['UP', 'DOWN']:
+            scroll_amount = -amount if direction.upper() == 'UP' else amount
+            page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+        elif direction.upper() in ['LEFT', 'RIGHT']:
+            scroll_amount = -amount if direction.upper() == 'LEFT' else amount
+            page.evaluate(f"window.scrollBy({scroll_amount}, 0)")
+        else:
+            raise ValueError(f"Invalid scroll direction: {direction}. Must be 'UP', 'DOWN', 'LEFT', or 'RIGHT'.")
         self._add_random_delay()
 
     def scroll_to_element(self, selector: str, selector_type: str = "css") -> None:
@@ -310,14 +326,14 @@ class Browser(WithLogger):
         self.page = self.browser.contexts[0].pages[-1]
         self.current_url = self.page.url
 
-    def take_screenshot(self, path: Path) -> None:
+    def take_screenshot(self, path: Path,full_page:bool=True) -> None:
         """
         Capture a screenshot of the current page.
 
         :param path: Path to save the screenshot.
         """
         page = self._ensure_page_initialized()
-        page.screenshot(path=str(path), full_page=True)
+        page.screenshot(path=str(path), full_page=full_page)
 
     def press_key(self, key: str) -> None:
         """
@@ -368,6 +384,16 @@ class Browser(WithLogger):
         if element:
             return element.inner_text()
         return None
+
+    def get_page_details(self,) -> t.Dict[str, t.Any]:
+        """Get the details of the current page."""
+        page = self._ensure_page_initialized()        
+        details={
+            "url": page.url,
+            "title": page.title(),
+            "page_details": page.accessibility.snapshot()
+        }
+        return details
 
     def __str__(self) -> str:
         """String representation."""

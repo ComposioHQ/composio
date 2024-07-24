@@ -8,7 +8,6 @@ from pydantic import Field
 
 from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.env.browsermanager.browser import BrowserError
 
 
 class NavigationDirection(str, Enum):
@@ -47,35 +46,22 @@ class NavigateHistory(BaseBrowserAction):
         request_data: NavigateHistoryRequest
     ) -> NavigateHistoryResponse:
         """Execute the navigate history action."""
-        previous_url = browser_manager.browser.current_url
-        try:
-            navigation_method = browser_manager.back if request_data.direction == NavigationDirection.BACK else browser_manager.forward
-            steps_taken = 0
-            message = None
+        previous_url = browser_manager.browser.current_url        
+        navigation_method = browser_manager.back if request_data.direction == NavigationDirection.BACK else browser_manager.forward
+        steps_taken = 0
+        message = None
 
-            for _ in range(request_data.steps):
-                try:
-                    navigation_method()
-                    steps_taken += 1
-                except BrowserError:
-                    # Reached the limit of history
-                    message = f"Maximum {'backs' if request_data.direction == NavigationDirection.BACK else 'forwards'} reached after {steps_taken} steps"
-                    break
+        for _ in range(request_data.steps):
+            try:
+                navigation_method()
+                steps_taken += 1
+            except Exception:
+                # Reached the limit of history
+                message = f"Maximum {'backs' if request_data.direction == NavigationDirection.BACK else 'forwards'} reached after {steps_taken} steps"
+                break
 
-            return NavigateHistoryResponse(
-                success=True,
-                previous_url=previous_url,
-                message=message
-            )
-        except BrowserError as e:
-            return NavigateHistoryResponse(
-                success=False,
-                error=f"Browser error while navigating history: {str(e)}",
-                previous_url=previous_url
-            )
-        except Exception as e:
-            return NavigateHistoryResponse(
-                success=False,
-                error=f"Unexpected error while navigating history: {str(e)}",
-                previous_url=previous_url
-            )
+        return NavigateHistoryResponse(
+            success=True,
+            previous_url=previous_url,
+            message=message
+        )

@@ -2,7 +2,7 @@ import threading
 import typing as t
 from pathlib import Path
 
-from composio.tools.env.browsermanager.browser import Browser, ScrollDirection, BrowserError
+from composio.tools.env.browsermanager.browser import Browser, BrowserError
 from composio.utils.logging import WithLogger
 from composio.tools.env.id import generate_id
 from playwright.sync_api import ElementHandle
@@ -24,14 +24,13 @@ def get_current_browser_manager() -> t.Optional["BrowserManager"]:
 class BrowserManager(WithLogger):
     """Browser manager implementation for agent workspaces."""
 
-    def __init__(self, headless: bool = True, window: t.Optional[int] = None) -> None:
+    def __init__(self, headless: bool = True) -> None:
         """Initialize browser manager."""
         super().__init__()
         self.id = generate_id()
-        self.browser = Browser(headless=headless, window=window)
+        self.browser = Browser(headless=headless)
         self.headless = headless
-        self.window = window
-        
+        self.browser.setup()
 
     def __enter__(self) -> "BrowserManager":
         """Enter browser manager context."""
@@ -39,7 +38,6 @@ class BrowserManager(WithLogger):
         if active_manager is not None and active_manager.id != self.id:
             raise RuntimeError("Another manager already activated via context.")
         try:
-            self.browser.setup()
             set_current_browser_manager(manager=self)
         except Exception as e:
             self.logger.error(f"Failed to set up browser: {str(e)}")
@@ -56,12 +54,22 @@ class BrowserManager(WithLogger):
         finally:
             set_current_browser_manager(manager=None)
 
-    def goto(self, url: str) -> None:
+    def goto(self, url: str,timeout:int=60000) -> None:
         """Navigate to a specific URL."""
         try:
-            self.browser.goto(url)
+            self.browser.goto(url,timeout=timeout)
         except BrowserError as e:
             self.logger.error(f"Failed to navigate to {url}: {str(e)}")
+            raise
+
+    def get_page_viewport(self) -> t.Optional[t.Dict[str, int]]:
+        """Get the viewport of the current page."""
+        try:
+            viewport = self.browser.get_page_viewport()
+            if viewport is not None:
+                return viewport
+        except BrowserError as e:
+            self.logger.error(f"Failed to get page viewport: {str(e)}")
             raise
 
     def back(self) -> None:
@@ -136,12 +144,12 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to select option '{value}' from element with selector '{selector}': {str(e)}")
             raise
 
-    def scroll(self, direction: ScrollDirection, amount: int) -> None:
+    def scroll(self, direction: str, amount: int) -> None:
         """Scroll the page."""
         try:
             self.browser.scroll(direction, amount)
         except BrowserError as e:
-            self.logger.error(f"Failed to scroll {direction.value} by {amount} pixels: {str(e)}")
+            self.logger.error(f"Failed to scroll {direction} by {amount} pixels: {str(e)}")
             raise
 
     def scroll_to_element(self, selector: str, selector_type: str = "css") -> None:
@@ -176,10 +184,10 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to close current tab: {str(e)}")
             raise
 
-    def take_screenshot(self, path: Path) -> None:
+    def take_screenshot(self, path: Path,full_page:bool=True) -> None:
         """Capture a screenshot of the current page."""
         try:
-            self.browser.take_screenshot(path)
+            self.browser.take_screenshot(path,full_page=full_page)
         except BrowserError as e:
             self.logger.error(f"Failed to take screenshot and save to {path}: {str(e)}")
             raise
@@ -207,13 +215,21 @@ class BrowserManager(WithLogger):
         except BrowserError as e:
             self.logger.error(f"Failed to get attribute '{attribute}' for element with selector '{selector}': {str(e)}")
             raise
-    
+
     def get_element_text(self, selector: str, selector_type: str = "css") -> t.Optional[str]:
         """Get the text content of a specific element."""
         try:
             return self.browser.get_element_text(selector, selector_type)
         except BrowserError as e:
             self.logger.error(f"Failed to get text for element with selector '{selector}': {str(e)}")
+            raise
+
+    def get_page_details(self)->t.Dict[str,t.Any]:
+        """Get the details of the current page."""
+        try:
+            return self.browser.get_page_details()
+        except BrowserError as e:
+            self.logger.error(f"Failed to get page details: {str(e)}")
             raise
 
     def __str__(self) -> str:

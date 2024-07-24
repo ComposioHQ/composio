@@ -1,3 +1,9 @@
 from .get_screenshot import GetScreenshot
-
-__all__ = ["GetScreenshot"]
+from .get_element_details import GetElementDetails
+from .get_page_details import GetPageDetails
+from .navigate_history import NavigateHistory
+from .refresh_page import RefreshPage
+from .scroll_page import ScrollPage
+from .type_text import TypeText
+from .click_element import ClickElement
+from .goto_page import GotoPage

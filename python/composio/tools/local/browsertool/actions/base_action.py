@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Type
+from typing import Optional, Type, Dict
 
 from pydantic import BaseModel, Field
 
@@ -30,9 +30,21 @@ class BaseBrowserResponse(BaseModel):
         default=None,
         description="Error message if the action failed",
     )
-    current_url: str = Field(
-        default="",
+    current_url: Optional[str] = Field(
+        default=None,
         description="Current URL of the browser.",
+    )
+    viewport: Optional[Dict[str, Optional[int]]] = Field(
+        default=None,
+        description="Current viewport size of the browser window.",
+    )
+    scroll_position: Optional[Dict[str, Optional[int]]] = Field(
+        default=None,
+        description="Current scroll position of the page.",
+    )
+    page_dimensions: Optional[Dict[str, Optional[int]]] = Field(
+        default=None,
+        description="Total dimensions of the page content.",
     )
 
 
@@ -64,12 +76,65 @@ class BaseBrowserAction(Action, ABC):
             resp = self.execute_on_browser_manager(
                 browser_manager=browser_manager, request_data=request_data
             )
-            resp.current_url = browser_manager.browser.current_url
+            current_url = None
+            if browser_manager:
+                if browser_manager.browser:
+                    if browser_manager.browser.page:
+                        current_url = browser_manager.browser.page.url
+                    else:
+                        current_url = browser_manager.browser.current_url
+            resp.current_url = current_url
+            # Get viewport size
+            viewport = browser_manager.browser.get_page_viewport()
+            resp.viewport = {k: v or None for k, v in viewport.items()} if viewport else None
+            
+            # Get scroll position
+            scroll_position = browser_manager.browser.page.evaluate("""
+                () => ({
+                    x: window.pageXOffset,
+                    y: window.pageYOffset
+                })
+            """)
+            resp.scroll_position = {k: v or None for k, v in scroll_position.items()} if scroll_position else None
+            
+            # Get total page dimensions
+            page_dimensions = browser_manager.browser.page.evaluate("""
+                () => ({
+                    width: Math.max(
+                        document.body.scrollWidth,
+                        document.documentElement.scrollWidth,
+                        document.body.offsetWidth,
+                        document.documentElement.offsetWidth,
+                        document.body.clientWidth,
+                        document.documentElement.clientWidth
+                    ),
+                    height: Math.max(
+                        document.body.scrollHeight,
+                        document.documentElement.scrollHeight,
+                        document.body.offsetHeight,
+                        document.documentElement.offsetHeight,
+                        document.body.clientHeight,
+                        document.documentElement.clientHeight
+                    )
+                })
+            """)
+            resp.page_dimensions = {k: v or None for k, v in page_dimensions.items()} if page_dimensions else None
+            
             return resp
         except Exception as e:
             error_message = f"An error occurred while executing the browser action: {str(e)}"
             self.logger.error(error_message, exc_info=True)
+            current_url = None
+            if browser_manager:
+                if browser_manager.browser:
+                    if browser_manager.browser.page:
+                        current_url = browser_manager.browser.page.url
+                    else:
+                        current_url = browser_manager.browser.current_url
             return self._response_schema(
                 error=error_message,
-                current_url=browser_manager.browser.current_url if browser_manager and browser_manager.browser else ""
+                current_url=current_url,
+                viewport=None,
+                scroll_position=None,
+                page_dimensions=None
             )

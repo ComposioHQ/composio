@@ -8,7 +8,6 @@ from typing import Optional, Dict, Any
 
 from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse, SelectorType
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.env.browsermanager.browser import BrowserError
 
 
 class GetElementDetailsRequest(BaseBrowserRequest):
@@ -44,41 +43,35 @@ class GetElementDetails(BaseBrowserAction):
         request_data: GetElementDetailsRequest
     ) -> GetElementDetailsResponse:
         """Execute the get element details action."""
-        try:
-            # Find the element
-            element = browser_manager.find_element(request_data.selector, request_data.selector_type.value)
+        # Find the element
+        element = browser_manager.find_element(request_data.selector, request_data.selector_type.value)
             
-            if element is None:
-                return GetElementDetailsResponse(success=False, element_found=False)
-            
-            # Get element details
-            details = browser_manager.execute_script("""
-                function getElementDetails(element) {
-                    const rect = element.getBoundingClientRect();
-                    return {
-                        tagName: element.tagName.toLowerCase(),
-                        id: element.id,
-                        className: element.className,
-                        text: element.textContent.trim(),
-                        value: element.value,
-                        isVisible: window.getComputedStyle(element).display !== 'none',
-                        attributes: Object.fromEntries([...element.attributes].map(attr => [attr.name, attr.value])),
-                        position: {
-                            x: rect.left,
-                            y: rect.top
-                        },
-                        size: {
-                            width: rect.width,
-                            height: rect.height
-                        }
-                    };
-                }
-                return getElementDetails(arguments[0]);
-            """, element)
-
-            return GetElementDetailsResponse(success=True, element_found=True, details=details)
+        if element is None:
+            return GetElementDetailsResponse(success=False, element_found=False)
         
-        except BrowserError as e:
-            return GetElementDetailsResponse(success=False, element_found=False, error=f"Browser error while getting element details: {str(e)}")
-        except Exception as e:
-            return GetElementDetailsResponse(success=False, element_found=False, error=f"Unexpected error while getting element details: {str(e)}")
+        # Get element details
+        details = browser_manager.execute_script("""
+            function getElementDetails(element) {
+                const rect = element.getBoundingClientRect();
+                return {
+                    tagName: element.tagName.toLowerCase(),
+                    id: element.id,
+                    className: element.className,
+                    text: element.textContent.trim(),
+                    value: element.value,
+                    isVisible: window.getComputedStyle(element).display !== 'none',
+                    attributes: Object.fromEntries([...element.attributes].map(attr => [attr.name, attr.value])),
+                    position: {
+                        x: rect.left,
+                        y: rect.top
+                    },
+                    size: {
+                        width: rect.width,
+                        height: rect.height
+                    }
+                };
+            }
+            return getElementDetails(arguments[0]);
+        """, element)
+
+        return GetElementDetailsResponse(success=True, element_found=True, details=details)

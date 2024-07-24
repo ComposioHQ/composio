@@ -39,29 +39,12 @@ class RefreshPage(BaseBrowserAction):
         request_data: RefreshPageRequest
     ) -> RefreshPageResponse:
         """Execute the refresh page action."""
-        previous_url = None
-        try:
-            previous_url = browser_manager.browser.current_url
-            browser_manager.refresh(ignore_cache=request_data.ignore_cache)
-            new_url = browser_manager.browser.current_url
-            
-            return RefreshPageResponse(
-                success=True,
-                previous_url=previous_url,
-                new_url=new_url if new_url != previous_url else None,
-                current_url=new_url
-            )
-        except BrowserError as e:
-            return RefreshPageResponse(
-                success=False,
-                error=f"Browser error while refreshing page: {str(e)}",
-                previous_url=previous_url,
-                current_url=browser_manager.browser.current_url
-            )
-        except Exception as e:
-            return RefreshPageResponse(
-                success=False,
-                error=f"Unexpected error while refreshing page: {str(e)}",
-                previous_url=previous_url,
-                current_url=browser_manager.browser.current_url
-            )
+        previous_url = browser_manager.browser.current_url
+        browser_manager.refresh(ignore_cache=request_data.ignore_cache)
+        new_url = browser_manager.browser.current_url            
+        return RefreshPageResponse(
+            success=True,
+            previous_url=previous_url,
+            new_url=new_url if new_url != previous_url else None,
+            current_url=new_url
+        )

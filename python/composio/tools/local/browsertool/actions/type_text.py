@@ -7,7 +7,6 @@ from typing import Optional
 
 from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse, SelectorType
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.env.browsermanager.browser import BrowserError, ScrollDirection
 
 class TypeTextRequest(BaseBrowserRequest):
     """Request schema for typing text into an element."""
@@ -45,49 +44,45 @@ class TypeText(BaseBrowserAction):
         request_data: TypeTextRequest
     ) -> TypeTextResponse:
         """Execute the type text action."""
-        try:
-            # First, check if the element exists
-            element = browser_manager.browser.find_element(request_data.selector, request_data.selector_type.value)
-            if element is None:
-                return TypeTextResponse(success=False, element_found=False, error="Element not found")
 
-            # Check if the element is visible and enabled
-            is_visible = browser_manager.browser.execute_script("return arguments[0].offsetParent !== null;", element)
-            is_enabled = browser_manager.browser.execute_script("return !arguments[0].disabled;", element)
+        # First, check if the element exists
+        element = browser_manager.browser.find_element(request_data.selector, request_data.selector_type.value)
+        if element is None:
+            return TypeTextResponse(success=False, element_found=False, error="Element not found")
 
-            if not is_visible or not is_enabled:
-                return TypeTextResponse(
-                    success=False,
-                    element_found=True,
-                    is_visible=is_visible,
-                    is_enabled=is_enabled,
-                    error="Element is not interactable"
-                )
+        # Check if the element is visible and enabled
+        is_visible = browser_manager.browser.execute_script("return arguments[0].offsetParent !== null;", element)
+        is_enabled = browser_manager.browser.execute_script("return !arguments[0].disabled;", element)
 
-            # Scroll the element into view
-            browser_manager.browser.scroll_to_element(request_data.selector, request_data.selector_type.value)
-
-            # Clear existing text if requested
-            if request_data.clear_existing:
-                browser_manager.browser.clear(request_data.selector, request_data.selector_type.value)
-
-            # Attempt to type text into the element
-            browser_manager.browser.type(request_data.selector, request_data.text, request_data.selector_type.value)
-
-            # Verify the text was typed correctly
-            final_value = browser_manager.browser.get_element_attribute(request_data.selector, "value", request_data.selector_type.value)
-            if final_value is None:
-                final_value = browser_manager.browser.get_element_text(request_data.selector, request_data.selector_type.value)
-
+        if not is_visible or not is_enabled:
             return TypeTextResponse(
-                success=True,
+                success=False,
                 element_found=True,
-                text_typed=request_data.text,
-                final_element_value=final_value,
                 is_visible=is_visible,
-                is_enabled=is_enabled
+                is_enabled=is_enabled,
+                error="Element is not interactable"
             )
-        except BrowserError as e:
-            return TypeTextResponse(success=False, element_found=True, error=f"Browser error while typing text: {str(e)}")
-        except Exception as e:
-            return TypeTextResponse(success=False, element_found=True, error=f"Unexpected error while typing text: {str(e)}")
+
+        # Scroll the element into view
+        browser_manager.browser.scroll_to_element(request_data.selector, request_data.selector_type.value)
+
+        # Clear existing text if requested
+        if request_data.clear_existing:
+            browser_manager.browser.clear(request_data.selector, request_data.selector_type.value)
+
+        # Attempt to type text into the element
+        browser_manager.browser.type(request_data.selector, request_data.text, request_data.selector_type.value)
+
+        # Verify the text was typed correctly
+        final_value = browser_manager.browser.get_element_attribute(request_data.selector, "value", request_data.selector_type.value)
+        if final_value is None:
+            final_value = browser_manager.browser.get_element_text(request_data.selector, request_data.selector_type.value)
+
+        return TypeTextResponse(
+            success=True,
+            element_found=True,
+            text_typed=request_data.text,
+            final_element_value=final_value,
+            is_visible=is_visible,
+            is_enabled=is_enabled
+        )

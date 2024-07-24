@@ -10,7 +10,6 @@ import os
 
 from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.env.browsermanager.browser import BrowserError
 
 class GetScreenshotRequest(BaseBrowserRequest):
     """Request schema for getting a screenshot."""
@@ -21,7 +20,7 @@ class GetScreenshotRequest(BaseBrowserRequest):
     output_path: str = Field(default="", description="""Optional path to save the screenshot. 
                             If not provided, a default path will be used.
                             Example: '/path/to/save/screenshot.png'""")
-
+    full_page: bool = Field(default=True, description="Whether to take a full page screenshot or just the visible area.")
 
 class GetScreenshotResponse(BaseBrowserResponse):
     """Response schema for getting a screenshot."""
@@ -58,9 +57,7 @@ class GetScreenshot(BaseBrowserAction):
                 output_path = browser_media_dir / f"screenshot_{random_string}.png"
             else:
                 output_path = Path(request_data.output_path)
-            browser_manager.take_screenshot(output_path)
+            browser_manager.take_screenshot(output_path,full_page=request_data.full_page)
             return GetScreenshotResponse(screenshot_path=str(output_path), success=True)
-        except BrowserError as e:
-            return GetScreenshotResponse(screenshot_path="", success=False, error=f"Browser error while taking screenshot: {str(e)}")
         except Exception as e:
             return GetScreenshotResponse(screenshot_path="", success=False, error=f"Unexpected error while taking screenshot: {str(e)}")

@@ -8,8 +8,12 @@ from typing import Optional
 
 from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse, SelectorType
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.env.browsermanager.browser import BrowserError, ScrollDirection
 
+class ScrollDirection(str, Enum):
+    UP = "up"
+    DOWN = "down"
+    LEFT = "left"
+    RIGHT = "right"
 
 class ScrollType(str, Enum):
     PIXELS = "pixels"
@@ -19,9 +23,9 @@ class ScrollType(str, Enum):
 class ScrollPageRequest(BaseBrowserRequest):
     """Request schema for scrolling the page."""
 
-    scroll_type: ScrollType = Field(..., description="Type of scroll action: 'pixels' or 'element'")
-    direction: ScrollDirection = Field(..., description="Direction to scroll: 'up', 'down', 'left', or 'right'")
-    amount: Optional[int] = Field(default=None, description="Number of pixels to scroll (required for 'pixels' scroll type)")
+    scroll_type: ScrollType = Field(default=ScrollType.PIXELS, description="Type of scroll action: 'pixels' or 'element'")
+    direction: ScrollDirection = Field(default=ScrollDirection.DOWN, description="Direction to scroll: 'up', 'down', 'left', or 'right'")
+    amount: Optional[int] = Field(default=200, description="Number of pixels to scroll (required for 'pixels' scroll type)")
     selector: Optional[str] = Field(default=None, description="Selector of the element to scroll to (required for 'element' scroll type)")
     selector_type: SelectorType = Field(default=SelectorType.CSS, description="Type of selector to use for element scrolling")
 
@@ -51,18 +55,12 @@ class ScrollPage(BaseBrowserAction):
         request_data: ScrollPageRequest
     ) -> ScrollPageResponse:
         """Execute the scroll page action."""
-        try:
-            if request_data.scroll_type == ScrollType.PIXELS:
-                return self._scroll_by_pixels(browser_manager, request_data)
-            elif request_data.scroll_type == ScrollType.ELEMENT:
-                return self._scroll_to_element(browser_manager, request_data)
-            else:
-                raise ValueError(f"Invalid scroll type: {request_data.scroll_type}")
-
-        except BrowserError as e:
-            return ScrollPageResponse(success=False, error=f"Browser error while scrolling: {str(e)}")
-        except Exception as e:
-            return ScrollPageResponse(success=False, error=f"Unexpected error while scrolling: {str(e)}")
+        if request_data.scroll_type == ScrollType.PIXELS:
+            return self._scroll_by_pixels(browser_manager, request_data)
+        elif request_data.scroll_type == ScrollType.ELEMENT:
+            return self._scroll_to_element(browser_manager, request_data)
+        else:
+            raise ValueError(f"Invalid scroll type: {request_data.scroll_type}")
 
     def _scroll_by_pixels(self, browser_manager: BrowserManager, request_data: ScrollPageRequest) -> ScrollPageResponse:
         if request_data.amount is None:

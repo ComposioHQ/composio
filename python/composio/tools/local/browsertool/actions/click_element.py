@@ -7,7 +7,6 @@ from typing import Optional
 
 from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse, SelectorType
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.env.browsermanager.browser import BrowserError, ScrollDirection
 
 class ClickElementRequest(BaseBrowserRequest):
     """Request schema for clicking an element."""
@@ -42,26 +41,22 @@ class ClickElement(BaseBrowserAction):
         request_data: ClickElementRequest
     ) -> ClickElementResponse:
         """Execute the click element action."""
-        try:
-            # First, check if the element exists
-            element = browser_manager.find_element(request_data.selector, request_data.selector_type.value)
-            element_found = element is not None
-            scrolled_into_view = False
+        
+        # First, check if the element exists
+        element = browser_manager.find_element(request_data.selector, request_data.selector_type.value)
+        element_found = element is not None
+        scrolled_into_view = False
 
-            if element_found:
-                # Scroll the element into view before clicking
-                try:
-                    browser_manager.scroll_to_element(request_data.selector, request_data.selector_type.value)
-                    scrolled_into_view = True
-                except BrowserError as scroll_error:
-                    return ClickElementResponse(success=False, element_found=True, scrolled_into_view=False, error=f"Error scrolling to element: {str(scroll_error)}")
+        if element_found:
+            # Scroll the element into view before clicking
+            try:
+                browser_manager.scroll_to_element(request_data.selector, request_data.selector_type.value)
+                scrolled_into_view = True
+            except Exception as scroll_error:
+                return ClickElementResponse(success=False, element_found=True, scrolled_into_view=False, error=f"Error scrolling to element: {str(scroll_error)}")
 
-                # Now attempt to click the element
-                browser_manager.click(request_data.selector, request_data.selector_type.value)
-                return ClickElementResponse(success=True, element_found=True, scrolled_into_view=True)
-            else:
-                return ClickElementResponse(success=False, element_found=False, scrolled_into_view=False)
-        except BrowserError as e:
-            return ClickElementResponse(success=False, element_found=False, scrolled_into_view=False, error=f"Browser error while clicking element: {str(e)}")
-        except Exception as e:
-            return ClickElementResponse(success=False, element_found=False, scrolled_into_view=False, error=f"Unexpected error while clicking element: {str(e)}")
+            # Now attempt to click the element
+            browser_manager.click(request_data.selector, request_data.selector_type.value)
+            return ClickElementResponse(success=True, element_found=True, scrolled_into_view=True)
+        else:
+            return ClickElementResponse(success=False, element_found=False, scrolled_into_view=False)
