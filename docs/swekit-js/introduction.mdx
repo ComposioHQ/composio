@@ -1,0 +1,127 @@
+---
+title: "SWE Development Kit"
+sidebarTitle: "Introduction"
+icon: "code"
+description: "Build and benchmark Software Engineering agents with Composio's tooling ecosystem using JavaScript"
+---
+
+## Overview
+
+SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. 
+It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell Manager, and more.
+
+## Key Features
+
+- **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like CrewAI, LlamaIndex, and more.
+- **Flexible Workspace Environments**: Run your agents in various environments including Docker, E2B, and FlyIO for security and isolation.
+- **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
+- **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
+
+## Getting Started
+
+<Steps>
+<Step title="Installation">
+  Install Compsoio core CLI packages using your favourite package manager.
+  
+  <Tabs>
+    <Tab title="pnpm (recommended)">
+        <CodeGroup>
+        ```bash Installing Composio Core Package
+        pnpm install -g composio-core
+        ```
+        </CodeGroup>
+    </Tab>
+    <Tab title="npm">
+       <CodeGroup>
+        ```bash Installing Composio Core Package
+        npm install -g composio-core
+        ```
+        </CodeGroup>
+    </Tab>
+    <Tab title="yarn">
+       <CodeGroup>
+        ```bash Installing Composio Core Package
+        yarn install -g composio-core
+        ```
+        </CodeGroup>
+    </Tab>
+  </Tabs>
+</Step>
+
+<Step title="Connect your Github Account">
+  In Case, you want to use Github Issues as a source of tasks, you need to connect your Github account.
+  <CodeGroup>
+  ```bash Use Github Auth Token
+  export GITHUB_ACCESS_TOKEN=<your_token>
+  ```
+  </CodeGroup>
+</Step>
+
+
+<Step title="Clone SWE Template for JS">
+  To quickly get started, clone the template from github using below command
+  <CodeGroup>
+  ```bash Clon and setup SWE Template
+  git clone https://github.com/ComposioHQ/swe-js-template.git swe-js
+  ```
+  </CodeGroup>
+    
+  This will a new agent in `swe-js` with key files:
+  - `src/app.ts`: Entry point to run the agent
+  - `src/prompts.ts`: Agent prompts
+  - `src/agents/swe`: Agent definations
+</Step>
+
+<Step title="Install all the dependencies">
+  Install all the required dependencies for SWE agent
+    <Tabs>
+    <Tab title="pnpm (recommended)">
+        <CodeGroup>
+        ```bash Install all the dependencies
+        cd swe-js && pnpm i
+        ```
+        </CodeGroup>
+    </Tab>
+    <Tab title="npm">
+       <CodeGroup>
+        ```bash Install all the dependencies
+        cd swe-js && npm i
+        ```
+        </CodeGroup>
+    </Tab>
+    <Tab title="yarn">
+       <CodeGroup>
+        ```bash Install all the dependencies
+        cd swe-js && yarn install
+        ```
+        </CodeGroup>
+    </Tab>
+  </Tabs>
+
+</Step>
+
+<Step title="Run your SWE agnet">
+  To start the agent, just run the following command
+  <CodeGroup>
+  ```bash Run the agent
+  pnpm start
+  ```
+  </CodeGroup>
+  
+  You'll be prompted for the repository name and issue to work on.
+</Step>
+</Steps>
+
+## Next Steps
+
+- Explore different workspace environments
+- Learn how to run benchmarks
+- Customize your agent's behavior
+
+For more detailed information on these topics, check out the following sections.
+
+#### Other Sections
+
+- Workspace Environments
+- Running the Benchmark
+- Development Guide
