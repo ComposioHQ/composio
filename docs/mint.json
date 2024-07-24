@@ -158,6 +158,7 @@
       "pages": [
         "swekit/introduction",
         "swekit/workspace-env",
+        "swekit/custom-tools",
         "swekit/benchmarks"
       ]
     },
