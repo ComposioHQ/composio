@@ -13,7 +13,7 @@ const llm = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 const composioToolset = new OpenAIToolSet({ workspaceEnv: ExecEnv.DOCKER });
 
 export async function initSWEAgent() {
-    let tools = await composioToolset.getTools({
+    let tools = await composioToolset.get_tools({
         apps: [
             "filetool",
             "fileedittool",
