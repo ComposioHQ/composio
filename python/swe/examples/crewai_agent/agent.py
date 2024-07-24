@@ -84,7 +84,6 @@ crew = Crew(
     agents=[agent],
     tasks=[task],
     process=Process.sequential,
-    full_output=True,
     verbose=True,
     cache=False,
     memory=True,

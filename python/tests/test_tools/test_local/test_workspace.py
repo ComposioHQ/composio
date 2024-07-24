@@ -94,7 +94,6 @@ def _check_output(output: dict) -> None:
 #     assert False
 
 
-@pytest.mark.skip
 def test_workspace() -> None:
     """Test workspace tools."""
     tempdir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
@@ -102,10 +101,21 @@ def test_workspace() -> None:
     allow_clone_without_repo = os.environ.get("ALLOW_CLONE_WITHOUT_REPO")
     os.environ["ALLOW_CLONE_WITHOUT_REPO"] = "true"
     os.chdir(tempdir.name)
+    logger = get_logger()
     try:
         toolset = ComposioToolSet(
             workspace_config=WorkspaceType.Host(),
         )
+        # output = toolset.execute_action(
+        #     action=Action.FILETOOL_EDIT_FILE,
+        #     params={"file_path": "/Users/karanvaidya/codes/composio_sdk/python/swe/examples/crewai_agent/compiler.py", "start_line": 19, "end_line": 19, "text": "FORCE = object() #added data"},
+        # )
+        output = toolset.execute_action(
+            action=Action.FILETOOL_EDIT_FILE,
+            params={"file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py", "start_line": 307, "end_line": 307, "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc"},
+        )
+        logger.info(f"output of edit file: {output}")
+        assert False
         _check_output(
             output=toolset.execute_action(
                 action=Action.SHELL_EXEC_COMMAND,
@@ -122,7 +132,6 @@ def test_workspace() -> None:
             action=Action.FILEEDITTOOL_OPEN_FILE,
             params={"file_name": "random_file.txt"},
         )
-        logger = get_logger()
         logger.info("output of open wrong file", output)
         output_open_file = toolset.execute_action(
             action=Action.FILETOOL_OPEN_FILE,
