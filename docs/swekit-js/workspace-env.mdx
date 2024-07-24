@@ -41,7 +41,7 @@ SWE Development Kit (swekit) supports various workspace environments to run your
 
 When configuring your workspace environment, consider the following customizable parameters to tailor the environment to your SWE agents' needs:
 
-- **`GITHUB_ACCESS_TOKEN`**: Optional. This token is used for GitHub operations. Use `GITHUB_ACCESS_TOKEN` environment variable to provide it.
+- **`GITHUB_ACCESS_TOKEN`**: Optional. This token is used for GitHub operations. Use `export GITHUB_ACCESS_TOKEN=<github_access_token>` environment variable to provide it.
 - **`environment`**: Optional. A set of key-value pairs representing environment variables specific to the workspace's needs.
 - **`persistent`**: A boolean flag, when set to `True`, ensures that the workspace persists beyond the execution of an agent. This is particularly useful for scenarios where you want your agent to deploy a service, such as a website, and require that the service remains active and accessible after the agent's task is complete.
 - **`ports`**: Optional. A dictionary specifying the port mappings for services that need to be publicly accessible. For example, if your agent is running a web server, you can map the internal port to an external one to allow public access.
@@ -56,9 +56,7 @@ For enhanced security and isolation, use Docker:
 import { OpenAIToolset, Workspace } from "composio-core"
 
 toolset = new OpenAIToolset({
-    workspaceConfig: Workspace.Docker({
-
-    })
+    workspaceConfig: Workspace.Docker({})
 })
 ```
 </CodeGroup>
@@ -87,9 +85,7 @@ To use E2B sandboxes for cloud-based execution:
 import { OpenAIToolset, Workspace } from "composio-core"
 
 toolset = new OpenAIToolset({
-    workspaceConfig: Workspace.E2B({
-
-    })
+    workspaceConfig: Workspace.E2B({})
 })
 ```
 </CodeGroup>
@@ -103,7 +99,7 @@ toolset = new OpenAIToolset({
 You can customize the workspace environment by adding environment variables while creating workspace.
 <CodeGroup>
 ``` javascript Add environment variables to workspace
-composio_toolset = OpenAIToolset({
+composio_toolset = new OpenAIToolset({
     workspaceConfig: WorkspaceType.Docker({
         environment: {
             "SOME_API_TOKEN": "<SOME_API_TOKEN>",
