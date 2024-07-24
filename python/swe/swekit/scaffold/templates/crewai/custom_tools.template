@@ -12,4 +12,5 @@ def say(message: str) -> str:
     :param message: Message string
     :return greeting: Formatted message.
     """
+    import cowsay
     return cowsay.get_output_string("cow", message)
