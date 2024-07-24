@@ -287,4 +287,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/1721740556")
+    get_score(logs_dir="/Users/karanvaidya/.composio_coder/logs/1721819092")

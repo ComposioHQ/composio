@@ -18,7 +18,7 @@ service ssh restart
 # Install composio in dev mode if `COMPOSIO_DEV_MODE` is set to 1
 if [ "$COMPOSIO_DEV_MODE" = 1 ]; then
     # Install composio-core in editable mode
-    pip install -e /opt/composio-core
+    pip install -e /opt/composio-core[all]
 fi
 
 # Update apps

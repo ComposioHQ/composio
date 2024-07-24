@@ -71,8 +71,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
 
   async getTools(filters: {
     apps: Sequence<string>;
-    tags: Optional<Array<string>>;
-    useCase: Optional<string>;
+    tags?: Optional<Array<string>>;
+    useCase?: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
     return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
@@ -100,8 +100,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
 
   async get_tools(filters: {
     apps: Sequence<string>;
-    tags: Optional<Array<string>>;
-    useCase: Optional<string>;
+    tags?: Optional<Array<string>>;
+    useCase?: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     console.warn("get_tools is deprecated, use getTools instead");
     return this.getTools(filters);

@@ -52,6 +52,9 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         }) || [];
     }
 
+    /**
+     * @deprecated Use getActions instead.
+     */
     async get_actions(filters: {
         actions?: Optional<Sequence<string>>
     } = {}, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
@@ -62,8 +65,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     async getTools(
         filters: {
             apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
@@ -82,10 +85,13 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         }) || [];
     }
 
+    /**
+     * @deprecated Use getTools instead.
+     */
     async get_tools(filters: {
         apps: Sequence<string>;
-        tags: Optional<Array<string>>;
-        useCase: Optional<string>;
+        tags?: Optional<Array<string>>;
+        useCase?: Optional<string>;
     }, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         console.warn("get_tools is deprecated, use getTools instead");
         return this.getTools(filters, entityId);
@@ -102,6 +108,9 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         ));
     }
 
+    /**
+     * @deprecated Use executeToolCall instead.
+     */
     async execute_tool_call(
         tool: OpenAI.ChatCompletionMessageToolCall,
         entityId: Optional<string> = null
@@ -123,6 +132,9 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return outputs;
     }
 
+    /**
+     * @deprecated Use handleToolCall instead.
+     */
     async handle_tool_call(
         chatCompletion: OpenAI.ChatCompletion,
         entityId: Optional<string> = null
@@ -151,6 +163,9 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return tool_outputs;
     }
 
+    /**
+     * @deprecated Use handleAssistantMessage instead.
+     */
     async handle_assistant_message(
         run: OpenAI.Beta.Threads.Run,
         entityId: Optional<string> = null
@@ -183,6 +198,9 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return run;
     }
 
+    /**
+     * @deprecated Use waitAndHandleAssistantToolCalls instead.
+     */
     async wait_and_handle_assistant_tool_calls(
         client: OpenAI,
         run: OpenAI.Beta.Threads.Run,

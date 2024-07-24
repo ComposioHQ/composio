@@ -6,7 +6,7 @@ import type CliProgress from "cli-progress";
 
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
 const ENV_COMPOSIO_SWE_AGENT = "COMPOSIO_SWE_AGENT";
-const DEFAULT_IMAGE = "angrybayblade/composio";
+const DEFAULT_IMAGE = "composio/composio";
 const DEFAULT_PORT = 54321;
 
 function getFreePort(): Promise<number> {
