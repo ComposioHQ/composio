@@ -1,6 +1,6 @@
-from agent import composio_toolset, crew
 from inputs import from_github
 
+from agent import composio_toolset, crew
 from composio import Action
 
 

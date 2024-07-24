@@ -219,15 +219,16 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _upload_workspace_tools(request: ToolUploadRequest) -> t.List[str]:
         """Get list of available developer tools."""
-        process = subprocess.run(
-            args=["pip", "install", *request.dependencies],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"Error installing dependencies: {process.stderr.decode()}"
+        if len(request.dependencies) > 0:
+            process = subprocess.run(
+                args=["pip", "install", *request.dependencies],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
+            if process.returncode != 0:
+                raise RuntimeError(
+                    f"Error installing dependencies: {process.stderr.decode()}"
+                )
 
         filename = md5(request.content.encode(encoding="utf-8")).hexdigest()
         tempfile = Path(tooldir.name, f"{filename}.py")
