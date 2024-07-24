@@ -94,7 +94,7 @@ def _check_output(output: dict) -> None:
 #     assert False
 
 
-@pytest.skip("skipping")
+@pytest.mark.skip
 def test_workspace() -> None:
     """Test workspace tools."""
     tempdir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with

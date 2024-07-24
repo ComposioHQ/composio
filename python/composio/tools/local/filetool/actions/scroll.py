@@ -27,7 +27,7 @@ class ScrollRequest(BaseFileRequest):
         default=0,
         description="""Unique ID for each scroll request.
         Enables consecutive scrolls in agentic frameworks that block same function calls consecutively.
-        Increment for each consecutive request.""",
+        Please increment and pass if you are calling this function consecutively.""",
     )
 
 
