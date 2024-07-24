@@ -1,24 +1,14 @@
-from email.mime import base
-import json
-import logging
-import os
-from pathlib import Path
 import typing as t
+from pathlib import Path
 
-from composio.tools.env.factory import WorkspaceType
-from composio.utils.logging import WithLogger
-from gymnasium import spec
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
 
-from swekit.benchmark.docker_utils.docker_file_generator.const import (
-    PYTHON_ENVIRONMENT_VERSIONS,
-)
-from swekit.benchmark.docker_utils.docker_file_generator.utils import (
-    get_environment_yml,
-    get_requirements,
-)
+from composio.utils.logging import WithLogger
+
+from swekit.benchmark.docker_utils.docker_file_generator.utils import get_requirements
+
 
 SCRIPTS_DIR = Path(__file__).parent / "scripts"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -38,7 +28,6 @@ def group_task_instances(task_instances):
 
 
 class DockerfileGenerator(WithLogger):
-
     def __init__(
         self,
         tasks: str,

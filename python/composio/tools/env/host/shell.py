@@ -6,13 +6,13 @@ import select
 import subprocess
 import time
 import typing as t
+from pathlib import Path
 
 import paramiko
 
 from composio.tools.env.base import Shell
 from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.id import generate_id
-from pathlib import Path
 
 
 _ANSI_ESCAPE = re.compile(
@@ -32,6 +32,7 @@ _ANSI_ESCAPE = re.compile(
 
 
 _DEV_SOURCE = Path("/home/user/.dev/bin/activate")
+
 
 # TODO: Execute in a virtual environment
 class HostShell(Shell):
@@ -64,7 +65,7 @@ class HostShell(Shell):
 
         # Load development environment if available
         if _DEV_SOURCE.exists():
-            self.logger.debug(f"Loading development environment")
+            self.logger.debug("Loading development environment")
             self.exec(f"source {_DEV_SOURCE}")
 
         # Setup environment
@@ -173,7 +174,7 @@ class SSHShell(Shell):
 
         # Load development environment if available
         if _DEV_SOURCE.exists():
-            self.logger.debug(f"Loading development environment")
+            self.logger.debug("Loading development environment")
             self.exec(f"source {_DEV_SOURCE}")
 
         # Setup environment

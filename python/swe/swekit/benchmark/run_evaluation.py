@@ -192,7 +192,7 @@ class EvaluationManager(WithLogger):
                 )
                 tag = repo.replace("/", "-") + "-" + issue["version"].replace(".", "-")
                 image_name = f"composio/swe:{tag}"
-                print (tag)
+                print(tag)
 
                 workspace_id = setup_workspace(
                     repo,

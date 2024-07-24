@@ -1,14 +1,14 @@
-from concurrent.futures import ThreadPoolExecutor
 import subprocess
 import typing as t
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from isort import file
 
 logs = Path.cwd() / "logs"
 logs.mkdir(exist_ok=True)
 
 errors = []
+
 
 def _build(file: Path, tag: str, *flags: str) -> None:
     """Build docker image."""
@@ -27,6 +27,7 @@ def _build(file: Path, tag: str, *flags: str) -> None:
     else:
         print(f"Error building {tag} - {logs / log}")
         errors.append(f"Error building {tag} - {logs / log}")
+
 
 def _base(generated: Path) -> None:
     """Build base images."""
@@ -63,15 +64,17 @@ def _swes(generated: Path) -> None:
 
         _ = [fut.result() for fut in futures]
 
+
 def _pyenv(file: t.Optional[Path] = None) -> None:
     print("Print building pyenv base")
     file = file or Path(__file__).parent / "templates" / "Dockerfile.pyenv"
     _build(file=file, tag="pyenv")
 
+
 def main(generated: t.Optional[Path] = None) -> None:
     """Build docker images for SWEKIT."""
     _pyenv()
-    
+
     generated = generated or Path.cwd() / "generated"
     _base(generated=generated)
     if len(errors) > 0:
@@ -82,6 +85,7 @@ def main(generated: t.Optional[Path] = None) -> None:
     _swes(generated=generated)
     print("==== Errors ====")
     print("\n".join(errors))
+
 
 if __name__ == "__main__":
     main()
