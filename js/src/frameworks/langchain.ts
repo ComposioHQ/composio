@@ -101,6 +101,9 @@ export class LangchainToolSet extends BaseComposioToolSet {
         ) as any;
     }
 
+    /**
+     * @deprecated Use getActions instead.
+     */
     async get_actions(filters: {
         actions?: Optional<Sequence<string>>
     } = {}, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
@@ -125,6 +128,9 @@ export class LangchainToolSet extends BaseComposioToolSet {
         );
     }
 
+    /**
+     * @deprecated Use getTools instead.
+     */
     async get_tools(filters: {
         apps: Sequence<string>;
         tags?: Optional<Array<string>>;
