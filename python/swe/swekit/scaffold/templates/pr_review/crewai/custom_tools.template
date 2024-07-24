@@ -1,6 +1,4 @@
-
 from composio import action
-
 
 # Use following example to add your own custom tools
 
@@ -13,4 +11,5 @@ def say(message: str) -> str:
     :return greeting: Formatted message.
     """
     import cowsay
+
     return cowsay.get_output_string("cow", message)
