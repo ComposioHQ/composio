@@ -1,8 +1,8 @@
 import typing as t
 from pathlib import Path
 
+import click
 from jinja2 import Environment, FileSystemLoader
-from pydantic import BaseModel, Field
 from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
 
 from composio.utils.logging import WithLogger
@@ -30,14 +30,14 @@ def group_task_instances(task_instances):
 class DockerfileGenerator(WithLogger):
     def __init__(
         self,
-        tasks: str,
+        dataset: str,
         author: str = "aorwall",
         outdir: str = "docker",
         predictions_path: t.Optional[str] = None,
     ):
         super().__init__()
         self.author = author
-        self.tasks = tasks
+        self.dataset = dataset
         self.outdir = Path(outdir)
         if not self.outdir.exists():
             self.outdir.mkdir()
@@ -60,7 +60,7 @@ class DockerfileGenerator(WithLogger):
         self.image_prefix = "swe-bench"
 
     def generate(self):
-        task_instances = get_eval_refs(data_path_or_name=self.tasks)
+        task_instances = get_eval_refs(data_path_or_name=self.dataset)
         task_instance_groups = group_task_instances(task_instances.values())
         for repo, versions in task_instance_groups.items():
             self.logger.info(f"Repo {repo} with {set(versions.keys())} versions")
@@ -183,39 +183,37 @@ def _repo_name(repo: str) -> str:
     return repo.replace("/", "__")
 
 
-class DockerGeneratorArgs(BaseModel):
-    swe_bench_tasks_path: str = Field(
-        ...,
-        description="Path to candidate task instances file",
-    )
-    author: str = Field(
-        ...,
-        description="Docker repository namespace",
-    )
-    prediction_path: str = Field(
-        ...,
-        description="Path to predictions file",
-    )
-    outdir: str = Field(
-        ...,
-        description="Path to docker directory",
-    )
-    is_testbed: bool = Field(
-        default=False,
-        description="if dockerfile needs to be genrated for testbed",
-    )
+@click.command(name="generate")
+@click.option(
+    "-d",
+    "--dataset",
+    type=str,
+    help="Name of the dataset.",
+    default="princeton-nlp/SWE-bench_Lite",
+)
+@click.option(
+    "-a",
+    "--author",
+    type=str,
+    help="Author name for the images.",
+    default="composio",
+)
+@click.option(
+    "-o",
+    "--output",
+    "outdir",
+    type=str,
+    help="Output directory for the generated images",
+    default="./generated",
+)
+def generate(dataset: str, author: str, outdir: str) -> None:
+    """Generate Dockerfiles for SWE-Bench."""
+    DockerfileGenerator(
+        dataset=dataset,
+        author=author,
+        outdir=outdir,
+    ).generate()
 
 
 if __name__ == "__main__":
-    args = DockerGeneratorArgs(
-        swe_bench_tasks_path="princeton-nlp/SWE-bench_Lite",
-        author="composio",
-        prediction_path="",
-        outdir="./dockerfiles/generated/",
-    )
-    generator = DockerfileGenerator(
-        tasks=args.swe_bench_tasks_path,
-        author=args.author,
-        outdir=args.outdir,
-    )
-    generator.generate()
+    generate()

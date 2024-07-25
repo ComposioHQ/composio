@@ -3,6 +3,8 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import click
+
 
 logs = Path.cwd() / "logs"
 logs.mkdir(exist_ok=True)
@@ -15,7 +17,7 @@ def _build(file: Path, tag: str, *flags: str) -> None:
     log = f"composio_swe_{tag}.stderr"
     tag = f"composio/swe:{tag}"
 
-    print(f"Starting build for {tag}")
+    print(f"Starting build for {tag} @ {file}")
     with open(logs / log, "w+", encoding="utf-8") as stderr:
         process = subprocess.run(
             ["docker", "build", str(file.parent), "-f", str(file), "-t", tag, *flags],
@@ -71,11 +73,17 @@ def _pyenv(file: t.Optional[Path] = None) -> None:
     _build(file=file, tag="pyenv")
 
 
-def main(generated: t.Optional[Path] = None) -> None:
+@click.command(name="build")
+@click.argument(
+    "generated",
+    type=str,
+    default="./generated",
+)
+def build(generated: Path) -> None:
     """Build docker images for SWEKIT."""
     _pyenv()
 
-    generated = generated or Path.cwd() / "generated"
+    generated = Path(generated or Path.cwd() / "generated").resolve()
     _base(generated=generated)
     if len(errors) > 0:
         print("==== Errors ====")
@@ -88,4 +96,4 @@ def main(generated: t.Optional[Path] = None) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    build()

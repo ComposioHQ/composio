@@ -3774,8 +3774,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            value = value().get_tool_merged_action_name() # type: ignore
-        super().__init__(value=value) # type: ignore
+            value = value().get_tool_merged_action_name()  # type: ignore
+        super().__init__(value=value)  # type: ignore
 
     @property
     def name(self) -> str:
