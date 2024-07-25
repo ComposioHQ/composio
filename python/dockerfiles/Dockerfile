@@ -19,7 +19,10 @@ RUN /bin/python3 -m venv .composio/venv
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio
-RUN python -m pip install composio-core[all]==0.3.30 fastapi
+RUN python -m pip install composio-core[all]==0.3.30 fastapi playwright
+
+# Install playwright binaries
+RUN playwright install chromium
 
 # Setup user
 RUN useradd -rm -d /home/user -s /bin/bash -g root -G sudo -u 1000 user
