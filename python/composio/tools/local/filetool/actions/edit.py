@@ -69,6 +69,8 @@ class EditFile(BaseFileAction):
     and modify the edit command you issue accordingly. Issuing the same command
     a second time will just lead to the same error message again.
 
+    If a lint error occurs, the edit will not be applied. Review the error message,
+    adjust your edit accordingly, and try again.
     Raises:
         - FileNotFoundError: If the file does not exist.
         - PermissionError: If the user does not have permission to edit the file.
