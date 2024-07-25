@@ -29,7 +29,7 @@ from composio_autogen import ComposioToolset, App, Action
 import os
 
 # Configuration for the language model
-llm_config = {"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]}
+llm_config = {"config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]}
 
 # Initialize the AssistantAgent
 chatbot = AssistantAgent(
@@ -66,7 +66,7 @@ composio_tools.register_tools(tools=[App.GITHUB], caller=chatbot, executor=user_
 Perform tasks like starring a repository on GitHub using the configured agent.
 
 ```python
-task = "Star a repo SamparkAI/docs on GitHub"
+task = "Star a repo composiohq/composio on GitHub"
 
 # Initiate the task
 response = user_proxy.initiate_chat(chatbot, message=task)
@@ -79,7 +79,7 @@ print(response.chat_history)
 Verify the task completion and response from the agent.
 
 ```bash
-[{'content': 'I have starred the repository "docs" for you on GitHub under the account "SamparkAI".', 'role': 'user'}, 
+[{'content': 'I have starred the repository "composio" for you on GitHub under the account "composiohq".', 'role': 'user'}, 
 {'content': '', 'role': 'assistant'}, {'content': 'TERMINATE', 'role': 'user'}]
 ```
 

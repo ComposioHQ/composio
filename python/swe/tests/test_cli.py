@@ -7,10 +7,11 @@ from unittest.mock import patch
 
 import click.testing
 from click.testing import CliRunner
-from composio_swe.cli import swe
-from composio_swe.config.context import Context, set_context
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
+
+from swekit.cli import swekit
+from swekit.config.context import Context, set_context
 
 
 # pylint: disable=unused-argument
@@ -76,7 +77,7 @@ class TestCLI(unittest.TestCase):
     def test_openai_setup(self):
         """Test the openai setup command."""
         with self.runner.isolated_filesystem():
-            result = self.runner.invoke(swe, ["setup"], input="openai\napi_key\n")
+            result = self.runner.invoke(swekit, ["setup"], input="openai\napi_key\n")
             self.handle_exception(result)
             self.assertIn("Model configuration saved", result.output)
             self.assertEqual(result.exit_code, 0)
@@ -85,7 +86,7 @@ class TestCLI(unittest.TestCase):
         """Test the azure setup command."""
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
-                swe, ["setup"], input="azure\napi_key\nend_point_url\n"
+                swekit, ["setup"], input="azure\napi_key\nend_point_url\n"
             )
             self.handle_exception(result)
             self.assertIn("Model configuration saved", result.output)
@@ -95,7 +96,7 @@ class TestCLI(unittest.TestCase):
         """Test the add_issue command."""
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
-                swe,
+                swekit,
                 ["add_issue"],
                 input="repo_name\nissue_id\nbase_commit_id\nissue_description\n",
                 env={"GITHUB_ACCESS_TOKEN": "DEFAULT-TOKEN"},
@@ -123,7 +124,7 @@ class TestCLI(unittest.TestCase):
 
             with patch("composio_coders.swe.CoderAgent.get_llm") as mock_get_llm:
                 mock_get_llm.return_value = FakeListLLM(responses=["Fake Response"])
-                result = self.runner.invoke(swe, ["solve"])
+                result = self.runner.invoke(swekit, ["solve"])
                 self.handle_exception(result)
                 mock_get_llm.assert_called_once()
                 self.assertEqual(result.exit_code, 0)
@@ -151,14 +152,14 @@ class TestCLI(unittest.TestCase):
 
             with patch("composio_coders.swe.CoderAgent.get_llm") as mock_get_llm:
                 mock_get_llm.return_value = FakeListLLM(responses=["Fake Response"])
-                result = self.runner.invoke(swe, ["solve"])
+                result = self.runner.invoke(swekit, ["solve"])
                 self.handle_exception(result)
                 mock_get_llm.assert_called_once()
                 self.assertEqual(result.exit_code, 0)
 
     def test_show_workflow(self):
         """Test the show_workflow command."""
-        result = self.runner.invoke(swe, ["workflow"])
+        result = self.runner.invoke(swekit, ["workflow"])
         self.handle_exception(result)
         self.assertIn("Workflow:", result.output)
         self.assertEqual(result.exit_code, 0)

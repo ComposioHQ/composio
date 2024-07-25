@@ -6,6 +6,8 @@ import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
 import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
+import { getEnvVariable } from '../utils/shared';
+import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
 
 export class Composio {
     public apiKey: string;
@@ -22,12 +24,12 @@ export class Composio {
     config: typeof OpenAPI;
 
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-        this.apiKey = apiKey || process.env.ENV_COMPOSIO_API_KEY || '';
+        this.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
         if (!this.apiKey) {
             throw new Error('API key is missing');
         }
 
-        this.baseUrl = baseUrl || this.getApiUrlBase();
+        this.baseUrl = baseUrl || Composio.getApiUrlBase();
         this.http = axios.create({
             baseURL: this.baseUrl,
             headers: {
@@ -39,8 +41,12 @@ export class Composio {
 
         this.config = {
             ...OpenAPI,
+            BASE: this.baseUrl,
             HEADERS: {
-                'X-API-Key': `${this.apiKey}`
+                'X-API-Key': `${this.apiKey}`,
+                'X-SOURCE': 'js_sdk',
+                // @ts-ignore
+                'X-RUNTIME': runtime
             }
         }
 
@@ -65,13 +71,13 @@ export class Composio {
         return response.data.client.id;
     }
 
-    private getApiUrlBase(): string {
-        return 'https://backend.composio.dev/api';
+    static getApiUrlBase(): string {
+        return getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) as string;
     }
 
     static async generateAuthKey(baseUrl?: string): Promise<string> {
         const http = axios.create({
-            baseURL: baseUrl || 'https://backend.composio.dev/api',
+            baseURL: baseUrl || this.getApiUrlBase(),
             headers: {
                 'Authorization': ''
             }
@@ -85,7 +91,7 @@ export class Composio {
 
     static async validateAuthSession(key: string, code: string, baseUrl?: string): Promise<string> {
         const http = axios.create({
-            baseURL: baseUrl || 'https://backend.composio.dev/api',
+            baseURL: baseUrl || this.getApiUrlBase(),
             headers: {
                 'Authorization': ''
             }
@@ -139,7 +145,9 @@ export class Entity {
             });
         } else {
             const connectedAccounts = await this.client.connectedAccounts.list({
-                user_uuid: this.id
+                user_uuid: this.id,
+                appNames: [action.appKey!],
+                status: 'ACTIVE'
             });
             if (connectedAccounts.items!.length === 0) {
                 throw new Error('No connected account found');

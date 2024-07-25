@@ -9,15 +9,15 @@ from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
-# Import embedtool from composio.local_tools
-from composio.local_tools import embedtool
+# Import embedtool from composio.tools.local
+from composio.tools.local import embedtool
 
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
 # Initialize a ComposioToolSet with the API key from environment variables
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
 tools = toolset.get_tools(apps=[App.EMBEDTOOL])
@@ -45,21 +45,25 @@ agent = FunctionCallingAgentWorker(
     verbose=True,  # Enable verbose output
 ).as_agent()
 
-# Define the images path and collection name
-collection_name = "animals"
-collection_path = "/path/to/the/chromadb/folder/in/your/working/directory"
-images_path = "/path/to/the/images"
-prompt = "horse"
+images_path = input("Enter the path to the images folder:")
+search_prompt = input("Enter the image description for the image you want to search:")
+top_no_of_images = int(
+    input(
+        "What number of images that are closest to the description that should be returned:"
+    )
+)  # returns n closest images to the search
 
+task_description = f"""
+    Check if a Vector Store exists for the image directory
+    If it doesn't create a vector store.
+    If it already exists, query the vector store
+    The images path and indexed directory is {images_path}
+    the prompt for the image to search is {search_prompt}
+    return the top {top_no_of_images} results.
+
+"""
 # Execute the task using the agent
-response = agent.chat(
-    "Create a vectorstore of name:"
-    + collection_name
-    + " using images in path:"
-    + images_path
-    + " and query the string:"
-    + query_string
-)
+response = agent.chat(task_description)
 
 # Print the response
 print("Response:", response)

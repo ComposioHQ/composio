@@ -1,5 +1,8 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
+import { ExecEnv } from "../env/factory";
+import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
+import { GetListActionsResponse } from "../sdk/client";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -17,25 +20,25 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       config: {
         apiKey?: Optional<string>,
         baseUrl?: Optional<string>,
-        entityId?: string
+        entityId?: string,
+        workspaceEnv: ExecEnv
       }
     ) {
         super(
             config.apiKey || null,
-            config.baseUrl || null,
+            config.baseUrl || COMPOSIO_BASE_URL,
             "openai",
-            config.entityId || "default"
+            config.entityId || "default",
+            config.workspaceEnv || ExecEnv.HOST
         );
     }
 
-    async get_actions(
-        filters: {
-            actions: Sequence<string>
-        }
+    async getActions(
+        filters: { actions?: Optional<Sequence<string>> } = {},
+        entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        return (await this.client.actions.list({})).items?.filter((a) => {
-            return filters.actions.includes(a!.name!);
-        }).map(action => {
+        const mainActions = await this.getActionsSchema(filters, entityId);
+        return mainActions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
                 description: action.description!,
@@ -49,19 +52,26 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         }) || [];
     }
 
-    async get_tools(
+    /**
+     * @deprecated Use getActions instead.
+     */
+    async get_actions(filters: {
+        actions?: Optional<Sequence<string>>
+    } = {}, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
+        console.warn("get_actions is deprecated, use getActions instead");
+        return this.getActions(filters, entityId);
+    }
+
+    async getTools(
         filters: {
             apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
-        }
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
+        },
+        entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        return (await this.client.actions.list({
-            apps: filters.apps.join(","),
-            tags: filters.tags?.join(","),
-            filterImportantActions: !filters.tags && !filters.useCase,
-            useCase: filters.useCase || undefined
-        })).items?.map(action => {
+        const mainActions = await this.getToolsSchema(filters, entityId);
+        return mainActions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
                 description: action.description!,
@@ -75,38 +85,72 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         }) || [];
     }
 
-    async execute_tool_call(
+    /**
+     * @deprecated Use getTools instead.
+     */
+    async get_tools(filters: {
+        apps: Sequence<string>;
+        tags?: Optional<Array<string>>;
+        useCase?: Optional<string>;
+    }, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
+        console.warn("get_tools is deprecated, use getTools instead");
+        return this.getTools(filters, entityId);
+    }
+
+    async executeToolCall(
         tool: OpenAI.ChatCompletionMessageToolCall,
         entityId: Optional<string> = null
     ): Promise<string> {
-        return JSON.stringify(await this.execute_action(
+        return JSON.stringify(await this.executeAction(
             tool.function.name,
             JSON.parse(tool.function.arguments),
             entityId || this.entityId
         ));
     }
 
-    async handle_tool_call(
+    /**
+     * @deprecated Use executeToolCall instead.
+     */
+    async execute_tool_call(
+        tool: OpenAI.ChatCompletionMessageToolCall,
+        entityId: Optional<string> = null
+    ): Promise<string> {
+        console.warn("execute_tool_call is deprecated, use executeToolCall instead");
+        return this.executeToolCall(tool, entityId);
+    }
+
+    async handleToolCall(
         chatCompletion: OpenAI.ChatCompletion,
         entityId: Optional<string> = null
     ): Promise<Sequence<string>> {
         const outputs = [];
         for (const message of chatCompletion.choices) {
             if (message.message.tool_calls) {
-                outputs.push(await this.execute_tool_call(message.message.tool_calls[0], entityId));
+                outputs.push(await this.executeToolCall(message.message.tool_calls[0], entityId));
             }
         }
         return outputs;
     }
 
-    async handle_assistant_message(
+    /**
+     * @deprecated Use handleToolCall instead.
+     */
+    async handle_tool_call(
+        chatCompletion: OpenAI.ChatCompletion,
+        entityId: Optional<string> = null
+    ): Promise<Sequence<string>> {
+        console.warn("handle_tool_call is deprecated, use handleToolCall instead");
+        return this.handleToolCall(chatCompletion, entityId);
+    }
+
+    async handleAssistantMessage(
         run: OpenAI.Beta.Threads.Run,
         entityId: Optional<string> = null
     ): Promise<Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput>> {
         const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
         const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> = await Promise.all(
             tool_calls.map(async (tool_call) => {
-                const tool_response = await this.execute_tool_call(
+                const tool_response = await this.executeToolCall(
                     tool_call as OpenAI.ChatCompletionMessageToolCall,
                     entityId || this.entityId
                 );
@@ -119,14 +163,25 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return tool_outputs;
     }
 
-    async wait_and_handle_assistant_tool_calls(
+    /**
+     * @deprecated Use handleAssistantMessage instead.
+     */
+    async handle_assistant_message(
+        run: OpenAI.Beta.Threads.Run,
+        entityId: Optional<string> = null
+    ): Promise<Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput>> {
+        console.warn("handle_assistant_message is deprecated, use handleAssistantMessage instead");
+        return this.handleAssistantMessage(run, entityId);
+    }
+
+    async waitAndHandleAssistantToolCalls(
         client: OpenAI,
         run: OpenAI.Beta.Threads.Run,
         thread: OpenAI.Beta.Threads.Thread,
         entityId: Optional<string> = null
     ): Promise<OpenAI.Beta.Threads.Run> {
         while (["queued", "in_progress", "requires_action"].includes(run.status)) {
-            const tool_outputs = await this.handle_assistant_message(run, entityId || this.entityId);
+            const tool_outputs = await this.handleAssistantMessage(run, entityId || this.entityId);
             if (run.status === "requires_action") {
                 run = await client.beta.threads.runs.submitToolOutputs(
                     thread.id,
@@ -141,5 +196,18 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             }
         }
         return run;
+    }
+
+    /**
+     * @deprecated Use waitAndHandleAssistantToolCalls instead.
+     */
+    async wait_and_handle_assistant_tool_calls(
+        client: OpenAI,
+        run: OpenAI.Beta.Threads.Run,
+        thread: OpenAI.Beta.Threads.Thread,
+        entityId: Optional<string> = null
+    ): Promise<OpenAI.Beta.Threads.Run> {
+        console.warn("wait_and_handle_assistant_tool_calls is deprecated, use waitAndHandleAssistantToolCalls instead");
+        return this.waitAndHandleAssistantToolCalls(client, run, thread, entityId);
     }
 }

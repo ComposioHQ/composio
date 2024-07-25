@@ -10,18 +10,23 @@ from composio.client.collections import TriggerEventData
 
 load_dotenv()
 
-# api_key for OpenAI
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+bot_id = os.getenv("SLACK_BOT_ID", "")
+if bot_id == "":
+    bot_id = input("Enter SLACK_BOT_ID:")
+    os.environ["SLACK_BOT_ID"] = bot_id
 
 # Configuration constants
-BOT_USER_ID = os.environ['SLACK_BOT_ID']  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.
+BOT_USER_ID = os.environ[
+    "SLACK_BOT_ID"
+]  # This is the bot ID of Composio. You can create your own bot by using slack developer platform.
 RESPOND_ONLY_IF_TAGGED = (
     True  # IF you want the bot to respond only when tagged, set this to True
 )
 
 # Step 2: Initialize clients and toolsets
 # Initialize OpenAI client
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI()
 
 # Initialize Composio OpenAI toolset
 # This toolset provides integration between Composio and OpenAI Assistant Framework
@@ -79,24 +84,27 @@ def process_message(event: TriggerEventData, is_new_message: bool) -> None:
         is_new_message (bool): Whether this is a new message or part of a thread.
     """
     # Extract message details from the event payload
+    print("Recieved new messsage")
     payload = event.payload
-    user_id = payload.get("event", {}).get("user", "")
+    user_id = payload.get("user", "")
 
-    # Ignore messages from the bot itself
+    # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return
+        return "Bot ignored"
 
-    message = payload.get("event", {}).get("text", "")
+    message = payload.get("text", "")
 
-    # Check if the bot should respond only when tagged
+    # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
-        print("Bot not tagged, ignoring message")
-        return
+        print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
+        return (
+            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+        )
 
-    channel_id = payload.get("event", {}).get("channel", "")
-    ts = payload.get("event", {}).get("ts", "")
-    thread_ts = payload.get("event", {}).get("thread_ts", ts)
-
+    # Extract channel and timestamp information from the event payload
+    channel_id = payload.get("channel", "")
+    ts = payload.get("ts", "")
+    thread_ts = payload.get("thread_ts", ts)
     # Handle OpenAI thread creation or retrieval
     if is_new_message:
         thread = openai_client.beta.threads.create()

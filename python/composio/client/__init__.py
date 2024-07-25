@@ -24,13 +24,20 @@ from composio.client.collections import (
     Triggers,
 )
 from composio.client.endpoints import v1
-from composio.client.enums import Action, App
+from composio.client.enums import (
+    Action,
+    App,
+    AppType,
+    Tag,
+    TagType,
+    Trigger,
+    TriggerType,
+)
 from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import ApiKeyNotProvidedError
 from composio.utils.url import get_api_url_base
-from composio.workspace.workspace_factory import WorkspaceFactory
 
 
 _valid_keys: t.Set[str] = set()
@@ -46,7 +53,7 @@ class Composio(BaseClient):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None,
+        runtime: t.Optional[str] = None
     ) -> None:
         """
         Initialize Composio SDK client
@@ -59,12 +66,12 @@ class Composio(BaseClient):
         self.runtime = runtime
         self.base_url = base_url or get_api_url_base()
 
-        self.connected_accounts = ConnectedAccounts(client=self)
         self.apps = Apps(client=self)
         self.actions = Actions(client=self)
         self.triggers = Triggers(client=self)
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
+        self.connected_accounts = ConnectedAccounts(client=self)
 
     @property
     def api_key(self) -> str:
@@ -224,7 +231,7 @@ class Entity:
 
     def get_connection(
         self,
-        app: t.Optional[t.Union[str, App]] = None,
+        app: t.Optional[AppType] = None,
         connected_account_id: t.Optional[str] = None,
     ) -> ConnectedAccountModel:
         """
@@ -246,6 +253,7 @@ class Entity:
             entity_ids=[self.id],
             active=True,
         )
+        app = str(app).lower()
         for connected_account in connected_accounts:
             if app == connected_account.appUniqueId:
                 creation_date = datetime.fromisoformat(
@@ -254,6 +262,7 @@ class Entity:
                 if latest_account is None or creation_date > latest_creation_date:
                     latest_creation_date = creation_date
                     latest_account = connected_account
+
         if latest_account is None:
             raise ComposioClientError(
                 f"Could not find a connection with app='{app}',"
@@ -311,6 +320,8 @@ class Entity:
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
+        use_composio_auth: bool = False,
+        force_new_integration: bool = False,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -333,14 +344,16 @@ class Entity:
                 name=f"integration_{timestamp}",
                 auth_mode=auth_mode,
                 auth_config=auth_config,
-                use_composio_auth=False,
+                use_composio_auth=use_composio_auth,
+                force_new_integration=force_new_integration,
             )
 
         if integration is None and auth_mode is None:
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"integration_{timestamp}",
-                use_composio_auth=True,
+                use_composio_auth=use_composio_auth,
+                force_new_integration=force_new_integration,
             )
 
         return self.client.connected_accounts.initiate(
@@ -348,3 +361,15 @@ class Entity:
             entity_id=self.id,
             redirect_url=redirect_url,
         )
+
+
+__all__ = (
+    "Action",
+    "App",
+    "Tag",
+    "AppType",
+    "TagType",
+    "Trigger",
+    "TriggerType",
+    "Composio",
+)

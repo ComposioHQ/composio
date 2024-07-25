@@ -2,12 +2,13 @@ import types
 import typing as t
 from inspect import Signature
 
-from composio_langchain import ComposioToolSet as BaseComposioToolSet
 from llama_index.core.tools import FunctionTool
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
+
+from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(BaseComposioToolSet):
@@ -41,7 +42,7 @@ class ComposioToolSet(BaseComposioToolSet):
         tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
         # Define task
-        task = "Star a repo SamparkAI/docs on GitHub"
+        task = "Star a repo composiohq/composio on GitHub"
 
         # Define agent
         agent = create_openai_functions_agent(openai_client, tools, prompt)
@@ -57,6 +58,8 @@ class ComposioToolSet(BaseComposioToolSet):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
+        workspace_id: t.Optional[str] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -69,6 +72,8 @@ class ComposioToolSet(BaseComposioToolSet):
             api_key=api_key,
             base_url=base_url,
             entity_id=entity_id,
+            workspace_config=workspace_config,
+            workspace_id=workspace_id,
         )
         self._runtime = "llamaindex"
 

@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.1.4",
+  "version": "0.1.8",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -12,8 +12,12 @@
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240718.0",
     "@hey-api/openapi-ts": "^0.46.3",
+    "@types/cli-progress": "^3.11.6",
+    "@types/dockerode": "^3.3.30",
     "@types/node": "^20.14.2",
+    "@types/uuid": "^10.0.0",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "terser-webpack-plugin": "^5.3.10",
@@ -21,16 +25,25 @@
     "typedoc": "^0.25.13",
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "wrangler": "^3.63.1"
   },
   "dependencies": {
+    "@e2b/code-interpreter": "^0.0.8",
+    "@e2b/sdk": "^0.16.1",
+    "@faker-js/faker": "^8.4.1",
+    "@hono/node-server": "^1.12.0",
     "@langchain/core": "^0.2.6",
     "@langchain/openai": "^0.1.2",
     "axios": "^1.7.2",
+    "cli-progress": "^3.12.0",
+    "dockerode": "^4.0.2",
     "enumify": "^2.0.0",
+    "hono": "^4.4.11",
     "langchain": "^0.2.5",
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
+    "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "publishConfig": {

@@ -1,6 +1,6 @@
-from composio_camel.toolset import ComposioToolSet
+from composio import Action, App, Tag, Trigger, WorkspaceType
 
-from composio.client.enums import Action, App, Tag, Trigger
+from composio_camel.toolset import ComposioToolSet
 
 
 __all__ = (
@@ -8,5 +8,6 @@ __all__ = (
     "App",
     "Tag",
     "ComposioToolSet",
+    "WorkspaceType",
     "Trigger",
 )

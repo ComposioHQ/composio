@@ -12,46 +12,77 @@ This consolidation simplifies the administration of multiple accounts.
 
 
 ## Make your user do a task on Github
+
+
+### Default Imports
 <CodeGroup>
-```python Default Imports
+```python python 
 from composio import Composio, App
 from openai import OpenAI
 
 composio_client = Composio(api_key="COMPOSIO_API_KEY")
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 ```
+```javascript javascript
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { Composio } from "composio-core";
+
+const composio_client = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+```
 </CodeGroup>
 
 Let's create an entity for a user via their email. Email is just an example, you can use any unique identifier for the entity.
-
+### Create or get an entity
 <CodeGroup>
-```python Create or get an entity
+```python python
 entity = composio_client.get_entity(id='user_email_id') 
+```
+```javascript javascript
+const entity = await composio_client.getEntity('user_email_id');
 ```
 </CodeGroup>
 
 Now, let's get the connected account for the entity. If the connected account does not exist, let's get the user to connect their account.
-
+### Get Connected accounts 
 <CodeGroup>
-```python Get connected account
+```python python
 try:
     connected_account  = entity.get_connection(app="slack")
 except Exception as e:
     print("No connected account found")
 ```
+```javascript javascript
+const connected_account  = await entity.getConnection("slack");
+```
 </CodeGroup>
 
 Now, let's get all the actions that can be performed on the entity on GitHub. You can avoid filtering via Github if you want to see all the actions.
+### Get all actions
 <CodeGroup>
-```python Get all actions
+```python python
 actions = entity.get_actions(app_name = App.GITHUB)
+```
+```javascript javascript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const entity = toolset.client.getEntity('default');
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
 
 Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
-
+### Agent Execution
 <CodeGroup>
-```python Agent Execution
+```python python
 from composio_openai import ComposioToolSet, Action, App
 from openai import OpenAI
 
@@ -60,7 +91,7 @@ openai_client = OpenAI()
 tool_set = ComposioToolSet(entity_id="melissa") 
 actions = tool_set.get_tools(apps=[App.GITHUB])
 
-my_task = "Star a repo ComposioHQ/composio on GitHub"
+my_task = "Star a repo composiohq/composio on GitHub"
 
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
@@ -71,6 +102,36 @@ response = openai_client.chat.completions.create(
     ],
 )
 tool_set.handle_tool_calls(response=response, entity_id="melissa")
+```
+```javascript javascript
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const openAI = new OpenAI(
+    {
+        apiKey: process.env.OPENAI_API_KEY,
+    }
+);
+const entity = toolset.client.getEntity('default');
+
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id)
+
+const task = "Star a repo composiohq/composio on GitHub"
+
+const response = await openAI.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    tools: tools,
+    messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: task },
+    ],
+});
+
+await toolset.handle_tool_call(response, entity.id);
 ```
 </CodeGroup>
 

@@ -1,24 +1,33 @@
+import os
 from composio_openai import Action, ComposioToolSet
 from openai import OpenAI
 
 from composio.client.collections import TriggerEventData
 
 
+channel_id = os.getenv("CHANNEL_ID", "")
+if channel_id == "":
+    channel_id = input("Enter Channel id:")
+
 openai_client = OpenAI()
 
-code_review_assistant_prompt = """
-You are an experienced code reviewer.
-Your task is to review the provided file diff and give constructive feedback and dm that to 
+code_review_assistant_prompt = (
+    """
+        You are an experienced code reviewer.
+        Your task is to review the provided file diff and give constructive feedback.
 
-Follow these steps:
-1. Identify if the file contains significant logic changes.
-2. Summarize the changes in the diff in clear and concise English, within 100 words.
-3. Provide actionable suggestions if there are any issues in the code.
+        Follow these steps:
+        1. Identify if the file contains significant logic changes.
+        2. Summarize the changes in the diff in clear and concise English, within 100 words.
+        3. Provide actionable suggestions if there are any issues in the code.
 
-Once you have decided on the changes, for any TODOs, create a Github issue. 
-And send the summary of the PR review to #general channel on slack. Slack doesn't have markdown and so send a plain text message.
-Also add the comprehensive review to the PR as a comment.
+        Once you have decided on the changes, for any TODOs, create a Github issue.
+        And send the summary of the PR review to """
+    + channel_id
+    + """ channel on slack. Slack doesn't have markdown and so send a plain text message.
+        Also add the comprehensive review to the PR as a comment.
 """
+)
 
 composio_toolset = ComposioToolSet()
 pr_agent_tools = composio_toolset.get_actions(
@@ -42,6 +51,8 @@ print("Assistant is ready")
 
 ## Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
+
+
 ## Triggers when a new PR is opened
 @listener.callback(filters={"trigger_name": "github_pull_request_event"})
 def review_new_pr(event: TriggerEventData) -> None:
