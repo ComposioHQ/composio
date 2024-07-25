@@ -8,7 +8,6 @@ from pathlib import Path
 
 import typing_extensions as te
 
-from composio.client.enums._patch import ACTIONS as OLD_ACTIONS
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
@@ -96,8 +95,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     """Enum class that uses class annotations as values."""
 
     _slug: str
-    _model: t.Type[EntityType]
     _path: Path
+    _model: t.Type[EntityType]
+    _deprecated: t.Dict = {}
 
     def __new__(cls, value: t.Any, warn: bool = True):
         (base,) = t.cast(t.Tuple[t.Any], getattr(cls, "__orig_bases__"))
@@ -123,13 +123,13 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             value = value._slug
 
         self._slug = t.cast(str, value).upper()
-        if self._slug.lower() in OLD_ACTIONS and warn:
+        if self._slug in self._deprecated and warn:
             warnings.warn(
                 f"`{self._slug}` is deprecated and will be removed. "
-                f"Use `{OLD_ACTIONS[self._slug.lower()].upper()}` instead.",
+                f"Use `{self._deprecated[self._slug]}` instead.",
                 UserWarning,
             )
-            self._slug = OLD_ACTIONS[self._slug.lower()].upper()
+            self._slug = self._deprecated[self._slug]
             return
 
         if (
@@ -164,6 +164,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     def all(cls) -> t.Iterator[te.Self]:
         """Iterate over available object."""
         for name in cls.__annotations__:
+            if name == "_deprecated":
+                continue
             yield cls._create(name=name)
 
     @classmethod
@@ -185,6 +187,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 def enum(cls: ClassType) -> ClassType:
     """Decorate class."""
     for attr in cls.__annotations__:
+        if attr == "_deprecated":
+            continue
         setattr(cls, attr, cls(attr, warn=False))
     return cls
 

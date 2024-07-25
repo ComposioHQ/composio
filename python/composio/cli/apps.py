@@ -16,7 +16,6 @@ from composio.cli.context import Context, get_context, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.client.enums._patch import ACTIONS as OLD_ACTIONS
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
 from composio.tools.local.handler import LocalClient
@@ -162,19 +161,25 @@ def _update_apps(apps: t.List[AppModel]) -> None:
 
 def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
+    enums.base.ACTIONS_CACHE.mkdir(exist_ok=True)
+    deprecated = {}
     action_names = []
-    enums.base.ACTIONS_CACHE.mkdir(
-        exist_ok=True,
-    )
     for app in sorted(apps, key=lambda x: x.key):
         for action in actions:
             if action.appKey != app.key:
                 continue
-            action_names.append(
-                get_enum_key(
-                    name=action.name,
-                )
-            )
+
+            if (
+                action.description is not None
+                and "<<DEPRECATED use " in action.description
+            ):
+                _, newact = action.description.split("<<DEPRECATED use ", maxsplit=1)
+                deprecated[get_enum_key(name=action.name)] = (
+                    action.appKey.lower() + "_" + newact.replace(">>", "")
+                ).upper()
+            else:
+                action_names.append(get_enum_key(name=action.name))
+
             enums.base.ActionData(
                 name=action.name,
                 app=app.key,
@@ -206,7 +211,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
     _update_annotations(
         cls=enums.Action,
         attributes=action_names,
-        deprecated=OLD_ACTIONS,
+        deprecated=deprecated,
     )
 
 
@@ -224,12 +229,8 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     tag_names = ["DEFAULT"]
     for app_name in sorted(tag_map):
         for tag in sorted(tag_map[app_name]):
-            tag_name = get_enum_key(
-                name=f"{app_name}_{tag}",
-            )
-            tag_names.append(
-                tag_name,
-            )
+            tag_name = get_enum_key(name=f"{app_name}_{tag}")
+            tag_names.append(tag_name)
             enums.base.TagData(
                 app=app_name,
                 value=tag,
@@ -279,36 +280,27 @@ def _update_annotations(
     """Update annontations for `cls`"""
     console = get_context().console
     file = Path(inspect.getmodule(cls).__file__)  # type: ignore
-
     annotations = []
     for attribute in sorted(attributes):
         annotations.append(
             ast.AnnAssign(
-                target=ast.Name(
-                    id=attribute,
-                ),
-                annotation=ast.Constant(
-                    value=f"{cls.__name__}",
-                ),
+                target=ast.Name(id=attribute),
+                annotation=ast.Constant(value=f"{cls.__name__}"),
                 simple=1,
             ),
         )
 
     _deprecated = []
     _deprecated_names = []
-    for old, new in (deprecated or {}).items():
+    deprecated = deprecated or {}
+    for old, new in deprecated.items():
         if old.lower() == new.lower():
             continue
 
         if new.upper() not in attributes:
             continue
 
-        _deprecated.append(
-            _build_deprecated_node(
-                old=old,
-                new=new,
-            )
-        )
+        _deprecated.append(_build_deprecated_node(old=old, new=new))
         _deprecated_names.append(old.upper())
 
     tree = ast.parse(file.read_text(encoding="utf-8"))
@@ -329,16 +321,20 @@ def _update_annotations(
             )
             return
 
-        body = [
-            child for child in node.body[1:] if not isinstance(child, ast.AnnAssign)
-        ]
-        body = [
-            child
-            for child in body
-            if not (
-                isinstance(child, ast.FunctionDef) and child.name in _deprecated_names
-            )
-        ]
+        def _filter(child: ast.AST) -> bool:
+            if isinstance(child, ast.AnnAssign) and child.target.id == "_deprecated":  # type: ignore
+                child.value = ast.Dict(
+                    keys=list(map(ast.Constant, deprecated.keys())),  # type: ignore
+                    values=list(map(ast.Constant, deprecated.values())),  # type: ignore
+                )
+                return True
+            if isinstance(child, ast.AnnAssign):
+                return False
+            if isinstance(child, ast.FunctionDef) and child.name in _deprecated_names:
+                return False
+            return True
+
+        body = [child for child in node.body[1:] if _filter(child=child)]
         node.body = node.body[:1] + annotations + _deprecated + body
         break
 
