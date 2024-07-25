@@ -84,6 +84,12 @@ class TriggerData(LocalStorage):
     _cache: Path = TRIGGERS_CACHE
 
 
+class SentinalObject:
+    """Sentinal object."""
+
+    sentinal = None
+
+
 class _AnnotatedEnum(t.Generic[EntityType]):
     """Enum class that uses class annotations as values."""
 
@@ -102,8 +108,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         cls._path = path
         return super().__init_subclass__()
 
-    def __init__(self, value: t.Union[str, te.Self]) -> None:
+    def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
         """Create an Enum"""
+        if hasattr(value, "sentinal"):
+            value = value().get_tool_merged_action_name()  # type: ignore
+
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
 
