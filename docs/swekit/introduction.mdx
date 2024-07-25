@@ -2,7 +2,7 @@
 title: "SWE Development Kit"
 sidebarTitle: "Introduction"
 icon: "code"
-description: "Build and benchmark Software Engineering agents with Composio's tooling ecosystem"
+description: "Build Software Engineering agents locally with frameworks and tools of your choice"
 ---
 
 ## Overview
@@ -13,23 +13,28 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 ## Key Features
 
 - **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like CrewAI, LlamaIndex, and more.
-- **Flexible Workspace Environments**: Run your agents in various environments including Docker, E2B, and FlyIO for security and isolation.
+- **Flexible Workspace Environments**: Operate your agents within a variety of secure and isolated environments including Docker, E2B, and FlyIO for security and isolation.
 - **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
 - **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
 
+## Introduction to Key Concepts
+
+- **Workspace Environments**: These are isolated and secure execution contexts where agents can be run. They ensure that agents operate in a controlled setting, which can be tailored for specific security or resource needs. Examples include containerized environments like Docker, virtualized environments like E2B, and cloud-based platforms like FlyIO.
+- **Custom Tools**: These are specialized utilities or enhancements that can be integrated into your agent to extend its functionality or improve its performance. They can range from simple scripts to complex software packages.
+- **Benchmarks**: Benchmarks are standardized tests that measure the performance and effectiveness of your agents. They provide a way to compare different agents and track improvements over time.
 
 ## Getting Started
 
 <Steps>
 <Step title="Installation">
-  Install the core packages:
+  Begin by installing the core packages:
   <CodeGroup>
   ```bash Installing SweKit
   pip install swekit composio-core
   ```
   </CodeGroup>
   
-  Install additional packages for your chosen framework (e.g., CrewAI):
+  For additional functionality, install packages for your preferred framework (e.g., CrewAI):
   <CodeGroup>
   ```bash Installing CrewAI and Composio CrewAI Plugin
   pip install crewai composio-crewai
@@ -38,7 +43,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 </Step>
 
 <Step title="Connect your Github Account">
-  In Case, you want to use Github Issues as a source of tasks, you need to connect your Github account.
+  To utilize Github Issues as a task source, link your Github account as follows:
   <Tabs>
   <Tab title="Composio CLI">
   <CodeGroup>
@@ -58,43 +63,50 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 </Step>
 
 <Step title="Create a New Agent">
-  Scaffold your agent:
+  Generate your agent's scaffolding:
   <CodeGroup>
   ```bash Create a new Folder with basic SWE agent code
-  swekit scaffold crewai -o <path>
+  swekit scaffold crewai -o swe_agent
   ```
   </CodeGroup>
+
+  <Note>
+  Scaffold support for other frameworks coming soon!
+  </Note>
   
-  This creates a new agent in `<path>/agent` with key files:
-  - `main.py`: Entry point to run the agent
-  - `agent.py`: Agent definition
-  - `prompts.py`: Agent prompts
-  - `benchmark.py`: SWE-Bench benchmark runner
+  This process will establish a new agent at `swe_agent` with essential files:
+  - `main.py`: The main script to execute the agent
+  - `agent.py`: The agent's core definition
+  - `prompts.py`: Prompts to guide the agent's actions
+  - `benchmark.py`: A runner for the SWE-Bench benchmarks
+  - `input.py`: A helper file to take inputs from the user
+
 </Step>
 
+
+<Step title="Start Docker Server">
+  <Warning>
+  To use Docker as the default workspace environment, ensure your Docker server is running
+  </Warning>
+    If you prefer to run the agent locally without Docker (**Unsafe**), modify the workspace configuration in `agent.py` by setting the `host` to `localhost`.
+</Step>
+
+
 <Step title="Run the Agent">
-  Navigate to the agent directory and run:
+  To activate the agent, proceed to its directory and execute:
   <CodeGroup>
   ```bash Run the agent
-  cd <path>/agent
+  cd swe_agent/agent
   python main.py
   ```
   </CodeGroup>
   
-  You'll be prompted for the repository name and issue to work on.
+  You will be prompted to specify the repository and issue for the agent to address.
 </Step>
 </Steps>
 
 ## Next Steps
 
-- Explore different workspace environments
-- Learn how to run benchmarks
-- Customize your agent's behavior
-
-For more detailed information on these topics, check out the following sections.
-
-#### Other Sections
-
-- Workspace Environments
-- Running the Benchmark
-- Development Guide
+- Familiarize yourself with the different [workspace environments](/swekit/workspace-env) and their use cases.
+- Discover how to [tailor your agent's functionality](/swekit/custom-tools) to suit specific tasks.
+- Understand how to [execute benchmarks](/swekit/benchmark) to evaluate your agent's performance.

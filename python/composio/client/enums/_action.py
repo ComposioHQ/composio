@@ -3184,8 +3184,6 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     TASKADE_REMOVE_ASSIGNEE_FROM_TASK: "Action"
     TASKADE_TASK_ASSIGNMENT: "Action"
     TAVILY_TAVILY_SEARCH: "Action"
-    TEST_ASANA_CREATE_SUBTASK: "Action"
-    TEST_ASANA_GET_SUBTASKS: "Action"
     TRELLO_ACTION_GET_BOARD_BY_ID_ACTION: "Action"
     TRELLO_ACTION_GET_BOARD_BY_ID_ACTION_BY_FIELD: "Action"
     TRELLO_ACTION_GET_BY_ID: "Action"
@@ -3776,8 +3774,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            value = value().get_tool_merged_action_name()  # type: ignore
-        super().__init__(value=value)  # type: ignore
+            value = value().get_tool_merged_action_name() # type: ignore
+        super().__init__(value=value) # type: ignore
 
     @property
     def name(self) -> str:

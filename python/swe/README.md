@@ -1,16 +1,63 @@
-# SWE Development Kit
+<p align="center">
+  <a href="https://composio.dev//#gh-dark-mode-only">
+    <img src="../docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
+  </a>
+  <a href="https://composio.dev//#gh-light-mode-only">
+    <img src="../docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
+  </a>
+</p>
+<p align="center">
+  <a href="https://pypi.org/project/composio-core/">
+  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
+  </a>
+  <a href="https://www.npmjs.com/package/composio-core">
+  <img alt="NPM" src="https://img.shields.io/npm/v/composio-core?style=plastic&logo=npm&logoColor=white&label=latest&color=blue&cacheSeconds=60">
+  </a>
+  <a href="https://pypi.org/project/composio-core/">
+  <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
+  </a>
+  
+</p>
 
+<h2 align="center"><i>
+  Production Ready Toolset for AI Agents
+</i></h2>
+
+<h4 align="center">Build Software engineering Agents fast and easy! 
+</h4>
+<div align="center" style="font-size: 40px; font-weight: bold;">
+  <a href="https://docs.composio.dev/swekit/introduction" rel="dofollow">SWEKIT Docs »</a>
+</div>
+
+<hr>
+<div align="center">
+<p >
+    <b>✨ Socials >></b>
+    <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
+    <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
+    <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
+    <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>
+</p>
+<p align="center">
+    <b>⛏️ Contribute >></b>
+    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=type%3A+bug&template=bug_report.yml&title=%F0%9F%90%9B+Bug+Report%3A+">Report Bugs</a> <b>|</b>
+    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">Request Feature</a> <b>|</b>
+    <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md">Contribute</a>
+</p>
+</div>
+
+## 📋 Table of contents
 ## Table of Contents
 
-- [SWE Development Kit](#swe-development-kit)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Dependencies](#dependencies)
-  - [Getting Started](#getting-started)
-    - [Creating a new agent](#creating-a-new-agent)
-    - [Workspace Environment](#workspace-environment)
-    - [Customising the workspace environment](#customising-the-workspace-environment)
-    - [Running the Benchmark](#running-the-benchmark)
+- [📋 Table of contents](#-table-of-contents)
+- [Table of Contents](#table-of-contents)
+- [Overview](#overview)
+- [Dependencies](#dependencies)
+- [Getting Started](#getting-started)
+  - [Creating a new agent](#creating-a-new-agent)
+  - [Workspace Environment](#workspace-environment)
+  - [Customising the workspace environment](#customising-the-workspace-environment)
+  - [Running the Benchmark](#running-the-benchmark)
 
 ## Overview
 
