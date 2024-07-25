@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc  --project . --outDir lib",
-    "type-docs": "typedoc"
+    "lint": "eslint . --ext .ts,.js",
+
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
