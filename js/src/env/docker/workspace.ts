@@ -1,22 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
-import Docker from "dockerode";
-import os from "os";
-import path from "path";
-import { promises as fs } from "fs";
 import { RemoteWorkspace, WorkspaceConfig } from "../base";
-import cliProgress from "cli-progress";
-import { getEnvVariable } from "../../utils/shared";
+import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
+import type Docker from "dockerode";
+import type CliProgress from "cli-progress";
 
-const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
-const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
 const ENV_COMPOSIO_SWE_AGENT = "COMPOSIO_SWE_AGENT";
-const DEFAULT_IMAGE = "angrybayblade/composio";
+const DEFAULT_IMAGE = "composio/composio";
 const DEFAULT_PORT = 54321;
 
 function getFreePort(): Promise<number> {
     return new Promise((resolve, reject) => {
-        const server = require("net").createServer();
+        const server = require("node:net").createServer();
         server.unref();
         server.on("error", reject);
         server.listen(0, () => {
@@ -28,7 +23,7 @@ function getFreePort(): Promise<number> {
 
 export class DockerWorkspace extends RemoteWorkspace {
     public docker: Docker;
-    public container: Docker.Container | null = null;
+    public container: any | null = null;
     public id: string;
     public port: number = DEFAULT_PORT;
     public image: string;
@@ -36,9 +31,9 @@ export class DockerWorkspace extends RemoteWorkspace {
 
     constructor(kwargs: WorkspaceConfig) {
         super(kwargs);
-        this.docker = new Docker();
         this.id = `composio-${uuidv4()}`;
         this.image = getEnvVariable(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)!;
+        this.docker = nodeExternalRequire("dockerode")();
     }
 
     async setup() {
@@ -46,13 +41,14 @@ export class DockerWorkspace extends RemoteWorkspace {
         this.url = `http://localhost:${this.port}/api`;
 
         const images = await this.docker.listImages();
-        const imageExists = images.some(image => image.RepoTags && image.RepoTags.find(tag => tag.startsWith(this.image)));
+        const imageExists = images.some((image: any) => image.RepoTags && image.RepoTags.find((tag: any) => tag.startsWith(this.image)));
 
 
         if (!imageExists) {
             console.log(`Pulling Docker image ${this.image}...`);
+            let cliProgress = nodeExternalRequire("cli-progress");
 
-            const bar = new cliProgress.SingleBar({
+            const bar: CliProgress.Bar = new cliProgress.SingleBar({
                 format: '{bar} | {percentage}% | {status}',
                 hideCursor: true
             }, cliProgress.Presets.shades_classic);
@@ -89,14 +85,21 @@ export class DockerWorkspace extends RemoteWorkspace {
         }
 
         const containers = await this.docker.listContainers({ all: true });
-        const existingContainer = containers.find(container => container.Names.find(name => name.startsWith(`/composio-`)));
+        const existingContainer = containers.find((container: any) => container.Names.find((name: any) => name.startsWith(`/composio-`)));
 
         if (existingContainer) {
             console.debug(`Container with name ${this.id} is already running.`);
             this.container = this.docker.getContainer(existingContainer.Id);
-            this.port = existingContainer.Ports.find(port => port.PrivatePort === 8000)?.PublicPort!;
+            this.port = existingContainer.Ports.find((port: any) => port.PrivatePort === 8000)?.PublicPort!;
             this.url = `http://localhost:${this.port}/api`;
         } else {
+
+            const path = require("node:path");
+            const os = require("node:os");
+
+            const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
+            const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
+
             const containerOptions: Docker.ContainerCreateOptions = {
                 Image: this.image,
                 name: this.id,

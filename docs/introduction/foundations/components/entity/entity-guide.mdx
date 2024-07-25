@@ -27,17 +27,12 @@ openai_client = OpenAI(api_key="******OPENAIKEY******")
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { OpenAI } from "openai";
-import { OpenAIToolSet } from "composio-core";
+import { Composio } from "composio-core";
 
-
-const toolset = new OpenAIToolSet({
+const composio_client = new Composio({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const openai_client = new OpenAI({
-    apiKey: process.env.OPENAIKEY
-});
 ```
 </CodeGroup>
 
@@ -48,7 +43,7 @@ Let's create an entity for a user via their email. Email is just an example, you
 entity = composio_client.get_entity(id='user_email_id') 
 ```
 ```javascript javascript
-const entity = await toolset.client.getEntity(id='user_email_id');
+const entity = await composio_client.getEntity('user_email_id');
 ```
 </CodeGroup>
 
@@ -73,7 +68,14 @@ Now, let's get all the actions that can be performed on the entity on GitHub. Yo
 actions = entity.get_actions(app_name = App.GITHUB)
 ```
 ```javascript javascript
-const actions = entity.get_action({actions: ['github_issues_create']})
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const entity = toolset.client.getEntity('default');
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
 
@@ -109,20 +111,27 @@ const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.get_actions({actions: ['github_star_repo']})
+const openAI = new OpenAI(
+    {
+        apiKey: process.env.OPENAI_API_KEY,
+    }
+);
+const entity = toolset.client.getEntity('default');
+
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id)
 
 const task = "Star a repo composiohq/composio on GitHub"
 
-const response = await toolset.client.chat.completions.create({
+const response = await openAI.chat.completions.create({
     model: "gpt-4-turbo-preview",
     tools: tools,
     messages: [
-        {role: "system", content: "You are a helpful assistant."},
-        {role: "user", content: task},
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: task },
     ],
 });
 
-await toolset.handle_tool_call(response, entity.id="melissa");
+await toolset.handle_tool_call(response, entity.id);
 ```
 </CodeGroup>
 

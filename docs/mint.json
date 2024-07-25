@@ -63,7 +63,6 @@
       "name": "Guides",
       "url": "patterns"
     },
-
     {
       "name": "Examples",
       "url": "guides"
@@ -99,7 +98,6 @@
     },
     {
       "group": "Python",
-
       "pages": [
         {
           "group": "With Frameworks",
@@ -150,12 +148,25 @@
       "group": "More",
       "icon": "circle",
       "pages": [
-        "javascript/account",
-        "javascript/entity",
-        "javascript/action",
         "javascript/trigger"
       ]
     }
+      ]
+    },
+    {
+      "group": "SweKit",
+      "pages": [
+        "swekit/introduction",
+        "swekit/workspace-env",
+        "swekit/custom-tools",
+        "swekit/benchmarks"
+      ]
+    },
+    {
+      "group": "SweKit.js",
+      "pages": [
+        "swekit-js/introduction",
+        "swekit-js/workspace-env"
       ]
     },
     {
@@ -213,7 +224,10 @@
       {
         "group":"Javascript Guides",
         "pages":[
-          "guides/javascript/interpreter-agent"
+          "guides/javascript/calendar-agent",
+          "guides/javascript/code-execution-agent",
+          "guides/javascript/rag_agent",
+          "guides/javascript/investment-analyst"
         ]
       }
         ]

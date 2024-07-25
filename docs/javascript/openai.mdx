@@ -49,7 +49,7 @@ const toolset = new OpenAIToolSet({apiKey: COMPOSIO_API_KEY,});
 const appName = 'github';
 
 async function setupUserConnectionIfNotExists(entityId) {
-        const entity = await toolset.client.getEntity(entityId);
+        const entity = toolset.client.getEntity(entityId);
         const connection = await entity.getConnection(appName);
 
         if (!connection) {
@@ -72,7 +72,7 @@ Learn more about entities [here](introduction/foundations/components/entity/enti
 <CodeGroup>
       ```typescript index.mjs
 async function executeAgent(repo,entityName="default") {
-        const entity = await toolset.client.getEntity(entityName)
+        const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
 
         const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);

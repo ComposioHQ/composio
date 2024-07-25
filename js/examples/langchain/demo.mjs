@@ -15,7 +15,7 @@ app.use(express.json());
         const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
 
         const llm = new ChatOpenAI({
-            model: "gpt-4o",
+            model: "gpt-4-turbo",
         });
 
         const toolset = new LangchainToolSet({
@@ -24,7 +24,7 @@ app.use(express.json());
         });
 
         const tools = await toolset.get_actions({
-            actions: ["FILETOOL_WRITE_FILE".toLowerCase()]
+            actions: ["filetool_write_file"]
         });
         const prompt = await pull(
             "hwchase17/openai-functions-agent"

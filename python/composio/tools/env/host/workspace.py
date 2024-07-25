@@ -12,6 +12,7 @@ from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 from composio.client.enums import Action
 from composio.tools.env.base import Shell, Workspace, WorkspaceConfigType
+from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.env.host.shell import HostShell, SSHShell
 from composio.tools.local.handler import LocalClient
 
@@ -63,6 +64,11 @@ class HostWorkspace(Workspace):
         """Initialize host workspace."""
         super().__init__(config=config)
         self.ssh_config = config.ssh or {}
+        # TODO: Make this configurable
+        self._working_dir = None
+
+        self.ports = []
+        self.host = "localhost"
 
     def setup(self) -> None:
         """Setup workspace."""
@@ -89,6 +95,15 @@ class HostWorkspace(Workspace):
             self.logger.debug("Using shell over `subprocess.Popen`")
             self._ssh = None
 
+    _file_manager: t.Optional[FileManager] = None
+
+    @property
+    def file_manager(self) -> FileManager:
+        """File manager for the workspace."""
+        if self._file_manager is None:
+            self._file_manager = FileManager(working_dir=self._working_dir)
+        return self._file_manager
+
     def _create_shell(self) -> Shell:
         """Create host shell."""
         if self._ssh is not None:
@@ -97,6 +112,10 @@ class HostWorkspace(Workspace):
                 environment=self.environment,
             )
         return HostShell()
+
+    def _create_file_manager(self) -> FileManager:
+        """Create file manager for the workspace."""
+        return FileManager(working_dir=self._working_dir)
 
     def execute_action(
         self,
@@ -108,10 +127,7 @@ class HostWorkspace(Workspace):
         return LocalClient().execute_action(
             action=action,
             request_data=request_data,
-            metadata={
-                **metadata,
-                "workspace": self,
-            },
+            metadata={**metadata, "workspace": self},
         )
 
     def teardown(self) -> None:

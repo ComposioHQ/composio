@@ -76,7 +76,7 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_
 
      ```javascript javascript
      // Get GitHub tools that are pre-configured
-    const tools = await composio_toolset.get_actions({
+    const tools = await composio_toolset.getActions({
         actions: ["github_start_repo"]
     });
     ```
@@ -244,7 +244,7 @@ const composio_toolset = new OpenAIToolSet({
 });
 
 // Fetching GitHub actions from Composio ToolSet
-const tools = await composio_toolset.get_actions({
+const tools = await composio_toolset.getActions({
     actions: ["github_start_repo"]
 });
 

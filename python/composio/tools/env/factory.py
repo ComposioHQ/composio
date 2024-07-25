@@ -102,12 +102,16 @@ class WorkspaceFactory:
     @classmethod
     def teardown(cls) -> None:
         """Teardown the workspace factory."""
+        logger = get_logger(name="atexit")
         if len(cls._workspaces) == 0:
             return
 
-        logger = get_logger(name="atexit")
         logger.debug("Tearing down workspace factory")
         for workspace in cls._workspaces.values():
+            if workspace.persistent:
+                logger.debug("%s is a persistent workspace, skipping")
+                continue
+
             logger.debug("Tearing down %s", workspace)
             workspace.teardown()
 

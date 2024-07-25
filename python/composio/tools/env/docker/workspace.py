@@ -16,7 +16,11 @@ from docker.models.containers import Container
 
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
-from composio.tools.env.constants import ENV_COMPOSIO_DEV_MODE, ENV_COMPOSIO_SWE_AGENT
+from composio.tools.env.constants import (
+    DEFAULT_IMAGE,
+    ENV_COMPOSIO_DEV_MODE,
+    ENV_COMPOSIO_TOOLSERVER_IMAGE,
+)
 
 
 COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.parent.resolve()
@@ -32,7 +36,6 @@ CONTAINER_DEV_VOLUMES = {
     },
 }
 DEV_MODE = os.environ.get(ENV_COMPOSIO_DEV_MODE, "0") == "1"
-DEFAULT_IMAGE = "angrybayblade/composio"
 DEFAULT_PORT = 54321
 
 
@@ -52,12 +55,21 @@ class Config(WorkspaceConfigType):
     image: t.Optional[str] = None
     """Name of the docker image."""
 
+    ports: t.Optional[t.Dict[int, t.Any]] = None
+    """
+    Ports to bind inside the container
+
+    Note: port 8000 is reserved for the tooling server inside the container
+    """
+
+    volumes: t.Optional[t.Dict[str, t.Any]] = None
+    """Voluems to bind inside the container"""
+
 
 class DockerWorkspace(RemoteWorkspace):
     """Docker workspace implementation."""
 
-    port: int
-
+    _port: int  # Tooling server port
     _container: Container
     _client: t.Optional[DockerClient] = None
 
@@ -65,15 +77,17 @@ class DockerWorkspace(RemoteWorkspace):
         """Create a docker workspace."""
         super().__init__(config=config)
         self.image = config.image or os.environ.get(
-            ENV_COMPOSIO_SWE_AGENT,
+            ENV_COMPOSIO_TOOLSERVER_IMAGE,
             DEFAULT_IMAGE,
         )
+        self._port_requests = config.ports or {}
+        self._volume_requests = config.volumes or {}
 
     def setup(self) -> None:
         """Setup docker workspace."""
         self.logger.debug(f"Creating docker workspace with image: {self.image}")
-        self.port = _get_free_port()
-        self.url = f"http://localhost:{self.port}/api"
+        self._port = _get_free_port()
+        self.url = f"http://localhost:{self._port}/api"
 
         container_kwargs: t.Dict[str, t.Any] = {
             "tty": True,
@@ -85,20 +99,31 @@ class DockerWorkspace(RemoteWorkspace):
             "environment": self.environment,
             "command": "/root/entrypoint.sh",
             "ports": {
-                8000: self.port,
+                **self._port_requests,
+                8000: self._port,
             },
+            "volumes": self._volume_requests,
         }
         if DEV_MODE:
-            container_kwargs["volumes"] = CONTAINER_DEV_VOLUMES
+            container_kwargs["volumes"].update(CONTAINER_DEV_VOLUMES)  # type: ignore
             container_kwargs["environment"][ENV_COMPOSIO_DEV_MODE] = "1"
 
         try:
             self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
+            self._container.reload()
         except DockerException as e:
             raise ComposioSDKError("Error starting workspace: ", e) from e
 
         self._wait()
+
+        # Setup network config
+        self.host = "localhost"
+        self.ports = [
+            int(port[0]["HostPort"])
+            for port in self._container.ports.values()
+            if int(port[0]["HostPort"]) != self._port
+        ]
 
     def _wait(self) -> None:
         """Wait for docker workspace to get started."""

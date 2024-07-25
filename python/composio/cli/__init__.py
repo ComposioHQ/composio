@@ -6,6 +6,7 @@ import typing as t
 
 import click
 
+from composio import __version__
 from composio.cli.actions import _actions
 from composio.cli.add import _add
 from composio.cli.apps import _apps
@@ -52,7 +53,14 @@ class HelpDYMGroup(DYMGroup):
         handler=handle_exceptions,
     ),
 )
-@click.help_option("--help", "-help", "-h")
+@click.help_option(
+    "-h",
+    "-help",
+    "--help",
+)
+@click.version_option(
+    version=__version__,
+)
 @click.option(
     "-v",
     "level",

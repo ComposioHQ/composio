@@ -89,7 +89,7 @@ from composio_openai import ComposioToolSet, Action
 
 tool_set = ComposioToolSet()
 
-tools = tool_set.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
 
 print(tools)
 ```
@@ -99,14 +99,11 @@ dotenv.config();
 
 import { OpenAIToolSet } from "composio-core";
 
-
-
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
 const tools = await toolset.get_actions({actions: ['github_issues_create']});
-console.log(tools)
 ```
 </CodeGroup>
 
@@ -186,19 +183,19 @@ dotenv.config();
 
 import { OpenAIToolSet } from "composio-core";
 
-
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-toolset.execute_action({
-    action: 'slack_chat_post_message',
-    params: {
+const entity = toolset.client.getEntity('user_email_id');
+toolset.executeAction(
+   'slack_chat_post_message',
+    {
         text: 'Hello, world!',
         channel: 'D04N8SVQKKU'
     },
-    entity_id: 'melissa'
-});
+   entity.id
+);
 ```
 
 </CodeGroup>
@@ -231,6 +228,37 @@ When executed successfully, action's response will be output. Output schema as r
 
       # Execute using agent_executor
       agent_executor.invoke({"input": task})
+      ```
+      ```javascript javascript
+      import dotenv from 'dotenv';
+      import { ChatOpenAI } from "@langchain/openai";
+      import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+      import { LangchainToolSet } from "composio-core";
+      import { pull } from "langchain/hub";
+
+      dotenv.config();
+
+      (async () => {
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+        const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
+        const tools = await composioToolset.getActions({ actions: ["github_issues_create"] });
+        const prompt = await pull("hwchase17/openai-functions-agent");
+
+        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+        const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+        async function createGithubIssue(issueDetails) {
+            const result = await agentExecutor.invoke({
+                input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
+            });
+            return result.output;
+        }
+
+        await createGithubIssue({
+            TITLE: "Sample issue",
+            DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
+        });
+      })();
       ```
     </CodeGroup>
     This code demonstrates how to use natural language to execute an action. By defining a task and using the `AgentExecutor`, you can perform complex actions with simple language commands.

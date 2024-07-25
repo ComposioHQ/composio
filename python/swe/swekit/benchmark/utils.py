@@ -97,7 +97,7 @@ def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
     print("Resetting repository to base commit")
     composio_toolset = ComposioToolSet(workspace_id=workspace_id)
     composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+        action=Action.FILETOOL_GIT_CLONE,
         params={
             "repo_name": repo,
             "just_reset": True,
@@ -143,26 +143,28 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
     )
     logger.info("Resetting repository to base commit")
     reset_resp = composio_toolset.execute_action(
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
+        action=Action.FILETOOL_GIT_CLONE,
         params={
             "repo_name": repo,
             "just_reset": True,
             "commit_id": base_commit,
         },
     )
-    if isinstance(reset_resp, dict) and reset_resp.get("status") == "failure":
-        raise Exception(f"Error resetting repository: {reset_resp['details']}")
+    if isinstance(reset_resp, dict) and not reset_resp.get("success"):
+        raise Exception(f"Error resetting repository: {reset_resp['error']}")
     return workspace_id
 
 
-def build_image_and_container(repo, base_commit, workspace_env=WorkspaceType.Docker):
+def build_image_and_container(
+    repo, base_commit, workspace_env=WorkspaceType.Docker, image_name=DEFAULT_IMAGE
+):
     logger.info("Falling back to creating new workspace.")
     start_time = datetime.datetime.now()
     composio_toolset = ComposioToolSet()
     if workspace_env == WorkspaceType.Docker:
         workspace = WorkspaceFactory.new(
             WorkspaceType.Docker(
-                image=DEFAULT_IMAGE,
+                image=image_name,
                 composio_api_key=composio_toolset.api_key,
                 composio_base_url=composio_toolset.base_url or get_api_url_base(),
                 github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
@@ -186,20 +188,28 @@ def build_image_and_container(repo, base_commit, workspace_env=WorkspaceType.Doc
 
     start_time = datetime.datetime.now()
     composio_toolset.set_workspace_id(workspace_id=workspace.id)
-    clone_resp = composio_toolset.execute_action(
-        entity_id="123",
-        action=Action.GITCMDTOOL_GITHUB_CLONE_CMD,
-        params={
-            "repo_name": repo,
-            "commit_id": base_commit,
-        },
-    )
-    if (
-        isinstance(clone_resp, dict)
-        and "status" in clone_resp
-        and clone_resp["status"] == "failure"
-    ):
-        raise Exception(clone_resp["details"])
+
+    if image_name == DEFAULT_IMAGE:
+        clone_resp = composio_toolset.execute_action(
+            action=Action.FILETOOL_GIT_CLONE,
+            params={
+                "repo_name": repo,
+                "commit_id": base_commit,
+            },
+        )
+        if (
+            isinstance(clone_resp, dict)
+            and "success" in clone_resp
+            and not clone_resp["success"]
+        ):
+            raise Exception(clone_resp["error"])
+
+    # chwdir_resp = composio_toolset.execute_action(
+    #     action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+    #     params={"path": repo.lstrip().rstrip().split("/")[-1]},  # todo: verify this
+    # )
+    # if isinstance(chwdir_resp, dict) and chwdir_resp.get("status") == "failure":
+    #     raise Exception(f"Error changing directory: {chwdir_resp['details']}")
     git_clone_time = datetime.datetime.now() - start_time
     logger.info("git clone completed, time taken: %s", git_clone_time)
     return workspace.id
@@ -211,6 +221,7 @@ def setup_workspace(
     repo_to_image_id_map,
     base_commit,
     workspace_env=WorkspaceType.Docker,
+    image_name=DEFAULT_IMAGE,
 ):
     # workspace_id = get_workspace_from_repo_map(
     #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
@@ -226,7 +237,10 @@ def setup_workspace(
     #     if workspace_id:
     #         return workspace_id
     workspace_id = build_image_and_container(
-        repo=repo, base_commit=base_commit, workspace_env=workspace_env
+        repo=repo,
+        base_commit=base_commit,
+        workspace_env=workspace_env,
+        image_name=image_name,
     )
     repo_to_workspace_map[repo] = workspace_id
     return workspace_id
@@ -273,4 +287,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/1720770557")
+    get_score(logs_dir="/Users/karanvaidya/.composio_coder/logs/1721819092")

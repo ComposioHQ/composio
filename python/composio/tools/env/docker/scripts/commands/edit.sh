@@ -108,7 +108,7 @@ edit() {
         cp "/tmp/$(basename "$CURRENT_FILE")_backup" "$CURRENT_FILE"
 
         export CURRENT_LINE=$(( ((end_line - start_line + 1) / 2) + start_line ))
-        export WINDOW=$((end_line - start_line + 10))
+        export WINDOW=$((end_line - start_line + 10))   
 
         echo "This is the original code before your edit"
         echo "-------------------------------------------------"
