@@ -8,24 +8,40 @@ from swekit.exceptions import SWEKitError
 from swekit.scaffold.templates import PATH as TEMPLATES_PATH
 
 
+class AgentType(Enum):
+    """Agent type."""
+
+    SWE = "swe"
+    PR_REVIEW = "pr_review"
+
+
 class AgenticFramework(Enum):
     """Agent framework name."""
 
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
 
-    def load_templates(self) -> t.Dict:
+    def load_templates(self, agent_type: AgentType) -> t.Dict:
         """Load tempalte string."""
-        return {
-            file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
-            for file in (TEMPLATES_PATH / self.value).glob("*.template")
-        }
+        if agent_type == AgentType.SWE:
+            return {
+                file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
+                for file in (TEMPLATES_PATH / self.value).glob("*.template")
+            }
+        elif agent_type == AgentType.PR_REVIEW:
+            return {
+                file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
+                for file in (TEMPLATES_PATH / "pr_review" / self.value).glob(
+                    "*.template"
+                )
+            }
 
 
 def scaffold(
     framework: AgenticFramework,
     name: t.Optional[str] = None,
     outdir: t.Optional[Path] = None,
+    agent_type: AgentType = AgentType.SWE,
 ) -> Path:
     """Scaffold agent using Composio tools."""
     name = name or "agent"
@@ -38,7 +54,7 @@ def scaffold(
         raise SWEKitError(f"Directory already exists @ {output}")
     output.mkdir()
 
-    for file, template in framework.load_templates().items():
+    for file, template in framework.load_templates(agent_type).items():
         (output / file).write_text(str(template), encoding="utf-8")
 
     return output

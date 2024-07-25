@@ -9,7 +9,7 @@ const PYDANTIC_TYPE_TO_TS_TYPE: SchemaTypeToTsType = {
     "integer": Number,
     "number": Number,
     "boolean": Boolean,
-    "null": null,
+    "null": null
 };
 
 
@@ -63,6 +63,42 @@ export function jsonSchemaToTsField(
     ];
 }
 
+
+function jsonSchemaPropertiesToTSTypes(value: any) {
+    if(!value.type) {
+        return z.object({});
+    }
+
+    let zodType;
+    switch (value.type) {
+        case "string":
+            zodType = z.string().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            break;
+        case "number":
+            zodType = z.number().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            break;
+        case "integer":
+            zodType = z.number().int().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            break;
+        case "boolean":
+            zodType = z.boolean().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            break;
+        case "array":
+            zodType = z.array(jsonSchemaToModel(value.items)).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            break;
+        case "object":
+            zodType = jsonSchemaToModel(value).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            break;
+        case "null":
+            zodType = z.null().describe(value.description || "")
+            break;
+        default:
+            throw new Error(`Unsupported JSON schema type: ${value.type}`);
+    }
+
+    return zodType;
+}
+
 export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<any> {
     const properties = jsonSchema.properties;
     const requiredFields = jsonSchema.required || [];
@@ -74,28 +110,13 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
     for (const [key, _] of Object.entries(properties)) {
         const value = _ as any;
         let zodType;
-    
-        switch (value.type) {
-            case "string":
-                zodType = z.string().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-                break;
-            case "number":
-                zodType = z.number().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-                break;
-            case "integer":
-                zodType = z.number().int().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-                break;
-            case "boolean":
-                zodType = z.boolean().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-                break;
-            case "array":
-                zodType = z.array(jsonSchemaToModel(value.items)).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-                break;
-            case "object":
-                zodType = jsonSchemaToModel(value).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-                break;
-            default:
-                throw new Error(`Unsupported JSON schema type: ${value.type}`);
+        if (value.anyOf) {
+            const anyOfTypes = value.anyOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
+            zodType = z.union(anyOfTypes).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+        } else if (value.type) {
+            zodType = jsonSchemaPropertiesToTSTypes(value.type);
+        } else {
+            throw new Error(`Missing 'type' property in JSON schema for key: ${key}`);
         }
 
         if (value.description) {
@@ -112,4 +133,22 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
     return z.object(zodSchema);
 }
 
+export const getEnvVariable = (name: string, defaultValue: string | undefined = undefined): string | undefined => {
+    try {
+        return process.env[name] || defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
+}
 
+export const nodeExternalRequire = (name: string) => {
+    try {
+        if (typeof process !== 'undefined') {
+            return require(name);
+        } else {
+            return require(`external:${name}`);
+        }
+    } catch(err) {
+        console.error(`Error while loading ${name}`, err);
+    }
+}

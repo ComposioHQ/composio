@@ -25,7 +25,7 @@ from composio import Action, App
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
-from composio.tools.env.e2b.workspace import ENV_ACCESS_TOKEN
+from composio.tools.env.base import ENV_ACCESS_TOKEN
 
 
 ResponseType = t.TypeVar("ResponseType")
@@ -76,6 +76,10 @@ class ExecuteActionRequest(BaseModel):
     params: t.Dict = Field(
         ...,
         description="Parameters for executing the request.",
+    )
+    metadata: t.Dict = Field(
+        None,
+        description="Metadata for executing action.",
     )
     entity_id: str = Field(
         None,
@@ -167,6 +171,14 @@ def create_app() -> FastAPI:
         """Get list of all available apps."""
         return get_context().client.actions.get(actions=[name])[0]
 
+    @app.get("/api/local_actions", response_model=APIResponse[t.List[ActionModel]])
+    @with_exception_handling
+    def _get_local_actions() -> t.List[ActionModel]:
+        """Get list of all available actions."""
+        return get_context().toolset.get_action_schemas(
+            actions=[action.slug for action in Action.all() if action.is_local]
+        )
+
     @app.get("/api/enums/actions", response_model=APIResponse[t.List[str]])
     @with_exception_handling
     def _get_actions_enums() -> t.List[str]:
@@ -186,6 +198,7 @@ def create_app() -> FastAPI:
         return get_context().toolset.execute_action(
             action=action,
             params=request.params,
+            metadata=request.metadata,
             entity_id=request.entity_id,
             connected_account_id=request.connected_account_id,
         )
@@ -206,15 +219,16 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _upload_workspace_tools(request: ToolUploadRequest) -> t.List[str]:
         """Get list of available developer tools."""
-        process = subprocess.run(
-            args=["pip", "install", *request.dependencies],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"Error installing dependencies: {process.stderr.decode()}"
+        if len(request.dependencies) > 0:
+            process = subprocess.run(
+                args=["pip", "install", *request.dependencies],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
+            if process.returncode != 0:
+                raise RuntimeError(
+                    f"Error installing dependencies: {process.stderr.decode()}"
+                )
 
         filename = md5(request.content.encode(encoding="utf-8")).hexdigest()
         tempfile = Path(tooldir.name, f"{filename}.py")

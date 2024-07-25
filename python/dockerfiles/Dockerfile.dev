@@ -1,0 +1,40 @@
+FROM python:slim
+
+# Install dependencies
+RUN apt update \
+    && apt install  -y \
+    git \
+    curl \
+    sudo \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    uuid-runtime \
+    openssh-server
+
+# Create Venv
+RUN /bin/python3 -m venv .composio/venv
+
+# Setup path
+RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
+
+# Define entry point
+COPY entrypoint.sh /root/entrypoint.sh
+
+# Set working dir
+WORKDIR /root
+
+# Install dependencies
+RUN python3 -m pip install composio-core[all]==0.3.27
+
+# Copy source
+COPY ./composio /root/composio
+
+# Install from source
+RUN python3 -m pip install /root/composio/ --no-deps --force-reinstall
+
+# Remove cache
+RUN rm -rf /root/composio/
+
+# Run entrypoint.sh
+ENTRYPOINT [ "/root/entrypoint.sh" ]

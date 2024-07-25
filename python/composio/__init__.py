@@ -11,7 +11,11 @@ from composio.client.enums import (
 )
 from composio.tools import ComposioToolSet
 from composio.tools.env.base import Shell
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import (
+    WorkspaceConfigType,
+    WorkspaceFactory,
+    WorkspaceType,
+)
 from composio.tools.local.base.decorators import action
 
 
@@ -26,7 +30,11 @@ __all__ = (
     "ActionType",
     "TriggerType",
     "ComposioToolSet",
-    "ExecEnv",
+    "WorkspaceType",
+    "WorkspaceConfigType",
+    "WorkspaceFactory",
     "Shell",
     "action",
 )
+
+__version__ = "0.3.28"

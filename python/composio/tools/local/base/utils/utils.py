@@ -39,15 +39,15 @@ def print_if_verbose(text, verbose=True):
 
 # Replace the existing token_count function with this:
 def token_count(text):
-    from transformers import GPT2Tokenizer  # pylint: disable=C0415
+    import tiktoken  # pylint: disable=C0415
 
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    enc = tiktoken.encoding_for_model("gpt-4o")
     max_length = 1024
     # If the tokens exceed max_length, count them in chunks
     if len(text) > max_length:
         total_tokens = 0
         for i in range(0, len(text), max_length):
-            chunk = tokenizer.encode(text[i : i + max_length])  # noqa: E203
+            chunk = enc.encode(text[i : i + max_length])  # noqa: E203
             total_tokens += len(chunk)
         return total_tokens
-    return len(tokenizer.encode(text))
+    return len(enc.encode(text))

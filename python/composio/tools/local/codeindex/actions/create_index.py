@@ -24,6 +24,7 @@ SUPPORTED_FILE_EXTENSIONS = {
     ".c": "C",
     ".h": "CHEADER",
     ".md": "MD",
+    ".rst": "RST",
     ".txt": "TXT",
 }
 DEFAULT_EMBEDDING_MODEL_REMOTE = "text-embedding-3-large"
@@ -160,7 +161,9 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
             kwargs = {
                 "api_key": openai_key,
                 "model_name": DEFAULT_EMBEDDING_MODEL_REMOTE,
-                "headers": {"Helicone-Auth": helicone_auth} if helicone_auth else {},
+                "default_headers": (
+                    {"Helicone-Auth": helicone_auth} if helicone_auth else {}
+                ),
             }
             if api_base:
                 kwargs["api_base"] = api_base
@@ -196,7 +199,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
 
                 windows = self._create_windows(content)
 
-                file_extension = os.path.splitext(file_path)[1]
+                file_extension = os.path.splitext(file_path)[1].lower()
                 file_type = SUPPORTED_FILE_EXTENSIONS.get(file_extension, "Unknown")
 
                 for start, end, window_content in windows:

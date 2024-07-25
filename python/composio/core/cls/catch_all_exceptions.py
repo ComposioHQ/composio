@@ -11,9 +11,12 @@ def init_sentry():
     response = requests.get(url=url, timeout=20)
     if response.status_code != 200:
         return
+
     config = response.json()
     sentry_sdk.init(
-        dsn=config.get("dns"), traces_sample_rate=1.0, profiles_sample_rate=1.0
+        dsn=config.get("dns"),
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
     )
 
 

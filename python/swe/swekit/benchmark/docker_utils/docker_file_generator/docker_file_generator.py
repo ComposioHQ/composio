@@ -4,6 +4,7 @@ import os
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
+
 from swekit.benchmark.docker_utils.docker_file_generator.const import (
     PYTHON_ENVIRONMENT_VERSIONS,
 )
@@ -114,7 +115,7 @@ class DockerfileGenerator:
                                 install_cmd=install_cmd,
                             )
 
-            self.create_makefile()
+            # self.create_makefile()
             self.generate_docker_compose()
 
         for dockerfile, image_name in self.dockerfiles_to_build:
@@ -181,7 +182,6 @@ class DockerfileGenerator:
         )
 
         path_to_reqs = None
-        path_to_env_file = None
         install_cmds = []
 
         testbed_dir = f"{self.docker_dir}/{repo_name}/{version}"
@@ -213,22 +213,11 @@ class DockerfileGenerator:
 
             if "no_use_env" in specifications and specifications["no_use_env"]:
                 # Create environment from yml
-                path_to_env_file = get_environment_yml(
-                    setup_ref_instance, env_name, save_path=test_bed_dir
-                )
                 conda_create_cmd = f"conda create -c conda-forge -n {env_name} python={specifications['python']} -y"
-
                 # Install dependencies
                 install_cmds.append("conda env update -f environment.yml")
             else:
                 # Create environment from yml
-                path_to_env_file = get_environment_yml(
-                    setup_ref_instance,
-                    env_name,
-                    save_path=test_bed_dir,
-                    python_version=specifications["python"],
-                )
-
                 conda_create_cmd = "conda env create -f environment.yml"
         elif use_conda:
             conda_create_cmd = f"conda create -n {env_name} python={specifications['python']} {pkgs} -y"
@@ -264,17 +253,13 @@ class DockerfileGenerator:
         dockerfile_content = template.render(
             base_image=base_image,
             pyenv_image=pyenv_image,
-            docker_dir=self.docker_dir,
             repo_name=repo_name,
-            version=version,
             testbed=repo_name + "__" + version,
-            python_version=python_version,
             conda_create_cmd=conda_create_cmd,
             pre_install_cmds=pre_install_cmds,
             install_cmds=install_cmds,
             path_to_reqs=path_to_reqs,
             environment_setup_commit=environment_setup_commit,
-            path_to_env_file=path_to_env_file,
             getconda_script_path=self.getconda_path,
         )
 

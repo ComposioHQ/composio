@@ -1,6 +1,7 @@
 """
 Trigger enums.
 """
+
 from composio.client.enums.base import TRIGGERS_CACHE, TriggerData, _AnnotatedEnum, enum
 
 
@@ -9,6 +10,7 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     """Trigger object."""
 
     GITHUB_COMMIT_EVENT: "Trigger"
+    GITHUB_FOLLOWER_EVENT: "Trigger"
     GITHUB_ISSUE_ADDED_EVENT: "Trigger"
     GITHUB_LABEL_ADDED_EVENT: "Trigger"
     GITHUB_PULL_REQUEST_EVENT: "Trigger"
@@ -16,16 +18,16 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     GMAIL_NEW_GMAIL_MESSAGE: "Trigger"
     GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES: "Trigger"
     NOTION_PAGE_ADDED_TO_DATABASE: "Trigger"
-    SLACK_CHANNEL_CREATED: "Trigger"
-    SLACK_REACTION_ADDED: "Trigger"
-    SLACK_REACTION_REMOVED: "Trigger"
-    SLACK_RECEIVE_MESSAGE: "Trigger"
-    SLACK_RECEIVE_THREAD_REPLY: "Trigger"
     SLACKBOT_CHANNEL_CREATED: "Trigger"
     SLACKBOT_REACTION_ADDED: "Trigger"
     SLACKBOT_REACTION_REMOVED: "Trigger"
     SLACKBOT_RECEIVE_MESSAGE: "Trigger"
     SLACKBOT_RECEIVE_THREAD_REPLY: "Trigger"
+    SLACK_CHANNEL_CREATED: "Trigger"
+    SLACK_REACTION_ADDED: "Trigger"
+    SLACK_REACTION_REMOVED: "Trigger"
+    SLACK_RECEIVE_MESSAGE: "Trigger"
+    SLACK_RECEIVE_THREAD_REPLY: "Trigger"
     SPOTIFY_NEW_DEVICE_TRIGGER: "Trigger"
     SPOTIFY_PLAYLIST_ITEM_TRIGGER: "Trigger"
     SPOTIFY_PLAYLIST_TRIGGER: "Trigger"

@@ -2,86 +2,137 @@
 Docker workspace.
 """
 
-import json
 import os
+import socket
+import time
 import typing as t
+from dataclasses import dataclass
 from pathlib import Path
 
+import requests
 from docker import DockerClient, from_env
-from docker.errors import DockerException
+from docker.errors import DockerException, NotFound
+from docker.models.containers import Container
 
-from composio.client.enums import Action
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import Workspace
+from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.constants import (
     DEFAULT_IMAGE,
     ENV_COMPOSIO_DEV_MODE,
-    ENV_COMPOSIO_SWE_AGENT,
-    EXIT_CODE,
-    STDERR,
-    STDOUT,
+    ENV_COMPOSIO_TOOLSERVER_IMAGE,
 )
-from composio.tools.env.docker.shell import Container as DockerContainer
-from composio.tools.env.docker.shell import DockerShell
-from composio.tools.local.handler import LocalClient
 
 
-COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.resolve()
+COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.parent.resolve()
 COMPOSIO_CACHE = Path.home() / ".composio"
-CONTAINER_BASE_KWARGS = {
-    "command": "/bin/bash -l -m",
-    "tty": True,
-    "detach": True,
-    "stdin_open": True,
-    "auto_remove": False,
-}
-CONTAINER_DEVELOPMENT_MODE_KWARGS = {
-    "environment": {ENV_COMPOSIO_DEV_MODE: 1},
-    "volumes": {
-        COMPOSIO_PATH: {
-            "bind": "/opt/composio-core",
-            "mode": "rw",
-        },
-        COMPOSIO_CACHE: {
-            "bind": "/root/.composio",
-            "mode": "rw",
-        },
+CONTAINER_DEV_VOLUMES = {
+    COMPOSIO_PATH: {
+        "bind": "/opt/composio-core",
+        "mode": "rw",
+    },
+    COMPOSIO_CACHE: {
+        "bind": "/root/.composio",
+        "mode": "rw",
     },
 }
+DEV_MODE = os.environ.get(ENV_COMPOSIO_DEV_MODE, "0") == "1"
+DEFAULT_PORT = 54321
 
 
-class DockerWorkspace(Workspace):
+def _get_free_port() -> int:
+    sock = socket.socket()
+    try:
+        sock.bind(("", 0))
+        return sock.getsockname()[1]
+    finally:
+        sock.close()
+
+
+@dataclass
+class Config(WorkspaceConfigType):
+    """Docker configuration type."""
+
+    image: t.Optional[str] = None
+    """Name of the docker image."""
+
+    ports: t.Optional[t.Dict[int, t.Any]] = None
+    """
+    Ports to bind inside the container
+
+    Note: port 8000 is reserved for the tooling server inside the container
+    """
+
+    volumes: t.Optional[t.Dict[str, t.Any]] = None
+    """Voluems to bind inside the container"""
+
+
+class DockerWorkspace(RemoteWorkspace):
     """Docker workspace implementation."""
 
-    _container: DockerContainer
+    _port: int  # Tooling server port
+    _container: Container
     _client: t.Optional[DockerClient] = None
 
-    def __init__(
-        self,
-        image: t.Optional[str] = None,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-    ) -> None:
+    def __init__(self, config: Config) -> None:
         """Create a docker workspace."""
-        super().__init__(api_key=api_key, base_url=base_url)
-        self._image = image or os.environ.get(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)
-        self.logger.info(f"Creating docker workspace with image: {self._image}")
+        super().__init__(config=config)
+        self.image = config.image or os.environ.get(
+            ENV_COMPOSIO_TOOLSERVER_IMAGE,
+            DEFAULT_IMAGE,
+        )
+        self._port_requests = config.ports or {}
+        self._volume_requests = config.volumes or {}
+
+    def setup(self) -> None:
+        """Setup docker workspace."""
+        self.logger.debug(f"Creating docker workspace with image: {self.image}")
+        self._port = _get_free_port()
+        self.url = f"http://localhost:{self._port}/api"
+
+        container_kwargs: t.Dict[str, t.Any] = {
+            "tty": True,
+            "detach": True,
+            "stdin_open": True,
+            "auto_remove": False,
+            "image": self.image,
+            "name": self.id,
+            "environment": self.environment,
+            "command": "/root/entrypoint.sh",
+            "ports": {
+                **self._port_requests,
+                8000: self._port,
+            },
+            "volumes": self._volume_requests,
+        }
+        if DEV_MODE:
+            container_kwargs["volumes"].update(CONTAINER_DEV_VOLUMES)  # type: ignore
+            container_kwargs["environment"][ENV_COMPOSIO_DEV_MODE] = "1"
+
         try:
-            container_kwargs = {
-                "image": self._image,
-                "name": self.id,
-                **CONTAINER_BASE_KWARGS,  # type: ignore
-            }
-            if os.environ.get(ENV_COMPOSIO_DEV_MODE, 0) != 0:
-                container_kwargs.update(CONTAINER_DEVELOPMENT_MODE_KWARGS)  # type: ignore
             self._container = self.client.containers.run(**container_kwargs)
             self._container.start()
-        except Exception as e:
-            raise Exception("exception in starting container: ", e) from e
+            self._container.reload()
+        except DockerException as e:
+            raise ComposioSDKError("Error starting workspace: ", e) from e
 
-    def _create_shell(self) -> DockerShell:
-        """Create docker shell."""
-        return DockerShell(container=self._container)
+        self._wait()
+
+        # Setup network config
+        self.host = "localhost"
+        self.ports = [
+            int(port[0]["HostPort"])
+            for port in self._container.ports.values()
+            if int(port[0]["HostPort"]) != self._port
+        ]
+
+    def _wait(self) -> None:
+        """Wait for docker workspace to get started."""
+        while True:
+            try:
+                if self._request(endpoint="", method="get").status_code == 200:
+                    return
+            except requests.ConnectionError:
+                time.sleep(0.1)
 
     @property
     def client(self) -> DockerClient:
@@ -96,62 +147,11 @@ class DockerWorkspace(Workspace):
                 ) from e
         return self._client
 
-    def _execute_shell(
-        self,
-        action: Action,
-        request_data: dict,
-        metadata: dict,
-    ) -> t.Dict:
-        """Execute action using shell."""
-        return LocalClient().execute_action(
-            action=action,
-            request_data=request_data,
-            metadata={
-                **metadata,
-                "workspace": self,
-            },
-        )
-
-    def _execute_cli(
-        self,
-        action: Action,
-        request_data: dict,
-        metadata: dict,
-    ) -> t.Dict:
-        """Execute action using CLI"""
-        output = self.shells.recent.exec(
-            f"composio execute {action.slug}"
-            f" --params '{json.dumps(request_data)}'"
-            f" --metadata '{json.dumps(metadata)}'"
-        )
-        if output[EXIT_CODE] != 0:
-            return {"status": "failure", "message": output[STDERR]}
-        try:
-            return {"status": "success", "data": json.loads(output[STDOUT])}
-        except json.JSONDecodeError:
-            return {"status": "failure", "message": output[STDOUT]}
-
-    def execute_action(
-        self,
-        action: Action,
-        request_data: dict,
-        metadata: dict,
-    ) -> t.Dict:
-        """Execute action in docker workspace."""
-        if action.shell:
-            return self._execute_shell(
-                action=action,
-                request_data=request_data,
-                metadata=metadata,
-            )
-        return self._execute_cli(
-            action=action,
-            request_data=request_data,
-            metadata=metadata,
-        )
-
     def teardown(self) -> None:
         """Teardown docker workspace factory."""
         super().teardown()
-        self._container.kill()
-        self._container.remove()
+        try:
+            self._container.kill()
+            self._container.remove()
+        except NotFound as e:
+            self.logger.debug(f"Error cleaning {self.id} - {e}")

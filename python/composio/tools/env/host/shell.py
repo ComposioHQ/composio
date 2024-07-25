@@ -1,10 +1,13 @@
 """Host shell session wrapper."""
 
 import os
+import re
 import select
 import subprocess
 import time
 import typing as t
+
+import paramiko
 
 from composio.tools.env.base import Shell
 from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
@@ -16,16 +19,40 @@ from composio.tools.env.docker.scripts import (
 from composio.tools.env.id import generate_id
 
 
+_ANSI_ESCAPE = re.compile(
+    rb"""
+    \x1B
+    (?:
+        [@-Z\\-_]
+    |
+        \[
+        [0-?]*
+        [ -/]*
+        [@-~]
+    )
+""",
+    re.VERBOSE,
+)
+
+
 # TODO: Execute in a virtual environment
 class HostShell(Shell):
     """Host interactive shell."""
 
     _process: subprocess.Popen
 
-    def __init__(self) -> None:
+    def __init__(self, environment: t.Optional[t.Dict] = None) -> None:
         """Initialize shell."""
         super().__init__()
         self._id = generate_id()
+        self.environment = {
+            **(environment or {}),
+            **{key: str(val) for key, val in SHELL_ENV_VARS.items()},
+        }
+
+    def setup(self) -> None:
+        """Setup host shell."""
+        self.logger.debug(f"Setting up shell: {self.id}")
         self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
@@ -35,8 +62,21 @@ class HostShell(Shell):
             bufsize=1,
         )
         self.logger.debug(
-            f"Initial data from session: {self.id} - {self._read(wait=False)}"
+            "Initial data from session: %s - %s",
+            self.id,
+            self._read(wait=False),
         )
+
+        for key, value in self.environment.items():
+            self.exec(f"export {key}={value}")
+            time.sleep(0.05)
+
+        self.exec(cmd=SHELL_STATE_CMD)
+        time.sleep(0.05)
+
+        for file in SHELL_SOURCE_FILES:
+            self.exec(cmd=f"source {file}")
+            time.sleep(0.05)
 
     def _has_command_exited(self, cmd: str) -> bool:
         """Waif for command to exit."""
@@ -98,18 +138,6 @@ class HostShell(Shell):
             STDERR: buffer[stderr].decode(),
         }
 
-    def setup(self) -> None:
-        """Setup host shell."""
-        self.logger.debug(f"Setting up shell: {self.id}")
-        for var, val in SHELL_ENV_VARS.items():
-            self.exec(cmd=f"{var}={val}")
-            time.sleep(0.05)
-        self.exec(cmd=SHELL_STATE_CMD)
-        time.sleep(0.05)
-        for file in SHELL_SOURCE_FILES:
-            self.exec(cmd=f"source {file}")
-            time.sleep(0.05)
-
     def _write(self, cmd: str) -> None:
         """Write command to shell."""
         try:
@@ -117,7 +145,6 @@ class HostShell(Shell):
             os.write(stdin.fileno(), self.sanitize_command(cmd=cmd))
             stdin.flush()
         except BrokenPipeError as e:
-            # TODO: Handle this as framework error
             raise RuntimeError(str(e)) from e
 
     def exec(self, cmd: str) -> t.Dict:
@@ -131,3 +158,111 @@ class HostShell(Shell):
     def stop(self) -> None:
         """Stop and remove the running shell."""
         self._process.kill()
+
+
+class SSHShell(Shell):
+    """Interactive shell over SSH session."""
+
+    def __init__(
+        self, client: paramiko.SSHClient, environment: t.Optional[t.Dict] = None
+    ) -> None:
+        """Initialize interactive shell."""
+        super().__init__()
+        self._id = generate_id()
+        self.client = client
+        self.channel = self.client.invoke_shell()
+        self.environment = {
+            **(environment or {}),
+            **SHELL_ENV_VARS,
+        }
+
+    def setup(self) -> None:
+        """Invoke shell."""
+        self.logger.debug(f"Setting up shell: {self.id}")
+        self._send("export PS1=''")
+        time.sleep(0.05)
+        self._read()
+
+        # Setup environment
+        for key, value in self.environment.items():
+            self._send(f"export {key}={value}")
+            time.sleep(0.05)
+            self._read()
+
+        # CD to user dir
+        self.exec(cmd="cd ~/")
+
+        # Setup shell state
+        self.exec(cmd=SHELL_STATE_CMD)
+
+        # Source the tool files
+        for file in SHELL_SOURCE_FILES:
+            self.exec(cmd=f"source {file}")
+            time.sleep(0.05)
+
+    def _send(self, buffer: str) -> None:
+        """Send buffer to shell."""
+        self.channel.sendall(f"{buffer}\n".encode("utf-8"))
+        time.sleep(0.05)
+
+    def _read(self) -> str:
+        """Read buffer from shell."""
+        output = b""
+        while self.channel.recv_ready():
+            output += self.channel.recv(512)
+        while self.channel.recv_stderr_ready():
+            output += self.channel.recv_stderr(512)
+        return _ANSI_ESCAPE.sub(b"", output).decode(encoding="utf-8")
+
+    def _wait(self, cmd: str) -> None:
+        """Wait for the command to execute."""
+        _cmd, *_rest = cmd.split(" ")
+        if _cmd in ("ls", "cd") or len(_rest) == 0:
+            time.sleep(0.3)
+            return
+
+        while True:
+            _, stdout, _ = self.client.exec_command(command="ps -eo command")
+            if all(
+                not line.lstrip().rstrip().endswith(cmd)
+                for line in stdout.read().decode().split("\n")
+            ):
+                return
+            time.sleep(0.3)
+
+    def _exit_status(self) -> int:
+        """Wait for the command to execute."""
+        self._send(buffer="echo $?")
+        try:
+            output = self._read().split("\n")
+            if len(output) == 1:
+                return int(output[0].lstrip().rstrip())
+            return int(output[1].lstrip().rstrip())
+        except ValueError:
+            return 1
+
+    def _sanitize_output(self, output: str) -> str:
+        """Clean the output."""
+        lines = list(map(lambda x: x.rstrip(), output.split("\r\n")))
+        clean = "\n".join(lines[1:])
+        if clean.startswith("\r"):
+            clean = clean[1:]
+        return clean
+
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute a command and return output and exit code."""
+        output = ""
+        for _cmd in cmd.split(" && "):
+            self._send(buffer=_cmd)
+            self._wait(cmd=_cmd)
+            output += self._sanitize_output(output=self._read())
+
+        return {
+            STDOUT: output,
+            STDERR: "",
+            EXIT_CODE: str(self._exit_status()),
+        }
+
+    def stop(self) -> None:
+        """Close the SSH channel."""
+        self.channel.close()

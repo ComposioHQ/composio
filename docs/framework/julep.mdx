@@ -93,7 +93,7 @@ Replace `julep_api_key` with actual API key.
   situation_prompt = "You are at a tech fair seeking innovative projects."
   session = julep_client.sessions.create(user_id=user.id, agent_id=agent.id, situation=situation_prompt)
 
-  user_msg = "Could you star the GitHub repository ComposioHQ/composio?"
+  user_msg = "Could you star the GitHub repository composiohq/composio?"
 
   response = julep_client.sessions.chat(
       session_id=session.id,
@@ -119,7 +119,7 @@ Replace `julep_api_key` with actual API key.
 <Step title="Check Response">
 <CodeGroup>
   ```bash Check Agent Response
-  [{'content': 'I have starred the repository "composio" for you on GitHub under the account "ComposioHQ".', 'role': 'agent'}]
+  [{'content': 'I have starred the repository "composio" for you on GitHub under the account "composiohq".', 'role': 'agent'}]
   ```
 </CodeGroup>
 </Step>
