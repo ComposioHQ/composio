@@ -49,7 +49,7 @@ export class DockerWorkspace extends RemoteWorkspace {
     private _volumes?: IDockerConfig["volumes"]
 
     constructor(configRepo: WorkspaceConfig<IDockerConfig>) {
-        super(config);
+        super(configRepo);
         this.id = `composio-${uuidv4()}`;
         this.image = getEnvVariable(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)!;
         this.docker = nodeExternalRequire("dockerode")();
