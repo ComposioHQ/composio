@@ -175,7 +175,7 @@ class ComposioToolSet(WithLogger):
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
-        if action.no_auth:
+        if action.no_auth or action.is_runtime:
             return
 
         if self._connected_accounts is None:
@@ -389,13 +389,14 @@ class ComposioToolSet(WithLogger):
             )
             items = items + remote_items
 
+        items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         for item in items:
             self.check_connected_account(action=item.name)
             item = self.action_preprocessing(item)
-        items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         return items
 
     def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
+        required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
             if param_details.get("properties") == FileModel.schema().get("properties"):
                 action_item.parameters.properties[param_name].pop("properties")
@@ -415,6 +416,32 @@ class ComposioToolSet(WithLogger):
                         "description": f"File path to {param_details.get('description', '')}",
                     }
                 )
+            elif param_details.get("type") in [
+                "string",
+                "integer",
+                "number",
+                "boolean",
+            ]:
+                param_type = param_details["type"]
+                description = param_details.get("description", "").rstrip(".")
+                if description:
+                    param_details[
+                        "description"
+                    ] = f"{description}. Please provide a value of type {param_type}."
+                else:
+                    param_details[
+                        "description"
+                    ] = f"Please provide a value of type {param_type}."
+
+            if param_name in required_params:
+                description = param_details.get("description", "")
+                if description:
+                    param_details[
+                        "description"
+                    ] = f"{description.rstrip('.')}. This parameter is required."
+                else:
+                    param_details["description"] = "This parameter is required."
+                param_details["required"] = True
 
         return action_item
 
