@@ -3,6 +3,7 @@ import { E2BWorkspace } from "./e2b/workspace";
 import { DockerWorkspace } from "./docker/workspace";
 import { Workspace } from "./base";
 import { WorkspaceConfig } from "./config";
+import logger from "../utils/logger";
 
 export enum ExecEnv {
     HOST = "HOST",
@@ -26,7 +27,7 @@ export class WorkspaceFactory {
         if (this.workspace) {
             return;
         }
-        console.debug(`Creating workspace with env=${this.kwargs.env} and config=${JSON.stringify(this.kwargs.config)}`);
+        logger.debug(`Creating workspace with env=${env} and kwargs=${JSON.stringify(kwargs)}`);
         let workspace: Workspace | null = null;
         switch (this.kwargs.env) {
             case ExecEnv.DOCKER:
