@@ -5,7 +5,7 @@ Camel tool spec.
 import typing as t
 
 # pylint: disable=E0611
-from camel.functions import OpenAIFunction
+from camel.toolkits import OpenAIFunction
 
 from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
