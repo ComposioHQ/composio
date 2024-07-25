@@ -8,8 +8,8 @@ composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
     actions=[
         Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER,
-        Action.GITHUB_USERS_GET_AUTHENTICATED
-        ]
+        Action.GITHUB_USERS_GET_AUTHENTICATED,
+    ]
 )
 tool_node = ToolNode(tools)
 model_with_tools = ChatOpenAI(temperature=0, streaming=True).bind_tools(tools)
@@ -54,6 +54,6 @@ for chunk in app.stream(
             )
         ]
     },
-    stream_mode="values"
+    stream_mode="values",
 ):
     chunk["messages"][-1].pretty_print()
