@@ -30,15 +30,17 @@ class NavigateHistoryResponse(BaseBrowserResponse):
 
 
 class NavigateHistory(BaseBrowserAction):
-    """Navigate browser history."""
+    """
+    Navigate browser history.
 
-    _display_name = "Navigate Browser History"
-    _description = "Navigates back or forward in the browser history by a specified number of steps."
-    _tags = ["browser", "navigation", "history"]
+    This action allows for navigation through the browser's history, either
+    backward or forward, for a specified number of steps.
+    """
+
+    _display_name = "Navigate History"
+
     _request_schema = NavigateHistoryRequest
     _response_schema = NavigateHistoryResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
     
     def execute_on_browser_manager(
         self,
@@ -46,7 +48,7 @@ class NavigateHistory(BaseBrowserAction):
         request_data: NavigateHistoryRequest
     ) -> NavigateHistoryResponse:
         """Execute the navigate history action."""
-        previous_url = browser_manager.browser.current_url        
+        previous_url = browser_manager.get_current_url()       
         navigation_method = browser_manager.back if request_data.direction == NavigationDirection.BACK else browser_manager.forward
         steps_taken = 0
         message = None

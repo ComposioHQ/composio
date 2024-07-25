@@ -62,6 +62,17 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to navigate to {url}: {str(e)}")
             raise
 
+    def get_current_url(self) -> str:
+        """Get the current URL."""
+        try:
+            if self.browser.page is not None:
+                return self.browser.page.url
+            else:
+                raise BrowserError("Failed to get current URL: No current URL found.")
+        except BrowserError as e:
+            self.logger.error(f"Failed to get current URL: {str(e)}")
+            raise
+
     def get_page_viewport(self) -> t.Optional[t.Dict[str, int]]:
         """Get the viewport of the current page."""
         try:

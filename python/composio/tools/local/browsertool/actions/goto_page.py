@@ -18,15 +18,17 @@ class GotoPageResponse(BaseBrowserResponse):
     message: str = Field(default="Navigated to the specified webpage.", description="Message indicating the result of the navigation action")
 
 class GotoPage(BaseBrowserAction):
-    """Navigate to a specified webpage."""
+    """
+    Navigate to a specified webpage.
 
-    _display_name = "Go to Webpage"
-    _description = "Navigates the browser to a specified URL."
-    _tags = ["browser", "navigation", "url"]
+    This action allows the browser to load and display a given URL. 
+
+    The action takes a URL and an optional timeout as input parameters. 
+    """
+
+    _display_name = "GotoPage"
     _request_schema = GotoPageRequest
     _response_schema = GotoPageResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
     
     def execute_on_browser_manager(
         self,

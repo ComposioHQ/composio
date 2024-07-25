@@ -23,15 +23,17 @@ class RefreshPageResponse(BaseBrowserResponse):
 
 
 class RefreshPage(BaseBrowserAction):
-    """Refresh the current page in the browser."""
+    """
+    Refresh the current page in the browser.
+    
+    This action reloads the current page, optionally ignoring the browser cache.
+    It inherits from BaseBrowserAction and implements the specific logic for
+    refreshing a web page.
+    """
 
-    _display_name = "Refresh Current Page"
-    _description = "Refreshes the current page in the browser, with an option to ignore cache."
-    _tags = ["browser", "refresh", "reload", "cache"]
+    _display_name = "RefreshPage"
     _request_schema = RefreshPageRequest
     _response_schema = RefreshPageResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
     
     def execute_on_browser_manager(
         self,
@@ -39,9 +41,9 @@ class RefreshPage(BaseBrowserAction):
         request_data: RefreshPageRequest
     ) -> RefreshPageResponse:
         """Execute the refresh page action."""
-        previous_url = browser_manager.browser.current_url
+        previous_url = browser_manager.get_current_url()
         browser_manager.refresh(ignore_cache=request_data.ignore_cache)
-        new_url = browser_manager.browser.current_url            
+        new_url = browser_manager.get_current_url()            
         return RefreshPageResponse(
             success=True,
             previous_url=previous_url,

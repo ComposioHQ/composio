@@ -18,16 +18,18 @@ class GetPageDetailsResponse(BaseBrowserResponse):
     success: bool = Field(default=False, description="Whether the action was successful")
 
 class GetPageDetails(BaseBrowserAction):
-    """Get details of the current webpage."""
+    """
+    Get details of the current webpage.
 
-    _display_name = "Get Webpage Details"
-    _description = "Retrieves various details about the current webpage, including URL, title, and optionally an accessibility snapshot."
-    _tags = ["browser", "page", "details", "information", "accessibility"]
+    This action retrieves various details about the currently loaded webpage in the browser.
+    It can include information such as the page title, URL, meta tags, and optionally,
+    an accessibility snapshot.
+    """
+
+    _display_name = "GetPageDetails"
     _request_schema = GetPageDetailsRequest
     _response_schema = GetPageDetailsResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
-    
+        
     def execute_on_browser_manager(
         self,
         browser_manager: BrowserManager,

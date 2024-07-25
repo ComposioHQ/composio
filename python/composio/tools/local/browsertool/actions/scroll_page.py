@@ -39,15 +39,24 @@ class ScrollPageResponse(BaseBrowserResponse):
 
 
 class ScrollPage(BaseBrowserAction):
-    """Scroll the page in the browser."""
+    """
+    Scroll the page in the browser.
+
+    This action allows for scrolling the page either by a specified number of pixels
+    or to a specific element on the page. It supports scrolling in four directions:
+    up, down, left, and right.
+
+    The scroll behavior is determined by the ScrollPageRequest parameters:
+    - scroll_type: Specifies whether to scroll by pixels or to an element.
+    - direction: Indicates the direction to scroll (up, down, left, or right).
+    - amount: The number of pixels to scroll (used when scroll_type is 'pixels').
+    - selector: The selector of the element to scroll to (used when scroll_type is 'element').
+    - selector_type: The type of selector to use for finding the element (e.g., CSS, XPath).
+    """
 
     _display_name = "Scroll Page"
-    _description = "Scrolls the page in the specified direction by pixels or to a specific element."
-    _tags = ["browser", "scroll", "interaction"]
     _request_schema = ScrollPageRequest
     _response_schema = ScrollPageResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
     
     def execute_on_browser_manager(
         self,

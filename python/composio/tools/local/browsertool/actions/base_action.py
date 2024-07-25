@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Type, Dict
+from pathlib import Path
+import random
+import string
 
 from pydantic import BaseModel, Field
 
@@ -23,6 +26,10 @@ class BaseBrowserRequest(BaseModel):
         description="ID of the browser manager where the action will be executed. "
         "If not provided, the most recent browser manager will be used.",
     )
+    capture_screenshot: bool = Field(
+        default=False,
+        description="Whether to capture before and after screenshots of page while executing the action.",
+    )
 
 
 class BaseBrowserResponse(BaseModel):
@@ -45,6 +52,14 @@ class BaseBrowserResponse(BaseModel):
     page_dimensions: Optional[Dict[str, Optional[int]]] = Field(
         default=None,
         description="Total dimensions of the page content.",
+    )
+    before_screenshot: Optional[str] = Field(
+        default=None,
+        description="Path to the screenshot taken before the action was executed.",
+    )
+    after_screenshot: Optional[str] = Field(
+        default=None,
+        description="Path to the screenshot taken after the action was executed.",
     )
 
 
@@ -73,23 +88,23 @@ class BaseBrowserAction(Action, ABC):
             browser_manager = next(iter(browser_managers.values()))
 
         try:
+            before_screenshot = None
+            after_screenshot = None
+
+            if request_data.capture_screenshot:
+                before_screenshot = self._take_screenshot(browser_manager, "before")
+
             resp = self.execute_on_browser_manager(
                 browser_manager=browser_manager, request_data=request_data
             )
-            current_url = None
-            if browser_manager:
-                if browser_manager.browser:
-                    if browser_manager.browser.page:
-                        current_url = browser_manager.browser.page.url
-                    else:
-                        current_url = browser_manager.browser.current_url
-            resp.current_url = current_url
+            resp.current_url = browser_manager.get_current_url()
+ 
             # Get viewport size
-            viewport = browser_manager.browser.get_page_viewport()
+            viewport = browser_manager.get_page_viewport()
             resp.viewport = {k: v or None for k, v in viewport.items()} if viewport else None
             
             # Get scroll position
-            scroll_position = browser_manager.browser.page.evaluate("""
+            scroll_position = browser_manager.execute_script("""
                 () => ({
                     x: window.pageXOffset,
                     y: window.pageYOffset
@@ -98,7 +113,7 @@ class BaseBrowserAction(Action, ABC):
             resp.scroll_position = {k: v or None for k, v in scroll_position.items()} if scroll_position else None
             
             # Get total page dimensions
-            page_dimensions = browser_manager.browser.page.evaluate("""
+            page_dimensions = browser_manager.execute_script("""
                 () => ({
                     width: Math.max(
                         document.body.scrollWidth,
@@ -119,22 +134,32 @@ class BaseBrowserAction(Action, ABC):
                 })
             """)
             resp.page_dimensions = {k: v or None for k, v in page_dimensions.items()} if page_dimensions else None
+
+            if request_data.capture_screenshot:
+                after_screenshot = self._take_screenshot(browser_manager, "after")
+
+            resp.before_screenshot = before_screenshot
+            resp.after_screenshot = after_screenshot
             
             return resp
         except Exception as e:
             error_message = f"An error occurred while executing the browser action: {str(e)}"
             self.logger.error(error_message, exc_info=True)
-            current_url = None
-            if browser_manager:
-                if browser_manager.browser:
-                    if browser_manager.browser.page:
-                        current_url = browser_manager.browser.page.url
-                    else:
-                        current_url = browser_manager.browser.current_url
             return self._response_schema(
                 error=error_message,
-                current_url=current_url,
+                current_url=browser_manager.get_current_url(),
                 viewport=None,
                 scroll_position=None,
-                page_dimensions=None
+                page_dimensions=None,
+                before_screenshot=None,
+                after_screenshot=None
             )
+
+    def _take_screenshot(self, browser_manager: BrowserManager, prefix: str) -> str:
+        home_dir = Path.home()
+        browser_media_dir = home_dir / ".browser_media"
+        browser_media_dir.mkdir(parents=True, exist_ok=True)
+        random_string = ''.join(random.choices(string.ascii_lowercase, k=6))
+        output_path = browser_media_dir / f"{prefix}_screenshot_{random_string}.png"
+        browser_manager.take_screenshot(output_path, full_page=True)
+        return str(output_path)

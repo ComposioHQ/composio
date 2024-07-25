@@ -25,15 +25,24 @@ class ClickElementResponse(BaseBrowserResponse):
 
 
 class ClickElement(BaseBrowserAction):
-    """Click an element on the current webpage."""
+    """
+    Click an element on the current webpage.
 
-    _display_name = "Click Webpage Element"
-    _description = "Clicks on a specified element on the current webpage using various selector types, scrolling into view if necessary."
-    _tags = ["browser", "click", "interaction", "element", "scroll"]
+    This action performs the following steps:
+    1. Locates the specified element using the provided selector and selector type.
+    2. Scrolls the element into view to ensure it's visible and clickable.
+    3. Attempts to click the element.
+
+    The action handles various scenarios, including:
+    - Element not found
+    - Unable to scroll to the element
+    - Successful click
+    """
+
+    _display_name = "ClickElement"
     _request_schema = ClickElementRequest
     _response_schema = ClickElementResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
+
     
     def execute_on_browser_manager(
         self,
@@ -44,14 +53,11 @@ class ClickElement(BaseBrowserAction):
         
         # First, check if the element exists
         element = browser_manager.find_element(request_data.selector, request_data.selector_type.value)
-        element_found = element is not None
-        scrolled_into_view = False
 
-        if element_found:
+        if element is not None:
             # Scroll the element into view before clicking
             try:
                 browser_manager.scroll_to_element(request_data.selector, request_data.selector_type.value)
-                scrolled_into_view = True
             except Exception as scroll_error:
                 return ClickElementResponse(success=False, element_found=True, scrolled_into_view=False, error=f"Error scrolling to element: {str(scroll_error)}")
 
@@ -59,4 +65,4 @@ class ClickElement(BaseBrowserAction):
             browser_manager.click(request_data.selector, request_data.selector_type.value)
             return ClickElementResponse(success=True, element_found=True, scrolled_into_view=True)
         else:
-            return ClickElementResponse(success=False, element_found=False, scrolled_into_view=False)
+            return ClickElementResponse(success=False, element_found=False, scrolled_into_view=False, error="Element not found")

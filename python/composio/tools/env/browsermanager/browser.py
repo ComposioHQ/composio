@@ -194,7 +194,6 @@ class Browser(WithLogger):
         """
         page = self._ensure_page_initialized()
         try:
-
             selector_func = selector_map.get(selector_type.lower())
             if not selector_func:
                 raise ValueError(f"Unsupported selector type: {selector_type}")
@@ -284,16 +283,43 @@ class Browser(WithLogger):
 
     def scroll_to_element(self, selector: str, selector_type: str = "css") -> None:
         """
-        Scroll to a specific element.
+        Scroll to a specific element if it is not already visible on the screen.
 
         :param selector: CSS selector for the element to scroll to.
+        :param selector_type: Type of selector (CSS, XPATH, ID, NAME, TAG, CLASS). Defaults to "css".
         """
         page = self._ensure_page_initialized()
         selector_func = selector_map.get(selector_type.lower())
         if not selector_func:
             raise ValueError(f"Unsupported selector type: {selector_type}")
-        page.evaluate(f"document.querySelector('{selector_func(selector)}').scrollIntoView({{behavior: 'smooth'}})")
-        self._add_random_delay()
+
+        # Check if the element is visible in the viewport
+        is_visible = page.evaluate("""
+            (selector) => {
+                const element = document.querySelector(selector);
+                if (!element) return false;
+                const rect = element.getBoundingClientRect();
+                const viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+                const viewWidth = Math.max(document.documentElement.clientWidth, window.innerWidth);
+                return !(rect.bottom < 0 || rect.top - viewHeight >= 0 || rect.right < 0 || rect.left - viewWidth >= 0);
+            }
+        """, selector_func(selector))
+
+        # Only scroll to the element if it is not visible
+        if not is_visible:
+            page.evaluate("""
+                (selector) => {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    } else {
+                        console.warn('Element not found:', selector);
+                    }
+                }
+            """,
+                selector_func(selector),
+            )
+            self._add_random_delay()
 
     def new_tab(self) -> None:
         """Open a new tab."""
@@ -355,6 +381,7 @@ class Browser(WithLogger):
         """
         page = self._ensure_page_initialized()
         return page.evaluate(script, *args)
+   
 
     def get_element_attribute(self, selector: str, attribute: str, selector_type: str = "css") -> t.Optional[str]:
         """

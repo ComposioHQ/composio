@@ -27,15 +27,29 @@ class GetElementDetailsResponse(BaseBrowserResponse):
 
 
 class GetElementDetails(BaseBrowserAction):
-    """Get details of an element on the current webpage."""
+    """
+    Get details of an element on the current webpage.
 
-    _display_name = "Get Webpage Element Details"
-    _description = "Retrieves details of a specified element on the current webpage using various selector types."
-    _tags = ["browser", "element", "details"]
+    This action performs the following steps:
+    1. Locates the specified element using the provided selector and selector type.
+    2. If the element is found, retrieves detailed information about it.
+
+    The details retrieved include:
+    - Tag name
+    - ID
+    - Class name
+    - Text content
+    & more
+
+    This action is useful for:
+    - Debugging element issues
+    - Extracting detailed information about specific page elements
+    - Verifying element properties and attributes
+    """
+
+    _display_name = "GetElementDetails"
     _request_schema = GetElementDetailsRequest
     _response_schema = GetElementDetailsResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
     
     def execute_on_browser_manager(
         self,

@@ -30,15 +30,19 @@ class GetScreenshotResponse(BaseBrowserResponse):
 
 
 class GetScreenshot(BaseBrowserAction):
-    """Get a screenshot of a webpage."""
+    """
+    Get a screenshot of a webpage.
 
-    _display_name = "Get Webpage Screenshot"
-    _description = "Takes a screenshot of the specified webpage and saves it to the given or default location."
-    _tags = ["browser", "screenshot", "capture"]
+    This action allows capturing a screenshot of a specified webpage or the current page
+    in the browser. It can take full-page screenshots or just the visible area.
+
+    If no output path is specified, it generates a random filename in the user's 
+    .browser_media directory.
+    """
+
+    _display_name = "GetScreenshot"
     _request_schema = GetScreenshotRequest
     _response_schema = GetScreenshotResponse
-    _tag = "browser"
-    _tool_name = "browsertool"
     
     def execute_on_browser_manager(
         self,
