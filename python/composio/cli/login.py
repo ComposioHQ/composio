@@ -5,15 +5,11 @@ Usage:
     composio login
 """
 
-import webbrowser
-
 import click
 
-from composio.cli.context import Context, pass_context
+from composio.cli.context import Context, login_flow, pass_context
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client import Composio
 from composio.exceptions import ComposioSDKError
-from composio.utils.url import get_web_url
 
 
 class Examples(HelpfulCmdBase, click.Command):
@@ -54,28 +50,6 @@ def _login(
 
     context.console.print("\n> [green]Authenticating...[/green]")
     try:
-        key = Composio.generate_auth_key()
-        url = get_web_url(path=f"?cliKey={key}")
-        context.console.print(
-            "> Please login using the following link"
-            if no_browser
-            else "> Redirecting you to the login page"
-        )
-        context.console.print(f"> [green]{url}[/green]")
-        if not no_browser:
-            webbrowser.open(url)
-        code = click.prompt("> Enter authentication code")
-        api_key = Composio.validate_auth_session(
-            key=key,
-            code=code,
-        )
-        if context.using_api_key_from_env() and api_key != context.user_data.api_key:
-            context.console.print(
-                "> [yellow]WARNING: API Key from environment does not match "
-                "with the one retrieved from login[/yellow]"
-            )
-        context.user_data.api_key = api_key
-        context.user_data.store()
-        context.console.print("✔ [green]Authenticated successfully![/green]")
+        login_flow(context=context, no_browser=no_browser)
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
