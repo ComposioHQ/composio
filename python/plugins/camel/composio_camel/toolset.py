@@ -7,7 +7,7 @@ import typing as t
 # pylint: disable=E0611
 from camel.toolkits import OpenAIFunction
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
@@ -71,7 +71,7 @@ class ComposioToolSet(BaseComposioToolSet):
         # set up agent
 
         prompt = (
-            "I have craeted a new Github Repo,"
+            "I have created a new Github Repo,"
             "Please star my github repository: camel-ai/camel"
         )
         user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)
@@ -115,7 +115,7 @@ class ComposioToolSet(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "Seperate `entity_id` can not be provided during "
+                "Separate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:
