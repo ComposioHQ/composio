@@ -1,0 +1,49 @@
+FROM {{ baseimage }}
+
+# Switch user
+USER user
+
+# Go to user dir
+WORKDIR /home/user
+
+# Clone github repository
+RUN git config --global http.postBuffer 157286400 && git clone --depth 1 https://github.com/{{ repository }}
+
+# Set repository as workdir
+WORKDIR /home/user/{{ reponame }}
+
+# Fetch the base commit
+RUN git fetch --depth 1 origin {{ basecommit}}
+
+# Checkout to base commit
+RUN git checkout {{ basecommit}}
+
+{% if dependencies -%}
+# Install dependecies
+RUN /home/user/.dev/bin/python -m pip install {{ dependencies }} || echo "$?"
+
+{% endif -%}
+
+
+{% if requirements -%}
+# Install dependecies
+COPY requirements.txt _requirements.txt
+
+# Install from requirements.txt
+RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
+
+{% endif -%}
+
+{% if preinstall -%}
+# Pre install
+{% for cmd in preinstall -%}
+RUN {{ cmd }}
+{% endfor -%}
+{{ "" }}
+{% endif -%}
+
+# Install package
+RUN /home/user/.dev/bin/python -m {{ install }} || echo "$?"
+
+# Switch to root
+USER root

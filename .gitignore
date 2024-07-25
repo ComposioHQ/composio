@@ -34,5 +34,9 @@ refactor_debug.ipynb
 **/coder_agent_logs_*
 **/.composio.coder.*
 .indexing_status.json
+
 python/dockerfiles/e2b-dev/composio
 python/dockerfiles/composio
+python/swe/dockerfiles/generated
+python/swe/dockerfiles/logs
+python/swe/logs
