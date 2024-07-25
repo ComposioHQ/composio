@@ -70,20 +70,10 @@ class E2BWorkspace(RemoteWorkspace):
             cmd="composio apps update",
         )
 
-        # TOFIX: Do not use random user every time
         # Setup SSH server
-        _ssh_username = uuid4().hex.replace("-", "")
         _ssh_password = uuid4().hex.replace("-", "")
         self.sandbox.process.start(
-            cmd=(
-                f"sudo useradd -rm -d /home/{_ssh_username} -s "
-                f"/bin/bash -g root -G sudo {_ssh_username}"
-            ),
-            on_stderr=lambda o: print(o.line),
-            on_stdout=lambda o: print(o.line),
-        )
-        self.sandbox.process.start(
-            cmd=f"echo {_ssh_username}:{_ssh_password} | sudo chpasswd",
+            cmd=f"echo user:{_ssh_password} | sudo chpasswd",
         )
         self.sandbox.process.start(
             cmd="sudo service ssh restart",
@@ -91,7 +81,7 @@ class E2BWorkspace(RemoteWorkspace):
         self.sandbox.process.start(
             cmd=(
                 f"COMPOSIO_LOGGING_LEVEL=debug "
-                f"_SSH_USERNAME={_ssh_username} _SSH_PASSWORD={_ssh_password} "
+                f"_SSH_USERNAME=user _SSH_PASSWORD={_ssh_password} "
                 f"composio serve -h '0.0.0.0' -p {self.port}"
             ),
         )
