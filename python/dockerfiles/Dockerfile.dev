@@ -18,6 +18,9 @@ RUN /bin/python3 -m venv .composio/venv
 # Setup path
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
+# Install composio for dependency caching
+RUN python -m pip install composio-core[all]==0.3.27 fastapi
+
 # Set working dir
 WORKDIR /root
 
@@ -25,7 +28,7 @@ WORKDIR /root
 COPY ./composio /root/composio
 
 # Install from source
-RUN python3 -m pip install /root/composio[all]
+RUN python -m pip install /root/composio[all] --no-deps --force-reinstall
 
 # Remove cache
 RUN rm -rf /root/composio/

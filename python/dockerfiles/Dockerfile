@@ -19,7 +19,7 @@ RUN /bin/python3 -m venv .composio/venv
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio
-RUN python -m pip install composio-core==0.3.27 fastapi
+RUN python -m pip install composio-core[all]==0.3.27 fastapi
 
 # Setup user
 RUN useradd -rm -d /home/user -s /bin/bash -g root -G sudo -u 1000 user
