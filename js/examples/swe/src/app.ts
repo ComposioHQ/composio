@@ -10,7 +10,7 @@ async function main() {
   const assistant = await llm.beta.assistants.create({
     name: "SWE agent",
     instructions: GOAL + `\nRepo is: ${repo} and your goal is to ${issue}`,
-    model: "gpt-4-turbo",
+    model: "gpt-4o",
     tools: tools
   });
 
@@ -42,7 +42,7 @@ async function main() {
     console.log('No output available');
   }
 
-  await composioToolset.workspace.close();
+  // await composioToolset.workspace.close();
 }
 
 main();
