@@ -11,7 +11,7 @@ import inflection
 import jsonref
 from pydantic import BaseModel, Field
 
-from composio.client.enums import SentinalObject
+from composio.client.enums.base import SentinalObject
 from composio.utils.logging import WithLogger
 
 

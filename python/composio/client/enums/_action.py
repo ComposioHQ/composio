@@ -3,8 +3,6 @@ Action enums.
 """
 import typing as t
 
-import typing_extensions as te
-
 from composio.client.enums.base import (
     ACTIONS_CACHE,
     ActionData,
@@ -12,12 +10,6 @@ from composio.client.enums.base import (
     add_runtime_action,
     enum,
 )
-
-
-class SentinalObject:
-    """Sentinal object."""
-
-    sentinal = None
 
 
 @enum
@@ -3770,12 +3762,6 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     ZOOM_WEB_IN_ARS_UPDATE_SURVEY: "Action"
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_VIRTUAL_BACKGROUND: "Action"
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_WALLPAPER: "Action"
-
-    def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
-        """Create an Enum"""
-        if hasattr(value, "sentinal"):
-            value = value().get_tool_merged_action_name()  # type: ignore
-        super().__init__(value=value)  # type: ignore
 
     @property
     def name(self) -> str:
