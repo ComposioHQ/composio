@@ -393,7 +393,6 @@ class ComposioToolSet(WithLogger):
         for item in items:
             self.check_connected_account(action=item.name)
             item = self.action_preprocessing(item)
-        self.logger.debug(f"items={items}")
         return items
 
     def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
