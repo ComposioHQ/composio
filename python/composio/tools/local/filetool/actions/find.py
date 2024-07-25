@@ -36,6 +36,7 @@ class FindFileResponse(BaseFileResponse):
     results: t.List[str] = Field(
         default=[], description="List of file paths matching the search pattern"
     )
+    message: str = Field(default="", description="Message to display to the user")
     error: str = Field(default="", description="Error message if any")
 
 
@@ -88,6 +89,11 @@ class FindFile(BaseFileAction):
                 include=request_data.include,  # type: ignore
                 exclude=request_data.exclude,  # type: ignore
             )
+            if len(results) > 200:
+                return FindFileResponse(
+                    results=results[:200],
+                    message=f"Too many results found. Found {len(results)} results, returning 300 of them. Please refine your search criteria.",
+                )
             if results == []:
                 return FindFileResponse(error="No results found.")
             return FindFileResponse(results=results)
