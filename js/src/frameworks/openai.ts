@@ -153,10 +153,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         const tool_calls = run.required_action?.submit_tool_outputs?.tool_calls || [];
         const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> = await Promise.all(
             tool_calls.map(async (tool_call) => {
+                logger.debug(`Executing tool call with ID: ${tool_call.function.name} and parameters: ${JSON.stringify(tool_call.function.arguments)}`);
                 const tool_response = await this.executeToolCall(
                     tool_call as OpenAI.ChatCompletionMessageToolCall,
                     entityId || this.entityId
                 );
+                logger.debug(`Received tool response: ${JSON.stringify(tool_response)}`);
                 return {
                     tool_call_id: tool_call.id,
                     output: JSON.stringify(tool_response),

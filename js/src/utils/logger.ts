@@ -1,5 +1,6 @@
 import winston from 'winston';
 import colors from 'colors';
+import { getEnvVariable } from './shared';
 
 const colorize = winston.format((info) => {
   switch (info.level) {
@@ -23,7 +24,7 @@ const colorize = winston.format((info) => {
 });
 
 const logger = winston.createLogger({
-  level: process.env.DEBUG ? 'debug' : 'info',
+  level: getEnvVariable("COMPOSIO_DEBUG", "0") === "1" ? 'debug' : 'info',
   format: winston.format.combine(
     winston.format.timestamp({ format: 'HH:mm:ss' }),
     colorize(),

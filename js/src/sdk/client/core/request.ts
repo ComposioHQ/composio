@@ -1,3 +1,4 @@
+import logger from '../../../utils/logger';
 import { ApiError } from './ApiError';
 import type { ApiRequestOptions } from './ApiRequestOptions';
 import type { ApiResult } from './ApiResult';
@@ -224,7 +225,7 @@ export const getResponseBody = async (response: Response): Promise<unknown> => {
 				}
 			}
 		} catch (error) {
-			console.error(error);
+			logger.error(error);
 		}
 	}
 	return undefined;

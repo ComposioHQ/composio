@@ -4,6 +4,7 @@ import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
 import type Docker from "dockerode";
 import type CliProgress from "cli-progress";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
+import logger from "../../utils/logger";
 
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
 const ENV_COMPOSIO_SWE_AGENT = "COMPOSIO_SWE_AGENT";
@@ -123,7 +124,7 @@ export class DockerWorkspace extends RemoteWorkspace {
 
 
         if (!imageExists) {
-            console.log(`Pulling Docker image ${this.image}...`);
+            logger.info(`Pulling Docker image ${this.image}...`);
             let cliProgress = nodeExternalRequire("cli-progress");
 
             const bar: CliProgress.Bar = new cliProgress.SingleBar({
@@ -137,7 +138,7 @@ export class DockerWorkspace extends RemoteWorkspace {
                 this.docker.pull(this.image, (err: any, stream: any) => {
                     if (err) {
                         bar.stop();
-                        console.error('Failed to pull Docker image.');
+                        logger.error('Failed to pull Docker image.');
                         return reject(err);
                     }
                     this.docker.modem.followProgress(stream, onFinished, onProgress);
@@ -145,7 +146,7 @@ export class DockerWorkspace extends RemoteWorkspace {
                     function onFinished(err: any, output: any) {
                         if (err) {
                             bar.stop();
-                            console.error('Failed to pull Docker image.');
+                            logger.error('Failed to pull Docker image.');
                             return reject(err);
                         }
                         bar.update(100, { status: 'Docker image pulled successfully.' });
@@ -159,14 +160,14 @@ export class DockerWorkspace extends RemoteWorkspace {
                 });
             });
         } else {
-            console.debug(`Image ${this.image} found locally.`);
+            logger.debug(`Image ${this.image} found locally.`);
         }
 
         const containers = await this.docker.listContainers({ all: true });
         const existingContainer = containers.find((container: any) => container.Names.find((name: any) => name.startsWith(`/composio-`)));
 
         if (existingContainer) {
-            console.debug(`Container with name ${this.id} is already running.`);
+            logger.debug(`Container with name ${this.id} is already running.`);
             this.container = this.docker.getContainer(existingContainer.Id);
             await this.container.restart();
             this.port = existingContainer.Ports.find((port: any) => port.PrivatePort === 8000)?.PublicPort!;
@@ -218,12 +219,12 @@ export class DockerWorkspace extends RemoteWorkspace {
 
     async teardown() {
         if (this.container) {
-            console.log(`Stopping container ${this.container.id}...`);
+            logger.info(`Stopping container ${this.container.id}...`);
             try {
                 await this.container.kill();
                 await this.container.remove();
             } catch (error) {
-                console.debug("Failed to stop and remove container:", error);
+                logger.debug("Failed to stop and remove container:", error);
             }
         }
     }

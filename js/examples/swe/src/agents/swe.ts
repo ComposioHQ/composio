@@ -18,7 +18,7 @@ const llm = new OpenAI({
 });
 const composioToolset = new OpenAIToolSet({ workspaceConfig: Workspace.Docker() });
 
-export async function initSWEAgent() {
+export async function initSWEAgent(): Promise<{composioToolset: OpenAIToolSet; assistantThread: OpenAI.Beta.Thread; llm: OpenAI; tools: Array<any>}> {
     let tools = await composioToolset.getTools({
         apps: [
             "filetool",

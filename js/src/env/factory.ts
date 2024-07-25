@@ -16,33 +16,33 @@ export class WorkspaceFactory {
     id: string | null = null;
 
     env: ExecEnv;
-    kwargs: WorkspaceConfig;
+    workspaceConfig: WorkspaceConfig;
 
     constructor(env: ExecEnv, kwargs: WorkspaceConfig) {
         this.env = env;
-        this.kwargs = kwargs;
+        this.workspaceConfig = kwargs;
     }
 
     async new() {
         if (this.workspace) {
             return;
         }
-        logger.debug(`Creating workspace with env=${env} and kwargs=${JSON.stringify(kwargs)}`);
+        logger.debug(`Creating workspace with env=${this.workspaceConfig.env} and kwargs=${JSON.stringify(this.workspaceConfig.config)}`);
         let workspace: Workspace | null = null;
-        switch (this.kwargs.env) {
+        switch (this.workspaceConfig.env) {
             case ExecEnv.DOCKER:
-                workspace = new DockerWorkspace(this.kwargs);
+                workspace = new DockerWorkspace(this.workspaceConfig);
                 await workspace.setup();
                 break;
             case ExecEnv.HOST:
-                console.warn("Local tools are not supported in host environment");
+                logger.warn("Local tools are not supported in host environment");
                 break;
             case ExecEnv.E2B:
-                workspace = new E2BWorkspace(this.kwargs);
+                workspace = new E2BWorkspace(this.workspaceConfig);
                 await workspace.setup();
                 break;
             default:
-                throw new Error(`Unknown environment: ${this.kwargs.env}`);
+                throw new Error(`Unknown environment: ${this.workspaceConfig.env}`);
         }
 
         if (workspace) {

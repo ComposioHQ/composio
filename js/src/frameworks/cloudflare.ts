@@ -151,11 +151,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
     const outputs = [];
-    if (result instanceof ReadableStream) {
-      console.log("");
-    } else if (!result) {
-      console.log("");
-    } else if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
+    if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
       for (const tool_call of result.tool_calls) {
         if (tool_call.name) {
           outputs.push(await this.executeToolCall(tool_call, entityId));

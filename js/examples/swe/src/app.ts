@@ -1,6 +1,7 @@
-import { fromGithub } from './utils';
+import { fromGithub, getBranchNameFromIssue } from './utils';
 import { initSWEAgent } from './agents/swe';
 import { GOAL } from './prompts';
+import { OpenAIToolSet, Workspace } from 'composio-core';
 
 async function main() {
   /**Run the agent.**/
@@ -31,18 +32,21 @@ async function main() {
   await composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
 
   const response = await composioToolset.executeAction("filetool_git_patch", {
-    new_file_paths: ["."]
   });
 
-  if (response.stderr && response.stderr.length > 0) {
-    console.log('Error:', response.stderr);
-  } else if (response.stdout) {
-    console.log('=== Generated Patch ===\n' + response.stdout);
-  } else {
-    console.log('No output available');
-  }
+  if (response.patch && response.patch?.length > 0) {
+    console.log('=== Generated Patch ===\n' + response.patch);
+    const branchName = getBranchNameFromIssue(issue);
+    const shellResponse = await composioToolset.executeAction("SHELL_EXEC_COMMAND", {
+      cmd: `git config --global user.name 'Utkarsh Dixit' && git config --global user.email utkarshdix02@gmail.com && git checkout -b ${branchName} && git commit -m 'feat: ${issue}' && git push origin ${branchName}`
+    });
 
-  // await composioToolset.workspace.close();
+    console.log("Push repo", shellResponse);
+
+    console.log("\n Now time to create ")
+  } else {
+    console.log('No output available - no patch was generated :(');
+  }
 }
 
 main();
