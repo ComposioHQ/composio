@@ -77,6 +77,14 @@ class FileManager(WithLogger):
             os.chdir(self._pwd)
         set_current_file_manager(manager=None)
 
+    def resolve_dir(self, dir: t.Union[Path, str]) -> Path:
+        """Resolve a directory path."""
+        return (
+            Path(dir).resolve()
+            if Path(dir).is_absolute()
+            else (self.working_dir / dir).resolve()
+        )
+
     def chdir(self, path: t.Union[Path, str]) -> None:
         """
         Change the current working directory.
@@ -218,19 +226,11 @@ class FileManager(WithLogger):
                     pass
 
         if not results:
-            print(f'No matches found for "{word}" in {pattern}')
+            self.logger.debug(f'No matches found for "{word}" in {pattern}')
             return {}
 
         num_matches: int = sum(len(matches) for matches in results.values())
-        num_files: int = len(results)
-
-        if num_files > 100:
-            print(
-                f'More than {num_files} files matched for "{word}" in {pattern}. Please narrow your search.'
-            )
-            return {}
-
-        self.logger.info(f'Found {num_matches} matches for "{word}" in {pattern}')
+        self.logger.debug(f'Found {num_matches} matches for "{word}" in {pattern}')
         return results
 
     def find(
@@ -258,9 +258,11 @@ class FileManager(WithLogger):
         :return: List of file paths matching the search pattern
         """
 
-        include_paths = [Path(dir).resolve() for dir in (include or [self.working_dir])]
-        exclude_paths = [Path(dir).resolve() for dir in (exclude or [])] + [
-            Path(".git").resolve()
+        include_paths = [
+            self.resolve_dir(dir) for dir in (include or [self.working_dir])
+        ]
+        exclude_paths = [self.resolve_dir(dir) for dir in (exclude or [])] + [
+            self.resolve_dir(".git")
         ]
 
         if case_sensitive:
@@ -281,8 +283,9 @@ class FileManager(WithLogger):
                     ):
                         continue
 
-                    if regex.match(item.name):
-                        matches.append(str(item.relative_to(self.working_dir)))
+                    relative_path = str(item.relative_to(self.working_dir))
+                    if regex.match(relative_path):
+                        matches.append(relative_path)
 
                     if item.is_dir():
                         search_recursive(item, current_depth + 1)
@@ -292,7 +295,7 @@ class FileManager(WithLogger):
         for directory in include_paths:
             search_recursive(directory, 0)
 
-        return matches
+        return sorted(matches)
 
     def _tree(
         self,
@@ -343,7 +346,10 @@ class FileManager(WithLogger):
     def ls(self) -> t.List[t.Tuple[str, str]]:
         """List contents of the current directory with their types."""
         return [
-            (str(path), "dir" if path.is_dir() else "file")
+            (
+                str(path.relative_to(self.working_dir)),
+                "dir" if path.is_dir() else "file",
+            )
             for path in self.working_dir.iterdir()
         ]
 
