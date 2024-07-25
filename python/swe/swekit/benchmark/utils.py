@@ -189,7 +189,7 @@ def build_image_and_container(
     start_time = datetime.datetime.now()
     composio_toolset.set_workspace_id(workspace_id=workspace.id)
 
-    if image_name == DEFAULT_IMAGE:
+    if not image_name.startswith("composio/swe"):
         clone_resp = composio_toolset.execute_action(
             action=Action.FILETOOL_GIT_CLONE,
             params={
