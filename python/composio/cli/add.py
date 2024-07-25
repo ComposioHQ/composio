@@ -10,7 +10,7 @@ import webbrowser
 
 import click
 
-from composio.cli.context import Context, login_required, pass_context
+from composio.cli.context import Context, ensure_login, pass_context
 from composio.cli.utils.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity
@@ -70,8 +70,8 @@ class AddIntegrationExamples(HelpfulCmd):
     help="Specify scopes for the connection.",
     multiple=True,
 )
-@login_required
 @pass_entity_id
+@ensure_login
 @pass_context
 def _add(
     context: Context,
@@ -265,7 +265,7 @@ def _handle_oauth(
     integration: t.Optional[IntegrationModel] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
-    """Handle basic auth."""
+    """Handle no auth."""
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
