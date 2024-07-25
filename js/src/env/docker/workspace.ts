@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
-import { RemoteWorkspace, WorkspaceConfig } from "../base";
+import { RemoteWorkspace } from "../base";
 import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
 import type Docker from "dockerode";
 import type CliProgress from "cli-progress";
+import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
 const ENV_COMPOSIO_SWE_AGENT = "COMPOSIO_SWE_AGENT";
@@ -21,6 +22,21 @@ function getFreePort(): Promise<number> {
     });
 }
 
+export interface IDockerConfig extends IWorkspaceConfig {
+    /** Name of the docker image. */
+    image?: string;
+
+    /**
+     * Ports to bind inside the container
+     *
+     * Note: port 8000 is reserved for the tooling server inside the container
+     */
+    ports?: { [key: number]: any };
+
+    /** Volumes to bind inside the container */
+    volumes?: { [key: string]: any };
+}
+
 export class DockerWorkspace extends RemoteWorkspace {
     public docker: Docker;
     public container: any | null = null;
@@ -29,11 +45,73 @@ export class DockerWorkspace extends RemoteWorkspace {
     public image: string;
     public url: string = "";
 
-    constructor(kwargs: WorkspaceConfig) {
-        super(kwargs);
+    private _ports?: IDockerConfig["ports"]
+    private _volumes?: IDockerConfig["volumes"]
+
+    constructor(configRepo: WorkspaceConfig<IDockerConfig>) {
+        super(config);
         this.id = `composio-${uuidv4()}`;
         this.image = getEnvVariable(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)!;
         this.docker = nodeExternalRequire("dockerode")();
+        this._ports = configRepo.config.ports;
+        this._volumes = configRepo.config.volumes;
+    }
+
+    private getBaseDockerConfig() {
+        const IS_DEV_MODE = getEnvVariable(ENV_COMPOSIO_DEV_MODE, "0");
+
+        const exposedPorts: {[key: string]: {}} = {
+            "8000/tcp": {},
+        };
+        const portBindings: {[key: string]: Array<{ HostPort: string }>} = {
+            "8000/tcp": [
+                {
+                    HostPort: this.port.toString(),
+                },
+            ],
+        };
+
+        // Add additional ports if specified in the environment configuration
+        if (this._ports) {
+            for (const port of Object.keys(this._ports)) {
+                const portKey = `${port}/tcp`;
+                exposedPorts[portKey] = {};
+                portBindings[portKey] = [{ HostPort: port }];
+            }
+        }
+
+        const volumeBindings: Array<string> = [];
+
+        // Add additional volumes if specified in the environment configuration
+        if (this._volumes) {
+            for (const hostPath in this._volumes) {
+                const containerPath = this._volumes[hostPath];
+                volumeBindings.push(`${hostPath}:${containerPath}`);
+            }
+        }
+
+        if(IS_DEV_MODE === "1") {
+            const path = require("node:path");
+            const os = require("node:os");
+
+            const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
+            const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
+
+            volumeBindings.push(...[
+                `${COMPOSIO_PATH}:/opt/composio-core:rw`,
+                `${COMPOSIO_CACHE}:/root/.composio:rw`,
+            ]);
+        }
+
+        const envBindings: Array<string> = Object.entries(this.environment).map(
+            ([key, value]) => `${key}=${value}`
+        );
+
+        if(IS_DEV_MODE === "1") {
+            envBindings.push(`${ENV_COMPOSIO_DEV_MODE}=1`);
+        }
+
+        return { exposedPorts, portBindings, volumeBindings, envBindings };
     }
 
     async setup() {
@@ -90,16 +168,11 @@ export class DockerWorkspace extends RemoteWorkspace {
         if (existingContainer) {
             console.debug(`Container with name ${this.id} is already running.`);
             this.container = this.docker.getContainer(existingContainer.Id);
+            await this.container.restart();
             this.port = existingContainer.Ports.find((port: any) => port.PrivatePort === 8000)?.PublicPort!;
             this.url = `http://localhost:${this.port}/api`;
         } else {
-
-            const path = require("node:path");
-            const os = require("node:os");
-
-            const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
-            const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
-
+            const { exposedPorts, portBindings, volumeBindings, envBindings } = this.getBaseDockerConfig();
             const containerOptions: Docker.ContainerCreateOptions = {
                 Image: this.image,
                 name: this.id,
@@ -110,26 +183,12 @@ export class DockerWorkspace extends RemoteWorkspace {
                 AttachStderr: true,
                 OpenStdin: true,
                 StdinOnce: false,
-                ExposedPorts: {
-                    "8000/tcp": {},
-                },
+                ExposedPorts: exposedPorts,
                 HostConfig: {
-                    PortBindings: {
-                        "8000/tcp": [
-                            {
-                                HostPort: this.port.toString(),
-                            },
-                        ],
-                    },
-                    Binds: [
-                        `${COMPOSIO_PATH}:/opt/composio-core:rw`,
-                        `${COMPOSIO_CACHE}:/root/.composio:rw`,
-                    ],
+                    PortBindings: portBindings,
+                    Binds: volumeBindings,
                 },
-                Env: [
-                    ...Object.entries(this.environment).map(([key, value]) => `${key}=${value}`),
-                    `${ENV_COMPOSIO_DEV_MODE}=${getEnvVariable(ENV_COMPOSIO_DEV_MODE, "0")}`,
-                ],
+                Env: envBindings,
             };
 
             this.container = await this.docker.createContainer(containerOptions);

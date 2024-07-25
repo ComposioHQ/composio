@@ -7,6 +7,8 @@ import {
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { GetListActionsResponse } from "../sdk/client";
+import { WorkspaceConfig } from "../env/config";
+import { Workspace } from "../env";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -24,14 +26,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     apiKey?: Optional<string>;
     baseUrl?: Optional<string>;
     entityId?: string;
-    workspaceEnv: ExecEnv;
+    workspaceConfig?: WorkspaceConfig
   }) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       "cloudflare",
       config.entityId || "default",
-      config.workspaceEnv || ExecEnv.HOST
+      config.workspaceConfig || Workspace.Host()
     );
   }
 
@@ -62,6 +64,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
         }) || [];
   }
 
+  /**
+   * @deprecated Use getActions instead.
+   */
   async get_actions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
@@ -98,6 +103,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       }) || [];
   }
 
+  /**
+   * @deprecated Use getTools instead.
+   */
   async get_tools(filters: {
     apps: Sequence<string>;
     tags?: Optional<Array<string>>;
@@ -123,6 +131,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     );
   }
 
+  /**
+   * @deprecated Use executeToolCall instead.
+   */
   async execute_tool_call(
     tool: {
       name: string;
@@ -153,6 +164,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     return outputs;
   }
 
+  /**
+   * @deprecated Use handleToolCall instead.
+   */
   async handle_tool_call(
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null

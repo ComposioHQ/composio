@@ -3,6 +3,8 @@ import { OpenAI } from "openai";
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { GetListActionsResponse } from "../sdk/client";
+import { WorkspaceConfig } from "../env/config";
+import { Workspace } from "../env";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -21,7 +23,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         apiKey?: Optional<string>,
         baseUrl?: Optional<string>,
         entityId?: string,
-        workspaceEnv: ExecEnv
+        workspaceConfig: WorkspaceConfig
       }
     ) {
         super(
@@ -29,7 +31,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             config.baseUrl || COMPOSIO_BASE_URL,
             "openai",
             config.entityId || "default",
-            config.workspaceEnv || ExecEnv.HOST
+            config.workspaceConfig || Workspace.Host()
         );
     }
 

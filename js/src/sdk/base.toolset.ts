@@ -5,6 +5,8 @@ import { RemoteWorkspace } from "../env/base";
 import type { IPythonActionDetails, Optional, Sequence } from "./types";
 import { GetListActionsResponse } from "./client";
 import { getEnvVariable } from "../utils/shared";
+import { WorkspaceConfig } from "../env/config";
+import { Workspace } from "../env";
 
 class UserData {
     apiKey: string | undefined;
@@ -49,7 +51,7 @@ export class ComposioToolSet {
         baseUrl: string | null = COMPOSIO_BASE_URL,
         runtime: string | null = null,
         entityId: string = "default",
-        workspaceEnv: ExecEnv = ExecEnv.HOST
+        workspaceConfig: WorkspaceConfig = Workspace.Host()
     ) {  
         const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || UserData.load(getUserPath()).apiKey;
         if (!clientApiKey) {
@@ -59,14 +61,15 @@ export class ComposioToolSet {
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
         this.runtime = runtime;
         this.entityId = entityId;
-        this.workspace = new WorkspaceFactory(
-            workspaceEnv,
-            {
-                composioAPIKey: this.apiKey,
-                composioBaseURL: baseUrl,
-            }
-        )
-        this.workspaceEnv = workspaceEnv;
+
+        if(!workspaceConfig.config.composioBaseURL) {
+            workspaceConfig.config.composioBaseURL = baseUrl
+        }
+        if(!workspaceConfig.config.composioAPIKey) {
+            workspaceConfig.config.composioAPIKey = apiKey;
+        }
+        this.workspace = new WorkspaceFactory(workspaceConfig.env, workspaceConfig);
+        this.workspaceEnv = workspaceConfig.env;
 
         if (typeof process !== 'undefined') {
             process.on("exit", async () => {
@@ -76,10 +79,7 @@ export class ComposioToolSet {
     }
 
     async setup() {
-        await this.workspace.new(this.workspaceEnv, {
-            composioAPIKey: this.apiKey,
-            composioBaseURL: COMPOSIO_BASE_URL,
-        });
+        await this.workspace.new();
 
         if(!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
             this.localActions = await (this.workspace.workspace as RemoteWorkspace).getLocalActionsSchema();

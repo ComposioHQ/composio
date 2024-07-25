@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosResponse } from "axios";
 import { IPythonActionDetails } from "../sdk/types";
 import { getEnvVariable } from "../utils/shared";
+import { IWorkspaceConfig, WorkspaceConfig } from "./config";
 
 const ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN";
 const ENV_ACCESS_TOKEN = "ACCESS_TOKEN";
@@ -109,13 +110,6 @@ export class ShellFactory {
     }
 }
 
-export interface WorkspaceConfig {
-    composioAPIKey?: string | null;
-    composioBaseURL?: string | null;
-    githubAccessToken?: string | null;
-    environment?: { [key: string]: string };
-}
-
 export interface IExecuteActionMetadata {
     entityId?: string | null;
 }
@@ -129,14 +123,14 @@ export class Workspace {
     environment: { [key: string]: string };
     private _shell_factory: ShellFactory | undefined;
 
-    constructor(config: WorkspaceConfig) {
+    constructor(configRepo: WorkspaceConfig<IWorkspaceConfig>) {
         this.id = uuidv4();
         this.accessToken = uuidv4().replace(/-/g, "");
-        this.composioAPIKey = _readEnvVar(ENV_COMPOSIO_API_KEY, config.composioAPIKey!);
-        this.composioBaseURL = _readEnvVar(ENV_COMPOSIO_BASE_URL, config.composioBaseURL!);
-        this.githubAccessToken = config.githubAccessToken || getEnvVariable(ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE")!;
+        this.composioAPIKey = _readEnvVar(ENV_COMPOSIO_API_KEY, configRepo.config.composioAPIKey!);
+        this.composioBaseURL = _readEnvVar(ENV_COMPOSIO_BASE_URL, configRepo.config.composioBaseURL!);
+        this.githubAccessToken = configRepo.config.githubAccessToken || getEnvVariable(ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE")!;
         this.environment = {
-            ...config.environment,
+            ...(configRepo.config.environment || {}),
             [ENV_COMPOSIO_API_KEY]: this.composioAPIKey,
             [ENV_COMPOSIO_BASE_URL]: this.composioBaseURL,
             [ENV_GITHUB_ACCESS_TOKEN]: this.githubAccessToken,
@@ -176,9 +170,9 @@ export class Workspace {
 export class RemoteWorkspace extends Workspace {
     url: string;
 
-    constructor(config: WorkspaceConfig) {
-        super(config);
-        this.url = config.composioBaseURL!;
+    constructor(configRepo: WorkspaceConfig) {
+        super(configRepo);
+        this.url = configRepo.config.composioBaseURL!;
     }
 
     async _request(endpoint: string, method: string, json: any = null, timeout: number = 60000.0): Promise<AxiosResponse> {

@@ -1,7 +1,8 @@
 
 import { E2BWorkspace } from "./e2b/workspace";
 import { DockerWorkspace } from "./docker/workspace";
-import { Workspace, WorkspaceConfig } from "./base";
+import { Workspace } from "./base";
+import { WorkspaceConfig } from "./config";
 
 export enum ExecEnv {
     HOST = "HOST",
@@ -21,26 +22,26 @@ export class WorkspaceFactory {
         this.kwargs = kwargs;
     }
 
-    async new(env: ExecEnv, kwargs: WorkspaceConfig) {
+    async new() {
         if (this.workspace) {
             return;
         }
-        console.debug(`Creating workspace with env=${env} and kwargs=${JSON.stringify(kwargs)}`);
+        console.debug(`Creating workspace with env=${this.kwargs.env} and config=${JSON.stringify(this.kwargs.config)}`);
         let workspace: Workspace | null = null;
-        switch (env) {
+        switch (this.kwargs.env) {
             case ExecEnv.DOCKER:
-                workspace = new DockerWorkspace(kwargs);
+                workspace = new DockerWorkspace(this.kwargs);
                 await workspace.setup();
                 break;
             case ExecEnv.HOST:
                 console.warn("Local tools are not supported in host environment");
                 break;
             case ExecEnv.E2B:
-                workspace = new E2BWorkspace(kwargs);
+                workspace = new E2BWorkspace(this.kwargs);
                 await workspace.setup();
                 break;
             default:
-                throw new Error(`Unknown environment: ${env}`);
+                throw new Error(`Unknown environment: ${this.kwargs.env}`);
         }
 
         if (workspace) {
