@@ -111,16 +111,16 @@ def test_workspace() -> None:
         #     action=Action.FILETOOL_EDIT_FILE,
         #     params={"file_path": "/Users/karanvaidya/codes/composio_sdk/python/swe/examples/crewai_agent/compiler.py", "start_line": 19, "end_line": 19, "text": "FORCE = object() #added data"},
         # )
-        output = toolset.execute_action(
-            action=Action.FILETOOL_EDIT_FILE,
-            params={
-                "file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py",
-                "start_line": 307,
-                "end_line": 307,
-                "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc",
-            },
-        )
-        logger.info(f"output of edit file: {output}")
+        # output = toolset.execute_action(
+        #     action=Action.FILETOOL_EDIT_FILE,
+        #     params={
+        #         "file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py",
+        #         "start_line": 307,
+        #         "end_line": 307,
+        #         "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc",
+        #     },
+        # )
+        # logger.info(f"output of edit file: {output}")
         assert False
         _check_output(
             output=toolset.execute_action(

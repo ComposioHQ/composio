@@ -12,8 +12,6 @@ from langchain_anthropic import ChatAnthropic
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 from tools import calculate_operation
 
-from composio_crewai import App, ComposioToolSet, WorkspaceType
-
 
 # Load environment variables from .env
 dotenv.load_dotenv()
