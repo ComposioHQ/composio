@@ -1,7 +1,9 @@
 
 import { E2BWorkspace } from "./e2b/workspace";
 import { DockerWorkspace } from "./docker/workspace";
-import { Workspace, WorkspaceConfig } from "./base";
+import { Workspace } from "./base";
+import { WorkspaceConfig } from "./config";
+import logger from "../utils/logger";
 
 export enum ExecEnv {
     HOST = "HOST",
@@ -14,33 +16,33 @@ export class WorkspaceFactory {
     id: string | null = null;
 
     env: ExecEnv;
-    kwargs: WorkspaceConfig;
+    workspaceConfig: WorkspaceConfig;
 
     constructor(env: ExecEnv, kwargs: WorkspaceConfig) {
         this.env = env;
-        this.kwargs = kwargs;
+        this.workspaceConfig = kwargs;
     }
 
-    async new(env: ExecEnv, kwargs: WorkspaceConfig) {
+    async new() {
         if (this.workspace) {
             return;
         }
-        console.debug(`Creating workspace with env=${env} and kwargs=${JSON.stringify(kwargs)}`);
+        logger.debug(`Creating workspace with env=${this.workspaceConfig.env} and kwargs=${JSON.stringify(this.workspaceConfig.config)}`);
         let workspace: Workspace | null = null;
-        switch (env) {
+        switch (this.workspaceConfig.env) {
             case ExecEnv.DOCKER:
-                workspace = new DockerWorkspace(kwargs);
+                workspace = new DockerWorkspace(this.workspaceConfig);
                 await workspace.setup();
                 break;
             case ExecEnv.HOST:
-                console.warn("Local tools are not supported in host environment");
+                logger.warn("Local tools are not supported in host environment - see docs https://docs.composio.dev/swekit-js/workspace-env");
                 break;
             case ExecEnv.E2B:
-                workspace = new E2BWorkspace(kwargs);
+                workspace = new E2BWorkspace(this.workspaceConfig);
                 await workspace.setup();
                 break;
             default:
-                throw new Error(`Unknown environment: ${env}`);
+                throw new Error(`Unknown environment: ${this.workspaceConfig.env}`);
         }
 
         if (workspace) {

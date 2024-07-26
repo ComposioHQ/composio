@@ -7,6 +7,9 @@ import {
 import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { GetListActionsResponse } from "../sdk/client";
+import { WorkspaceConfig } from "../env/config";
+import { Workspace } from "../env";
+import logger from "../utils/logger";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -24,14 +27,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     apiKey?: Optional<string>;
     baseUrl?: Optional<string>;
     entityId?: string;
-    workspaceEnv: ExecEnv;
+    workspaceConfig?: WorkspaceConfig
   }) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       "cloudflare",
       config.entityId || "default",
-      config.workspaceEnv || ExecEnv.HOST
+      config.workspaceConfig || Workspace.Host()
     );
   }
 
@@ -62,10 +65,13 @@ export class CloudflareToolSet extends BaseComposioToolSet {
         }) || [];
   }
 
+  /**
+   * @deprecated Use getActions instead.
+   */
   async get_actions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    console.warn("get_actions is deprecated, use getActions instead");
+    logger.warn("get_actions is deprecated, use getActions instead");
     return this.getActions(filters);
   }
 
@@ -98,12 +104,15 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       }) || [];
   }
 
+  /**
+   * @deprecated Use getTools instead.
+   */
   async get_tools(filters: {
     apps: Sequence<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
-    console.warn("get_tools is deprecated, use getTools instead");
+    logger.warn("get_tools is deprecated, use getTools instead");
     return this.getTools(filters);
   }
 
@@ -123,6 +132,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     );
   }
 
+  /**
+   * @deprecated Use executeToolCall instead.
+   */
   async execute_tool_call(
     tool: {
       name: string;
@@ -130,7 +142,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<string> {
-    console.warn("execute_tool_call is deprecated, use executeToolCall instead");
+    logger.warn("execute_tool_call is deprecated, use executeToolCall instead");
     return this.executeToolCall(tool, entityId);
   }
 
@@ -139,11 +151,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
     const outputs = [];
-    if (result instanceof ReadableStream) {
-      console.log("");
-    } else if (!result) {
-      console.log("");
-    } else if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
+    if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
       for (const tool_call of result.tool_calls) {
         if (tool_call.name) {
           outputs.push(await this.executeToolCall(tool_call, entityId));
@@ -153,11 +161,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     return outputs;
   }
 
+  /**
+   * @deprecated Use handleToolCall instead.
+   */
   async handle_tool_call(
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
-    console.warn("handle_tool_call is deprecated, use handleToolCall instead");
+    logger.warn("handle_tool_call is deprecated, use handleToolCall instead");
     return this.handleToolCall(result, entityId);
   }
 }
