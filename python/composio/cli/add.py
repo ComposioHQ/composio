@@ -73,7 +73,7 @@ class AddIntegrationExamples(HelpfulCmd):
 @click.option(
     "--force",
     is_flag=True,
-    help="Force new integration.",
+    help="Override the existing account.",
 )
 @pass_entity_id
 @ensure_login
