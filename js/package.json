@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc  --project . --outDir lib",
+    "lint": "eslint .",    "build": "tsc  --project . --outDir lib",
     "type-docs": "typedoc"
   },
   "keywords": [],
@@ -28,7 +28,8 @@
     "typescript": "^5.4.5",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4",
-    "wrangler": "^3.63.1"
+    "eslint": "^8.44.0",
+    "eslint-config-standard": "^17.0.0",    "wrangler": "^3.63.1"
   },
   "dependencies": {
     "@e2b/code-interpreter": "^0.0.8",
