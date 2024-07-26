@@ -1,4 +1,4 @@
-FROM composio/composio:dev
+FROM composio/composio:latest
 
 # Install dependencies
 RUN apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
