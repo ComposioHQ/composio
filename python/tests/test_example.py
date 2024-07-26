@@ -17,6 +17,8 @@ EXAMPLES_PATH = Path.cwd() / "examples"
 # Require env vars
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY")
+JULEP_API_KEY = os.environ.get("JULEP_API_KEY")
+JULEP_API_URL = os.environ.get("JULEP_API_URL")
 
 # Plugin test definitions
 EXAMPLES = (
@@ -56,6 +58,99 @@ EXAMPLES = (
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
+    {
+        "file": PLUGINS / "crew_ai" / "crewai_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+        },
+    },
+    {
+        "file": PLUGINS / "julep" / "julep_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "finish_reason=<ChatResponseFinishReason.STOP: 'stop'>"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+            "JULEP_API_KEY": JULEP_API_KEY,
+            "JULEP_API_URL": JULEP_API_URL,
+        },
+    },
+    {
+        "file": PLUGINS / "langchain" / "langchain_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
+        },
+    },
+    {
+        "file": PLUGINS / "langgraph" / "langgraph_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
+        },
+    },
+    {
+        "file": PLUGINS / "openai" / "openai_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
+        },
+    },
+    {
+        "file": PLUGINS / "lyzr" / "lyzr_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
+        },
+    },
+    {
+        "file": PLUGINS / "praisonai" / "praisonai_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
+        },
+    }
 )
 
 

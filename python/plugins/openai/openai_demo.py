@@ -23,12 +23,7 @@ tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
 # Extension of system prompt(Not using at this moment)
 _ = composio_toolset.get_agent_instructions(
-    apps=[App.GMAIL],
-    actions=[
-        Action.MATHEMATICAL_CALCULATOR,
-        Action.GITHUB_ACTIONS_ADD_CUSTOM_LABELS_TO_SELF_HOSTED_RUNNER_FOR_ORG,
-        Action.ASANA_ALLOCATIONS_DELETE_ALLOCATION_BY_ID,
-    ],
+    apps=[App.GITHUB],
 )
 
 # Get response from the LLM
