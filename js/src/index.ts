@@ -2,6 +2,6 @@ import { Composio } from "./sdk";
 import { LangchainToolSet } from "./frameworks/langchain";
 import { OpenAIToolSet } from "./frameworks/openai";
 import { CloudflareToolSet } from "./frameworks/cloudflare";
-import { ExecEnv } from "./env/factory";
+import { Workspace } from "./env/";
 
-export { Composio, LangchainToolSet, OpenAIToolSet, CloudflareToolSet, ExecEnv };
+export { Composio, LangchainToolSet, OpenAIToolSet, CloudflareToolSet, Workspace };
