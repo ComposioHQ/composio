@@ -40,6 +40,7 @@ class SearchWordResponse(BaseFileResponse):
         default={},
         description="A dictionary with file paths as keys and lists of (line number, line content) tuples as values",
     )
+    message: str = Field(default="", description="Message to display to the user")
     error: str = Field(default="", description="Error message if any")
 
 
@@ -91,7 +92,7 @@ class SearchWord(BaseFileAction):
             if num_files > 100:
                 return SearchWordResponse(
                     results=dict(list(results.items())[:100]),
-                    error=f'Warning: More than 100 files matched for "{request_data.word}" in {request_data.pattern}". Sending the first 100 results. Consider narrowing your search.',
+                    message=f'Warning: More than 100 files matched for "{request_data.word}" in {request_data.pattern}". Sending the first 100 results. Consider narrowing your search.',
                 )
             return SearchWordResponse(results=results)
         except ValueError as e:
