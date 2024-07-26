@@ -75,9 +75,7 @@ EXAMPLES = {
         "file": PLUGINS / "julep" / "julep_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "finish_reason=<ChatResponseFinishReason.STOP: 'stop'>"
-            ],
+            "values": ["finish_reason=<ChatResponseFinishReason.STOP: 'stop'>"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
@@ -94,10 +92,7 @@ EXAMPLES = {
                 "{'execution_details': {'executed': True}, 'response_data': ''}"
             ],
         },
-        "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY,
-            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
-        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "langgraph": {
         "file": PLUGINS / "langgraph" / "langgraph_demo.py",
@@ -107,10 +102,7 @@ EXAMPLES = {
                 "{'execution_details': {'executed': True}, 'response_data': ''}"
             ],
         },
-        "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY,
-            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
-        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "openai": {
         "file": PLUGINS / "openai" / "openai_demo.py",
@@ -120,10 +112,7 @@ EXAMPLES = {
                 "{'execution_details': {'executed': True}, 'response_data': ''}"
             ],
         },
-        "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY,
-            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
-        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "lyzr": {
         "file": PLUGINS / "lyzr" / "lyzr_demo.py",
@@ -133,10 +122,7 @@ EXAMPLES = {
                 "{'execution_details': {'executed': True}, 'response_data': ''}"
             ],
         },
-        "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY,
-            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
-        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "praisonai": {
         "file": PLUGINS / "praisonai" / "praisonai_demo.py",
@@ -146,10 +132,7 @@ EXAMPLES = {
                 "{'execution_details': {'executed': True}, 'response_data': ''}"
             ],
         },
-        "env": {
-            "OPENAI_API_KEY": OPENAI_API_KEY,
-            "COMPOSIO_API_KEY": COMPOSIO_API_KEY
-        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     }
     # TODO: Fix and add claude, camel
 }
@@ -160,7 +143,7 @@ EXAMPLES = {
     reason="Testing in CI will lead to too much LLM API usage",
 )
 @pytest.mark.parametrize("example_name, example", EXAMPLES.items())
-def test_example(example_name: str, example: dict) -> None:
+def test_example(example_name: str, example: dict) -> None:  # pylint: disable=unused-argument
     """Test an example with given environment."""
     for key, val in example["env"].items():
         assert (

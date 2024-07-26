@@ -5,7 +5,7 @@ OpenAI demo.
 import dotenv
 from openai import OpenAI
 
-from composio_openai import Action, App, ComposioToolSet
+from composio_openai import App, ComposioToolSet
 
 
 # Load environment variables from .env

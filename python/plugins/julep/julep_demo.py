@@ -111,4 +111,8 @@ response = client.sessions.chat(
 )
 
 # Execute function calls
-print(composio_toolset.handle_tool_calls(response=response, session_id=session.id, julep_client=client))
+print(
+    composio_toolset.handle_tool_calls(
+        response=response, session_id=session.id, julep_client=client
+    )
+)
