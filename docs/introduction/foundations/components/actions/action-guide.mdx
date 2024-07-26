@@ -17,7 +17,6 @@ Actions are tasks which your agent can perform. Actions can be performed on the 
 
 Check out the coding guides provided in the examples section to have a better understanding.
 
-
 <div
   style={{
     width: '100%',
@@ -75,93 +74,127 @@ Check out the coding guides provided in the examples section to have a better un
   </Tab>
 </Tabs>
 
+--- 
 ## Working with Actions (Fetch and Execute)
-
 <Steps>
-<Step title="Fetch Actions">
+<Step title="Fetching Actions">
+<AccordionGroup>
+<Accordion title="Fetching Actions via Enums (Static)">
+  <Tabs>
+
+    <Tab title="Python">
+    <CodeGroup>
+    ```python Fetching Actions via Enums
+
+    from composio_openai import ComposioToolSet, Action 
+    # you can choose framework of your choice using composio_framework
+    # ex. from composio_langchain import ComposioToolSet, Action
+
+    tool_set = ComposioToolSet()
+
+    tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
+
+    print(tools)
+    ```
+    </CodeGroup>
+    </Tab>
+
+    <Tab title="Javascript">
+    <CodeGroup>
+    ```javascript Fetching Actions via Enums
+    import dotenv from 'dotenv';
+    dotenv.config();
+
+    import { OpenAIToolSet } from "composio-core";
+
+    const toolset = new OpenAIToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+      });
+
+    const tools = await toolset.get_actions({actions: ['github_issues_create']});
+    ```
+    </CodeGroup>
+    </Tab>
+  </Tabs>
+
+</Accordion>
+
+<Accordion title="Fetching Actions using natural language use-case (Dynamic)">
+
 <Tabs>
-<Tab title="Fetching Actions via Action ID">
-Get Action/s Input Schema
-<CodeGroup>
-```python python
 
-from composio_openai import ComposioToolSet, Action
-
-tool_set = ComposioToolSet()
-
-tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
-
-print(tools)
-```
-```javascript javascript
-import dotenv from 'dotenv';
-dotenv.config();
-
-import { OpenAIToolSet } from "composio-core";
-
-const toolset = new OpenAIToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-const tools = await toolset.get_actions({actions: ['github_issues_create']});
-```
-</CodeGroup>
-
-The response will include the **Action's ID, Name and Input/Output schema** in **JSON Def**
-
-<CodeGroup>
-```JSON Sample Response
-[
-  {
-    "name": "github_create_issue",
-    "display_name": "Create Issue",
-    "description": "Create a new issue in a repository.",
-    "parameters": {
-      "properties": {
-        "owner": {
-          "description": "Owner of the repository",
-          "examples": [
-            "openai",
-            "facebook"
-          ],
-          "title": "Owner",
-          "type": "string"
-        }...
-      },
-      "required": [
-        "owner"...
-      ],
-      "title": "CreateIssueRequest",
-      "type": "object"
-    },
-    "response": {
-      "properties": {
-        ...
-      }
-    },
-    "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
-    "appKey": "github",
-    "logo": "https://i.imgur.com/FAXkSDq.png",
-    "appName": "Github",
-    "enabled": true
-  }
-]
-```
-</CodeGroup>
-</Tab>
-<Tab title="Fetching Actions via Use-Case">
-This is a demonstration on how to fetch actions based on specific use-cases using the CLI command. For example, to retrieve actions related to managing channel messages:
+  <Tab title="Python">
   <CodeGroup>
-  ```bash bash
-  composio actions --use-case 'get channel messages'
+  ```Python Fetching Actions using natural language use-case
+
+  use_case="Star a repo on github"
+
+  action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
+  tools = toolset.get_actions(actions=action_enums)
+
+  # use tools as per your framework
   ```
   </CodeGroup>
-</Tab>
+  </Tab>
+
+  <Tab title="Javascript">
+  <CodeGroup>
+  ```Javascript Fetching Actions using natural language use-case
+  //coming soon
+  ```
+  </CodeGroup>
+  </Tab>
+
+  <Tab title="CLI">
+  <CodeGroup>
+  ```bash Fetching Actions using natural language use-case
+  composio actions --use-case 'get channel messages' --app 'slack'
+  ```
+  </CodeGroup>
+  </Tab>
 </Tabs>
+</Accordion>
+
+<Accordion title="Fetching Actions via API Groups">
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Fetching Actions via API Groups
+tag = "users"
+action_enums = toolset.find_actions_by_tags(
+    App.GITHUB,
+    tags=[tag],
+)
+actions = toolset.get_actions(actions=action_enums)
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="Javascript">
+<CodeGroup>
+```javascript Fetching Actions via API Groups
+coming soon
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="CLI">
+<CodeGroup>
+```bash Fetching Actions via API Groups
+composio actions --app 'github' --tag 'code'
+```
+</CodeGroup>
+</Tab>
+
+</Tabs>
+
+</Accordion>
+</AccordionGroup>
 </Step>
 
 <Step title="Execute the action">
 <Tabs>
+
 <Tab title="Execute Action">
 Execute Action
 <CodeGroup>
@@ -197,10 +230,9 @@ toolset.executeAction(
    entity.id
 );
 ```
-
 </CodeGroup>
-When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
 </Tab>
+
 <Tab title="Execute Action with Natural Language">
     Execute Action with Natural Language
     <CodeGroup>

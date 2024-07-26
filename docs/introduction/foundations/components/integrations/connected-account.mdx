@@ -5,108 +5,86 @@ icon: "plug"
 description: "Authorize Users Seamlessly 🌐"
 ---
 
-When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
+
 
 ## Steps to Connect an Account (~ 4️⃣ 🕰️ minutes )
 
 <Tabs>
-<Tab title="Adding Account via Dashboard">
+<Tab title="Via Dashboard">
 The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
 For deploying in a production environment, utilize the SDK or API methods.
 
 <Steps>
-<Step title="Select the Preferred Integration">
-Visit the [Integrations page](https://app.composio.dev/your_apps) and select the integration that best suits your needs.
-</Step>
-<Step title="Connect Your Account">
-To begin the connection process, click the `Add Account` button located in the top right corner of the page.
-</Step>
-<Step title="Complete Auth Flow">
-Complete the authorization process to allow the application to access your account.
-</Step>
-<Step title="Verify Connection Status">
-Check the connection status. If the process was successful, the `connected_account` status will display as 'Active'. If not fully completed, it will show as 'Initiated'.
-</Step>
+  <Step title="Select the Preferred Integration">
+    Visit the [Integrations page](https://app.composio.dev/your_apps) and select the integration that best suits your needs.
+  </Step>
+  <Step title="Connect Your Account">
+    To begin the connection process, click the `Add Account` button located in the top right corner of the page.
+  </Step>
+  <Step title="Complete Auth Flow">
+    Complete the authorization process to allow the application to access your account.
+  </Step>
+  <Step title="Verify Connection Status">
+    Check the connection status. If the process was successful, the `connected_account` status will display as 'Active'. If not fully completed, it will show as 'Initiated'.
+  </Step>
 </Steps>
 </Tab>
-<Tab title="Add account via SDK">
+
+
+<Tab title="Python">
 <Steps>
-<Step title="Gather Integration Parameters">
-Example: API Key, Subdomain URL, Username.
+<Step title="Fetch Integration Parameters">
+  Example: API Key, Subdomain URL, Username.
+  <CodeGroup>
+    ```python python 
+    from composio import ComposioToolSet,App
 
-<CodeGroup>
-```python python 
-from composio import Composio, App
+    client = Composio(api_key="COMPOSIO_API_KEY")
 
-client = Composio(api_key="COMPOSIO_API_KEY")
+    entity = client.get_entity(id="default")
 
-entity = client.get_entity(id="default")
+    # Integration Chosen by User to Connect with
 
-# Integration Chosen by User to Connect with
+    integration = client.get_integration(integration_id)
 
-integration = client.get_integration(integration_id)
+    # list of params req from user
 
-# list of params req from user
-
-print(integration.get_required_variables())
-
-```
-```javascript javascript
-import { Composio } from "composio-core";
-
-const client = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
-});
-
-const entity = await client.getEntity({ id: "default" });
-
-// Get the integration id from the dashboard
-const integration = await client.integrations.get({ integrationId: "{{integration_id}}" });
-
-console.log("integration.expectedInputFields", integration.expectedInputFields)
-```
-</CodeGroup>
+    print(integration.get_required_variables())
+    ```
+  </CodeGroup>
 
 Response if `Zendesk` Integration was chosen.
-<CodeGroup>
-```json Example Response
-[
-  {
-    "name": "subdomain",
-    "expected_from_customer": true,
-    "displayName": "Zendesk Subdomain",
-    "description": "Your Zendesk subdomain (e.g., your-company-name in your-company-name.zendesk.com)",
-    "type": "string",
-    "required": true
-  }
-]
-```
 
-</CodeGroup>
+    <CodeGroup>
+    ```json Example Response
+    [
+      {
+        "name": "subdomain",
+        "expected_from_customer": true,
+        "displayName": "Zendesk Subdomain",
+        "description": "Your Zendesk subdomain (e.g., your-company-name in your-company-name.zendesk.com)",
+        "type": "string",
+        "required": true
+      }
+    ]
+    ```
+
+    </CodeGroup>
 </Step>
 
 <Step title="Initiate Connection Request">
 Send Requested Params
 <CodeGroup>
-```python python 
+```python 
 # Collect the subdomain from your user via your platform's frontend
-params = {"subdomain":"***zendesk_sub_domain****"}
+auth_config = {"subdomain":"***zendesk_sub_domain****"}
 
-connection_request = integration.initiate_connection(params=params, entity_id = "")
+connection_request = integration.initiate_connection(params=auth_config, entity_id = "")
 
 if connection_request.redirectUrl != "":
 print("Please complete the auth flow by opening this link: ", connection_request.redirectUrl)
 else:
 print("The account status is: ",connection_request)
-```
-```javascript javascript
-const entity = await client.getEntity({ id: "default" });
-
-const params = {
-    "api_key": "YOUR_API_KEY"
-}
-const connection = await entity.initiateConnection('serpapi',null, params);
-
 ```
 </CodeGroup>
 </Step>
@@ -166,5 +144,3 @@ print(connected_account.status)
 </Tabs>
 
 ## Using Connected Accounts
-
-By leveraging the `connected_account.id`, you can execute actions or configure triggers. For example, if you need to create a repository on GitHub, you can use the Composio SDK or the Action API. Simply provide the `connection_id` to enable this operation.
