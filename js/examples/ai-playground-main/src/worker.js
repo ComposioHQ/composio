@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { CloudflareToolSet, Workspace } from "composio-core"
+import { CloudflareToolSet } from "composio-core"
 const app = new Hono();
 
 // Configuration for the AI model
@@ -29,9 +29,6 @@ app.post('/', async (c) => {
   // Initialize the CloudflareToolSet with the API key
   const toolset = new CloudflareToolSet({
     apiKey: c.env.COMPOSIO_API_KEY,
-    workspaceConfig: Workspace.E2B({
-      apiKey: "e2b_3bc7f760e162f163d46a954ad72713e7899b73f7"
-    })
   });
 
   try {
