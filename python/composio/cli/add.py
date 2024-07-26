@@ -23,8 +23,8 @@ from composio.client.collections import (
 from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
-from composio.utils.url import get_web_url
 from composio.utils.logging import get as get_logger
+from composio.utils.url import get_web_url
 
 
 class AddIntegrationExamples(HelpfulCmd):

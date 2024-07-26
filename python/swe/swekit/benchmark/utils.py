@@ -203,10 +203,10 @@ def build_image_and_container(
             and not clone_resp["success"]
         ):
             raise Exception(clone_resp["error"])
-        
+
         git_clone_time = datetime.datetime.now() - start_time
         logger.info("git clone completed, time taken: %s", git_clone_time)
-    
+
     return workspace.id
 
 

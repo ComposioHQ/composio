@@ -17,7 +17,9 @@ dotenv.load_dotenv()
 
 
 # Initialize tool.
-def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic, ChatVertexAI]:
+def get_langchain_llm() -> (
+    t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic, ChatVertexAI]
+):
     helicone_api_key = os.environ.get("HELICONE_API_KEY")
     if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
         # if helicone_api_key:
@@ -30,7 +32,11 @@ def get_langchain_llm() -> t.Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic, C
         #         },
         #     )
         print("Using Google Vertex AI Claude")
-        return ChatVertexAI(model_name="claude-3-5-sonnet@20240620", project="claude-composio", location="us-east5")
+        return ChatVertexAI(
+            model_name="claude-3-5-sonnet@20240620",
+            project="claude-composio",
+            location="us-east5",
+        )
     if os.environ.get("ANTHROPIC_API_KEY"):
         if helicone_api_key:
             print("Using Anthropic with Helicone")

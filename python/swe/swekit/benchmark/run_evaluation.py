@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
-from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 from composio_crewai import ComposioToolSet
