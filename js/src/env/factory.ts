@@ -35,7 +35,7 @@ export class WorkspaceFactory {
                 await workspace.setup();
                 break;
             case ExecEnv.HOST:
-                logger.warn("Local tools are not supported in host environment");
+                logger.warn("Local tools are not supported in host environment - see docs https://docs.composio.dev/swekit-js/workspace-env");
                 break;
             case ExecEnv.E2B:
                 workspace = new E2BWorkspace(this.workspaceConfig);
