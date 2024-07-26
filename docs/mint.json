@@ -85,9 +85,8 @@
           "pages": [
              "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/basic",
-            "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/integrations/connected-account",
+            "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/triggers/trigger-guide",
             "introduction/foundations/components/actions/local-code",
