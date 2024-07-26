@@ -151,6 +151,7 @@ EXAMPLES = (
             "COMPOSIO_API_KEY": COMPOSIO_API_KEY
         },
     }
+    # TODO: Fix and add claude, camel
 )
 
 
