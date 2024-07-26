@@ -50,4 +50,4 @@ crew = Crew(agents=[researcher], tasks=[task])
 result = crew.kickoff()
 
 # Print the result of the task execution
-print(task1.output)
+print(task.output)
