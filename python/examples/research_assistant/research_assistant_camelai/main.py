@@ -7,7 +7,7 @@ from camel.messages import BaseMessage
 from camel.models import ModelFactory
 from camel.types import ModelPlatformType, ModelType
 from camel.utils import print_text_animated
-from composio_camel import ComposioToolSet, App
+from composio_camel import ComposioToolSet, App, Action
 
 # Load environment variables
 dotenv.load_dotenv()
@@ -17,7 +17,8 @@ api_key = os.environ["OPENAI_API_KEY"]
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+# tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+tools = composio_toolset.get_actions(actions=[Action.SERPAPI_SEARCH])
 
 # Configure the assistant model
 assistant_model_config = ChatGPTConfig(
@@ -29,7 +30,7 @@ assistant_model_config = ChatGPTConfig(
 model = ModelFactory.create(
     model_platform=ModelPlatformType.OPENAI,
     model_type=ModelType.GPT_4O,
-    model_config_dict={"api_key": api_key, **assistant_model_config.__dict__}
+    model_config_dict=assistant_model_config.__dict__
 )
 
 # Define the system message for the assistant
