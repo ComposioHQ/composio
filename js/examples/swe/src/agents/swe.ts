@@ -10,11 +10,6 @@ import { v4 } from 'uuid';
 // Initialize tool.
 const llm = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    baseURL: "https://oai.helicone.ai/v1",
-    defaultHeaders: {
-        "Helicone-Auth": `Bearer sk-helicone-qyrd4dq-vruuq3q-xfv7x7a-i75osli`,
-        "Helicone-Session-Id": "swe-" + v4(),
-    },
 });
 const composioToolset = new OpenAIToolSet({ workspaceConfig: Workspace.Docker() });
 
