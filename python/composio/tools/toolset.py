@@ -442,7 +442,6 @@ class ComposioToolSet(WithLogger):
                     ] = f"{description.rstrip('.')}. This parameter is required."
                 else:
                     param_details["description"] = "This parameter is required."
-                param_details["required"] = True
 
         return action_item
 
