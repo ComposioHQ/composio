@@ -75,15 +75,12 @@ tools = composio_toolset.get_tools(
         App.SHELLTOOL,
     ]
 )
-agent_instructions = composio_toolset.get_agent_instructions(
-    apps=[App.FILETOOL, App.SHELLTOOL]
-)
 
 # Define agent
 agent = Agent(
     role=ROLE,
     goal=GOAL,
-    backstory=f"{BACKSTORY}\n\n{agent_instructions}",
+    backstory=BACKSTORY,
     llm=get_langchain_llm(),
     tools=tools,
     verbose=True,
