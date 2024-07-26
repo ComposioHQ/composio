@@ -2,15 +2,18 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { ExecEnv, OpenAIToolSet } from 'composio-core';
+import { ExecEnv, OpenAIToolSet, Workspace } from 'composio-core';
 import { BACKSTORY, DESCRIPTION, GOAL } from '../prompts';
 import OpenAI from 'openai';
+import { v4 } from 'uuid';
 
 // Initialize tool.
-const llm = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
-const composioToolset = new OpenAIToolSet({ workspaceEnv: ExecEnv.DOCKER });
+const llm = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+const composioToolset = new OpenAIToolSet({ workspaceConfig: Workspace.Docker() });
 
-export async function initSWEAgent() {
+export async function initSWEAgent(): Promise<{composioToolset: OpenAIToolSet; assistantThread: OpenAI.Beta.Thread; llm: OpenAI; tools: Array<any>}> {
     let tools = await composioToolset.getTools({
         apps: [
             "filetool",

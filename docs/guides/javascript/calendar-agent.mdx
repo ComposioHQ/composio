@@ -144,7 +144,6 @@ const composioToolset = new LangchainToolSet({
     apiKey: process.env.COMPOSIO_API_KEY
 });
 
-
 // Retrieve the current date and time
 const getCurrentDate = () => new Date().toISOString().split('T')[0];
 const getTimezone = () => new Date().toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2];

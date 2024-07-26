@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
-import { RemoteWorkspace, WorkspaceConfig } from "../base";
+import { RemoteWorkspace } from "../base";
 import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
-import type {Sandbox} from "@e2b/sdk";
+import { CodeInterpreter } from "@e2b/code-interpreter";
+import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 
 const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
 const TOOLSERVER_PORT = 8000;
@@ -9,31 +10,30 @@ const TOOLSERVER_URL = "https://{host}/api";
 
 const ENV_E2B_TEMPLATE = "E2B_TEMPLATE";
 
-interface Config extends WorkspaceConfig {
+export interface IE2BConfig extends IWorkspaceConfig {
     template?: string;
-    api_key?: string;
+    apiKey?: string;
     port?: number;
 }
 
 export class E2BWorkspace extends RemoteWorkspace {
-    sandbox: Sandbox | undefined;
+    sandbox: CodeInterpreter | undefined;
     template: string;
-    api_key?: string;
+    apiKey?: string;
     port: number;
 
-    constructor(config: Config) {
-        super(config);
-        this.template = config.template || getEnvVariable(ENV_E2B_TEMPLATE, DEFAULT_TEMPLATE)!;
-        this.api_key = config.api_key;
-        this.port = config.port || TOOLSERVER_PORT;
+    constructor(configRepo: WorkspaceConfig<IE2BConfig>) {
+        super(configRepo);
+        this.template = configRepo.config.template || getEnvVariable(ENV_E2B_TEMPLATE, DEFAULT_TEMPLATE)!;
+        this.apiKey = configRepo.config.apiKey;
+        this.port = configRepo.config.port || TOOLSERVER_PORT;
     }
 
     async setup(): Promise<void> {
-        const { Sandbox } = nodeExternalRequire("@e2b/sdk");
-        this.sandbox = new Sandbox({
+        this.sandbox = await CodeInterpreter.create({
             template: this.template,
             envVars: this.environment,
-            apiKey: this.api_key,
+            apiKey: this.apiKey,
         });
 
         this.url = TOOLSERVER_URL.replace("{host}", await this.sandbox!.getHostname(this.port));
