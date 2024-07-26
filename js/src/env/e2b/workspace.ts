@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { RemoteWorkspace } from "../base";
 import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
-import type { CodeInterpreter } from "@e2b/code-interpreter";
+import { CodeInterpreter } from "@e2b/code-interpreter";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 
 const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
