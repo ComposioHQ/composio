@@ -185,17 +185,14 @@ class EvaluationManager(WithLogger):
         ):
             try:
                 repo = issue["repo"]
-                # version = issue.get("version")
-                # image_name = (
-                #     f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
-                # )
-                # if version and check_and_pull_image(image_name):
-                #     self.repo_to_image_id_map.setdefault(repo, image_name)
                 self.logger.info(
                     f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map} "
                     f"Repo: {repo} "
                     f"Issue id: {issue['instance_id']} "
                 )
+                tag = repo.replace("/", "-") + "-" + issue["version"].replace(".", "-")
+                image_name = self.image_name or f"composio/swe:{tag}"
+                print(tag)
 
                 workspace_id = setup_workspace(
                     repo,
@@ -203,7 +200,7 @@ class EvaluationManager(WithLogger):
                     self.repo_to_image_id_map,
                     issue["base_commit"],
                     self.workspace_env,
-                    self.image_name,
+                    image_name,
                 )
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(

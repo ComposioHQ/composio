@@ -288,8 +288,8 @@ class File(WithLogger):
 
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
-            self.path.write_text(data=original_content, encoding="utf-8")
             formatted_errors = self._format_lint_errors(new_lint_errors)
+            self.path.write_text(data=original_content, encoding="utf-8")
             return {
                 "replaced_text": "",
                 "replaced_with": "",
@@ -334,32 +334,114 @@ class File(WithLogger):
     ) -> t.List[str]:
         """Compare lint results before and after edit."""
 
-        def parse_lint_error(error: str) -> t.Tuple[str, str]:
-            """Parse a lint error into (error_code, error_message)."""
+        def parse_lint_error(error: str) -> t.Tuple[str, str, str, str, str]:
+            """Parse a lint error into (file_name, line_number, error_code, error_message)."""
             parts = error.split(":", 3)
             if len(parts) >= 4:
+                file_name = parts[0]
+                line_number = parts[1]
+                column_number = parts[2]
                 error_code = parts[3].split()[0]
                 error_message = ":".join(parts[3:]).strip()
-                return error_code, error_message
-            return "", error
+                return file_name, line_number, column_number, error_code, error_message
+            return "", "", "", "", error
 
-        before_errors = set(parse_lint_error(error) for error in before)
-        after_errors = set(parse_lint_error(error) for error in after)
+        before_errors = set(
+            (error_code, error_message)
+            for _, _, _, error_code, error_message in map(parse_lint_error, before)
+        )
+        after_errors = set(
+            (error_code, error_message)
+            for _, _, _, error_code, error_message in map(parse_lint_error, after)
+        )
 
         new_errors = after_errors - before_errors
-        return [f"{code}: {message}" for code, message in new_errors]
+        return [
+            f"{file_name}:{line_number}:{column_number} - {code}: {message}"
+            for file_name, line_number, column_number, code, message in map(
+                parse_lint_error, after
+            )
+            if (code, message) in new_errors
+        ]
 
     def _format_lint_errors(self, errors: t.List[str]) -> str:
-        """Format lint errors."""
+        """Format lint errors with descriptions and next actions."""
         formatted_output = ""
         for error in errors:
             parts = error.split(":", 3)
             if len(parts) >= 4:
                 file_path, line, column, message = parts
+                line_content = self.path.read_text(encoding="utf-8").splitlines()[
+                    int(line.strip()) - 1
+                ]
                 formatted_output += f"- File: {file_path.strip()}, Line {line.strip()}, Column {column.strip()}: {message.strip()}\n"
+                formatted_output += f"  Code: {line_content.strip()}\n"
+
+                # Add description and next action based on error code
+                error_code = message.split()[0]
+                description, next_action = self._get_error_info(error_code)
+                formatted_output += f"  Description: {description}\n"
+                formatted_output += f"  Next Action: {next_action}\n\n"
             else:
                 formatted_output += f"- {error}\n"
         return formatted_output.rstrip()
+
+    def _get_error_info(self, error_code: str) -> t.Tuple[str, str]:
+        """Get description and next action for a given error code."""
+        error_info = {
+            "E9": (
+                "SyntaxError or IndentationError",
+                "Check your syntax and indentation. If you add a newline, make sure the indentation is correct.",
+            ),
+            "F821": ("Undefined name", "Define the variable before using it"),
+            "F823": (
+                "Local variable referenced before assignment",
+                "Assign a value to the variable before using it",
+            ),
+            "F831": (
+                "Duplicate argument name in function definition",
+                "Rename one of the duplicate arguments",
+            ),
+            "F406": (
+                "Module level import not at top of file",
+                "Move the import statement to the top of the file",
+            ),
+            "F407": (
+                "Future import should be first non-docstring statement",
+                "Move the future import to the top of the file",
+            ),
+            "F701": (
+                "Multiple statements on one line (colon)",
+                "Split the statements into separate lines",
+            ),
+            "F702": (
+                "Multiple statements on one line (semicolon)",
+                "Split the statements into separate lines",
+            ),
+            "F704": (
+                "Multiple statements on one line (def)",
+                "Split the statements into separate lines",
+            ),
+            "F706": (
+                "Multiple statements on one line (lambda)",
+                "Split the statements into separate lines",
+            ),
+            "E999": (
+                "SyntaxError",
+                "Check your syntax/indentation for errors. If you add a newline, make sure the indentation is correct.",
+            ),
+            "E902": ("IOError", "Check file permissions and path"),
+            "E111": (
+                "Indentation is not a multiple of four",
+                "Adjust the indentation to be a multiple of four spaces",
+            ),
+            "E112": ("Expected an indented block", "Add indentation to the block"),
+            "E113": ("Unexpected indentation", "Remove unexpected indentation"),
+        }
+        return error_info.get(
+            error_code,
+            ("Unknown error", "Review the error message and fix accordingly"),
+        )
 
     def write_and_run_lint(self, text: str, start: int, end: int) -> TextReplacement:
         """Write and run lint on the file. If linting fails, revert the changes."""

@@ -74,7 +74,11 @@ def _bump_setup(file: Path, bump_type: BumpType) -> None:
 
 def _bump_setups(bump_type: BumpType) -> None:
     cwd = Path.cwd()
-    for setup in (cwd / "setup.py", *(cwd / "plugins").glob("**/setup.py")):
+    for setup in (
+        cwd / "setup.py",
+        cwd / "swe" / "setup.py",
+        *(cwd / "plugins").glob("**/setup.py"),
+    ):
         _bump_setup(file=setup, bump_type=bump_type)
 
 
@@ -84,7 +88,7 @@ def _bump_dockerfile(file: Path, bump_type: BumpType) -> None:
     content = file.read_text(encoding="utf-8")
     try:
         (version_str,) = re.findall(
-            pattern=r"composio-core==(\d+.\d+.\d+) ", string=content
+            pattern=r"composio-core\[all\]==(\d+.\d+.\d+) ", string=content
         )
     except ValueError as error:
         print(f"{error=}")
@@ -94,8 +98,8 @@ def _bump_dockerfile(file: Path, bump_type: BumpType) -> None:
     update = _get_bumped_version(current=version, btype=bump_type)
     print(f"Next version {update}")
     content = content.replace(
-        f"composio-core=={version}",
-        f"composio-core=={update}",
+        f"composio-core[all]=={version}",
+        f"composio-core[all]=={update}",
     )
 
     file.write_text(content, encoding="utf-8")

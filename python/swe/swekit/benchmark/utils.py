@@ -188,20 +188,21 @@ def build_image_and_container(
 
     start_time = datetime.datetime.now()
     composio_toolset.set_workspace_id(workspace_id=workspace.id)
-    clone_resp = composio_toolset.execute_action(
-        entity_id="123",
-        action=Action.FILETOOL_GIT_CLONE,
-        params={
-            "repo_name": repo,
-            "commit_id": base_commit,
-        },
-    )
-    if (
-        isinstance(clone_resp, dict)
-        and "success" in clone_resp
-        and not clone_resp["success"]
-    ):
-        raise Exception(clone_resp["error"])
+
+    if not image_name.startswith("composio/swe"):
+        clone_resp = composio_toolset.execute_action(
+            action=Action.FILETOOL_GIT_CLONE,
+            params={
+                "repo_name": repo,
+                "commit_id": base_commit,
+            },
+        )
+        if (
+            isinstance(clone_resp, dict)
+            and "success" in clone_resp
+            and not clone_resp["success"]
+        ):
+            raise Exception(clone_resp["error"])
 
     # chwdir_resp = composio_toolset.execute_action(
     #     action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,

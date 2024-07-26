@@ -80,6 +80,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
   - `prompts.py`: Prompts to guide the agent's actions
   - `benchmark.py`: A runner for the SWE-Bench benchmarks
   - `input.py`: A helper file to take inputs from the user
+  - `custom_tools.py`: A file to add custom tools to the agent
 
 </Step>
 
@@ -88,7 +89,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
   <Warning>
   To use Docker as the default workspace environment, ensure your Docker server is running
   </Warning>
-    If you prefer to run the agent locally without Docker (**Unsafe**), modify the workspace configuration in `agent.py` by setting the `host` to `localhost`.
+    If you prefer to run the agent locally without Docker (**Unsafe**), modify the workspace configuration in `agent.py` by setting the `WorkspaceType.Docker()` to `WorkspaceType.Host()`.
 </Step>
 
 

@@ -10,7 +10,7 @@ import webbrowser
 
 import click
 
-from composio.cli.context import Context, login_required, pass_context
+from composio.cli.context import Context, ensure_login, pass_context
 from composio.cli.utils.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity
@@ -70,8 +70,13 @@ class AddIntegrationExamples(HelpfulCmd):
     help="Specify scopes for the connection.",
     multiple=True,
 )
-@login_required
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Override the existing account.",
+)
 @pass_entity_id
+@ensure_login
 @pass_context
 def _add(
     context: Context,
@@ -81,6 +86,7 @@ def _add(
     integration_id: t.Optional[str],
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
+    force: bool = False,
 ) -> None:
     """Add a new integration."""
     try:
@@ -92,6 +98,7 @@ def _add(
             no_browser=no_browser,
             auth_mode=auth_mode,
             scopes=scopes,
+            force=force,
         )
     except ComposioSDKError as e:
         raise click.ClickException(
@@ -113,12 +120,15 @@ def _replace_connection() -> bool:
     )
 
 
-def _collect_input_fields(fields: t.List[AuthSchemeField]) -> t.Dict:
+def _collect_input_fields(
+    fields: t.List[AuthSchemeField],
+    expected_from_customer: bool = False,
+) -> t.Dict:
     """Collect"""
     inputs = {}
     for _field in fields:
         field = _field.model_dump()
-        if field.get("expected_from_customer", True):
+        if field.get("expected_from_customer", True) and expected_from_customer:
             if field.get("required", False):
                 value = input(
                     f"> Enter {field.get('displayName', field.get('name'))}: "
@@ -161,6 +171,7 @@ def add_integration(
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
+    force: bool = False,
 ) -> None:
     """
     Add integration.
@@ -183,7 +194,7 @@ def add_integration(
     except ComposioClientError:
         existing_connection = None
 
-    if existing_connection is not None:
+    if existing_connection is not None and not force:
         context.console.print(
             f"[yellow]Warning: An existing connection for {name} was found.[/yellow]\n"
         )
@@ -192,6 +203,11 @@ def add_integration(
                 "\n[green]Existing connection retained. No new connection added.[/green]\n"
             )
             return None
+
+    if existing_connection is not None and force:
+        context.console.print(
+            f"[yellow]Warning: Replacing existing connection for {name}.[/yellow]\n"
+        )
 
     context.console.print(
         f"\n[green]> Adding integration: {name.capitalize()}...[/green]\n"
@@ -232,7 +248,6 @@ def add_integration(
             app_name=name,
             auth_mode=auth_mode,
             auth_scheme=auth_scheme,
-            scopes=scopes,
         )
     return _handle_oauth(
         entity=entity,
@@ -265,7 +280,7 @@ def _handle_oauth(
     integration: t.Optional[IntegrationModel] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
-    """Handle basic auth."""
+    """Handle no auth."""
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
@@ -295,20 +310,23 @@ def _handle_basic_auth(
     auth_mode: str,
     auth_scheme: AppAuthScheme,
     integration: t.Optional[IntegrationModel] = None,
-    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
     """Handle basic auth."""
     entity.initiate_connection(
         app_name=app_name.lower(),
         auth_mode=auth_mode,
-        auth_config=_get_auth_config(scopes=scopes),
+        auth_config=_collect_input_fields(
+            fields=auth_scheme.fields,
+            expected_from_customer=True,
+        ),
         integration=integration,
-        use_composio_auth=True,
-        force_new_integration=len(scopes or []) > 0,
+        use_composio_auth=False,
+        force_new_integration=True,
     ).save_user_access_data(
         client=client,
         field_inputs=_collect_input_fields(
             fields=auth_scheme.fields,
+            expected_from_customer=False,
         ),
         entity_id=entity.id,
     )
