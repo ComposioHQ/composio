@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { RemoteWorkspace } from "../base";
 import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
-import type {Sandbox} from "@e2b/sdk";
+import type { CodeInterpreter } from "@e2b/code-interpreter";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 
 const DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz";
@@ -17,7 +17,7 @@ export interface IE2BConfig extends IWorkspaceConfig {
 }
 
 export class E2BWorkspace extends RemoteWorkspace {
-    sandbox: Sandbox | undefined;
+    sandbox: CodeInterpreter | undefined;
     template: string;
     apiKey?: string;
     port: number;
@@ -30,8 +30,7 @@ export class E2BWorkspace extends RemoteWorkspace {
     }
 
     async setup(): Promise<void> {
-        const { Sandbox } = nodeExternalRequire("@e2b/sdk");
-        this.sandbox = new Sandbox({
+        this.sandbox = await CodeInterpreter.create({
             template: this.template,
             envVars: this.environment,
             apiKey: this.apiKey,
