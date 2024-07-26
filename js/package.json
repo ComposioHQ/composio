@@ -2,11 +2,8 @@
   "name": "composio-core",
   "version": "0.1.9",
   "description": "",
-  "main": "lib/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc  --project . --outDir lib",
-    "type-docs": "typedoc"
+    "lint": "eslint .",
+    "lint-fix": "eslint --fix .",    "type-docs": "typedoc"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
