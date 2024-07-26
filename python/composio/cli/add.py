@@ -24,6 +24,7 @@ from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
+from composio.utils.logging import get as get_logger
 
 
 class AddIntegrationExamples(HelpfulCmd):
@@ -240,7 +241,8 @@ def add_integration(
             ),
         )
         auth_scheme = auth_modes[auth_mode]
-
+    logger = get_logger("composio.cli.add")
+    logger.debug(f"auth_mode: {auth_mode}")
     if auth_mode.lower() in ("basic", "api_key"):
         return _handle_basic_auth(
             entity=entity,
