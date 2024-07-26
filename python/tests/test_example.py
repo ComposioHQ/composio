@@ -144,8 +144,8 @@ EXAMPLES = {
 )
 @pytest.mark.parametrize("example_name, example", EXAMPLES.items())
 def test_example(
-    example_name: str, example: dict # pylint: disable=unused-argument
-) -> None:  
+    example_name: str, example: dict  # pylint: disable=unused-argument
+) -> None:
     """Test an example with given environment."""
     for key, val in example["env"].items():
         assert (
