@@ -1,40 +1,47 @@
-import winston from 'winston';
-import colors from 'colors';
 import { getEnvVariable } from './shared';
 
-const colorize = winston.format((info) => {
-  switch (info.level) {
-    case 'error':
-      info.level = colors.red(info.level.toUpperCase());
-      break;
-    case 'warn':
-      info.level = colors.yellow(info.level.toUpperCase());
-      break;
-    case 'info':
-      info.level = colors.blue(info.level.toUpperCase());
-      break;
-    case 'debug':
-      info.level = colors.green(info.level.toUpperCase());
-      break;
-    default:
-      break;
-  }
-  info.timestamp = colors.gray(info.timestamp);
-  return info;
-});
+const levels = {
+  error: 'ERROR',
+  warn: 'WARN',
+  info: 'INFO',
+  debug: 'DEBUG'
+};
 
-const logger = winston.createLogger({
+const colors = {
+  red: (str: string) => `\x1b[31m${str}\x1b[0m`,
+  yellow: (str: string) => `\x1b[33m${str}\x1b[0m`,
+  blue: (str: string) => `\x1b[34m${str}\x1b[0m`,
+  green: (str: string) => `\x1b[32m${str}\x1b[0m`,
+  gray: (str: string) => `\x1b[90m${str}\x1b[0m`
+};
+
+const colorize = (level: string, timestamp: string) => {
+  switch (level) {
+    case 'error':
+      return { level: colors.red(levels[level]), timestamp: colors.gray(timestamp) };
+    case 'warn':
+      return { level: colors.yellow(levels[level]), timestamp: colors.gray(timestamp) };
+    case 'info':
+      return { level: colors.blue(levels[level]), timestamp: colors.gray(timestamp) };
+    case 'debug':
+      return { level: colors.green(levels[level]), timestamp: colors.gray(timestamp) };
+    default:
+      return { level, timestamp };
+  }
+};
+
+const logger = {
   level: getEnvVariable("COMPOSIO_DEBUG", "0") === "1" ? 'debug' : 'info',
-  format: winston.format.combine(
-    winston.format.timestamp({ format: 'HH:mm:ss' }),
-    colorize(),
-    winston.format.printf(({ level, message, timestamp }) => {
-      return `[${level}] ${timestamp} ${message}`;
-    })
-  ),
-  transports: [
-    new winston.transports.Console()
-  ],
-});
+  log: (level: string, message: string, meta?: any) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const { level: coloredLevel, timestamp: coloredTimestamp } = colorize(level, timestamp);
+    const metaInfo = meta ? ` - ${JSON.stringify(meta)}` : '';
+    console.log(`[${coloredLevel}] ${coloredTimestamp} ${message}${metaInfo}`);
+  },
+  error: (message: string, meta?: any) => logger.log('error', message, meta),
+  warn: (message: string, meta?: any) => logger.log('warn', message, meta),
+  info: (message: string, meta?: any) => logger.log('info', message, meta),
+  debug: (message: string, meta?: any) => logger.log('debug', message, meta)
+};
 
 export default logger;

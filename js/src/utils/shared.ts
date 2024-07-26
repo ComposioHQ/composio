@@ -150,6 +150,6 @@ export const nodeExternalRequire = (name: string) => {
             return require(`external:${name}`);
         }
     } catch(err) {
-        logger.error(`Error while loading ${name}`, err);
+        return null
     }
 }

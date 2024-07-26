@@ -225,7 +225,7 @@ export const getResponseBody = async (response: Response): Promise<unknown> => {
 				}
 			}
 		} catch (error) {
-			logger.error(error);
+			logger.error(`Error in getResponseBody: ${error}`, error);
 		}
 	}
 	return undefined;
