@@ -42,4 +42,4 @@ task = Task(
 )
 
 # Execute task
-task.execute()
+task.execute_sync()
