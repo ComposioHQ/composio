@@ -33,7 +33,7 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
-from composio.client.exceptions import ComposioClientError, HTTPError
+from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import ApiKeyNotProvidedError
@@ -264,7 +264,7 @@ class Entity:
                     latest_account = connected_account
 
         if latest_account is None:
-            raise ComposioClientError(
+            raise NoItemsFound(
                 f"Could not find a connection with app='{app}',"
                 f"connected_account_id=`{connected_account_id}` and "
                 f"entity=`{self.id}`"
@@ -341,7 +341,7 @@ class Entity:
         if integration is None and auth_mode is not None:
             integration = self.client.integrations.create(
                 app_id=app.appId,
-                name=f"integration_{timestamp}",
+                name=f"{app_name}_{timestamp}",
                 auth_mode=auth_mode,
                 auth_config=auth_config,
                 use_composio_auth=use_composio_auth,
@@ -351,7 +351,8 @@ class Entity:
         if integration is None and auth_mode is None:
             integration = self.client.integrations.create(
                 app_id=app.appId,
-                name=f"integration_{timestamp}",
+                auth_config=auth_config,
+                name=f"{app_name}_{timestamp}",
                 use_composio_auth=use_composio_auth,
                 force_new_integration=force_new_integration,
             )
