@@ -1109,6 +1109,8 @@ class Integrations(Collection[IntegrationModel]):
 
         if auth_mode is not None:
             request["authScheme"] = auth_mode
+
+        if auth_config is not None:
             request["authConfig"] = auth_config or {}
 
         if force_new_integration:
