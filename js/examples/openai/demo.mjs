@@ -19,7 +19,7 @@ const toolset = new OpenAIToolSet({
     return connection;
   }
 
-  async function executeAgent(entityName) {
+async function executeAgent(entityName) {
     const entity = await toolset.client.getEntity(entityName)
     await setupUserConnectionIfNotExists(entity.id);
   
@@ -41,4 +41,4 @@ const toolset = new OpenAIToolSet({
     await toolset.handle_tool_call(response, entity.id);
   }
   
-  executeGithubAgent("himanshu")
+  executeAgent("himanshu")

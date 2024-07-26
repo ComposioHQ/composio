@@ -6,16 +6,12 @@ import select
 import subprocess
 import time
 import typing as t
+from pathlib import Path
 
 import paramiko
 
 from composio.tools.env.base import Shell
 from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
-from composio.tools.env.docker.scripts import (
-    SHELL_ENV_VARS,
-    SHELL_SOURCE_FILES,
-    SHELL_STATE_CMD,
-)
 from composio.tools.env.id import generate_id
 
 
@@ -35,6 +31,9 @@ _ANSI_ESCAPE = re.compile(
 )
 
 
+_DEV_SOURCE = Path("/home/user/.dev/bin/activate")
+
+
 # TODO: Execute in a virtual environment
 class HostShell(Shell):
     """Host interactive shell."""
@@ -45,6 +44,11 @@ class HostShell(Shell):
         """Initialize shell."""
         super().__init__()
         self._id = generate_id()
+        self.environment = environment or {}
+
+    def setup(self) -> None:
+        """Setup host shell."""
+        self.logger.debug(f"Setting up shell: {self.id}")
         self._process = subprocess.Popen(  # pylint: disable=consider-using-with
             args=["/bin/bash", "-l", "-m"],
             stdin=subprocess.PIPE,
@@ -52,22 +56,21 @@ class HostShell(Shell):
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
-            env={
-                **(environment or {}),
-                **{key: str(val) for key, val in SHELL_ENV_VARS.items()},
-            },
         )
         self.logger.debug(
-            f"Initial data from session: {self.id} - {self._read(wait=False)}"
+            "Initial data from session: %s - %s",
+            self.id,
+            self._read(wait=False),
         )
 
-    def setup(self) -> None:
-        """Setup host shell."""
-        self.logger.debug(f"Setting up shell: {self.id}")
-        self.exec(cmd=SHELL_STATE_CMD)
-        time.sleep(0.05)
-        for file in SHELL_SOURCE_FILES:
-            self.exec(cmd=f"source {file}")
+        # Load development environment if available
+        if _DEV_SOURCE.exists():
+            self.logger.debug("Loading development environment")
+            self.exec(f"source {_DEV_SOURCE}")
+
+        # Setup environment
+        for key, value in self.environment.items():
+            self.exec(f"export {key}={value}")
             time.sleep(0.05)
 
     def _has_command_exited(self, cmd: str) -> bool:
@@ -163,17 +166,16 @@ class SSHShell(Shell):
         self._id = generate_id()
         self.client = client
         self.channel = self.client.invoke_shell()
-        self.environment = {
-            **(environment or {}),
-            **SHELL_ENV_VARS,
-        }
+        self.environment = environment or {}
 
     def setup(self) -> None:
         """Invoke shell."""
         self.logger.debug(f"Setting up shell: {self.id}")
-        self._send("export PS1=''")
-        time.sleep(0.05)
-        self._read()
+
+        # Load development environment if available
+        if _DEV_SOURCE.exists():
+            self.logger.debug("Loading development environment")
+            self.exec(f"source {_DEV_SOURCE}")
 
         # Setup environment
         for key, value in self.environment.items():
@@ -182,19 +184,17 @@ class SSHShell(Shell):
             self._read()
 
         # CD to user dir
-        self.exec(cmd="cd ~/")
+        self.exec(cmd="cd ~/ && export PS1=''")
 
-        # Setup shell state
-        self.exec(cmd=SHELL_STATE_CMD)
-
-        # Source the tool files
-        for file in SHELL_SOURCE_FILES:
-            self.exec(cmd=f"source {file}")
-            time.sleep(0.05)
-
-    def _send(self, buffer: str) -> None:
+    def _send(self, buffer: str, stdin: t.Optional[str] = None) -> None:
         """Send buffer to shell."""
-        self.channel.sendall(f"{buffer}\n".encode("utf-8"))
+        if stdin is None:
+            self.channel.sendall(f"{buffer}\n".encode("utf-8"))
+            time.sleep(0.05)
+            return
+
+        self.channel.send(f"{buffer}\n".encode("utf-8"))
+        self.channel.sendall(f"{stdin}\n".encode("utf-8"))
         time.sleep(0.05)
 
     def _read(self) -> str:
@@ -239,13 +239,13 @@ class SSHShell(Shell):
         clean = "\n".join(lines[1:])
         if clean.startswith("\r"):
             clean = clean[1:]
-        return clean
+        return clean.replace("(.dev)\n", "")
 
-    def exec(self, cmd: str) -> t.Dict:
+    def exec(self, cmd: str, stdin: t.Optional[str] = None) -> t.Dict:
         """Execute a command and return output and exit code."""
         output = ""
         for _cmd in cmd.split(" && "):
-            self._send(buffer=_cmd)
+            self._send(buffer=_cmd, stdin=stdin)
             self._wait(cmd=_cmd)
             output += self._sanitize_output(output=self._read())
 

@@ -11,7 +11,7 @@ import inflection
 import jsonref
 from pydantic import BaseModel, Field
 
-from composio.client.enums import SentinalObject
+from composio.client.enums.base import SentinalObject
 from composio.utils.logging import WithLogger
 
 
@@ -138,11 +138,21 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
             "description": (
                 self.__class__.__doc__ if self.__class__.__doc__ else self.action_name
             ),
-            "parameters": jsonref.loads(
-                json.dumps(self.request_schema.model_json_schema(by_alias=False))
+            "parameters": json.loads(
+                jsonref.dumps(
+                    jsonref.replace_refs(
+                        self.request_schema.model_json_schema(by_alias=False),
+                        lazy_load=False,
+                    )
+                )
             ),
-            "response": jsonref.loads(
-                json.dumps(self.response_schema.model_json_schema())
+            "response": json.loads(
+                jsonref.dumps(
+                    jsonref.replace_refs(
+                        self.response_schema.model_json_schema(),
+                        lazy_load=False,
+                    )
+                )
             ),
         }
         return action_schema

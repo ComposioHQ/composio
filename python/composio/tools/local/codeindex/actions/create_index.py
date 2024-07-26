@@ -161,7 +161,9 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
             kwargs = {
                 "api_key": openai_key,
                 "model_name": DEFAULT_EMBEDDING_MODEL_REMOTE,
-                "headers": {"Helicone-Auth": helicone_auth} if helicone_auth else {},
+                "default_headers": (
+                    {"Helicone-Auth": helicone_auth} if helicone_auth else {}
+                ),
             }
             if api_base:
                 kwargs["api_base"] = api_base

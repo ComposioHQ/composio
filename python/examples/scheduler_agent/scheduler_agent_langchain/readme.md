@@ -1,6 +1,6 @@
 # Scheduling Agent Guide
 
-This guide provides detailed steps to create a Scheduler Agent that leverages Composio, Langchain, LangChain and ChatGPT to schedule your events based on received emails. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a Scheduler Agent that leverages Composio, CrewAI, LangChain and ChatGPT to schedule your events based on received emails. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 

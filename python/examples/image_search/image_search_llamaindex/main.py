@@ -17,7 +17,7 @@ from composio.tools.local import embedtool
 dotenv.load_dotenv()
 
 # Initialize a ComposioToolSet with the API key from environment variables
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
 tools = toolset.get_tools(apps=[App.EMBEDTOOL])
@@ -47,7 +47,11 @@ agent = FunctionCallingAgentWorker(
 
 images_path = input("Enter the path to the images folder:")
 search_prompt = input("Enter the image description for the image you want to search:")
-top_no_of_images = int(input("What number of images that are closest to the description that should be returned:")) #returns n closest images to the search 
+top_no_of_images = int(
+    input(
+        "What number of images that are closest to the description that should be returned:"
+    )
+)  # returns n closest images to the search
 
 task_description = f"""
     Check if a Vector Store exists for the image directory

@@ -8,16 +8,18 @@ from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
 
+
+
 dotenv.load_dotenv()
 
 # Initialize the LLM with the OpenAI GPT-4o model and API key
-llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4o")
 
 # Pull the prompt template for the agent
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize the Composio ToolSet with the API key
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Get tools for SQL and File operations
 sql_file_tool = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL])

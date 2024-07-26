@@ -3,8 +3,6 @@ Action enums.
 """
 import typing as t
 
-import typing_extensions as te
-
 from composio.client.enums.base import (
     ACTIONS_CACHE,
     ActionData,
@@ -12,12 +10,6 @@ from composio.client.enums.base import (
     add_runtime_action,
     enum,
 )
-
-
-class SentinalObject:
-    """Sentinal object."""
-
-    sentinal = None
 
 
 @enum
@@ -621,7 +613,6 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     CODEINDEX_CREATE_INDEX: "Action"
     CODEINDEX_INDEX_STATUS: "Action"
     CODEINDEX_SEARCH_CODEBASE: "Action"
-    CODEINTERPRETER_CREATE_SANDBOX: "Action"
     CODEINTERPRETER_EXECUTE_CODE: "Action"
     CODEINTERPRETER_GET_FILE_CMD: "Action"
     CODEINTERPRETER_RUN_TERMINAL_CMD: "Action"
@@ -905,17 +896,18 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     FILEEDITTOOL_EDIT_FILE: "Action"
     FILEEDITTOOL_OPEN_FILE: "Action"
     FILEEDITTOOL_SCROLL: "Action"
-    FILEMANAGER_CLOSE_SHELL_ACTION: "Action"
-    FILEMANAGER_CREATE_FILE_ACTION: "Action"
-    FILEMANAGER_CREATE_SHELL_ACTION: "Action"
-    FILEMANAGER_EDIT_FILE_ACTION: "Action"
-    FILEMANAGER_GOTO_LINE_ACTION: "Action"
-    FILEMANAGER_OPEN_FILE_ACTION: "Action"
-    FILEMANAGER_RUN_COMMAND_ACTION: "Action"
-    FILEMANAGER_SCROLL_ACTION: "Action"
-    FILEMANAGER_SET_ENV_VAR_ACTION: "Action"
-    FILETOOL_READ_FILE: "Action"
-    FILETOOL_WRITE_FILE: "Action"
+    FILETOOL_CHANGE_WORKING_DIRECTORY: "Action"
+    FILETOOL_CREATE_FILE: "Action"
+    FILETOOL_EDIT_FILE: "Action"
+    FILETOOL_FIND_FILE: "Action"
+    FILETOOL_GIT_CLONE: "Action"
+    FILETOOL_GIT_PATCH: "Action"
+    FILETOOL_GIT_REPO_TREE: "Action"
+    FILETOOL_LIST_FILES: "Action"
+    FILETOOL_OPEN_FILE: "Action"
+    FILETOOL_SCROLL: "Action"
+    FILETOOL_SEARCH_WORD: "Action"
+    FILETOOL_WRITE: "Action"
     FIRECRAWL_CHECK_CRAWL_STATUS: "Action"
     FIRECRAWL_CRAWL: "Action"
     FIRECRAWL_EXTRACT: "Action"
@@ -1858,11 +1850,11 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     GITHUB_USER_SUN_FOLLOW: "Action"
     GMAIL_ADD_LABEL_TO_EMAIL: "Action"
     GMAIL_CREATE_EMAIL_DRAFT: "Action"
-    GMAIL_FETCH_EMAILS_WITH_LABEL: "Action"
-    GMAIL_FETCH_LAST_THREE_MESSAGES: "Action"
+    GMAIL_CREATE_LABEL: "Action"
+    GMAIL_FETCH_EMAILS: "Action"
     GMAIL_FETCH_MESSAGE_BY_THREAD_ID: "Action"
-    GMAIL_FIND_EMAIL_ID: "Action"
     GMAIL_LIST_LABELS: "Action"
+    GMAIL_LIST_THREADS: "Action"
     GMAIL_REPLY_TO_THREAD: "Action"
     GMAIL_SEND_EMAIL: "Action"
     GOOGLECALENDAR_CREATE_EVENT: "Action"
@@ -1870,6 +1862,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     GOOGLECALENDAR_DUPLICATE_CALENDAR: "Action"
     GOOGLECALENDAR_FIND_EVENT: "Action"
     GOOGLECALENDAR_FIND_FREE_SLOTS: "Action"
+    GOOGLECALENDAR_GET_CALENDAR: "Action"
     GOOGLECALENDAR_GET_CURRENT_DATE_TIME: "Action"
     GOOGLECALENDAR_LIST_CALENDARS: "Action"
     GOOGLECALENDAR_PATCH_CALENDAR: "Action"
@@ -2680,6 +2673,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     SERPAPI_TRENDS_SEARCH: "Action"
     SHELL_CREATE_SHELL: "Action"
     SHELL_EXEC_COMMAND: "Action"
+    SHELL_SPAWN_PROCESS: "Action"
     SLACKBOT_API_TEST: "Action"
     SLACKBOT_APPS_EVENT_AUTHORIZATIONS_GET_LIST: "Action"
     SLACKBOT_APPS_PERMISSIONS_ADDITIONAL_SCOPES_REQUEST: "Action"
@@ -3768,12 +3762,6 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     ZOOM_WEB_IN_ARS_UPDATE_SURVEY: "Action"
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_VIRTUAL_BACKGROUND: "Action"
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_WALLPAPER: "Action"
-
-    def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
-        """Create an Enum"""
-        if hasattr(value, "sentinal"):
-            value = value().get_tool_merged_action_name()  # type: ignore
-        super().__init__(value=value)  # type: ignore
 
     @property
     def name(self) -> str:

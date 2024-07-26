@@ -9,7 +9,7 @@ async function setupUserConnectionIfNotExists(entityId) {
     const entity = await toolset.client.getEntity(entityId);
     const connection = await entity.getConnection('github');
     if (!connection) {
-        const connection = await entity.initiateConnection(appName);
+        const connection = await entity.initiateConnection('github');
         console.log("Log in via: ", connection.redirectUrl);
         return connection.waitUntilActive(60);
     }

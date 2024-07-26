@@ -26,13 +26,21 @@ class GitRepoTree(BaseExecCommand):
     _output_text = "Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file."
 
     def execute(
-        self, request_data: ShellRequest, authorisation_data: dict
+        self,
+        request_data: ShellRequest,
+        authorisation_data: dict,
     ) -> ShellExecResponse:
         output = exec_cmd(
             cmd="git ls-tree -r HEAD --name-only > ./git_repo_tree.txt",
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
+        if int(output["exit_code"]) == 128:
+            return ShellExecResponse(
+                stdout=output["stdout"],
+                stderr=output["stderr"],
+                exit_code=int(output["exit_code"]),
+            )
         return ShellExecResponse(
             stdout="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
             stderr=output["stderr"],

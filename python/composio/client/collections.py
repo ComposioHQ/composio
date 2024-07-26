@@ -70,6 +70,7 @@ class ConnectedAccountModel(BaseModel):
     appUniqueId: str
     integrationId: str
     connectionParams: AuthConnectionParamsModel
+
     clientUniqueUserId: t.Optional[str] = None
 
     # Override arbitrary model config.
@@ -803,7 +804,6 @@ class ActionModel(BaseModel):
 
     name: str
     display_name: str
-    description: t.Optional[str]
     parameters: ActionParametersModel
     response: ActionResponseModel
     appKey: str
@@ -813,6 +813,7 @@ class ActionModel(BaseModel):
     enabled: bool
 
     logo: t.Optional[str] = None
+    description: t.Optional[str] = None
 
 
 class Actions(Collection[ActionModel]):
@@ -1086,6 +1087,7 @@ class Integrations(Collection[IntegrationModel]):
         auth_mode: t.Optional[str] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_auth: bool = False,
+        force_new_integration: bool = False,
     ) -> IntegrationModel:
         """
         Create a new integration
@@ -1108,6 +1110,9 @@ class Integrations(Collection[IntegrationModel]):
         if auth_mode is not None:
             request["authScheme"] = auth_mode
             request["authConfig"] = auth_config or {}
+
+        if force_new_integration:
+            request["forceNewIntegration"] = force_new_integration
 
         response = self._raise_if_required(
             response=self.client.http.post(

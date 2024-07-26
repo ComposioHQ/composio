@@ -8,8 +8,10 @@ import uuid
 import gql
 import gql.transport
 import requests
+import typing_extensions as te
 from gql.transport.requests import RequestsHTTPTransport
 
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 
@@ -17,7 +19,6 @@ FLY_API = "https://api.machines.dev"
 FLY_GRAPHQL_API = "https://api.fly.io/graphql"
 API_VERSION = "/v1"
 BASE_URL = FLY_API + API_VERSION
-TOOLSERVER_IMAGE = "angrybayblade/composio:latest"
 
 
 ALLOCATE_IP_QUERY = """mutation {
@@ -52,6 +53,42 @@ RELEASE_IP_REQUEST = """mutation {
 ENV_FLY_API_TOKEN = "FLY_API_TOKEN"
 
 
+TOOLING_ERVICE = {
+    "ports": [
+        {"port": 8000, "handlers": ["tls", "http"]},
+    ],
+    "protocol": "tcp",
+    "internal_port": 8000,
+}
+
+
+class ExternalPortConfig(te.TypedDict):
+    """External port config."""
+
+    port: int
+    """External port to map (Port 8000 is reserved for the tooling server)."""
+
+    handlers: t.List[str]
+    """List of protocol handlers (`http` will be used if not provided)."""
+
+
+class PortRequest(te.TypedDict):
+    """
+    Port request
+
+    Read more at: https://fly.io/docs/machines/api/machines-resource/#create-a-machine-with-services
+    """
+
+    ports: t.List[ExternalPortConfig]
+    """List of public port configurations (Port 8000 is reserved for the tooling server)."""
+
+    internal_port: int
+    """Internal port number (Port 8000 is reserved for the tooling server)."""
+
+    protocol: t.Literal["tcp", "udp"]
+    """List of protocol handlers."""
+
+
 class FlyIO(WithLogger):
     """FlyIO client."""
 
@@ -63,6 +100,7 @@ class FlyIO(WithLogger):
         image: t.Optional[str] = None,
         flyio_token: t.Optional[str] = None,
         environment: t.Optional[t.Dict] = None,
+        ports: t.Optional[t.List[PortRequest]] = None,
     ) -> None:
         """Initialize FlyIO client."""
         super().__init__()
@@ -73,12 +111,13 @@ class FlyIO(WithLogger):
                 f"You can export it as `{ENV_FLY_API_TOKEN}`"
             )
 
+        self.ports = ports or []
         self.environment = environment or {}
         self.flyio_token = flyio_token
         self.access_token = access_token
-        self.image = image or TOOLSERVER_IMAGE
+        self.image = image or DEFAULT_IMAGE
         self.app_name = f"composio-{uuid.uuid4().hex.replace('-', '')}"
-        self.url = f"https://{self.app_name}.fly.dev/api"
+        self.url = f"https://{self.app_name}.fly.dev:8000/api"
         self.gql = gql.Client(
             transport=RequestsHTTPTransport(
                 url=FLY_GRAPHQL_API,
@@ -183,16 +222,7 @@ class FlyIO(WithLogger):
                     "config": {
                         "image": self.image,
                         "env": self.environment,
-                        "services": [
-                            {
-                                "ports": [
-                                    {"port": 443, "handlers": ["tls", "http"]},
-                                    {"port": 80, "handlers": ["http"]},
-                                ],
-                                "protocol": "tcp",
-                                "internal_port": 8000,
-                            }
-                        ],
+                        "services": [TOOLING_ERVICE, *self.ports],
                         "guest": {
                             "cpu_kind": "shared",
                             "cpus": 1,

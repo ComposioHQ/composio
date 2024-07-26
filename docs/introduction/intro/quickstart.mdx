@@ -19,6 +19,9 @@ pip install composio_openai
 ```javascript javascript
 npm install composio-core
 npm install openai
+pip install composio_core  // for installing CLI via python. 
+// We will soon release a binary package for CLI. 😅
+// This step can be skipped if you don't intend to use the CLI.
 ```
 </CodeGroup>
 </Step>
@@ -73,7 +76,7 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO
 
      ```javascript javascript
      // Get GitHub tools that are pre-configured
-    const tools = await composio_toolset.get_actions({
+    const tools = await composio_toolset.getActions({
         actions: ["github_start_repo"]
     });
     ```
@@ -241,7 +244,7 @@ const composio_toolset = new OpenAIToolSet({
 });
 
 // Fetching GitHub actions from Composio ToolSet
-const tools = await composio_toolset.get_actions({
+const tools = await composio_toolset.getActions({
     actions: ["github_start_repo"]
 });
 

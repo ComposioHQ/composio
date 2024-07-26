@@ -1,7 +1,9 @@
 import os
 import re
 from datetime import datetime
-from composio_langchain import ComposioToolSet, Action,App
+from dotenv import load_dotenv
+from composio_langchain import Action, ComposioToolSet
+from composio_langchain import ComposioToolSet, Action, App
 from langchain_openai import ChatOpenAI
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
@@ -9,18 +11,16 @@ from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
 
-openai_api_key = os.getenv("OPENAI_API_KEY","")
-if(openai_api_key==""):
-    print("OpenAI key not found in env")
-llm = ChatOpenAI(model="gpt-4-turbo", api_key=openai_api_key)
+llm = ChatOpenAI(model="gpt-4-turbo")
+# llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
-composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY",""))
+composio_toolset = ComposioToolSet()
 
 schedule_tool = composio_toolset.get_actions(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
-        Action.GMAIL_CREATE_EMAIL_DRAFT
+        Action.GMAIL_CREATE_EMAIL_DRAFT,
     ]
 )
 email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
@@ -30,7 +30,6 @@ timezone = datetime.now().astimezone().tzinfo
 prompt = hub.pull("hwchase17/openai-functions-agent")
 query_agent = create_openai_functions_agent(llm, schedule_tool, prompt)
 agent_executor = AgentExecutor(agent=query_agent, tools=schedule_tool, verbose=True)
-
 
 def extract_sender_email(payload):
     delivered_to_header_found = False

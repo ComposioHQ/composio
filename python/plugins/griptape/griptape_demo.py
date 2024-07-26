@@ -3,9 +3,10 @@ Griptape demo.
 """
 
 import dotenv
-from composio_griptape import App, ComposioToolSet
 from griptape.structures import Agent
 from griptape.utils import Chat
+
+from composio_griptape import App, ComposioToolSet
 
 
 # Load environment variables from .env

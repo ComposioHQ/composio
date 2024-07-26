@@ -1,6 +1,7 @@
 """
 Tag enums.
 """
+
 from composio.client.enums.base import TAGS_CACHE, TagData, _AnnotatedEnum, enum
 
 

@@ -7,6 +7,7 @@ import os
 
 from pydantic import BaseModel, Field
 from swebench import get_eval_refs
+
 from swekit.benchmark.docker_utils.docker_file_generator.const import (
     KEY_INSTANCE_ID,
     KEY_MODEL,

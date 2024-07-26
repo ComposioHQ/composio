@@ -1,22 +1,26 @@
-# pylint: disable=logging-fstring-interpolation
-
-import argparse
 import datetime
 import json
 import os
 import typing as t
 from pathlib import Path
 
-import swekit.benchmark.utils as eval_utils
-from composio_crewai import ComposioToolSet
 from pydantic import BaseModel, Field
-from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
-from swekit.config.store import IssueConfig
 from tqdm import tqdm
 
-from composio import Action
-from composio.tools.env.factory import ExecEnv, WorkspaceFactory
+from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
+from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
+
+from composio_crewai import ComposioToolSet
+
+from swekit.benchmark.utils import (
+    build_issue_description,
+    get_issues_dataset,
+    get_score,
+    setup_workspace,
+)
+from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
+from swekit.config.store import IssueConfig
 
 
 def _get_logs_dir() -> Path:
@@ -29,12 +33,16 @@ def _get_logs_dir() -> Path:
     )
 
 
-class EvaluationArgs(BaseModel):
+class EvaluationConfig(BaseModel):
+    """Benchmark evaluation config."""
+
     test_range: str = Field(
-        default="20:30", description="slice for the test split range "
+        default="20:30",
+        description="slice for the test split range",
     )
     dry_run: bool = Field(
-        default=False, description="dry-run will only print short issue description"
+        default=False,
+        description="dry-run will only print short issue description",
     )
     include_hints: bool = Field(
         default=False,
@@ -44,32 +52,47 @@ class EvaluationArgs(BaseModel):
         description="Logs directory",
     )
     generate_report: bool = Field(
-        default=True, description="generate evaluation report after running evaluation"
+        default=True,
+        description="generate evaluation report after running evaluation",
     )
-    test_instance_ids: t.List[str] = Field(default=[], description="test instance ids")
-    workspace_env: ExecEnv = Field(
-        default=ExecEnv.DOCKER, description="workspace environment"
+    test_instance_ids: t.List[str] = Field(
+        default=[],
+        description="test instance ids",
+    )
+    workspace_type: t.Type[WorkspaceConfigType] = Field(
+        default=WorkspaceType.Docker,
+        description="workspace environment",
+    )
+    image_name: str = Field(
+        default=DEFAULT_IMAGE,
+        description="image name",
     )
 
 
 class EvaluationManager(WithLogger):
-    def __init__(self, eval_args: EvaluationArgs):
+    """Benchmark evaluation manager."""
+
+    def __init__(self, config: EvaluationConfig):
+        """Initialize evaluation manager."""
         super().__init__()
-        self.issues = eval_utils.get_issues_dataset(
-            eval_args.test_range, eval_args.test_instance_ids
+
+        self.issues = get_issues_dataset(
+            test_split=config.test_range,
+            test_instance_ids=config.test_instance_ids,
         )
-        self.dry_run = eval_args.dry_run
-        self.include_hints = eval_args.include_hints
-        self.logs_dir = os.path.expanduser(eval_args.logs_dir)
+        self.dry_run = config.dry_run
+        self.include_hints = config.include_hints
+        self.logs_dir = os.path.expanduser(config.logs_dir)
         self.repo_to_workspace_map = {}
         self.repo_to_image_id_map = {}
-        self.workspace_env = eval_args.workspace_env
-        logs_dir = Path(eval_args.logs_dir)
+        self.image_name = config.image_name
+        self.workspace_env = config.workspace_type
+        logs_dir = Path(config.logs_dir)
         if not logs_dir.exists():
             logs_dir.mkdir(parents=True)
 
     def get_issue_config(self, issue) -> IssueConfig:
-        issue_description = eval_utils.build_issue_description(
+        issue_description = build_issue_description(
             issue["hints_text"], issue["problem_statement"], self.include_hints
         )
         return IssueConfig(
@@ -82,19 +105,19 @@ class EvaluationManager(WithLogger):
     def get_patch_for_issue(self, workspace_id: str, issue):
         composio_toolset = ComposioToolSet(workspace_id=workspace_id)
         self.logger.info(
-            f"Agent run finished, getting path for issue: {issue['instance_id']}"
+            f"Agent run finished, getting patch for issue: {issue['instance_id']}"
         )
         get_patch_resp = composio_toolset.execute_action(
-            action=Action.GITCMDTOOL_GET_PATCH_CMD,
+            action=Action.FILETOOL_GIT_PATCH,
             params={},
         )
         if (
             isinstance(get_patch_resp, dict)
-            and get_patch_resp.get("status") == "failure"
+            and len(get_patch_resp.get("error", "")) > 0
         ):
             raise Exception(get_patch_resp)
         self.logger.info(f"Get patch response: {get_patch_resp}")
-        patch = get_patch_resp.get("stdout")  # type: ignore
+        patch = get_patch_resp.get("patch")  # type: ignore
         self.logger.info(f"Final Patch: {patch}")
         return patch
 
@@ -155,29 +178,29 @@ class EvaluationManager(WithLogger):
             self.show_info_and_exit()
             return
 
-        for count, issue in tqdm(
-            enumerate(self.issues, 1), total=len(self.issues), desc="Processing issues"
+        for count, issue in tqdm(  # type: ignore
+            iterable=enumerate(self.issues, 1),
+            total=len(self.issues),
+            desc="Processing issues",
         ):
             try:
                 repo = issue["repo"]
-                version = issue.get("version")
-                image_name = (
-                    f"techcomposio/swe-bench-{repo.replace('/', '_')}-swe:{version}"
-                )
-                if version and eval_utils.check_and_pull_image(image_name):
-                    self.repo_to_image_id_map.setdefault(repo, image_name)
                 self.logger.info(
-                    f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map}"
-                    f"Repo: {repo}"
-                    f"Issue id: {issue['instance_id']}"
+                    f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map} "
+                    f"Repo: {repo} "
+                    f"Issue id: {issue['instance_id']} "
                 )
+                tag = repo.replace("/", "-") + "-" + issue["version"].replace(".", "-")
+                image_name = self.image_name or f"composio/swe:{tag}"
+                print(tag)
 
-                workspace_id = eval_utils.setup_workspace(
+                workspace_id = setup_workspace(
                     repo,
                     self.repo_to_workspace_map,
                     self.repo_to_image_id_map,
                     issue["base_commit"],
                     self.workspace_env,
+                    image_name,
                 )
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(
@@ -196,84 +219,35 @@ class EvaluationManager(WithLogger):
                 raise e
 
     def score_evaluation(self):
-        eval_utils.get_score(self.logs_dir)
+        get_score(self.logs_dir)
 
 
 def evaluate(
     runnable: t.Callable,
     test_range: str = "20:22",
-    workspace_env: ExecEnv = ExecEnv.DOCKER,
+    workspace_type: t.Type[WorkspaceConfigType] = WorkspaceType.Docker,
     dry_run: bool = True,
     include_hints: bool = True,
     logs_dir: Path = _get_logs_dir(),
     generate_report: bool = True,
     test_instance_ids: t.List[str] = [],
+    image_name: str = DEFAULT_IMAGE,
 ) -> None:
     """Evaluate a callable."""
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
+
     manager = EvaluationManager(
-        EvaluationArgs(
+        EvaluationConfig(
             test_range=test_range,
             dry_run=dry_run,
             include_hints=include_hints,
             logs_dir=logs_dir,
             generate_report=generate_report,
             test_instance_ids=test_instance_ids,
-            workspace_env=workspace_env,
+            workspace_type=workspace_type,
+            image_name=image_name,
         )
     )
     manager.run(runnable)
     manager.score_evaluation()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run SWE-bench evaluation")
-    parser.add_argument(
-        "--test_range",
-        type=str,
-        default="20:22",
-        help="Test split range (e.g., 1:10)",
-    )
-    parser.add_argument(
-        "--dry_run",
-        action="store_true",
-        default=True,
-        help="Just print the issues without running an agent",
-    )
-    parser.add_argument(
-        "--include_hints",
-        action="store_true",
-        default=False,
-        help="Include hints in the issue description",
-    )
-    parser.add_argument(
-        "--gen_report",
-        action="store_true",
-        default=True,
-        help="Generate a report after running evaluations",
-    )
-    parser.add_argument(
-        "--logs_dir",
-        type=str,
-        help="Logs directory",
-        default=_get_logs_dir(),
-    )
-    args = parser.parse_args()
-
-    from swe.examples.crewai_agent import CrewaiAgent, SWEArgs
-
-    def default_agent_func(workspace_id, issue_config):
-        return CrewaiAgent(
-            args=SWEArgs(agent_logs_dir=Path("")),
-            workspace_id=workspace_id,
-        ).setup_and_solve(issue_config=issue_config, workspace_id=workspace_id)
-
-    evaluate(
-        default_agent_func,
-        test_range=args.test_range,
-        dry_run=args.dry_run,
-        include_hints=args.include_hints,
-        logs_dir=args.logs_dir,
-        generate_report=args.gen_report,
-    )

@@ -19,7 +19,7 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
         inputs={
             "repo": issue_config.repo_name,
             "issue": issue_config.issue_desc,
-        }
+        },
     )
 
 
@@ -56,4 +56,5 @@ if __name__ == "__main__":
         dry_run=False,
         test_range=test_range,
         test_instance_ids=test_instance_ids_list,
+        image_name="composio/composio:dev",
     )

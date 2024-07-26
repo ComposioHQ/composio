@@ -9,14 +9,15 @@ from composio.tools.local import ragtool
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
+
 # Initialize the ComposioToolSet
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+toolset = ComposioToolSet()
 
 # Get the RAG tool from the Composio ToolSet
 tools = toolset.get_tools(apps=[App.RAGTOOL])
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
-llm = ChatOpenAI(model="gpt-4o", openai_api_key=os.environ["OPENAI_API_KEY"])
+llm = ChatOpenAI(model="gpt-4o")
 
 # User-provided description of the data to be added and the query
 additional_content_list = [
@@ -47,7 +48,7 @@ rag_agent = Agent(
     ),
     llm=llm,
     allow_delegation=False,
-    #tools=tools,
+    # tools=tools,
 )
 
 # Define the task for adding content to the RAG tool
@@ -55,18 +56,18 @@ rag_agent = Agent(
 
 total_content = ""
 for content in additional_content_list:
-    total_content +=content
+    total_content += content
 
 add_content_tasks = Task(
-        description=dedent(
-            f"""\
+    description=dedent(
+        f"""\
             Add the following content to the RAG tool to enrich its knowledge base: {total_content}"""
-        ),
-        expected_output="Content was added to the RAG tool",
-        tools=tools,
-        agent=rag_agent,
-        allow_delegation=False,
-    )
+    ),
+    expected_output="Content was added to the RAG tool",
+    tools=tools,
+    agent=rag_agent,
+    allow_delegation=False,
+)
 # Define the task for executing the RAG tool query
 query_task = Task(
     description=dedent(
@@ -83,7 +84,7 @@ query_task = Task(
 # Define the crew with the agent and tasks
 crew = Crew(
     agents=[rag_agent],
-    tasks=[add_content_tasks,query_task],
+    tasks=[add_content_tasks, query_task],
     process=Process.sequential,
 )
 

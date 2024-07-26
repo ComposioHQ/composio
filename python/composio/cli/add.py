@@ -9,9 +9,8 @@ import typing as t
 import webbrowser
 
 import click
-from beaupy.spinners import DOTS, Spinner
 
-from composio.cli.context import Context, login_required, pass_context
+from composio.cli.context import Context, ensure_login, pass_context
 from composio.cli.utils.decorators import pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity
@@ -57,15 +56,31 @@ class AddIntegrationExamples(HelpfulCmd):
     type=str,
     help="Specify intgration ID to use existing integration",
 )
-@login_required
+@click.option(
+    "-a",
+    "--auth-mode",
+    type=str,
+    help="Specify auth mode for given app.",
+)
+@click.option(
+    "-s",
+    "--scope",
+    "scopes",
+    type=str,
+    help="Specify scopes for the connection.",
+    multiple=True,
+)
 @pass_entity_id
+@ensure_login
 @pass_context
 def _add(
     context: Context,
     name: str,
+    scopes: t.Tuple[str, ...],
     entity_id: str,
     integration_id: t.Optional[str],
     no_browser: bool = False,
+    auth_mode: t.Optional[str] = None,
 ) -> None:
     """Add a new integration."""
     try:
@@ -75,6 +90,8 @@ def _add(
             entity_id=entity_id,
             integration_id=integration_id,
             no_browser=no_browser,
+            auth_mode=auth_mode,
+            scopes=scopes,
         )
     except ComposioSDKError as e:
         raise click.ClickException(
@@ -142,6 +159,8 @@ def add_integration(
     entity_id: str = DEFAULT_ENTITY_ID,
     integration_id: t.Optional[str] = None,
     no_browser: bool = False,
+    auth_mode: t.Optional[str] = None,
+    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
     """
     Add integration.
@@ -150,12 +169,15 @@ def add_integration(
     :param context: CLI runtime context.
     :param entity_id: Entity ID to use for creating integration.
     :param no_browser: Don't open browser.
+    :param auth_mode: Preferred auth mode.
+    :param scopes: List of scopes for the connected account.
     """
     entity = context.client.get_entity(id=entity_id)
     integration = _load_integration(
         context=context,
         integration_id=integration_id,
     )
+
     try:
         existing_connection = entity.get_connection(app=name)
     except ComposioClientError:
@@ -179,46 +201,79 @@ def add_integration(
         raise click.ClickException(f"{app.name} does not require authentication")
 
     auth_schemes = app.auth_schemes or []
+    if len(auth_schemes) == 0:
+        context.console.print(f"{app.name} does not need authentication")
+        return None
+
     auth_modes = {auth_scheme.auth_mode: auth_scheme for auth_scheme in auth_schemes}
-    if "API_KEY" in auth_modes:
+    if auth_mode is not None and auth_mode not in auth_modes:
+        raise click.ClickException(
+            f"Invalid value for `auth_mode`, select from `{set(auth_modes)}`"
+        )
+
+    if auth_mode is not None:
+        auth_scheme = auth_modes[auth_mode]
+    elif len(auth_modes) == 1:
+        ((auth_mode, auth_scheme),) = auth_modes.items()
+    else:
+        auth_mode = t.cast(
+            str,
+            click.prompt(
+                "Select auth mode: ",
+                type=click.Choice(choices=list(auth_modes)),
+            ),
+        )
+        auth_scheme = auth_modes[auth_mode]
+
+    if auth_mode.lower() in ("basic", "api_key"):
         return _handle_basic_auth(
             entity=entity,
             client=context.client,
             app_name=name,
-            auth_mode="API_KEY",
-            auth_scheme=auth_modes["API_KEY"],
+            auth_mode=auth_mode,
+            auth_scheme=auth_scheme,
+            scopes=scopes,
         )
-
-    if "BASIC" in auth_modes:
-        return _handle_basic_auth(
-            entity=entity,
-            client=context.client,
-            app_name=name,
-            auth_mode="BASIC",
-            auth_scheme=auth_modes["BASIC"],
-        )
-
-    return _handle_no_auth(
+    return _handle_oauth(
         entity=entity,
         client=context.client,
         app_name=name,
         no_browser=no_browser,
         integration=integration,
+        scopes=scopes,
     )
 
 
-def _handle_no_auth(
+def _get_auth_config(
+    scopes: t.Optional[t.Tuple[str, ...]] = None
+) -> t.Optional[t.Dict]:
+    """Get auth config."""
+    scopes = scopes or ()
+    if len(scopes) == 0:
+        return None
+
+    return {
+        "scopes": ",".join(scopes),
+    }
+
+
+def _handle_oauth(
     entity: Entity,
     client: Composio,
     app_name: str,
     no_browser: bool = False,
     integration: t.Optional[IntegrationModel] = None,
+    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
-    """Handle basic auth."""
+    """Handle no auth."""
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
         integration=integration,
+        auth_mode="OAUTH2",
+        auth_config=_get_auth_config(scopes=scopes),
+        use_composio_auth=True,
+        force_new_integration=len(scopes or []) > 0,
     )
     if not no_browser:
         webbrowser.open(
@@ -228,13 +283,8 @@ def _handle_no_auth(
         f"Please authenticate {app_name} in the browser and come back here. "
         f"URL: {connection.redirectUrl}"
     )
-    spinner = Spinner(
-        DOTS,
-        f"⚠ Waiting for {app_name} authentication...",
-    )
-    spinner.start()
+    click.echo(f"⚠ Waiting for {app_name} authentication...")
     connection.wait_until_active(client=client)
-    spinner.stop()
     click.echo(f"✔ {app_name} added successfully!")
 
 
@@ -245,12 +295,16 @@ def _handle_basic_auth(
     auth_mode: str,
     auth_scheme: AppAuthScheme,
     integration: t.Optional[IntegrationModel] = None,
+    scopes: t.Optional[t.Tuple[str, ...]] = None,
 ) -> None:
     """Handle basic auth."""
     entity.initiate_connection(
         app_name=app_name.lower(),
         auth_mode=auth_mode,
+        auth_config=_get_auth_config(scopes=scopes),
         integration=integration,
+        use_composio_auth=True,
+        force_new_integration=len(scopes or []) > 0,
     ).save_user_access_data(
         client=client,
         field_inputs=_collect_input_fields(

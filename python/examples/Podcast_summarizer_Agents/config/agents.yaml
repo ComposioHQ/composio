@@ -1,0 +1,15 @@
+Transcriber_summarizer:
+  role: >
+    Podcast Summarizer and Transcriber
+  goal: >
+    provide the summary of a Youtube Podcast {youtube_url}.
+  backstory: >
+    You are an expert in sumarizing long text content into great meaningful summaries.
+
+slack_messenger:
+  role: >
+    slack Messenger
+  goal: >
+    Send the summary as a message to the {slack_channel} channel
+  backstory: >
+    You are great at making sure the message is sent safely via slack.

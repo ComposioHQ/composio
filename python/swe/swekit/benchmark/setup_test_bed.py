@@ -6,6 +6,7 @@ from pathlib import Path
 
 from datasets import load_dataset
 from swebench import KEY_INSTANCE_ID, KEY_MODEL, KEY_PREDICTION
+
 from swekit.benchmark.constants import (
     MODEL_GPT4,
     PATH_PATCHES_JSON,

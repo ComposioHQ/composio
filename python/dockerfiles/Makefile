@@ -20,14 +20,14 @@ e2b-dev:
 
 .PHONY: prod
 prod:
-	@docker build . -t angrybayblade/composio -f Dockerfile
-
-.PHONY: prod-multi
-prod-multi:
-	@docker buildx build --platform linux/amd64,linux/arm64 . -t angrybayblade/composio -f Dockerfile --push
+	@docker build . -t composio/composio -f Dockerfile
 
 .PHONY: dev
 dev: _copy-composio
-	@docker build . -t angrybayblade/composio:dev -f Dockerfile.dev
+	@docker build . -t composio/composio:dev -f Dockerfile.dev
 	@rm -rf ./composio
 
+.PHONY: publish
+publish:
+	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:$$VERSION . --push
+	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:latest . --push
