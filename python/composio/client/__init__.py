@@ -37,7 +37,6 @@ from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFo
 from composio.client.http import HttpClient
 from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
 from composio.exceptions import ApiKeyNotProvidedError
-from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
 
 
@@ -339,8 +338,6 @@ class Entity:
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        logger = get_logger("composio.client.Entity.initiate_connection")
-        logger.debug(f"integration: {integration}, auth_mode: {auth_mode}")
         if integration is None and auth_mode is not None:
             integration = self.client.integrations.create(
                 app_id=app.appId,
