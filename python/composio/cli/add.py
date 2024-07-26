@@ -240,6 +240,7 @@ def add_integration(
             ),
         )
         auth_scheme = auth_modes[auth_mode]
+
     if auth_mode.lower() in ("basic", "api_key"):
         return _handle_basic_auth(
             entity=entity,
