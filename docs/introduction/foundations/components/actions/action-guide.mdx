@@ -74,17 +74,18 @@ Check out the coding guides provided in the examples section to have a better un
   </Tab>
 </Tabs>
 
---- 
+---
 ## Working with Actions (Fetch and Execute)
 <Steps>
 <Step title="Fetching Actions">
+
 <AccordionGroup>
-<Accordion title="Fetching Actions via Enums (Static)">
+<Accordion title="Fetching Actions via Name (Static)">
   <Tabs>
 
     <Tab title="Python">
     <CodeGroup>
-    ```python Fetching Actions via Enums
+    ```python Fetching Actions via Name
 
     from composio_openai import ComposioToolSet, Action 
     # you can choose framework of your choice using composio_framework
@@ -101,7 +102,7 @@ Check out the coding guides provided in the examples section to have a better un
 
     <Tab title="Javascript">
     <CodeGroup>
-    ```javascript Fetching Actions via Enums
+    ```javascript Fetching Actions via Name
     import dotenv from 'dotenv';
     dotenv.config();
 
@@ -155,24 +156,36 @@ Check out the coding guides provided in the examples section to have a better un
 </Tabs>
 </Accordion>
 
-<Accordion title="Fetching Actions via API Groups">
+<Accordion title="Fetching Actions via Apps">
+
+<Warning> 
+Efficiency can be significantly enhanced by selectively filtering actions rather than assigning all available actions of an application to the agent. 
+</Warning>
+
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Fetching Actions via API Groups
+```python Fetching Actions via Apps & Tags
+tools = toolset.get_tools(apps=[App.GITHUB]) 
+
+# Filter by tags
 tag = "users"
+
 action_enums = toolset.find_actions_by_tags(
     App.GITHUB,
-    tags=[tag],
+    tags=[tag], 
 )
-actions = toolset.get_actions(actions=action_enums)
+
+tools = toolset.get_actions(actions=action_enums)
 ```
 </CodeGroup>
 </Tab>
 
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Fetching Actions via API Groups
+```javascript Fetching Actions via Apps
 coming soon
 ```
 </CodeGroup>
@@ -180,8 +193,9 @@ coming soon
 
 <Tab title="CLI">
 <CodeGroup>
-```bash Fetching Actions via API Groups
-composio actions --app 'github' --tag 'code'
+```bash Fetching Actions via Apps
+composio actions --app 'github' --tag 'code' 
+# Don't use tag if you want all actions
 ```
 </CodeGroup>
 </Tab>
@@ -298,3 +312,31 @@ toolset.executeAction(
 </Tabs>
 </Step>
 </Steps>
+
+--- 
+## Action Selection and Filtering
+
+<Warning>
+    Directly invoking actions is generally discouraged as it can lead to significant performance issues when implemented in a production environment.
+    <CodeGroup>
+    ```python python
+    tools = composio_toolset.get_tools(apps=[App.ASANA])
+    // Not a good idea.
+    ```
+    ```javascript javascript
+    const tools = composio_toolset.get_tools(apps=[App.ASANA])
+    // Not a good idea.
+    ```
+    </CodeGroup>
+</Warning>
+
+Some Composio tools provide a wide array of over 100 actions. However, there are several considerations to keep in mind:
+
+- **Performance Impact**: The performance and decision-making accuracy of agents can diminish when they are overwhelmed with too many choices.
+- **Model Limitations**: OpenAI Models imposes a limit, supporting no more than 128 actions per request. Exceeding this limit results in errors.
+  
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+
+To address these issues, it is crucial to streamline the number of actions presented to agents. 
+This can be effectively managed by employing various action filtering techniques.
+

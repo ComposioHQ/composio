@@ -69,13 +69,18 @@ description: "The Composio SDK allows you to integrate your applications with a 
   </Tab>
   </Tabs>
 </Step>
-<Step title="Verifying Installation">
-  Verify the installation by checking the installed packages:
-  <CodeGroup>
-  ```bash Verify Installation
-  pip list | grep composio-core
-  ```
-  This command should list all installed Composio packages.
-  </CodeGroup>
+
+<Step title="Initializing the SDK">
+<Warning>
+    You should only initialize the SDK if you have not setup Composio via the CLI.
+</Warning>
+First, retrieve your api key from the [Composio dashboard](https://app.composio.dev/settings)
+<CodeGroup>
+     ```python Initialise Composio directly with API Key 
+from composio import ComposioToolSet
+composio_toolset = ComposioToolSet(api_key=*COMPOSIO_API_KEY*)
+     ```
+</CodeGroup>
 </Step>
+
 </Steps>
