@@ -3,7 +3,9 @@ Test `composio add`
 """
 
 import re
+
 from tests.test_cli.base import BaseCliTest
+
 
 class TestComposioAdd(BaseCliTest):
     """Test `composio add`"""
@@ -18,16 +20,18 @@ class TestComposioAdd(BaseCliTest):
 
     def test_github_add(self) -> None:
         """Test `composio add` with no-auth."""
-        self.run("add", "github",input="Y")
+        self.run("add", "github", input="Y")
 
         self.assert_stdout_regex(
-            match=re.compile("Do you want to replace the existing connection?|Adding integration..."),
+            match=re.compile(
+                "Do you want to replace the existing connection?|Adding integration..."
+            ),
         )
         self.assert_exit_code(code=0)
-    
+
     def test_add_serpapi(self) -> None:
         """Test `composio add` with no-auth."""
-        self.run("add", "serpapi",input="Y")
+        self.run("add", "serpapi", input="Y")
 
         print(self.result)
         self.assert_stdout_regex(

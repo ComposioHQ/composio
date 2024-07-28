@@ -11,6 +11,7 @@ from click.testing import CliRunner, Result
 from composio.cli import composio
 from composio.utils import logging
 
+
 class BaseCliTest:
     """Utility class for writing CLI tests."""
 
@@ -27,7 +28,7 @@ class BaseCliTest:
     ) -> Result:
         """Run given command using click's CLI runner."""
         self.result = CliRunner(env=env, mix_stderr=mix_stderr).invoke(
-            cli=composio, args=tuple(map(str, args)),input=input
+            cli=composio, args=tuple(map(str, args)), input=input
         )
         return self.result
 
@@ -51,7 +52,7 @@ class BaseCliTest:
             "stdout": self.result.stdout,
             "stderr": self.result.stderr,
         }
-    
+
     def assert_stdout_regex(self, match: re.Pattern) -> None:
         """Check if given text is present in stdout."""
         assert re.search(pattern=match, string=self.result.stdout), {

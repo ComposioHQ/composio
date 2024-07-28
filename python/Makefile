@@ -132,3 +132,6 @@ test-demo:
 	for dir in plugins/*; do \
 		find $$dir -name '*_demo.py' -exec python3 {} \;;\
 	done
+
+format-code:
+	tox -e isort && tox -e black && tox -e flake8
