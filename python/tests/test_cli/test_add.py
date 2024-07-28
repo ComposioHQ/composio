@@ -18,7 +18,7 @@ class TestComposioAdd(BaseCliTest):
             match="Scheduler does not require authentication",
         )
 
-    def test_github_add(self) -> None:
+    def test_add_github(self) -> None:
         """Test `composio add` with no-auth."""
         self.run("add", "github", input="Y")
 
