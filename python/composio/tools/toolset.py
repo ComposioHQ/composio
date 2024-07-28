@@ -14,9 +14,10 @@ from pydantic import BaseModel
 from pydantic.v1.main import BaseModel as V1BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
-from composio.client import Composio
+from composio.client import Composio, Entity
 from composio.client.collections import (
     ActionModel,
+    AppAuthScheme,
     ConnectedAccountModel,
     FileModel,
     SuccessExecuteActionResponseModel,
@@ -441,7 +442,6 @@ class ComposioToolSet(WithLogger):
                     ] = f"{description.rstrip('.')}. This parameter is required."
                 else:
                     param_details["description"] = "This parameter is required."
-                param_details["required"] = True
 
         return action_item
 
@@ -556,6 +556,14 @@ class ComposioToolSet(WithLogger):
             + ". Whichever tool is useful to execute your task, use that with proper parameters."
         )
         return formatted_schema_info
+
+    def get_auth_schemes(self, app: AppType) -> t.List[AppAuthScheme]:
+        """Get the list of auth schemes for an app."""
+        return self.client.apps.get(name=str(app)).auth_schemes or []
+
+    def get_entity(self, id: t.Optional[str] = None) -> Entity:
+        """Get entity object for given ID."""
+        return self.client.get_entity(id=id or self.entity_id)
 
 
 def _ensure_output_dir_exists():

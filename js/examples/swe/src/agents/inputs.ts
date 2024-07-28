@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { ComposioToolSet } from "composio-core/lib/sdk/base.toolset";
-import { nanoid } from "nanoid";
+
 
 type InputType = any;
 
@@ -68,7 +68,7 @@ export async function fromGithub(toolset: ComposioToolSet): Promise<{ repo: stri
   const name = await readUserInput(
     'Enter github repository name',
     'github repository name',
-    (value: string) => value
+    githubRepositoryNameValidator
   );
   const repo = `${owner}/${name}`;
   const issue = await readUserInput(
@@ -77,9 +77,5 @@ export async function fromGithub(toolset: ComposioToolSet): Promise<{ repo: stri
     createGithubIssueValidator(owner, name, toolset)
   );
   return { repo, issue };
-}
-
-export function getBranchNameFromIssue(issue: string): string {
-  return "swe/" + issue.toLowerCase().replace(/\s+/g, '-') + "-" + nanoid();
 }
 

@@ -1,4 +1,5 @@
 import z from "zod";
+import logger from "./logger";
 
 type SchemaTypeToTsType = {
     [key: string]: any;
@@ -149,6 +150,6 @@ export const nodeExternalRequire = (name: string) => {
             return require(`external:${name}`);
         }
     } catch(err) {
-        console.error(`Error while loading ${name}`, err);
+        return null
     }
 }

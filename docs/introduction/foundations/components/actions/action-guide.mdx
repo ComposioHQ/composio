@@ -17,7 +17,6 @@ Actions are tasks which your agent can perform. Actions can be performed on the 
 
 Check out the coding guides provided in the examples section to have a better understanding.
 
-
 <div
   style={{
     width: '100%',
@@ -75,93 +74,141 @@ Check out the coding guides provided in the examples section to have a better un
   </Tab>
 </Tabs>
 
+---
 ## Working with Actions (Fetch and Execute)
-
 <Steps>
-<Step title="Fetch Actions">
+<Step title="Fetching Actions">
+
+<AccordionGroup>
+<Accordion title="Fetching Actions via Name (Static)">
+  <Tabs>
+
+    <Tab title="Python">
+    <CodeGroup>
+    ```python Fetching Actions via Name
+
+    from composio_openai import ComposioToolSet, Action 
+    # you can choose framework of your choice using composio_framework
+    # ex. from composio_langchain import ComposioToolSet, Action
+
+    tool_set = ComposioToolSet()
+
+    tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
+
+    print(tools)
+    ```
+    </CodeGroup>
+    </Tab>
+
+    <Tab title="Javascript">
+    <CodeGroup>
+    ```javascript Fetching Actions via Name
+    import dotenv from 'dotenv';
+    dotenv.config();
+
+    import { OpenAIToolSet } from "composio-core";
+
+    const toolset = new OpenAIToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+      });
+
+    const tools = await toolset.get_actions({actions: ['github_issues_create']});
+    ```
+    </CodeGroup>
+    </Tab>
+  </Tabs>
+
+</Accordion>
+
+<Accordion title="Fetching Actions using natural language use-case (Dynamic)">
+
 <Tabs>
-<Tab title="Fetching Actions via Action ID">
-Get Action/s Input Schema
-<CodeGroup>
-```python python
 
-from composio_openai import ComposioToolSet, Action
-
-tool_set = ComposioToolSet()
-
-tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
-
-print(tools)
-```
-```javascript javascript
-import dotenv from 'dotenv';
-dotenv.config();
-
-import { OpenAIToolSet } from "composio-core";
-
-const toolset = new OpenAIToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-const tools = await toolset.get_actions({actions: ['github_issues_create']});
-```
-</CodeGroup>
-
-The response will include the **Action's ID, Name and Input/Output schema** in **JSON Def**
-
-<CodeGroup>
-```JSON Sample Response
-[
-  {
-    "name": "github_create_issue",
-    "display_name": "Create Issue",
-    "description": "Create a new issue in a repository.",
-    "parameters": {
-      "properties": {
-        "owner": {
-          "description": "Owner of the repository",
-          "examples": [
-            "openai",
-            "facebook"
-          ],
-          "title": "Owner",
-          "type": "string"
-        }...
-      },
-      "required": [
-        "owner"...
-      ],
-      "title": "CreateIssueRequest",
-      "type": "object"
-    },
-    "response": {
-      "properties": {
-        ...
-      }
-    },
-    "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
-    "appKey": "github",
-    "logo": "https://i.imgur.com/FAXkSDq.png",
-    "appName": "Github",
-    "enabled": true
-  }
-]
-```
-</CodeGroup>
-</Tab>
-<Tab title="Fetching Actions via Use-Case">
-This is a demonstration on how to fetch actions based on specific use-cases using the CLI command. For example, to retrieve actions related to managing channel messages:
+  <Tab title="Python">
   <CodeGroup>
-  ```bash bash
-  composio actions --use-case 'get channel messages'
+  ```Python Fetching Actions using natural language use-case
+
+  use_case="Star a repo on github"
+
+  action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
+  tools = toolset.get_actions(actions=action_enums)
+
+  # use tools as per your framework
   ```
   </CodeGroup>
-</Tab>
+  </Tab>
+
+  <Tab title="Javascript">
+  <CodeGroup>
+  ```Javascript Fetching Actions using natural language use-case
+  //coming soon
+  ```
+  </CodeGroup>
+  </Tab>
+
+  <Tab title="CLI">
+  <CodeGroup>
+  ```bash Fetching Actions using natural language use-case
+  composio actions --use-case 'get channel messages' --app 'slack'
+  ```
+  </CodeGroup>
+  </Tab>
 </Tabs>
+</Accordion>
+
+<Accordion title="Fetching Actions via Apps">
+
+<Warning> 
+Efficiency can be significantly enhanced by selectively filtering actions rather than assigning all available actions of an application to the agent. 
+</Warning>
+
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Fetching Actions via Apps & Tags
+tools = toolset.get_tools(apps=[App.GITHUB]) 
+
+# Filter by tags
+tag = "users"
+
+action_enums = toolset.find_actions_by_tags(
+    App.GITHUB,
+    tags=[tag], 
+)
+
+tools = toolset.get_actions(actions=action_enums)
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="Javascript">
+<CodeGroup>
+```javascript Fetching Actions via Apps
+coming soon
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="CLI">
+<CodeGroup>
+```bash Fetching Actions via Apps
+composio actions --app 'github' --tag 'code' 
+# Don't use tag if you want all actions
+```
+</CodeGroup>
+</Tab>
+
+</Tabs>
+
+</Accordion>
+</AccordionGroup>
 </Step>
 
 <Step title="Execute the action">
 <Tabs>
+
 <Tab title="Execute Action">
 Execute Action
 <CodeGroup>
@@ -197,10 +244,9 @@ toolset.executeAction(
    entity.id
 );
 ```
-
 </CodeGroup>
-When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
 </Tab>
+
 <Tab title="Execute Action with Natural Language">
     Execute Action with Natural Language
     <CodeGroup>
@@ -266,3 +312,31 @@ When executed successfully, action's response will be output. Output schema as r
 </Tabs>
 </Step>
 </Steps>
+
+--- 
+## Action Selection and Filtering
+
+<Warning>
+    Directly invoking actions is generally discouraged as it can lead to significant performance issues when implemented in a production environment.
+    <CodeGroup>
+    ```python python
+    tools = composio_toolset.get_tools(apps=[App.ASANA])
+    // Not a good idea.
+    ```
+    ```javascript javascript
+    const tools = composio_toolset.get_tools(apps=[App.ASANA])
+    // Not a good idea.
+    ```
+    </CodeGroup>
+</Warning>
+
+Some Composio tools provide a wide array of over 100 actions. However, there are several considerations to keep in mind:
+
+- **Performance Impact**: The performance and decision-making accuracy of agents can diminish when they are overwhelmed with too many choices.
+- **Model Limitations**: OpenAI Models imposes a limit, supporting no more than 128 actions per request. Exceeding this limit results in errors.
+  
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+
+To address these issues, it is crucial to streamline the number of actions presented to agents. 
+This can be effectively managed by employing various action filtering techniques.
+

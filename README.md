@@ -77,9 +77,8 @@
   - [2. **Setup the OpenAI and Composio Tool Set**:](#2-setup-the-openai-and-composio-tool-set)
   - [3. **Run your script**:](#3-run-your-script)
 - [💡 Examples](#-examples)
-  - [Competitor Researcher](#competitor-researcher)
-  - [Todolist to Calendar](#todolist-to-calendar)
-  - [Github to Trellox](#github-to-trellox)
+  - [Python Examples](#python-examples)
+  - [Javascript Examples](#javascript-examples)
 - [Star History](#star-history)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
@@ -256,11 +255,11 @@ For more details, refer to the [Composio SDK Documentation](https://docs.composi
 
 ## 💡 Examples
 
-### [Competitor Researcher](https://docs.composio.dev/guides/examples/CompetitorResearcher)
+### [Python Examples](https://docs.composio.dev/guides/python/)
 
-### [Todolist to Calendar](https://docs.composio.dev/guides/examples/todo-to-calendar)
+### [Javascript Examples](https://docs.composio.dev/guides/javascript/)
 
-### [Github to Trellox](https://docs.composio.dev/guides/examples/github-trello)
+
 
 ## Star History
 
