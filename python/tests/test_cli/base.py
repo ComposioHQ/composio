@@ -17,7 +17,6 @@ class BaseCliTest:
 
     result: Result
     logger: Logger = logging.get(name="tests")
-    runner: CliRunner = CliRunner()
 
     def run(
         self,
