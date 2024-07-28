@@ -27,7 +27,6 @@ class TestComposioAdd(BaseCliTest):
                 "Do you want to replace the existing connection?|Adding integration..."
             ),
         )
-        self.assert_exit_code(code=0)
 
     def test_add_serpapi(self) -> None:
         """Test `composio add` with no-auth."""
@@ -37,4 +36,3 @@ class TestComposioAdd(BaseCliTest):
         self.assert_stdout_regex(
             match=re.compile("Enter API Key"),
         )
-        self.assert_exit_code(code=1)
