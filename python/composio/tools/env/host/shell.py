@@ -147,7 +147,7 @@ class HostShell(Shell):
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
         self._write(cmd=cmd)
-        self.execute_commands.append(
+        self.executed_commands_history.append(
             {
                 "cmd": cmd,
                 "executed_at": datetime.now(),
@@ -252,7 +252,7 @@ class SSHShell(Shell):
     def exec(self, cmd: str, stdin: t.Optional[str] = None) -> t.Dict:
         """Execute a command and return output and exit code."""
         output = ""
-        self.execute_commands.append(
+        self.executed_commands_history.append(
             {
                 "cmd": cmd,
                 "executed_at": datetime.now(),
