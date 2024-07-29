@@ -38,7 +38,7 @@ from llama_index.core.tools import FunctionTool
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4-turbo")
 ```
 
 #### 2. Fetch GitHub llamaindex Tools via Composio

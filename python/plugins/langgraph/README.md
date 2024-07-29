@@ -140,7 +140,7 @@ After the compilation of workflow, we invoke the LLM with a task, and print the 
 inputs = {
     "messages": [
         HumanMessage(
-            content="Star the Github repository sawradip/sawradip"
+            content="Star the Github repository composiohq/composio"
             )
         ]
     }

@@ -4,8 +4,45 @@ on:
     types: [published]
 
 jobs:
+  test-examples:
+    name: Run Example Tests
+    defaults:
+      run:
+        working-directory: ./python
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run Tests
+        env:
+          DOCKER_USER: ${{secrets.DOCKER_USER}}
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+          JULEP_API_KEY: ${{secrets.JULEP_API_KEY}}
+          JULEP_API_URL: ${{secrets.JULEP_API_URL}}
+          COMPOSIO_API_KEY: ${{secrets.COMPOSIO_API_KEY_RELEASE}}
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+
+          python -m pip install --upgrade pip pipenv pytest
+          ls -1 plugins | awk '$0="plugins/"$0"/"' | xargs -L1 pipenv run pip3 install
+          pipenv install
+          pipenv run pip3 install '.[all]'
+          pipenv run pip install 'numpy<2'
+          pipenv run composio apps update
+          
+          CI=false COMPOSIO_BASE_URL=https://backend.composio.dev/api pipenv run pytest -vv tests/test_example.py
+
   publish-core:
     name: Create Framework & Plugin Releases
+    needs: test-examples
     defaults:
       run:
         working-directory: ./python
@@ -146,7 +183,7 @@ jobs:
 
           cd python/
           pip3 install .
-          
+
           # Build CLI
           pyinstaller composio/cli/__main__.py
 
@@ -156,7 +193,7 @@ jobs:
           cd python/
           mv dist/__main__ dist/bin
           mv dist/bin/__main__ dist/bin/composio
-          
+
           cd dist/
           zip -r composio-linux-amd64.zip bin/*
           rm -rf bin/
@@ -165,14 +202,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: python/dist/composio-linux-amd64.zip
-      
+
       # Mac Intel Release
       - if: matrix.os == 'macos-12'
         run: |
           cd python/
           mv dist/__main__ dist/bin
           mv dist/bin/__main__ dist/bin/composio
-          
+
           cd dist/
           zip -r composio-darwin-amd64.zip bin/*
           rm -rf bin/
@@ -181,14 +218,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: python/dist/composio-darwin-amd64.zip
-      
+
       # Mac ARM Release
       - if: matrix.os == 'macos-14'
         run: |
           cd python/
           mv dist/__main__ dist/bin
           mv dist/bin/__main__ dist/bin/composio
-          
+
           cd dist/
           zip -r composio-darwin-arm64.zip bin/*
           rm -rf bin/
@@ -197,14 +234,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: python/dist/composio-darwin-arm64.zip
-      
+
       # # Windows release
       # - if: matrix.os == 'windows-latest'
       #   run: |
       #     cd python/
       #     mv dist/__main__ dist/bin
       #     mv dist/bin/__main__.exe dist/bin/composio.exe
-          
+
       #     cd dist/
       #     zip -r composio-win.zip bin/*
       #     rm -rf bin/

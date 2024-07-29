@@ -39,7 +39,7 @@ class ComposioToolset(BaseComposioToolSet):
             max_tokens=1024,
             tools=composio_tools,
             messages=[
-                {"role": "user", "content": "Star me sawradip/sawradip repo in github."},
+                {"role": "user", "content": "Star me composiohq/composio repo in github."},
             ],
         )
         print(response)
