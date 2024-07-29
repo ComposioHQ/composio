@@ -50,7 +50,7 @@ agent = t.cast(
         name=name,
         about=about,
         default_settings=default_settings,
-        model="gpt-4o",
+        model="gpt-4-turbo",
         tools=composio_tools,
     ),
 )
