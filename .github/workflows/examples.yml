@@ -6,17 +6,6 @@ on:
       working-directory:
         required: true
         type: string
-    secrets:
-      DOCKER_USER:
-        required: true
-      OPENAI_API_KEY:
-        required: true
-      JULEP_API_KEY:
-        required: true
-      JULEP_API_URL:
-        required: true
-      COMPOSIO_API_KEY:
-        required: true
 
 jobs:
   run-tests:
@@ -40,7 +29,7 @@ jobs:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
           JULEP_API_KEY: ${{secrets.JULEP_API_KEY}}
           JULEP_API_URL: ${{secrets.JULEP_API_URL}}
-          COMPOSIO_API_KEY: ${{secrets.COMPOSIO_API_KEY}}
+          COMPOSIO_API_KEY: ${{secrets.COMPOSIO_API_KEY_RELEASE}}
         run: |
           sudo apt-get update --fix-missing
           sudo apt-get autoremove
