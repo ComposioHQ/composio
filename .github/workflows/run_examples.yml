@@ -1,0 +1,10 @@
+name: Build and Release
+on:
+  workflow_dispatch:
+
+jobs:
+  test-examples:
+    uses: ./.github/workflows/common-test-steps.yml
+    with:
+      working-directory: ./python
+    secrets: inherit
