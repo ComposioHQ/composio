@@ -1,8 +1,4 @@
-import os
-import subprocess
-import time
 from datetime import datetime
-from re import L
 
 from pydantic import BaseModel, Field
 
@@ -77,7 +73,9 @@ class GetWorkspaceHistory(
                 executed_time_ago=format_timestamp(command["executed_at"]),
                 command=command["cmd"],
             )
-            for command in shell.executed_commands_history[-request_data.last_n_commands :]
+            for command in shell.executed_commands_history[
+                -request_data.last_n_commands:
+            ]
         ]
         return {
             "workspace_command_history": workspace_command_history,
