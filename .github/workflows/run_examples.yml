@@ -1,4 +1,4 @@
-name: Build and Release
+name: Run Examples tests
 on:
   workflow_dispatch:
 
