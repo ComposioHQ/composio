@@ -314,6 +314,7 @@ def _update_annotations(
             child.target.id  # type: ignore
             for child in node.body[1:]
             if isinstance(child, ast.AnnAssign)
+            and child.target.id != "_deprecated"  # type: ignore
         ]
         if set(cls_attributes) == set(attributes):
             console.print(
