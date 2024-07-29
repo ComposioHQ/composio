@@ -288,7 +288,9 @@ class File(WithLogger):
 
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
-            formatted_errors = self._format_lint_errors(new_lint_errors)
+            formatted_errors = self._format_lint_errors(
+                new_lint_errors, start, end, text
+            )
             self.path.write_text(data=original_content, encoding="utf-8")
             return {
                 "replaced_text": "",
@@ -364,26 +366,41 @@ class File(WithLogger):
             if (code, message) in new_errors
         ]
 
-    def _format_lint_errors(self, errors: t.List[str]) -> str:
+    def _format_lint_errors(
+        self, errors: t.List[str], start: int, end: int, text: str
+    ) -> str:
         """Format lint errors with descriptions and next actions."""
         formatted_output = ""
+        file_lines = self.path.read_text(encoding="utf-8").splitlines()
         for error in errors:
             parts = error.split(":", 3)
             if len(parts) >= 4:
                 file_path, line, column, message = parts
-                line_content = self.path.read_text(encoding="utf-8").splitlines()[
-                    int(line.strip()) - 1
-                ]
+                line_content = file_lines[int(line.strip()) - 1]
                 formatted_output += f"- File: {file_path.strip()}, Line {line.strip()}, Column {column.strip()}: {message.strip()}\n"
-                formatted_output += f"  Code: {line_content.strip()}\n"
+                formatted_output += f"  Error code line: {line_content.strip()}\n"
 
                 # Add description and next action based on error code
                 error_code = message.split()[0]
                 description, next_action = self._get_error_info(error_code)
                 formatted_output += f"  Description: {description}\n"
-                formatted_output += f"  Next Action: {next_action}\n\n"
+                formatted_output += f"  Next Action: {next_action}\n"
             else:
                 formatted_output += f"- {error}\n"
+
+        # Add information about the overall change
+        formatted_output += "\nThis is how the change would have looked if applied:\n"
+        for i in range(max(1, start - 3), start):
+            formatted_output += f"{file_lines[i - 1]}\n"
+        if start > 1:
+            formatted_output += f"{file_lines[start - 2]}\n"
+        formatted_output += f"{text}\n"
+        if end < len(file_lines):
+            formatted_output += f"{file_lines[end]}\n"
+        for i in range(end + 1, min(end + 4, len(file_lines) + 1)):
+            formatted_output += f"{file_lines[i - 1]}\n"
+        formatted_output += "\n"
+
         return formatted_output.rstrip()
 
     def _get_error_info(self, error_code: str) -> t.Tuple[str, str]:
