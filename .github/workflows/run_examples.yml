@@ -1,10 +1,10 @@
-name: Run Examples tests
+name: Run Examples Tests
 on:
   workflow_dispatch:
 
 jobs:
   test-examples:
-    uses: ./.github/workflows/common-test-steps.yml
+    uses: ./.github/workflows/examples.yml
     with:
       working-directory: ./python
     secrets: inherit
