@@ -85,14 +85,11 @@ workflow.add_edge("tool", "agent")
 workflow.set_entry_point("agent")
 
 app = workflow.compile()
-
-
 inputs = {
-    "messages": [HumanMessage(content="Star the Github Repository sawradip/sawradip")]
+    "messages": [
+        HumanMessage(content="Star a repo composiohq/composio on GitHub"),
+    ]
 }
-# response = app.invoke(inputs)
-# print(response)
-
 for output in app.stream(inputs):
     for key, value in output.items():
         print(f"Output from node '{key}':")
