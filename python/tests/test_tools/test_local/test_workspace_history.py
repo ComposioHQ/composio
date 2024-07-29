@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from composio import Action, ComposioToolSet
 from composio.tools.env.factory import WorkspaceType
 
