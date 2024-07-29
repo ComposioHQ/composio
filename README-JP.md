@@ -63,18 +63,19 @@
 
 - [📋 目次](#-目次)
 - [🤔 なぜComposio？](#-なぜcomposio)
-- [🔥 主要機能](#-主要機能)  
+- [🔥 主要機能](#-主要機能)
 - [🚀 Pythonでの始め方](#-pythonでの始め方)
   - [1. インストール](#1-インストール)
   - [2. Composioの実践テスト](#2-composioの実践テスト)
-- [🚀 Javascriptでの始め方 ](#-javascriptでの始め方) 
-  - [1. Composio SDKのインストール](#1-composio-sdkのインストール)
-  - [2. OpenAIとComposioツールセットの設定](#2-openaiとcomposioツールセットの設定)
+- [🚀 Javascriptでの始め方](#-javascriptでの始め方)
+  - [1. **Composio SDKのインストール**：](#1-composio-sdkのインストール)
+  - [2. **OpenAIとComposioツールセットの設定**：](#2-openaiとcomposioツールセットの設定)
+  - [3. **スクリプトを実行**：](#3-スクリプトを実行)
 - [💡 例](#-例)
-  - [競合研究者](#競合研究者) 
-  - [ToDoリストからカレンダーへ](#todolistからカレンダーへ)
-  - [GithubからTrelloへ](#githubからtrelloへ)
-- [📋 行動規範を読む](#-行動規範を読む) 
+  - [Python](#python)
+  - [Javascript](#javascript)
+- [Star履歴](#star履歴)
+- [📋 行動規範を読む](#-行動規範を読む)
 - [🤗 貢献](#-貢献)
 - [🔗 リンク](#-リンク)
 - [🛡️ ライセンス](#️-ライセンス)
@@ -247,11 +248,9 @@ JavascriptでComposio SDKを使用するには、以下の手順に従ってく�
 
 ## 💡 例
 
-### [競合研究者](https://docs.composio.dev/guides/examples/CompetitorResearcher)
+### [Python](https://docs.composio.dev/guides/python/)
 
-### [ToDoリストからカレンダーへ](https://docs.composio.dev/guides/examples/todo-to-calendar) 
-
-### [GithubからTrelloへ](https://docs.composio.dev/guides/examples/github-trello)
+### [Javascript](https://docs.composio.dev/guides/javascript/)
 
 ## Star履歴
 

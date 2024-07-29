@@ -5,7 +5,7 @@ Camel tool spec.
 import typing as t
 
 # pylint: disable=E0611
-from camel.functions import OpenAIFunction
+from camel.toolkits import OpenAIFunction
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
@@ -115,8 +115,8 @@ class ComposioToolSet(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "separate `entity_id` can not be provided during "
-                "intialization and handelling tool calls"
+                "Separate `entity_id` can not be provided during "
+                "intialization and handling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:
             entity_id = self.entity_id

@@ -10,7 +10,7 @@ from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4-turbo")
 
 
 def main():

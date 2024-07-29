@@ -42,4 +42,7 @@ task = Task(
 )
 
 # Execute task
-task.execute()
+try:
+    task.execute_sync()  # type: ignore
+except AttributeError:
+    task.execute()  # type: ignore

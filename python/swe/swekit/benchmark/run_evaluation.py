@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
-from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
 
 from composio_crewai import ComposioToolSet
@@ -63,8 +62,8 @@ class EvaluationConfig(BaseModel):
         default=WorkspaceType.Docker,
         description="workspace environment",
     )
-    image_name: str = Field(
-        default=DEFAULT_IMAGE,
+    image_name: t.Optional[str] = Field(
+        default=None,
         description="image name",
     )
 
@@ -191,8 +190,8 @@ class EvaluationManager(WithLogger):
                     f"Issue id: {issue['instance_id']} "
                 )
                 tag = repo.replace("/", "-") + "-" + issue["version"].replace(".", "-")
-                image_name = f"composio/swe:{tag}"
-                print(tag)
+                image_name = self.image_name or f"composio/swe:{tag}"
+                self.logger.info(f"Using image: {image_name}")
 
                 workspace_id = setup_workspace(
                     repo,
@@ -231,7 +230,7 @@ def evaluate(
     logs_dir: Path = _get_logs_dir(),
     generate_report: bool = True,
     test_instance_ids: t.List[str] = [],
-    image_name: str = DEFAULT_IMAGE,
+    image_name: t.Optional[str] = None,
 ) -> None:
     """Evaluate a callable."""
     if not os.path.exists(logs_dir):

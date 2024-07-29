@@ -56,7 +56,7 @@ response = client.beta.tools.messages.create(
     model="claude-3-opus-20240229",
     max_tokens=1024,
     tools= actions,
-    messages=[{"role": "user", "content": "Star me sawradip/sawradip repo in github."}],
+    messages=[{"role": "user", "content": "Star me composiohq/composio repo in github."}],
 )
 pprint(response)
 ```

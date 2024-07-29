@@ -132,7 +132,6 @@ This project involves setting up and running an agent to conduct investment rese
         apiKey: process.env.COMPOSIO_API_KEY
     });
 
-
     const prompt = await pull("hwchase17/openai-functions-agent");
     
     const agent = await createOpenAIFunctionsAgent({

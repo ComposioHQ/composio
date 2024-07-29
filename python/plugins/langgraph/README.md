@@ -28,22 +28,16 @@ composio-cli show-apps
 Prepare your environment by initializing necessary imports from LangGraph & LangChain for setting up your agent.
 
 ```python
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-import json
-import operator
-from typing import Annotated, TypedDict, Sequence
+from typing import Literal
 
 from langchain_openai import ChatOpenAI
-from langchain_core.utils.function_calling import convert_to_openai_function
-from langchain_core.messages import BaseMessage, HumanMessage, FunctionMessage
-
-from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolInvocation, ToolExecutor
+from langgraph.graph import MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode
 ```
 
 #### 2. Fetch GitHub LangGraph Tools via Composio
 
-Access GitHub tools provided by Composio for LangGraph, initialize a `tool_executor` and get OpenAI-format function schemas from the tools.
+Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtaned from `ComposioToolSet`.
 
 ```python
 from composio_langgraph import Action, ComposioToolSet
@@ -51,99 +45,75 @@ from composio_langgraph import Action, ComposioToolSet
 # Initialize the toolset for GitHub
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
-    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
-)
-tool_executor = ToolExecutor(tools)
-functions = [convert_to_openai_function(t) for t in tools]
+    actions=[
+        Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER,
+        Action.GITHUB_USERS_GET_AUTHENTICATED,
+    ])
+tool_node = ToolNode(tools)
 ```
 
 #### 3. Prepare the model
 
-Initialize the LLM class and bind obtained functions to the model.
+Initialize the LLM class and bind obtained tools to the model.
 
 ```python
 model = ChatOpenAI(temperature=0, streaming=True)
-model = model.bind_functions(functions)
+model_with_tools = model.bind_tools(functions)
 ```
 #### 4. Define the Graph Nodes
 
-LangGraph expects you to define different nodes of the agentic workflow as separate functions. 
-
-Here we define one node for calling the LLM and another for executing the correct tool(function), with appropriate parameters.
+LangGraph expects you to define different nodes of the agentic workflow as separate functions. Here we define a node for calling the LLM model.
 
 ```python
-def function_1(state):
-    messages = state['messages']
-    response = model.invoke(messages)
+def call_model(state: MessagesState):
+    messages = state["messages"]
+    response = model_with_tools.invoke(messages)
     return {"messages": [response]}
-
-
-def function_2(state):
-    messages = state['messages']
-    last_message = messages[-1]
-
-    parsed_function_call = last_message.additional_kwargs["function_call"]
-
-    action = ToolInvocation(
-        tool=parsed_function_call["name"],
-        tool_input=json.loads(parsed_function_call["arguments"]),
-    )
-
-    response = tool_executor.invoke(action)
-
-    function_message = FunctionMessage(content=str(response), name=action.tool)
-
-    return {"messages": [function_message]}
-
 ```
-#### 5. Define the Graph Edges
+#### 5. Define the Graph Nodes and Edges
 
-To establish the agent's workflow, we begin by initializing the workflow with an `AgentState` to maintain state, followed by specifying the connecting edges between nodes. These edges can be straightforward or conditional, depending on the workflow requirements.
+To establish the agent's workflow, we begin by initializing the workflow with `agent` and `tools` node, followed by specifying the connecting edges between nodes, finally compiling the workflow. These edges can be straightforward or conditional, depending on the workflow requirements.
 
 ```python
-
-def where_to_go(state):
-    messages = state['messages']
+def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+    messages = state["messages"]
     last_message = messages[-1]
-
-    if "function_call" in last_message.additional_kwargs:
-        return "continue"
-    else:
-        return "end"
+    if last_message.tool_calls:
+        return "tools"
+    return "__end__"
 
 
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], operator.add]
+workflow = StateGraph(MessagesState)
 
+# Define the two nodes we will cycle between
+workflow.add_node("agent", call_model)
+workflow.add_node("tools", tool_node)
 
-workflow = StateGraph(AgentState)
-workflow.add_node("agent", function_1)
-workflow.add_node("tool", function_2)
+workflow.add_edge("__start__", "agent")
 workflow.add_conditional_edges(
     "agent",
-    where_to_go,
-    {
-        "continue": "tool",
-        "end": END
-    }
+    should_continue,
 )
-workflow.add_edge('tool', 'agent')
-workflow.set_entry_point("agent")
+workflow.add_edge("tools", "agent")
 
 app = workflow.compile()
 ```
 #### 6. Invoke & Check Response
 
-After the compilation of workflow, we invoke the LLM with a task, and print the final response. 
+After the compilation of workflow, we invoke the LLM with a task, and stream the response.
 
 ```python
-inputs = {
-    "messages": [
-        HumanMessage(
-            content="Star the Github repository sawradip/sawradip"
+for chunk in app.stream(
+    {
+        "messages": [
+            (
+                "human",
+                # "Star the Github Repository composiohq/composio",
+                "Get my information.",
             )
         ]
-    }
-response = app.invoke(inputs)
-print(response)
+    },
+    stream_mode="values",
+):
+    chunk["messages"][-1].pretty_print()
 ```

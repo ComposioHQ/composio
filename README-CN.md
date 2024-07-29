@@ -73,9 +73,8 @@
   - [2. **配置 OpenAI 和 Composio 工具集**：](#2-配置-openai-和-composio-工具集)
   - [3. **运行您的脚本**：](#3-运行您的脚本)
 - [💡 示例](#-示例)
-  - [竞争对手研究员](#竞争对手研究员)
-  - [待办事项列表转日历](#待办事项列表转日历)
-  - [Github 到 Trello](#github-到-trello)
+  - [Python](#python)
+  - [Javascript](#javascript)
 - [Star 历史](#star-历史)
 - [📋 阅读我们的行为准则](#-阅读我们的行为准则)
 - [🤗 贡献](#-贡献)
@@ -248,11 +247,9 @@ print(response_after_tool_calls)
 
 ## 💡 示例
 
-### [竞争对手研究员](https://docs.composio.dev/guides/examples/CompetitorResearcher)
+### [Python](https://docs.composio.dev/guides/python/)
 
-### [待办事项列表转日历](https://docs.composio.dev/guides/examples/todo-to-calendar) 
-
-### [Github 到 Trello](https://docs.composio.dev/guides/examples/github-trello)
+### [Javascript](https://docs.composio.dev/guides/javascript/)
 
 ## Star 历史
 

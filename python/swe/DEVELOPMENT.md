@@ -8,7 +8,7 @@ This guide outlines the process for enhancing the SWE agent's capabilities by ad
 
 To incorporate a new local tool into the agent's toolkit:
 
-1. Consult the [Local Tool documentation](https://docs.composio.dev/sdk/python/local_tools) for detailed instructions.
+1. Consult the [Local Tool documentation](https://docs.composio.dev/introduction/foundations/components/local_tools) for detailed instructions.
 2. Follow the guidelines to integrate your tool seamlessly with the existing framework.
 
 ## Implementing a New Shell Tool

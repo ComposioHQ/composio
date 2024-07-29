@@ -189,7 +189,7 @@ def build_image_and_container(
     start_time = datetime.datetime.now()
     composio_toolset.set_workspace_id(workspace_id=workspace.id)
 
-    if image_name == DEFAULT_IMAGE:
+    if not image_name.startswith("composio/swe"):
         clone_resp = composio_toolset.execute_action(
             action=Action.FILETOOL_GIT_CLONE,
             params={
@@ -204,14 +204,9 @@ def build_image_and_container(
         ):
             raise Exception(clone_resp["error"])
 
-    # chwdir_resp = composio_toolset.execute_action(
-    #     action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
-    #     params={"path": repo.lstrip().rstrip().split("/")[-1]},  # todo: verify this
-    # )
-    # if isinstance(chwdir_resp, dict) and chwdir_resp.get("status") == "failure":
-    #     raise Exception(f"Error changing directory: {chwdir_resp['details']}")
-    git_clone_time = datetime.datetime.now() - start_time
-    logger.info("git clone completed, time taken: %s", git_clone_time)
+        git_clone_time = datetime.datetime.now() - start_time
+        logger.info("git clone completed, time taken: %s", git_clone_time)
+
     return workspace.id
 
 
@@ -287,4 +282,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/.composio_coder/logs/1721819092")
+    get_score(logs_dir="/Users/karanvaidya/1721915475")

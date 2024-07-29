@@ -94,6 +94,7 @@ def _check_output(output: dict) -> None:
 #     assert False
 
 
+# pylint: disable=too-many-statements
 @pytest.mark.skip
 def test_workspace() -> None:
     """Test workspace tools."""
@@ -107,20 +108,107 @@ def test_workspace() -> None:
         toolset = ComposioToolSet(
             workspace_config=WorkspaceType.Host(),
         )
+
+        # Test FILETOOL_CHANGE_WORKING_DIRECTORY
+        output = toolset.execute_action(
+            action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+            params={"path": "/Users/karanvaidya/codes/composio_sdk/python/"},
+        )
+        logger.info(f"output of change working directory: {output}")
+
+        # Test FILETOOL_LIST_FILES
+        output = toolset.execute_action(
+            action=Action.FILETOOL_LIST_FILES,
+            params={},
+        )
+        logger.info(f"output of list files: {output}")
+
+        # # Test FILETOOL_SEARCH_WORD
         # output = toolset.execute_action(
-        #     action=Action.FILETOOL_EDIT_FILE,
-        #     params={"file_path": "/Users/karanvaidya/codes/composio_sdk/python/swe/examples/crewai_agent/compiler.py", "start_line": 19, "end_line": 19, "text": "FORCE = object() #added data"},
+        #     action=Action.FILETOOL_SEARCH_WORD,
+        #     params={"word": "@action", "pattern": "*.py"},
         # )
+        # logger.info(f"output of search word '@action': {output}")
+
+        # # Test FILETOOL_SEARCH_WORD with case-insensitive search
         # output = toolset.execute_action(
-        #     action=Action.FILETOOL_EDIT_FILE,
+        #     action=Action.FILETOOL_SEARCH_WORD,
+        #     params={"word": "filemanager", "pattern": "**/*.py", "case_insensitive": True},
+        # )
+        # logger.info(f"output of case-insensitive search for 'filemanager': {output}")
+
+        # # Test FILETOOL_SEARCH_WORD in a specific directory
+        # output = toolset.execute_action(
+        #     action=Action.FILETOOL_SEARCH_WORD,
+        #     params={"word": "grep", "pattern": "composio/tools/local/**/*.py"},
+        # )
+        # logger.info(f"output of search for 'grep' in local tools: {output}")
+
+        # # Test FILETOOL_FIND_FILE
+        # output_list = toolset.execute_action(
+        #     action=Action.FILETOOL_FIND_FILE,
         #     params={
-        #         "file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py",
-        #         "start_line": 307,
-        #         "end_line": 307,
-        #         "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc",
+        #         "pattern": "*run_evaluation.py",
         #     },
         # )
-        # logger.info(f"output of edit file: {output}")
+        # logger.info(f"output of find file run_evaluation.py: {output_list}")
+
+        # # Test FILETOOL_FIND_FILE with depth limit
+        # output_list = toolset.execute_action(
+        #     action=Action.FILETOOL_FIND_FILE,
+        #     params={
+        #         "pattern": "*.py",
+        #         "depth": 2,
+        #     },
+        # )
+        # logger.info(f"output of find Python files with depth 2: {output_list}")
+
+        # # Test FILETOOL_FIND_FILE with case-sensitive search
+        # output_list = toolset.execute_action(
+        #     action=Action.FILETOOL_FIND_FILE,
+        #     params={
+        #         "pattern": "*Action*.py",
+        #         "case_sensitive": True,
+        #     },
+        # )
+        # logger.info(f"output of case-sensitive find for *Action*.py: {output_list}")
+
+        # # Test FILETOOL_FIND_FILE with include and exclude
+        # output_list = toolset.execute_action(
+        #     action=Action.FILETOOL_FIND_FILE,
+        #     params={
+        #         "pattern": "*.py",
+        #         "include": ["composio/tools"],
+        #         "exclude": ["composio/tools/env"],
+        #     },
+        # )
+        # logger.info(f"output of find Python files in tools, excluding env: {output_list}")
+
+        output = toolset.execute_action(
+            action=Action.FILETOOL_EDIT_FILE,
+            params={
+                "file_path": "swe/examples/crewai_agent/compiler.py",
+                "text": """        # Updated to handle multiline RawSQL expressions by converting SQL to a single line
+        sql_oneline = ' '.join(sql.split('\\n'))
+        without_ordering = self.ordering_parts.search(sql_online).group(1)""",
+                "start_line": 356,
+                "end_line": 356,
+            },
+        )
+        logger.info(f"output of edit file: {output}")
+
+        assert False  # Remove this line when you're done adding the test cases
+
+        output = toolset.execute_action(
+            action=Action.FILETOOL_EDIT_FILE,
+            params={
+                "file_path": "/Users/karanvaidya/codes/composio_sdk/python/global_settings.py",
+                "start_line": 307,
+                "end_line": 307,
+                "text": "FILE_UPLOAD_PERMISSIONS = 0o644\nabc",
+            },
+        )
+        logger.info(f"output of edit file: {output}")
         assert False
         _check_output(
             output=toolset.execute_action(

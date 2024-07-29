@@ -1,3 +1,5 @@
+import logger from "../../utils/logger";
+
 const PUSHER_KEY = "ff9f18c208855d77a152"
 const PUSHER_CLUSTER = "mt1"
 
@@ -57,7 +59,7 @@ export class PusherUtils {
         try {
             await PusherUtils.pusherClient.subscribe(channelName).bind(event, fn);
         } catch (error) {
-            console.error(`Error subscribing to ${channelName} with event ${event}: ${error}`);
+            logger.error(`Error subscribing to ${channelName} with event ${event}: ${error}`);
         }
     }
 
@@ -104,7 +106,7 @@ export class PusherUtils {
         var channel = PusherUtils.pusherClient.subscribe(`private-${clientId}_triggers`);
         PusherUtils.bindWithChunking(channel, "trigger_to_client", fn);
 
-        console.log(`Subscribed to ${clientId}_triggers`);
+        logger.info(`Subscribed to ${clientId}_triggers`);
     }
 
     static triggerUnsubscribe(clientId: string): void {
