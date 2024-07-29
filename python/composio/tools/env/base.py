@@ -41,6 +41,7 @@ class Shell(ABC, WithLogger):
     """Abstract shell session."""
 
     _id: str
+    execute_commands: t.List[dict] = []
 
     def sanitize_command(self, cmd: str) -> bytes:
         """Prepare command string."""

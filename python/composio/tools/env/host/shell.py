@@ -6,6 +6,7 @@ import select
 import subprocess
 import time
 import typing as t
+from datetime import datetime
 from pathlib import Path
 
 import paramiko
@@ -55,6 +56,7 @@ class HostShell(Shell):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            shell=True,
             bufsize=1,
         )
         self.logger.debug(
@@ -145,6 +147,12 @@ class HostShell(Shell):
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
         self._write(cmd=cmd)
+        self.execute_commands.append(
+            {
+                "cmd": cmd,
+                "executed_at": datetime.now(),
+            }
+        )
         return {
             **self._read(cmd=cmd, wait=True),
             EXIT_CODE: self._get_exit_code(),
@@ -244,6 +252,12 @@ class SSHShell(Shell):
     def exec(self, cmd: str, stdin: t.Optional[str] = None) -> t.Dict:
         """Execute a command and return output and exit code."""
         output = ""
+        self.execute_commands.append(
+            {
+                "cmd": cmd,
+                "executed_at": datetime.now(),
+            }
+        )
         for _cmd in cmd.split(" && "):
             self._send(buffer=_cmd, stdin=stdin)
             self._wait(cmd=_cmd)

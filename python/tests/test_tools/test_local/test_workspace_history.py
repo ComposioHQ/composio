@@ -1,29 +1,36 @@
 """Test workspace tools."""
 
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from composio import Action, ComposioToolSet
-from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.factory import WorkspaceType
-
 
 
 PATH = Path(__file__).parent
 
 
 def test_workspace_history() -> None:
-    """Test outputs."""
-    toolset = ComposioToolSet(
-        workspace_config=WorkspaceType.Host(),
+    """Test workspace history retrieval."""
+    toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
+    shell_creation_output = toolset.execute_action(
+        action=Action.SHELL_CREATE_SHELL,
+        params={},
     )
-    output = toolset.execute_action(
+    shell_id = shell_creation_output["shell_id"]
+
+    toolset.execute_action(
+        action=Action.SHELL_EXEC_COMMAND,
+        params={"cmd": f"ls {PATH}", "shell_id": shell_id},
+    )
+
+    history_output = toolset.execute_action(
         action=Action.HISTORYFETCHERTOOL_GET_WORKSPACE_HISTORY,
-        params={"last_n_commands": 2},
+        params={"last_n_commands": 4, "shell_id": shell_id},
     )
 
-    assert len(output['workspace_command_history']) > 0, "No commands found in workspace history."
-
+    command_history = history_output["workspace_command_history"]
+    assert history_output["is_success"]
+    assert "ls" in command_history[0].dict()["command"]
+    assert len(command_history) > 0
