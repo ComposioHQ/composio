@@ -74,7 +74,7 @@ class GetWorkspaceHistory(
                 command=command["cmd"],
             )
             for command in shell.executed_commands_history[
-                -request_data.last_n_commands:
+                -request_data.last_n_commands :
             ]
         ]
         return {
