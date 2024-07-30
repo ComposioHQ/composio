@@ -44,12 +44,11 @@ from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
 from composio.utils.url import get_api_url_base
-
+import agentops
 
 ParamType = t.TypeVar("ParamType")
 
 output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-
 
 class ComposioToolSet(WithLogger):
     """Composio toolset."""
@@ -94,6 +93,9 @@ class ComposioToolSet(WithLogger):
             )
         except FileNotFoundError:
             self.logger.debug("`api_key` is not set when initializing toolset.")
+        
+        if os.getenv("AGENTOPS_API_KEY") is not None:
+            agentops.init()
 
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
@@ -309,6 +311,13 @@ class ComposioToolSet(WithLogger):
             f"\ntype={type(param)} \nvalue={param}"
         )
 
+    def _log_execute_action_to_agentops(self, function_to_execute, name: str, param: dict, metadata: t.Optional[t.Dict] = None, entity_id: str = DEFAULT_ENTITY_ID, text: t.Optional[str] = None, connected_account_id: t.Optional[str] = None):
+        ## Explicity pass parameters for agentops logging,
+        @agentops.record_function(name)
+        def wrapped_function(name: str, param: dict, metadata: t.Optional[t.Dict] = None, entity_id: str = DEFAULT_ENTITY_ID, text: t.Optional[str] = None, connected_account_id: t.Optional[str] = None):
+            return function_to_execute(name, param, metadata, entity_id, text, connected_account_id)
+        return wrapped_function(name, param, metadata, entity_id, text, connected_account_id)
+
     def execute_action(
         self,
         action: ActionType,
@@ -329,21 +338,29 @@ class ComposioToolSet(WithLogger):
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
-        action = Action(action)
-        params = self._serialize_execute_params(param=params)
-        if action.is_local:
-            return self._execute_local(
-                action=action,
-                params=params,
-                metadata=metadata,
+
+        def execute(action_name: str,param: dict,metadata: t.Optional[t.Dict] = None, entity_id: str = DEFAULT_ENTITY_ID,text: t.Optional[str] = None, connected_account_id: t.Optional[str] = None):
+            action_passed = Action(action_name)
+            params_to_execute = self._serialize_execute_params(param=param)
+            if action_passed.is_local:
+                return self._execute_local(
+                    action=action_passed,
+                    params=params_to_execute,
+                    metadata=metadata,
+                )
+            return self._execute_remote(
+                action=action_passed,
+                params=params_to_execute,
+                entity_id=entity_id,
+                text=text,
+                connected_account_id=connected_account_id,
             )
-        return self._execute_remote(
-            action=action,
-            params=params,
-            entity_id=entity_id,
-            text=text,
-            connected_account_id=connected_account_id,
-        )
+
+        action_name_str = str(action.name) if isinstance(action, Action) else str(action)
+        if(os.getenv("AGENTOPS_API_KEY") is not None):
+            return self._log_execute_action_to_agentops(execute,action_name_str ,params,metadata,entity_id,text,connected_account_id)
+        else:
+            return execute(action_name_str,params,metadata,entity_id,text,connected_account_id)
 
     def get_action_schemas(
         self,
