@@ -50,9 +50,9 @@ class OpenAIAnalyzer(MediaAnalyzer):
     ) -> str:
         try:
             from openai import OpenAI  # pylint: disable=import-outside-toplevel
-            from openai.types.chat import (
+            from openai.types.chat import (  # pylint: disable=import-outside-toplevel
                 ChatCompletionMessageParam,
-            )  # pylint: disable=import-outside-toplevel
+            )
         except ImportError as e:
             raise ImportError(
                 "The 'openai' package is required for OpenAI analysis. Please install it using 'pip install openai'."

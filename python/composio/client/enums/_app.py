@@ -2,6 +2,7 @@
 App enums.
 """
 import typing as t
+
 from composio.client.enums._action import Action
 from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
 
