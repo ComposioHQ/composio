@@ -48,7 +48,7 @@ class GotoPage(BaseBrowserAction):
     _response_schema = GotoPageResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GotoPageRequest
+        self, browser_manager: BrowserManager, request_data: GotoPageRequest  # type: ignore
     ) -> GotoPageResponse:
         """Execute the navigation action."""
         browser_manager.goto(request_data.url, request_data.timeout)

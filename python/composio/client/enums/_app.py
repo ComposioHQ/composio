@@ -42,6 +42,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     HACKERNEWS: 'App'
     HEROKU: 'App'
     HISTORYFETCHERTOOL: 'App'
+    IMAGEANALYSERTOOL: 'App'
     INDUCEDAI: 'App'
     LINEAR: 'App'
     LISTENNOTES: 'App'

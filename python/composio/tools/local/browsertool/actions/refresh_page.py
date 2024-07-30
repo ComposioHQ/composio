@@ -6,7 +6,6 @@ from typing import Optional
 
 from pydantic import Field
 
-from composio.tools.env.browsermanager.browser import BrowserError
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.local.browsertool.actions.base_action import (
     BaseBrowserAction,
@@ -53,7 +52,7 @@ class RefreshPage(BaseBrowserAction):
     _response_schema = RefreshPageResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: RefreshPageRequest
+        self, browser_manager: BrowserManager, request_data: RefreshPageRequest  # type: ignore
     ) -> RefreshPageResponse:
         """Execute the refresh page action."""
         previous_url = browser_manager.get_current_url()

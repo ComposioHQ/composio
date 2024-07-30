@@ -49,12 +49,14 @@ class OpenAIAnalyzer(MediaAnalyzer):
         self, model: ModelChoice, media_paths: List[str], prompt: str, api_key: str
     ) -> str:
         try:
-            from openai import OpenAI
-            from openai.types.chat import ChatCompletionMessageParam
-        except ImportError:
+            from openai import OpenAI  # pylint: disable=import-outside-toplevel
+            from openai.types.chat import (
+                ChatCompletionMessageParam,
+            )  # pylint: disable=import-outside-toplevel
+        except ImportError as e:
             raise ImportError(
                 "The 'openai' package is required for OpenAI analysis. Please install it using 'pip install openai'."
-            )
+            ) from e
         client = OpenAI(api_key=api_key)
         content = [{"type": "text", "text": prompt}]
 
@@ -92,11 +94,11 @@ class ClaudeAnalyzer(MediaAnalyzer):
         self, model: ModelChoice, media_paths: List[str], prompt: str, api_key: str
     ) -> str:
         try:
-            import anthropic
-        except ImportError:
+            import anthropic  # pylint: disable=import-outside-toplevel
+        except ImportError as e:
             raise ImportError(
                 "The 'anthropic' package is required for Claude analysis. Please install it using 'pip install anthropic'."
-            )
+            ) from e
         client = anthropic.Anthropic(api_key=api_key)
 
         content = []
@@ -123,7 +125,7 @@ class ClaudeAnalyzer(MediaAnalyzer):
 
     def _prepare_image_content(self, media_path: str) -> Dict[str, Any]:
         if media_path.startswith(("http://", "https://")):
-            response = requests.get(media_path)
+            response = requests.get(media_path, timeout=40)
             image_data = base64.b64encode(response.content).decode("utf-8")
         else:
             with open(media_path, "rb") as image_file:

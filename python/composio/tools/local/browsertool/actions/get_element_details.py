@@ -2,8 +2,7 @@
 Action for getting details of an element on a webpage.
 """
 
-from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from pydantic import Field
 
@@ -59,7 +58,7 @@ class GetElementDetails(BaseBrowserAction):
     _response_schema = GetElementDetailsResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GetElementDetailsRequest
+        self, browser_manager: BrowserManager, request_data: GetElementDetailsRequest  # type: ignore
     ) -> GetElementDetailsResponse:
         """Execute the get element details action."""
         # Find the element

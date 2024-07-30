@@ -2,7 +2,6 @@
 Action for navigating browser history.
 """
 
-from enum import Enum
 from typing import Optional
 
 from pydantic import Field
@@ -18,15 +17,28 @@ from composio.tools.local.browsertool.actions.base_action import (
 class NavigateHistoryRequest(BaseBrowserRequest):
     """Request schema for navigating browser history."""
 
-    direction: str = Field(..., description="Direction to navigate: 'back' or 'forward'")
-    steps: int = Field(default=1, ge=1, description="Number of steps to navigate in the specified direction")
+    direction: str = Field(
+        ..., description="Direction to navigate: 'back' or 'forward'"
+    )
+    steps: int = Field(
+        default=1,
+        ge=1,
+        description="Number of steps to navigate in the specified direction",
+    )
 
 
 class NavigateHistoryResponse(BaseBrowserResponse):
     """Response schema for navigating browser history."""
-    success: bool = Field(default=False, description="Whether the navigation action was successful")
-    previous_url: Optional[str] = Field(default=None, description="URL before navigation")
-    message: Optional[str] = Field(default=None, description="Additional information about the navigation result")
+
+    success: bool = Field(
+        default=False, description="Whether the navigation action was successful"
+    )
+    previous_url: Optional[str] = Field(
+        default=None, description="URL before navigation"
+    )
+    message: Optional[str] = Field(
+        default=None, description="Additional information about the navigation result"
+    )
 
 
 class NavigateHistory(BaseBrowserAction):
@@ -41,15 +53,15 @@ class NavigateHistory(BaseBrowserAction):
 
     _request_schema = NavigateHistoryRequest
     _response_schema = NavigateHistoryResponse
-    
+
     def execute_on_browser_manager(
-        self,
-        browser_manager: BrowserManager,
-        request_data: NavigateHistoryRequest
+        self, browser_manager: BrowserManager, request_data: NavigateHistoryRequest  # type: ignore
     ) -> NavigateHistoryResponse:
         """Execute the navigate history action."""
-        previous_url = browser_manager.get_current_url()       
-        navigation_method = browser_manager.back if request_data.direction == "back" else browser_manager.forward
+        previous_url = browser_manager.get_current_url()
+        navigation_method = browser_manager.back
+        if request_data.direction == "forward":
+            navigation_method = browser_manager.forward
         steps_taken = 0
         message = None
 
@@ -59,11 +71,12 @@ class NavigateHistory(BaseBrowserAction):
                 steps_taken += 1
             except Exception:
                 # Reached the limit of history
-                message = f"Maximum {'backs' if request_data.direction == "back" else 'forwards'} reached after {steps_taken} steps. Can't go any further."
+                method_direction = "backs"
+                if request_data.direction == "forward":
+                    method_direction = "forwards"
+                message = f"Maximum {method_direction} reached after {steps_taken} steps. Can't go any further."
                 break
 
         return NavigateHistoryResponse(
-            success=True,
-            previous_url=previous_url,
-            message=message
+            success=True, previous_url=previous_url, message=message
         )

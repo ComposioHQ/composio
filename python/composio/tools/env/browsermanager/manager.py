@@ -48,7 +48,7 @@ class BrowserManager(WithLogger):
             raise
         return self
 
-    def __exit__(self) -> None:
+    def __exit__(self, *args: t.Any, **kwargs: t.Any) -> None:
         """Exit from browser manager context."""
         try:
             self.browser.cleanup()
@@ -70,8 +70,7 @@ class BrowserManager(WithLogger):
         try:
             if self.browser.page is not None:
                 return self.browser.page.url
-            else:
-                raise BrowserError("Failed to get current URL: No current URL found.")
+            raise BrowserError("Failed to get current URL: No current URL found.")
         except BrowserError as e:
             self.logger.error(f"Failed to get current URL: {str(e)}")
             raise
@@ -80,11 +79,10 @@ class BrowserManager(WithLogger):
         """Get the viewport of the current page."""
         try:
             viewport = self.browser.get_page_viewport()
-            if viewport is not None:
-                return viewport
+            return viewport
         except BrowserError as e:
             self.logger.error(f"Failed to get page viewport: {str(e)}")
-            raise
+            raise BrowserError(f"Failed to get page viewport: {str(e)}") from e
 
     def back(self) -> None:
         """Navigate back in browser history."""
@@ -110,13 +108,13 @@ class BrowserManager(WithLogger):
             self.logger.error(f"Failed to refresh page: {str(e)}")
             raise
 
-    def get_content(self) -> str:
-        """Get the current page's HTML content."""
-        try:
-            return self.browser.get_content()
-        except BrowserError as e:
-            self.logger.error(f"Failed to get page content: {str(e)}")
-            raise
+    # def get_content(self) -> str:
+    #     """Get the current page's HTML content."""
+    #     try:
+    #         return self.browser.get_content()
+    #     except BrowserError as e:
+    #         self.logger.error(f"Failed to get page content: {str(e)}")
+    #         raise
 
     def find_element(self, selector: str, selector_type: str = "css"):
         """Find an element on the page."""
@@ -158,15 +156,15 @@ class BrowserManager(WithLogger):
             )
             raise
 
-    def select(self, selector: str, value: str) -> None:
-        """Select an option from a dropdown."""
-        try:
-            self.browser.select(selector, value)
-        except BrowserError as e:
-            self.logger.error(
-                f"Failed to select option '{value}' from element with selector '{selector}': {str(e)}"
-            )
-            raise
+    # def select(self, selector: str, value: str) -> None:
+    #     """Select an option from a dropdown."""
+    #     try:
+    #         self.browser.select(selector, value)
+    #     except BrowserError as e:
+    #         self.logger.error(
+    #             f"Failed to select option '{value}' from element with selector '{selector}': {str(e)}"
+    #         )
+    #         raise
 
     def scroll(self, direction: str, amount: int) -> None:
         """Scroll the page."""
@@ -188,29 +186,29 @@ class BrowserManager(WithLogger):
             )
             raise
 
-    def new_tab(self) -> None:
-        """Open a new tab."""
-        try:
-            self.browser.new_tab()
-        except BrowserError as e:
-            self.logger.error(f"Failed to open new tab: {str(e)}")
-            raise
+    # def new_tab(self) -> None:
+    #     """Open a new tab."""
+    #     try:
+    #         self.browser.new_tab()
+    #     except BrowserError as e:
+    #         self.logger.error(f"Failed to open new tab: {str(e)}")
+    #         raise
 
-    def switch_tab(self, index: int) -> None:
-        """Switch between tabs."""
-        try:
-            self.browser.switch_tab(index)
-        except BrowserError as e:
-            self.logger.error(f"Failed to switch to tab at index {index}: {str(e)}")
-            raise
+    # def switch_tab(self, index: int) -> None:
+    #     """Switch between tabs."""
+    #     try:
+    #         self.browser.switch_tab(index)
+    #     except BrowserError as e:
+    #         self.logger.error(f"Failed to switch to tab at index {index}: {str(e)}")
+    #         raise
 
-    def close_tab(self) -> None:
-        """Close the current tab."""
-        try:
-            self.browser.close_tab()
-        except BrowserError as e:
-            self.logger.error(f"Failed to close current tab: {str(e)}")
-            raise
+    # def close_tab(self) -> None:
+    #     """Close the current tab."""
+    #     try:
+    #         self.browser.close_tab()
+    #     except BrowserError as e:
+    #         self.logger.error(f"Failed to close current tab: {str(e)}")
+    #         raise
 
     def take_screenshot(self, path: Path, full_page: bool = True) -> None:
         """Capture a screenshot of the current page."""

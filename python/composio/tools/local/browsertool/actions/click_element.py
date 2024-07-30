@@ -2,17 +2,13 @@
 Action for clicking an element on a webpage.
 """
 
-from typing import Optional
-
 from pydantic import Field
 
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.local.browsertool.actions.base_action import (
     BaseBrowserAction,
-    BaseBrowserRequest,
     BaseBrowserResponse,
     BaseBrowserSelectorRequest,
-    SelectorType,
 )
 
 
@@ -55,7 +51,7 @@ class ClickElement(BaseBrowserAction):
     _response_schema = ClickElementResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: ClickElementRequest
+        self, browser_manager: BrowserManager, request_data: ClickElementRequest  # type: ignore
     ) -> ClickElementResponse:
         """Execute the click element action."""
 
@@ -83,10 +79,9 @@ class ClickElement(BaseBrowserAction):
             return ClickElementResponse(
                 success=True, element_found=True, scrolled_into_view=True
             )
-        else:
-            return ClickElementResponse(
-                success=False,
-                element_found=False,
-                scrolled_into_view=False,
-                error="Element not found",
-            )
+        return ClickElementResponse(
+            success=False,
+            element_found=False,
+            scrolled_into_view=False,
+            error="Element not found",
+        )

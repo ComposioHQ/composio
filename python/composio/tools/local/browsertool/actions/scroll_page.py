@@ -2,7 +2,6 @@
 Action for scrolling the page in the browser.
 """
 
-from enum import Enum
 from typing import Optional
 
 from pydantic import Field
@@ -19,7 +18,7 @@ class ScrollPageRequest(BaseBrowserSelectorRequest):
     """Request schema for scrolling the page."""
 
     selector: Optional[str] = Field(
-        default=None, description="Selector value of the element to interact with"
+        default=None, description="Selector value of the element to interact with"  # type: ignore
     )
     # overwrite base class due to required field
     scroll_type: str = Field(
@@ -71,15 +70,14 @@ class ScrollPage(BaseBrowserAction):
     _response_schema = ScrollPageResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: ScrollPageRequest
+        self, browser_manager: BrowserManager, request_data: ScrollPageRequest  # type: ignore
     ) -> ScrollPageResponse:
         """Execute the scroll page action."""
         if request_data.scroll_type == "pixels":
             return self._scroll_by_pixels(browser_manager, request_data)
-        elif request_data.scroll_type == "element":
+        if request_data.scroll_type == "element":
             return self._scroll_to_element(browser_manager, request_data)
-        else:
-            raise ValueError(f"Invalid scroll type: {request_data.scroll_type}")
+        raise ValueError(f"Invalid scroll type: {request_data.scroll_type}")
 
     def _scroll_by_pixels(
         self, browser_manager: BrowserManager, request_data: ScrollPageRequest
@@ -102,5 +100,4 @@ class ScrollPage(BaseBrowserAction):
                 request_data.selector, request_data.selector_type
             )
             return ScrollPageResponse(success=True, element_found=True)
-        else:
-            return ScrollPageResponse(success=False, element_found=False)
+        return ScrollPageResponse(success=False, element_found=False)

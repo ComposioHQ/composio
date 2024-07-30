@@ -55,7 +55,7 @@ class ExecuteScript(BaseBrowserAction):
     _response_schema = ExecuteScriptResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: ExecuteScriptRequest
+        self, browser_manager: BrowserManager, request_data: ExecuteScriptRequest  # type: ignore
     ) -> ExecuteScriptResponse:
         """Execute the custom JavaScript script."""
 

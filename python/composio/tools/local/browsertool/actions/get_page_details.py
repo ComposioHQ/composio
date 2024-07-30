@@ -47,7 +47,7 @@ class GetPageDetails(BaseBrowserAction):
     _response_schema = GetPageDetailsResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GetPageDetailsRequest
+        self, browser_manager: BrowserManager, request_data: GetPageDetailsRequest  # type: ignore
     ) -> GetPageDetailsResponse:
         """Execute the get page details action."""
         page_details = browser_manager.get_page_details()

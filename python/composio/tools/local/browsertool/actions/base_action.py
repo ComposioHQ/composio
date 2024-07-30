@@ -3,7 +3,7 @@ import string
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Type
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 

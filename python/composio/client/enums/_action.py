@@ -2,12 +2,7 @@
 Action enums.
 """
 import typing as t
-import typing_extensions as te
 from composio.client.enums.base import ACTIONS_CACHE, ActionData, _AnnotatedEnum, add_runtime_action, enum
-
-class SentinalObject:
-    """Sentinal object."""
-    sentinal = None
 
 @enum
 class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
@@ -1921,6 +1916,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     HEROKU_UPDATE_ACCOUNT_FEATURE: 'Action'
     HEROKU_UPDATE_ACCOUNT_INFO: 'Action'
     HISTORYFETCHERTOOL_GET_WORKSPACE_HISTORY: 'Action'
+    IMAGEANALYSER_IMAGE_ANALYSER: 'Action'
     INDUCEDAI_EXTRACT_DATA: 'Action'
     INDUCEDAI_GET_AUTONOMOUS_TASK_STATUS: 'Action'
     INDUCEDAI_GET_DATA_EXTRACTION_STATUS: 'Action'
@@ -3767,12 +3763,6 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     ZOOM_WEB_IN_ARS_UPDATE_SURVEY: 'Action'
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_VIRTUAL_BACKGROUND: 'Action'
     ZOOM_WEB_IN_ARS_UPLOAD_BRANDING_WALLPAPER: 'Action'
-
-    def __init__(self, value: t.Union[str, te.Self, t.Type['SentinalObject']]) -> None:
-        """Create an Enum"""
-        if hasattr(value, 'sentinal'):
-            value = value().get_tool_merged_action_name()
-        super().__init__(value=value)
 
     @property
     def name(self) -> str:

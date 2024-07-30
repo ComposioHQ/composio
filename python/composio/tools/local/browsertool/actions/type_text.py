@@ -64,7 +64,7 @@ class TypeText(BaseBrowserAction):
     _response_schema = TypeTextResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: TypeTextRequest
+        self, browser_manager: BrowserManager, request_data: TypeTextRequest  # type: ignore
     ) -> TypeTextResponse:
         """Execute the type text action."""
 

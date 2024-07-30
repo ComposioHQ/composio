@@ -2,7 +2,6 @@
 Action for getting a screenshot of a webpage.
 """
 
-import os
 import random
 import string
 from pathlib import Path
@@ -22,15 +21,16 @@ class GetScreenshotRequest(BaseBrowserRequest):
 
     url: str = Field(
         default="",
-        description="""Full URL of the webpage to screenshot, 
+        description="""Full URL of the webpage to screenshot,
                     including the protocol (e.g., 'https://www.example.com').
-                    If not provided, the current page will be used.""",
+                    By default, the current page will be used. If a URL is provided,
+                    the page will be newly loaded before taking the screenshot.""",
     )
     output_path: str = Field(
         default="",
-        description="""Optional path to save the screenshot. 
+        description="""Optional path to save the screenshot. Preferable is not provide this.
                             If not provided, a default path will be used.
-                            Example: '/path/to/save/screenshot.png'""",
+                            Example: '/home/user/screenshot.png'""",
     )
     full_page: bool = Field(
         default=True,
@@ -52,7 +52,9 @@ class GetScreenshotResponse(BaseBrowserResponse):
 class GetScreenshot(BaseBrowserAction):
     """
     Get a screenshot of a webpage.
-
+    
+    If a URL is provided, the page will be newly loaded before taking the screenshot.
+    If no URL is provided, the screenshot will be taken of the current open page.
     This action allows capturing a screenshot of a specified webpage or the current page
     in the browser. It can take full-page screenshots or just the visible area.
 
@@ -65,7 +67,7 @@ class GetScreenshot(BaseBrowserAction):
     _response_schema = GetScreenshotResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GetScreenshotRequest
+        self, browser_manager: BrowserManager, request_data: GetScreenshotRequest  # type: ignore
     ) -> GetScreenshotResponse:
         """Execute the screenshot action."""
         try:
