@@ -20,9 +20,10 @@ class AgenticFramework(Enum):
 
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
+    LANGGRAPH = "langgraph"
 
     def load_templates(self, agent_type: AgentType) -> t.Dict:
-        """Load tempalte string."""
+        """Load template string."""
         if agent_type == AgentType.SWE:
             return {
                 file.name.replace(".template", ".py"): file.read_text(encoding="utf-8")
