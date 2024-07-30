@@ -37,4 +37,4 @@ __all__ = (
     "action",
 )
 
-__version__ = "0.3.30"
+__version__ = "0.4.0"
