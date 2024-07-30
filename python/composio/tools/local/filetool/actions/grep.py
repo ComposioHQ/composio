@@ -46,13 +46,11 @@ class SearchWordResponse(BaseFileResponse):
 
 class SearchWord(BaseFileAction):
     """
-    Searches for a specified word in files matching the given pattern.
-
-    This action allows you to search for a specific word or phrase across multiple files
-    in your workspace. You can specify a pattern to narrow down the search to specific
+    - Search for a specific word or phrase across multiple files
+    in your workspace by specifying a pattern.
+    You can specify a pattern to narrow down the search to specific
     files, directories, or file types.
-
-    The search is case-sensitive and returns the line numbers and content of the lines
+    The search returns the line numbers and content of the lines
     where the word is found.
 
     Usage examples:
@@ -70,8 +68,6 @@ class SearchWord(BaseFileAction):
     Raises:
         - ValueError: If the word to search for is empty.
         - FileNotFoundError: If the specified pattern doesn't match any files.
-        - PermissionError: If there's no permission to read certain files.
-        - IOError: If there's an issue reading files.
     """
 
     _display_name = "Search Word in Files"
@@ -93,6 +89,11 @@ class SearchWord(BaseFileAction):
                 return SearchWordResponse(
                     results=dict(list(results.items())[:100]),
                     message=f'Warning: More than 100 files matched for "{request_data.word}" in {request_data.pattern}". Sending the first 100 results. Consider narrowing your search.',
+                )
+            if num_files == 0:
+                return SearchWordResponse(
+                    results={},
+                    message=f'No files matched for "{request_data.word}" in {request_data.pattern}".',
                 )
             return SearchWordResponse(results=results)
         except ValueError as e:
