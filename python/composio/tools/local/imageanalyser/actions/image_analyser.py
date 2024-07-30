@@ -3,7 +3,7 @@ import os
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 from pydantic import BaseModel, Field
@@ -214,7 +214,7 @@ class ImageAnalyser(Action):
 
     def _get_api_key(
         self, model: ModelChoice, authorisation_data: dict
-    ) -> str | Dict[str, str]:
+    ) -> Union[str, Dict[str, str]]:
         if model in [ModelChoice.GPT4_VISION, ModelChoice.GPT4_VISION_MINI]:
             key = os.environ.get("OPENAI_API_KEY") or authorisation_data.get(
                 "OPENAI_API_KEY"
