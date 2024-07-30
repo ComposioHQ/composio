@@ -12,8 +12,8 @@ from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 from composio.client.enums import Action
 from composio.tools.env.base import Shell, Workspace, WorkspaceConfigType
-from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.env.browsermanager.manager import BrowserManager
+from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.env.host.shell import HostShell, SSHShell
 from composio.tools.local.handler import LocalClient
 

@@ -1,14 +1,14 @@
 """Virtual browser implementation using Playwright with Chromium."""
 
+import importlib
+import random
 import typing as t
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-import random
-from contextlib import contextmanager
-
-from playwright.sync_api import sync_playwright, Browser as PlaywrightBrowser, Page, Playwright
 
 from composio.utils.logging import WithLogger
+
 
 selector_map = {
     "css": lambda s: s,
@@ -16,16 +16,20 @@ selector_map = {
     "id": lambda s: f"#{s}",
     "name": lambda s: f"[name='{s}']",
     "tag": lambda s: f"//{s}",
-    "class": lambda s: f".{s}"
+    "class": lambda s: f".{s}",
 }
+
 
 class BrowserError(Exception):
     """Exception raised for browser-related errors."""
 
+
 class Browser(WithLogger):
     """Browser object for browser manager using Chromium."""
 
-    def __init__(self, headless: bool = True, window_size: t.Tuple[int, int] = (1920, 1080)) -> None:
+    def __init__(
+        self, headless: bool = True, window_size: t.Tuple[int, int] = (1920, 1080)
+    ) -> None:
         """
         Initialize browser object
 
@@ -33,33 +37,51 @@ class Browser(WithLogger):
         :param window_size: Size of the browser window as (width, height).
         """
         super().__init__()
+
         self.headless = headless
         self.window_size = window_size
-        self.playwright: t.Optional[Playwright] = None
-        self.browser: t.Optional[PlaywrightBrowser] = None
-        self.page: t.Optional[Page] = None
+        # self.playwright: t.Optional[Playwright] = None
+        # self.browser: t.Optional[PlaywrightBrowser] = None
+        # self.page: t.Optional[Page] = None
         self.user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36"
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
         ]
         self.current_url: str = ""
+        self.playwright_module: t.Optional[t.Any] = None
+        self.sync_playwright: t.Optional[t.Any] = None
+        self.PlaywrightBrowser: t.Optional[t.Any] = None
+        self.Page: t.Optional[t.Any] = None
+        self.Playwright: t.Optional[t.Any] = None
+        self.Browser: t.Optional[t.Any] = None
+
+    def load_playwright(self) -> None:
+        """Load the playwright module."""
+        if self.playwright_module is None:
+            self.playwright_module = importlib.import_module("playwright.sync_api")
+            self.sync_playwright = self.playwright_module.sync_playwright
+            self.PlaywrightBrowser = self.playwright_module.Browser
+            self.Page = self.playwright_module.Page
+            self.Playwright = self.playwright_module.Playwright
 
     def setup(self) -> None:
         """Set up the Chromium browser."""
-        self.playwright = sync_playwright().start()
+        self.load_playwright()
+        if self.sync_playwright is None:
+            raise BrowserError("Failed to load playwright")
+        self.playwright = self.sync_playwright().start()
         user_agent = random.choice(self.user_agents)
         self.browser = self.playwright.chromium.launch(
-            headless=self.headless,
-            args=self._get_browser_args(user_agent)
+            headless=self.headless, args=self._get_browser_args(user_agent)
         )
         self.page = self.browser.new_page(
-            viewport={'width': self.window_size[0], 'height': self.window_size[1]},
+            viewport={"width": self.window_size[0], "height": self.window_size[1]},
             user_agent=user_agent,
-            locale='en-US',
-            timezone_id='America/New_York',
-            geolocation={'latitude': 40.7128, 'longitude': -74.0060},
-            permissions=['geolocation']
+            locale="en-US",
+            timezone_id="America/New_York",
+            geolocation={"latitude": 40.7128, "longitude": -74.0060},
+            permissions=["geolocation"],
         )
         self._setup_browser_environment()
 
@@ -71,24 +93,25 @@ class Browser(WithLogger):
     def _get_browser_args(self, user_agent: str) -> t.List[str]:
         """Get browser launch arguments."""
         return [
-            f'--user-agent={user_agent}',
-            '--disable-blink-features=AutomationControlled',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu',
-            '--lang=en-US,en;q=0.9',
-            '--disable-extensions',
-            '--mute-audio'
+            f"--user-agent={user_agent}",
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-accelerated-2d-canvas",
+            "--no-first-run",
+            "--no-zygote",
+            "--disable-gpu",
+            "--lang=en-US,en;q=0.9",
+            "--disable-extensions",
+            "--mute-audio",
         ]
 
     def _setup_browser_environment(self) -> None:
         """Set up browser environment to mimic real user."""
         if self.page:
-            self.page.evaluate("""
+            self.page.evaluate(
+                """
                 () => {
                     Object.defineProperty(navigator, 'webdriver', {
                         get: () => undefined
@@ -100,20 +123,21 @@ class Browser(WithLogger):
                         get: () => [1, 2, 3, 4, 5]
                     });
                 }
-            """)
+            """
+            )
 
-    def _ensure_page_initialized(self) -> Page:
+    def _ensure_page_initialized(self):
         """Ensure page is initialized before operations."""
         if self.page is None:
             raise BrowserError("Page is not initialized")
         return self.page
 
-    def goto(self, url: str,timeout:int=60000) -> None:
+    def goto(self, url: str, timeout: int = 60000) -> None:
         """Navigate to a specific URL."""
         page = self._ensure_page_initialized()
 
         # try:
-        page.goto(url, wait_until="networkidle",timeout=timeout)
+        page.goto(url, wait_until="networkidle", timeout=timeout)
         # except Exception as e:
         #     self.logger.warning(
         #         f"Timeout or error occurred while waiting for networkidle: {str(e)}"
@@ -128,7 +152,7 @@ class Browser(WithLogger):
             page = self._ensure_page_initialized()
             viewport = page.viewport_size
             if viewport:
-                return viewport # type: ignore
+                return viewport  # type: ignore
             else:
                 raise BrowserError("Failed to get page viewport")
         except BrowserError as e:
@@ -199,7 +223,9 @@ class Browser(WithLogger):
                 raise ValueError(f"Unsupported selector type: {selector_type}")
             return page.query_selector(selector_func(selector))
         except Exception as e:
-            raise BrowserError(f"Failed to find element with selector '{selector}': {str(e)}")
+            raise BrowserError(
+                f"Failed to find element with selector '{selector}': {str(e)}"
+            )
 
     def click(self, selector: str, selector_type: str = "css") -> None:
         """
@@ -221,7 +247,9 @@ class Browser(WithLogger):
             else:
                 raise BrowserError(f"Element not found with selector '{selector}'")
         except Exception as e:
-            raise BrowserError(f"Failed to click element with selector '{selector}': {str(e)}")
+            raise BrowserError(
+                f"Failed to click element with selector '{selector}': {str(e)}"
+            )
 
     def type(self, selector: str, text: str, selector_type: str = "css") -> None:
         """
@@ -271,14 +299,16 @@ class Browser(WithLogger):
         :param amount: Number of pixels to scroll.
         """
         page = self._ensure_page_initialized()
-        if direction.upper() in ['UP', 'DOWN']:
-            scroll_amount = -amount if direction.upper() == 'UP' else amount
+        if direction.upper() in ["UP", "DOWN"]:
+            scroll_amount = -amount if direction.upper() == "UP" else amount
             page.evaluate(f"window.scrollBy(0, {scroll_amount})")
-        elif direction.upper() in ['LEFT', 'RIGHT']:
-            scroll_amount = -amount if direction.upper() == 'LEFT' else amount
+        elif direction.upper() in ["LEFT", "RIGHT"]:
+            scroll_amount = -amount if direction.upper() == "LEFT" else amount
             page.evaluate(f"window.scrollBy({scroll_amount}, 0)")
         else:
-            raise ValueError(f"Invalid scroll direction: {direction}. Must be 'UP', 'DOWN', 'LEFT', or 'RIGHT'.")
+            raise ValueError(
+                f"Invalid scroll direction: {direction}. Must be 'UP', 'DOWN', 'LEFT', or 'RIGHT'."
+            )
         self._add_random_delay()
 
     def scroll_to_element(self, selector: str, selector_type: str = "css") -> None:
@@ -294,7 +324,8 @@ class Browser(WithLogger):
             raise ValueError(f"Unsupported selector type: {selector_type}")
 
         # Check if the element is visible in the viewport
-        is_visible = page.evaluate("""
+        is_visible = page.evaluate(
+            """
             (selector) => {
                 const element = document.querySelector(selector);
                 if (!element) return false;
@@ -303,11 +334,14 @@ class Browser(WithLogger):
                 const viewWidth = Math.max(document.documentElement.clientWidth, window.innerWidth);
                 return !(rect.bottom < 0 || rect.top - viewHeight >= 0 || rect.right < 0 || rect.left - viewWidth >= 0);
             }
-        """, selector_func(selector))
+        """,
+            selector_func(selector),
+        )
 
         # Only scroll to the element if it is not visible
         if not is_visible:
-            page.evaluate("""
+            page.evaluate(
+                """
                 (selector) => {
                     const element = document.querySelector(selector);
                     if (element) {
@@ -352,7 +386,7 @@ class Browser(WithLogger):
         self.page = self.browser.contexts[0].pages[-1]
         self.current_url = self.page.url
 
-    def take_screenshot(self, path: Path,full_page:bool=True) -> None:
+    def take_screenshot(self, path: Path, full_page: bool = True) -> None:
         """
         Capture a screenshot of the current page.
 
@@ -381,9 +415,10 @@ class Browser(WithLogger):
         """
         page = self._ensure_page_initialized()
         return page.evaluate(script, *args)
-   
 
-    def get_element_attribute(self, selector: str, attribute: str, selector_type: str = "css") -> t.Optional[str]:
+    def get_element_attribute(
+        self, selector: str, attribute: str, selector_type: str = "css"
+    ) -> t.Optional[str]:
         """
         Get the value of an attribute for a specific element.
 
@@ -398,7 +433,9 @@ class Browser(WithLogger):
             return element.get_attribute(attribute)
         return None
 
-    def get_element_text(self, selector: str, selector_type: str = "css") -> t.Optional[str]:
+    def get_element_text(
+        self, selector: str, selector_type: str = "css"
+    ) -> t.Optional[str]:
         """
         Get the text content of a specific element.
 
@@ -412,13 +449,15 @@ class Browser(WithLogger):
             return element.inner_text()
         return None
 
-    def get_page_details(self,) -> t.Dict[str, t.Any]:
+    def get_page_details(
+        self,
+    ) -> t.Dict[str, t.Any]:
         """Get the details of the current page."""
-        page = self._ensure_page_initialized()        
-        details={
+        page = self._ensure_page_initialized()
+        details = {
             "url": page.url,
             "title": page.title(),
-            "page_details": page.accessibility.snapshot()
+            "page_details": page.accessibility.snapshot(),
         }
         return details
 

@@ -11,8 +11,8 @@ import requests
 from composio.client.enums import Action
 from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.filemanager import FileManager
 from composio.tools.env.browsermanager import BrowserManager
+from composio.tools.env.filemanager import FileManager
 from composio.tools.env.id import generate_id
 from composio.tools.local.handler import get_runtime_action
 from composio.utils.logging import WithLogger
@@ -193,6 +193,7 @@ class FileManagerFactory(WithLogger):
         self._file_managers.clear()
         self._recent = None
 
+
 class BrowserManagerFactory(WithLogger):
     """Browser manager factory."""
 
@@ -246,6 +247,7 @@ class BrowserManagerFactory(WithLogger):
         self._browser_managers.clear()
         self._recent = None
 
+
 @dataclass
 class WorkspaceConfigType:
     """Workspace configuration."""
@@ -281,7 +283,7 @@ class Workspace(WithLogger, ABC):
     _shell_factory: t.Optional[ShellFactory] = None
 
     _file_manager_factory: t.Optional[FileManagerFactory] = None
-    
+
     _browser_manager_factory: t.Optional[BrowserManagerFactory] = None
 
     def __init__(self, config: WorkspaceConfigType):
@@ -332,7 +334,7 @@ class Workspace(WithLogger, ABC):
                 factory=self._create_file_manager,
             )
         return self._file_manager_factory
-    
+
     @property
     def browser_managers(self) -> BrowserManagerFactory:
         """Returns browser manager for current workspace."""

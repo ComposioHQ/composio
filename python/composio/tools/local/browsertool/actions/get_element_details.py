@@ -3,27 +3,34 @@ Action for getting details of an element on a webpage.
 """
 
 from enum import Enum
+from typing import Any, Dict, Optional
+
 from pydantic import Field
-from typing import Optional, Dict, Any
 
-from composio.tools.local.browsertool.actions.base_action import BaseBrowserAction, BaseBrowserRequest, BaseBrowserResponse, SelectorType
 from composio.tools.env.browsermanager.manager import BrowserManager
+from composio.tools.local.browsertool.actions.base_action import (
+    BaseBrowserAction,
+    BaseBrowserResponse,
+    BaseBrowserSelectorRequest,
+)
 
 
-class GetElementDetailsRequest(BaseBrowserRequest):
+class GetElementDetailsRequest(BaseBrowserSelectorRequest):
     """Request schema for getting element details."""
-
-    selector: str = Field(..., description="Selector of the element to get details for")
-    selector_type: SelectorType = Field(default=SelectorType.CSS, description="Type of selector to use")
-    timeout: Optional[float] = Field(default=None, description="Maximum time to wait for the element to be found (in seconds)")
 
 
 class GetElementDetailsResponse(BaseBrowserResponse):
     """Response schema for getting element details."""
 
-    success: bool = Field(default=False, description="Whether the action was successful")
-    element_found: bool = Field(default=False, description="Whether the element was found on the page")
-    details: Dict[str, Any] = Field(default_factory=dict, description="Details of the found element")
+    success: bool = Field(
+        default=False, description="Whether the action was successful"
+    )
+    element_found: bool = Field(
+        default=False, description="Whether the element was found on the page"
+    )
+    details: Dict[str, Any] = Field(
+        default_factory=dict, description="Details of the found element"
+    )
 
 
 class GetElementDetails(BaseBrowserAction):
@@ -50,21 +57,22 @@ class GetElementDetails(BaseBrowserAction):
     _display_name = "GetElementDetails"
     _request_schema = GetElementDetailsRequest
     _response_schema = GetElementDetailsResponse
-    
+
     def execute_on_browser_manager(
-        self,
-        browser_manager: BrowserManager,
-        request_data: GetElementDetailsRequest
+        self, browser_manager: BrowserManager, request_data: GetElementDetailsRequest
     ) -> GetElementDetailsResponse:
         """Execute the get element details action."""
         # Find the element
-        element = browser_manager.find_element(request_data.selector, request_data.selector_type.value)
-            
+        element = browser_manager.find_element(
+            request_data.selector, request_data.selector_type
+        )
+
         if element is None:
             return GetElementDetailsResponse(success=False, element_found=False)
-        
+
         # Get element details
-        details = browser_manager.execute_script("""
+        details = browser_manager.execute_script(
+            """
             function getElementDetails(element) {
                 const rect = element.getBoundingClientRect();
                 return {
@@ -86,6 +94,10 @@ class GetElementDetails(BaseBrowserAction):
                 };
             }
             return getElementDetails(arguments[0]);
-        """, element)
+        """,
+            element,
+        )
 
-        return GetElementDetailsResponse(success=True, element_found=True, details=details)
+        return GetElementDetailsResponse(
+            success=True, element_found=True, details=details
+        )

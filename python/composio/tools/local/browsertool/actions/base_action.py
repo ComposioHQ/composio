@@ -1,15 +1,16 @@
-from abc import ABC, abstractmethod
-from typing import Optional, Type, Dict
-from pathlib import Path
 import random
 import string
+from abc import ABC, abstractmethod
+from enum import Enum
+from pathlib import Path
+from typing import Dict, Optional, Type
 
 from pydantic import BaseModel, Field
 
+from composio.exceptions import ComposioSDKError
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.local.base import Action
-from composio.exceptions import ComposioSDKError
-from enum import Enum
+
 
 class SelectorType(str, Enum):
     CSS = "css"
@@ -29,6 +30,21 @@ class BaseBrowserRequest(BaseModel):
     capture_screenshot: bool = Field(
         default=False,
         description="Whether to capture before and after screenshots of page while executing the action.",
+    )
+
+
+class BaseBrowserSelectorRequest(BaseBrowserRequest):
+    selector_type: str = Field(
+        default="css",
+        description="Type of selector to use while interacting with the element. Only `css`, `xpath`, `name`, `tag`, `class`, `id` are supported",
+        examples=["css", "xpath", "name", "tag", "class", "id"],
+    )
+    selector: str = Field(
+        ..., description="Selector value of the element to interact with"
+    )
+    timeout: Optional[float] = Field(
+        default=None,
+        description="Maximum time to wait for the action to complete (in seconds)",
     )
 
 
@@ -98,22 +114,31 @@ class BaseBrowserAction(Action, ABC):
                 browser_manager=browser_manager, request_data=request_data
             )
             resp.current_url = browser_manager.get_current_url()
- 
+
             # Get viewport size
             viewport = browser_manager.get_page_viewport()
-            resp.viewport = {k: v or None for k, v in viewport.items()} if viewport else None
-            
+            resp.viewport = (
+                {k: v or None for k, v in viewport.items()} if viewport else None
+            )
+
             # Get scroll position
-            scroll_position = browser_manager.execute_script("""
+            scroll_position = browser_manager.execute_script(
+                """
                 () => ({
                     x: window.pageXOffset,
                     y: window.pageYOffset
                 })
-            """)
-            resp.scroll_position = {k: v or None for k, v in scroll_position.items()} if scroll_position else None
-            
+            """
+            )
+            resp.scroll_position = (
+                {k: v or None for k, v in scroll_position.items()}
+                if scroll_position
+                else None
+            )
+
             # Get total page dimensions
-            page_dimensions = browser_manager.execute_script("""
+            page_dimensions = browser_manager.execute_script(
+                """
                 () => ({
                     width: Math.max(
                         document.body.scrollWidth,
@@ -132,18 +157,25 @@ class BaseBrowserAction(Action, ABC):
                         document.documentElement.clientHeight
                     )
                 })
-            """)
-            resp.page_dimensions = {k: v or None for k, v in page_dimensions.items()} if page_dimensions else None
+            """
+            )
+            resp.page_dimensions = (
+                {k: v or None for k, v in page_dimensions.items()}
+                if page_dimensions
+                else None
+            )
 
             if request_data.capture_screenshot:
                 after_screenshot = self._take_screenshot(browser_manager, "after")
 
             resp.before_screenshot = before_screenshot
             resp.after_screenshot = after_screenshot
-            
+
             return resp
         except Exception as e:
-            error_message = f"An error occurred while executing the browser action: {str(e)}"
+            error_message = (
+                f"An error occurred while executing the browser action: {str(e)}"
+            )
             self.logger.error(error_message, exc_info=True)
             return self._response_schema(
                 error=error_message,
@@ -152,14 +184,14 @@ class BaseBrowserAction(Action, ABC):
                 scroll_position=None,
                 page_dimensions=None,
                 before_screenshot=None,
-                after_screenshot=None
+                after_screenshot=None,
             )
 
     def _take_screenshot(self, browser_manager: BrowserManager, prefix: str) -> str:
         home_dir = Path.home()
         browser_media_dir = home_dir / ".browser_media"
         browser_media_dir.mkdir(parents=True, exist_ok=True)
-        random_string = ''.join(random.choices(string.ascii_lowercase, k=6))
+        random_string = "".join(random.choices(string.ascii_lowercase, k=6))
         output_path = browser_media_dir / f"{prefix}_screenshot_{random_string}.png"
         browser_manager.take_screenshot(output_path, full_page=True)
         return str(output_path)

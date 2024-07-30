@@ -1,13 +1,15 @@
-from typing import Any, List, Dict, Optional
-import os
 import base64
-from pathlib import Path
-from enum import Enum
+import os
 from abc import ABC, abstractmethod
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import requests
 from pydantic import BaseModel, Field
+
 from composio.tools.local.base.action import Action
+
 
 system_prompt = "You are an expert assistant that analyzes images and provides detailed descriptions to answer questions about them."
 
@@ -18,17 +20,14 @@ class ModelChoice(str, Enum):
     CLAUDE_3_SONNET = "claude-3-sonnet-20240229"
 
 
-class MediaAnalysisRequest(BaseModel):
+class ImageAnalyserRequest(BaseModel):
     media_paths: List[str] = Field(
         ..., description="List of local file paths or URLs of the media to be analyzed"
-    )
-    model: ModelChoice = Field(
-        default=ModelChoice.GPT4_VISION, description="Model to be used for analysis"
     )
     prompt: str = Field(..., description="Prompt for guiding the analysis")
 
 
-class MediaAnalysisResponse(BaseModel):
+class ImageAnalyserResponse(BaseModel):
     analysis: Optional[str] = Field(
         None, description="The resulting analysis of the media"
     )
@@ -153,14 +152,14 @@ class ClaudeAnalyzer(MediaAnalyzer):
         return f"Unsupported image format: {file_extension}"
 
 
-class MediaAnalysis(Action):
-    """Analyze local media files using multimodal LLMs."""
+class ImageAnalyser(Action):
+    """Analyze local images using multimodal LLMs."""
 
-    _display_name = "Analyze Local Media"
-    _request_schema = MediaAnalysisRequest
-    _response_schema = MediaAnalysisResponse
-    _tags = ["multimodal"]
-    _tool_name = "browsertool"
+    _display_name = "Image Analyser"
+    _request_schema = ImageAnalyserRequest
+    _response_schema = ImageAnalyserResponse
+    _tags = ["image"]
+    _tool_name = "imageanalyser"
 
     def __init__(self):
         self.analyzers = {
@@ -171,35 +170,37 @@ class MediaAnalysis(Action):
 
     def execute(
         self,
-        request_data: MediaAnalysisRequest,
+        request_data: ImageAnalyserRequest,
         authorisation_data: dict,
-    ) -> MediaAnalysisResponse:
-        """Execute media analysis on local files."""
+    ) -> ImageAnalyserResponse:
+        """Execute image analysis."""
         validation_result = self._validate_request(request_data)
         if validation_result:
-            return MediaAnalysisResponse(error_message=validation_result, analysis=None)
+            return ImageAnalyserResponse(error_message=validation_result, analysis=None)
 
-        api_key_result = self._get_api_key(request_data.model, authorisation_data)
+        media_model_choice = os.environ.get("MEDIA_MODEL_CHOICE", "gpt-4o")
+        media_model_choice = ModelChoice(media_model_choice)
+        api_key_result = self._get_api_key(media_model_choice, authorisation_data)
         if not isinstance(api_key_result, str):
-            return MediaAnalysisResponse(
+            return ImageAnalyserResponse(
                 error_message="No API key found", analysis=None
             )
 
-        analyzer = self.analyzers.get(request_data.model)
+        analyzer = self.analyzers.get(media_model_choice)
         if not analyzer:
-            return MediaAnalysisResponse(
-                error_message=f"Unsupported model: {request_data.model}", analysis=None
+            return ImageAnalyserResponse(
+                error_message=f"Unsupported model: {media_model_choice}", analysis=None
             )
 
         analysis = analyzer.analyze(
-            request_data.model,
+            media_model_choice,
             request_data.media_paths,
             request_data.prompt,
             api_key_result,
         )
-        return MediaAnalysisResponse(analysis=analysis, error_message=None)
+        return ImageAnalyserResponse(analysis=analysis, error_message=None)
 
-    def _validate_request(self, request_data: MediaAnalysisRequest) -> Optional[str]:
+    def _validate_request(self, request_data: ImageAnalyserRequest) -> Optional[str]:
         if not request_data.media_paths:
             return "Media paths cannot be None or empty"
         for media_path in request_data.media_paths:

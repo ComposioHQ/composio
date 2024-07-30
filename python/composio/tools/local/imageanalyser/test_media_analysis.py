@@ -1,4 +1,9 @@
-from composio.tools.local.browsertool.actions.media_analysis import MediaAnalysis, MediaAnalysisRequest, ModelChoice
+from composio.tools.local.browsertool.actions.media_analysis import (
+    MediaAnalysis,
+    MediaAnalysisRequest,
+    ModelChoice,
+)
+
 
 def main():
     media_analysis = MediaAnalysis()
@@ -26,7 +31,10 @@ def main():
 
     print("Testing Claude:")
     claude_response = media_analysis.execute(claude_request, {})
-    print(f"Analysis: {claude_response.analysis}\n, Error: {claude_response.error_message}")
+    print(
+        f"Analysis: {claude_response.analysis}\n, Error: {claude_response.error_message}"
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
