@@ -19,13 +19,6 @@ from composio.tools.local.browsertool.actions.base_action import (
 class GetScreenshotRequest(BaseBrowserRequest):
     """Request schema for getting a screenshot."""
 
-    url: str = Field(
-        default="",
-        description="""Full URL of the webpage to screenshot,
-                    including the protocol (e.g., 'https://www.example.com').
-                    By default, the current page will be used. If a URL is provided,
-                    the page will be newly loaded before taking the screenshot.""",
-    )
     output_path: str = Field(
         default="",
         description="""Optional path to save the screenshot. Preferable is not provide this.
@@ -52,7 +45,7 @@ class GetScreenshotResponse(BaseBrowserResponse):
 class GetScreenshot(BaseBrowserAction):
     """
     Get a screenshot of a webpage.
-    
+
     If a URL is provided, the page will be newly loaded before taking the screenshot.
     If no URL is provided, the screenshot will be taken of the current open page.
     This action allows capturing a screenshot of a specified webpage or the current page
@@ -71,9 +64,7 @@ class GetScreenshot(BaseBrowserAction):
     ) -> GetScreenshotResponse:
         """Execute the screenshot action."""
         try:
-            if request_data.url:
-                browser_manager.goto(request_data.url)
-            if not request_data.output_path:
+            if not request_data.output_path or request_data.output_path == "":
                 home_dir = Path.home()
                 browser_media_dir = home_dir / ".browser_media"
                 browser_media_dir.mkdir(parents=True, exist_ok=True)

@@ -329,6 +329,7 @@ class ComposioToolSet(WithLogger):
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
+        self.logger.debug(f"Executing action `{action}` with params `{params}` and metadata `{metadata}`")
         action = Action(action)
         params = self._serialize_execute_params(param=params)
         if action.is_local:

@@ -21,6 +21,9 @@ RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 # Install composio
 RUN python -m pip install composio-core[all]==0.3.30 fastapi playwright
 
+# Install playwright deps
+RUN playwright install-deps
+
 # Install playwright binaries
 RUN playwright install chromium
 

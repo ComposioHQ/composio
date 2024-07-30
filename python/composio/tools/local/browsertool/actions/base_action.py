@@ -94,7 +94,7 @@ class BaseBrowserAction(Action, ABC):
         workspace = authorisation_data.get("workspace")
         if not workspace:
             raise ComposioSDKError("Workspace not found in authorisation data")
-
+        self.logger.debug(f"Executing action `{self.get_tool_merged_action_name()}` with request data `{request_data}` and metadata `{authorisation_data}`")
         browser_managers = workspace.browser_managers
         browser_manager = browser_managers.get(request_data.browser_manager_id)
 
