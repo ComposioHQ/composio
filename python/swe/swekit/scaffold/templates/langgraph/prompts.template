@@ -44,6 +44,8 @@ following tips.
     If it didn't, issue another command to fix it.
   11. When you finish working on the issue, use the get patch action with the
     new files created to create the final patch to be submitted to fix the issue.
-
-RESPOND WITH "PATCH COMPLETED" WHEN YOU ARE DONE WORKING ON THE ISSUE.
+  12. Create a branch adding the fixed code.
+  13. Create a PR of the new branch requesting a merge with the master branch. Follow the
+  title format fix/<ISSUE_NUMBER> 
+RESPOND WITH "PATCH COMPLETED" WHEN YOU ARE DONE WORKING ON THE ISSUE and "PATCH COMPLETED AND PR WAS CREATED" WHEN YOU ARE DONE WORKING ON THE ISSUE AND THE PR WAS CREATED.
 """
