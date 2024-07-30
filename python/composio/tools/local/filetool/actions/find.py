@@ -64,14 +64,6 @@ class FindFile(BaseFileAction):
        pattern: "src/**/main.js"
 
     Note: The search automatically excludes the '.git' directory.
-
-    Returns:
-    - A list of file paths (as strings) relative to the working directory that match the search pattern.
-
-    Raises:
-    - ValueError: If the pattern is empty or invalid.
-    - PermissionError: If there's no permission to access certain directories.
-    - OSError: If there's an issue with the file system operations.
     """
 
     _display_name = "Find Files"
@@ -92,10 +84,12 @@ class FindFile(BaseFileAction):
             if len(results) > 200:
                 return FindFileResponse(
                     results=results[:200],
-                    message=f"Too many results found. Found {len(results)} results, returning 300 of them. Please refine your search criteria.",
+                    message=f"Too many results found. Found {len(results)} results, returning 200 of them. Please refine your search criteria.",
                 )
             if results == []:
-                return FindFileResponse(error="No results found.")
+                return FindFileResponse(
+                    error=f"No results found for the pattern. {request_data.pattern}"
+                )
             return FindFileResponse(results=results)
         except ValueError as e:
             return FindFileResponse(error=f"Invalid search parameters: {str(e)}")

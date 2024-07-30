@@ -82,19 +82,33 @@ class File(WithLogger):
     def scroll(
         self,
         lines: t.Optional[int] = None,
+        to_line: t.Optional[int] = None,
         direction: t.Optional[ScrollDirection] = None,
     ) -> None:
         """
         Scroll to given number of lines.
 
         :param lines: Number of lines to scroll.
+        :param to_line: Line number to scroll to.
         :param direction: Direction of scrolling.
         :return: None
         """
         direction = direction or ScrollDirection.DOWN
-        lines = direction.offset(lines or self._window)
-        self._start += lines
-        self._end += lines
+        if to_line:
+            half_window = self._window // 2
+            if to_line < half_window:
+                self._start = 0
+                self._end = self._window
+            if to_line > self.total_lines() - half_window:
+                self._start = self.total_lines() - self._window
+                self._end = self.total_lines()
+            else:
+                self._start = to_line - half_window
+                self._end = to_line + half_window
+        else:
+            lines = direction.offset(lines or self._window)
+            self._start += lines
+            self._end += lines
 
     def goto(
         self,
@@ -238,18 +252,18 @@ class File(WithLogger):
         :param text: Content to write to file.
         :param scope: Scope of the file operation
         :param start: Line number to start the edit at
-        :param end: Line number where to end the edit
+        :param end: Line number before which to end the edit
         :return: Replaced text
         """
         text = text + "\n"
         scope = scope or FileOperationScope.FILE
-
+        end = end - 1
         # Store original content
         original_content = self.path.read_text(encoding="utf-8")
 
         # Run lint before edit
         before_lint = self.lint()
-
+        
         cursor = 0
         buffer = ""
         replaced = ""

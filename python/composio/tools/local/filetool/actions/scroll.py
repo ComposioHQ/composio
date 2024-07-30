@@ -21,7 +21,11 @@ class ScrollRequest(BaseFileRequest):
     )
     lines: int = Field(
         default=0,
-        description="How many lines to scroll by. Choose between 1 to 1000. 1 means scroll by 1 line, 100 means scroll by 100 lines.",
+        description="Number of lines to scroll. Valid range: 1-1000. Examples: 1 scrolls by 1 line, 100 scrolls by 100 lines. Default is 0, which scrolls by the window size.",
+    )
+    to_line: int = Field(
+        default=0,
+        description="The line to scroll to. If not provided, scroll by the number of lines specified.",
     )
     scroll_id: int = Field(
         default=0,
@@ -54,10 +58,14 @@ class ScrollResponse(BaseFileResponse):
 
 class Scroll(BaseFileAction):
     """
-    Scrolls the view of the opened file up or down by 100 lines.
+    Scrolls the view of the opened file up or down by the specified number of lines.
+    Can also scroll to a specific line.
+
     Returns:
     - A dictionary of line numbers and their content for the new view window.
     - An error message if no file is open or if the file is not found.
+
+    If the file is large, try to first search for the word and then scroll to that line.
 
     Raises:
     - FileNotFoundError: If the file is not found.
@@ -71,11 +79,17 @@ class Scroll(BaseFileAction):
         self, file_manager: FileManager, request_data: ScrollRequest  # type: ignore
     ) -> ScrollResponse:
         try:
+            if request_data.to_line and request_data.lines:
+                return ScrollResponse(
+                    error="Cannot specify both to_line and lines. Try specifying one of them."
+                )
+
             recent_file = file_manager.recent
             if recent_file is None:
                 return ScrollResponse(error="No file opened")
             recent_file.scroll(
                 lines=request_data.lines,
+                to_line=request_data.to_line,
                 direction=ScrollDirection(request_data.direction),
             )
             return ScrollResponse(
