@@ -333,6 +333,8 @@ def _update_annotations(
                 return False
             if isinstance(child, ast.FunctionDef) and child.name in _deprecated_names:
                 return False
+            if "@te.deprecated" in ast.unparse(child):
+                return False
             return True
 
         body = [child for child in node.body[1:] if _filter(child=child)]
@@ -346,7 +348,8 @@ def _update_annotations(
     )
     code = code.replace(
         "import typing as t",
-        "\n# pylint: disable=too-many-public-methods\n\nimport typing as t",
+        "\n# pylint: disable=too-many-public-methods, unused-import\n\nimport typing as t"
+        "\nimport typing_extensions as te  # noqa: F401",
     )
     with file.open("w", encoding="utf-8") as fp:
         fp.write(code)
