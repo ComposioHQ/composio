@@ -1,3 +1,5 @@
+import logging
+
 from llama_agents import (
     AgentService,
     AgentOrchestrator,
@@ -11,6 +13,16 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core.base.llms.types import ChatMessage, MessageRole
 from composio_llamaindex import App, ComposioToolSet, WorkspaceType
 from prompts import BACKSTORY, GOAL, ROLE
+
+
+# Set up basic configuration
+logging.basicConfig(level=logging.INFO)
+
+# Enable INFO logging for LlamaIndex
+logging.getLogger('llama_index').setLevel(logging.INFO)
+
+# Enable DEBUG logging for agent/tool calls
+logging.getLogger('llama_index.agent').setLevel(logging.DEBUG)
 
 
 composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
