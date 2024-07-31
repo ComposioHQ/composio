@@ -139,7 +139,7 @@ composio_tool_set = ComposioToolSet()
 
 # 事前に設定されたGitHubツールを取得
 actions = composio_tool_set.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
 my_task = "GitHubでcomposiodev/composioリポジトリにスターを付ける"

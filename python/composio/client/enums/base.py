@@ -3,6 +3,7 @@ Enum helper base.
 """
 
 import typing as t
+import warnings
 from pathlib import Path
 
 import typing_extensions as te
@@ -26,6 +27,12 @@ TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
 
 class MetadataFileNotFound(ComposioSDKError):
     """Raise when matadata file is missing."""
+
+
+class SentinalObject:
+    """Sentinal object."""
+
+    sentinal = None
 
 
 class TagData(LocalStorage):
@@ -84,20 +91,15 @@ class TriggerData(LocalStorage):
     _cache: Path = TRIGGERS_CACHE
 
 
-class SentinalObject:
-    """Sentinal object."""
-
-    sentinal = None
-
-
 class _AnnotatedEnum(t.Generic[EntityType]):
     """Enum class that uses class annotations as values."""
 
     _slug: str
-    _model: t.Type[EntityType]
     _path: Path
+    _model: t.Type[EntityType]
+    _deprecated: t.Dict = {}
 
-    def __new__(cls, value: t.Any):
+    def __new__(cls, value: t.Any, warn: bool = True):
         (base,) = t.cast(t.Tuple[t.Any], getattr(cls, "__orig_bases__"))
         (model,) = t.get_args(base)
         instance = super().__new__(cls)
@@ -108,7 +110,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         cls._path = path
         return super().__init_subclass__()
 
-    def __init__(self, value: t.Union[str, te.Self, t.Type["SentinalObject"]]) -> None:
+    def __init__(
+        self,
+        value: t.Union[str, te.Self, t.Type[SentinalObject]],
+        warn: bool = True,
+    ) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
             value = value().get_tool_merged_action_name()  # type: ignore
@@ -116,10 +122,21 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
 
-        value = t.cast(str, value).upper()
-        if value not in self.__annotations__ and value not in _runtime_actions:
+        self._slug = t.cast(str, value).upper()
+        if self._slug in self._deprecated and warn:
+            warnings.warn(
+                f"`{self._slug}` is deprecated and will be removed. "
+                f"Use `{self._deprecated[self._slug]}` instead.",
+                UserWarning,
+            )
+            self._slug = self._deprecated[self._slug]
+            return
+
+        if (
+            self._slug not in self.__annotations__
+            and self._slug not in _runtime_actions
+        ):
             raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
-        self._slug = value
 
     @property
     def slug(self) -> str:
@@ -147,6 +164,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     def all(cls) -> t.Iterator[te.Self]:
         """Iterate over available object."""
         for name in cls.__annotations__:
+            if name == "_deprecated":
+                continue
             yield cls._create(name=name)
 
     @classmethod
@@ -168,7 +187,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 def enum(cls: ClassType) -> ClassType:
     """Decorate class."""
     for attr in cls.__annotations__:
-        setattr(cls, attr, cls(attr))
+        if attr == "_deprecated":
+            continue
+        setattr(cls, attr, cls(attr, warn=False))
     return cls
 
 
