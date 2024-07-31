@@ -22,7 +22,7 @@ class BrowserError(Exception):
     """Exception raised for browser-related errors."""
 
 
-class Browser(WithLogger):
+class Browser(WithLogger):  # pylint: disable=too-many-public-methods
     """Browser object for browser manager using Chromium."""
 
     def __init__(
