@@ -53,8 +53,8 @@ class OpenAIAnalyzer(MediaAnalyzer):
             from openai.types.chat import (  # pylint: disable=import-outside-toplevel
                 ChatCompletionMessageParam,
             )
-        except ImportError as e:
-            raise ImportError(
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
                 "The 'openai' package is required for OpenAI analysis. Please install it using 'pip install openai'."
             ) from e
         client = OpenAI(api_key=api_key)
