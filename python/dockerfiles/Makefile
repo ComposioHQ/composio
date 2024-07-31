@@ -26,6 +26,11 @@ prod:
 dev: _copy-composio
 	@docker build . -t composio/composio:dev -f Dockerfile.dev
 	@rm -rf ./composio
+	
+.PHONY: dev-multi
+dev-multi: _copy-composio
+	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:dev -f Dockerfile.dev . --push
+	@rm -rf ./composio
 
 .PHONY: publish
 publish:

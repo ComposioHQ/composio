@@ -28,7 +28,7 @@
     "isHidden": false
   },
   "feedback": {
-    "suggestEdit": false,
+    "suggestEdit": true,
     "raiseIssue": true,
     "thumbsRating": true
   },
@@ -99,6 +99,7 @@
     {
       "group": "Python",
       "pages": [
+        "python/introduction",
         {
           "group": "With Frameworks",
           "icon": "code",
@@ -116,8 +117,7 @@
         "framework/praisonai",
         "framework/langgraph"
           ]
-        },
-        "python/introduction"
+        }
       ]
     },
             {
@@ -137,6 +137,13 @@
       ]
     },
     {
+      "group": "CLI",
+      "pages": [
+        "sdk/cli/install",
+        "sdk/cli/trigger"
+      ]
+    },
+    {
       "group": "SweKit",
       "pages": [
         "swekit/introduction",
@@ -152,15 +159,7 @@
         "swekit-js/workspace-env"
       ]
     },
-    {
-      "group": "CLI",
-      "pages": [
-        "sdk/cli/install",
-        "sdk/cli/account",
-        "sdk/cli/trigger",
-        "sdk/cli/actions"
-      ]
-    },
+
      {
       "group": "Guides",
       "pages": [
@@ -176,7 +175,8 @@
         "pages": [
           "patterns/howtos/usecase",
           "patterns/howtos/tool-finding",
-          "patterns/howtos/listing-connections"
+          "patterns/howtos/listing-connections",
+          "patterns/howtos/listing-integrations"
         ] 
       },
       {
