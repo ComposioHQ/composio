@@ -926,16 +926,22 @@ class Actions(Collection[ActionModel]):
 
         if limit is not None:
             queries["limit"] = str(limit)
+
         response = self._raise_if_required(
             response=self.client.http.get(
-                url=str(self.endpoint(queries=queries)),
+                url=str(
+                    self.endpoint(
+                        queries=queries,
+                    )
+                )
             )
         )
+
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required_triggers = [t.cast(Action, action).name for action in actions]
-            items = [item for item in items if item.name in required_triggers]
+            required = [t.cast(Action, action).name for action in actions]
+            items = [item for item in items if item.name in required]
 
         if len(tags) > 0:
             required_tags = [tag.app if isinstance(tag, Tag) else tag for tag in tags]
@@ -975,14 +981,9 @@ class Actions(Collection[ActionModel]):
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
-            return self.client.local.execute_action(
-                action=action,
-                request_data=params,
-            )
+            return self.client.local.execute_action(action=action, request_data=params)
 
-        actions = self.get(
-            actions=[action],
-        )
+        actions = self.get(actions=[action])
         if len(actions) == 0:
             raise ComposioClientError(f"Action {action} not found")
 

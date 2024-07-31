@@ -12,6 +12,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_google_vertexai import ChatVertexAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 
+
 # Load environment variables from .env
 dotenv.load_dotenv()
 

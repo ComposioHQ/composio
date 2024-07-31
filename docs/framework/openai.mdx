@@ -77,7 +77,7 @@ These steps prepare your environment to enable interactions between OpenAI and G
   ```python python
   # Get GitHub tools that are pre-configured
   # Retrieve actions
-  actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+  actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
   ```
   ```javascript javascript
   // Get GitHub tools that are pre-configured
@@ -159,7 +159,7 @@ These steps prepare your environment to enable interactions between OpenAI and G
 <CodeGroup>
   ```bash Filter Specific Action 
   # To restrict agents from executing any actions, filter specific actions 
-  actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+  actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
   ```
 </CodeGroup>
 
