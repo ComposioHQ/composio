@@ -45,10 +45,10 @@ class TestUpdate(BaseCliTest):
                 continue
             self.files[file] = file.read_text(encoding="utf-8")
 
-    # def teardown_method(self) -> None:
-    #     """Restore original enums file after testing."""
-    #     for file, content in self.files.items():
-    #         file.write_text(data=content, encoding="utf-8")
+    def teardown_method(self) -> None:
+        """Restore original enums file after testing."""
+        for file, content in self.files.items():
+            file.write_text(data=content, encoding="utf-8")
 
     def test_update_not_required(self) -> None:
         """Test app enums update."""
