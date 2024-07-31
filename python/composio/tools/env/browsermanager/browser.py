@@ -352,36 +352,36 @@ class Browser(WithLogger):
             )
             self._add_random_delay()
 
-    # def new_tab(self) -> None:
-    #     """Open a new tab."""
-    #     if self.browser is None:
-    #         raise BrowserError("Browser is not initialized")
-    #     self.page = self.browser.new_page()
-    #     self.current_url = self.page.url
+    def new_tab(self) -> None:
+        """Open a new tab."""
+        if self.browser is None:
+            raise BrowserError("Browser is not initialized")
+        self.page = self.browser.new_page()
+        self.current_url = self.page.url
 
-    # def switch_tab(self, index: int) -> None:
-    #     """
-    #     Switch between tabs.
+    def switch_tab(self, index: int) -> None:
+        """
+        Switch between tabs.
 
-    #     :param index: Index of the tab to switch to.
-    #     """
-    #     if self.browser is None:
-    #         raise BrowserError("Browser is not initialized")
-    #     pages = self.browser.contexts[0].pages
-    #     if 0 <= index < len(pages):
-    #         self.page = pages[index]
-    #         self.current_url = self.page.url
+        :param index: Index of the tab to switch to.
+        """
+        if self.browser is None:
+            raise BrowserError("Browser is not initialized")
+        pages = self.browser.contexts[0].pages
+        if 0 <= index < len(pages):
+            self.page = pages[index]
+            self.current_url = self.page.url
 
-    #     raise IndexError("Tab index out of range")
+        raise IndexError("Tab index out of range")
 
-    # def close_tab(self) -> None:
-    #     """Close the current tab."""
-    #     page = self._ensure_page_initialized()
-    #     if self.browser is None:
-    #         raise BrowserError("Browser is not initialized")
-    #     page.close()
-    #     self.page = self.browser.contexts[0].pages[-1]
-    #     self.current_url = self.page.url
+    def close_tab(self) -> None:
+        """Close the current tab."""
+        page = self._ensure_page_initialized()
+        if self.browser is None:
+            raise BrowserError("Browser is not initialized")
+        page.close()
+        self.page = self.browser.contexts[0].pages[-1]
+        self.current_url = self.page.url
 
     def take_screenshot(self, path: Path, full_page: bool = True) -> None:
         """
