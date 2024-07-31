@@ -263,7 +263,7 @@ class File(WithLogger):
 
         # Run lint before edit
         before_lint = self.lint()
-        
+
         cursor = 0
         buffer = ""
         replaced = ""
