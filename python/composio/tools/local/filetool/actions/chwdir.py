@@ -20,10 +20,12 @@ class ChwdirRequest(BaseFileRequest):
 
 class ChwdirResponse(BaseFileResponse):
     """Response to change the current working directory."""
+
     message: str = Field(
         default="",
         description="The message to display to the user.",
     )
+
 
 class ChangeWorkingDirectory(BaseFileAction):
     """
@@ -44,7 +46,9 @@ class ChangeWorkingDirectory(BaseFileAction):
     ) -> ChwdirResponse:
         try:
             file_manager.chdir(request_data.path)
-            return ChwdirResponse(message=f"Changed working directory successfully to {request_data.path}")
+            return ChwdirResponse(
+                message=f"Changed working directory successfully to {request_data.path}"
+            )
         except PermissionError as e:
             return ChwdirResponse(error=f"Permission denied: {str(e)}")
         except FileNotFoundError as e:

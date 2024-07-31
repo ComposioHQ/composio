@@ -57,37 +57,36 @@ class EditFileResponse(BaseFileResponse):
 class EditFile(BaseFileAction):
     """
 
-Use this tools to edit a file.
-THE EDIT COMMAND REQUIRES INDENTATION.
+    Use this tools to edit a file.
+    THE EDIT COMMAND REQUIRES INDENTATION.
 
-If you'd like to add the line '        print(x)' you must fully write
-that out, with all those spaces before the code!
+    If you'd like to add the line '        print(x)' you must fully write
+    that out, with all those spaces before the code!
 
-If a lint error occurs, the edit will not be applied. 
-Review the error message, adjust your edit accordingly.
+    If a lint error occurs, the edit will not be applied.
+    Review the error message, adjust your edit accordingly.
 
-If start line and end line are the same, 
-the new text will be added at the start line & 
-text at end line will be still in the new edited file.
+    If start line and end line are the same,
+    the new text will be added at the start line &
+    text at end line will be still in the new edited file.
 
-Examples A - Start line == End line
-Start line: 1
-End line: 1
-Text: "print(x)"
-Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
+    Examples A - Start line == End line
+    Start line: 1
+    End line: 1
+    Text: "print(x)"
+    Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
 
-Examples B - Start line != End line
-Start line: 1
-End line: 3
-Text: "print(x)"
-Result: print(x) will be replaced in the file as first line. 
-First and Second line will be removed as end line = 3
-Rest of the file will be unchanged.
+    Examples B - Start line != End line
+    Start line: 1
+    End line: 3
+    Text: "print(x)"
+    Result: print(x) will be replaced in the file as first line.
+    First and Second line will be removed as end line = 3
+    Rest of the file will be unchanged.
 
 
-This action edits a specific part of the file, if you want to rewrite the
-complete file, use `write` tool instead.
-"""
+    This action edits a specific part of the file, if you want to rewrite the
+    complete file, use `write` tool instead."""
 
     _display_name = "Edit a file"
     _request_schema = EditFileRequest
