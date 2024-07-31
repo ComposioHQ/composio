@@ -95,8 +95,8 @@ class ClaudeAnalyzer(MediaAnalyzer):
     ) -> str:
         try:
             import anthropic  # pylint: disable=import-outside-toplevel
-        except ImportError as e:
-            raise ImportError(
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
                 "The 'anthropic' package is required for Claude analysis. Please install it using 'pip install anthropic'."
             ) from e
         client = anthropic.Anthropic(api_key=api_key)
