@@ -1,6 +1,9 @@
 """
 App enums.
 """
+
+# pylint: disable=too-many-public-methods
+
 import typing as t
 
 from composio.client.enums._action import Action

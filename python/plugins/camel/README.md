@@ -45,7 +45,7 @@ This step involves fetching and integrating GitHub tools provided by Composio, e
 ```python
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 ```
 

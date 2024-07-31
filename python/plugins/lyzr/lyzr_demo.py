@@ -32,7 +32,7 @@ instructions = "Star a repo composiohq/composio on GitHub"
 
 # Get required tool
 (github_tool,) = composio_toolset.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
 # Define agent

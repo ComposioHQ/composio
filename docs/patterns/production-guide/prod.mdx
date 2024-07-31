@@ -15,6 +15,8 @@ This can be done through the platform's UI or via your deployment scripts.
 ### Step 2: Initialize the Composio Client
 In your application code, initialize the Composio client using the environment variable for the API key. 
 Here is an example in Python:
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
 ```python python
 import os
@@ -22,6 +24,10 @@ from composio import Composio
 
 composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
 ```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
 ```javascript javascript
 import { OpenAIToolSet } from "composio-core";
 
@@ -30,15 +36,8 @@ const composio_toolset = new OpenAIToolSet({
 });
 ```
 </CodeGroup>
-
-### Step 3: Provide an Entity ID for User-Specific Actions
-Whenever you perform actions using the Composio SDK, make sure to provide the entity ID of the user. 
-Here is an example of enabling a GitHub commit hook for a user:
-<CodeGroup>
-```python python
-entity = composio_client.get_entity(user_id="user_123")
-```
-```javascript javascript
-entity = composio_client.client.get_entity("user_123");
-```
-</CodeGroup>
+</Tab>
+<Tab title="API">
+Coming Soon! 
+</Tab>
+</Tabs>
