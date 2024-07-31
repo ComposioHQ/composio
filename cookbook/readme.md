@@ -2,6 +2,10 @@
 
 The Composio Cookbook is a collection of AI agents and workflows built using the Composio toolset. By contributing, you can showcase how you used Composio to solve real-world problems and help others learn from your examples.
 
+## All Python Examples - [here](https://github.com/ComposioHQ/composio/tree/master/python/examples)
+
+## All JS Examples - [here](https://github.com/ComposioHQ/composio/tree/master/js/examples)
+
 ## 📚 Contribute to the Composio Cookbook
 
 We are excited to have you contribute to the Composio Cookbook! This is a space where you can share your AI agents and workflows built with Composio.
