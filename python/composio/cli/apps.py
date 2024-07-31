@@ -161,19 +161,25 @@ def _update_apps(apps: t.List[AppModel]) -> None:
 
 def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
+    enums.base.ACTIONS_CACHE.mkdir(exist_ok=True)
+    deprecated = {}
     action_names = []
-    enums.base.ACTIONS_CACHE.mkdir(
-        exist_ok=True,
-    )
     for app in sorted(apps, key=lambda x: x.key):
         for action in actions:
             if action.appKey != app.key:
                 continue
-            action_names.append(
-                get_enum_key(
-                    name=action.name,
-                )
-            )
+
+            if (
+                action.description is not None
+                and "<<DEPRECATED use " in action.description
+            ):
+                _, newact = action.description.split("<<DEPRECATED use ", maxsplit=1)
+                deprecated[get_enum_key(name=action.name)] = (
+                    action.appKey.lower() + "_" + newact.replace(">>", "")
+                ).upper()
+            else:
+                action_names.append(get_enum_key(name=action.name))
+
             enums.base.ActionData(
                 name=action.name,
                 app=app.key,
@@ -205,6 +211,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
     _update_annotations(
         cls=enums.Action,
         attributes=action_names,
+        deprecated=deprecated,
     )
 
 
@@ -222,12 +229,8 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     tag_names = ["DEFAULT"]
     for app_name in sorted(tag_map):
         for tag in sorted(tag_map[app_name]):
-            tag_name = get_enum_key(
-                name=f"{app_name}_{tag}",
-            )
-            tag_names.append(
-                tag_name,
-            )
+            tag_name = get_enum_key(name=f"{app_name}_{tag}")
+            tag_names.append(tag_name)
             enums.base.TagData(
                 app=app_name,
                 value=tag,
@@ -269,24 +272,36 @@ def _update_triggers(
     )
 
 
-def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
+def _update_annotations(
+    cls: t.Type,
+    attributes: t.List[str],
+    deprecated: t.Optional[t.Dict[str, str]] = None,
+) -> None:
     """Update annontations for `cls`"""
     console = get_context().console
     file = Path(inspect.getmodule(cls).__file__)  # type: ignore
-
     annotations = []
     for attribute in sorted(attributes):
         annotations.append(
             ast.AnnAssign(
-                target=ast.Name(
-                    id=attribute,
-                ),
-                annotation=ast.Constant(
-                    value=f"{cls.__name__}",
-                ),
+                target=ast.Name(id=attribute),
+                annotation=ast.Constant(value=f"{cls.__name__}"),
                 simple=1,
             ),
         )
+
+    _deprecated = []
+    _deprecated_names = []
+    deprecated = deprecated or {}
+    for old, new in deprecated.items():
+        if old.lower() == new.lower():
+            continue
+
+        if new.upper() not in attributes:
+            continue
+
+        _deprecated.append(_build_deprecated_node(old=old, new=new))
+        _deprecated_names.append(old.upper())
 
     tree = ast.parse(file.read_text(encoding="utf-8"))
     for node in tree.body:
@@ -299,6 +314,7 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             child.target.id  # type: ignore
             for child in node.body[1:]
             if isinstance(child, ast.AnnAssign)
+            and child.target.id != "_deprecated"  # type: ignore
         ]
         if set(cls_attributes) == set(attributes):
             console.print(
@@ -306,13 +322,73 @@ def _update_annotations(cls: t.Type, attributes: t.List[str]) -> None:
             )
             return
 
-        node.body = (
-            node.body[:1]
-            + annotations
-            + [child for child in node.body[1:] if not isinstance(child, ast.AnnAssign)]
-        )
+        def _filter(child: ast.AST) -> bool:
+            if isinstance(child, ast.AnnAssign) and child.target.id == "_deprecated":  # type: ignore
+                child.value = ast.Dict(
+                    keys=list(map(ast.Constant, deprecated.keys())),  # type: ignore
+                    values=list(map(ast.Constant, deprecated.values())),  # type: ignore
+                )
+                return True
+            if isinstance(child, ast.AnnAssign):
+                return False
+            if isinstance(child, ast.FunctionDef) and child.name in _deprecated_names:
+                return False
+            if "@te.deprecated" in ast.unparse(child):
+                return False
+            return True
+
+        body = [child for child in node.body[1:] if _filter(child=child)]
+        node.body = node.body[:1] + annotations + _deprecated + body
         break
 
+    code = ast.unparse(tree)
+    code = code.replace(
+        "@classmethod",
+        "@classmethod  # type: ignore",
+    )
+    code = code.replace(
+        "import typing as t",
+        "\n# pylint: disable=too-many-public-methods, unused-import\n\nimport typing as t"
+        "\nimport typing_extensions as te  # noqa: F401",
+    )
     with file.open("w", encoding="utf-8") as fp:
-        fp.write(ast.unparse(tree))
+        fp.write(code)
     console.print(f"[green]✔ {cls.__name__}s updated[/green]")
+
+
+def _build_deprecated_node(old: str, new: str) -> ast.FunctionDef:
+    """Function definition."""
+    return ast.FunctionDef(
+        name=old.upper(),
+        args=ast.arguments(
+            posonlyargs=[],
+            args=[ast.arg(arg="cls")],
+            kwonlyargs=[],
+            kw_defaults=[],
+            defaults=[],
+        ),
+        body=[
+            ast.Return(
+                value=ast.Attribute(
+                    value=ast.Name(id="cls", ctx=ast.Load()),
+                    attr=new.upper(),
+                    ctx=ast.Load(),
+                )
+            )
+        ],
+        decorator_list=[
+            ast.Name(id="classmethod", ctx=ast.Load()),
+            ast.Name(id="property", ctx=ast.Load()),
+            ast.Call(
+                func=ast.Attribute(
+                    value=ast.Name(id="te", ctx=ast.Load()),
+                    attr="deprecated",
+                    ctx=ast.Load(),
+                ),
+                args=[ast.Constant(value=f"Use {new.upper()} instead.")],
+                keywords=[],
+            ),
+        ],
+        returns=ast.Constant(value="Action"),
+        lineno=0,
+    )
