@@ -5,7 +5,13 @@ icon: "play"
 description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to perform a task using natural language"
 ---
 
-## Goal: Star a repository on GitHub with natural language
+## Quick Start Guide
+
+In this quickstart, you will learn how to:
+
+- Install Composio package
+- Connect your GitHub account
+- Use Composio with OpenAI to perform actions on GitHub using natural language
 
 <Steps>
 
@@ -204,7 +210,7 @@ Replace `OPENAIKEY`.
 
 ## Step 3
 from openai import OpenAI
-from composio_openai import ComposioToolSet, App
+from composio_openai import ComposioToolSet, App,Action
 
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 
@@ -219,14 +225,26 @@ actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_
 ## Step 5
 my_task = "Star a repo composiohq/composio on GitHub"
 
-# Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(
-model="gpt-4-turbo",
-tools=actions, # Passing actions we fetched earlier.
-messages=[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": my_task}
-  ]
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions,  # type: ignore
+)
+
+
+# create a thread
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(
+    thread_id=thread.id, role="user", content=my_task
+)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(
+    thread_id=thread.id, assistant_id=assistant.id
 )
 
 
