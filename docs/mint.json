@@ -83,8 +83,8 @@
         {
           "group": "Core Concepts",
           "pages": [
-             "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/basic",
+            "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/action-guide",
@@ -271,6 +271,9 @@
     },
     "posthog": {
       "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
+    },
+    "plausible": {
+        "domain": "composio.dev"
     }
   },
   "api": {

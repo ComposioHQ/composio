@@ -11,6 +11,7 @@ import requests
 from composio.client.enums import Action
 from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
+from composio.tools.env.browsermanager import BrowserManager
 from composio.tools.env.filemanager import FileManager
 from composio.tools.env.id import generate_id
 from composio.tools.local.handler import get_runtime_action
@@ -193,6 +194,60 @@ class FileManagerFactory(WithLogger):
         self._recent = None
 
 
+class BrowserManagerFactory(WithLogger):
+    """Browser manager factory."""
+
+    _recent: t.Optional[BrowserManager] = None
+    _browser_managers: t.Dict[str, BrowserManager] = {}
+    _lock: threading.Lock = threading.Lock()
+
+    def __init__(self, factory: t.Callable[[], BrowserManager]) -> None:
+        """Create browser manager factory"""
+        super().__init__()
+        self._factory = factory
+
+    @property
+    def recent(self) -> BrowserManager:
+        """Get most recent browser manager."""
+        with self._lock:
+            browser_manager = self._recent
+        if browser_manager is None:
+            browser_manager = self.new()
+            with self._lock:
+                self._recent = browser_manager
+        return browser_manager
+
+    @recent.setter
+    def recent(self, browser_manager: BrowserManager) -> None:
+        """Set most recent browser manager."""
+        with self._lock:
+            self._recent = browser_manager
+
+    def new(self) -> BrowserManager:
+        """Create a new browser manager."""
+        browser_manager = self._factory()
+        self._browser_managers[browser_manager.id] = browser_manager
+        self.recent = browser_manager
+        return browser_manager
+
+    def get(self, id: t.Optional[str] = None) -> BrowserManager:
+        """Get browser manager instance."""
+        if id is None or id == "":
+            return self.recent
+        if id not in self._browser_managers:
+            raise ComposioSDKError(
+                message=f"No browser manager found with ID: {id}",
+            )
+        browser_manager = self._browser_managers[id]
+        self.recent = browser_manager
+        return browser_manager
+
+    def teardown(self) -> None:
+        """Clean up all browser managers."""
+        self._browser_managers.clear()
+        self._recent = None
+
+
 @dataclass
 class WorkspaceConfigType:
     """Workspace configuration."""
@@ -228,6 +283,8 @@ class Workspace(WithLogger, ABC):
     _shell_factory: t.Optional[ShellFactory] = None
 
     _file_manager_factory: t.Optional[FileManagerFactory] = None
+
+    _browser_manager_factory: t.Optional[BrowserManagerFactory] = None
 
     def __init__(self, config: WorkspaceConfigType):
         """Initialize workspace."""
@@ -279,6 +336,15 @@ class Workspace(WithLogger, ABC):
         return self._file_manager_factory
 
     @property
+    def browser_managers(self) -> BrowserManagerFactory:
+        """Returns browser manager for current workspace."""
+        if self._browser_manager_factory is None:
+            self._browser_manager_factory = BrowserManagerFactory(
+                factory=self._create_browser_manager,
+            )
+        return self._browser_manager_factory
+
+    @property
     def shells(self) -> ShellFactory:
         """Returns shell factory for current workspace."""
         if self._shell_factory is None:
@@ -294,6 +360,10 @@ class Workspace(WithLogger, ABC):
     @abstractmethod
     def _create_file_manager(self) -> FileManager:
         """Create file manager for the workspace."""
+
+    @abstractmethod
+    def _create_browser_manager(self) -> BrowserManager:
+        """Create browser manager for the workspace."""
 
     @abstractmethod
     def execute_action(
@@ -338,6 +408,11 @@ class RemoteWorkspace(Workspace):
     def _create_file_manager(self) -> FileManager:
         raise NotImplementedError(
             "Creating file manager for remote workspaces is not allowed."
+        )
+
+    def _create_browser_manager(self) -> BrowserManager:
+        raise NotImplementedError(
+            "Creating browser manager for remote workspaces is not allowed."
         )
 
     def _upload(self, action: Action) -> None:

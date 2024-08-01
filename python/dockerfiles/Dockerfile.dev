@@ -19,7 +19,14 @@ RUN /bin/python3 -m venv .composio/venv
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio for dependency caching
-RUN python -m pip install composio-core[all]==0.4.0 fastapi
+# Install composio
+RUN python -m pip install composio-core[all]==0.4.0 fastapi playwright
+
+# Install playwright deps
+RUN playwright install-deps
+
+# Install playwright binaries
+RUN playwright install chromium
 
 # Set working dir
 WORKDIR /root
