@@ -7,9 +7,10 @@ Composio SDK client.
 import os
 import typing as t
 from datetime import datetime
+from pathlib import Path
 
 import requests
-from pathlib import Path
+
 from composio.client.base import BaseClient
 from composio.client.collections import (
     Actions,
@@ -33,16 +34,16 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
+from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.http import HttpClient
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
-from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
-from composio.client.http import HttpClient
-from composio.storage.user import UserData
 from composio.exceptions import ApiKeyNotProvidedError
+from composio.storage.user import UserData
 from composio.utils.url import get_api_url_base
 
 
