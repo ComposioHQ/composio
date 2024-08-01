@@ -90,7 +90,8 @@ class Composio(BaseClient):
                 if user_data_path.exists() else None
             )
             env_api_key = (
-                user_data.api_key or os.environ.get(ENV_COMPOSIO_API_KEY)
+                (user_data.api_key if user_data else None)
+                or os.environ.get(ENV_COMPOSIO_API_KEY)
             )
             if env_api_key:
                 self._api_key = env_api_key
