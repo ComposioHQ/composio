@@ -191,7 +191,7 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         return [
             self._wrap_tool(  # type: ignore
-                **t.cast(
+                t.cast(
                     OpenAISchema,
                     self.schema.format(
                         schema.model_dump(
