@@ -2,9 +2,11 @@
 App enums.
 """
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, unused-import
 
 import typing as t
+
+import typing_extensions as te  # noqa: F401
 
 from composio.client.enums._action import Action
 from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
@@ -18,24 +20,18 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     ASANA: "App"
     ATTIO: "App"
     BREVO: "App"
-    BROWSERTOOL: "App"
     CLICKUP: "App"
-    CODEFORMATTOOL: "App"
-    CODEGREPTOOL: "App"
-    CODEINDEXTOOL: "App"
     CODEINTERPRETER: "App"
-    CODEMAPTOOL: "App"
     COMPOSIO: "App"
     DISCORD: "App"
     DROPBOX: "App"
     ELEVENLABS: "App"
-    EMBEDTOOL: "App"
+    EMBED_TOOL: "App"
     EXA: "App"
     FIGMA: "App"
-    FILEEDITTOOL: "App"
     FILETOOL: "App"
     FIRECRAWL: "App"
-    GITCMDTOOL: "App"
+    GIT: "App"
     GITHUB: "App"
     GMAIL: "App"
     GOOGLECALENDAR: "App"
@@ -47,8 +43,9 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     GREPTILE: "App"
     HACKERNEWS: "App"
     HEROKU: "App"
-    HISTORYFETCHERTOOL: "App"
-    IMAGEANALYSERTOOL: "App"
+    HISTORY_FETCHER: "App"
+    HUBSPOT: "App"
+    IMAGE_ANALYSER: "App"
     INDUCEDAI: "App"
     LINEAR: "App"
     LISTENNOTES: "App"
@@ -61,7 +58,6 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     PERPLEXITYAI: "App"
     RAGTOOL: "App"
     SCHEDULER: "App"
-    SEARCHTOOL: "App"
     SERPAPI: "App"
     SHELLTOOL: "App"
     SLACK: "App"
@@ -75,6 +71,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     STRAVA: "App"
     TASKADE: "App"
     TAVILY: "App"
+    TEST_ASANA: "App"
     TRELLO: "App"
     TWILIO: "App"
     TYPEFORM: "App"

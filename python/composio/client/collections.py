@@ -859,12 +859,10 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            from composio.tools.local.handler import (  # pylint: disable=import-outside-toplevel
-                LocalClient,
-            )
-
-            local_items = LocalClient().get_action_schemas(
-                apps=local_apps, actions=local_actions, tags=tags
+            local_items = self.client.local.get_action_schemas(
+                apps=local_apps,
+                actions=local_actions,
+                tags=tags,
             )
             return [self.model(**item) for item in local_items]
 

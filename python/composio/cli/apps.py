@@ -141,7 +141,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
             is_local=False,
         ).store()
 
-    for tool in LocalClient().tools.values():
+    for tool in LocalClient.tools().values():
         app_names.append(
             get_enum_key(
                 name=tool.name.lower().replace(" ", "_").replace("-", "_"),
@@ -189,15 +189,10 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
             ).store()
 
-    local_tool_handler = LocalClient()
-    for tool in local_tool_handler.tools.values():
-        for tool_action in tool.actions():
-            name = tool_action().get_tool_merged_action_name()
-            action_names.append(
-                get_enum_key(
-                    name=name,
-                )
-            )
+    for tool in LocalClient.tools().values():
+        for actcls in tool.actions():
+            name = actcls.enum()
+            action_names.append(get_enum_key(name=name))
             enums.base.ActionData(
                 name=name,
                 app=tool.name,
@@ -205,7 +200,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
-                shell=tool_action.run_on_shell,
+                shell=False,  # TOFIX(viraj)
             ).store()
 
     _update_annotations(
