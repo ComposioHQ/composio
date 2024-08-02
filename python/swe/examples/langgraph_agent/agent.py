@@ -28,7 +28,7 @@ openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"],  # type: ignore
     model="gpt-4-turbo",
 )
-composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
+composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker(image="composio/composio:dev"))
 
 # Get required tools
 coder_tools = composio_toolset.get_tools(
@@ -93,7 +93,6 @@ pm_node = create_agent_node(pm_agent, pm_agent_name)
 
 # Router function
 def router(state) -> Literal["call_tool", "pm", "__end__", "continue",]:
-    # print("state",state)
     last_message = state["messages"][-1]
     sender = state["sender"]
     if last_message.tool_calls:
@@ -116,7 +115,6 @@ workflow.add_node(pm_tool_node_name, pm_tool_node)
 
 # add start and end
 workflow.add_edge(START, coding_agent_name)
-workflow.add_edge(coding_agent_name, pm_agent_name)
 
 # add conditional edges for tool calling
 workflow.add_conditional_edges(
@@ -146,7 +144,7 @@ workflow.add_conditional_edges(
     router,
     {
         "continue": coding_agent_name,
-        "pm_tool": pm_tool_node_name,
+        "call_tool": pm_tool_node_name,
         "__end__": END,
     },
 )
@@ -172,4 +170,4 @@ around AI Agents."""
 
         print(final_state["messages"][-1].content)
     except Exception as e:
-        print(e)
+        print("Error:", e)
