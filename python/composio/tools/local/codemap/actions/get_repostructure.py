@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.base.utils.grep_utils import get_files_excluding_gitignore
 
 
@@ -99,7 +99,7 @@ def parse_python_file(file_path, file_content=None, include_content=False):
     return class_info, function_names, file_content.splitlines()
 
 
-class GetRepoStructure(Action[GetRepoStructureRequest, GetRepoStructureResponse]):
+class GetRepoStructure(LocalAction[GetRepoStructureRequest, GetRepoStructureResponse]):
     """
     Generates a comprehensive repository structure for all files within a given repository.
 
@@ -115,7 +115,7 @@ class GetRepoStructure(Action[GetRepoStructureRequest, GetRepoStructureResponse]
     _tool_name = "codemap"
 
     def execute(
-        self, request_data: GetRepoStructureRequest, authorisation_data: dict = {}
+        self, request_data: GetRepoStructureRequest, metadata: dict = {}
     ) -> GetRepoStructureResponse:
         repo_root = Path(request_data.code_directory).resolve()
         include_content = request_data.include_content

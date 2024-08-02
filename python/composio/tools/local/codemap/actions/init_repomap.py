@@ -3,7 +3,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.base.utils.grep_utils import get_files_excluding_gitignore
 from composio.tools.local.base.utils.repomap import RepoMap
 
@@ -19,7 +19,7 @@ class InitRepoMapResponse(BaseModel):
     error: str = Field(default=None, description="Error message if any")
 
 
-class InitRepoMap(Action[InitRepoMapRequest, InitRepoMapResponse]):
+class InitRepoMap(LocalAction[InitRepoMapRequest, InitRepoMapResponse]):
     """
     Initializes the repository map for the given root directory.
     """
@@ -30,9 +30,7 @@ class InitRepoMap(Action[InitRepoMapRequest, InitRepoMapResponse]):
     _tags = ["repo"]
     _tool_name = "codemap"
 
-    def execute(
-        self, request_data: InitRepoMapRequest, authorisation_data: dict = {}
-    ) -> dict:
+    def execute(self, request_data: InitRepoMapRequest, metadata: dict = {}) -> dict:
         root_path = Path(request_data.code_directory).resolve()
         if not root_path.exists():
             return {"success": False, "error": f"Path {root_path} does not exist"}

@@ -1,17 +1,15 @@
 from typing import Type
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions.sql_query import SqlQuery
 
 
-class SqlTool(Tool):
+class Sqltool(LocalTool, autoload=True):
     """
     This class enables us to execute sql queries in a database
     """
 
-    def actions(self) -> list[Type[Action]]:
+    @classmethod
+    def actions(cls) -> list[Type[LocalAction]]:
         return [SqlQuery]
-
-    def triggers(self) -> list:
-        return []

@@ -1,19 +1,14 @@
+from typing import Dict
+
 from pydantic import Field
 
-from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
+from composio.tools.base.local import LocalAction
+from composio.tools.env.constants import EXIT_CODE, STDERR
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
-    exec_cmd,
 )
 from composio.tools.local.shelltool.utils import git_clone_cmd, git_reset_cmd
-from composio.utils.logging import WithLogger
-from composio.utils.logging import get as get_logger
-
-
-LONG_TIMEOUT = 200
-logger = get_logger("workspace")
 
 
 class GithubCloneRequest(ShellRequest):
@@ -37,48 +32,22 @@ class GithubCloneResponse(ShellExecResponse):
     pass
 
 
-class GithubCloneCmd(BaseExecCommand, WithLogger):
-    """
-    Clones a github repository at a given commit-id.
-    """
+class GithubCloneCmd(LocalAction[GithubCloneRequest, GithubCloneResponse]):
+    """Clones a github repository at a given commit-id."""
 
-    _display_name = "Clone Github Repository Action"
-    _tool_name = "gitcmdtool"
-    _request_schema = GithubCloneRequest
-    _response_schema = GithubCloneResponse
+    _tags = ["cli"]
 
     def execute(
-        self, request_data: ShellRequest, authorisation_data: dict
-    ) -> ShellExecResponse:
-        request_data = GithubCloneRequest(**request_data.model_dump())
-        if request_data.just_reset:
-            return self.reset_to_base_commit(request_data, authorisation_data)
-        output = exec_cmd(
-            cmd=git_clone_cmd(request_data),
-            authorisation_data=authorisation_data,
-            shell_id=request_data.shell_id,
+        self, request: GithubCloneRequest, metadata: Dict
+    ) -> GithubCloneResponse:
+        cmd = (
+            git_reset_cmd(request.commit_id)
+            if request.just_reset
+            else git_clone_cmd(request)
         )
-        return ShellExecResponse(
+        output = self.shells.get(id=request.shell_id).exec(cmd=cmd)
+        return GithubCloneResponse(
             stdout=output[STDERR],
-            stderr="",
-            exit_code=int(output[EXIT_CODE]),
-        )
-
-    def reset_to_base_commit(
-        self, request_data: GithubCloneRequest, authorisation_data: dict
-    ) -> ShellExecResponse:
-        """
-        Resets the repository to the specified base commit and cleans any untracked files or changes.
-        Assumes the repository already exists as cloned by the execute function.
-        """
-        logger.info("Resetting repository to base commit inside reset_to_base_commit")
-        output = exec_cmd(
-            cmd=git_reset_cmd(request_data.commit_id),
-            authorisation_data=authorisation_data,
-            shell_id=request_data.shell_id,
-        )
-        return ShellExecResponse(
-            stdout=output[STDOUT],
             stderr=output[STDERR],
             exit_code=int(output[EXIT_CODE]),
         )

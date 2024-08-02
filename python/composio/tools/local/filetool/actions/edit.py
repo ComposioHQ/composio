@@ -1,8 +1,9 @@
+from typing import Dict
+
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -54,7 +55,7 @@ class EditFileResponse(BaseFileResponse):
     )
 
 
-class EditFile(BaseFileAction):
+class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     """
     Use this tools to edit a file on specific line numbers.
 
@@ -80,33 +81,26 @@ class EditFile(BaseFileAction):
         complete file, use `write` tool instead.
     """
 
-    _display_name = "Edit a file"
-    _request_schema = EditFileRequest
-    _response_schema = EditFileResponse
-
-    def execute_on_file_manager(
-        self,
-        file_manager: FileManager,
-        request_data: EditFileRequest,  # type: ignore
-    ) -> EditFileResponse:
+    def execute(self, request: EditFileRequest, metadata: Dict) -> EditFileResponse:
+        """Execute action."""
+        file_manager = self.filemanagers.get(request.file_manager_id)
         try:
             file = (
                 file_manager.recent
-                if request_data.file_path is None
-                else file_manager.open(
-                    path=request_data.file_path,
-                )
+                if request.file_path is None
+                else file_manager.open(path=request.file_path)
             )
             if file is None:
-                raise FileNotFoundError(f"File not found: {request_data.file_path}")
+                raise FileNotFoundError(f"File not found: {request.file_path}")
+
             response = file.write_and_run_lint(
-                text=request_data.text,
-                start=request_data.start_line,
-                end=request_data.end_line,
+                text=request.text,
+                start=request.start_line,
+                end=request.end_line,
             )
-            if response.get("error") and len(response["error"]) > 0:
+            if response.get("error") and len(response["error"]) > 0:  # type: ignore
                 return EditFileResponse(
-                    error="No Update, found error: " + response["error"]
+                    error="No Update, found error: " + response["error"]  # type: ignore
                 )
             return EditFileResponse(
                 old_text=response["replaced_text"],

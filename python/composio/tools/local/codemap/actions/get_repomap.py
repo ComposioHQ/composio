@@ -3,7 +3,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.base.utils.grep_utils import get_files_excluding_gitignore
 from composio.tools.local.base.utils.repomap import RepoMap
 
@@ -47,7 +47,7 @@ class GetRepoMapResponse(BaseModel):
     )
 
 
-class GetRepoMap(Action[GetRepoMapRequest, GetRepoMapResponse]):
+class GetRepoMap(LocalAction[GetRepoMapRequest, GetRepoMapResponse]):
     """
     Generates a comprehensive repository map for specified files of interest within a given repository.
 
@@ -62,9 +62,7 @@ class GetRepoMap(Action[GetRepoMapRequest, GetRepoMapResponse]):
     _tags = ["repository", "code-structure", "analysis"]
     _tool_name = "codemap"
 
-    def execute(
-        self, request_data: GetRepoMapRequest, authorisation_data: dict = {}
-    ) -> dict:
+    def execute(self, request_data: GetRepoMapRequest, metadata: dict = {}) -> dict:
         repo_root = Path(request_data.code_directory).resolve()
 
         if not repo_root.exists():

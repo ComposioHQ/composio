@@ -1,6 +1,6 @@
 import random
 import string
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional
@@ -8,8 +8,8 @@ from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
 from composio.exceptions import ComposioSDKError
+from composio.tools.base.local import LocalAction
 from composio.tools.env.browsermanager.manager import BrowserManager
-from composio.tools.local.base import Action
 
 
 class SelectorType(str, Enum):
@@ -79,7 +79,7 @@ class BaseBrowserResponse(BaseModel):
     )
 
 
-class BaseBrowserAction(Action, ABC):
+class BaseBrowserAction(LocalAction):
     _tool_name: str = "browsertool"
 
     @abstractmethod
@@ -89,13 +89,13 @@ class BaseBrowserAction(Action, ABC):
         pass
 
     def execute(
-        self, request_data: BaseBrowserRequest, authorisation_data: dict
+        self, request_data: BaseBrowserRequest, metadata: dict
     ) -> BaseBrowserResponse:
-        workspace = authorisation_data.get("workspace")
+        workspace = metadata.get("workspace")
         if not workspace:
             raise ComposioSDKError("Workspace not found in authorisation data")
         self.logger.debug(
-            f"Executing action `{self.get_tool_merged_action_name()}` with request data `{request_data}` and metadata `{authorisation_data}`"
+            f"Executing action `{self.get_tool_merged_action_name()}` with request data `{request_data}` and metadata `{metadata}`"
         )
         browser_managers = workspace.browser_managers
         browser_manager = browser_managers.get(request_data.browser_manager_id)

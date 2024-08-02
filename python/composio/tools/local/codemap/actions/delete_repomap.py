@@ -3,7 +3,7 @@ from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.base.utils.repomap import RepoMap
 
 
@@ -16,7 +16,7 @@ class DeleteRepoMapResponse(BaseModel):
     error: Optional[str] = Field(default=None, description="Error message if any")
 
 
-class DeleteRepoMap(Action[DeleteRepoMapRequest, DeleteRepoMapResponse]):
+class DeleteRepoMap(LocalAction[DeleteRepoMapRequest, DeleteRepoMapResponse]):
     """
     Deletes the repository map cache for the given root directory. This action removes the cached data used by RepoMap.
     """
@@ -27,9 +27,7 @@ class DeleteRepoMap(Action[DeleteRepoMapRequest, DeleteRepoMapResponse]):
     _tags = ["repo"]
     _tool_name = "codemap"
 
-    def execute(
-        self, request_data: DeleteRepoMapRequest, authorisation_data: dict = {}
-    ) -> dict:
+    def execute(self, request_data: DeleteRepoMapRequest, metadata: dict = {}) -> dict:
         root_path = Path(request_data.root_path).resolve()
         if not root_path.exists():
             return {"success": False, "error": f"Path {root_path} does not exist"}

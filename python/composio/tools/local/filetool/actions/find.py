@@ -2,9 +2,8 @@ import typing as t
 
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -13,12 +12,18 @@ from composio.tools.local.filetool.actions.base_action import (
 class FindFileRequest(BaseFileRequest):
     """Request to find files matching a pattern."""
 
-    pattern: str = Field(..., description="Pattern to search for (supports wildcards)")
+    pattern: str = Field(
+        ...,
+        description="Pattern to search for (supports wildcards)",
+    )
     depth: t.Optional[int] = Field(
-        default=None, description="Max depth to search for (None for unlimited)", ge=0
+        default=None,
+        description="Max depth to search for (None for unlimited)",
+        ge=0,
     )
     case_sensitive: bool = Field(
-        default=False, description="If set True the search will be case sensitive"
+        default=False,
+        description="If set True the search will be case sensitive",
     )
     include: t.List[str] = Field(
         default=None,
@@ -34,13 +39,20 @@ class FindFileResponse(BaseFileResponse):
     """Response to find files matching a pattern."""
 
     results: t.List[str] = Field(
-        default=[], description="List of file paths matching the search pattern"
+        default=[],
+        description="List of file paths matching the search pattern",
     )
-    message: str = Field(default="", description="Message to display to the user")
-    error: str = Field(default="", description="Error message if any")
+    message: str = Field(
+        default="",
+        description="Message to display to the user",
+    )
+    error: str = Field(
+        default="",
+        description="Error message if any",
+    )
 
 
-class FindFile(BaseFileAction):
+class FindFile(LocalAction[FindFileRequest, FindFileResponse]):
     """
     Finds files or directories matching the given pattern in the workspace.
 
@@ -74,25 +86,22 @@ class FindFile(BaseFileAction):
     - OSError: If there's an issue with the file system operations.
     """
 
-    _display_name = "Find Files"
-    _request_schema = FindFileRequest
-    _response_schema = FindFileResponse
-
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: FindFileRequest  # type: ignore
-    ) -> FindFileResponse:
+    def execute(self, request: FindFileRequest, metadata: t.Dict) -> FindFileResponse:
         try:
-            results = file_manager.find(
-                pattern=request_data.pattern,
-                depth=request_data.depth,
-                case_sensitive=request_data.case_sensitive,
-                include=request_data.include,  # type: ignore
-                exclude=request_data.exclude,  # type: ignore
+            results = self.filemanagers.get(request.file_manager_id).find(
+                pattern=request.pattern,
+                depth=request.depth,
+                case_sensitive=request.case_sensitive,
+                include=request.include,  # type: ignore
+                exclude=request.exclude,  # type: ignore
             )
             if len(results) > 200:
                 return FindFileResponse(
                     results=results[:200],
-                    message=f"Too many results found. Found {len(results)} results, returning 300 of them. Please refine your search criteria.",
+                    message=(
+                        f"Too many results found. Found {len(results)} results, "
+                        "returning 300 of them. Please refine your search criteria."
+                    ),
                 )
             if results == []:
                 return FindFileResponse(error="No results found.")

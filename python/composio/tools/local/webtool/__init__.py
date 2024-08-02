@@ -1,1 +1,1 @@
-from .tool import WebTool
+from .tool import Webtool

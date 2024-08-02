@@ -2,10 +2,9 @@ import typing as t
 
 from pydantic import Field
 
+from composio.tools.base.local import LocalAction
 from composio.tools.env.filemanager.file import ScrollDirection
-from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -52,7 +51,7 @@ class ScrollResponse(BaseFileResponse):
     )
 
 
-class Scroll(BaseFileAction):
+class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
     """
     Scrolls the view of the opened file up or down by 100 lines.
     Returns:
@@ -63,20 +62,15 @@ class Scroll(BaseFileAction):
     - FileNotFoundError: If the file is not found.
     """
 
-    _display_name = "Scroll up/down"
-    _request_schema = ScrollRequest
-    _response_schema = ScrollResponse
-
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: ScrollRequest  # type: ignore
-    ) -> ScrollResponse:
+    def execute(self, request: ScrollRequest, metadata: t.Dict) -> ScrollResponse:
         try:
-            recent_file = file_manager.recent
+            recent_file = self.filemanagers.get(id=request.file_manager_id).recent
             if recent_file is None:
-                return ScrollResponse(error="No file opened")
+                return ScrollResponse(error="No open file found!")
+
             recent_file.scroll(
-                lines=request_data.lines,
-                direction=ScrollDirection(request_data.direction),
+                lines=request.lines,
+                direction=ScrollDirection(request.direction),
             )
             return ScrollResponse(
                 message="Scroll successful.",

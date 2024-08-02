@@ -2,7 +2,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.codeindex.actions.create_index import CreateIndex
 
 
@@ -15,7 +15,7 @@ class IndexStatusOutput(BaseModel):
     error: str = Field(default=None, description="Error message if indexing failed")
 
 
-class IndexStatus(Action[IndexStatusInput, IndexStatusOutput]):
+class IndexStatus(LocalAction[IndexStatusInput, IndexStatusOutput]):
     """
     Checks the status of the indexing process for a given directory.
     """
@@ -27,7 +27,7 @@ class IndexStatus(Action[IndexStatusInput, IndexStatusOutput]):
     _tool_name = "codeindex"
 
     def execute(
-        self, input_data: IndexStatusInput, authorisation_data: dict = {}
+        self, input_data: IndexStatusInput, metadata: dict = {}
     ) -> IndexStatusOutput:
         create_index = CreateIndex()
         status_data = create_index.check_status(input_data.directory_path)

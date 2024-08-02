@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from composio.client.enums import Action
 from composio.client.enums.base import ActionData
-from composio.tools.env.base import Shell
+from composio.tools.env.host.shell import Shell
 from composio.tools.local.handler import add_runtime_action
 from composio.utils.enums import get_enum_key
 
@@ -57,8 +57,8 @@ def _wrap(
         requires = _requires
         module = file
 
-        def execute(self, request_data: t.Any, authorisation_data: dict) -> t.Any:
-            return f(request_data, authorisation_data)
+        def execute(self, request_data: t.Any, metadata: dict) -> t.Any:
+            return f(request_data, metadata)
 
     cls = type(inflection.camelize(f.__name__), (WrappedAction,), {})
     cls.__doc__ = f.__doc__

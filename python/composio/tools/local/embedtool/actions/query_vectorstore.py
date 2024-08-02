@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class QueryImageVectorStoreInputSchema(BaseModel):
@@ -21,7 +21,7 @@ class QueryImageVectorStoreOutputSchema(BaseModel):
     )
 
 
-class QueryImageVectorStore(Action):
+class QueryImageVectorStore(LocalAction):
     """
     Query Vector Store for images
     """
@@ -35,7 +35,7 @@ class QueryImageVectorStore(Action):
     def execute(
         self,
         request_data: QueryImageVectorStoreInputSchema,
-        authorisation_data: dict = {},
+        metadata: dict = {},
     ) -> QueryImageVectorStoreOutputSchema:
         import chromadb  # pylint: disable=C0415
         from chromadb.utils import embedding_functions  # pylint: disable=C0415

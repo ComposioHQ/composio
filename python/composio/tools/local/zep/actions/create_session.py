@@ -2,13 +2,15 @@
 Action for creating session.
 """
 
+# pylint: disable=import-outside-toplevel
+
 import os
 import typing as t
 import uuid
 
 from pydantic import BaseModel
 
-from composio.tools.local.base.action import Action
+from composio.tools.base.local import LocalAction
 
 
 class CreateSessionRequest(BaseModel):
@@ -23,29 +25,18 @@ class CreateSessionResponse(BaseModel):
     session_id: str
 
 
-class CreateSession(Action):
+class CreateSession(LocalAction[CreateSessionRequest, CreateSessionResponse]):
     """Create zep session."""
 
-    _display_name = "Create A Zep Session"
-    _request_schema = CreateSessionRequest
-    _response_schema = CreateSessionResponse
     _tags = ["memory", "history"]
-    _tool_name = "zeptool"
 
     def execute(
-        self,
-        request_data: CreateSessionRequest,
-        authorisation_data: dict,
+        self, request: CreateSessionRequest, metadata: t.Dict
     ) -> CreateSessionResponse:
-        """Create session."""
-        from zep_cloud.client import Zep  # pylint: disable=import-outside-toplevel
+        """Create a new session."""
+        from zep_cloud.client import Zep
 
-        client = Zep(
-            api_key=os.environ.get(
-                "ZEP_API_KEY",
-                authorisation_data.get("api_key"),
-            ),
-        )
-        session_id = request_data.session_id or uuid.uuid4().hex
+        client = Zep(api_key=os.environ.get("ZEP_API_KEY", metadata.get("api_key")))
+        session_id = request.session_id or uuid.uuid4().hex
         client.memory.add_session(session_id=session_id)
         return CreateSessionResponse(session_id=session_id)

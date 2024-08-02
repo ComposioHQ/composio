@@ -2,9 +2,9 @@ import threading
 import typing as t
 from pathlib import Path
 
+from composio.tools.env.base import Sessionable
 from composio.tools.env.browsermanager.browser import Browser, BrowserError
 from composio.tools.env.id import generate_id
-from composio.utils.logging import WithLogger
 
 
 _active_manager: t.Optional["BrowserManager"] = None
@@ -24,16 +24,22 @@ def get_current_browser_manager() -> t.Optional["BrowserManager"]:
         return _active_manager
 
 
-class BrowserManager(WithLogger):
+class BrowserManager(Sessionable):
     """Browser manager implementation for agent workspaces."""
 
     def __init__(self, headless: bool = True) -> None:
         """Initialize browser manager."""
         super().__init__()
-        self.id = generate_id()
+        self._id = generate_id()
         self.browser = Browser(headless=headless)
         self.headless = headless
         self.browser.setup()
+
+    def setup(self) -> None:
+        """Setup browser manager."""
+
+    def teardown(self) -> None:
+        """Teardown a browser manager."""
 
     def __enter__(self) -> "BrowserManager":
         """Enter browser manager context."""

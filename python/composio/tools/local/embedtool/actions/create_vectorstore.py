@@ -4,7 +4,7 @@ from typing import List, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class CreateVectorStoreInputSchema(BaseModel):
@@ -17,7 +17,7 @@ class CreateVectorStoreOutputSchema(BaseModel):
 
 
 class CreateImageVectorStore(
-    Action[CreateVectorStoreInputSchema, CreateVectorStoreOutputSchema]
+    LocalAction[CreateVectorStoreInputSchema, CreateVectorStoreOutputSchema]
 ):
     """
     Creates Vector Store for all image files in the specified folder
@@ -48,7 +48,9 @@ class CreateImageVectorStore(
         return image_files
 
     def execute(
-        self, request_data: CreateVectorStoreInputSchema, authorisation_data: dict = {}
+        self,
+        request_data: CreateVectorStoreInputSchema,
+        metadata: dict,
     ) -> CreateVectorStoreOutputSchema:
         import chromadb  # pylint: disable=C0415
         from chromadb.utils import embedding_functions  # pylint: disable=C0415

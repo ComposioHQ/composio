@@ -4,7 +4,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class DeleteIndexInput(BaseModel):
@@ -15,7 +15,7 @@ class DeleteIndexOutput(BaseModel):
     message: str = Field(..., description="Result of the delete index action")
 
 
-class DeleteIndex(Action[DeleteIndexInput, DeleteIndexOutput]):
+class DeleteIndex(LocalAction[DeleteIndexInput, DeleteIndexOutput]):
     """
     Deletes the index for a specified code base.
     """
@@ -27,7 +27,7 @@ class DeleteIndex(Action[DeleteIndexInput, DeleteIndexOutput]):
     _tool_name = "codeindex"
 
     def execute(
-        self, input_data: DeleteIndexInput, authorisation_data: dict = {}
+        self, input_data: DeleteIndexInput, metadata: dict = {}
     ) -> DeleteIndexOutput:
         import chromadb  # pylint: disable=C0415
         from chromadb.errors import ChromaError  # pylint: disable=C0415
