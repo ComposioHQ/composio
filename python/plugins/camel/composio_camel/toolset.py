@@ -199,7 +199,7 @@ class ComposioToolSet(BaseComposioToolSet):
                         )
                     ),
                 ).model_dump(),
-                entity_id=entity_id
+                entity_id=entity_id,
             )
             for schema in self.get_action_schemas(apps=apps, tags=tags)
         ]
