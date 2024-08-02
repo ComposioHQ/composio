@@ -7,6 +7,7 @@ Composio SDK client.
 import os
 import typing as t
 from datetime import datetime
+from pathlib import Path
 
 import requests
 
@@ -35,8 +36,14 @@ from composio.client.enums import (
 )
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.http import HttpClient
-from composio.constants import DEFAULT_ENTITY_ID, ENV_COMPOSIO_API_KEY
+from composio.constants import (
+    DEFAULT_ENTITY_ID,
+    ENV_COMPOSIO_API_KEY,
+    LOCAL_CACHE_DIRECTORY_NAME,
+    USER_DATA_FILE_NAME,
+)
 from composio.exceptions import ApiKeyNotProvidedError
+from composio.storage.user import UserData
 from composio.utils.url import get_api_url_base
 
 
@@ -76,7 +83,16 @@ class Composio(BaseClient):
     @property
     def api_key(self) -> str:
         if self._api_key is None:
-            env_api_key = os.environ.get(ENV_COMPOSIO_API_KEY)
+            cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
+            user_data_path = cache_dir / USER_DATA_FILE_NAME
+            user_data = (
+                UserData.load(path=user_data_path)
+                if user_data_path.exists() else None
+            )
+            env_api_key = (
+                (user_data.api_key if user_data else None)
+                or os.environ.get(ENV_COMPOSIO_API_KEY)
+            )
             if env_api_key:
                 self._api_key = env_api_key
         if self._api_key is None:
