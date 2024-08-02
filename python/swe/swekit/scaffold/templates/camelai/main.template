@@ -1,6 +1,6 @@
 from inputs import from_github
 
-from agent import composio_toolset, graph
+from agent import composio_toolset,agent
 from composio_camel import Action
 from prompts import DESCRIPTION
 from camel.messages import BaseMessage
@@ -12,7 +12,7 @@ def main() -> None:
     repo, issue = from_github()
     user_msg = BaseMessage.make_user_message(role_name="User", content=DESCRIPTION)
     try:
-        final_state = agent.step(user_msg)
+        final_state = agent.step(f"repo:{repo} and issue:{issue}")
 
         for msg in response.msgs:
             print_text_animated(Fore.GREEN + f"Agent response:\n{msg.content}\n")

@@ -21,6 +21,7 @@ class AgenticFramework(Enum):
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
     LANGGRAPH = "langgraph"
+    CAMELAI = "camelai"
 
     def load_templates(self, agent_type: AgentType) -> t.Dict:
         """Load template string."""
