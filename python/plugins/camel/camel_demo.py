@@ -11,13 +11,11 @@ from composio_camel import Action, ComposioToolSet
 
 
 # pylint: enable=E0611
-
-
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
-
+# tools = composio_toolset.get_tools(apps=[App.GMAIL])
 # set up LLM model
 assistant_model_config = ChatGPTConfig(
     temperature=0.0,
