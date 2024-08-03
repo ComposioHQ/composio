@@ -1020,7 +1020,7 @@ class Actions(Collection[ActionModel]):
                         "content": encoded_data,
                     }
                     modified_params[param] = encoded_data_with_filename
-                elif value=="":
+                elif value == "":
                     del modified_params[param]
                 else:
                     return {"error": f"File with path {value} not found"}
