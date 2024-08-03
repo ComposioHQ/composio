@@ -11,6 +11,7 @@ import typing_extensions as te
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
+from composio.tools.local.handler import LocalClient
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}
@@ -151,6 +152,31 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             )
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
+        local_client = LocalClient()
+        for tool in local_client.tools.values():
+            if tool.name.lower().replace(" ", "_").replace("-", "_") == self._slug:
+                return t.cast(
+                    EntityType,
+                    AppData(
+                        name=tool.name,
+                        is_local=True,
+                    ),
+                )
+            for tool_action in tool.actions():
+                name = tool_action().get_tool_merged_action_name()
+                if name == self._slug:
+                    return t.cast(
+                        EntityType,
+                        ActionData(
+                            name=name,
+                            app=tool.name,
+                            tags=["local"],
+                            no_auth=True,
+                            is_local=True,
+                            path=ACTIONS_CACHE / name,
+                            shell=tool_action.run_on_shell,
+                        ),
+                    )
         if not (self._path / self._slug).exists():
             raise MetadataFileNotFound(
                 f"Metadata file for `{self._slug}` not found, "
