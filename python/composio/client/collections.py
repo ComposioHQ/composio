@@ -1010,15 +1010,20 @@ class Actions(Collection[ActionModel]):
                         modified_params[param] = base64.b64encode(file_content).decode(
                             "utf-8"
                         )
-            elif file_uploadable and isinstance(value, str) and os.path.isfile(value):
-                with open(value, "rb") as file:
-                    file_content = file.read()
-                encoded_data = base64.b64encode(file_content).decode("utf-8")
-                encoded_data_with_filename = {
-                    "name": os.path.basename(value),
-                    "content": encoded_data,
-                }
-                modified_params[param] = encoded_data_with_filename
+            elif file_uploadable and isinstance(value, str):
+                if os.path.isfile(value):
+                    with open(value, "rb") as file:
+                        file_content = file.read()
+                    encoded_data = base64.b64encode(file_content).decode("utf-8")
+                    encoded_data_with_filename = {
+                        "name": os.path.basename(value),
+                        "content": encoded_data,
+                    }
+                    modified_params[param] = encoded_data_with_filename
+                elif value == "":
+                    pass
+                else:
+                    return {"error": f"File with path {value} not found"}
             else:
                 modified_params[param] = value
 
