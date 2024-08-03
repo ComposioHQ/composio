@@ -28,16 +28,31 @@ openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"],  # type: ignore
     model="gpt-4-turbo",
 )
-composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker(image="composio/composio:dev"))
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Host()
+)
 
 # Get required tools
-coder_tools = composio_toolset.get_tools(
+coder_tools = [
+    *composio_toolset.get_actions(
+        actions=[
+            Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+            Action.FILETOOL_FIND_FILE,
+            Action.FILETOOL_CREATE_FILE,
+            Action.FILETOOL_EDIT_FILE,
+            Action.FILETOOL_OPEN_FILE,
+            Action.FILETOOL_SCROLL,
+            Action.FILETOOL_WRITE,
+            Action.FILETOOL_LIST_FILES,
+        ]
+    ),
+    *composio_toolset.get_tools(
         apps=[
-            App.FILETOOL,
             App.SHELLTOOL,
             App.BROWSERTOOL,
-    ]
-)
+        ]
+    )
+]
 
 coder_tool_node = ToolNode(coder_tools)
 
