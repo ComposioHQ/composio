@@ -46,7 +46,8 @@ core_requires = [
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
     # TODO: Extract as workspace dependencies
-    "fastapi",  # Tool server
+    "fastapi",  # Tool API
+    "uvicorn",  # Tool server
     "paramiko",  # Host workspace
     "docker>=7.1.0",  # Docker workspace
     "docker>=7.1.0",  # Docker workspace
