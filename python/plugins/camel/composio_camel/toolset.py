@@ -191,7 +191,7 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         return [
             self._wrap_tool(  # type: ignore
-                **t.cast(
+                t.cast(
                     OpenAISchema,
                     self.schema.format(
                         schema.model_dump(
@@ -199,7 +199,7 @@ class ComposioToolSet(BaseComposioToolSet):
                         )
                     ),
                 ).model_dump(),
-                entity_id=entity_id
+                entity_id=entity_id,
             )
             for schema in self.get_action_schemas(apps=apps, tags=tags)
         ]
