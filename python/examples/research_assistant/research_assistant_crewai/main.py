@@ -10,7 +10,10 @@ from langchain_openai import ChatOpenAI
 dotenv.load_dotenv()
 
 # Initialize the language model with OpenAI API key and model name
-llm = ChatOpenAI(model="gpt-4o")
+llm = ChatOpenAI(
+    api_key=os.environ["OPENAI_API_KEY"],
+    model="gpt-4o"
+)
 
 # Setup tools using ComposioToolSet
 composio_toolset = ComposioToolSet()
@@ -47,4 +50,4 @@ crew = Crew(agents=[researcher], tasks=[task])
 result = crew.kickoff()
 
 # Print the result of the task execution
-print(result)
+print(task.output)
