@@ -151,10 +151,14 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             )
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
-        from composio.tools.local.handler import LocalClient
+        from composio.tools.local.handler import LocalClient  # pylint: disable=import-outside-toplevel,cyclic-import
+
         local_client = LocalClient()
         for tool in local_client.tools.values():
-            if tool.name.lower().replace(" ", "_").replace("-", "_") == self._slug.lower():
+            if (
+                tool.name.lower().replace(" ", "_").replace("-", "_")
+                == self._slug.lower()
+            ):
                 return t.cast(
                     EntityType,
                     AppData(
@@ -164,7 +168,10 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 )
             for tool_action in tool.actions():
                 name = tool_action().get_tool_merged_action_name()
-                if name.lower().replace(" ", "_").replace("-", "_") == self._slug.lower():
+                if (
+                    name.lower().replace(" ", "_").replace("-", "_")
+                    == self._slug.lower()
+                ):
                     return t.cast(
                         EntityType,
                         ActionData(
