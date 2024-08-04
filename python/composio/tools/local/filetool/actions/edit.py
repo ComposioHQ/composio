@@ -30,7 +30,7 @@ class EditFileRequest(BaseFileRequest):
     )
     end_line: int = Field(
         ...,
-        description="The line number at which the file edit will end (REQUIRED). Inclusive - the end line will be included in the edit.",
+        description="The line number at which the file edit will end (REQUIRED). Exclusive - the end line will NOT be included in the edit.",
     )
 
 
@@ -56,29 +56,31 @@ class EditFileResponse(BaseFileResponse):
 
 class EditFile(BaseFileAction):
     """
-    Use this tools to edit a file on specific line numbers.
+    Use this tools to edit a file.
+    THE EDIT COMMAND REQUIRES INDENTATION.
 
-    Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
-
-    Python files will be checked for syntax errors after the edit.
     If you'd like to add the line '        print(x)' you must fully write
     that out, with all those spaces before the code!
 
-    If the system detects a syntax error, the edit will not be executed.
-    Simply try to edit the file again, but make sure to read the error message
-    and modify the edit command you issue accordingly. Issuing the same command
-    a second time will just lead to the same error message again.
+    If a lint error occurs, the edit will not be applied.
+    Review the error message, adjust your edit accordingly.
 
-    If a lint error occurs, the edit will not be applied. Review the error message,
-    adjust your edit accordingly, and try again.
-    Raises:
-        - FileNotFoundError: If the file does not exist.
-        - PermissionError: If the user does not have permission to edit the file.
-        - OSError: If an OS-specific error occurs.
-    Note:
-        This action edits a specific part of the file, if you want to rewrite the
-        complete file, use `write` tool instead.
-    """
+    Examples A -
+    Start line: 1
+    End line: 1
+    Text: "print(x)"
+    Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
+
+    Examples B -
+    Start line: 1
+    End line: 3
+    Text: "print(x)"
+    Result: print(x) will be replaced in the file as first line.
+    First and Second line will be removed as end line = 3
+    Rest of the file will be unchanged.
+
+    This action edits a specific part of the file, if you want to rewrite the
+    complete file, use `write` tool instead."""
 
     _display_name = "Edit a file"
     _request_schema = EditFileRequest
@@ -99,6 +101,7 @@ class EditFile(BaseFileAction):
             )
             if file is None:
                 raise FileNotFoundError(f"File not found: {request_data.file_path}")
+
             response = file.write_and_run_lint(
                 text=request_data.text,
                 start=request_data.start_line,

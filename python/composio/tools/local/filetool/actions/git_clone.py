@@ -84,9 +84,7 @@ def git_clone_cmd(repo: str, commit_id: str) -> str:
 
 class GitClone(BaseFileAction):
     """
-    Clones a Git repository to a local directory.
-
-    This action allows you to clone a Git repository to your local workspace.
+    This action allows you to clone a Git repository to your local directory.
     You can specify the repository URL, destination directory, and optionally a specific branch or commit to clone.
 
     Usage examples:
@@ -95,15 +93,14 @@ class GitClone(BaseFileAction):
     2. Clone a repository to a specific directory:
        repo_url: "https://github.com/username/repo.git", destination: "/path/to/directory"
     3. Clone a specific commit of a repository:
-       repo_url: "https://github.com/username/repo.git", commit_id: "abcdef1234567890"
+       repo_url: "https://github.com/username/repo.git", commit_id: "as12sa"
     4. Reset an existing repository to a specific commit:
-       repo_url: "https://github.com/username/repo.git", just_reset: True, commit_id: "abcdef1234567890"
+       repo_url: "https://github.com/username/repo.git", just_reset: True, commit_id: "as12sa"
 
     Raises:
         ValueError: If the repository URL is invalid.
         FileExistsError: If the destination directory is not empty.
-        PermissionError: If there's no permission to write to the destination directory.
-        RuntimeError: If there's an issue with the Git command execution or missing GitHub access token.
+        RuntimeError: If there's an issue with the command execution or GitHub token.
     """
 
     _display_name = "Clone Git Repository"
