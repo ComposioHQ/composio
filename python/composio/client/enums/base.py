@@ -151,7 +151,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             )
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
-        from composio.tools.local.handler import LocalClient  # pylint: disable=import-outside-toplevel,cyclic-import
+        from composio.tools.local.handler import ( # pylint: disable=import-outside-toplevel,cyclic-import
+            LocalClient,  
+        )
 
         local_client = LocalClient()
         for tool in local_client.tools.values():
