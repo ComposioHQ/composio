@@ -66,7 +66,6 @@ tools_require = [
     "ruff",
     "flake8",
     "transformers",
-    "pyautogui",
 ]
 
 all_requirements = core_requires + tools_require
