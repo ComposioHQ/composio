@@ -1,8 +1,10 @@
-from composio.constants import LOCAL_CACHE_DIRECTORY
-from pydantic import BaseModel, Field
-from composio.tools.local.base import Action
-import pyautogui
 from datetime import datetime
+
+import pyautogui
+from pydantic import BaseModel, Field
+
+from composio.constants import LOCAL_CACHE_DIRECTORY
+from composio.tools.local.base import Action
 
 
 class ScreenCaptureRequest(BaseModel):
@@ -33,12 +35,13 @@ class ScreenCapture(Action[ScreenCaptureRequest, ScreenCaptureResponse]):
             screenshot = pyautogui.screenshot()
             screenshot.save(file_path)
             execution_details = {"executed": True}
-            response_data = {"file_path": file_path}
+            response_data = {"file_path": str(file_path)}
         except Exception as e:
-            execution_details = {"executed": False, "error": str(e)}
+            execution_details = {"executed": False, "error": str(e)}  # type: ignore
             response_data = {}
 
         return {"execution_details": execution_details, "response_data": response_data}
-    
+
+
 if __name__ == "__main__":
     ScreenCapture().execute(ScreenCaptureRequest(), {})

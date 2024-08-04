@@ -2,7 +2,7 @@ import typing as t
 
 from composio.tools.local.base import Action, Tool
 
-from .actions import ScreenCapture, Notify
+from .actions import Notify, ScreenCapture
 
 
 class SystemTools(Tool):

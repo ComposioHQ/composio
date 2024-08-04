@@ -1,2 +1,2 @@
-from .screen_capture import ScreenCapture
 from .notify import Notify
+from .screen_capture import ScreenCapture

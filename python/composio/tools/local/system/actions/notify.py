@@ -1,11 +1,19 @@
-from pydantic import BaseModel, Field
-from composio.tools.local.base import Action
 import subprocess
+
+from pydantic import BaseModel, Field
+
+from composio.tools.local.base import Action
 
 
 class NotifyRequest(BaseModel):
-    title: str = Field(..., description="Title of the notification")
-    message: str = Field(..., description="Message of the notification")
+    title: str = Field(
+        ...,
+        description="Title of the notification. Try to keep it short, max 20 characters.",
+    )
+    message: str = Field(
+        ...,
+        description="Message of the notification. Try to keep it short, max 100 characters.",
+    )
 
 
 class NotifyResponse(BaseModel):
@@ -23,18 +31,21 @@ class Notify(Action[NotifyRequest, NotifyResponse]):
     _tags = ["utility"]
     _tool_name = "system"
 
-    def execute(
-        self, request_data: NotifyRequest, authorisation_data: dict
-    ) -> dict:
+    def execute(self, request_data: NotifyRequest, authorisation_data: dict) -> dict:
         title = request_data.title
         message = request_data.message
-        command = f"osascript -e 'display notification \"{message}\" with title \"{title}\"'"
-        subprocess.run(command, shell=True)
+        command = (
+            f'osascript -e \'display notification "{message}" with title "{title}"\''
+        )
+        subprocess.run(command, shell=True, check=True)
         execution_details = {"executed": True}
-        response_data = {}
+        response_data: dict = {}
 
         return {"execution_details": execution_details, "response_data": response_data}
 
+
 if __name__ == "__main__":
     print("Notifying...")
-    Notify().execute(NotifyRequest(title="Test Title", message="Test Message"), {})
+    Notify().execute(
+        NotifyRequest(title="Test Title", message="https://composio.dev"), {}
+    )
