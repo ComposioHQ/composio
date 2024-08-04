@@ -2,9 +2,11 @@
 App enums.
 """
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, unused-import
 
 import typing as t
+
+import typing_extensions as te  # noqa: F401
 
 from composio.client.enums._action import Action
 from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
@@ -48,6 +50,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     HACKERNEWS: "App"
     HEROKU: "App"
     HISTORYFETCHERTOOL: "App"
+    HUBSPOT: "App"
     IMAGEANALYSERTOOL: "App"
     INDUCEDAI: "App"
     LINEAR: "App"
@@ -73,6 +76,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SPOTIFY: "App"
     SQLTOOL: "App"
     STRAVA: "App"
+    SYSTEMTOOLS: "App"
     TASKADE: "App"
     TAVILY: "App"
     TRELLO: "App"
