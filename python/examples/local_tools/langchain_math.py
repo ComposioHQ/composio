@@ -15,7 +15,7 @@ tools = ComposioToolSet(output_in_file=True).get_tools([App.MATHEMATICAL])
 print(tools)
 
 
-task = "Calculate the forumula as mentioned in the file /Users/karanvaidya/codes/composio_sdk/eq.txt"
+task = "Calculate the forumula 4666*598"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
