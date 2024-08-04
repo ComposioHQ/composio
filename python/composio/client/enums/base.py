@@ -11,7 +11,6 @@ import typing_extensions as te
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
-from composio.tools.local.handler import LocalClient
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}
@@ -152,6 +151,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             )
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
+        from composio.tools.local.handler import LocalClient
         local_client = LocalClient()
         for tool in local_client.tools.values():
             if tool.name.lower().replace(" ", "_").replace("-", "_") == self._slug:
