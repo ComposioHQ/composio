@@ -20,6 +20,7 @@ from composio.tools.local.shelltool.history_keeper import HistoryFetcherTool
 from composio.tools.local.shelltool.shell_exec import ShellTool
 from composio.tools.local.spidertool import SpiderTool
 from composio.tools.local.sqltool import SqlTool
+from composio.tools.local.system import SystemTools
 from composio.tools.local.webtool import WebTool
 from composio.tools.local.zep import ZepTool
 
@@ -44,6 +45,7 @@ TOOLS = [
     ShellTool,
     SpiderTool,
     SqlTool,
+    SystemTools,
     WebTool,
     ZepTool,
     ImageAnalyserTool,
