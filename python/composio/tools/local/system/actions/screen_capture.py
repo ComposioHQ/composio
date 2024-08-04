@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
@@ -27,7 +28,8 @@ class ScreenCapture(Action[ScreenCaptureRequest, ScreenCaptureResponse]):
     def execute(
         self, request_data: ScreenCaptureRequest, authorisation_data: dict
     ) -> dict:
-        import pyautogui
+        import pyautogui # pylint: disable=import-outside-toplevel
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_path = LOCAL_CACHE_DIRECTORY / "output" / f"screenshot_{timestamp}.png"
         try:
