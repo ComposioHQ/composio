@@ -28,7 +28,8 @@ class ScreenCapture(Action[ScreenCaptureRequest, ScreenCaptureResponse]):
     def execute(
         self, request_data: ScreenCaptureRequest, authorisation_data: dict
     ) -> dict:
-        import pyautogui # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import pyautogui
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_path = LOCAL_CACHE_DIRECTORY / "output" / f"screenshot_{timestamp}.png"
