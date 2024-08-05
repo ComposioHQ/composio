@@ -196,12 +196,17 @@ const client = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY
 });
 
-const entity = await client.getEntity({ id: "default" });
+const entity = await client.getEntity("default");
 
 // Get the integration id from the dashboard
-const integration = await client.integrations.get({ integrationId: "{{integration_id}}" });
+const integration = await client.integrations.get({
+    integrationId: "{{integration_id}}"
+});
 
-console.log("integration.expectedInputFields", integration.expectedInputFields)
+console.log(
+    "Expected input fields for the integration:",
+    integration.expectedInputFields
+)
 ```
 </CodeGroup>
 
@@ -209,22 +214,19 @@ Complete Authentication process by passing the auth config to the initiate conne
 
 <CodeGroup>
 ```javascript javascript
-const entity = await client.getEntity({ id: "default" });
+const entity = await client.getEntity("default");
 
 const params = {
     "api_key": "YOUR_API_KEY"
 }
-const connection = await entity.initiateConnection('serpapi',null, params);
+const connection = await entity.initiateConnection(
+    'serpapi',
+    null,
+    params
+);
 ```
 </CodeGroup>
 
-</Tab>
-<Tab title="API">
-<CodeGroup>
-```bash Connecting an account
-Coming soon!
-```
-</CodeGroup>
 </Tab>
 </Tabs>
 
@@ -274,19 +276,51 @@ actions = z.get_actions(app_name = App.GITHUB)
 <Tab title="Javascript">
 <CodeGroup>
 ```python Execute Agent
-actions = tool_set.get_tools(apps=[App.GITHUB])
+import { OpenAIToolSet } from "composio-core";
+import { OpenAI } from "openai";
 
-my_task = "Star a repo composiohq/composio on GitHub"
+const toolset = new OpenAIToolSet({ entityId: "melissa"});
 
-response = openai_client.chat.completions.create(
-    model="gpt-4-turbo-preview",
-    tools=actions,  # Passing actions we fetched earlier.
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": my_task},
-    ],
-)
-tool_set.handle_tool_calls(response=response, entity_id="melissa") # entity_id is optional as it has been set in the toolset
+task = "Star a repo composiohq/composio on GitHub"
+
+const llm = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+const composioToolset = new OpenAIToolSet();
+
+const tools = await composioToolset.getTools({
+    apps: ["github"],
+});
+const assistantThread = await llm.beta.threads.create({
+    messages: [
+        {
+            role: "assistant",
+            content: "You are an assistant tasked with starring a repository on GitHub."
+        }
+    ]
+});
+
+const assistant = await llm.beta.assistants.create({
+    name: "SWE agent",
+    instructions: `Your goal is to star the repository: ComposioHq/composio`,
+    model: "gpt-4o",
+    tools: tools
+});
+
+  await llm.beta.threads.messages.create(
+    assistantThread.id,
+    {
+      role: "user",
+      content: issue
+    }
+  );
+  const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
+    assistant_id: assistant.id,
+    instructions: `Repo is: ${repo} and your goal is to ${issue}`,
+    tool_choice: "required"
+  });
+ 
+  await composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
 ```
 </CodeGroup>
 
