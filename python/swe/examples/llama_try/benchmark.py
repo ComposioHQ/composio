@@ -9,6 +9,8 @@ from agent import composio_toolset, launcher
 from prompts import DESCRIPTION
 
 
+import asyncio
+
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
     """Run benchmark on the agent."""
 
@@ -16,9 +18,9 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
     composio_toolset.set_workspace_id(workspace_id)
 
     # kick off the crew on the issue.
-    return launcher.launch_single(
-        DESCRIPTION.format(repo=issue_config.repo_name, issue=issue_config.issue_desc)
-    )
+    return asyncio.run(launcher.run(
+        input=DESCRIPTION.format(repo=issue_config.repo_name, issue=issue_config.issue_desc)
+    ))
 
 
 if __name__ == "__main__":
