@@ -1,25 +1,26 @@
 import logging
 from typing import Any, List
 
+from composio_llamaindex import App, ComposioToolSet, WorkspaceType
+from llama_index.core.base.llms.types import ChatMessage, MessageRole
 from llama_index.core.llms.function_calling import FunctionCallingLLM
 from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.tools import ToolOutput, ToolSelection
 from llama_index.core.tools.types import BaseTool
-from llama_index.core.workflow import Event, Workflow, StartEvent, StopEvent, step
+from llama_index.core.workflow import Event, StartEvent, StopEvent, Workflow, step
 from llama_index.llms.openai import OpenAI
-from llama_index.core.base.llms.types import ChatMessage, MessageRole
-from llama_index.core.llms import ChatMessage
-from llama_index.core.tools import ToolSelection, ToolOutput
-from composio_llamaindex import App, ComposioToolSet, WorkspaceType
 from prompts import BACKSTORY, GOAL, ROLE
+
 
 # Set up basic configuration
 logging.basicConfig(level=logging.INFO)
 
 # Enable INFO logging for LlamaIndex
-logging.getLogger('llama_index').setLevel(logging.INFO)
+logging.getLogger("llama_index").setLevel(logging.DEBUG)
 
 # Enable DEBUG logging for agent/tool calls
-logging.getLogger('llama_index.agent').setLevel(logging.DEBUG)
+logging.getLogger("llama_index.agent").setLevel(logging.DEBUG)
+
 
 class InputEvent(Event):
     input: list[ChatMessage]
@@ -31,6 +32,7 @@ class ToolCallEvent(Event):
 
 class FunctionOutputEvent(Event):
     output: ToolOutput
+
 
 class FunctionCallingAgent(Workflow):
     def __init__(
@@ -50,7 +52,10 @@ class FunctionCallingAgent(Workflow):
         self.sources = []
 
         # Add system message to memory
-        system_msg = ChatMessage(role=MessageRole.SYSTEM, content=f"Your role is {ROLE}\n Your backstory: {BACKSTORY}\n Your goal is: {GOAL}")
+        system_msg = ChatMessage(
+            role=MessageRole.SYSTEM,
+            content=f"Your role is {ROLE}\n Your backstory: {BACKSTORY}\n Your goal is: {GOAL}",
+        )
         self.memory.put(system_msg)
 
     @step()
@@ -68,11 +73,13 @@ class FunctionCallingAgent(Workflow):
         return InputEvent(input=chat_history)
 
     @step()
-    async def handle_llm_input(
-        self, ev: InputEvent
-    ) -> ToolCallEvent | StopEvent:
+    async def handle_llm_input(self, ev: InputEvent) -> ToolCallEvent | StopEvent:
         chat_history = ev.input
-        
+        for tool in self.tools:
+            if len(tool.metadata.description) > 1024:
+                print(
+                    f"Tool {tool.metadata.name} description is too long: {len(tool.metadata.description)}"
+                )
         response = await self.llm.achat_with_tools(
             self.tools, chat_history=chat_history
         )
@@ -83,9 +90,7 @@ class FunctionCallingAgent(Workflow):
         )
 
         if not tool_calls:
-            return StopEvent(
-                result={"response": response, "sources": [*self.sources]}
-            )
+            return StopEvent(result={"response": response, "sources": [*self.sources]})
         else:
             return ToolCallEvent(tool_calls=tool_calls)
 
@@ -106,7 +111,7 @@ class FunctionCallingAgent(Workflow):
             if not tool:
                 tool_msgs.append(
                     ChatMessage(
-                        role="tool",
+                        role=MessageRole.TOOL,
                         content=f"Tool {tool_call.tool_name} does not exist",
                         additional_kwargs=additional_kwargs,
                     )
@@ -118,7 +123,7 @@ class FunctionCallingAgent(Workflow):
                 self.sources.append(tool_output)
                 tool_msgs.append(
                     ChatMessage(
-                        role="tool",
+                        role=MessageRole.TOOL,
                         content=tool_output.content,
                         additional_kwargs=additional_kwargs,
                     )
@@ -126,7 +131,7 @@ class FunctionCallingAgent(Workflow):
             except Exception as e:
                 tool_msgs.append(
                     ChatMessage(
-                        role="tool",
+                        role=MessageRole.TOOL,
                         content=f"Encountered error in tool call: {e}",
                         additional_kwargs=additional_kwargs,
                     )
@@ -138,12 +143,12 @@ class FunctionCallingAgent(Workflow):
         chat_history = self.memory.get()
         return InputEvent(input=chat_history)
 
-composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
+
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker(image="composio/composio:dev")
+)
 tools = composio_toolset.get_tools(apps=[App.FILETOOL, App.SHELLTOOL])
 
 launcher = FunctionCallingAgent(
-    llm=OpenAI(model="gpt-4-turbo"),
-    tools=list(tools),
-    timeout=120,
-    verbose=True
+    llm=OpenAI(model="gpt-4-turbo"), tools=list(tools), timeout=120, verbose=True
 )
