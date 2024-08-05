@@ -91,7 +91,7 @@ These commands prepare your environment for seamless interaction between Langcha
   const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY});
   
   // Fetch tools configured for GitHub applications
-  const tools = await toolset.get_tools({ apps: ["github"] });
+  const tools = await toolset.getTools({ apps: ["github"] });
   ```
 </CodeGroup>
 </Step>
