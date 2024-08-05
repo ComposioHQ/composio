@@ -1,6 +1,7 @@
 """Base abstractions."""
 
 import hashlib
+import inspect
 import typing as t
 from abc import abstractmethod
 from pathlib import Path
@@ -10,18 +11,20 @@ import pydantic
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
+from composio.client.enums import Action as ActionEnum
+from composio.client.enums import Trigger as TriggerEnum
 from composio.utils.logging import WithLogger
 from composio.utils.logging import get as get_logger
 
 
-GroupID = str
+GroupID = t.Literal["runtime", "local"]
 ModelType = t.TypeVar("ModelType")
 ExecuteActionResponse = t.TypeVar("ExecuteActionResponse")
 ExecuteActionRequest = t.TypeVar("ExecuteActionRequest")
 Loadable = t.TypeVar("Loadable", "Trigger", "Action")
 RegistryType = t.Dict[GroupID, t.Dict[str, "Tool"]]
 
-registry: RegistryType = {}
+registry: RegistryType = {"runtime": {}, "local": {}}
 logger = get_logger()
 
 
@@ -40,21 +43,8 @@ def generate_app_id(name: str) -> str:
     )
 
 
-class ExecuteResponse(BaseModel, t.Generic[ModelType]):
+class ExecuteResponse(BaseModel):
     """Execute action response."""
-
-    successful: bool = Field(
-        ...,
-        description="Whether or not the action execution was successful or not",
-    )
-    data: ModelType = Field(
-        ...,
-        description="Response from the executed action",
-    )
-    error: t.Optional[str] = Field(
-        None,
-        description="Error if any occured during the execution of the action",
-    )
 
 
 class _Attributes:
@@ -118,21 +108,27 @@ class _Response(t.Generic[ModelType]):
     def __init__(self, model: t.Type[ModelType]) -> None:
         """Initialize request model."""
         self.model = model
+        self.wrapper = self.wrap(model=model)
+
+    @classmethod
+    def wrap(cls, model: t.Type[ModelType]) -> t.Type[BaseModel]:
+        class wrapper(model):
+            successful: bool = Field(
+                ...,
+                description="Whether or not the action execution was successful or not",
+            )
+            error: t.Optional[str] = Field(
+                None,
+                description="Error if any occured during the execution of the action",
+            )
+
+        return t.cast(t.Type[BaseModel], wrapper)
 
     def schema(self) -> t.Dict:
         """Build request schema."""
-        schema = t.cast(
-            t.Type[BaseModel],
-            self.model,
-        ).model_json_schema(
-            by_alias=False,
-        )
+        schema = self.wrapper.model_json_schema(by_alias=True)
         schema["title"] = self.model.__name__
         return jsonable_encoder(obj=schema)
-
-    def build(self, response: t.Dict) -> ModelType:
-        """Build response."""
-        return self.model(**response)
 
 
 class ActionMeta(type):
@@ -163,6 +159,7 @@ class ActionMeta(type):
         setattr(cls, "response", _Response(response))
         if getattr(getattr(cls, "execute"), "__isabstractmethod__", False):
             raise RuntimeError(f"Please implement {name}.execute")
+        cls.file = getattr(cls, "file", Path(inspect.getfile(cls)))
 
 
 class Action(
@@ -186,6 +183,12 @@ class Action(
     response: _Response[ExecuteActionResponse]
     """Response helper."""
 
+    file: str
+    """Path to the file containing the action"""
+
+    requires: t.Optional[t.List[str]] = None
+    """List of dependencies required to run this action."""
+
     def __init_subclass__(cls, abs: bool = False) -> None:
         """Initialize subclas."""
 
@@ -197,7 +200,7 @@ class Action(
     @classmethod
     def enum(cls) -> str:
         """Tool merged name for action"""
-        return cls.tool + "_" + cls.display_name()
+        return (cls.tool + "_" + cls.display_name()).upper()
 
     @classmethod
     def _generate_schema(cls) -> None:
@@ -293,9 +296,29 @@ class Tool(WithLogger, _Attributes):
         super().__init__()
         self._path = Path(__file__).parent
 
+    @t.overload
+    @classmethod
+    def get(cls, enum: ActionEnum) -> t.Type[Action]:
+        """Returns the"""
+
+    @t.overload
+    @classmethod
+    def get(cls, enum: TriggerEnum) -> t.Type[Trigger]:
+        """Returns the"""
+
+    @classmethod
+    def get(
+        cls,
+        enum: t.Union[ActionEnum, TriggerEnum],
+    ) -> t.Union[t.Type[Action], t.Type[Trigger]]:
+        """Returns the"""
+        if type == "trigger":
+            return cls._triggers[enum.name]
+        return cls._actions[enum.name]
+
     @classmethod
     @abstractmethod
-    def actions(cls) -> t.List[t.Type[Action]]:
+    def actions(cls) -> t.List[t.Type[Action]]:  # type: ignore
         """Get collection of actions for the tool."""
         return []
 
@@ -372,5 +395,4 @@ class Tool(WithLogger, _Attributes):
         """Register given tool to the registry."""
         if cls.gid not in registry:
             registry[cls.gid] = {}
-        logger.debug(f"Registering {cls.__name__} to the tool registry")
         registry[cls.gid][cls.display_name()] = cls()

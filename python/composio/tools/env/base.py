@@ -231,13 +231,15 @@ class RemoteWorkspace(Workspace):
 
     def _upload(self, action: Action) -> None:
         """Upload action instance to tooling server."""
-        obj = get_runtime_action(name=action.name)
+        from composio.tools.base.abs import registry
+
+        obj = registry["runtime"][action.app].get(action)
         request = self._request(
             method="post",
             endpoint="/tools",
             json={
-                "content": Path(str(obj.module)).read_text(encoding="utf-8"),
-                "filename": Path(str(obj.module)).name,
+                "content": Path(obj.file).read_text(encoding="utf-8"),
+                "filename": Path(obj.file).name,
                 "dependencies": obj.requires or [],
             },
         )
@@ -246,10 +248,12 @@ class RemoteWorkspace(Workspace):
             self.logger.error(
                 f"Error while uploading {action.slug}: " + response["error"]
             )
-        else:
-            self.logger.debug(
-                f"Succesfully uploaded: {action.slug}",
-            )
+            return
+
+        self.logger.debug(
+            f"Succesfully uploaded: {action.slug} - {response}",
+        )
+        return
 
     def execute_action(
         self,

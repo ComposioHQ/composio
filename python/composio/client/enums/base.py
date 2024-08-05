@@ -117,7 +117,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     ) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            value = value().get_tool_merged_action_name()  # type: ignore
+            self._slug = value.enum().upper()  # type: ignore
+            return
 
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
@@ -132,11 +133,10 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             self._slug = self._deprecated[self._slug]
             return
 
-        if (
-            self._slug not in self.__annotations__
-            and self._slug not in _runtime_actions
-        ):
-            raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
+        if self._slug in self.__annotations__ or self._slug in _runtime_actions:
+            return
+
+        raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
 
     @property
     def slug(self) -> str:
@@ -149,8 +149,10 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             raise ValueError(
                 "Cannot load `AppData` object without initializing object."
             )
+
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
+
         if not (self._path / self._slug).exists():
             raise MetadataFileNotFound(
                 f"Metadata file for `{self._slug}` not found, "

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
 
 from .abs import Action, ExecuteActionRequest, ExecuteActionResponse, Tool
@@ -85,9 +86,7 @@ class LocalToolMeta(type):
             cls.register()
 
 
-class LocalTool(Tool, metaclass=LocalToolMeta):
-    """Local tool class."""
-
+class LocalToolMixin(Tool):
     gid = "local"
     """Group ID for this tool."""
 
@@ -95,7 +94,6 @@ class LocalTool(Tool, metaclass=LocalToolMeta):
     @abstractmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Get collection of actions for the tool."""
-        return []
 
     @classmethod
     def _check_file_uploadable(cls, param: str, model: BaseModel) -> bool:
@@ -175,10 +173,26 @@ class LocalTool(Tool, metaclass=LocalToolMeta):
                 ),
                 metadata=metadata,
             )
-            if not isinstance(response, dict):
-                return t.cast(BaseModel, response).model_dump()
-            return response
+            return {
+                **response.model_dump(),
+                "successfull": True,
+                "error": None,
+            }
+        except ExecutionFailed as e:
+            self.logger.error(f"Error executing `{action}`: {e}")
+            return {
+                "successfull": False,
+                "error": e.message,
+                **e.extra,
+            }
         except Exception as e:
             self.logger.error(f"Error executing `{action}`: {e}")
             self.logger.debug(traceback.format_exc())
-            return {"error": str(e), "action": action, "params": params}
+            return {
+                "successfull": False,
+                "error": str(e),
+            }
+
+
+class LocalTool(LocalToolMixin, metaclass=LocalToolMeta):
+    """Local tool class."""
