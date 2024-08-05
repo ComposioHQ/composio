@@ -29,7 +29,7 @@ description: "This is a simple guide to demonstrate how to use CODEINTERPRETER t
             apiKey: process.env.COMPOSIO_API_KEY
         });
 
-        const tools = await toolset.get_actions({ 
+        const tools = await toolset.getActions({ 
             actions: ["codeinterpreter_create_sandbox", "codeinterpreter_execute_code"] 
         });
         ```
@@ -126,7 +126,7 @@ Here's the complete JavaScript code for the Code Execution Agent:
             apiKey: process.env.COMPOSIO_API_KEY
         });
 
-        const tools = await toolset.get_actions({ 
+        const tools = await toolset.getActions({ 
             actions: ["codeinterpreter_create_sandbox", "codeinterpreter_execute_code"] 
         });
 
