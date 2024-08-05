@@ -115,10 +115,10 @@ class GetRepoStructure(LocalAction[GetRepoStructureRequest, GetRepoStructureResp
     _tool_name = "codemap"
 
     def execute(
-        self, request_data: GetRepoStructureRequest, metadata: dict = {}
+        self, request: GetRepoStructureRequest, metadata: dict = {}
     ) -> GetRepoStructureResponse:
-        repo_root = Path(request_data.code_directory).resolve()
-        include_content = request_data.include_content
+        repo_root = Path(request.code_directory).resolve()
+        include_content = request.include_content
 
         if not repo_root.exists():
             error_message = (

@@ -34,13 +34,13 @@ class QueryImageVectorStore(LocalAction):
 
     def execute(
         self,
-        request_data: QueryImageVectorStoreInputSchema,
+        request: QueryImageVectorStoreInputSchema,
         metadata: dict = {},
     ) -> QueryImageVectorStoreOutputSchema:
         import chromadb  # pylint: disable=C0415
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
-        image_collection_name = Path(request_data.indexed_directory).name + "_images"
+        image_collection_name = Path(request.indexed_directory).name + "_images"
         index_storage_path = Path.home() / ".composio" / "image_index_storage"
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
         chroma_collection = chroma_client.get_collection(image_collection_name)
@@ -50,11 +50,11 @@ class QueryImageVectorStore(LocalAction):
                 model_name="clip-ViT-B-32"
             )
         )
-        query_embeddings = text_embedding_function([request_data.search_query])
+        query_embeddings = text_embedding_function([request.search_query])
 
         search_results = chroma_collection.query(
             query_embeddings=query_embeddings,
-            n_results=request_data.max_results,
+            n_results=request.max_results,
         )
         if search_results is None:
             return QueryImageVectorStoreOutputSchema(

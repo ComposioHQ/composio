@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -47,7 +47,7 @@ class GetRepoMapResponse(BaseModel):
     )
 
 
-class GetRepoMap(LocalAction[GetRepoMapRequest, GetRepoMapResponse]):
+class GenerateRepositoryMap(LocalAction[GetRepoMapRequest, GetRepoMapResponse]):
     """
     Generates a comprehensive repository map for specified files of interest within a given repository.
 
@@ -56,48 +56,35 @@ class GetRepoMap(LocalAction[GetRepoMapRequest, GetRepoMapResponse]):
     the layout and key components of the codebase.
     """
 
-    _display_name = "Generate Repository Map"
-    _request_schema: Type[GetRepoMapRequest] = GetRepoMapRequest
-    _response_schema: Type[GetRepoMapResponse] = GetRepoMapResponse
     _tags = ["repository", "code-structure", "analysis"]
-    _tool_name = "codemap"
 
-    def execute(self, request_data: GetRepoMapRequest, metadata: dict = {}) -> dict:
-        repo_root = Path(request_data.code_directory).resolve()
-
+    def execute(self, request: GetRepoMapRequest, metadata: Dict) -> GetRepoMapResponse:
+        repo_root = Path(request.code_directory).resolve()
         if not repo_root.exists():
-            return {
-                "error_message": f"Repository root path '{repo_root}' does not exist or is inaccessible."
-            }
-
-        try:
-            # Retrieve all files in the repository, excluding those specified in .gitignore
-            all_repository_files = get_files_excluding_gitignore(repo_root)
-
-            # Convert absolute paths to paths relative to the repository root, considering only .py files
-            relative_file_paths = [
-                str(Path(file).relative_to(repo_root))
-                for file in all_repository_files
-                if file.endswith(".py")
-            ]
-
-            # Generate the repository map
-            repo_map_generator = RepoMap(root=repo_root)
-            generated_map = repo_map_generator.get_repo_map(
-                chat_files=set(request_data.primary_file_paths),
-                other_files=relative_file_paths,
-                mentioned_fnames=set(request_data.files_of_interest),
-                mentioned_idents=set(request_data.mentioned_idents),
+            return GetRepoMapResponse(
+                error_message=f"Repository root path '{repo_root}' does not exist or is inaccessible."
             )
 
-            return {
-                "status": "success",
-                "repository_map": generated_map,
-                "error_message": None,
-            }
+        # Retrieve all files in the repository, excluding those specified in .gitignore
+        all_repository_files = get_files_excluding_gitignore(repo_root)
 
-        except Exception as e:
-            return {
-                "repository_map": None,
-                "error_message": f"An error occurred while generating the repository map: {str(e)}. Please ensure all paths are correct and you have necessary permissions.",
-            }
+        # Convert absolute paths to paths relative to the repository root, considering only .py files
+        relative_file_paths = [
+            str(Path(file).relative_to(repo_root))
+            for file in all_repository_files
+            if file.endswith(".py")
+        ]
+
+        # Generate the repository map
+        repo_map_generator = RepoMap(root=repo_root)
+        generated_map = repo_map_generator.get_repo_map(
+            chat_files=set(request.primary_file_paths),
+            other_files=relative_file_paths,
+            mentioned_fnames=set(request.files_of_interest),
+            mentioned_idents=set(request.mentioned_idents),
+        )
+
+        return GetRepoMapResponse(
+            repository_map=generated_map,
+            error_message=None,
+        )

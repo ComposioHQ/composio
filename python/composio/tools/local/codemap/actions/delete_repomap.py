@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Type
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -13,35 +13,31 @@ class DeleteRepoMapRequest(BaseModel):
 
 class DeleteRepoMapResponse(BaseModel):
     success: bool = Field(..., description="Whether the deletion was successful")
-    error: Optional[str] = Field(default=None, description="Error message if any")
+    message: Optional[str] = Field(default=None, description="Error message if any")
 
 
-class DeleteRepoMap(LocalAction[DeleteRepoMapRequest, DeleteRepoMapResponse]):
+class DeleteRepositoryMapCache(
+    LocalAction[DeleteRepoMapRequest, DeleteRepoMapResponse]
+):
     """
     Deletes the repository map cache for the given root directory. This action removes the cached data used by RepoMap.
     """
 
-    _display_name = "Delete Repository Map Cache"
-    _request_schema: Type[DeleteRepoMapRequest] = DeleteRepoMapRequest
-    _response_schema: Type[DeleteRepoMapResponse] = DeleteRepoMapResponse
     _tags = ["repo"]
-    _tool_name = "codemap"
 
-    def execute(self, request_data: DeleteRepoMapRequest, metadata: dict = {}) -> dict:
-        root_path = Path(request_data.root_path).resolve()
+    def execute(
+        self, request: DeleteRepoMapRequest, metadata: Dict
+    ) -> DeleteRepoMapResponse:
+        root_path = Path(request.root_path).resolve()
         if not root_path.exists():
-            return {"success": False, "error": f"Path {root_path} does not exist"}
+            return DeleteRepoMapResponse(
+                success=False,
+                message=f"Path {root_path} does not exist",
+            )
 
-        try:
-            repo_map = RepoMap(root=root_path)
-            repo_map.delete_cache()
-
-            return {
-                "success": True,
-                "message": "Repository map cache deleted successfully",
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "error": f"An error occurred while deleting the repository map cache: {str(e)}",
-            }
+        repo_map = RepoMap(root=root_path)
+        repo_map.delete_cache()
+        return DeleteRepoMapResponse(
+            success=True,
+            message="Repository map cache deleted successfully",
+        )

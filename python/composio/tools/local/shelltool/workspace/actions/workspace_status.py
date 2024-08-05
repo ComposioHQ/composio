@@ -30,7 +30,7 @@ class WorkspaceStatusAction(
 
     def execute(
         self,
-        request_data: WorkspaceStatusRequest,
+        request: WorkspaceStatusRequest,
         metadata: dict,
     ) -> dict:
         # TODO: Implement shell status
