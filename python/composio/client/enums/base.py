@@ -117,7 +117,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     ) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            self._slug = value.enum().upper()  # type: ignore
+            self._slug = value.enum  # type: ignore
             return
 
         if isinstance(value, _AnnotatedEnum):

@@ -48,10 +48,14 @@ class ExecuteResponse(BaseModel):
 
 
 class _Attributes:
-    @classmethod
-    def display_name(cls) -> str:
-        """Display name."""
-        return inflection.underscore(word=cls.__name__)
+    name: str
+    """Name represenation."""
+
+    enum: str
+    """Enum key."""
+
+    display_name: str
+    """Display compatible name."""
 
 
 class _Request(t.Generic[ModelType]):
@@ -145,6 +149,7 @@ class ActionMeta(type):
         if abs or name == "Action":
             return
 
+        cls = t.cast(t.Type["Action"], cls)
         try:
             (generic,) = getattr(cls, "__orig_bases__")
             request, response = t.get_args(generic)
@@ -159,7 +164,19 @@ class ActionMeta(type):
         setattr(cls, "response", _Response(response))
         if getattr(getattr(cls, "execute"), "__isabstractmethod__", False):
             raise RuntimeError(f"Please implement {name}.execute")
-        cls.file = getattr(cls, "file", Path(inspect.getfile(cls)))
+
+        setattr(cls, "file", getattr(cls, "file", Path(inspect.getfile(cls))))
+        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
+        setattr(
+            cls,
+            "enum",
+            getattr(cls, "enum", inflection.underscore(cls.__name__).upper()),
+        )
+        setattr(
+            cls,
+            "display_name",
+            getattr(cls, "display_name", inflection.humanize(cls.__name__)),
+        )
 
 
 class Action(
@@ -198,27 +215,23 @@ class Action(
         return cls._tags or []
 
     @classmethod
-    def enum(cls) -> str:
-        """Tool merged name for action"""
-        return (cls.tool + "_" + cls.display_name()).upper()
-
-    @classmethod
     def _generate_schema(cls) -> None:
         """Generate action schema."""
         description = (
             cls.__doc__.lstrip().rstrip()
             if cls.__doc__
-            else inflection.titleize(cls.display_name())
+            else inflection.titleize(cls.display_name)
         )
         cls._schema = {
+            "name": cls.name,
+            "enum": cls.enum,
             "appKey": cls.tool,
             "appName": cls.tool,
             "appId": generate_app_id(cls.tool),
             "logo": "empty",
-            "name": cls.enum(),
             "tags": cls.tags(),
             "enabled": True,
-            "display_name": cls.display_name(),
+            "displayName": cls.display_name,
             "description": description,
             "parameters": cls.request.schema(),
             "response": cls.response.schema(),
@@ -313,8 +326,8 @@ class Tool(WithLogger, _Attributes):
     ) -> t.Union[t.Type[Action], t.Type[Trigger]]:
         """Returns the"""
         if type == "trigger":
-            return cls._triggers[enum.name]
-        return cls._actions[enum.name]
+            return cls._triggers[enum.slug]
+        return cls._actions[enum.slug]
 
     @classmethod
     @abstractmethod
@@ -332,19 +345,19 @@ class Tool(WithLogger, _Attributes):
     def _generate_schema(cls) -> None:
         """Generate schema for the app."""
         cls._schema = {
-            "Name": cls.name,
-            "DisplayName": cls.display_name(),
-            "Metadata": {
-                "tool_name": cls.name,
-                "group_id": cls.gid,
-                "display_name": cls.display_name(),
+            "name": cls.name,
+            "displayName": cls.display_name,
+            "metaData": {
+                "toolName": cls.name,
+                "groupId": cls.gid,
+                "displayName": cls.display_name,
                 "description": cls.description,
-                "tool_path": str(cls.file),
+                "toolPath": str(cls.file),
             },
-            "Integration": {},
-            "Description": cls.description,
-            "Actions": [action.schema() for action in cls.actions()],
-            "Triggers": [trigger.schema() for trigger in cls.triggers()],
+            "integration": {},
+            "description": cls.description,
+            "actions": [action.schema() for action in cls.actions()],
+            "triggers": [trigger.schema() for trigger in cls.triggers()],
         }
 
     @classmethod
@@ -395,4 +408,4 @@ class Tool(WithLogger, _Attributes):
         """Register given tool to the registry."""
         if cls.gid not in registry:
             registry[cls.gid] = {}
-        registry[cls.gid][cls.display_name()] = cls()
+        registry[cls.gid][cls.enum] = cls()

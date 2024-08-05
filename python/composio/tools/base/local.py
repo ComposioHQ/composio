@@ -8,6 +8,7 @@ import typing as t
 from abc import abstractmethod
 from pathlib import Path
 
+import inflection
 from pydantic import BaseModel, Field
 
 from composio.tools.base.exceptions import ExecutionFailed
@@ -72,15 +73,21 @@ class LocalToolMeta(type):
             if not inspect.ismethod(getattr(cls, method)):
                 raise RuntimeError(f"Please implement {name}.{method} as class method")
 
-        cls.name = getattr(cls, "mame", cls.display_name())
         cls.file = Path(inspect.getfile(cls))
         cls.description = t.cast(str, cls.__doc__).lstrip().rstrip()
 
+        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
+        setattr(cls, "enum", getattr(cls, "enum", cls.name).upper())
+        setattr(
+            cls,
+            "display_name",
+            getattr(cls, "display_name", inflection.humanize(cls.__name__)),
+        )
         setattr(cls, "_actions", getattr(cls, "_actions", {}))
         for action in cls.actions():
             action.tool = cls.name
-            cls._actions[action.display_name()] = action
-            cls._actions[action.enum()] = action
+            action.enum = f"{cls.enum}_{action.name.upper()}"
+            cls._actions[action.enum] = action
 
         if autoload:
             cls.register()

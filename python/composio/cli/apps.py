@@ -142,11 +142,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
         ).store()
 
     for tool in LocalClient.tools().values():
-        app_names.append(
-            get_enum_key(
-                name=tool.name.lower().replace(" ", "_").replace("-", "_"),
-            )
-        )
+        app_names.append(tool.enum)
         enums.base.AppData(
             name=tool.name,
             path=enums.base.APPS_CACHE / app_names[-1],
@@ -191,10 +187,9 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
 
     for tool in LocalClient.tools().values():
         for actcls in tool.actions():
-            name = actcls.enum()
-            action_names.append(get_enum_key(name=name))
+            action_names.append(actcls.enum)
             enums.base.ActionData(
-                name=name,
+                name=action.name,
                 app=tool.name,
                 tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
                 no_auth=True,

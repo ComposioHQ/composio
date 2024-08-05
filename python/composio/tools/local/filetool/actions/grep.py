@@ -92,7 +92,7 @@ class SearchWord(LocalAction[SearchWordRequest, SearchWordResponse]):
             if num_files == 0:
                 return SearchWordResponse(
                     results={},
-                    message=f'No files matched for "{request_data.word}" in {request_data.pattern}".',
+                    message=f'No files matched for "{request.word}" in {request.pattern}".',
                 )
             return SearchWordResponse(results=results)
         except ValueError as e:

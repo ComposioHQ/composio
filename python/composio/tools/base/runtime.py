@@ -85,15 +85,21 @@ class RuntimeToolMeta(type):
             if not inspect.ismethod(getattr(cls, method)):
                 raise RuntimeError(f"Please implement {name}.{method} as class method")
 
-        cls.name = getattr(cls, "mame", cls.display_name())
         cls.file = Path(inspect.getfile(cls))
         cls.description = t.cast(str, cls.__doc__).lstrip().rstrip()
 
+        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
+        setattr(cls, "enum", getattr(cls, "enum", cls.name).upper())
+        setattr(
+            cls,
+            "display_name",
+            getattr(cls, "display_name", inflection.humanize(cls.__name__)),
+        )
         setattr(cls, "_actions", getattr(cls, "_actions", {}))
         for action in cls.actions():
             action.tool = cls.name
-            cls._actions[action.display_name()] = action
-            cls._actions[action.enum()] = action
+            action.enum = f"{cls.enum}_{action.enum}"
+            cls._actions[action.enum] = action
 
         if autoload:
             cls.register()
@@ -128,11 +134,11 @@ def _wrap(
     f: t.Callable,
     toolname: str,
     tags: t.List,
+    file: str,
     request_schema: t.Type[BaseModel],
     response_schema: t.Type[BaseModel],
     runs_on_shell: bool = False,
     requires: t.Optional[t.List[str]] = None,
-    file: t.Optional[str] = None,
 ) -> t.Type[RuntimeAction]:
     """Wrap action class with given params."""
 
@@ -143,16 +149,15 @@ def _wrap(
         """Wrapped action class."""
 
         _tags: t.List[str] = tags
-        _tool_name: str = toolname
-        _display_name: str = f.__name__
 
-        _request_schema = request_schema
-        _response_schema = response_schema
+        tool = toolname
+        name = f.__name__
+        enum = f.__name__.upper()
+        display_name = f.__name__
 
-        _history_maintains: bool = False
-        run_on_shell: bool = runs_on_shell
-        requires = _requires
         file = _file
+        requires = _requires
+        run_on_shell: bool = runs_on_shell
 
         data = ActionData(
             name=f.__name__,
@@ -178,7 +183,7 @@ def _wrap(
         existing_actions = registry["runtime"][toolname].actions()
     tool = _create_tool_class(name=toolname, actions=[cls, *existing_actions])  # type: ignore
     registry["runtime"][toolname] = tool()
-    add_runtime_action(cls.enum(), cls.data)
+    add_runtime_action(cls.enum, cls.data)
     return cls
 
 
@@ -359,11 +364,11 @@ def action(
             f=f,
             toolname=toolname,
             tags=tags or [],
+            file=file,
             request_schema=RequestSchema,
             response_schema=ResponseSchema,
             runs_on_shell=_runs_on_shell,
             requires=requires,
-            file=file,
         )
 
     return wrapper

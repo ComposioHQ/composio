@@ -155,7 +155,7 @@ class HostWorkspace(Workspace):
             else registry["local"][action.app]
         )
         return tool.execute(
-            action=action.name,
+            action=action.slug,
             params=request_data,
             metadata={
                 **metadata,
