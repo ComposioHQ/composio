@@ -103,7 +103,9 @@ class ComposioToolSet(BaseComposioToolSet):
                 schema_params=schema_params
             )
         )
-
+        if len(description) > 1024:
+            self.logger.debug(f"Description for {action} is too long, truncating")
+            description = description[:1024]
         action_func.__doc__ = description
 
         return action_func

@@ -59,7 +59,7 @@ class FunctionCallingAgent(Workflow):
         self.sources = []
 
         # get user input
-        user_input = ev.input
+        user_input = ev.get("input")
         user_msg = ChatMessage(role=MessageRole.USER, content=user_input)
         self.memory.put(user_msg)
 
@@ -72,7 +72,7 @@ class FunctionCallingAgent(Workflow):
         self, ev: InputEvent
     ) -> ToolCallEvent | StopEvent:
         chat_history = ev.input
-
+        
         response = await self.llm.achat_with_tools(
             self.tools, chat_history=chat_history
         )

@@ -1,5 +1,6 @@
 # isort: skip_file
 
+import asyncio
 from inputs import from_github
 
 from agent import composio_toolset, launcher
@@ -10,9 +11,9 @@ from composio import Action
 def main() -> None:
     """Run the agent."""
     repo, issue = from_github()
-    launcher.launch_single(
-        DESCRIPTION.format(repo=repo, issue=issue)
-    )
+    asyncio.run(launcher.run(
+        input=DESCRIPTION.format(repo=repo, issue=issue)
+    ))
     response = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_PATCH,
         params={},
