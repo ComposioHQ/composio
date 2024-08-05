@@ -117,15 +117,19 @@ tool_set.handle_tool_calls(response=response, entity_id="melissa")
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
 
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.get_actions({actions: ['github_star_repo']})
+const tools = await toolset.getActions({actions: ['github_star_repo']})
 
 const task = "Star a repo composiohq/composio on GitHub"
 
-const response = await toolset.client.chat.completions.create({
+const response = await openai_client.chat.completions.create({
     model: "gpt-4-turbo-preview",
     tools: tools,
     messages: [
@@ -134,7 +138,7 @@ const response = await toolset.client.chat.completions.create({
     ],
 });
 
-await toolset.handle_tool_call(response, entity.id="melissa");
+await toolset.handleToolCall(response, "melissa");
 ```
 </CodeGroup>
 </Tab>

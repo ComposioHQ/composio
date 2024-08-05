@@ -75,7 +75,7 @@ async function executeAgent(repo,entityName="default") {
         const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
 
-        const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
+        const tools = await toolset.getActions({ actions: ["github_issues_create"] }, entity.id);
         const instruction = `Make an issue with sample title in the repo - ${repo}`
 
         const client = new OpenAI({ apiKey: OPEN_AI_API_KEY })
@@ -90,7 +90,7 @@ async function executeAgent(repo,entityName="default") {
         })
 
         console.log(response.choices[0].message.tool_calls);
-        await toolset.handle_tool_call(response, entity.id);
+        await toolset.handleToolCall(response, entity.id);
 }
 
       ```
