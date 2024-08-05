@@ -15,6 +15,7 @@ from composio.storage.base import LocalStorage
 
 _model_cache: t.Dict[str, LocalStorage] = {}
 _runtime_actions: t.Dict[str, "ActionData"] = {}
+_local_data: t.Dict[str, LocalStorage] = {}
 
 EntityType = t.TypeVar("EntityType", bound=LocalStorage)
 ClassType = t.TypeVar("ClassType", bound=t.Type["_AnnotatedEnum"])
@@ -143,49 +144,56 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         """Enum slug value."""
         return self._slug
 
+    @property
+    def _local(self) -> t.Dict:
+        """Local tools."""
+        if len(_local_data) > 0:
+            return _local_data
+
+        from composio.tools.local.handler import (  # pylint: disable=import-outside-toplevel
+            LocalClient,
+        )
+
+        local_client = LocalClient()
+        for tool in local_client.tools.values():
+            name = tool.name.replace(" ", "_").replace("-", "_").upper()
+            _local_data[name] = t.cast(
+                EntityType,
+                AppData(
+                    name=tool.name,
+                    path=APPS_CACHE / name,
+                    is_local=True,
+                ),
+            )
+            for tool_action in tool.actions():
+                name = tool_action().get_tool_merged_action_name()
+                _local_data[name.replace(" ", "_").replace("-", "_").upper()] = t.cast(
+                    EntityType,
+                    ActionData(
+                        name=name,
+                        app=tool.name,
+                        tags=["local"],
+                        no_auth=True,
+                        is_local=True,
+                        path=ACTIONS_CACHE / name,
+                        shell=tool_action.run_on_shell,
+                    ),
+                )
+        return _local_data
+
     def load(self) -> EntityType:
         """Load action data."""
         if self._slug is None:
             raise ValueError(
                 "Cannot load `AppData` object without initializing object."
             )
+
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
-        from composio.tools.local.handler import ( # pylint: disable=import-outside-toplevel,cyclic-import
-            LocalClient,  
-        )
 
-        local_client = LocalClient()
-        for tool in local_client.tools.values():
-            if (
-                tool.name.lower().replace(" ", "_").replace("-", "_")
-                == self._slug.lower()
-            ):
-                return t.cast(
-                    EntityType,
-                    AppData(
-                        name=tool.name,
-                        is_local=True,
-                    ),
-                )
-            for tool_action in tool.actions():
-                name = tool_action().get_tool_merged_action_name()
-                if (
-                    name.lower().replace(" ", "_").replace("-", "_")
-                    == self._slug.lower()
-                ):
-                    return t.cast(
-                        EntityType,
-                        ActionData(
-                            name=name,
-                            app=tool.name,
-                            tags=["local"],
-                            no_auth=True,
-                            is_local=True,
-                            path=ACTIONS_CACHE / name,
-                            shell=tool_action.run_on_shell,
-                        ),
-                    )
+        if self._slug in self._local:
+            return self._local[self._slug]  # type: ignore
+
         if not (self._path / self._slug).exists():
             raise MetadataFileNotFound(
                 f"Metadata file for `{self._slug}` not found, "
