@@ -103,7 +103,6 @@ class ComposioToolSet(BaseComposioToolSet):
                 schema_params=schema_params
             )
         )
-
         action_func.__doc__ = description
 
         return action_func
