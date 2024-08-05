@@ -1,8 +1,9 @@
+from typing import Dict
+
 from pydantic import Field, field_validator
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -40,7 +41,7 @@ class CreateFileResponse(BaseFileResponse):
     )
 
 
-class CreateFile(BaseFileAction):
+class CreateFile(LocalAction[CreateFileRequest, CreateFileResponse]):
     """
     Creates a new file within a shell session.
     Example:
@@ -55,19 +56,13 @@ class CreateFile(BaseFileAction):
         - OSError: If an OS-specific error occurs.
     """
 
-    _display_name = "Create a new file"
-    _request_schema = CreateFileRequest
-    _response_schema = CreateFileResponse
-
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: CreateFileRequest  # type: ignore
-    ) -> CreateFileResponse:
+    def execute(self, request: CreateFileRequest, metadata: Dict) -> CreateFileResponse:
         try:
             return CreateFileResponse(
                 file=str(
-                    file_manager.create(
-                        path=request_data.file_path,
-                    ).path
+                    self.filemanagers.get(request.file_manager_id)
+                    .create(path=request.file_path)
+                    .path
                 ),
                 success=True,
             )

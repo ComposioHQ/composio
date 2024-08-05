@@ -1,6 +1,11 @@
+from typing import Dict
+
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
+
+
+# pylint: disable=import-outside-toplevel
 
 
 class RagToolQueryRequest(BaseModel):
@@ -13,46 +18,32 @@ class RagToolQueryResponse(BaseModel):
     )
 
 
-class RagToolQuery(Action[RagToolQueryRequest, RagToolQueryResponse]):
+class RagToolQuery(LocalAction[RagToolQueryRequest, RagToolQueryResponse]):
     """
-    Tool for querying a knowledge base
-    this can only be performed after AddContentToRagTool
+    Tool for querying a knowledge base.
+
+    *Note*: This can only be performed after `add_content_to_rag_tool`
     """
 
-    _display_name = "Rag Tool"
-    _request_schema = RagToolQueryRequest
-    _response_schema = RagToolQueryResponse
-    _tags = ["Knowledge Base"]
-    _tool_name = "ragtool"
+    _tags = ["Knowledge Base", "rag"]
 
     def execute(
-        self, request_data: RagToolQueryRequest, authorisation_data: dict
-    ) -> dict:
+        self, request: RagToolQueryRequest, metadata: Dict
+    ) -> RagToolQueryResponse:
         """Query the knowledge base and return the response"""
-        if authorisation_data is None:
-            authorisation_data = {}
         try:
-            # pylint: disable=import-outside-toplevel
             from embedchain import App
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                f"Failed to import App from embedchain: {e}"
+            ) from e
 
-            # pylint: enable=import-outside-toplevel
-        except ImportError as e:
-            raise ImportError(f"Failed to import App from embedchain: {e}") from e
-        embedchain_app = None
         try:
             embedchain_app = App()
         except Exception as e:
-            print(f"Failed to initialize App: {e}")
             raise Exception(f"Failed to initialize App: {e}") from e
 
-        query = request_data.query
-
-        if embedchain_app:
-            try:
-                _, sources = embedchain_app.query(query, citations=True)
-                response = "\n\n".join([source[0] for source in sources])
-                return {"response": response}
-            except Exception as e:
-                return {"error": f"Error querying knowledge base: {e}"}
-        else:
-            return {"error": "App initialization failed, cannot perform query."}
+        _, sources = embedchain_app.query(request.query, citations=True)
+        return RagToolQueryResponse(
+            response="\n\n".join([source[0] for source in sources])
+        )

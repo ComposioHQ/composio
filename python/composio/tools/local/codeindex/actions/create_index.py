@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 # Constants
@@ -48,7 +48,7 @@ class CreateCodeIndexOutput(BaseModel):
     result: str = Field(..., description="Result of the action")
 
 
-class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
+class CreateIndex(LocalAction[CreateCodeIndexInput, CreateCodeIndexOutput]):
     """
     Indexes a code base in a folder and stores the index in a vector store.
     """
@@ -60,7 +60,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
     _tool_name = "codeindex"
 
     def execute(
-        self, request_data: CreateCodeIndexInput, authorisation_data: dict = {}
+        self, request_data: CreateCodeIndexInput, metadata: dict = {}
     ) -> CreateCodeIndexOutput:
         # Check if index already exists or is in progress
         status = self.check_status(request_data.dir_to_index_path)

@@ -1,17 +1,13 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import CodeQuery
 
 
-class Greptile(Tool):
-    """
-    Code understanding tool. Index Code and answer questions about it.
-    """
+class Greptile(LocalTool, autoload=True):
+    """Code understanding tool. Index Code and answer questions about it."""
 
-    def actions(self) -> list[t.Type[Action]]:
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
         return [CodeQuery]
-
-    def triggers(self) -> list:
-        return []

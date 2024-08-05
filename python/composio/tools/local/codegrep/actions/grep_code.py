@@ -3,7 +3,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.base.utils.grep_utils import grep_util
 
 
@@ -51,7 +51,7 @@ class CodeSearchResponse(BaseModel):
     )
 
 
-class SearchCodebase(Action[CodeSearchRequest, CodeSearchResponse]):
+class SearchCodebase(LocalAction[CodeSearchRequest, CodeSearchResponse]):
     """
     Performs an advanced search across a codebase using regex patterns, similar to the grep command but optimized for large-scale software projects.
 
@@ -78,7 +78,7 @@ class SearchCodebase(Action[CodeSearchRequest, CodeSearchResponse]):
     _tool_name = "codegrep"
 
     def execute(
-        self, request_data: CodeSearchRequest, authorisation_data: dict = {}
+        self, request_data: CodeSearchRequest, metadata: dict = {}
     ) -> CodeSearchResponse:
         try:
             search_paths = request_data.file_paths or [request_data.code_directory]

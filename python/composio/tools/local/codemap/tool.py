@@ -4,7 +4,7 @@ Code map tool for Composio.
 
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import (
     DeleteRepoMap,
@@ -15,10 +15,11 @@ from .actions import (
 )
 
 
-class CodeMapTool(Tool):
+class CodeMapTool(LocalTool, autoload=True):
     """Code Map tool."""
 
-    def actions(self) -> t.List[t.Type[Action]]:
+    @classmethod
+    def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
         return [
             GenerateRankedTags,
@@ -27,7 +28,3 @@ class CodeMapTool(Tool):
             DeleteRepoMap,
             GetRepoStructure,
         ]
-
-    def triggers(self) -> t.List:
-        """Return the list of triggers."""
-        return []

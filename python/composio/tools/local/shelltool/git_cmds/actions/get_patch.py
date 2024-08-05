@@ -2,12 +2,11 @@ import typing as t
 
 from pydantic import Field
 
+from composio.tools.base.local import LocalAction
 from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
-    exec_cmd,
 )
 from composio.utils.logging import get as get_logger
 
@@ -27,13 +26,14 @@ class GetPatchResponse(ShellExecResponse):
     pass
 
 
-class GetPatchCmd(BaseExecCommand):
+class GetPatchCmd(LocalAction[GetPatchRequest, GetPatchResponse]):
     """
-    Get the patch from the current working directory. The patch is present in the output field of the response.
-    The patch is in the format of a proper diff format.
-    It incorporates any new files specified in the request, thereby excluding irrelevant installation files.
-    It includes deleted files by default.
+    Get the patch from the current working directory. The patch is present in
+    the output field of the response. The patch is in the format of a proper diff
+    format. It incorporates any new files specified in the request, thereby
+    excluding irrelevant installation files. It includes deleted files by default.
     You should run it after all the changes are made to git add and check the result.
+
     Example:
     diff --git a/repo/example.py b/repo/example.py
     index 1234567..89abcde 100644
@@ -44,26 +44,15 @@ class GetPatchCmd(BaseExecCommand):
     +Hello, Composio!
     """
 
-    _tool_name = "gitcmdtool"
-    _display_name = "Get Patch Action"
-    _request_schema = GetPatchRequest
-    _response_schema = GetPatchResponse
+    def execute(self, request: GetPatchRequest, metadata: t.Dict) -> GetPatchResponse:
+        new_files = " ".join(request.new_file_path)
+        cmd = ["git add -u"]
+        if len(request.new_file_path) > 0:
+            cmd = [f"git add {new_files}", "git add -u"]
+        cmd.append("git diff --cached")
 
-    def execute(
-        self, request_data: ShellRequest, authorisation_data: dict
-    ) -> ShellExecResponse:
-        get_patch_request = t.cast(GetPatchRequest, request_data)
-        new_files = " ".join(get_patch_request.new_file_path)
-        cmd_list = ["git add -u"]
-        if len(get_patch_request.new_file_path) > 0:
-            cmd_list = [f"git add {new_files}", "git add -u"]
-        cmd_list.append("git diff --cached")
-        output = exec_cmd(
-            cmd=" && ".join(cmd_list),
-            authorisation_data=authorisation_data,
-            shell_id=request_data.shell_id,
-        )
-        return ShellExecResponse(
+        output = self.shells.get(request.shell_id).exec(cmd=" && ".join(cmd))
+        return GetPatchResponse(
             stdout=output[STDOUT],
             stderr=output[STDERR],
             exit_code=int(output[EXIT_CODE]),

@@ -1,1 +1,1 @@
-from .tool import SqlTool
+from .tool import Sqltool

@@ -1,6 +1,10 @@
+# pylint: disable=import-outside-toplevel
+
+from typing import Dict
+
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class ScrapeWebsiteToolRequest(BaseModel):
@@ -15,38 +19,32 @@ class ScrapeWebsiteToolResponse(BaseModel):
     )
 
 
-class Scrape(Action[ScrapeWebsiteToolRequest, ScrapeWebsiteToolResponse]):
+class Scrape(LocalAction[ScrapeWebsiteToolRequest, ScrapeWebsiteToolResponse]):
     """
     Scrape contents of a website
     """
 
-    _display_name = "Scrape a website"
-    _request_schema = ScrapeWebsiteToolRequest
-    _response_schema = ScrapeWebsiteToolResponse
     _tags = ["Web"]
-    _tool_name = "spidertool"
 
     def execute(
-        self, request_data: ScrapeWebsiteToolRequest, authorisation_data: dict
-    ) -> dict:
+        self, request: ScrapeWebsiteToolRequest, metadata: Dict
+    ) -> ScrapeWebsiteToolResponse:
         """Scrape the website and return the content in markdown format"""
-        url = request_data.url
+
         try:
-            # pylint: disable=import-outside-toplevel
             from spider import Spider
             from spider.spider_types import RequestParamsDict
-
-            # pylint: enable=import-outside-toplevel
         except ImportError as e:
             raise ImportError("Failed to import Spider:", e) from e
+
         try:
             spider = Spider()
             params = RequestParamsDict(return_format="markdown")
-            response = spider.scrape_url(url, params)
+            response = spider.scrape_url(request.url, params)
             if response is None:
-                return {"error": "Response is None"}
-            return {"content": response.content}
+                raise ValueError(f"Error getting response for url {request.url}")
+            return ScrapeWebsiteToolResponse(content=response.content)
         except (ConnectionError, TimeoutError) as e:
-            return {"error": f"Connection or timeout error occurred: {e}"}
+            raise ValueError(f"Connection or timeout error occurred: {e}")
         except Exception as e:
-            return {"error": f"An unexpected error occurred: {e}"}
+            raise ValueError(f"An unexpected error occurred: {e}")

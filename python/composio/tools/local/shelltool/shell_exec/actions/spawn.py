@@ -4,10 +4,11 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Dict
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 # pylint: disable=consider-using-with,unspecified-encoding
@@ -55,7 +56,7 @@ class SpawnResponse(BaseModel):
     )
 
 
-class SpawnProcess(Action):
+class SpawnProcess(LocalAction[SpawnRequest, SpawnResponse]):
     """
     Spawn a process.
 
@@ -65,20 +66,12 @@ class SpawnProcess(Action):
     cmd: python path/to/script.py
     """
 
-    _display_name = "Spawn Process"
-    _tool_name = "shell"
-    _request_schema = SpawnRequest
-    _response_schema = SpawnResponse
     _tags = ["workspace", "shell"]
 
-    def execute(
-        self,
-        request_data: SpawnRequest,
-        authorisation_data: dict,
-    ) -> SpawnResponse:
+    def execute(self, request: SpawnRequest, metadata: Dict) -> SpawnResponse:
         """Execute a shell command."""
-        cmd, *args = request_data.cmd.split(" ")
-        cmd = shutil.which(cmd=cmd)  # type: ignore
+        cmd, *args = request.cmd.split(" ")
+        cmd = shutil.which(cmd=cmd)
         if cmd is None:
             raise ValueError(f"Command `{cmd}` not found!")
 
@@ -90,7 +83,7 @@ class SpawnProcess(Action):
             start_new_session=True,
             stdout=stdout.open("w+"),
             stderr=stderr.open("w+"),
-            cwd=str(request_data.working_dir or Path.cwd()),
+            cwd=str(request.working_dir or Path.cwd()),
         )
         pid = Path(tempdir.name, "pid.txt")
         pid.write_text(str(process.pid))

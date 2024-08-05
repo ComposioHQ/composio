@@ -2,9 +2,8 @@ import typing as t
 
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -34,7 +33,7 @@ class OpenFileResponse(BaseFileResponse):
     error: str = Field(default="", description="Error message if any")
 
 
-class OpenFile(BaseFileAction):
+class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
     """
     Opens a file in the editor based on the provided file path,
     If line_number is provided, the window will be move to include that line
@@ -47,20 +46,19 @@ class OpenFile(BaseFileAction):
     - IsADirectoryError: If the provided path is a directory.
     """
 
-    _display_name = "Open File on workspace"
-    _request_schema = OpenFileRequest
-    _response_schema = OpenFileResponse
-
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: OpenFileRequest  # type: ignore
-    ) -> OpenFileResponse:
+    def execute(self, request: OpenFileRequest, metadata: t.Dict) -> OpenFileResponse:
+        """Open a file."""
         try:
-            file = file_manager.open(request_data.file_path)
-            if request_data.line_number > 0:
-                file.goto(request_data.line_number)
+            file = self.filemanagers.get(request.file_manager_id).open(
+                request.file_path
+            )
+            if request.line_number > 0:
+                file.goto(request.line_number)
+
             content = file.read()
             if content == {}:
                 return OpenFileResponse(error="File is empty")
+
             return OpenFileResponse(
                 message="File opened successfully. 100 lines after the cursor displayed.",
                 lines=content,

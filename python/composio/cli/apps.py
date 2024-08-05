@@ -141,12 +141,8 @@ def _update_apps(apps: t.List[AppModel]) -> None:
             is_local=False,
         ).store()
 
-    for tool in LocalClient().tools.values():
-        app_names.append(
-            get_enum_key(
-                name=tool.name.lower().replace(" ", "_").replace("-", "_"),
-            )
-        )
+    for tool in LocalClient.tools().values():
+        app_names.append(tool.enum)
         enums.base.AppData(
             name=tool.name,
             path=enums.base.APPS_CACHE / app_names[-1],
@@ -189,23 +185,17 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
             ).store()
 
-    local_tool_handler = LocalClient()
-    for tool in local_tool_handler.tools.values():
-        for tool_action in tool.actions():
-            name = tool_action().get_tool_merged_action_name()
-            action_names.append(
-                get_enum_key(
-                    name=name,
-                )
-            )
+    for tool in LocalClient.tools().values():
+        for actcls in tool.actions():
+            action_names.append(actcls.enum)
             enums.base.ActionData(
-                name=name,
+                name=action.name,
                 app=tool.name,
                 tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
-                shell=tool_action.run_on_shell,
+                shell=False,  # TOFIX(viraj)
             ).store()
 
     _update_annotations(

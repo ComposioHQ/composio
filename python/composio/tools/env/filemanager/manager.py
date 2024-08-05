@@ -10,9 +10,9 @@ from pathlib import Path
 
 import typing_extensions as te
 
+from composio.tools.env.base import Sessionable
 from composio.tools.env.filemanager.file import File
 from composio.tools.env.id import generate_id
-from composio.utils.logging import WithLogger
 
 
 _active_manager: t.Optional["FileManager"] = None
@@ -39,7 +39,7 @@ class FindResult(te.TypedDict):
     file: str
 
 
-class FileManager(WithLogger):
+class FileManager(Sessionable):
     """File manager implementation for agent workspaces."""
 
     _files: t.Dict[Path, File]
@@ -50,10 +50,15 @@ class FileManager(WithLogger):
     def __init__(self, working_dir: t.Optional[str] = None) -> None:
         """Initialize file manager."""
         super().__init__()
-        self.id = generate_id()
+        self._id = generate_id()
+        self._files = {}
         self.working_dir = Path(working_dir or "./").resolve()
 
-        self._files = {}
+    def setup(self) -> None:
+        """Setup browser manager."""
+
+    def teardown(self) -> None:
+        """Teardown a browser manager."""
 
     @property
     def recent(self) -> t.Optional[File]:

@@ -1,17 +1,13 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import Calculator
 
 
-class Mathematical(Tool):
-    """
-    Mathematical Tools for LLM
-    """
+class Mathematical(LocalTool, autoload=True):
+    """Mathematical Tools for LLM"""
 
-    def actions(self) -> list[t.Type[Action]]:
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
         return [Calculator]
-
-    def triggers(self) -> list:
-        return []

@@ -1,48 +1,40 @@
+from typing import Dict
+
+from composio.tools.base.local import LocalAction
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
-    BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
-    exec_cmd,
 )
-from composio.utils.logging import get as get_logger
 
 
-logger = get_logger("workspace")
-
-
-class GitRepoTree(BaseExecCommand):
+class GitRepoTree(LocalAction[ShellRequest, ShellExecResponse]):
     """
-    Generate a tree of the repository. This command lists all files in the current commit across all directories.
-    Returns a list of files with their relative paths in the codebase.
-    It is useful to understand the file structure of the codebase and to find the relevant files for a given issue.
-    The command writes the result to a file in current directory. Read the file 'git_repo_tree.txt' for getting the
-    git-repo-tree results
+    Generate a tree of the repository. This command lists all files in
+    the current commit across all directories. Returns a list of files
+    with their relative paths in the codebase. It is useful to understand
+    the file structure of the codebase and to find the relevant files for
+    a given issue. The command writes the result to a file in current directory.
+    Read the file 'git_repo_tree.txt' for getting the git-repo-tree results
     """
 
-    _display_name = "Git repo tree action"
-    _tool_name = "gitcmdtool"
-    _request_schema = ShellRequest
-    _response_schema = ShellExecResponse
-    _output_text = "Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file."
+    _tags = ["cli"]
 
-    def execute(
-        self,
-        request_data: ShellRequest,
-        authorisation_data: dict,
-    ) -> ShellExecResponse:
-        output = exec_cmd(
+    def execute(self, request: ShellRequest, metadata: Dict) -> ShellExecResponse:
+        output = self.shells.get(id=request.shell_id).exec(
             cmd="git ls-tree -r HEAD --name-only > ./git_repo_tree.txt",
-            authorisation_data=authorisation_data,
-            shell_id=request_data.shell_id,
         )
-        if int(output["exit_code"]) == 128:
+        if int(output[EXIT_CODE]) == 128:
             return ShellExecResponse(
-                stdout=output["stdout"],
-                stderr=output["stderr"],
-                exit_code=int(output["exit_code"]),
+                stdout=output[STDOUT],
+                stderr=output[STDERR],
+                exit_code=int(output[EXIT_CODE]),
             )
         return ShellExecResponse(
-            stdout="Check git_repo_tree.txt for the git-repo-tree results. Use Open File function to check the file.",
-            stderr=output["stderr"],
-            exit_code=int(output["exit_code"]),
+            stdout=(
+                "Check git_repo_tree.txt for the git-repo-tree results. "
+                "Use Open File function to check the file."
+            ),
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
         )

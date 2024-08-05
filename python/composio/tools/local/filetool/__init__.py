@@ -2,4 +2,4 @@
 File manager.
 """
 
-from .tool import FileTool
+from .tool import Filetool

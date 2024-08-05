@@ -1,1 +1,1 @@
-from .image_analyser import ImageAnalyser
+from .image_analyser import Analyse

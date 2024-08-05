@@ -97,7 +97,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
 
     @abstractmethod
     def execute(
-        self, request_data: RequestType, authorisation_data: dict
+        self, request_data: RequestType, metadata: dict
     ) -> Union[dict, ResponseType]:
         pass
 
@@ -222,7 +222,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                         modified_request_data,
                     )
                 ),
-                authorisation_data=metadata,
+                metadata=metadata,
             )
         except json.JSONDecodeError as e:
             return {

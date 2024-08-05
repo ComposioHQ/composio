@@ -1,1 +1,1 @@
-from .tool import ImageAnalyserTool
+from .tool import ImageAnalyser

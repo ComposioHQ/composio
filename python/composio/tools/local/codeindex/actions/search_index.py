@@ -3,7 +3,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.codeindex.actions.create_index import CreateIndex
 
 
@@ -58,7 +58,7 @@ class SearchCodebaseResponse(BaseModel):
     )
 
 
-class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
+class SearchCodebase(LocalAction[SearchCodebaseRequest, SearchCodebaseResponse]):
     """
     Searches the indexed codebase for relevant code snippets based on a given query.
 
@@ -74,7 +74,7 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
     _tool_name = "codeindex"
 
     def execute(
-        self, request_data: SearchCodebaseRequest, authorisation_data: dict = {}
+        self, request_data: SearchCodebaseRequest, metadata: dict = {}
     ) -> SearchCodebaseResponse:
         import chromadb  # pylint: disable=C0415
         from chromadb.errors import ChromaError  # pylint: disable=C0415

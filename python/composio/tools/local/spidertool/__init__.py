@@ -1,1 +1,1 @@
-from .tool import SpiderTool
+from .tool import Spidertool

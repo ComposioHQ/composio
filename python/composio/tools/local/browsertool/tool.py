@@ -4,7 +4,7 @@ Browser tool for Composio.
 
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import (
     ClickElement,
@@ -19,10 +19,11 @@ from .actions import (
 )
 
 
-class BrowserTool(Tool):
+class BrowserTool(LocalTool, autoload=True):
     """Browser tool for local usage."""
 
-    def actions(self) -> t.List[t.Type[Action]]:
+    @classmethod
+    def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
         return [
             GetScreenshot,
@@ -35,7 +36,3 @@ class BrowserTool(Tool):
             TypeText,
             GotoPage,
         ]
-
-    def triggers(self) -> t.List:
-        """Return the list of triggers."""
-        return []
