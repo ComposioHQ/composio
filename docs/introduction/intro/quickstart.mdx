@@ -182,7 +182,7 @@ var resp = response.choices[0].message.tool_calls
 console.log(resp);
 
 // Execute
-await composio_toolset.handle_tool_call(response);
+await composio_toolset.handleToolCall(response);
 ```
 </CodeGroup>
 </Tab>
@@ -304,7 +304,7 @@ var resp = response.choices[0].message.tool_calls
 console.log(resp);
 
 // Handling the tool call using Composio ToolSet
-await composio_toolset.handle_tool_call(response);
+await composio_toolset.handleToolCall(response);
 
 ```
 </CodeGroup>

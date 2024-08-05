@@ -90,7 +90,7 @@ async function executeAgent(repo,entityName="default") {
         })
 
         console.log(response.choices[0].message.tool_calls);
-        await toolset.handle_tool_call(response, entity.id);
+        await toolset.handleToolCall(response, entity.id);
 }
 
       ```

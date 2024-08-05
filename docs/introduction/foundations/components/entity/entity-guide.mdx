@@ -326,7 +326,7 @@ const response = await openAI.chat.completions.create({
     ],
 });
 
-await toolset.handle_tool_call(response, entity.id);
+await toolset.handleToolCall(response, entity.id);
 ```
 </CodeGroup>
 

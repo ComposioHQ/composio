@@ -134,7 +134,7 @@ const response = await toolset.client.chat.completions.create({
     ],
 });
 
-await toolset.handle_tool_call(response, entity.id="melissa");
+await toolset.handleToolCall(response, entity.id="melissa");
 ```
 </CodeGroup>
 </Tab>

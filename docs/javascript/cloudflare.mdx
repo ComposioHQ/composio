@@ -95,7 +95,7 @@ app.post('/', async (c) => {
             });
 
             // Handle the tool call response
-            await toolset.handle_tool_call(toolCallResp, entity.id);
+            await toolset.handleToolCall(toolCallResp, entity.id);
             return c.json({ messages: "Your issue has been created" });
         } catch (err) {
             console.log(err);
