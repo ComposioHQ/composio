@@ -20,7 +20,7 @@ RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio for dependency caching
 # Install composio
-RUN python -m pip install composio-core[all]==0.4.0 fastapi playwright
+RUN python -m pip install composio-core[all]==0.4.0 fastapi playwright uvicorn
 
 # Install playwright deps
 RUN playwright install-deps
