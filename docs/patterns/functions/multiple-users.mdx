@@ -121,7 +121,7 @@ const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.get_actions({actions: ['github_star_repo']})
+const tools = await toolset.getActions({actions: ['github_star_repo']})
 
 const task = "Star a repo composiohq/composio on GitHub"
 

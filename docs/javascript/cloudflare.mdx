@@ -79,7 +79,7 @@ app.post('/', async (c) => {
             const entity = toolset.client.getEntity('default');
             await setupUserConnectionIfNotExists(toolset, entity.id, c);
             // Get the required tools for the AI task
-            const tools = await toolset.get_actions({ actions: ['github_issues_create'] }, entity.id);
+            const tools = await toolset.getActions({ actions: ['github_issues_create'] }, entity.id);
             const instruction = 'Make an issue with sample title in the repo - anonthedev/break, only use the tools';
 
             // Set up the initial messages for the AI model
