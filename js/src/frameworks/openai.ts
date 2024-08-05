@@ -186,8 +186,10 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         entityId: Optional<string> = null
     ): Promise<OpenAI.Beta.Threads.Run> {
         while (["queued", "in_progress", "requires_action"].includes(run.status)) {
+            logger.debug(`Current run status: ${run.status}`);
             const tool_outputs = await this.handleAssistantMessage(run, entityId || this.entityId);
             if (run.status === "requires_action") {
+                logger.debug(`Submitting tool outputs for run ID: ${run.id} in thread ID: ${thread.id}`);
                 run = await client.beta.threads.runs.submitToolOutputs(
                     thread.id,
                     run.id,

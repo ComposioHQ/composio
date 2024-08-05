@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.1.9",
+  "version": "0.1.11",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -35,8 +35,8 @@
     "@e2b/sdk": "^0.16.1",
     "@faker-js/faker": "^8.4.1",
     "@hono/node-server": "^1.12.0",
-    "@langchain/core": "^0.2.6",
-    "@langchain/openai": "^0.1.2",
+    "@langchain/core": "^0.2.18",
+    "@langchain/openai": "^0.2.5",
     "axios": "^1.7.2",
     "cli-progress": "^3.12.0",
     "colors": "^1.4.0",
@@ -44,12 +44,13 @@
     "e2b": "^0.16.1",
     "enumify": "^2.0.0",
     "hono": "^4.4.11",
-    "langchain": "^0.2.5",
+    "langchain": "^0.2.11",
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
     "uuid": "^10.0.0",
     "winston": "^3.13.1",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.2"
   },
   "publishConfig": {
     "access": "public"

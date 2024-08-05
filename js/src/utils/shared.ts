@@ -115,7 +115,7 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
             const anyOfTypes = value.anyOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
             zodType = z.union(anyOfTypes).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
         } else if (value.type) {
-            zodType = jsonSchemaPropertiesToTSTypes(value.type);
+            zodType = jsonSchemaPropertiesToTSTypes(value);
         } else {
             throw new Error(`Missing 'type' property in JSON schema for key: ${key}`);
         }
