@@ -141,7 +141,22 @@ Check out the coding guides provided in the examples section to have a better un
   <Tab title="Javascript">
   <CodeGroup>
   ```Javascript Fetching Actions using natural language use-case
-  //coming soon
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+    useCase: "create github issues"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
   ```
   </CodeGroup>
   </Tab>
@@ -225,8 +240,6 @@ tool_set.execute_action(
 )
 ```
 ```javascript javascript
-import dotenv from 'dotenv';
-dotenv.config();
 
 import { OpenAIToolSet } from "composio-core";
 

@@ -21,7 +21,7 @@ each user would be represented as an individual entity.
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```Python Create or get an entity
+```python Create or get an entity
 from composio import ComposioToolSet
 
 toolset = ComposioToolSet(entity_id="default")
@@ -34,16 +34,13 @@ entity = toolset.getEntity(id='default')
 <Tab title="Javascript">
 <CodeGroup>
 ```javascript Create or get an entity
-import dotenv from 'dotenv';
-dotenv.config();
-
 import { Composio } from "composio-core";
 
 const composio_client = new Composio({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const entity = await composio_client.getEntity('user_email_id');
+const entity = composio_client.getEntity('user_email_id');
 ```
 </CodeGroup>
 </Tab>
@@ -270,12 +267,11 @@ openai_client = OpenAI()
 # can be configured to use the entity id of the user
 tool_set = ComposioToolSet(entity_id="melissa") 
 
-actions = entity.get_actions(app_name = App.GITHUB)
+actions = z.get_actions(app_name = App.GITHUB)
 ```
 </CodeGroup>
-
-Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
-
+</Tab>
+<Tab title="Javascript">
 <CodeGroup>
 ```python Execute Agent
 actions = tool_set.get_tools(apps=[App.GITHUB])
@@ -295,9 +291,30 @@ tool_set.handle_tool_calls(response=response, entity_id="melissa") # entity_id i
 </CodeGroup>
 
 </Tab>
+</Tabs>
 
+Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python execute agent
+const task = "Star a repo composiohq/composio on GitHub"
+
+const response = await openAI.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    tools: tools,
+    messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: task },
+    ],
+});
+
+await toolset.handle_tool_calls(response, entity.id);
+```
+</CodeGroup>
+
+</Tab>
 <Tab title="Javascript">
-
 <CodeGroup>
 ```javascript Fetch tools
 import { OpenAIToolSet } from "composio-core";
@@ -310,28 +327,7 @@ const entity = toolset.client.getEntity('default');
 const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
-
-Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
-
-<CodeGroup>
-```javascript execute agent
-const task = "Star a repo composiohq/composio on GitHub"
-
-const response = await openAI.chat.completions.create({
-    model: "gpt-4-turbo-preview",
-    tools: tools,
-    messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: task },
-    ],
-});
-
-await toolset.handleToolCall(response, entity.id);
-```
-</CodeGroup>
-
 </Tab>
-
 </Tabs>
 
 You can use the above pattern to make agents at a user level to perform tasks on their behalf.
