@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
 
-from .abs import Action, ExecuteActionRequest, ExecuteActionResponse, Tool
+from .abs import Action, ActionRequest, ActionResponse, Tool
 
 
 class FileModel(BaseModel):
@@ -29,7 +29,7 @@ class FileModel(BaseModel):
 
 
 class LocalAction(
-    Action[ExecuteActionRequest, ExecuteActionResponse],
+    Action[ActionRequest, ActionResponse],
     abs=True,
 ):
     """Local action abstraction."""

@@ -1,3 +1,3 @@
 """Tool abstractions."""
 
-from .abs import Action, Trigger
+from .abs import Action

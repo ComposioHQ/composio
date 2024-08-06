@@ -18,9 +18,9 @@ from composio.utils.logging import WithLogger
 
 GroupID = t.Literal["runtime", "local"]
 ModelType = t.TypeVar("ModelType")
-ExecuteActionResponse = t.TypeVar("ExecuteActionResponse")
-ExecuteActionRequest = t.TypeVar("ExecuteActionRequest")
-Loadable = t.TypeVar("Loadable", "Trigger", "Action")
+ActionResponse = t.TypeVar("ActionResponse")
+ActionRequest = t.TypeVar("ActionRequest")
+Loadable = t.TypeVar("Loadable")
 RegistryType = t.Dict[GroupID, t.Dict[str, "Tool"]]
 
 registry: RegistryType = {"runtime": {}, "local": {}}
@@ -162,6 +162,8 @@ class ActionMeta(type):
         try:
             (generic,) = getattr(cls, "__orig_bases__")
             request, response = t.get_args(generic)
+            if request == ActionRequest or response == ActionResponse:
+                raise ValueError(f"Invalid type generics, ({request}, {response})")
         except ValueError as e:
             raise ValueError(
                 "Invalid action class definition, please define your class "
@@ -191,7 +193,7 @@ class ActionMeta(type):
 class Action(
     WithLogger,
     _Attributes,
-    t.Generic[ExecuteActionRequest, ExecuteActionResponse],
+    t.Generic[ActionRequest, ActionResponse],
     metaclass=ActionMeta,
 ):
     """Action abstraction."""
@@ -203,10 +205,10 @@ class Action(
     tool: str
     """Toolname."""
 
-    request: _Request[ExecuteActionRequest]
+    request: _Request[ActionRequest]
     """Request helper."""
 
-    response: _Response[ExecuteActionResponse]
+    response: _Response[ActionResponse]
     """Response helper."""
 
     file: str
@@ -256,34 +258,10 @@ class Action(
     @abstractmethod
     def execute(
         self,
-        request: ExecuteActionRequest,
+        request: ActionRequest,
         metadata: t.Dict,
-    ) -> ExecuteActionResponse:
+    ) -> ActionResponse:
         """Execute the action."""
-
-
-class Trigger(WithLogger, _Attributes):
-    """Trigger abstraction."""
-
-    tool: str
-    """Toolname."""
-
-    def __init__(self) -> None:
-        """Initialize trigger class."""
-        super().__init__()
-
-    @classmethod
-    def schema(cls) -> t.Dict:
-        """Trigger schema."""
-        return {}
-        # return {
-        #     "name": add_tool_name(tool_name, trigger.__name__),
-        #     "display_name": trigger().display_name,
-        #     "description": trigger.__doc__.strip() if trigge
-        #     "payload": jsonable_encoder(trigger().payload_schema.model_json_schema()),
-        #     "config": jsonable_encoder(trigger().trigger_config_schema.model_json_schema()),
-        #     "instructions": trigger().trigger_instructions,
-        # }
 
 
 class Tool(WithLogger, _Attributes):
@@ -307,9 +285,6 @@ class Tool(WithLogger, _Attributes):
     _actions: t.Dict[str, t.Type[Action]]
     """Actions container"""
 
-    _triggers: t.Dict[str, t.Type[Trigger]]
-    """Triggers container"""
-
     def __init_subclass__(cls, autoload: bool = False) -> None:
         """Initialize a tool class."""
 
@@ -318,24 +293,9 @@ class Tool(WithLogger, _Attributes):
         super().__init__()
         self._path = Path(__file__).parent
 
-    @t.overload
     @classmethod
     def get(cls, enum: ActionEnum) -> t.Type[Action]:
         """Returns the"""
-
-    @t.overload
-    @classmethod
-    def get(cls, enum: TriggerEnum) -> t.Type[Trigger]:
-        """Returns the"""
-
-    @classmethod
-    def get(
-        cls,
-        enum: t.Union[ActionEnum, TriggerEnum],
-    ) -> t.Union[t.Type[Action], t.Type[Trigger]]:
-        """Returns the"""
-        if type == "trigger":
-            return cls._triggers[enum.slug]
         return cls._actions[enum.slug]
 
     @classmethod
@@ -377,7 +337,6 @@ class Tool(WithLogger, _Attributes):
     def _load(self, loadable: t.Type[Loadable]) -> Loadable:
         """Load action class."""
         instance = loadable()
-        instance.tool = self.name
         return instance
 
     def execute(

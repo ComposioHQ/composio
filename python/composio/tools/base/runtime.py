@@ -12,7 +12,7 @@ from composio.tools.base.local import LocalToolMixin
 from composio.tools.env.host.shell import Shell
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
 
-from .abs import Action, ExecuteActionRequest, ExecuteActionResponse, registry
+from .abs import Action, ActionRequest, ActionResponse, registry
 
 
 ActionCallable = t.Callable
@@ -41,7 +41,7 @@ class ArgSpec(BaseModel):
 
 class RuntimeAction(
     SentinalObject,
-    Action[ExecuteActionRequest, ExecuteActionResponse],
+    Action[ActionRequest, ActionResponse],
     abs=True,
 ):
     """Local action abstraction."""

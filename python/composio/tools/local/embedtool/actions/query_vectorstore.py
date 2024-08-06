@@ -21,7 +21,12 @@ class QueryImageVectorStoreOutputSchema(BaseModel):
     )
 
 
-class QueryImageVectorStore(LocalAction):
+class QueryImageVectorStore(
+    LocalAction[
+        QueryImageVectorStoreInputSchema,
+        QueryImageVectorStoreOutputSchema,
+    ]
+):
     """
     Query Vector Store for images
     """
