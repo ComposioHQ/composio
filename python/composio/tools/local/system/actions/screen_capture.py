@@ -19,7 +19,7 @@ class ScreenCapture(Action[ScreenCaptureRequest, ScreenCaptureResponse]):
     Useful to capture a screenshot of the current screen.
     """
 
-    _display_name = "Capture a screenshot"
+    display_name = "Capture a screenshot"
     _request_schema = ScreenCaptureRequest
     _response_schema = ScreenCaptureResponse
     _tags = ["utility"]

@@ -71,7 +71,7 @@ class SearchCodebase(LocalAction[CodeSearchRequest, CodeSearchResponse]):
     This action provides a powerful tool for code analysis, refactoring assistance, and codebase exploration tasks.
     """
 
-    _display_name = "Advanced Codebase Search"
+    display_name = "Advanced Codebase Search"
     _request_schema: Type[CodeSearchRequest] = CodeSearchRequest
     _response_schema: Type[CodeSearchResponse] = CodeSearchResponse
     _tags = ["search", "code-analysis"]

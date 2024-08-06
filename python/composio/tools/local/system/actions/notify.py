@@ -25,7 +25,7 @@ class Notify(Action[NotifyRequest, NotifyResponse]):
     Sends a local notification. Only works for MacOS.
     """
 
-    _display_name = "Notify"
+    display_name = "Notify"
     _request_schema = NotifyRequest
     _response_schema = NotifyResponse
     _tags = ["utility"]

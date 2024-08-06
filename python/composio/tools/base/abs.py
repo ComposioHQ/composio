@@ -12,7 +12,6 @@ import pydantic
 from pydantic import BaseModel, Field
 
 from composio.client.enums import Action as ActionEnum
-from composio.client.enums import Trigger as TriggerEnum
 from composio.utils.logging import WithLogger
 
 

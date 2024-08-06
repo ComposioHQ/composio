@@ -23,7 +23,7 @@ class CreateImageVectorStore(
     Creates Vector Store for all image files in the specified folder
     """
 
-    _display_name = "Create Image Vector Store"
+    display_name = "Create Image Vector Store"
     _request_schema: Type[CreateVectorStoreInputSchema] = CreateVectorStoreInputSchema
     _response_schema: Type[
         CreateVectorStoreOutputSchema

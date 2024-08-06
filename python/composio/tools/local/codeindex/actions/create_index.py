@@ -53,7 +53,7 @@ class CreateIndex(LocalAction[CreateCodeIndexInput, CreateCodeIndexOutput]):
     Indexes a code base in a folder and stores the index in a vector store.
     """
 
-    _display_name = "Create index"
+    display_name = "Create index"
     _request_schema: Type[CreateCodeIndexInput] = CreateCodeIndexInput
     _response_schema: Type[CreateCodeIndexOutput] = CreateCodeIndexOutput
     _tags = ["index"]

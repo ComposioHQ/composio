@@ -108,7 +108,7 @@ class GetRepoStructure(LocalAction[GetRepoStructureRequest, GetRepoStructureResp
     the layout and key components of the codebase.
     """
 
-    _display_name = "Generate Repository Structure"
+    display_name = "Generate Repository Structure"
     _request_schema: Type[GetRepoStructureRequest] = GetRepoStructureRequest
     _response_schema: Type[GetRepoStructureResponse] = GetRepoStructureResponse
     _tags = ["repository", "code-structure", "analysis"]

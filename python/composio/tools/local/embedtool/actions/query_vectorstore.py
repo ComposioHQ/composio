@@ -31,7 +31,7 @@ class QueryImageVectorStore(
     Query Vector Store for images
     """
 
-    _display_name = "Query Image Vector Store"
+    display_name = "Query Image Vector Store"
     _request_schema = QueryImageVectorStoreInputSchema
     _response_schema = QueryImageVectorStoreOutputSchema
     _tags = ["query_image_embeddings"]

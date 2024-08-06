@@ -69,7 +69,7 @@ class GenerateRankedTags(
     ```
     """
 
-    _display_name = "Generate Ranked Tags"
+    display_name = "Generate Ranked Tags"
     _request_schema: Type[GenerateRankedTagsRequest] = GenerateRankedTagsRequest
     _response_schema: Type[GenerateRankedTagsResponse] = GenerateRankedTagsResponse
     _tags = ["repo", "tags", "code-analysis"]

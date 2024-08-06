@@ -49,7 +49,7 @@ class GitPatch(LocalAction[GitPatchRequest, GitPatchResponse]):
     Note: This action should be run after all changes are made to add and check the result.
     """
 
-    _display_name = "Get Git Patch"
+    display_name = "Get Git Patch"
     _request_schema = GitPatchRequest
     _response_schema = GitPatchResponse
 

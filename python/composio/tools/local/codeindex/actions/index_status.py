@@ -20,7 +20,7 @@ class IndexStatus(LocalAction[IndexStatusInput, IndexStatusOutput]):
     Checks the status of the indexing process for a given directory.
     """
 
-    _display_name = "Check Index Status"
+    display_name = "Check Index Status"
     _request_schema: Type[IndexStatusInput] = IndexStatusInput
     _response_schema: Type[IndexStatusOutput] = IndexStatusOutput
     _tags = ["index"]

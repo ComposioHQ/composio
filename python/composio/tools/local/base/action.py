@@ -69,7 +69,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
 
     @display_name.setter
     def display_name(self, value: str):
-        self._display_name = value  # Set the internal variable
+        self.display_name = value  # Set the internal variable
 
     @property
     def tags(self) -> List[str]:

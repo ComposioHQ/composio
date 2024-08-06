@@ -47,7 +47,7 @@ class FormatAndLintCodebase(LocalAction[CodeFormatRequest, CodeFormatResponse]):
     This action provides a comprehensive tool for code quality improvement and standardization.
     """
 
-    _display_name = "Format and Lint Codebase"
+    display_name = "Format and Lint Codebase"
     _request_schema: Type[CodeFormatRequest] = CodeFormatRequest
     _response_schema: Type[CodeFormatResponse] = CodeFormatResponse
     _tags = ["formatting"]

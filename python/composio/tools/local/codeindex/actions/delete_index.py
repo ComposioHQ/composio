@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Type
 
 from pydantic import BaseModel, Field
 
@@ -20,21 +19,21 @@ class DeleteIndex(LocalAction[DeleteIndexInput, DeleteIndexOutput]):
     Deletes the index for a specified code base.
     """
 
-    _display_name = "Delete index"
-    _request_schema: Type[DeleteIndexInput] = DeleteIndexInput
-    _response_schema: Type[DeleteIndexOutput] = DeleteIndexOutput
     _tags = ["index"]
-    _tool_name = "codeindex"
+
+    display_name = "Delete index"
 
     def execute(
-        self, input_data: DeleteIndexInput, metadata: dict = {}
+        self,
+        request: DeleteIndexInput,
+        metadata: dict = {},
     ) -> DeleteIndexOutput:
         import chromadb  # pylint: disable=C0415
         from chromadb.errors import ChromaError  # pylint: disable=C0415
 
         index_storage_path = Path.home() / ".composio" / "index_storage"
-        collection_name = Path(input_data.index_directory).name
-        status_file = Path(input_data.index_directory) / ".indexing_status.json"
+        collection_name = Path(request.index_directory).name
+        status_file = Path(request.index_directory) / ".indexing_status.json"
 
         try:
             # Delete the collection from Chroma
@@ -46,7 +45,7 @@ class DeleteIndex(LocalAction[DeleteIndexInput, DeleteIndexOutput]):
                 os.remove(status_file)
 
             return DeleteIndexOutput(
-                message=f"Index for {input_data.index_directory} has been successfully deleted."
+                message=f"Index for {request.index_directory} has been successfully deleted."
             )
         except ChromaError as e:
             return DeleteIndexOutput(message=f"Failed to delete index: {str(e)}")

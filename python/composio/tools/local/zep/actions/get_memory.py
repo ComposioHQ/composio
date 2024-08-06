@@ -31,7 +31,7 @@ class GetMemoryResponse(BaseModel):
 class GetMemory(LocalAction[GetMemoryRequest, GetMemoryResponse]):
     """Get memory from zep session."""
 
-    _display_name = "Create A Zep Session"
+    display_name = "Create A Zep Session"
     _request_schema = GetMemoryRequest
     _response_schema = GetMemoryResponse
     _tags = ["memory", "history"]

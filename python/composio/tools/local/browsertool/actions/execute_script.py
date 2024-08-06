@@ -50,7 +50,7 @@ class ExecuteScript(BaseBrowserAction):
     }
     """
 
-    _display_name = "ExecuteScript"
+    display_name = "ExecuteScript"
     _request_schema = ExecuteScriptRequest
     _response_schema = ExecuteScriptResponse
 

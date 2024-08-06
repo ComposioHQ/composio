@@ -55,7 +55,7 @@ class GetScreenshot(BaseBrowserAction):
     .browser_media directory.
     """
 
-    _display_name = "GetScreenshot"
+    display_name = "GetScreenshot"
     _request_schema = GetScreenshotRequest
     _response_schema = GetScreenshotResponse
 

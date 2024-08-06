@@ -67,7 +67,7 @@ class SearchCodebase(LocalAction[SearchCodebaseRequest, SearchCodebaseResponse])
     by file type and provides detailed information about each matching snippet.
     """
 
-    _display_name = "Search Indexed Codebase"
+    display_name = "Search Indexed Codebase"
     _request_schema: Type[SearchCodebaseRequest] = SearchCodebaseRequest
     _response_schema: Type[SearchCodebaseResponse] = SearchCodebaseResponse
     _tags = ["codebase", "search", "index"]
