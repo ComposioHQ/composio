@@ -803,7 +803,7 @@ class ActionModel(BaseModel):
     """Action data model."""
 
     name: str
-    display_name: str
+    display_name: t.Optional[str] = None
     parameters: ActionParametersModel
     response: ActionResponseModel
     appKey: str

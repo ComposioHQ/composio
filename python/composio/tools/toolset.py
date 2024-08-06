@@ -389,11 +389,12 @@ class ComposioToolSet(WithLogger):
                 actions=remote_actions,
                 tags=tags,
             )
+            for item in remote_items:
+                self.check_connected_account(action=item.name)
             items = items + remote_items
 
         items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         for item in items:
-            self.check_connected_account(action=item.name)
             item = self.action_preprocessing(item)
         return items
 

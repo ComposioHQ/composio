@@ -79,7 +79,7 @@ class BaseBrowserResponse(BaseModel):
     )
 
 
-class BaseBrowserAction(LocalAction):
+class BaseBrowserAction(LocalAction[BaseBrowserRequest, BaseBrowserResponse]):
     _tool_name: str = "browsertool"
 
     @abstractmethod

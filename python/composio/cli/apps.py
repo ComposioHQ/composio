@@ -194,9 +194,9 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
         for actcls in tool.actions():
             action_names.append(actcls.enum)
             enums.base.ActionData(
-                name=actcls.name,
+                name=actcls.enum,
                 app=tool.name,
-                tags=actcls.tags,
+                tags=actcls.tags(),
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
