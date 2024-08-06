@@ -47,7 +47,7 @@ class GetRepoMapResponse(BaseModel):
     )
 
 
-class GenerateRepositoryMap(LocalAction[GetRepoMapRequest, GetRepoMapResponse]):
+class GetRepoMap(LocalAction[GetRepoMapRequest, GetRepoMapResponse]):
     """
     Generates a comprehensive repository map for specified files of interest within a given repository.
 

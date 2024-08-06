@@ -7,14 +7,13 @@ from abc import abstractmethod
 from pathlib import Path
 
 import inflection
+import jsonref
 import pydantic
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
 from composio.client.enums import Action as ActionEnum
 from composio.client.enums import Trigger as TriggerEnum
 from composio.utils.logging import WithLogger
-from composio.utils.logging import get as get_logger
 
 
 GroupID = t.Literal["runtime", "local"]
@@ -25,7 +24,17 @@ Loadable = t.TypeVar("Loadable", "Trigger", "Action")
 RegistryType = t.Dict[GroupID, t.Dict[str, "Tool"]]
 
 registry: RegistryType = {"runtime": {}, "local": {}}
-logger = get_logger()
+
+
+def remove_json_ref(data: t.Dict) -> t.Dict:
+    full = t.cast(
+        t.Dict,
+        jsonref.replace_refs(
+            obj=data,
+            lazy_load=False,
+        ),
+    )
+    return full
 
 
 def generate_app_id(name: str) -> str:
@@ -84,7 +93,7 @@ class _Request(t.Generic[ModelType]):
                 ]
                 del details["type"]  # Remove original type to avoid conflict in oneOf
         request["properties"] = properties
-        return jsonable_encoder(obj=request)
+        return remove_json_ref(request)
 
     def parse(self, request: t.Dict) -> ModelType:
         """Parse request."""
@@ -116,7 +125,7 @@ class _Response(t.Generic[ModelType]):
 
     @classmethod
     def wrap(cls, model: t.Type[ModelType]) -> t.Type[BaseModel]:
-        class wrapper(model):
+        class wrapper(model):  # type: ignore
             successful: bool = Field(
                 ...,
                 description="Whether or not the action execution was successful or not",
@@ -132,7 +141,7 @@ class _Response(t.Generic[ModelType]):
         """Build request schema."""
         schema = self.wrapper.model_json_schema(by_alias=True)
         schema["title"] = self.model.__name__
-        return jsonable_encoder(obj=schema)
+        return remove_json_ref(schema)
 
 
 class ActionMeta(type):
@@ -331,15 +340,13 @@ class Tool(WithLogger, _Attributes):
 
     @classmethod
     @abstractmethod
-    def actions(cls) -> t.List[t.Type[Action]]:  # type: ignore
+    def actions(cls) -> t.List[t.Type[t.Any]]:
         """Get collection of actions for the tool."""
-        return []
 
     @classmethod
     @abstractmethod
-    def triggers(cls) -> t.List[t.Type[Trigger]]:
+    def triggers(cls) -> t.List[t.Type[t.Any]]:
         """Get collection of triggers for the tool."""
-        return []
 
     @classmethod
     def _generate_schema(cls) -> None:
@@ -388,24 +395,10 @@ class Tool(WithLogger, _Attributes):
         """
         raise NotImplementedError()
 
-    def poll(
-        self,
-        trigger: str,
-        params: t.Dict,
-        metadata: t.Optional[t.Dict] = None,
-    ) -> t.Dict:
-        """
-        Poll the given trigger for event.
-
-        :param trigger: Name of the trigger.
-        :param params: Execution parameters.
-        :param metadata: A dictionary containing metadata for action.
-        """
-        raise NotImplementedError()
-
     @classmethod
     def register(cls: t.Type["Tool"]) -> None:
         """Register given tool to the registry."""
         if cls.gid not in registry:
             registry[cls.gid] = {}
         registry[cls.gid][cls.enum] = cls()
+        registry[cls.gid][cls.name] = registry[cls.gid][cls.enum]

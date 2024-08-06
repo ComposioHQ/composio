@@ -19,7 +19,7 @@ class InitRepoMapResponse(BaseModel):
     message: str = Field(default=None, description="Message if any")
 
 
-class InitializeRepositoryName(LocalAction[InitRepoMapRequest, InitRepoMapResponse]):
+class InitRepoMap(LocalAction[InitRepoMapRequest, InitRepoMapResponse]):
     """
     Initializes the repository map for the given root directory.
     """

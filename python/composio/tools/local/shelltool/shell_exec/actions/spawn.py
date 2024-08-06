@@ -71,7 +71,7 @@ class SpawnProcess(LocalAction[SpawnRequest, SpawnResponse]):
     def execute(self, request: SpawnRequest, metadata: Dict) -> SpawnResponse:
         """Execute a shell command."""
         cmd, *args = request.cmd.split(" ")
-        cmd = shutil.which(cmd=cmd)
+        cmd = shutil.which(cmd=cmd)  # type: ignore
         if cmd is None:
             raise ValueError(f"Command `{cmd}` not found!")
 

@@ -16,9 +16,7 @@ class DeleteRepoMapResponse(BaseModel):
     message: Optional[str] = Field(default=None, description="Error message if any")
 
 
-class DeleteRepositoryMapCache(
-    LocalAction[DeleteRepoMapRequest, DeleteRepoMapResponse]
-):
+class DeleteRepoMap(LocalAction[DeleteRepoMapRequest, DeleteRepoMapResponse]):
     """
     Deletes the repository map cache for the given root directory. This action removes the cached data used by RepoMap.
     """

@@ -94,9 +94,6 @@ class LocalToolMeta(type):
 
 
 class LocalToolMixin(Tool):
-    gid = "local"
-    """Group ID for this tool."""
-
     @classmethod
     @abstractmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
@@ -121,7 +118,7 @@ class LocalToolMixin(Tool):
         """Pre-process request for execution."""
         modified_request_data: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in request.items():
-            annotations = model.model_fields[param].json_schema_extra
+            annotations = t.cast(t.Dict, model.model_fields[param].json_schema_extra)
             file_readable = (annotations or {}).get("file_readable", False)
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 _content = Path(value).read_bytes()
@@ -203,3 +200,6 @@ class LocalToolMixin(Tool):
 
 class LocalTool(LocalToolMixin, metaclass=LocalToolMeta):
     """Local tool class."""
+
+    gid = "local"
+    """Group ID for this tool."""

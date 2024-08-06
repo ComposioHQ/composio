@@ -29,9 +29,7 @@ class WorkspaceStatusAction(
     """
 
     def execute(
-        self,
-        request: WorkspaceStatusRequest,
-        metadata: dict,
-    ) -> dict:
+        self, request: WorkspaceStatusRequest, metadata: dict
+    ) -> WorkspaceStatusResponse:
         # TODO: Implement shell status
-        return {"output": "running"}
+        return WorkspaceStatusResponse(workspace_status="runinng")

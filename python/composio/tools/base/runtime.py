@@ -145,7 +145,7 @@ def _wrap(
     _file = file
     _requires = requires
 
-    class WrappedAction(RuntimeAction[request_schema, response_schema]):
+    class WrappedAction(RuntimeAction[request_schema, response_schema]):  # type: ignore
         """Wrapped action class."""
 
         _tags: t.List[str] = tags

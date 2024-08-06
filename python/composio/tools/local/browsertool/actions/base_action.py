@@ -94,12 +94,9 @@ class BaseBrowserAction(LocalAction):
         workspace = metadata.get("workspace")
         if not workspace:
             raise ComposioSDKError("Workspace not found in authorisation data")
-        self.logger.debug(
-            f"Executing action `{self.get_tool_merged_action_name()}` with request data `{request_data}` and metadata `{metadata}`"
-        )
+
         browser_managers = workspace.browser_managers
         browser_manager = browser_managers.get(request_data.browser_manager_id)
-
         if not browser_manager:
             if not browser_managers:
                 raise ComposioSDKError("No browser managers available")
@@ -179,7 +176,7 @@ class BaseBrowserAction(LocalAction):
                 f"An error occurred while executing the browser action: {str(e)}"
             )
             self.logger.error(error_message, exc_info=True)
-            return self._response_schema(
+            return self.response.model(
                 error=error_message,
                 current_url=browser_manager.get_current_url(),
                 viewport=None,
