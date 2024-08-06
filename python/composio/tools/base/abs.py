@@ -111,7 +111,7 @@ class _Request(t.Generic[ModelType]):
             if len(missing) > 0:
                 message += f"\n- Following fields are missing: {set(missing)}"
             message += "\n- ".join(others)
-            raise ValueError(message)
+            raise ValueError(message) from e
 
 
 class _Response(t.Generic[ModelType]):
@@ -146,7 +146,7 @@ class _Response(t.Generic[ModelType]):
 class ActionMeta(type):
     """Action metaclass."""
 
-    def __init__(
+    def __init__(  # pylint: disable=unused-argument, self-cls-assignment
         cls,
         name: str,
         bases: t.Tuple,
@@ -303,11 +303,6 @@ class Tool(WithLogger, _Attributes):
         """Get collection of actions for the tool."""
 
     @classmethod
-    @abstractmethod
-    def triggers(cls) -> t.List[t.Type[t.Any]]:
-        """Get collection of triggers for the tool."""
-
-    @classmethod
     def _generate_schema(cls) -> None:
         """Generate schema for the app."""
         cls._schema = {
@@ -323,7 +318,6 @@ class Tool(WithLogger, _Attributes):
             "integration": {},
             "description": cls.description,
             "actions": [action.schema() for action in cls.actions()],
-            "triggers": [trigger.schema() for trigger in cls.triggers()],
         }
 
     @classmethod

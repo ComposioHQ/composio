@@ -132,19 +132,19 @@ class SearchCodebase(LocalAction[SearchCodebaseRequest, SearchCodebaseResponse])
                     and search_results["metadatas"]
                     and search_results["distances"]
                 ):
-                    for snippet, metadata, distance in zip(
+                    for snippet, mdata, distance in zip(
                         search_results["documents"][0],
                         search_results["metadatas"][0],
                         search_results["distances"][0],
                     ):
                         matched_snippets.append(
                             CodeSnippet(
-                                file_path=str(metadata["file_path"]),
-                                start_line=int(metadata["start_line"]),
-                                end_line=int(metadata["end_line"]),
+                                file_path=str(mdata["file_path"]),
+                                start_line=int(mdata["start_line"]),
+                                end_line=int(mdata["end_line"]),
+                                file_type=str(mdata["file_type"]),
                                 snippet_content=snippet,
                                 relevance_score=round(1 - distance, 4),
-                                file_type=str(metadata["file_type"]),
                             )
                         )
 

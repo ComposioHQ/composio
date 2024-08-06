@@ -146,7 +146,9 @@ class HostWorkspace(Workspace):
         metadata: dict,
     ) -> t.Dict:
         """Execute action in host workspace."""
-        from composio.tools.local import load_local_tools
+        from composio.tools.local import (  # pylint: disable=import-outside-toplevel
+            load_local_tools,
+        )
 
         registry = load_local_tools()
         tool = (

@@ -8,12 +8,14 @@ from composio.tools.base.abs import RegistryType, registry
 TOOLS_PATH = Path(__file__).parent
 
 
-def load_local_tools() -> RegistryType:
-    # from composio.tools.local.browsertool import BrowserTool
-    # from composio.tools.local.codeformat import CodeFormatTool
-    # from composio.tools.local.codegrep import CodeGrepTool
-    # from composio.tools.local.codeindex import CodeIndexTool
-    # from composio.tools.local.codemap import CodeMapTool
+def load_local_tools() -> (
+    RegistryType
+):  # pylint: disable=import-outside-toplevel,unused-import
+    from composio.tools.local.browsertool import BrowserTool
+    from composio.tools.local.codeformat import CodeFormatTool
+    from composio.tools.local.codegrep import CodeGrepTool
+    from composio.tools.local.codeindex import CodeIndexTool
+    from composio.tools.local.codemap import CodeMapTool
     from composio.tools.local.embedtool import EmbedTool
     from composio.tools.local.filetool import Filetool
     from composio.tools.local.greptile import Greptile

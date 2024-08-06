@@ -42,7 +42,11 @@ class LocalClient(WithLogger):
             action_schemas += [action.schema() for action in tools[app.name].actions()]
 
         for action in actions:
-            action_schemas.append(tools[action.app]._actions[action.name].schema())
+            action_schemas.append(
+                tools[action.app]  # pylint: disable=protected-access
+                ._actions[action.name]
+                .schema()
+            )
 
         if tags:
             tags = t.cast(t.List[str], [Tag(tag).value for tag in tags or []])

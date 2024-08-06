@@ -185,17 +185,22 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
             ).store()
 
+    processed = []
     for tool in LocalClient.tools().values():
+        if tool.name in processed:
+            continue
+
+        processed.append(tool.name)
         for actcls in tool.actions():
             action_names.append(actcls.enum)
             enums.base.ActionData(
-                name=action.name,
+                name=actcls.name,
                 app=tool.name,
-                tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
+                tags=actcls.tags,
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
-                shell=False,  # TOFIX(viraj)
+                shell=False,
             ).store()
 
     _update_annotations(

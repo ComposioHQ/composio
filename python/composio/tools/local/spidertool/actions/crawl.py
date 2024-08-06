@@ -40,6 +40,6 @@ class Crawl(LocalAction[CrawlToolRequest, CrawlToolResponse]):
                 raise ValueError(f"Error getting response for url {request.url}")
             return CrawlToolResponse(content=response.content)
         except (ConnectionError, TimeoutError) as e:
-            raise ValueError(f"Connection or timeout error occurred: {e}")
+            raise ValueError(f"Connection or timeout error occurred: {e}") from e
         except Exception as e:
-            raise ValueError(f"An unexpected error occurred: {e}")
+            raise ValueError(f"An unexpected error occurred: {e}") from e

@@ -54,7 +54,7 @@ class LocalAction(
 class LocalToolMeta(type):
     """Tool metaclass."""
 
-    def __init__(
+    def __init__(  # pylint: disable=self-cls-assignment,unused-argument
         cls,
         name: str,
         bases: t.Tuple,
@@ -164,9 +164,9 @@ class LocalToolMixin(Tool):
             metadata = metadata or {}
             instance = actcls(**metadata.get("kwargs", {}))
             if isinstance(instance, LocalAction):
-                instance._shells = metadata["_shells"]
-                instance._browsers = metadata["_browsers"]
-                instance._filemanagers = metadata["_filemanagers"]
+                setattr(instance, "_shells", metadata["_shells"])
+                setattr(instance, "_browsers", metadata["_browsers"])
+                setattr(instance, "_filemanagers", metadata["_filemanagers"])
 
             response = instance.execute(
                 request=actcls.request.parse(  # type: ignore

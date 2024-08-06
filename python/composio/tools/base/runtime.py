@@ -66,7 +66,7 @@ class RuntimeAction(
 class RuntimeToolMeta(type):
     """Tool metaclass."""
 
-    def __init__(
+    def __init__(  # pylint: disable=self-cls-assignment,unused-argument
         cls,
         name: str,
         bases: t.Tuple,

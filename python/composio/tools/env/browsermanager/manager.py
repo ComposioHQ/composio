@@ -24,7 +24,7 @@ def get_current_browser_manager() -> t.Optional["BrowserManager"]:
         return _active_manager
 
 
-class BrowserManager(Sessionable):
+class BrowserManager(Sessionable):  # pylint: disable=too-many-public-methods
     """Browser manager implementation for agent workspaces."""
 
     def __init__(self, headless: bool = True) -> None:

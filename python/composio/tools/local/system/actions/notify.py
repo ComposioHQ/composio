@@ -2,7 +2,7 @@ import subprocess
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class NotifyRequest(BaseModel):
@@ -20,20 +20,17 @@ class NotifyResponse(BaseModel):
     pass
 
 
-class Notify(Action[NotifyRequest, NotifyResponse]):
+class Notify(LocalAction[NotifyRequest, NotifyResponse]):
     """
     Sends a local notification. Only works for MacOS.
     """
 
-    display_name = "Notify"
-    _request_schema = NotifyRequest
-    _response_schema = NotifyResponse
     _tags = ["utility"]
-    _tool_name = "system"
+    display_name = "Notify"
 
-    def execute(self, request_data: NotifyRequest, authorisation_data: dict) -> dict:
-        title = request_data.title
-        message = request_data.message
+    def execute(self, request: NotifyRequest, metadata: dict) -> NotifyResponse:
+        title = request.title
+        message = request.message
         # Escape single quotes in the title and message
         title = "".join(char for char in title if char.isalnum() or char.isspace())
         message = "".join(char for char in message if char.isalnum() or char.isspace())

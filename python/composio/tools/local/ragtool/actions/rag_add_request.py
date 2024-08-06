@@ -28,7 +28,7 @@ class AddContentToRagTool(LocalAction[RagToolAddRequest, RagToolAddResponse]):
         try:
             from embedchain import App
         except ImportError as e:
-            raise ImportError(f"Failed to import App from embedchain: {e}")
+            raise ImportError(f"Failed to import App from embedchain: {e}") from e
 
         App().add(request.content)
         return RagToolAddResponse(status="Content added successfully")
