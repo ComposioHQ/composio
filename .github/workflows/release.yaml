@@ -1,14 +1,8 @@
 name: Build and Release
-on:
-  release:
-    types: [published]
-  workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: 'Skip running tests'
-        required: false
-        type: boolean
-        default: false
+on: 
+  push:
+    branches:
+      - ft-binary
 
 jobs:
   # test-examples:
@@ -44,101 +38,6 @@ jobs:
 
           # Build dist
           python -m build
-      - name: Publish Core to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
-          skip-existing: true
-          packages-dir: python/dist/
-
-  publish-plugins:
-    needs: publish-core
-    name: Create Plugin Releases
-    defaults:
-      run:
-        working-directory: ./python
-    strategy:
-      max-parallel: 1
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-        package:
-          [
-            autogen,
-            camel,
-            claude,
-            crew_ai,
-            griptape,
-            julep,
-            langchain,
-            llamaindex,
-            lyzr,
-            openai,
-            praisonai,
-            langgraph,
-          ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build ${{ matrix.package }}
-        run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          python -m pip install --upgrade pip
-          pip install twine build
-
-          # Build dist
-          cd plugins/${{ matrix.package }}
-          python -m build
-      - name: Publish ${{ matrix.package }} to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
-          skip-existing: true
-          packages-dir: python/plugins/${{ matrix.package }}/dist/
-
-  publish-swe:
-    needs: publish-core
-    name: Create SWE Toolkit Release
-    defaults:
-      run:
-        working-directory: ./python/swe
-    strategy:
-      max-parallel: 1
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build
-        run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          python -m pip install --upgrade pip
-          pip install twine build
-
-          # Build dist
-          python -m build
-      - name: Publish SWE Kit to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
-          skip-existing: true
-          packages-dir: python/swe/dist/
 
   publish-cli:
     name: Build and upload CLI
@@ -163,109 +62,20 @@ jobs:
           pip3 install .
 
           # Build CLI
-          pyinstaller composio/cli/__main__.py
+          pyinstaller --onefile composio/cli/__main__.py
 
-      # Ubuntu Release
-      - if: matrix.os == 'ubuntu-latest'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-linux-amd64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'ubuntu-latest'
-        name: Upload artifact
-        uses: softprops/action-gh-release@v2
-        with:
-          files: python/dist/composio-linux-amd64.zip
-
-      # Mac Intel Release
-      - if: matrix.os == 'macos-12'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-darwin-amd64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'macos-12'
-        name: Upload artifact
-        uses: softprops/action-gh-release@v2
-        with:
-          files: python/dist/composio-darwin-amd64.zip
 
       # Mac ARM Release
       - if: matrix.os == 'macos-14'
         run: |
           cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-darwin-arm64.zip bin/*
-          rm -rf bin/
+          zip -r composio-darwin-arm64.zip dist/*
+          rm -rf dist/
       - if: matrix.os == 'macos-14'
-        name: Upload artifact
-        uses: softprops/action-gh-release@v2
+        name: Upload artifact to GitHub
+        uses: actions/upload-artifact@v2
         with:
-          files: python/dist/composio-darwin-arm64.zip
+          name: composio-darwin-arm64
+          path: python/composio-darwin-arm64.zip
 
-      # # Windows release
-      # - if: matrix.os == 'windows-latest'
-      #   run: |
-      #     cd python/
-      #     mv dist/__main__ dist/bin
-      #     mv dist/bin/__main__.exe dist/bin/composio.exe
-
-      #     cd dist/
-      #     zip -r composio-win.zip bin/*
-      #     rm -rf bin/
-      # - if: matrix.os == 'windows-latest'
-      #   name: Upload artifact
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     files: python/dist/composio-win.zip
-
-  publish-images:
-    name: Build and publish docker images
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Docker login
-        env:
-          DOCKER_USER: ${{secrets.DOCKER_USER}}
-          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        run: |
-          echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
-      - name: Set up support for multi platform build
-        run: |
-          docker run --privileged --rm tonistiigi/binfmt --install all
-          docker buildx create --use --name multibuild
-          docker buildx inspect --bootstrap
-      - name: Publishing tool server images
-        run: |
-          cd python/dockerfiles/
-          VERSION=$(cat ../composio/__init__.py | grep version | cut -b 16- | rev | cut -b 2- | rev) make publish
-
-  publish-e2b:
-    name: Publish E2B template
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v4
-      - name: Install E2B
-        run: |
-          npm install -g @e2b/cli@latest
-      - name: Publishing Template
-        env:
-          E2B_ACCESS_TOKEN: ${{secrets.E2B_ACCESS_TOKEN}}
-        run: |
-          cd python/dockerfiles/
-          make e2b
+     
