@@ -163,7 +163,7 @@ jobs:
           pip3 install .
 
           # Build CLI
-          pyinstaller composio/cli/__main__.py
+          pyinstaller --onefile composio/cli/__main__.py
 
       # Ubuntu Release
       - if: matrix.os == 'ubuntu-latest'
