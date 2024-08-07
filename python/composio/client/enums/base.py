@@ -183,6 +183,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             return NotImplemented
         return str(self) == str(other)
 
+    def __hash__(self) -> int:
+        return hash(self._slug)
+
 
 def enum(cls: ClassType) -> ClassType:
     """Decorate class."""

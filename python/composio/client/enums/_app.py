@@ -79,6 +79,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SYSTEMTOOLS: "App"
     TASKADE: "App"
     TAVILY: "App"
+    TEST_ASANA: "App"
     TRELLO: "App"
     TWILIO: "App"
     TYPEFORM: "App"
