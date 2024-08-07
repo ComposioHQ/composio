@@ -3,6 +3,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[requires]
+python_version = "3.10.2"
+
 [packages]
 requests = ">=2.31.0,<3"
 jsonschema = ">=4.21.1,<5"
