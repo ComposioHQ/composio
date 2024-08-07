@@ -130,20 +130,3 @@ jobs:
       #   uses: softprops/action-gh-release@v2
       #   with:
       #     files: python/dist/composio-win.zip
-
-    name: Publish E2B template
-    needs: publish-core
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v4
-      - name: Install E2B
-        run: |
-          npm install -g @e2b/cli@latest
-      - name: Publishing Template
-        env:
-          E2B_ACCESS_TOKEN: ${{secrets.E2B_ACCESS_TOKEN}}
-        run: |
-          cd python/dockerfiles/
-          make e2b
