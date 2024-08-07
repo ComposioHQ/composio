@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from composio.tools.local.browsertool import BrowserTool
+from composio.tools.local.clickup.clickup import ClickupLocal
 from composio.tools.local.codeformat import CodeFormatTool
 from composio.tools.local.codegrep import CodeGrepTool
 from composio.tools.local.codeindex import CodeIndexTool
@@ -30,6 +31,7 @@ TOOLS_PATH = Path(__file__).parent
 TOOLS = [
     CodeIndexTool,
     CodeFormatTool,
+    ClickupLocal,
     BrowserTool,
     CodeGrepTool,
     CodeMapTool,
