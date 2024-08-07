@@ -299,7 +299,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
 
     def _update_status(
         self,
-        repo_path: Path,
+        repo_path: str,
         status: str,
         error: str = "",
     ) -> dict:

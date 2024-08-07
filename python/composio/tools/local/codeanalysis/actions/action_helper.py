@@ -40,6 +40,9 @@ class BaseCodeAnalysisAction(ABC):
         }
 
     def get_matching_items(self, query_name: str, item_type: str) -> List[str]:
+        if not self.fqdn_index:
+            raise ValueError("FQDN index not loaded")
+
         matching_fqdns = [
             curr_fqdn
             for curr_fqdn, curr_fqdn_elem in self.fqdn_index.items()
