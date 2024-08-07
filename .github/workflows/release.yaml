@@ -64,69 +64,18 @@ jobs:
           # Build CLI
           pyinstaller --onefile composio/cli/__main__.py
 
-      # Ubuntu Release
-      - if: matrix.os == 'ubuntu-latest'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-linux-amd64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'ubuntu-latest'
-        name: Upload artifact to GitHub
-        uses: actions/upload-artifact@v2
-        with:
-          name: composio-linux-amd64
-          path: python/dist/composio-linux-amd64.zip
-
-      # Mac Intel Release
-      - if: matrix.os == 'macos-12'
-        run: |
-          cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-darwin-amd64.zip bin/*
-          rm -rf bin/
-      - if: matrix.os == 'macos-12'
-        name: Upload artifact to GitHub
-        uses: actions/upload-artifact@v2
-        with:
-          name: composio-darwin-amd64
-          path: python/dist/composio-darwin-amd64.zip
 
       # Mac ARM Release
       - if: matrix.os == 'macos-14'
         run: |
           cd python/
-          mv dist/__main__ dist/bin
-          mv dist/bin/__main__ dist/bin/composio
-
-          cd dist/
-          zip -r composio-darwin-arm64.zip bin/*
-          rm -rf bin/
+          zip -r composio-darwin-arm64.zip dist/*
+          rm -rf dist/
       - if: matrix.os == 'macos-14'
         name: Upload artifact to GitHub
         uses: actions/upload-artifact@v2
         with:
           name: composio-darwin-arm64
-          path: python/dist/composio-darwin-arm64.zip
+          path: python/composio-darwin-arm64.zip
 
-      # # Windows release
-      # - if: matrix.os == 'windows-latest'
-      #   run: |
-      #     cd python/
-      #     mv dist/__main__ dist/bin
-      #     mv dist/bin/__main__.exe dist/bin/composio.exe
-
-      #     cd dist/
-      #     zip -r composio-win.zip bin/*
-      #     rm -rf bin/
-      # - if: matrix.os == 'windows-latest'
-      #   name: Upload artifact
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     files: python/dist/composio-win.zip
+     
