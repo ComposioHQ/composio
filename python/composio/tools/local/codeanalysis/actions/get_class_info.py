@@ -24,7 +24,7 @@ class GetClassInfo(
     Action[GetClassInfoInput, GetClassInfoOutput], BaseCodeAnalysisAction
 ):
     _display_name = "Get Class Info"
-    _request_schema: Type[GetClassInfoInput] = GetClassInfoOutput
+    _request_schema: Type[GetClassInfoInput] = GetClassInfoInput
     _response_schema: Type[GetClassInfoOutput] = GetClassInfoOutput
 
     def execute(self, request_data: GetClassInfoInput) -> GetClassInfoOutput:

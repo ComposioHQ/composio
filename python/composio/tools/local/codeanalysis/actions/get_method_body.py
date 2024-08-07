@@ -25,7 +25,7 @@ class GetMethodBody(
     Action[GetMethodBodyInput, GetMethodBodyOutput], MethodAnalysisAction
 ):
     _display_name = "Get Method Body"
-    _request_schema: Type[GetMethodBodyInput] = GetMethodBodyOutput
+    _request_schema: Type[GetMethodBodyInput] = GetMethodBodyInput
     _response_schema: Type[GetMethodBodyOutput] = GetMethodBodyOutput
 
     def execute(self, request_data: GetMethodBodyInput) -> GetMethodBodyOutput:
