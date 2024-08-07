@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from composio.tools.local.browsertool import BrowserTool
+from composio.tools.local.codeanalysis import CodeAnalysisTool
 from composio.tools.local.codeformat import CodeFormatTool
 from composio.tools.local.codegrep import CodeGrepTool
 from composio.tools.local.codeindex import CodeIndexTool
@@ -33,6 +34,7 @@ TOOLS = [
     BrowserTool,
     CodeGrepTool,
     CodeMapTool,
+    CodeAnalysisTool,
     EmbedTool,
     Mathematical,
     FileTool,

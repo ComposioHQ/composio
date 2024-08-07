@@ -22,6 +22,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     BREVO: "App"
     BROWSERTOOL: "App"
     CLICKUP: "App"
+    CODEANALYSISTOOL: "App"
     CODEFORMATTOOL: "App"
     CODEGREPTOOL: "App"
     CODEINDEXTOOL: "App"
