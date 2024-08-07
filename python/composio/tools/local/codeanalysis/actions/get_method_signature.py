@@ -11,8 +11,8 @@ from composio.tools.local.codeanalysis.constants import *
 
 
 class GetMethodSignatureInput(BaseModel):
-    class_name: Optional[str] = Field(
-        None, description="Name of the class to get the method signature for"
+    class_name: str = Field(
+        ..., description="Name of the class to get the method signature for"
     )
     method_name: str = Field(
         ..., description="Name of the method to get the signature for"

@@ -11,8 +11,8 @@ from composio.tools.local.codeanalysis.constants import *
 
 
 class GetMethodBodyInput(BaseModel):
-    class_name: Optional[str] = Field(
-        None, description="Name of the class to get the method body for"
+    class_name: str = Field(
+        ..., description="Name of the class to get the method body for"
     )
     method_name: str = Field(..., description="Name of the method to get the body for")
 
