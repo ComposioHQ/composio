@@ -1,7 +1,7 @@
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, List, Type
+from typing import Dict, List
 
 from composio.tools.local.codeanalysis import tool_utils
 from composio.tools.local.codeanalysis.constants import (

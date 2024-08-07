@@ -14,7 +14,10 @@ from composio.tools.local.codeanalysis import (
     tool_utils,
     tree_sitter_related,
 )
-from composio.tools.local.codeanalysis.constants import *
+from composio.tools.local.codeanalysis.constants import (
+    DIR_FOR_FQDN_CACHE,
+    DIR_FOR_TOOL_INFO_CACHE,
+)
 
 
 class Status(str, Enum):

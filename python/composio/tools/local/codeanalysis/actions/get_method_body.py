@@ -1,13 +1,9 @@
-import json
-from collections import Counter
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Type
 
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
-from composio.tools.local.codeanalysis import tool_utils
 from composio.tools.local.codeanalysis.actions.action_helper import MethodAnalysisAction
-from composio.tools.local.codeanalysis.constants import *
 
 
 class GetMethodBodyInput(BaseModel):
