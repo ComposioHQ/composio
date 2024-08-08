@@ -8,6 +8,7 @@ import { GetListActionsResponse } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
@@ -79,6 +80,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         };
 
         const parameters = jsonSchemaToModel(schema["parameters"]);
+
         // @TODO: Add escriiption an othjer stuff here
 
         return new DynamicStructuredTool({
