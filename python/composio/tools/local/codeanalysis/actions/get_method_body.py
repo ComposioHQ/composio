@@ -6,12 +6,20 @@ from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysis
 
 
 class GetMethodBodyInput(BaseModel):
-    class_name: str = Field(..., description="Fully qualified name of the class containing the target method")
-    method_name: str = Field(..., description="Name of the method whose body is to be retrieved")
+    class_name: str = Field(
+        ...,
+        description="Fully qualified name of the class containing the target method",
+    )
+    method_name: str = Field(
+        ..., description="Name of the method whose body is to be retrieved"
+    )
 
 
 class GetMethodBodyOutput(BaseModel):
-    result: str = Field(..., description="Retrieved method body as a string, including any decorators and comments")
+    result: str = Field(
+        ...,
+        description="Retrieved method body as a string, including any decorators and comments",
+    )
 
 
 class GetMethodBody(MethodAnalysisAction):
