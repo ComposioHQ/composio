@@ -2,7 +2,7 @@ import typing as t
 
 from composio.tools.local.base import Action, Tool
 
-from .actions import CreateIndex, GetClassInfo, GetMethodBody, GetMethodSignature
+from .actions import CreateCodeMap, GetClassInfo, GetMethodBody, GetMethodSignature
 
 
 class CodeAnalysisTool(Tool):
@@ -10,7 +10,7 @@ class CodeAnalysisTool(Tool):
 
     def actions(self) -> t.List[t.Type[Action]]:
         """Return the list of actions."""
-        return [CreateIndex, GetClassInfo, GetMethodBody, GetMethodSignature]
+        return [CreateCodeMap, GetClassInfo, GetMethodBody, GetMethodSignature]
 
     def triggers(self) -> t.List:
         """Return the list of triggers."""

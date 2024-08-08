@@ -7,21 +7,21 @@ from composio.tools.local.codeanalysis.actions.action_helper import MethodAnalys
 
 
 class GetMethodSignatureInput(BaseModel):
-    class_name: str = Field(
-        ..., description="Name of the class to get the method signature for"
-    )
-    method_name: str = Field(
-        ..., description="Name of the method to get the signature for"
-    )
+    class_name: str = Field(..., description="Fully qualified name of the class containing the target method")
+    method_name: str = Field(..., description="Name of the method whose signature is to be retrieved")
 
 
 class GetMethodSignatureOutput(BaseModel):
-    result: str = Field(..., description="Result of the action")
+    result: str = Field(..., description="Retrieved method signature as a string, including return type and parameters")
 
 
 class GetMethodSignature(
     Action[GetMethodSignatureInput, GetMethodSignatureOutput], MethodAnalysisAction
 ):
+    """
+    Retrieves the signature of a specified method within a given class.
+    """
+
     _display_name = "Get Method Signature"
     _request_schema: Type[GetMethodSignatureInput] = GetMethodSignatureInput
     _response_schema: Type[GetMethodSignatureOutput] = GetMethodSignatureOutput

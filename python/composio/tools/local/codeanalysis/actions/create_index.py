@@ -28,27 +28,30 @@ class Status(str, Enum):
     FAILED = "failed"
 
 
-class CreateCodeIndexInput(BaseModel):
-    dir_to_index_path: str = Field(..., description="Directory to index")
-    env_path: str = Field(..., description="Path to the environment file")
+class CreateCodeMapInput(BaseModel):
+    dir_to_index_path: str = Field(..., description="Absolute path to the directory that needs to be indexed for code analysis")
+    env_path: str = Field(..., description="Path to the environment file containing necessary configuration for indexing")
 
 
-class CreateCodeIndexOutput(BaseModel):
-    result: str = Field(..., description="Result of the action")
+class CreateCodeMapOutput(BaseModel):
+    result: str = Field(..., description="Outcome of the code map creation process, including success or failure status and any relevant details")
 
 
-class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
+class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
     """
-    Creates a fqdn cache for a repo.
+    Creates a Fully Qualified Domain Name (FQDN) cache for a repository.
+
+    This class is responsible for indexing a given repository by creating a cache
+    of FQDNs for various code entities such as classes, functions, and variables.
     """
 
     _display_name = "Create index"
-    _request_schema: Type[CreateCodeIndexInput] = CreateCodeIndexInput
-    _response_schema: Type[CreateCodeIndexOutput] = CreateCodeIndexOutput
+    _request_schema: Type[CreateCodeMapInput] = CreateCodeMapInput
+    _response_schema: Type[CreateCodeMapOutput] = CreateCodeMapOutput
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request_data: CreateCodeIndexInput) -> CreateCodeIndexOutput:
+    def execute(self, request_data: CreateCodeMapInput) -> CreateCodeMapOutput:
         self.REPO_DIR = os.path.normpath(
             os.path.abspath(request_data.dir_to_index_path)
         )
@@ -58,7 +61,7 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
             status = self.check_status(self.REPO_DIR)
 
             if status["status"] == Status.COMPLETED:
-                return CreateCodeIndexOutput(
+                return CreateCodeMapOutput(
                     result=f"Indexing already exists for {request_data.dir_to_index_path}"
                 )
 
@@ -70,13 +73,13 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
 
             self._process(status)
 
-            return CreateCodeIndexOutput(
+            return CreateCodeMapOutput(
                 result=f"Indexing completed for {request_data.dir_to_index_path}"
             )
         except Exception as e:
             print(f"Failed to execute indexing: {e}")
             self._update_status(self.REPO_DIR, Status.FAILED, str(e))
-            return CreateCodeIndexOutput(
+            return CreateCodeMapOutput(
                 result=f"Indexing failed for {request_data.dir_to_index_path}: {e}"
             )
 
