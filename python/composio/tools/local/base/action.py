@@ -11,9 +11,9 @@ import inflection
 import jsonref
 from pydantic import BaseModel, Field
 
-from composio.utils.logging import WithLogger
-from composio.client.enums.base import SentinalObject
 from composio.client.collections import _check_file_uploadable
+from composio.client.enums.base import SentinalObject
+from composio.utils.logging import WithLogger
 
 
 def generate_hashed_appId(input_string):
@@ -174,7 +174,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
                 )
-                file_uploadable = _check_file_uploadable(param=param)
+                file_uploadable = _check_file_uploadable(param)
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
                     with open(value, "rb") as file:
                         file_content = file.read()
@@ -191,7 +191,9 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
 
                 elif file_uploadable and isinstance(value, str):
                     if not os.path.isfile(value):
-                        raise ValueError(f"Attachment File with path `{value}` not found.")
+                        raise ValueError(
+                            f"Attachment File with path `{value}` not found."
+                        )
 
                     with open(value, "rb") as file:
                         file_content = file.read()
