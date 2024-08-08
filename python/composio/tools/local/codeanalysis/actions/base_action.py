@@ -8,9 +8,10 @@ from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
     DIR_FOR_TOOL_INFO_CACHE,
 )
+from composio.tools.local.base import Action
 
 
-class BaseCodeAnalysisAction(ABC):
+class BaseCodeAnalysisAction(Action, ABC):
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
