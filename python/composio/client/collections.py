@@ -779,6 +779,13 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return self._raise_if_empty(super().get(queries=queries))
 
 
+def _check_file_uploadable(param_field: dict) -> bool:
+    return (
+        (param_field.get("title") in ["File", "FileType"]) and
+        all([field_name in param_field.get("properties", {}) for field_name in ["name", "content"]])
+    )
+
+
 class ActionParametersModel(BaseModel):
     """Action parameter data models."""
 
@@ -991,14 +998,9 @@ class Actions(Collection[ActionModel]):
         action_req_schema = action_model.parameters.properties
         modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in params.items():
-            file_readable = False
-            if isinstance(action_req_schema[param], dict):
-                file_readable = action_req_schema[param].get("file_readable", False)
-                file_uploadable = (
-                    action_req_schema[param].get("allOf", [{}])[0].get("properties")
-                    or action_req_schema[param].get("properties")
-                    or {}
-                ) == FileModel.schema().get("properties")
+            request_param_schema = action_req_schema[param]
+            file_readable = request_param_schema.get("file_readable", False)
+            file_uploadable = _check_file_uploadable(request_param_schema)
 
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
@@ -1011,19 +1013,16 @@ class Actions(Collection[ActionModel]):
                             "utf-8"
                         )
             elif file_uploadable and isinstance(value, str):
-                if os.path.isfile(value):
-                    with open(value, "rb") as file:
-                        file_content = file.read()
-                    encoded_data = base64.b64encode(file_content).decode("utf-8")
-                    encoded_data_with_filename = {
-                        "name": os.path.basename(value),
-                        "content": encoded_data,
-                    }
-                    modified_params[param] = encoded_data_with_filename
-                elif value == "":
-                    pass
-                else:
-                    return {"error": f"File with path {value} not found"}
+                if not os.path.isfile(value):
+                    raise ValueError(f"Attachment File with path `{value}` not found.")
+
+                with open(value, "rb") as file:
+                    file_content = file.read()
+
+                modified_params[param] = {
+                    "name": os.path.basename(value),
+                    "content": base64.b64encode(file_content).decode("utf-8"),
+                }
             else:
                 modified_params[param] = value
 

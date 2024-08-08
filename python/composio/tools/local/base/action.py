@@ -11,8 +11,9 @@ import inflection
 import jsonref
 from pydantic import BaseModel, Field
 
-from composio.client.enums.base import SentinalObject
 from composio.utils.logging import WithLogger
+from composio.client.enums.base import SentinalObject
+from composio.client.collections import _check_file_uploadable
 
 
 def generate_hashed_appId(input_string):
@@ -157,19 +158,6 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
         }
         return action_schema
 
-    def _check_file_uploadable(self, param: str) -> bool:
-        return (
-            self.request_schema.model_json_schema()
-            .get("properties", {})
-            .get(param, {})
-            .get("allOf", [{}])[0]
-            .get("properties", {})
-            or self.request_schema.model_json_schema()
-            .get("properties", {})
-            .get(param, {})
-            .get("properties", {})
-        ) == FileModel.model_json_schema().get("properties")
-
     def execute_action(
         self,
         request_data: RequestType,
@@ -186,7 +174,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
                 )
-
+                file_uploadable = _check_file_uploadable(param=param)
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
                     with open(value, "rb") as file:
                         file_content = file.read()
@@ -200,12 +188,11 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                             modified_request_data[param] = base64.b64encode(
                                 file_content
                             ).decode("utf-8")
-                elif (
-                    self._check_file_uploadable(param=param)
-                    and isinstance(value, str)
-                    and os.path.isfile(value)
-                ):
-                    # For uploadable files, we also need to send the  filename
+
+                elif file_uploadable and isinstance(value, str):
+                    if not os.path.isfile(value):
+                        raise ValueError(f"Attachment File with path `{value}` not found.")
+
                     with open(value, "rb") as file:
                         file_content = file.read()
 
