@@ -1,0 +1,5 @@
+chromadb
+sentence-transformers
+open-clip-torch
+composio-langchain
+langchain-openai

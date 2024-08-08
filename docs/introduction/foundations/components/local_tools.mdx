@@ -1,0 +1,224 @@
+---
+title: "Creating a Local Tool"
+sidebarTitle: "Local Tools"
+icon: "gear"
+description: "How to create a Local Tool and add it to your Agent"
+---
+
+Composio provides you with hundreds of tools and thousands of prebuilt actions, which contains both: 
+ 1. Managed and run at Composio's end,
+ 2. Running and executed locally at the user's machine. 
+
+The second kind is termed as **Local Tools** and some of its advantages are: 
+
+* The execution data does not need to leave user's machine,
+* User can add as many new Tools and Actions by themselves, and once added,  can use with any of Composio's supported platforms.
+
+We have already added a number of local tools and are continuously adding more. 
+
+<AccordionGroup title="Category of application">
+    <Accordion title="FileTool">
+    Manage your local files with actions like `ReadFile`, `WriteFile`.
+    </Accordion>
+    <Accordion title="Greptile">
+    Code understanding and conversation with codebase using tools like `CodeQuery`.
+    </Accordion>
+    <Accordion title="LocalWorkspace">
+    Manage your workspace with actions like `CreateWorkspaceAction`, `WorkspaceStatusAction`
+    </Accordion>
+    <Accordion title="RagTool">
+    Retrieval Augmented Generation with `RagToolQuery`, `AddContentToRagTool`
+    </Accordion>
+    <Accordion title="WebTool">
+    Interact with internet with tools like `ScrapeWebsiteContent`, `ScrapeWebsiteElement`
+    </Accordion>    
+    <Accordion title="Mathematical">
+    Various mathematical functionalities such as `Calculator`
+    </Accordion>
+</AccordionGroup>
+
+## Adding a Custom Local tool
+
+In addition to the existing tools, a user can easily create their own tool and use with any of the supported frameworks of composio.
+
+**Pre-requisites:**
+
+* [Clone the Composio repo](https://github.com/ComposioHQ/composio)
+* [Setting up the development environment](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md#development-setup)
+
+
+Your local tool and its actions should be organized as follows:
+<CodeGroup>
+```bash File Structure of a local tool and its Actions files.
+composio/
+└── tools/
+   └── local/
+       └── <tool_name>/
+           ├── __init__.py
+           ├── tool.py
+           └── actions/
+               ├── __init__.py
+               └── <action_name>.py 
+```
+</CodeGroup>
+
+**Files and their Contents:**
+
+<Steps>
+<Step title="Define the Tool Class">
+**`composio/tools/local/<tool_name>/tool.py`**
+
+<CodeGroup>
+   ```python Defines the tool class
+    import typing as t
+    from composio.tools.local.base import Action, Tool
+    from .actions.<action_name> import <ActionName>  # Import your action class
+
+    class <ToolName>(Tool):
+        """
+        Description of your tool.
+        """
+
+        def actions(self) -> list[t.Type[Action]]:
+            return [<ActionName>]
+
+        def triggers(self) -> list:
+            return []  # If applicable, define triggers here
+   ```
+</CodeGroup>
+</Step>
+
+<Step title="Export the Tool Class">
+**`composio/tools/local/<tool_name>/__init__.py`:**
+<CodeGroup>
+   ```python Exports the tool class
+   from .tool import <ToolName>
+   ```
+</CodeGroup>
+</Step>
+
+<Step title="Define an Action for Your Tool">
+**`composio/tools/local/<tool_name>/actions/<action_name>.py`** 
+
+<CodeGroup>
+   ```python Defines an action for your tool
+   from pydantic import BaseModel, Field
+   from composio.tools.local.base import Action
+
+   class <RequestSchema>(BaseModel):
+       # Define input schema for your action
+       # Example:
+       # text: str = Field(..., description="Input text for the action")
+
+   class <ResponseSchema>(BaseModel):
+       # Define output schema for your action
+       # Example:
+       # result: str = Field(..., description="Result of the action")
+
+   class <ActionName>(Action[<RequestSchema>, <ResponseSchema>]):
+       """
+       Description of your action.
+       """
+
+       _display_name = "Friendly name of your action"
+       _request_schema = <RequestSchema>
+       _response_schema = <ResponseSchema>
+       _tags = ["tag1", "tag2"]  # Optional tags to categorize your action
+       _tool_name = "<tool_name>"  # Tool name, same as directory name
+
+       def execute(
+           self, request_data: <RequestSchema>, authorisation_data: dict = {}
+       ) -> <ResponseSchema>:
+           # Implement logic to process input and return output
+           # Example:
+           # response_data = {"result": "Processed text: " + request_data.text}
+           return {"execution_details": {"executed": True}, "response_data": response_data}
+   ```
+</CodeGroup>
+</Step>
+
+
+<Step title="Export the Action Class">
+**`composio/tools/local/<tool_name>/actions/__init__.py`:** 
+
+<CodeGroup>
+   ```python Exports the action class
+   from .<action_name> import <ActionName>
+   ```
+</CodeGroup>
+</Step>
+
+
+<Step title="Add your tool in local tools">
+**`composio/tools/local/__init__.py`:** 
+
+<CodeGroup>
+   ```python Add your tool
+    from pathlib import Path
+    from composio.tools.local.filetool import FileTool
+    from composio.tools.local.greptile import Greptile
+    from composio.tools.local.<tool_name> import <ToolName> # Import your tool class
+
+    TOOLS_PATH = Path(__file__).parent
+    TOOLS = [
+        FileTool,
+        Greptile,
+        <ToolName>, # Add your tool here
+    ]
+   ```
+</CodeGroup>
+</Step>
+
+
+<Step title="Add New App and Action Enum value">
+Run the below command to add a new tool and action to the enum values.
+
+```bash
+composio apps update
+```
+
+If this command fails or you still don't see your tool and action in the enum values, then update the enum values manually via below steps:
+**`composio/client/enums.py`:** 
+
+<CodeGroup>
+```python Add new App & Action entry
+
+class App(str, Enum):
+    """Composio App."""
+
+    ABLY = "ably"
+    ACCELO = "accelo"
+    <TOOL_ENUM_NAME> = <_tool_name_>
+
+
+
+class Action(tuple, Enum):
+    """App action."""
+
+    MATHEMATICAL_CALCULATOR = ("mathematical", "mathematical_calculator", True, True)
+    LOCALWORKSPACE_WORKSPACESTATUSACTION = ("localworkspace", "localworkspace_workspacestatusaction", True, True)
+    LOCALWORKSPACE_CREATEWORKSPACEACTION = ("localworkspace", "localworkspace_createworkspaceaction", True, True)
+    <ACTION_ENUM_NAME> = ( <_tool_name>, <_action_name>, True, True)
+
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+
+<Info> Make sure `_tool_name` is always the lowercase of the `<ToolName>` class we defined in the previous steps. E.g if we defined `<ToolName>` as `MyTool`, then _tool_name should be `mytool`.</Info>
+
+<Info> Make sure `TOOL_ENUM_NAME` and `ACTION_ENUM_NAME` is always one or more uppercase words seperated by _.</Info>
+
+**Examples/Sample Code:**
+
+There are lot of local tools available in `composio/tools/local` directory, that you can use as a reference. To get started, you should check out the below two tools:
+
+- [Mathematical tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/mathematical/tool.py): Simple tool to perform mathematical operations.
+- [Greptile tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/greptile/tool.py): Tool to integrate with [Greptile](https://www.greptile.com/) framework.
+
+**Key Points:**
+
+* Replace placeholders `<tool_name>`, `<action_name>`, `<ToolName>`, `<ActionName>`, `<RequestSchema>`, `<ResponseSchema>` with your own names and logic.
+* Use the Composio documentation for further details on defining tools and actions: [https://docs.composio.dev/](https://docs.composio.dev/)
+* Install any required dependencies for your tools and actions.

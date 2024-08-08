@@ -6,13 +6,6 @@ from crewai.task import TaskOutput
 from langchain_openai import ChatOpenAI
 
 
-CONFIG_FILE_PATH = "./task_config.yaml"
-
-# Path of the current script
-script_path = Path(__file__).resolve()
-script_dir = script_path.parent
-task_config_path = script_dir / Path(CONFIG_FILE_PATH)
-
 task_data = ""
 
 composio_toolset = ComposioToolSet()
@@ -42,7 +35,7 @@ if __name__ == "__main__":
     )
 
     task = Task(
-        description="Can you tell me in which file enums are stored? for repo samparkai/composio. ",
+        description="Can you tell me in which file enums are stored? for repo composiohq/composio. ",
         agent=agent_1,
         expected_output="Name of the file",
     )

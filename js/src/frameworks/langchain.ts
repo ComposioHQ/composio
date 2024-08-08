@@ -1,10 +1,14 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-
-type Optional<T> = T | null;
-type Dict<T> = { [key: string]: T };
-type Sequence<T> = Array<T>;
+import { ExecEnv } from "../env/factory";
+import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
+import type { Optional, Dict, Sequence } from "../sdk/types";
+import { GetListActionsResponse } from "../sdk/client";
+import { WorkspaceConfig } from "../env/config";
+import { Workspace } from "../env";
+import logger from "../utils/logger";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
@@ -32,7 +36,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
      * const tools = composio_toolset.get_tools({ apps: [App.GITHUB] });
      *
      * // Define task
-     * const task = "Star a repo SamparkAI/docs on GitHub";
+     * const task = "Star a repo composiohq/composio on GitHub";
      *
      * // Define agent
      * const agent = create_openai_functions_agent(openai_client, tools, prompt);
@@ -46,18 +50,20 @@ export class LangchainToolSet extends BaseComposioToolSet {
         config: {
             apiKey?: Optional<string>,
             baseUrl?: Optional<string>,
-            entityId?: string
+            entityId?: string,
+            workspaceConfig: WorkspaceConfig
         }
     ) {
         super(
             config.apiKey || null,
-            config.baseUrl || null,
+            config.baseUrl || COMPOSIO_BASE_URL,
             "langchain",
-            config.entityId || "default"
+            config.entityId || "default",
+            config.workspaceConfig || Workspace.Host()
         );
     }
 
-    private _wrap_tool(
+    private _wrapTool(
         schema: Dict<any>,
         entityId: Optional<string> = null
     ): DynamicStructuredTool {
@@ -66,7 +72,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         const description = schema["description"];
 
         const func = async (...kwargs: any[]): Promise<any> => {
-            return JSON.stringify(await this.execute_action(
+            return JSON.stringify(await this.executeAction(
                 action,
                 kwargs[0],
                 entityId || this.entityId
@@ -74,6 +80,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         };
 
         const parameters = jsonSchemaToModel(schema["parameters"]);
+
         // @TODO: Add escriiption an othjer stuff here
 
         return new DynamicStructuredTool({
@@ -84,47 +91,57 @@ export class LangchainToolSet extends BaseComposioToolSet {
         });
     }
 
-    async get_actions(
+    async getActions(
         filters: {
             actions?: Optional<Sequence<string>>
         } = {},
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
-        const actions =  (await this.client.actions.list({
-            actions: filters.actions?.join(","),
-            showAll: true
-        })).items?.filter((a) => {
-            return filters.actions
-        });
-         
-         return actions!.map(tool =>
-            this._wrap_tool(
+        const actions = await this.getActionsSchema(filters as any, entityId);
+        return actions!.map((tool: NonNullable<GetListActionsResponse["items"]>[0]) =>
+            this._wrapTool(
+                tool,
+                entityId || this.entityId
+            )
+        ) as any;
+    }
+
+    /**
+     * @deprecated Use getActions instead.
+     */
+    async get_actions(filters: {
+        actions?: Optional<Sequence<string>>
+    } = {}, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
+        logger.warn("get_actions is deprecated, use getActions instead");
+        return this.getActions(filters, entityId);
+    }
+
+    async getTools(
+        filters: {
+            apps: Sequence<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
+        },
+        entityId: Optional<string> = null
+    ): Promise<Sequence<DynamicStructuredTool>> {
+        const tools = await this.getToolsSchema(filters, entityId);
+        return tools.map((tool: NonNullable<GetListActionsResponse["items"]>[0]) =>
+            this._wrapTool(
                 tool,
                 entityId || this.entityId
             )
         );
     }
 
-    async get_tools(
-        filters: {
-            apps: Sequence<string>;
-            tags: Optional<Array<string>>;
-            useCase: Optional<string>;
-        },
-        entityId: Optional<string> = null
-    ): Promise<Sequence<DynamicStructuredTool>> {
-        const apps =  await this.client.actions.list({
-            apps: filters.apps.join(","),
-            tags: filters.tags?.join(","),
-            showAll: true,
-            filterImportantActions: !filters.tags && !filters.useCase,
-            useCase: filters.useCase || undefined
-         });
-        return apps.items!.map(tool =>
-            this._wrap_tool(
-                tool,
-                entityId || this.entityId
-            )
-        );
+    /**
+     * @deprecated Use getTools instead.
+     */
+    async get_tools(filters: {
+        apps: Sequence<string>;
+        tags?: Optional<Array<string>>;
+        useCase?: Optional<string>;
+    }, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
+        logger.warn("get_tools is deprecated, use getTools instead");
+        return this.getTools(filters, entityId);
     }
 }

@@ -1,0 +1,102 @@
+---
+title: "Benchmarks"
+sidebarTitle: "Benchmarks"
+icon: "chart-line"
+description: "Learn how to run and evaluate your SWE agents using benchmarks"
+---
+
+## Overview
+
+Benchmarking is a crucial step in evaluating the performance and capabilities of your Software Engineering (SWE) agents. The SWE Development Kit (swekit) provides tools and methods to run standardized benchmarks, allowing you to assess and compare different agent implementations.
+
+## SWE-Bench
+
+[SWE-Bench](https://www.swebench.com/) is a comprehensive benchmark suite designed specifically for evaluating SWE agents. It includes a variety of real-world software engineering tasks from popular Python open-source projects, providing a robust testing environment.
+
+### Running SWE-Bench
+
+To run the SWE-Bench benchmark on your agent:
+
+<Steps>
+<Step title="Prerequisites">
+  Ensure Docker is installed and running on your system.
+</Step>
+
+<Step title="Run the Benchmark">
+  Navigate to the agent directory and run:
+  <CodeGroup>
+  ```bash Run SWE-Bench
+  cd agent
+  python benchmark.py --test-split=<test_split>
+  ```
+  </CodeGroup>
+  
+  - By default, `python benchmark.py` runs only 1 test instance.
+  - Specify a test split ratio to run more tests, e.g., `--test-split=1:300` runs 300 tests.
+</Step>
+</Steps>
+
+### Workspace Environments
+
+You can run the benchmarks in different sandbox environments:
+
+<Tabs>
+  <Tab title="Docker (Default)">
+  No additional configuration required.
+</Tab>
+<Tab title="E2B">
+<CodeGroup>
+```python Modify benchmark.py
+from composio import WorkspaceType
+
+# existing benchmark code
+
+evaluate(
+    bench,
+    dry_run=False,
+    test_range=test_range,
+    test_instance_ids=test_instance_ids_list,
+    workspace_env=WorkspaceType.E2B
+)
+```
+</CodeGroup>
+  Export your E2B API key:
+<CodeGroup>
+  ```bash Set E2B API key
+  export E2B_API_KEY=<your_e2b_api_key>
+  ```
+</CodeGroup>
+</Tab>
+<Tab title="FlyIO">
+<CodeGroup>
+```python Modify benchmark.py
+from composio import WorkspaceType
+
+# existing benchmark code
+
+evaluate(
+    bench,
+    dry_run=False,
+    test_range=test_range,
+    test_instance_ids=test_instance_ids_list,
+    workspace_env=WorkspaceType.FLYIO
+)
+```
+</CodeGroup>
+Export your FlyIO API token:
+<CodeGroup>
+```bash Set FlyIO API token
+export FLY_API_TOKEN=<your_flyio_api_token>
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+## Implementation Details
+
+We utilize [SWE-Bench-Docker](https://github.com/aorwall/SWE-bench-docker) to ensure each test instance runs in an isolated container with its specific environment and Python version.
+
+## Next Steps
+
+- Explore the [Development Guide](DEVELOPMENT.md) to learn how to extend your SWE agent's functionality by adding new tools or extending existing ones.
+- Check out the [Workspace Environments](./workspace-environments.mdx) section for more details on running your agents in different environments.

@@ -1,0 +1,166 @@
+---
+title: "Research Assistant"
+sidebarTitle: "Research Assistant"
+icon: "book"
+description: "This guide provides detailed steps to create a research assistant agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports. Ensure you have Python 3.8 or higher installed.
+"
+---
+<Card color="#7bee0c" title="Research Assistant Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/research_assistant/">
+  Explore the complete source code for the Research Assistant Agent project. This repository contains all the necessary files and scripts to set up and run the Research Assistant system using CrewAI and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the Research Assistant Agent
+  </CardBody>
+</Card>
+<Steps>
+    <Step title="Run the `setup.sh` file">
+    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
+   
+   `cd python/examples/research_assistant`
+
+    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
+    <CodeGroup>
+        ```bash Run Command
+       chmod +x setup.sh
+
+       # run the setup.sh file
+       ./setup.sh
+        ```
+        Fill in the .env file after running the script.
+    </CodeGroup>
+    </Step>
+
+    <Step title="Importing required libraries">
+    Now, import the necessary libraries in your Python script:
+    <CodeGroup>
+        ```python Import statements
+        from crewai import Agent, Task, Crew, Process
+        from composio_langchain import ComposioToolSet, App
+        from langchain_openai import ChatOpenAI
+        import os
+        import dotenv
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialise Language Model and Define tools">
+    We'll initialize our language model and set up the necessary tools for our agents.
+    We will be using serpapi tool, So that our agent can execute actions using this tool.    
+    <CodeGroup>
+        ```python LLM and Tools 
+        # Load environment variables
+        dotenv.load_dotenv()
+
+        # Initialize the language model with OpenAI API key and model name
+        llm = ChatOpenAI(
+            model="gpt-4o"
+        )
+        # Setup tools using ComposioToolSet
+        composio_toolset = ComposioToolSet()
+        #Using .get_tools we are able to add various tools needed by the agents to execute its objective
+        #in this case its serpapi, giving the agent access to the internet
+        tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+        ```
+    </CodeGroup>
+
+    </Step>
+
+   <Step title="Defining the Agent">
+   Define the Researcher agent with the necessary parameters:
+   <CodeGroup>
+       ```python Agents
+        researcher = Agent(
+            role='Researcher',
+            goal='Search the internet for the information requested',
+            backstory="""
+            You are a researcher. Using the information in the task, you find out some of the most popular facts about the topic along with some of the trending aspects.
+            You provide a lot of information thereby allowing a choice in the content selected for the final blog.
+            """,
+            verbose=True,
+            allow_delegation=False,
+            tools=tools,
+            llm=llm
+        )
+       ```
+
+   </CodeGroup>
+   </Step>
+
+    <Step title="Defining the Task">
+    Create and execute a task for the agent:
+    <CodeGroup>
+        ```python Execute
+        task = Task( description="""Research about open source LLMs vs
+            closed source LLMs. Your final answer MUST be a full analysis report""", #To
+            change the topic, edit the text after 'Research about' in the description
+            parameter of task1 expected_output='When the research report is ready',
+            agent=researcher
+        )
+        crew = Crew(agents=[researcher], tasks=[task])
+        result = crew.kickoff()
+        print(result)
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+
+## Putting It All Together
+
+Below is the complete code snippet combining all the steps:
+
+<CodeGroup>
+    ```python Final Code
+    from crewai import Agent, Task, Crew, Process
+    from composio_langchain import ComposioToolSet, App
+    from langchain_openai import ChatOpenAI
+    import os
+    import dotenv
+
+    # Load environment variables
+    dotenv.load_dotenv()
+
+    # Initialize the language model with OpenAI API key and model name
+    llm = ChatOpenAI(
+        model_name="gpt-4o"
+    )
+
+    # Setup tools using ComposioToolSet
+    composio_toolset = ComposioToolSet()
+    #Using .get_tools we are able to add various tools needed by the agents to execute its objective
+    #in this case its serpapi, giving the agent access to the internet
+    tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+
+    # Define the Researcher agent with its role, goal, and backstory
+    researcher = Agent(
+        role='Researcher',
+        goal='Search the internet for the information requested',
+        backstory="""
+        You are a researcher. Using the information in the task, you find out some of the most popular facts about the topic along with some of the trending aspects.
+        You provide a lot of information thereby allowing a choice in the content selected for the final blog.
+        """,
+        verbose=True,  # Enable verbose logging for the agent
+        allow_delegation=False,  # Disable delegation
+        tools=tools,  # Assign the tools to the agent
+        llm=llm  # Assign the language model to the agent
+    )
+
+    # Define the research task with its description and expected output
+    task = Task(
+        description="""
+        Research about open source LLMs vs closed source LLMs.
+        Your final answer MUST be a full analysis report
+        """, #you can add your own topic after "Research about {your topic}"
+        expected_output='When the research report is ready',  # Define the expected output
+        agent=researcher  # Assign the task to the researcher agent
+    )
+
+    # Execute the task
+    crew = Crew(agents=[researcher], tasks=[task])
+    result = crew.kickoff()
+    print(result)
+    ```
+
+</CodeGroup>
+

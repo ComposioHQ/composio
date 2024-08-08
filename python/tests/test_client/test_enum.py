@@ -16,20 +16,20 @@ def test_app_enum() -> None:
     """Test `App` enum."""
     assert App.GITHUB == "GITHUB"
     assert not App.GITHUB.is_local
-    assert App.LOCALWORKSPACE.is_local
+    assert App.SEARCHTOOL.is_local
 
 
 def test_action_enum() -> None:
     """Test `Action` enum."""
     action = Action("github_issues_list")
     assert action.app == "github"
-    assert action.name == "github_issues_list"
+    assert action.name == "github_list_issues_assigned_to_the_authenticated_user"
     assert not action.no_auth
 
 
 def test_trigger_enum() -> None:
     """Test `Trigger` enum."""
-    trigger = Trigger("slack_new_message")
+    trigger = Trigger("slack_receive_message")
     assert trigger.app == "slack"
     assert trigger.name == "slack_receive_message"
 

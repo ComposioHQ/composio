@@ -5,17 +5,39 @@ icon: "play"
 description: "Use Composio to connect OpenAI Assistant to GitHub (via OAUTH2) to perform a task using natural language"
 ---
 
-## Goal: Star a repository on GitHub with natural language
+## Quick Start Guide
+
+In this quickstart, you will learn how to:
+
+- Install Composio package
+- Connect your GitHub account
+- Use Composio with OpenAI to perform actions on GitHub using natural language
 
 <Steps>
 
 <Step title="Install Composio Package">
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-```bash Install Composio SDK 
+```bash Install Composio Package 
 pip install composio_core 
 pip install composio_openai 
 ```
 </CodeGroup>
+</Tab>
+
+<Tab title="JS">
+<CodeGroup>
+```javascript Install Composio Package 
+npm install composio-core
+npm install openai
+pip install composio_core  // for installing CLI via python. 
+```
+</CodeGroup>
+<Note> CLI binary package coming soon. Skip if not using CLI. </Note>
+</Tab>
+</Tabs>
+
 </Step>
 <Step title="Authenticate your github account using CLI">
 <CodeGroup>
@@ -23,38 +45,77 @@ pip install composio_openai
 composio add github
 ```
 </CodeGroup>
+
 </Step>
-<Step title="Import python packages">
-Modify `OPENAIKEY` before executing it.
+<Step title="Import packages and initialize clients">
+<Note>Modify `OPENAIKEY` and `COMPOSIO_API_KEY` before executing it.</Note>
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-```python Import Base Packages & Configure OpenAI Client
+```python Initialise the Composio Tool Set
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
 openai_client = OpenAI(api_key="**\*\***OPENAIKEY**\*\***")
 
-# Initialise the Composio Tool Set
+composio_toolset = ComposioToolSet() 
 
-composio_toolset = ComposioToolSet(api_key="**\*\***COMPOSIO_API_KEY**\*\***")
-
+# composio_toolset = ComposioToolSet(api_key=COMPOSIO_API_KEY)
+# Only need to pass API key if you are not using CLI
 ```
 </CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript Initialise the Composio Tool Set
+
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAIKEY
+});
+
+// Initialise the Composio Tool Set
+const composio_toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY
+});
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
 </Step>
 
 <Step title="Fetch all Github actions via Composio">
-  <CodeGroup>
-    ```python Fetch Actions
-# Get GitHub tools that are pre-configured
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Get GitHub action for starring a repo
 actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
-    ```
-  </CodeGroup>
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript Get GitHub action for starring a repo
+const tools = await composio_toolset.getActions({
+actions: ["github_start_repo"]
+});
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
 </Step>
 
-<Step title="Using Function Call">
-
+<Step title="Pass those actions to LLM">
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-```python Task to Action Selection
-my_task = "Star a repo ComposioHQ/composio on GitHub"
+```python Star a repository using LLM
+my_task = "Star a repo composiohq/composio on GitHub"
 
 # Setup openai assistant
 assistant_instruction = "You are a super intelligent personal assistant"
@@ -75,44 +136,58 @@ message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="u
 run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
 
 ```
-
-</CodeGroup>
-</Step>
-
-<Step title="Handle Tool Calls - Execute Actions">
-<Tabs>
-<Tab title="Default">
-<CodeGroup>
-```python Executing Selected Actions!
-# Execute Function calls
-response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
-    client=openai_client,
-    run=run,
-    thread=thread,
-)
-
-print(response_after_tool_calls)
-```
 </CodeGroup>
 </Tab>
-<Tab title="Execute actions for Specific User">
-You can checkout adding connections for your user [here](/introduction/foundations/components/integrations/connected-account)
+<Tab title="JS">
 <CodeGroup>
-```python Executing Selected Actions!
-# Execute Function calls
-response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
-    client=openai_client,
-    run=run,
-    thread=thread,
-)
+```javascript Star a repository using LLM
+const instruction = "Star a repo composiohq/composio on GitHub";
 
-url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
-print(f"Open this URL to see the assistant in action: {url}")
-print(response_after_tool_calls)
+// Initialise the Composio Tool Set
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4-turbo",
+    messages: [{ role: "user", content: instruction }],
+    tools: tools,
+    tool_choice: "auto",
+});
+
 ```
 </CodeGroup>
 </Tab>
 </Tabs>
+
+</Step>
+
+<Step title="Handle Tool Calls - Execute Actions">
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Execute Function calls
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript Execute Function calls
+var resp = response.choices[0].message.tool_calls 
+console.log(resp);
+
+// Execute
+await composio_toolset.handleToolCall(response);
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+<Note>You can checkout docs on adding connections or executing actions for a specific user [here](/introduction/foundations/components/entity/entity-guide)</Note>
+
 </Step>
 
 </Steps>
@@ -120,7 +195,8 @@ print(response_after_tool_calls)
 ### Putting it all together
 
 Replace `OPENAIKEY`.
-
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
 ```python Complete Code
 ## Step 1
@@ -132,7 +208,7 @@ Replace `OPENAIKEY`.
 
 ## Step 3
 from openai import OpenAI
-from composio_openai import ComposioToolSet, App
+from composio_openai import ComposioToolSet, App,Action
 
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 
@@ -141,20 +217,32 @@ composio_toolset = ComposioToolSet(api_key="**\*\***COMPOSIO_API_KEY**\*\***")
 
 ## Step 4
 # Get GitHub tools that are pre-configured
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
 
 
 ## Step 5
-my_task = "Star a repo ComposioHQ/composio on GitHub"
+my_task = "Star a repo composiohq/composio on GitHub"
 
-# Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(
-model="gpt-4-turbo",
-tools=actions, # Passing actions we fetched earlier.
-messages=[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": my_task}
-  ]
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions,  # type: ignore
+)
+
+
+# create a thread
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(
+    thread_id=thread.id, role="user", content=my_task
+)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(
+    thread_id=thread.id, assistant_id=assistant.id
 )
 
 
@@ -171,3 +259,50 @@ print(f"Open this URL to see the assistant in action: {url}")
 print(response_after_tool_calls)
 ```
 </CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript Complete Code
+// Importing necessary modules from the openai and composio-core packages
+
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+
+// Initializing the OpenAI client with the API key from environment variables
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+// Initializing the Composio ToolSet with the API key from environment variables
+const composio_toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY
+});
+
+// Fetching GitHub actions from Composio ToolSet
+const tools = await composio_toolset.getActions({
+    actions: ["github_start_repo"]
+});
+
+// Defining the user instruction for the OpenAI model
+const instruction = "Star a repo composiohq/composio on GitHub";
+
+// Creating a chat completion request to the OpenAI model
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4-turbo",
+    messages: [{ role: "user", content: instruction }],
+    tools: tools,
+    tool_choice: "auto",
+});
+
+// Extracting tool calls from the response and logging them
+var resp = response.choices[0].message.tool_calls 
+console.log(resp);
+
+// Handling the tool call using Composio ToolSet
+await composio_toolset.handleToolCall(response);
+
+```
+</CodeGroup>
+</Tab>
+</Tabs>

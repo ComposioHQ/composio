@@ -1,77 +1,367 @@
 ---
-title: "🧑‍🤝‍🧑 Entity"
-sidebarTitle: "Entity"
+title: "🧑‍🤝‍🧑 Accounts/Entity"
+sidebarTitle: "Accounts/Entity"
 icon: "users"
-description: "Manage all the tools of your Users & Organizations 🧑‍🤝‍🧑 via entities"
+description: "Manage all the connected accounts of your Users & Organizations 🧑‍🤝‍🧑 via entities"
 ---
 
 ## Introduction to Entities
 
-In Composio, an entity represents either a user or an organization, encapsulating all associated accounts under a single management umbrella. 
-This consolidation simplifies the administration of multiple accounts.
+- Within Composio, an entity acts as a central hub representing either a user or an organization. 
+- This entity consolidates all their connected accounts, providing a unified view of their integrations. 
+- For instance, if you have million users connecting various accounts (Github, Hubspot, Slack, etc.) within your application,
+each user would be represented as an individual entity. 
+- All the accounts linked by a user would then be neatly organized as connected accounts under their respective entity.
 
+## Introduction to Connected Accounts
+- When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
 
-## Make your user do a task on Github
-<CodeGroup>
-```python Default Imports
-from composio import Composio, App
-from openai import OpenAI
+### Create or get an entity
 
-composio_client = Composio(api_key="COMPOSIO_API_KEY")
-openai_client = OpenAI(api_key="******OPENAIKEY******")
-```
-</CodeGroup>
-
-Let's create an entity for a user via their email. Email is just an example, you can use any unique identifier for the entity.
-
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
 ```python Create or get an entity
-entity = composio_client.get_entity(id='user_email_id') 
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet(entity_id="default")
+
+entity = toolset.getEntity(id='default')
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="Javascript">
+<CodeGroup>
+```javascript Create or get an entity
+import { Composio } from "composio-core";
+
+const composio_client = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const entity = composio_client.getEntity('user_email_id');
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+### Connect an account for an entity
+<Tabs>
+<Tab title="Via Dashboard">
+The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
+For deploying in a production environment, utilize the SDK or API methods.
+<div
+  style={{
+    width: '100%',
+    position: 'relative',
+    paddingTop: '56.25%',
+  }}>
+  <iframe
+    src="https://app.supademo.com/embed/cly1z8i4g0lwy149zfx6h4ee2"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+      position: 'absolute',
+      top: 0,left: 0, width: '100%', height: '100%',
+      border: '3px solid #5E43CE',
+      borderRadius: '10px',
+    }}/>
+</div>
+
+</Tab>
+
+<Tab title="CLI">
+<CodeGroup>
+```bash Adding a connection for an entity
+composio add github -e default # replace `default` with the entity id
+
+# you can also use -s to specify scopes ex. -s "repo,user"
+# you can also use -i to specify the integration id ex. -i 123456
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python OAuth2 Apps">
+<CodeGroup>
+```python get the entity and auth scheme for an app
+from composio import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="default")
+
+app = App.Github
+
+entity = toolset.get_entity()
+schemes = toolset.get_auth_schemes(app=app)
+
+print(schemes) # this should print all the auth schemes for the app
+# filter next step based on the scheme
+# some apps have multiple auth schemes ex. Github has OAuth2 and Basic Auth
 ```
 </CodeGroup>
 
-Now, let's get the connected account for the entity. If the connected account does not exist, let's get the user to connect their account.
+Complete Authentication process for OAuth2 application. 
 
 <CodeGroup>
-```python Get connected account
+```python Complete Auth for OAuth2
 try:
-    connected_account  = entity.get_connection(app="slack")
+    entity.get_connection(app=App.GITHUB)
+
+    print(f"Entity {entity_id} is already authenticated with GitHub")
+
+except NoItemsFound as e:
+
+    # Create a request to initiate connection
+    request = entity.initiate_connection(App.Github, redirect_url="https://google.com")
+
+    print(
+        f"Please authenticate {App.GITHUB} in the browser and come back here. URL: {request.redirectUrl}"
+    )
+
+    # Poll until the connection is active
+    connected_account = request.wait_until_active(client=composio_client, timeout=100)
+
+    # also possible to check on redirect url
+    # connected_account = entity.get_connection(app=App.GITHUB)
+
 except Exception as e:
+    print(e)
+
+```
+</CodeGroup>
+
+</Tab>
+<Tab title="Python Non OAuth2 Apps">
+<CodeGroup>
+```python get the entity and auth scheme for an app
+from composio import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="default")
+
+app = App.SERPAPI
+
+entity = toolset.get_entity()
+schemes = toolset.get_auth_schemes(app=app)
+
+print(schemes) # this should print all the auth schemes for the app
+# filter next step based on the scheme
+# some apps have multiple auth schemes ex. Github has OAuth2 and Basic Auth
+```
+</CodeGroup>
+Complete Authentication process for non OAuth2 application. 
+
+<CodeGroup>
+```python Complete Auth for Other Auth Schemes
+try:
+    entity.get_connection(app=App.SERPAPI)
+
+    print(f"Entity {entity_id} is already authenticated with SERPAPI")
+
+except NoItemsFound as e:
+    # parse scheme dict to get the auth config parameters needed to initiate connection
+    # pass those parameters to end user to fill in
+
+    # after collecting the auth config from the user
+    auth_config = {
+        "api_key": "your_api_key"
+    }
+
+    # Create a request to initiate connection
+    connection_request = entity.initiate_connection(
+        app_name=App.SERPAPI,
+        auth_mode=schemes[0].auth_mode, # this is fetched from the scheme dict ex. "api_key" or "basic_auth" or some other value
+        auth_config=auth_config,
+    )
+
+    connected_account = connection_request.wait_until_active(client=toolset.client)
+
+    # use this connected_account to perform tasks on behalf of the entity
+
+except Exception as e:
+    print(e)
+
+```
+</CodeGroup>
+
+</Tab>
+<Tab title="Javascript All apps">
+<CodeGroup>
+```javascript Get the entity and auth scheme for an app
+import { Composio } from "composio-core";
+
+const client = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+
+const entity = await client.getEntity("default");
+
+// Get the integration id from the dashboard
+const integration = await client.integrations.get({
+    integrationId: "{{integration_id}}"
+});
+
+console.log(
+    "Expected input fields for the integration:",
+    integration.expectedInputFields
+)
+```
+</CodeGroup>
+
+Complete Authentication process by passing the auth config to the initiate connection method.
+
+<CodeGroup>
+```javascript javascript
+const entity = await client.getEntity("default");
+
+const params = {
+    "api_key": "YOUR_API_KEY"
+}
+const connection = await entity.initiateConnection(
+    'serpapi',
+    null,
+    params
+);
+```
+</CodeGroup>
+
+</Tab>
+</Tabs>
+
+### Get All Connected accounts 
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Get All Connected Account
+try:
+    connected_accounts  = entity.get_connections()
+except NoItemsFound as e:
     print("No connected account found")
 ```
 </CodeGroup>
-
-Now, let's get all the actions that can be performed on the entity on GitHub. You can avoid filtering via Github if you want to see all the actions.
+</Tab>
+<Tab title="Javascript">
 <CodeGroup>
-```python Get all actions
-actions = entity.get_actions(app_name = App.GITHUB)
+```javascript Get All Connected Account
+coming soon
 ```
 </CodeGroup>
 
-Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
+</Tab>
+</Tabs>
 
+
+### Execute Agent and perform tasks on behalf of an entity
+
+Now, let's get all the actions that can be performed on the entity on GitHub.
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-```python Agent Execution
+```python Fetch tools
 from composio_openai import ComposioToolSet, Action, App
 from openai import OpenAI
 
 openai_client = OpenAI()
+
 # can be configured to use the entity id of the user
 tool_set = ComposioToolSet(entity_id="melissa") 
-actions = tool_set.get_tools(apps=[App.GITHUB])
 
-my_task = "Star a repo ComposioHQ/composio on GitHub"
-
-response = openai_client.chat.completions.create(
-    model="gpt-4-turbo-preview",
-    tools=actions,  # Passing actions we fetched earlier.
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": my_task},
-    ],
-)
-tool_set.handle_tool_calls(response=response, entity_id="melissa")
+actions = z.get_actions(app_name = App.GITHUB)
 ```
 </CodeGroup>
+</Tab>
+<Tab title="Javascript">
+<CodeGroup>
+```python Execute Agent
+import { OpenAIToolSet } from "composio-core";
+import { OpenAI } from "openai";
+
+const toolset = new OpenAIToolSet({ entityId: "melissa"});
+
+task = "Star a repo composiohq/composio on GitHub"
+
+const llm = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+const composioToolset = new OpenAIToolSet();
+
+const tools = await composioToolset.getTools({
+    apps: ["github"],
+});
+const assistantThread = await llm.beta.threads.create({
+    messages: [
+        {
+            role: "assistant",
+            content: "You are an assistant tasked with starring a repository on GitHub."
+        }
+    ]
+});
+
+const assistant = await llm.beta.assistants.create({
+    name: "SWE agent",
+    instructions: `Your goal is to star the repository: ComposioHq/composio`,
+    model: "gpt-4o",
+    tools: tools
+});
+
+  await llm.beta.threads.messages.create(
+    assistantThread.id,
+    {
+      role: "user",
+      content: issue
+    }
+  );
+  const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
+    assistant_id: assistant.id,
+    instructions: `Repo is: ${repo} and your goal is to ${issue}`,
+    tool_choice: "required"
+  });
+ 
+  await composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
+```
+</CodeGroup>
+
+</Tab>
+</Tabs>
+
+Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python execute agent
+const task = "Star a repo composiohq/composio on GitHub"
+
+const response = await openAI.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    tools: tools,
+    messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: task },
+    ],
+});
+
+await toolset.handle_tool_calls(response, entity.id);
+```
+</CodeGroup>
+
+</Tab>
+<Tab title="Javascript">
+<CodeGroup>
+```javascript Fetch tools
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const entity = toolset.client.getEntity('default');
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
+```
+</CodeGroup>
+</Tab>
+</Tabs>
 
 You can use the above pattern to make agents at a user level to perform tasks on their behalf.

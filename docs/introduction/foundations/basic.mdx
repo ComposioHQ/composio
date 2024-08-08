@@ -5,45 +5,40 @@ icon: "book"
 description: "Platform's core concepts and functionalities."
 ---
 
-Let's get you started building with Composio! You should be familiar with core concepts of Composio Platform to best utilise it.
+Let's get you started building with Composio! This section will get you familiar with Composio’s core concepts.
 
 Goal of this section is to give you a brief walkthrough of each component and how they go together.
 
 <CardGroup cols={3}>
-<Card title="Integrations" icon="plug" href="./components/integrations/integration-guide">
+<Card color="#7bee0c" title="Integrations" icon="plug" href="./components/integrations/integration-guide">
 </Card>
 
-<Card title="Entity" icon="users" href="./components/entity/entity-guide">
+<Card color="#7bee0c" title="Entity" icon="users" href="./components/entity/entity-guide">
 </Card>
 
-<Card title="Connected Accounts" icon="plug" href="./components/integrations/connected-account">
+<Card color="#7bee0c" title="Actions" icon="wand-magic-sparkles" href="./components/actions/action-guide">
 </Card>
 
-<Card title="Actions" icon="wand-magic-sparkles" href="./components/actions/action-guide">
+<Card color="#7bee0c" title="Triggers" icon="webhook" href="./components/triggers/trigger-guide">
 </Card>
 
-<Card title="Triggers" icon="webhook" href="./components/triggers/trigger-guide">
+<Card color="#7bee0c" title="Custom Actions" icon="code" href="./components/actions/local-code">
 </Card>
 
-<Card title="Custom Actions" icon="code" href="./components/actions/local-code">
-</Card>
-
-<Card title="Custom Tools" icon="puzzle-piece" href="./components/integrations/custom-integration">
+<Card color="#7bee0c" title="Custom Tools" icon="puzzle-piece" href="./components/integrations/custom-integration">
 </Card>
 </CardGroup>
 
 | Component         | Description                                                                                                                                                                                                                                                                | Examples                                                                                                                                           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Integrations      | Integrations are tool configurations (eg. Permissions to ask for when connecting an account, ClientID/Secret in the case of OAuth) that will be used to connect your users account to Composio. You can use your own configuration or use Composio's default integrations. | Github Integration that requires repo permission & User data (ex. 1). Linear Integration requiring API Key (2). Linear Integration using Oauth (3) |
-| Entity            | Entity is a catch all term for your users who can be individuals, entities, teams, organisations. Composio manages authentication at `Entity` level.                                                                                                                       | Melissa, Sam, ABC Corp, etc                                                                                                                        |
-| ConnectedAccounts | Connected accounts represent connections between your app and third-party platforms. They are user-specific instances of integrations, storing credentials and specific configuration details.                                                                             | Melissa's Github account after completing auth with integration, Similarly Sam's Hubspot account.                                                  |
+| Entity            | Entity is a **catch all term for your users** which can be of type `individuals`, `teams`, `organisations`. | Melissa, Sam, ABC Corp, etc                                                                                                                        |
+| ConnectedAccounts | Connections represent **link between your app and third-party platforms accounts of your user**.                                                                             | Melissa's Github account after completing auth with integration, Similarly Sam's Hubspot account.                                                  |
+| Integrations      | Integrations are customisable configurations (settings) that are used while creating a new connected account. | Github Integration that that will ask Melissa for private repo permission|
 | Tools             | Tools refer to the various applications or tools that can be integrated and used by your agents via Composio.                                                                                                                                                              | Shell manager, Hubspot, Github, Slack & many others                                                                                                |
-| Actions           | Actions are tasks that can be performed by your agents. ex. `send email via gmail`                                                                                                                                                                                         | Send email via Gmail, Send email via Outlook, Send email via Sendgrid, etc                                                                         |
+| Actions           | Actions are tasks that can be performed by your agents.| Send email via Gmail, Send email via Outlook, Send email via Sendgrid, etc                                                                         |
 | Triggers          | Triggers are predefined conditions that, when met, initiate webhooks to your agents.                                                                                                                                                                                       | New Github Issue, New Github Pull Request, New Github Release, New Hubspot Ticket, New Hubspot Case, etc                                           |
 
 
 In next few pages, we can go through each component in detail. They will explain how to use each component in the code and what the expected flow should look like.
-
-
 
 If you prefer something quicker, checkout [Quickstart Guide](../intro/quickstart)

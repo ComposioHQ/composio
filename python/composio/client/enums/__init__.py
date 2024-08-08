@@ -15,7 +15,7 @@ TagType = t.Union[str, Tag]
 AppType = t.Union[str, App]
 "Type placeholder for `App`"
 
-ActionType = t.Union[str, Action]
+ActionType = t.Union[str, Action, t.Type[base.SentinalObject]]
 "Type placeholder for `Action`"
 
 TriggerType = t.Union[str, Trigger]

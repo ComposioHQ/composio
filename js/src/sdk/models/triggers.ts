@@ -1,7 +1,7 @@
 import { CancelablePromise, ListTriggersData, ListTriggersResponse, SetupTriggerData, SetupTriggerResponse, listTriggers, setupTrigger } from "../client";
 import { Composio } from "../";
-import { PusherUtils, TriggerData } from "../utils/pusher";
-
+import { TriggerData, PusherUtils } from "../utils/pusher";
+import logger from "../../utils/logger";
 
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
@@ -63,7 +63,7 @@ export class Triggers {
             }
         }
         
-        console.log("Subscribing to triggers",filters)
+        logger.info("Subscribing to triggers",filters)
         PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
             if (shouldSendTrigger(data)) {
                 fn(data);

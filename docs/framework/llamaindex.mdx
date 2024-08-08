@@ -88,7 +88,7 @@ Create a worker agent, setting it up with proper prefix messages and tools.
 Converse with your LlamaIndex agent, and it will use the provoded tool(s) as necessary.
 <CodeGroup>
   ```python Executing Agent
-  response = agent.chat("Hello! I would like to star a repo ComposioHQ/composio on GitHub")
+  response = agent.chat("Hello! I would like to star a repo composiohq/composio on GitHub")
   print("Response:", response)
   ```
 </CodeGroup>
@@ -108,7 +108,7 @@ Converse with your LlamaIndex agent, and it will use the provoded tool(s) as nec
 <CodeGroup>
   ```bash Filter Specific Action
   # To restrict agents from using all the actions, filter specific actions
-  tools = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]) 
+  tools = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]) 
   ```
 </CodeGroup>
 

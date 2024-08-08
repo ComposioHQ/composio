@@ -1,15 +1,41 @@
 """
-Setup configuration for Composio SWE Agent plugin
+Setup configuration for SWE Kit.
 """
 
+import typing as t
 from pathlib import Path
 
 from setuptools import find_packages, setup
 
 
+SWEKIT = Path(__file__).parent.resolve() / "swekit"
+
+
+def scan_for_package_data(
+    directory: Path,
+    package: Path,
+    data: t.Optional[t.List[str]] = None,
+) -> t.List[str]:
+    """Walk the package and scan for package files."""
+    data = data or []
+    for child in directory.iterdir():
+        if child.name.endswith(".py") or child.name.endswith(".pyc"):
+            continue
+
+        if child.is_file():
+            data.append(str(child.relative_to(package)))
+            continue
+
+        data += scan_for_package_data(
+            directory=child,
+            package=package,
+        )
+    return data
+
+
 setup(
-    name="composio_swe",
-    version="0.0.1",
+    name="swekit",
+    version="0.1.6",
     author="Shubhra",
     author_email="shubhra@composio.dev",
     description="Tools for running a SWE agent using Composio platform",
@@ -22,25 +48,27 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    packages=find_packages(include=["composio_swe*"]),
+    packages=find_packages(include=["swekit*"]),
     entry_points={
         "console_scripts": [
-            "composio-swe=composio_swe.cli:cli",
+            "swekit=swekit.cli:swekit",
         ],
     },
-    install_requires=[
-        "composio_core>=0.3.9",
-        "gitpython>=3.1.43",
-        "composio_crewai>=0.3.9",
-        "crewai==0.30.11",
-        "datasets>=2.20.0",
-        "swebench>=1.1.0",
-        "langchain_anthropic",
-        "llama-index-llms-anthropic",
-        "swe_bench_docker @ git+https://github.com/ComposioHQ/SWE-bench-docker.git",
-    ],
-    dependency_links=[
-        "git+https://github.com/ComposioHQ/SWE-bench-docker.git",
-    ],
+    package_data={
+        "swekit": scan_for_package_data(
+            directory=SWEKIT,
+            package=SWEKIT,
+        ),
+    },
     include_package_data=True,
+    install_requires=[
+        "pydantic>=2.7.4",
+        "swebench==1.1.0",
+        "datasets>=2.20.0",
+        "gitpython>=3.1.43",
+        "composio_core>=0.3.9",
+        "unidiff==0.7.5",
+        "tqdm==4.66.4",
+        "rich",
+    ],
 )

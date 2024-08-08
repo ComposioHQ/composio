@@ -68,7 +68,7 @@ def setup(
 
 
 def get(
-    name: str,
+    name: t.Optional[str] = None,
     level: int = logging.INFO,
     log_format: str = _DEFAULT_FORMAT,
 ) -> logging.Logger:
@@ -81,7 +81,7 @@ def get(
     logging.basicConfig(format=log_format)
 
     # Create logger
-    _logger = logging.getLogger(name)
+    _logger = logging.getLogger(name or _DEFAULT_LOGGER_NAME)
     _logger.setLevel(_parse_log_level_from_env(default=level))
     return _logger
 

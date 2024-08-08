@@ -1,12 +1,13 @@
-from composio_autogen.toolset import ComposioToolSet
+from composio import Action, App, Tag, Trigger, WorkspaceType
 
-from composio.client.enums import Action, App, Tag, Trigger
+from composio_autogen.toolset import ComposioToolSet
 
 
 __all__ = (
     "Action",
     "App",
     "Tag",
+    "WorkspaceType",
     "ComposioToolSet",
     "Trigger",
 )

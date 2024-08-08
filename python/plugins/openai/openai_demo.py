@@ -3,8 +3,9 @@ OpenAI demo.
 """
 
 import dotenv
-from composio_openai import App, ComposioToolSet
 from openai import OpenAI
+
+from composio_openai import App, ComposioToolSet
 
 
 # Load environment variables from .env
@@ -15,10 +16,15 @@ openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 
 # Define task.
-task = "Star a repo SamparkAI/composio_sdk on GitHub"
+task = "Star a repo composiohq/composio on GitHub"
 
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_tools(apps=[App.GITHUB])
+
+# Extension of system prompt(Not using at this moment)
+_ = composio_toolset.get_agent_instructions(
+    apps=[App.GITHUB],
+)
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
