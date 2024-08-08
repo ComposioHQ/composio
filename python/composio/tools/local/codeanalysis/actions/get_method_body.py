@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Optional
 
 from pydantic import BaseModel, Field
 
@@ -6,8 +6,8 @@ from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysis
 
 
 class GetMethodBodyInput(BaseModel):
-    class_name: str = Field(
-        ...,
+    class_name: Optional[str] = Field(
+        None,
         description="Fully qualified name of the class containing the target method",
     )
     method_name: str = Field(
@@ -24,7 +24,13 @@ class GetMethodBodyOutput(BaseModel):
 
 class GetMethodBody(MethodAnalysisAction):
     """
-    Retrieves the body of a specified method within a given class.
+    Retrieves the body of a specified method.
+
+    This action can retrieve the method body in two scenarios:
+    1. If a class name is provided, it retrieves the method from within that class.
+    2. If no class name is provided, it retrieves the method from the global scope.
+
+    The retrieved body includes any decorators and comments associated with the method.
     """
 
     _display_name = "Get Method Body"
@@ -34,10 +40,8 @@ class GetMethodBody(MethodAnalysisAction):
     def execute(self, request_data: GetMethodBodyInput) -> GetMethodBodyOutput:
         try:
             self.load_fqdn_cache()
-            query_class_name = request_data.class_name
-            query_method_name = request_data.method_name
             method_artefacts = self.get_method_artefacts(
-                query_class_name, query_method_name
+                request_data.class_name, request_data.method_name
             )
             return GetMethodBodyOutput(result=method_artefacts["body_ans"])
         except Exception as e:

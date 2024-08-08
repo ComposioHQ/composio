@@ -1,7 +1,7 @@
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from composio.tools.local.base import Action
 from composio.tools.local.codeanalysis import tool_utils
@@ -40,7 +40,7 @@ class BaseCodeAnalysisAction(Action, ABC):
             for fqdn_obj in possible_fqdns
         }
 
-    def get_matching_items(self, query_name: str, item_type: str) -> List[str]:
+    def get_matching_items(self, query_name: Optional[str], item_type: str) -> List[str]:
         if not self.fqdn_index:
             raise ValueError("FQDN index not loaded")
 
@@ -90,7 +90,7 @@ class MethodAnalysisAction(BaseCodeAnalysisAction, ABC):
         pass
 
     def get_method_artefacts(
-        self, query_class_name: str, query_method_name: str
+        self, query_class_name: Optional[str], query_method_name: str
     ) -> Dict:
         matching_fqdns_func = self.get_matching_items(query_method_name, "function")
         matching_fqdns_class = self.get_matching_items(query_class_name, "class")
@@ -105,7 +105,7 @@ class MethodAnalysisAction(BaseCodeAnalysisAction, ABC):
     def filter_function_results(
         self,
         func_results: List[Dict],
-        query_class_name: str,
+        query_class_name: Optional[str],
         matching_fqdns_class: List[str],
     ) -> List[Dict]:
         filtered_results = []
