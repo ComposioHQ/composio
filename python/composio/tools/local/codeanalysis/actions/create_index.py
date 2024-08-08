@@ -29,12 +29,21 @@ class Status(str, Enum):
 
 
 class CreateCodeMapInput(BaseModel):
-    dir_to_index_path: str = Field(..., description="Absolute path to the directory that needs to be indexed for code analysis")
-    env_path: str = Field(..., description="Path to the environment file containing necessary configuration for indexing")
+    dir_to_index_path: str = Field(
+        ...,
+        description="Absolute path to the directory that needs to be indexed for code analysis",
+    )
+    env_path: str = Field(
+        ...,
+        description="Path to the environment file containing necessary configuration for indexing",
+    )
 
 
 class CreateCodeMapOutput(BaseModel):
-    result: str = Field(..., description="Outcome of the code map creation process, including success or failure status and any relevant details")
+    result: str = Field(
+        ...,
+        description="Outcome of the code map creation process, including success or failure status and any relevant details",
+    )
 
 
 class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):

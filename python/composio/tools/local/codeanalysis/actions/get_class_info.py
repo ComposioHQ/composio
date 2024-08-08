@@ -2,17 +2,20 @@ from typing import Dict, List, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.codeanalysis.actions.base_action import (
-    BaseCodeAnalysisAction,
-)
+from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
 
 
 class GetClassInfoInput(BaseModel):
-    class_name: str = Field(..., description="Name of the class for which information is requested")
+    class_name: str = Field(
+        ..., description="Name of the class for which information is requested"
+    )
 
 
 class GetClassInfoOutput(BaseModel):
-    result: str = Field(..., description="Formatted string containing detailed information about the requested class")
+    result: str = Field(
+        ...,
+        description="Formatted string containing detailed information about the requested class",
+    )
 
 
 class GetClassInfo(BaseCodeAnalysisAction):

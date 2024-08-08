@@ -3,6 +3,7 @@ Tag enums.
 """
 from composio.client.enums.base import TAGS_CACHE, TagData, _AnnotatedEnum, enum
 
+
 @enum
 class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     """Tag object."""

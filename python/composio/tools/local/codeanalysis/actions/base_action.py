@@ -3,12 +3,12 @@ import os
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
+from composio.tools.local.base import Action
 from composio.tools.local.codeanalysis import tool_utils
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
     DIR_FOR_TOOL_INFO_CACHE,
 )
-from composio.tools.local.base import Action
 
 
 class BaseCodeAnalysisAction(Action, ABC):
