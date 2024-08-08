@@ -2,7 +2,7 @@ from typing import Dict, List, Type
 
 from pydantic import BaseModel, Field
 
-from python.composio.tools.local.codeanalysis.actions.base_action import (
+from composio.tools.local.codeanalysis.actions.base_action import (
     BaseCodeAnalysisAction,
 )
 

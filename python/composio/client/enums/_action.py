@@ -5,11 +5,9 @@ Action enums.
 # pylint: disable=too-many-public-methods, unused-import
 
 import typing as t
-
 import typing_extensions as te  # noqa: F401
 
 from composio.client.enums.base import ACTIONS_CACHE, ActionData, _AnnotatedEnum, enum
-
 
 @enum
 class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
@@ -5948,56 +5946,56 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_CREATE_TASK_ATTACHMENT instead.")
-    def CLICKUP_ATTACHMENTS_UPLOAD_FILE_TO_TASK_AS_ATTACHMENT(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_CREATE_TASK_ATTACHMENT instead.')
+    def CLICKUP_ATTACHMENTS_UPLOAD_FILE_TO_TASK_AS_ATTACHMENT(cls) -> 'Action':
         return cls.CLICKUP_CREATE_TASK_ATTACHMENT
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_ACCESS_TOKEN instead.")
-    def CLICKUP_AUTHORIZATION_GET_ACCESS_TOKEN(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_ACCESS_TOKEN instead.')
+    def CLICKUP_AUTHORIZATION_GET_ACCESS_TOKEN(cls) -> 'Action':
         return cls.CLICKUP_GET_ACCESS_TOKEN
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_CREATE_FOLDER instead.")
-    def CLICKUP_FOLDERS_CREATE_NEW_FOLDER(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_CREATE_FOLDER instead.')
+    def CLICKUP_FOLDERS_CREATE_NEW_FOLDER(cls) -> 'Action':
         return cls.CLICKUP_CREATE_FOLDER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_FOLDERS instead.")
-    def CLICKUP_FOLDERS_GET_CONTENTS_OF(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_FOLDERS instead.')
+    def CLICKUP_FOLDERS_GET_CONTENTS_OF(cls) -> 'Action':
         return cls.CLICKUP_GET_FOLDERS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_FOLDER instead.")
-    def CLICKUP_FOLDERS_GET_FOLDER_CONTENT(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_FOLDER instead.')
+    def CLICKUP_FOLDERS_GET_FOLDER_CONTENT(cls) -> 'Action':
         return cls.CLICKUP_GET_FOLDER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_LISTS instead.")
-    def CLICKUP_LISTS_GET_FOLDER_LISTS(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_LISTS instead.')
+    def CLICKUP_LISTS_GET_FOLDER_LISTS(cls) -> 'Action':
         return cls.CLICKUP_GET_LISTS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_LIST_MEMBERS instead.")
-    def CLICKUP_MEMBERS_GET_LIST_USERS(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_LIST_MEMBERS instead.')
+    def CLICKUP_MEMBERS_GET_LIST_USERS(cls) -> 'Action':
         return cls.CLICKUP_GET_LIST_MEMBERS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_SPACE instead.")
-    def CLICKUP_SPACES_GET_DETAILS(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_SPACE instead.')
+    def CLICKUP_SPACES_GET_DETAILS(cls) -> 'Action':
         return cls.CLICKUP_GET_SPACE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_SPACES instead.")
-    def CLICKUP_SPACES_GET_SPACE_DETAILS(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_SPACES instead.')
+    def CLICKUP_SPACES_GET_SPACE_DETAILS(cls) -> 'Action':
         return cls.CLICKUP_GET_SPACES
 
     @classmethod  # type: ignore
@@ -6020,320 +6018,314 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use CLICKUP_GET_SPACE_VIEWS instead.")
-    def CLICKUP_VIEWS_SPACE_VIEWS_GET(cls) -> "Action":
+    @te.deprecated('Use CLICKUP_GET_SPACE_VIEWS instead.')
+    def CLICKUP_VIEWS_SPACE_VIEWS_GET(cls) -> 'Action':
         return cls.CLICKUP_GET_SPACE_VIEWS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use DISCORD_CREATE_GUILD instead.")
-    def DISCORD_CREATEGUILD(cls) -> "Action":
+    @te.deprecated('Use DISCORD_CREATE_GUILD instead.')
+    def DISCORD_CREATEGUILD(cls) -> 'Action':
         return cls.DISCORD_CREATE_GUILD
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use DISCORD_GET_MESSAGE instead.")
-    def DISCORD_GETMESSAGE(cls) -> "Action":
+    @te.deprecated('Use DISCORD_GET_MESSAGE instead.')
+    def DISCORD_GETMESSAGE(cls) -> 'Action':
         return cls.DISCORD_GET_MESSAGE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use DISCORD_GET_MY_APPLICATION instead.")
-    def DISCORD_GETMYAPPLICATION(cls) -> "Action":
+    @te.deprecated('Use DISCORD_GET_MY_APPLICATION instead.')
+    def DISCORD_GETMYAPPLICATION(cls) -> 'Action':
         return cls.DISCORD_GET_MY_APPLICATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use DISCORD_GET_MY_USER instead.")
-    def DISCORD_GETMYUSER(cls) -> "Action":
+    @te.deprecated('Use DISCORD_GET_MY_USER instead.')
+    def DISCORD_GETMYUSER(cls) -> 'Action':
         return cls.DISCORD_GET_MY_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use ELEVENLABS_DUB_A_VIDEO_OR_AN_AUDIO_FILE instead.")
-    def ELEVENLABS_DUB_A_VIDEO_OR_AN_AUDIOFILE_V_1_DUBBING_POST(cls) -> "Action":
+    @te.deprecated('Use ELEVENLABS_DUB_A_VIDEO_OR_AN_AUDIO_FILE instead.')
+    def ELEVENLABS_DUB_A_VIDEO_OR_AN_AUDIOFILE_V_1_DUBBING_POST(cls) -> 'Action':
         return cls.ELEVENLABS_DUB_A_VIDEO_OR_AN_AUDIO_FILE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use ELEVENLABS_GET_MODELS instead.")
-    def ELEVENLABS_GET_MODELS_V_1_MODELS_GET(cls) -> "Action":
+    @te.deprecated('Use ELEVENLABS_GET_MODELS instead.')
+    def ELEVENLABS_GET_MODELS_V_1_MODELS_GET(cls) -> 'Action':
         return cls.ELEVENLABS_GET_MODELS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use ELEVENLABS_GET_USER_INFO instead.")
-    def ELEVENLABS_GET_USER_INFO_V_1_USER_GET(cls) -> "Action":
+    @te.deprecated('Use ELEVENLABS_GET_USER_INFO instead.')
+    def ELEVENLABS_GET_USER_INFO_V_1_USER_GET(cls) -> 'Action':
         return cls.ELEVENLABS_GET_USER_INFO
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use ELEVENLABS_GET_VOICES instead.")
-    def ELEVENLABS_GET_VOICES_V_1_VOICES_GET(cls) -> "Action":
+    @te.deprecated('Use ELEVENLABS_GET_VOICES instead.')
+    def ELEVENLABS_GET_VOICES_V_1_VOICES_GET(cls) -> 'Action':
         return cls.ELEVENLABS_GET_VOICES
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated(
-        "Use GITHUB_LIST_REPOSITORIES_STARRED_BY_THE_AUTHENTICATED_USER instead."
-    )
-    def GITHUB_ACTIVITY_LIST_REPO_S_STARRED_BY_AUTHENTICATED_USER(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_REPOSITORIES_STARRED_BY_THE_AUTHENTICATED_USER instead.')
+    def GITHUB_ACTIVITY_LIST_REPO_S_STARRED_BY_AUTHENTICATED_USER(cls) -> 'Action':
         return cls.GITHUB_LIST_REPOSITORIES_STARRED_BY_THE_AUTHENTICATED_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_GET_EMOJIS instead.")
-    def GITHUB_EMO_J_IS_GET(cls) -> "Action":
+    @te.deprecated('Use GITHUB_GET_EMOJIS instead.')
+    def GITHUB_EMO_J_IS_GET(cls) -> 'Action':
         return cls.GITHUB_GET_EMOJIS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CREATE_A_GIST instead.")
-    def GITHUB_GIST_S_CREATE(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CREATE_A_GIST instead.')
+    def GITHUB_GIST_S_CREATE(cls) -> 'Action':
         return cls.GITHUB_CREATE_A_GIST
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_PUBLIC_GISTS instead.")
-    def GITHUB_GIST_S_LIST_PUBLIC(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_PUBLIC_GISTS instead.')
+    def GITHUB_GIST_S_LIST_PUBLIC(cls) -> 'Action':
         return cls.GITHUB_LIST_PUBLIC_GISTS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CREATE_AN_ISSUE instead.")
-    def GITHUB_ISSUES_CREATE(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CREATE_AN_ISSUE instead.')
+    def GITHUB_ISSUES_CREATE(cls) -> 'Action':
         return cls.GITHUB_CREATE_AN_ISSUE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CREATE_AN_ISSUE_COMMENT instead.")
-    def GITHUB_ISSUES_CREATE_COMMENT(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CREATE_AN_ISSUE_COMMENT instead.')
+    def GITHUB_ISSUES_CREATE_COMMENT(cls) -> 'Action':
         return cls.GITHUB_CREATE_AN_ISSUE_COMMENT
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_GET_AN_ISSUE instead.")
-    def GITHUB_ISSUES_GET(cls) -> "Action":
+    @te.deprecated('Use GITHUB_GET_AN_ISSUE instead.')
+    def GITHUB_ISSUES_GET(cls) -> 'Action':
         return cls.GITHUB_GET_AN_ISSUE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER instead.")
-    def GITHUB_ISSUES_LIST(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER instead.')
+    def GITHUB_ISSUES_LIST(cls) -> 'Action':
         return cls.GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_ASSIGNEES instead.")
-    def GITHUB_ISSUES_LIST_ASSIGN_EES(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_ASSIGNEES instead.')
+    def GITHUB_ISSUES_LIST_ASSIGN_EES(cls) -> 'Action':
         return cls.GITHUB_LIST_ASSIGNEES
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_ISSUE_EVENTS_FOR_A_REPOSITORY instead.")
-    def GITHUB_ISSUES_LIST_EVENTS_FOR_REPO(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_ISSUE_EVENTS_FOR_A_REPOSITORY instead.')
+    def GITHUB_ISSUES_LIST_EVENTS_FOR_REPO(cls) -> 'Action':
         return cls.GITHUB_LIST_ISSUE_EVENTS_FOR_A_REPOSITORY
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CHECK_IF_A_PULL_REQUEST_HAS_BEEN_MERGED instead.")
-    def GITHUB_PULLS_CHECK_IF_MERGED(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CHECK_IF_A_PULL_REQUEST_HAS_BEEN_MERGED instead.')
+    def GITHUB_PULLS_CHECK_IF_MERGED(cls) -> 'Action':
         return cls.GITHUB_CHECK_IF_A_PULL_REQUEST_HAS_BEEN_MERGED
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_GET_A_PULL_REQUEST instead.")
-    def GITHUB_PULLS_GET(cls) -> "Action":
+    @te.deprecated('Use GITHUB_GET_A_PULL_REQUEST instead.')
+    def GITHUB_PULLS_GET(cls) -> 'Action':
         return cls.GITHUB_GET_A_PULL_REQUEST
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CREATE_A_FORK instead.")
-    def GITHUB_REPO_S_CREATE_FORK(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CREATE_A_FORK instead.')
+    def GITHUB_REPO_S_CREATE_FORK(cls) -> 'Action':
         return cls.GITHUB_CREATE_A_FORK
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY instead.")
-    def GITHUB_REPO_S_CREATE_IN_ORG(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY instead.')
+    def GITHUB_REPO_S_CREATE_IN_ORG(cls) -> 'Action':
         return cls.GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS instead.")
-    def GITHUB_REPO_S_CREATE_OR_UPDATE_FILE_CONTENTS(cls) -> "Action":
+    @te.deprecated('Use GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS instead.')
+    def GITHUB_REPO_S_CREATE_OR_UPDATE_FILE_CONTENTS(cls) -> 'Action':
         return cls.GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_GET_THE_WEEKLY_COMMIT_ACTIVITY instead.")
-    def GITHUB_REPO_S_GET_CODE_FREQUENCY_STATS(cls) -> "Action":
+    @te.deprecated('Use GITHUB_GET_THE_WEEKLY_COMMIT_ACTIVITY instead.')
+    def GITHUB_REPO_S_GET_CODE_FREQUENCY_STATS(cls) -> 'Action':
         return cls.GITHUB_GET_THE_WEEKLY_COMMIT_ACTIVITY
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_GET_ALL_CONTRIBUTOR_COMMIT_ACTIVITY instead.")
-    def GITHUB_REPO_S_GET_CONTRIBUTORS_STATS(cls) -> "Action":
+    @te.deprecated('Use GITHUB_GET_ALL_CONTRIBUTOR_COMMIT_ACTIVITY instead.')
+    def GITHUB_REPO_S_GET_CONTRIBUTORS_STATS(cls) -> 'Action':
         return cls.GITHUB_GET_ALL_CONTRIBUTOR_COMMIT_ACTIVITY
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_BRANCHES instead.")
-    def GITHUB_REPO_S_LIST_BRANCHES(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_BRANCHES instead.')
+    def GITHUB_REPO_S_LIST_BRANCHES(cls) -> 'Action':
         return cls.GITHUB_LIST_BRANCHES
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_REPOSITORY_COLLABORATORS instead.")
-    def GITHUB_REPO_S_LIST_COLLABORATORS(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_REPOSITORY_COLLABORATORS instead.')
+    def GITHUB_REPO_S_LIST_COLLABORATORS(cls) -> 'Action':
         return cls.GITHUB_LIST_REPOSITORY_COLLABORATORS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_COMMITS instead.")
-    def GITHUB_REPO_S_LIST_COMMITS(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_COMMITS instead.')
+    def GITHUB_REPO_S_LIST_COMMITS(cls) -> 'Action':
         return cls.GITHUB_LIST_COMMITS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_REPOSITORY_CONTRIBUTORS instead.")
-    def GITHUB_REPO_S_LIST_CONTRIBUTORS(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_REPOSITORY_CONTRIBUTORS instead.')
+    def GITHUB_REPO_S_LIST_CONTRIBUTORS(cls) -> 'Action':
         return cls.GITHUB_LIST_REPOSITORY_CONTRIBUTORS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER instead.")
-    def GITHUB_REPO_S_LIST_FOR_AUTHENTICATED_USER(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER instead.')
+    def GITHUB_REPO_S_LIST_FOR_AUTHENTICATED_USER(cls) -> 'Action':
         return cls.GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_REPOSITORIES_FOR_A_USER instead.")
-    def GITHUB_REPO_S_LIST_FOR_USER(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_REPOSITORIES_FOR_A_USER instead.')
+    def GITHUB_REPO_S_LIST_FOR_USER(cls) -> 'Action':
         return cls.GITHUB_LIST_REPOSITORIES_FOR_A_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_GLOBAL_SECURITY_ADVISORIES instead.")
-    def GITHUB_SECURITY_ADVISORIES_LIST_GLOBAL_ADVISORIES(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_GLOBAL_SECURITY_ADVISORIES instead.')
+    def GITHUB_SECURITY_ADVISORIES_LIST_GLOBAL_ADVISORIES(cls) -> 'Action':
         return cls.GITHUB_LIST_GLOBAL_SECURITY_ADVISORIES
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_GET_CONTEXTUAL_INFORMATION_FOR_A_USER instead.")
-    def GITHUB_USERS_GET_CONTEXT_FOR_USER(cls) -> "Action":
+    @te.deprecated('Use GITHUB_GET_CONTEXTUAL_INFORMATION_FOR_A_USER instead.')
+    def GITHUB_USERS_GET_CONTEXT_FOR_USER(cls) -> 'Action':
         return cls.GITHUB_GET_CONTEXTUAL_INFORMATION_FOR_A_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated(
-        "Use GITHUB_LIST_EMAIL_ADDRESSES_FOR_THE_AUTHENTICATED_USER instead."
-    )
-    def GITHUB_USERS_LIST_EMAILS_FOR_AUTHENTICATED_USER(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_EMAIL_ADDRESSES_FOR_THE_AUTHENTICATED_USER instead.')
+    def GITHUB_USERS_LIST_EMAILS_FOR_AUTHENTICATED_USER(cls) -> 'Action':
         return cls.GITHUB_LIST_EMAIL_ADDRESSES_FOR_THE_AUTHENTICATED_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use GITHUB_LIST_FOLLOWERS_OF_THE_AUTHENTICATED_USER instead.")
-    def GITHUB_USERS_LIST_FOLLOWERS_FOR_AUTHENTICATED_USER(cls) -> "Action":
+    @te.deprecated('Use GITHUB_LIST_FOLLOWERS_OF_THE_AUTHENTICATED_USER instead.')
+    def GITHUB_USERS_LIST_FOLLOWERS_FOR_AUTHENTICATED_USER(cls) -> 'Action':
         return cls.GITHUB_LIST_FOLLOWERS_OF_THE_AUTHENTICATED_USER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use NASA_GET_ORGANIZATION_DETAILS_AND_INFO instead.")
-    def NASA_ORGANIZATION_GET_INFORMATION(cls) -> "Action":
+    @te.deprecated('Use NASA_GET_ORGANIZATION_DETAILS_AND_INFO instead.')
+    def NASA_ORGANIZATION_GET_INFORMATION(cls) -> 'Action':
         return cls.NASA_GET_ORGANIZATION_DETAILS_AND_INFO
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use NASA_LIST_AVAILABLE_ORGANIZATION_TYPES instead.")
-    def NASA_ORGANIZATION_LIST_TYPES(cls) -> "Action":
+    @te.deprecated('Use NASA_LIST_AVAILABLE_ORGANIZATION_TYPES instead.')
+    def NASA_ORGANIZATION_LIST_TYPES(cls) -> 'Action':
         return cls.NASA_LIST_AVAILABLE_ORGANIZATION_TYPES
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use NASA_FIND_PROJECTS_MATCHING_SEARCH_TERMS instead.")
-    def NASA_PROJECT_FIND_MATCHING_PROJECTS(cls) -> "Action":
+    @te.deprecated('Use NASA_FIND_PROJECTS_MATCHING_SEARCH_TERMS instead.')
+    def NASA_PROJECT_FIND_MATCHING_PROJECTS(cls) -> 'Action':
         return cls.NASA_FIND_PROJECTS_MATCHING_SEARCH_TERMS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use NASA_LIST_AVAILABLE_TECHNOLOGY_PROJECT_IDS instead.")
-    def NASA_PROJECT_LIST_AVAILABLE_IDS(cls) -> "Action":
+    @te.deprecated('Use NASA_LIST_AVAILABLE_TECHNOLOGY_PROJECT_IDS instead.')
+    def NASA_PROJECT_LIST_AVAILABLE_IDS(cls) -> 'Action':
         return cls.NASA_LIST_AVAILABLE_TECHNOLOGY_PROJECT_IDS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use NASA_FETCH_API_SWAGGER_SPECIFICATION instead.")
-    def NASA_RESOURCE_GET_SPECIFICATION(cls) -> "Action":
+    @te.deprecated('Use NASA_FETCH_API_SWAGGER_SPECIFICATION instead.')
+    def NASA_RESOURCE_GET_SPECIFICATION(cls) -> 'Action':
         return cls.NASA_FETCH_API_SWAGGER_SPECIFICATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_LIST_APP_PERMISSIONS_ON_A_TEAM instead.")
-    def SLACK_APPS_PERMISSIONS_LIST_PERMISSIONS(cls) -> "Action":
+    @te.deprecated('Use SLACK_LIST_APP_PERMISSIONS_ON_A_TEAM instead.')
+    def SLACK_APPS_PERMISSIONS_LIST_PERMISSIONS(cls) -> 'Action':
         return cls.SLACK_LIST_APP_PERMISSIONS_ON_A_TEAM
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_LIST_APP_PERMISSIONS_SCOPES_ON_A_TEAM instead.")
-    def SLACK_APPS_PERMISSIONS_SCOPES_GET_LIST(cls) -> "Action":
+    @te.deprecated('Use SLACK_LIST_APP_PERMISSIONS_SCOPES_ON_A_TEAM instead.')
+    def SLACK_APPS_PERMISSIONS_SCOPES_GET_LIST(cls) -> 'Action':
         return cls.SLACK_LIST_APP_PERMISSIONS_SCOPES_ON_A_TEAM
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL instead.")
-    def SLACK_CHAT_POST_MESSAGE(cls) -> "Action":
+    @te.deprecated('Use SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL instead.')
+    def SLACK_CHAT_POST_MESSAGE(cls) -> 'Action':
         return cls.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_RETRIEVE_CONVERSATION_INFORMATION instead.")
-    def SLACK_CONVERSATIONS_INFO(cls) -> "Action":
+    @te.deprecated('Use SLACK_RETRIEVE_CONVERSATION_INFORMATION instead.')
+    def SLACK_CONVERSATIONS_INFO(cls) -> 'Action':
         return cls.SLACK_RETRIEVE_CONVERSATION_INFORMATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated(
-        "Use SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS instead."
-    )
-    def SLACK_CONVERSATIONS_LIST(cls) -> "Action":
+    @te.deprecated('Use SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS instead.')
+    def SLACK_CONVERSATIONS_LIST(cls) -> 'Action':
         return cls.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_CREATE_A_REMINDER instead.")
-    def SLACK_REMINDERS_ADD(cls) -> "Action":
+    @te.deprecated('Use SLACK_CREATE_A_REMINDER instead.')
+    def SLACK_REMINDERS_ADD(cls) -> 'Action':
         return cls.SLACK_CREATE_A_REMINDER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_SEARCH_FOR_MESSAGES_WITH_QUERY instead.")
-    def SLACK_SEARCH_MESSAGES(cls) -> "Action":
+    @te.deprecated('Use SLACK_SEARCH_FOR_MESSAGES_WITH_QUERY instead.')
+    def SLACK_SEARCH_MESSAGES(cls) -> 'Action':
         return cls.SLACK_SEARCH_FOR_MESSAGES_WITH_QUERY
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_RETRIEVE_DETAILED_USER_INFORMATION instead.")
-    def SLACK_USERS_INFO(cls) -> "Action":
+    @te.deprecated('Use SLACK_RETRIEVE_DETAILED_USER_INFORMATION instead.')
+    def SLACK_USERS_INFO(cls) -> 'Action':
         return cls.SLACK_RETRIEVE_DETAILED_USER_INFORMATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_LIST_ALL_SLACK_TEAM_USERS_WITH_PAGINATION instead.")
-    def SLACK_USERS_LIST(cls) -> "Action":
+    @te.deprecated('Use SLACK_LIST_ALL_SLACK_TEAM_USERS_WITH_PAGINATION instead.')
+    def SLACK_USERS_LIST(cls) -> 'Action':
         return cls.SLACK_LIST_ALL_SLACK_TEAM_USERS_WITH_PAGINATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_FIND_USER_BY_EMAIL_ADDRESS instead.")
-    def SLACK_USERS_LOOKUP_BY_EMAIL(cls) -> "Action":
+    @te.deprecated('Use SLACK_FIND_USER_BY_EMAIL_ADDRESS instead.')
+    def SLACK_USERS_LOOKUP_BY_EMAIL(cls) -> 'Action':
         return cls.SLACK_FIND_USER_BY_EMAIL_ADDRESS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SLACK_RETRIEVE_USER_PROFILE_INFORMATION instead.")
-    def SLACK_USERS_PROFILE_GET_PROFILE_INFO(cls) -> "Action":
+    @te.deprecated('Use SLACK_RETRIEVE_USER_PROFILE_INFORMATION instead.')
+    def SLACK_USERS_PROFILE_GET_PROFILE_INFO(cls) -> 'Action':
         return cls.SLACK_RETRIEVE_USER_PROFILE_INFORMATION
 
     @classmethod  # type: ignore
@@ -6350,8 +6342,8 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_GET_ARTIST_S_TOP_TRACKS instead.")
-    def SPOTIFY_GET_AN_ARTISTS_TOP_TRACKS(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_GET_ARTIST_S_TOP_TRACKS instead.')
+    def SPOTIFY_GET_AN_ARTISTS_TOP_TRACKS(cls) -> 'Action':
         return cls.SPOTIFY_GET_ARTIST_S_TOP_TRACKS
 
     @classmethod  # type: ignore
@@ -6374,146 +6366,146 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_GET_PLAYBACK_STATE instead.")
-    def SPOTIFY_GET_INFORMATION_ABOUT_THE_USERS_CURRENT_PLAYBACK(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_GET_PLAYBACK_STATE instead.')
+    def SPOTIFY_GET_INFORMATION_ABOUT_THE_USERS_CURRENT_PLAYBACK(cls) -> 'Action':
         return cls.SPOTIFY_GET_PLAYBACK_STATE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_GET_RECENTLY_PLAYED_TRACKS instead.")
-    def SPOTIFY_GET_RECENTLY_PLAYED(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_GET_RECENTLY_PLAYED_TRACKS instead.')
+    def SPOTIFY_GET_RECENTLY_PLAYED(cls) -> 'Action':
         return cls.SPOTIFY_GET_RECENTLY_PLAYED_TRACKS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_GET_USER_S_PROFILE instead.")
-    def SPOTIFY_GET_USERS_PROFILE(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_GET_USER_S_PROFILE instead.')
+    def SPOTIFY_GET_USERS_PROFILE(cls) -> 'Action':
         return cls.SPOTIFY_GET_USER_S_PROFILE
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_GET_USER_S_SAVED_TRACKS instead.")
-    def SPOTIFY_GET_USERS_SAVED_TRACKS(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_GET_USER_S_SAVED_TRACKS instead.')
+    def SPOTIFY_GET_USERS_SAVED_TRACKS(cls) -> 'Action':
         return cls.SPOTIFY_GET_USER_S_SAVED_TRACKS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_SEARCH_FOR_ITEM instead.")
-    def SPOTIFY_SEARCH(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_SEARCH_FOR_ITEM instead.')
+    def SPOTIFY_SEARCH(cls) -> 'Action':
         return cls.SPOTIFY_SEARCH_FOR_ITEM
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_SKIP_TO_NEXT instead.")
-    def SPOTIFY_SKIP_USERS_PLAYBACK_TO_NEXT_TRACK(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_SKIP_TO_NEXT instead.')
+    def SPOTIFY_SKIP_USERS_PLAYBACK_TO_NEXT_TRACK(cls) -> 'Action':
         return cls.SPOTIFY_SKIP_TO_NEXT
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use SPOTIFY_START_RESUME_PLAYBACK instead.")
-    def SPOTIFY_START_A_USERS_PLAYBACK(cls) -> "Action":
+    @te.deprecated('Use SPOTIFY_START_RESUME_PLAYBACK instead.')
+    def SPOTIFY_START_A_USERS_PLAYBACK(cls) -> 'Action':
         return cls.SPOTIFY_START_RESUME_PLAYBACK
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TASKADE_CREATE_PROJECT_TASKS_WITH_DETAILED_OPTIONS instead.")
-    def TASKADE_CREATE_TASK_IN_PROJECT(cls) -> "Action":
+    @te.deprecated('Use TASKADE_CREATE_PROJECT_TASKS_WITH_DETAILED_OPTIONS instead.')
+    def TASKADE_CREATE_TASK_IN_PROJECT(cls) -> 'Action':
         return cls.TASKADE_CREATE_PROJECT_TASKS_WITH_DETAILED_OPTIONS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TASKADE_GET_WORKSPACE_FOLDERS instead.")
-    def TASKADE_GET_ALL_FOLDERS_FOR_WORKSPACE(cls) -> "Action":
+    @te.deprecated('Use TASKADE_GET_WORKSPACE_FOLDERS instead.')
+    def TASKADE_GET_ALL_FOLDERS_FOR_WORKSPACE(cls) -> 'Action':
         return cls.TASKADE_GET_WORKSPACE_FOLDERS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TASKADE_GET_MY_PROJECTS_WITH_SORTING_AND_PAGINATION instead.")
-    def TASKADE_GET_ALL_PROJECTS_MINE(cls) -> "Action":
+    @te.deprecated('Use TASKADE_GET_MY_PROJECTS_WITH_SORTING_AND_PAGINATION instead.')
+    def TASKADE_GET_ALL_PROJECTS_MINE(cls) -> 'Action':
         return cls.TASKADE_GET_MY_PROJECTS_WITH_SORTING_AND_PAGINATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TASKADE_RETRIEVE_USER_S_WORKSPACES instead.")
-    def TASKADE_GET_ALL_WORKSPACES_FOR_USER(cls) -> "Action":
+    @te.deprecated('Use TASKADE_RETRIEVE_USER_S_WORKSPACES instead.')
+    def TASKADE_GET_ALL_WORKSPACES_FOR_USER(cls) -> 'Action':
         return cls.TASKADE_RETRIEVE_USER_S_WORKSPACES
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TASKADE_RETRIEVE_DETAILED_TASK_INFORMATION instead.")
-    def TASKADE_GET_TASK_WITH_ID(cls) -> "Action":
+    @te.deprecated('Use TASKADE_RETRIEVE_DETAILED_TASK_INFORMATION instead.')
+    def TASKADE_GET_TASK_WITH_ID(cls) -> 'Action':
         return cls.TASKADE_RETRIEVE_DETAILED_TASK_INFORMATION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_ACTIONS_BOARD_BY_ID_ACTION instead.")
-    def TRELLO_ACTION_GET_BOARD_BY_ID_ACTION(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_ACTIONS_BOARD_BY_ID_ACTION instead.')
+    def TRELLO_ACTION_GET_BOARD_BY_ID_ACTION(cls) -> 'Action':
         return cls.TRELLO_GET_ACTIONS_BOARD_BY_ID_ACTION
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_ADD_BOARDS instead.")
-    def TRELLO_BOARD_CREATE_BOARD(cls) -> "Action":
+    @te.deprecated('Use TRELLO_ADD_BOARDS instead.')
+    def TRELLO_BOARD_CREATE_BOARD(cls) -> 'Action':
         return cls.TRELLO_ADD_BOARDS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_BOARDS_CARDS_BY_ID_BOARD_BY_FILTER instead.")
-    def TRELLO_BOARD_FILTER_CARDS_BY_ID_BOARD(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_BOARDS_CARDS_BY_ID_BOARD_BY_FILTER instead.')
+    def TRELLO_BOARD_FILTER_CARDS_BY_ID_BOARD(cls) -> 'Action':
         return cls.TRELLO_GET_BOARDS_CARDS_BY_ID_BOARD_BY_FILTER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_BOARDS_BY_ID_BOARD instead.")
-    def TRELLO_BOARD_GET_BY_ID(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_BOARDS_BY_ID_BOARD instead.')
+    def TRELLO_BOARD_GET_BY_ID(cls) -> 'Action':
         return cls.TRELLO_GET_BOARDS_BY_ID_BOARD
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_BOARDS_CARDS_BY_ID_BOARD instead.")
-    def TRELLO_BOARD_GET_CARDS_BY_ID_BOARD(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_BOARDS_CARDS_BY_ID_BOARD instead.')
+    def TRELLO_BOARD_GET_CARDS_BY_ID_BOARD(cls) -> 'Action':
         return cls.TRELLO_GET_BOARDS_CARDS_BY_ID_BOARD
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_ADD_CARDS instead.")
-    def TRELLO_CARD_CREATE_AND_UPDATE(cls) -> "Action":
+    @te.deprecated('Use TRELLO_ADD_CARDS instead.')
+    def TRELLO_CARD_CREATE_AND_UPDATE(cls) -> 'Action':
         return cls.TRELLO_ADD_CARDS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_CARDS_BY_ID_CARD_BY_FIELD instead.")
-    def TRELLO_CARD_GET_BY_ID_FIELD(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_CARDS_BY_ID_CARD_BY_FIELD instead.')
+    def TRELLO_CARD_GET_BY_ID_FIELD(cls) -> 'Action':
         return cls.TRELLO_GET_CARDS_BY_ID_CARD_BY_FIELD
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_UPDATE_CARDS_BY_ID_CARD instead.")
-    def TRELLO_CARD_UPDATE_BY_ID_CARD(cls) -> "Action":
+    @te.deprecated('Use TRELLO_UPDATE_CARDS_BY_ID_CARD instead.')
+    def TRELLO_CARD_UPDATE_BY_ID_CARD(cls) -> 'Action':
         return cls.TRELLO_UPDATE_CARDS_BY_ID_CARD
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_ADD_LISTS instead.")
-    def TRELLO_LIST_CREATE_LIST(cls) -> "Action":
+    @te.deprecated('Use TRELLO_ADD_LISTS instead.')
+    def TRELLO_LIST_CREATE_LIST(cls) -> 'Action':
         return cls.TRELLO_ADD_LISTS
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_LISTS_CARDS_BY_ID_LIST instead.")
-    def TRELLO_LIST_GET_CARDS_BY_ID_LIST(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_LISTS_CARDS_BY_ID_LIST instead.')
+    def TRELLO_LIST_GET_CARDS_BY_ID_LIST(cls) -> 'Action':
         return cls.TRELLO_GET_LISTS_CARDS_BY_ID_LIST
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_MEMBERS_BOARDS_BY_ID_MEMBER_BY_FILTER instead.")
-    def TRELLO_MEMBER_GET_BOARDS(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_MEMBERS_BOARDS_BY_ID_MEMBER_BY_FILTER instead.')
+    def TRELLO_MEMBER_GET_BOARDS(cls) -> 'Action':
         return cls.TRELLO_GET_MEMBERS_BOARDS_BY_ID_MEMBER_BY_FILTER
 
     @classmethod  # type: ignore
     @property
-    @te.deprecated("Use TRELLO_GET_TOKENS_MEMBER_BY_TOKEN instead.")
-    def TRELLO_TOKEN_GET_MEMBER_BY_TOKEN(cls) -> "Action":
+    @te.deprecated('Use TRELLO_GET_TOKENS_MEMBER_BY_TOKEN instead.')
+    def TRELLO_TOKEN_GET_MEMBER_BY_TOKEN(cls) -> 'Action':
         return cls.TRELLO_GET_TOKENS_MEMBER_BY_TOKEN
 
     _deprecated: t.Dict = {

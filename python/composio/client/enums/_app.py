@@ -5,12 +5,10 @@ App enums.
 # pylint: disable=too-many-public-methods, unused-import
 
 import typing as t
-
 import typing_extensions as te  # noqa: F401
-
+import typing_extensions as te
 from composio.client.enums._action import Action
 from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
-
 
 @enum
 class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
@@ -108,7 +106,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
         """Name of the app."""
         return self.load().name
 
-    def get_actions(self, tags: t.Optional[t.List[str]] = None) -> t.Iterator[Action]:
+    def get_actions(self, tags: t.Optional[t.List[str]]=None) -> t.Iterator[Action]:
         """
         Get actions for the given app filtered by the `tags`
 
@@ -116,7 +114,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
         :return: Iterator object which yields `Action`
         """
         tags = tags or []
-        app = f"{self.slug.lower()}_"
+        app = f'{self.slug.lower()}_'
         for action in Action.all():
             if not action.slug.lower().startswith(app):
                 continue
