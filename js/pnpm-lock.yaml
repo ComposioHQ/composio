@@ -8,9 +8,6 @@ dependencies:
   '@ai-sdk/openai':
     specifier: ^0.0.36
     version: 0.0.36(zod@3.23.8)
-  '@cloudflare/workers-types':
-    specifier: github:cloudflare/workers-types
-    version: github.com/cloudflare/workers-types/c8d9533caa4415c2156d2cf1daca75289d01ae70
   '@e2b/code-interpreter':
     specifier: ^0.0.8
     version: 0.0.8
@@ -44,9 +41,6 @@ dependencies:
   dockerode:
     specifier: ^4.0.2
     version: 4.0.2
-  dotenv:
-    specifier: ^16.4.5
-    version: 16.4.5
   e2b:
     specifier: ^0.16.1
     version: 0.16.1
@@ -79,6 +73,9 @@ dependencies:
     version: 3.23.2(zod@3.23.8)
 
 devDependencies:
+  '@cloudflare/workers-types':
+    specifier: ^4.20240718.0
+    version: 4.20240806.0
   '@hey-api/openapi-ts':
     specifier: ^0.46.3
     version: 0.46.3(typescript@5.4.5)
@@ -126,7 +123,7 @@ devDependencies:
     version: 5.1.4(webpack@5.92.0)
   wrangler:
     specifier: ^3.63.1
-    version: 3.63.1(@cloudflare/workers-types@3.19.0)
+    version: 3.63.1(@cloudflare/workers-types@4.20240806.0)
 
 packages:
 
@@ -386,6 +383,10 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
+
+  /@cloudflare/workers-types@4.20240806.0:
+    resolution: {integrity: sha512-8lvgrwXGTZEBsUQJ8YUnMk72Anh9omwr6fqWLw/EwVgcw1nQxs/bfdadBEbdP48l9fWXjE4E5XERLUrrFuEpsg==}
+    dev: true
 
   /@colors/colors@1.6.0:
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
@@ -1774,6 +1775,7 @@ packages:
   /dotenv@16.4.5:
     resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
     engines: {node: '>=12'}
+    dev: true
 
   /e2b@0.16.1:
     resolution: {integrity: sha512-2L1R/REEB+EezD4Q4MmcXXNATjvCYov2lv/69+PY6V95+wl1PZblIMTYAe7USxX6P6sqANxNs+kXqZr6RvXkSw==}
@@ -4007,7 +4009,7 @@ packages:
       '@cloudflare/workerd-windows-64': 1.20240701.0
     dev: true
 
-  /wrangler@3.63.1(@cloudflare/workers-types@3.19.0):
+  /wrangler@3.63.1(@cloudflare/workers-types@4.20240806.0):
     resolution: {integrity: sha512-fxMPNEyDc9pZNtQOuYqRikzv6lL5eP4S1zv7L/kw24uu1cCEmJ39j8bfJGzrAEqKDNsiFXVjEka0RjlpgEVWPg==}
     engines: {node: '>=16.17.0'}
     hasBin: true
@@ -4018,7 +4020,7 @@ packages:
         optional: true
     dependencies:
       '@cloudflare/kv-asset-handler': 0.3.4
-      '@cloudflare/workers-types': github.com/cloudflare/workers-types/c8d9533caa4415c2156d2cf1daca75289d01ae70
+      '@cloudflare/workers-types': 4.20240806.0
       '@esbuild-plugins/node-globals-polyfill': 0.2.3(esbuild@0.17.19)
       '@esbuild-plugins/node-modules-polyfill': 0.2.2(esbuild@0.17.19)
       blake3-wasm: 2.1.5
@@ -4100,8 +4102,3 @@ packages:
 
   /zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
-
-  github.com/cloudflare/workers-types/c8d9533caa4415c2156d2cf1daca75289d01ae70:
-    resolution: {tarball: https://codeload.github.com/cloudflare/workers-types/tar.gz/c8d9533caa4415c2156d2cf1daca75289d01ae70}
-    name: '@cloudflare/workers-types'
-    version: 3.19.0
