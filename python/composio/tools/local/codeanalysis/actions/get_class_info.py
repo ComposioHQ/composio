@@ -3,7 +3,7 @@ from typing import Dict, List, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
-from composio.tools.local.codeanalysis.actions.action_helper import (
+from python.composio.tools.local.codeanalysis.actions.base_action import (
     BaseCodeAnalysisAction,
 )
 
@@ -16,9 +16,7 @@ class GetClassInfoOutput(BaseModel):
     result: str = Field(..., description="Formatted string containing detailed information about the requested class")
 
 
-class GetClassInfo(
-    Action[GetClassInfoInput, GetClassInfoOutput], BaseCodeAnalysisAction
-):
+class GetClassInfo(BaseCodeAnalysisAction):
     """
     Retrieves and formats information about a specified class.
 

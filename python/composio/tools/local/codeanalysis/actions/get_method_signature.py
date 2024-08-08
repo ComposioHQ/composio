@@ -3,7 +3,7 @@ from typing import Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
-from composio.tools.local.codeanalysis.actions.action_helper import MethodAnalysisAction
+from python.composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
 
 
 class GetMethodSignatureInput(BaseModel):
@@ -15,9 +15,7 @@ class GetMethodSignatureOutput(BaseModel):
     result: str = Field(..., description="Retrieved method signature as a string, including return type and parameters")
 
 
-class GetMethodSignature(
-    Action[GetMethodSignatureInput, GetMethodSignatureOutput], MethodAnalysisAction
-):
+class GetMethodSignature(MethodAnalysisAction):
     """
     Retrieves the signature of a specified method within a given class.
     """

@@ -3,7 +3,7 @@ from typing import Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
-from composio.tools.local.codeanalysis.actions.action_helper import MethodAnalysisAction
+from python.composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
 
 
 class GetMethodBodyInput(BaseModel):
@@ -15,9 +15,7 @@ class GetMethodBodyOutput(BaseModel):
     result: str = Field(..., description="Retrieved method body as a string, including any decorators and comments")
 
 
-class GetMethodBody(
-    Action[GetMethodBodyInput, GetMethodBodyOutput], MethodAnalysisAction
-):
+class GetMethodBody(MethodAnalysisAction):
     """
     Retrieves the body of a specified method within a given class.
     """
