@@ -132,7 +132,7 @@
             "javascript/langchain",
             "javascript/cloudflare",
             "javascript/openai",
-            "/javascript/vercel"
+            "javascript/vercel"
           ]
         }
       ]
