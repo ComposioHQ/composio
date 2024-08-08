@@ -31,12 +31,14 @@
     "wrangler": "^3.63.1"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^0.0.36",
     "@e2b/code-interpreter": "^0.0.8",
     "@e2b/sdk": "^0.16.1",
     "@faker-js/faker": "^8.4.1",
     "@hono/node-server": "^1.12.0",
     "@langchain/core": "^0.2.18",
     "@langchain/openai": "^0.2.5",
+    "ai": "^3.2.22",
     "axios": "^1.7.2",
     "cli-progress": "^3.12.0",
     "colors": "^1.4.0",
