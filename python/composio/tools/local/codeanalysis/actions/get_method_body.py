@@ -7,19 +7,21 @@ from composio.tools.local.codeanalysis.actions.action_helper import MethodAnalys
 
 
 class GetMethodBodyInput(BaseModel):
-    class_name: str = Field(
-        ..., description="Name of the class to get the method body for"
-    )
-    method_name: str = Field(..., description="Name of the method to get the body for")
+    class_name: str = Field(..., description="Fully qualified name of the class containing the target method")
+    method_name: str = Field(..., description="Name of the method whose body is to be retrieved")
 
 
 class GetMethodBodyOutput(BaseModel):
-    result: str = Field(..., description="Result of the action")
+    result: str = Field(..., description="Retrieved method body as a string, including any decorators and comments")
 
 
 class GetMethodBody(
     Action[GetMethodBodyInput, GetMethodBodyOutput], MethodAnalysisAction
 ):
+    """
+    Retrieves the body of a specified method within a given class.
+    """
+
     _display_name = "Get Method Body"
     _request_schema: Type[GetMethodBodyInput] = GetMethodBodyInput
     _response_schema: Type[GetMethodBodyOutput] = GetMethodBodyOutput

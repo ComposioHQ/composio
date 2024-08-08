@@ -9,16 +9,23 @@ from composio.tools.local.codeanalysis.actions.action_helper import (
 
 
 class GetClassInfoInput(BaseModel):
-    class_name: str = Field(..., description="Name of the class to get info for")
+    class_name: str = Field(..., description="Name of the class for which information is requested")
 
 
 class GetClassInfoOutput(BaseModel):
-    result: str = Field(..., description="Result of the action")
+    result: str = Field(..., description="Formatted string containing detailed information about the requested class")
 
 
 class GetClassInfo(
     Action[GetClassInfoInput, GetClassInfoOutput], BaseCodeAnalysisAction
 ):
+    """
+    Retrieves and formats information about a specified class.
+
+    This action searches for class information based on the provided class name,
+    fetches relevant details, and returns a formatted string with the results.
+    """
+
     _display_name = "Get Class Info"
     _request_schema: Type[GetClassInfoInput] = GetClassInfoInput
     _response_schema: Type[GetClassInfoOutput] = GetClassInfoOutput
