@@ -78,7 +78,8 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
                 status = self._update_status(self.REPO_DIR, Status.LOADING_FQDNS)
 
             os.makedirs(DIR_FOR_FQDN_CACHE, exist_ok=True)
-            self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, "fqdn.json")
+            repo_hash = tool_utils.fetch_hash(self.REPO_DIR)
+            self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_hash}.json")
 
             self._process(status)
 
@@ -102,8 +103,8 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         try:
             self.load_all_fqdns()
             self._update_status(self.REPO_DIR, Status.CREATING_CACHE)
-            self.create_fqdn_cache()
-            self._update_status(self.REPO_DIR, Status.COMPLETED)
+            # self.create_fqdn_cache()
+            # self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise RuntimeError(f"Failed to handle loading FQDNs: {e}")
