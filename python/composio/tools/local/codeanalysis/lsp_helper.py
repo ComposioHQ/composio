@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Dict, List, Optional, Tuple, Union
 
 import jedi
@@ -8,7 +9,7 @@ from composio.tools.local.codeanalysis import tree_sitter_related
 
 
 def fetch_script_obj_for_file_in_repo(
-    file_path: str, repo_path: str, environment_path: str
+    file_path: str, repo_path: str
 ) -> jedi.Script:
     """
     Fetches the Jedi script object for a file in a repository.
@@ -16,7 +17,6 @@ def fetch_script_obj_for_file_in_repo(
     Args:
         file_path (str): The path of the file.
         repo_path (str): The path of the repository.
-        environment_path (str): The path of the environment.
 
     Returns:
         jedi.Script: The script object for the file.
@@ -27,7 +27,7 @@ def fetch_script_obj_for_file_in_repo(
     """
     try:
         project_obj = jedi.Project(repo_path)
-        environment_obj = jedi.create_environment(environment_path, safe=False)
+        environment_obj = jedi.create_environment(sys.executable, safe=False)
 
         _project_obj_path = os.path.normpath(os.path.abspath(str(project_obj.path)))
         _file_path = os.path.normpath(os.path.abspath(file_path))
@@ -421,7 +421,7 @@ def fetch_references_in_script(
 
 
 def fetch_relevant_elem(
-    file_name: str, repo_dir: str, fqdn_use: str, expected_type: str, env_path: str
+    file_name: str, repo_dir: str, fqdn_use: str, expected_type: str
 ) -> List["EntityObj"]:
     """
     Initializes the relevant element with the appropriate class.
@@ -431,7 +431,6 @@ def fetch_relevant_elem(
         repo_dir (str): The directory of the repository.
         fqdn_use (str): The fully qualified domain name to use.
         expected_type (str): The expected type of the element ('class' or 'function').
-        env_path (str): The path to the environment.
 
     Returns:
         list[EntityObj]: A list of initialized entity objects.
@@ -440,7 +439,7 @@ def fetch_relevant_elem(
         ValueError: If no elements are found for the given FQDN and expected type,
                     if multiple types are found for the given FQDN, or if the expected type is unsupported.
     """
-    _script_obj = fetch_script_obj_for_file_in_repo(file_name, repo_dir, env_path)
+    _script_obj = fetch_script_obj_for_file_in_repo(file_name, repo_dir)
 
     # Find all names in the file
     all_names = _script_obj.get_names(
@@ -465,7 +464,7 @@ def fetch_relevant_elem(
         raise ValueError(f"Unsupported expected type '{expected_type}'")
 
     entity_objs = [
-        entity_class_map[expected_type](name, file_name, repo_dir, env_path)
+        entity_class_map[expected_type](name, file_name, repo_dir)
         for name in all_names
     ]
 
@@ -478,7 +477,6 @@ class EntityObj:
         fqdn_goto_elem: Name,
         file_path: str,
         repo_dir_where_used: str,
-        env_path: str,
     ):
         """
         Initializes the EntityObj object.
@@ -487,7 +485,6 @@ class EntityObj:
             fqdn_goto_elem (Name): The goto object from jedi.
             file_path (str): The path of the file.
             repo_dir_where_used (str): The repository directory where the entity is used.
-            env_path (str): The path of the environment.
         """
         if not fqdn_goto_elem.is_definition() or fqdn_goto_elem.type not in [
             "function",
@@ -508,7 +505,6 @@ class EntityObj:
         self.repo_dir_where_used = os.path.normpath(
             os.path.abspath(repo_dir_where_used)
         )
-        self.env_path = env_path
         self.global_path = os.path.normpath(os.path.abspath(self.goto_obj.module_path))
 
         self.definition_body = fetch_node_definition_body(self.goto_obj)
@@ -521,7 +517,7 @@ class EntityObj:
 
 class ClassObj(EntityObj):
     def __init__(
-        self, goto_obj: Name, file_path: str, repo_dir_where_used: str, env_path: str
+        self, goto_obj: Name, file_path: str, repo_dir_where_used: str
     ):
         """
         Initializes a ClassObj instance.
@@ -529,13 +525,12 @@ class ClassObj(EntityObj):
         :param goto_obj: The goto object representing the class.
         :param file_path: The path of the file where the class is defined.
         :param repo_dir_where_used: The repository directory where the class is used.
-        :param env_path: The environment path.
         """
         self.entity_type = "class"
         if not goto_obj.is_definition() or goto_obj.type != "class":
             raise ValueError("goto_obj must be a class definition")
 
-        super().__init__(goto_obj, file_path, repo_dir_where_used, env_path)
+        super().__init__(goto_obj, file_path, repo_dir_where_used)
 
         self.class_nl_summary: str = "<PENDING>"
 
@@ -608,18 +603,17 @@ class ClassObj(EntityObj):
 
     @staticmethod
     def find_functions_and_variables(
-        global_path: str, repo_dir: str, env_path: str
+        global_path: str, repo_dir: str
     ) -> Tuple[List[Completion], List[Completion]]:
         """
         Finds and returns the functions and variables in the given file.
 
         :param global_path: The path to the file.
         :param repo_dir: The repository directory.
-        :param env_path: The environment path.
         :return: A tuple containing lists of statement completions and function completions.
         """
         new_script_obj = fetch_script_obj_for_file_in_repo(
-            global_path, repo_dir, env_path
+            global_path, repo_dir
         )
 
         with open(global_path, "r") as fd:
@@ -723,7 +717,7 @@ class ClassObj(EntityObj):
             class_statement_completions,
             class_function_completions,
         ) = _class_obj.find_functions_and_variables(
-            _class_obj.global_path, _class_obj.repo_dir_where_used, _class_obj.env_path
+            _class_obj.global_path, _class_obj.repo_dir_where_used
         )
 
         class_statement_completions = filter_completions(
@@ -762,7 +756,7 @@ class ClassObj(EntityObj):
             object_statement_completions,
             object_function_completions,
         ) = _class_obj.find_functions_and_variables(
-            _class_obj.global_path, _class_obj.repo_dir_where_used, _class_obj.env_path
+            _class_obj.global_path, _class_obj.repo_dir_where_used
         )
 
         object_statement_completions = filter_completions(
@@ -798,8 +792,7 @@ class ClassObj(EntityObj):
             FunctionObj(
                 _x,
                 _class_obj.global_path,
-                _class_obj.repo_dir_where_used,
-                _class_obj.env_path,
+                _class_obj.repo_dir_where_used
             )
             for _x in object_function_completions
         ]
@@ -953,7 +946,7 @@ class ClassObj(EntityObj):
 
 class FunctionObj(EntityObj):
     def __init__(
-        self, goto_obj: Name, file_path: str, repo_dir_where_used: str, env_path: str
+        self, goto_obj: Name, file_path: str, repo_dir_where_used: str
     ):
         """
         Initializes a FunctionObj instance.
@@ -962,12 +955,11 @@ class FunctionObj(EntityObj):
             goto_obj (Name): The goto object.
             file_path (str): The path of the file where the function is defined.
             repo_dir_where_used (str): The repository directory where the function is used.
-            env_path (str): The environment path.
         """
         self.entity_type = "function"
         if not (goto_obj.is_definition() and goto_obj.type == "function"):
             raise ValueError("goto_obj must be a function definition")
-        super().__init__(goto_obj, file_path, repo_dir_where_used, env_path)
+        super().__init__(goto_obj, file_path, repo_dir_where_used)
 
         (
             self.parent_class,

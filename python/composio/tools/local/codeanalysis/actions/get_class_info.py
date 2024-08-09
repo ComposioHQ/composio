@@ -12,9 +12,6 @@ class GetClassInfoInput(BaseModel):
     class_name: str = Field(
         ..., description="Name of the class for which information is requested"
     )
-    env_path: str = Field(
-        ..., description="Path to the virtual environment"
-    )
 
 
 class GetClassInfoOutput(BaseModel):
@@ -39,7 +36,6 @@ class GetClassInfo(BaseCodeAnalysisAction):
     def execute(self, request_data: GetClassInfoInput) -> GetClassInfoOutput:
         try:
             repo_path = request_data.repo_dir
-            env_path = request_data.env_path
             self.load_fqdn_cache(repo_path)
             query_class_name = request_data.class_name
 
@@ -49,7 +45,7 @@ class GetClassInfo(BaseCodeAnalysisAction):
                 )
 
             matching_fqdns = self.get_matching_items(query_class_name, "class")
-            class_results = self.get_item_results(matching_fqdns, repo_path, env_path)
+            class_results = self.get_item_results(matching_fqdns, repo_path)
 
             if not class_results:
                 return GetClassInfoOutput(result="No matching results found!")
