@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 from composio.tools.local.base import Action
-from composio.tools.local.codeanalysis import tool_utils
+from composio.tools.local.codeanalysis import tool_utils, lsp_helper
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
     DIR_FOR_TOOL_INFO_CACHE,
@@ -24,8 +24,9 @@ class BaseCodeAnalysisAction(Action, ABC):
     def execute(self, request_data):
         pass
 
-    def load_fqdn_cache(self):
-        self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, "fqdn.json")
+    def load_fqdn_cache(self, repo_path: str):
+        repo_hash = tool_utils.fetch_hash(repo_path)
+        self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_hash}.json")
         if not os.path.exists(self.fqdn_cache_file):
             raise FileNotFoundError(
                 f"FQDN cache file not found: {self.fqdn_cache_file}"
@@ -56,24 +57,44 @@ class BaseCodeAnalysisAction(Action, ABC):
         ]
         return matching_fqdns
 
-    def fetch_relevant_details(self, relevant_fqdn: str) -> Dict:
-        str_to_hash = tool_utils.fetch_hash(relevant_fqdn)
-        possible_path = os.path.join(DIR_FOR_TOOL_INFO_CACHE, f"{str_to_hash}.json")
+    def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str, env_path: str) -> Dict:
+        repo_hash = tool_utils.fetch_hash(repo_path)
+        hash_id = tool_utils.fetch_hash(relevant_fqdn)
+        os.makedirs(DIR_FOR_TOOL_INFO_CACHE, exist_ok=True)
+        os.makedirs(os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_hash), exist_ok=True)
+        possible_path = os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_hash, f"{hash_id}.json")
 
         if not os.path.exists(possible_path):
-            raise FileNotFoundError(f"Cache file not found for FQDN: {relevant_fqdn}")
-
-        with open(possible_path, "r") as f:
-            data = json.load(f)
+            if self.fqdn_index is None:
+                raise ValueError("FQDN index not loaded")
+            elem_fqdn = self.fqdn_index[relevant_fqdn]
+            elem = lsp_helper.fetch_relevant_elem(
+                    elem_fqdn["global_module"],
+                    repo_path,
+                    elem_fqdn["global_fqdn"],
+                    elem_fqdn["global_type"],
+                    env_path,
+            )
+            data = {}
+            if isinstance(elem, list):
+                data[relevant_fqdn] = [x.__dict__ for x in elem]
+            else:
+                raise ValueError("Expected a list of elements")
+            
+            with open(possible_path, "w") as fd:
+                json.dump(data, fd, indent=1)
+        else:
+            with open(possible_path, "r") as f:
+                data = json.load(f)
 
         if relevant_fqdn not in data:
             raise KeyError(f"FQDN {relevant_fqdn} not found in cache")
 
         return data[relevant_fqdn]
 
-    def get_item_results(self, matching_fqdns: List[str]) -> List[Dict]:
+    def get_item_results(self, matching_fqdns: List[str], repo_path: str, env_path: str) -> List[Dict]:
         matching_fqdn_elems_df = {
-            k: self.fetch_relevant_details(k) for k in matching_fqdns
+            k: self.fetch_relevant_details(k, repo_path, env_path) for k in matching_fqdns
         }
         results = []
         for _val in matching_fqdn_elems_df.values():
@@ -90,14 +111,14 @@ class MethodAnalysisAction(BaseCodeAnalysisAction, ABC):
         pass
 
     def get_method_artefacts(
-        self, query_class_name: Optional[str], query_method_name: str
+        self, query_class_name: Optional[str], query_method_name: str, repo_path: str, env_path: str
     ) -> Dict:
         matching_fqdns_func = self.get_matching_items(query_method_name, "function")
         matching_fqdns_class = self.get_matching_items(query_class_name, "class")
 
-        func_results = self.get_item_results(matching_fqdns_func)
+        func_results = self.get_item_results(matching_fqdns_func, repo_path, env_path)
         filtered_func_results = self.filter_function_results(
-            func_results, query_class_name, matching_fqdns_class
+            func_results, query_class_name, matching_fqdns_class, repo_path, env_path
         )
 
         return self.format_method_results(filtered_func_results)
@@ -107,6 +128,8 @@ class MethodAnalysisAction(BaseCodeAnalysisAction, ABC):
         func_results: List[Dict],
         query_class_name: Optional[str],
         matching_fqdns_class: List[str],
+        repo_path: str,
+        env_path: str,
     ) -> List[Dict]:
         filtered_results = []
         for func_res in func_results:
@@ -115,15 +138,15 @@ class MethodAnalysisAction(BaseCodeAnalysisAction, ABC):
                 if query_class_name is None:
                     filtered_results.append(func_res)
             else:
-                if self.is_function_in_class(func_res, matching_fqdns_class):
+                if self.is_function_in_class(func_res, matching_fqdns_class, repo_path, env_path):
                     filtered_results.append(func_res)
         return filtered_results
 
     def is_function_in_class(
-        self, func_res: Dict, matching_fqdns_class: List[str]
+        self, func_res: Dict, matching_fqdns_class: List[str], repo_path: str, env_path: str
     ) -> bool:
         matching_class_elems = {
-            k: self.fetch_relevant_details(k) for k in matching_fqdns_class
+            k: self.fetch_relevant_details(k, repo_path, env_path) for k in matching_fqdns_class
         }
         for class_elem in matching_class_elems.values():
             all_members = self.get_all_members(class_elem)
