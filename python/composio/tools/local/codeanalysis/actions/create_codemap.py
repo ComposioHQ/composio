@@ -72,8 +72,8 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
                 status = self._update_status(self.REPO_DIR, Status.LOADING_FQDNS)
 
             os.makedirs(DIR_FOR_FQDN_CACHE, exist_ok=True)
-            repo_hash = tool_utils.fetch_hash(self.REPO_DIR)
-            self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_hash}.json")
+            repo_name = os.path.basename(self.REPO_DIR)
+            self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json")
 
             self._handle_loading_fqdns()
 
@@ -112,7 +112,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             )
 
             self.all_fqdns_df = {}
-            for _file in python_file_paths:
+            for _file in tqdm(python_file_paths, desc="Processing Python files"):
                 _rel_path = os.path.relpath(_file, self.REPO_DIR)
                 self.all_fqdns_df[_rel_path] = self.process_python_file_fqdns(_file)
 
