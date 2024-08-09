@@ -1,7 +1,8 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
-from composio.tools.local.shelltool.shell_exec.actions.exec import ShellExecRequest
 from composio.utils.logging import get as get_logger
 
 
@@ -10,13 +11,33 @@ STATUS_STOPPED = "stopped"
 logger = get_logger("workspace")
 
 
-class GetWorkspaceHistoryRequest(ShellExecRequest):
-    pass
+def format_timestamp(command_time):
+    current_time = datetime.now()
+    elapsed_seconds = (current_time - command_time).total_seconds()
+    minutes = int(elapsed_seconds // 60)
+    seconds = int(elapsed_seconds % 60)
+    return f"{minutes} mins {seconds} secs ago"
+
+
+class CommandHistory(BaseModel):
+    executed_time_ago: str = Field(..., description="executed at")
+    command: str = Field(..., description="command")
+
+
+class GetWorkspaceHistoryRequest(BaseModel):
+    last_n_commands: int = Field(..., description="Number of last commands to fetch")
+    shell_id: str = Field(..., description="shell id")
 
 
 class GetWorkspaceHistoryResponse(BaseModel):
-    workspace_history: dict = Field(
+    is_success: bool = Field(
+        ..., description="Whether the history fetch was successful"
+    )
+    workspace_command_history: list[CommandHistory] = Field(
         ..., description="history of last n commands on the workspace"
+    )
+    error: str = Field(
+        ..., description="Error message if the history fetch was not successful"
     )
 
 
@@ -43,4 +64,20 @@ class GetWorkspaceHistory(
         request_data: GetWorkspaceHistoryRequest,
         authorisation_data: dict,
     ) -> dict:
-        return {}
+        print("execute")
+        print(authorisation_data)
+        shell = authorisation_data.get("workspace").shells.get(id=request_data.shell_id)  # type: ignore
+
+        workspace_command_history = [
+            CommandHistory(
+                executed_time_ago=format_timestamp(command["executed_at"]),
+                command=command["cmd"],
+            )
+            for command in shell.executed_commands_history[
+                -request_data.last_n_commands :
+            ]
+        ]
+        return {
+            "workspace_command_history": workspace_command_history,
+            "is_success": True,
+        }
