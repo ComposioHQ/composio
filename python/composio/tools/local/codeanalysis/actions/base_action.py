@@ -25,8 +25,8 @@ class BaseCodeAnalysisAction(Action, ABC):
         pass
 
     def load_fqdn_cache(self, repo_path: str):
-        repo_hash = tool_utils.fetch_hash(repo_path)
-        self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_hash}.json")
+        repo_name = os.path.basename(repo_path)
+        self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json")
         if not os.path.exists(self.fqdn_cache_file):
             raise FileNotFoundError(
                 f"FQDN cache file not found: {self.fqdn_cache_file}"
@@ -58,11 +58,11 @@ class BaseCodeAnalysisAction(Action, ABC):
         return matching_fqdns
 
     def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> Dict:
-        repo_hash = tool_utils.fetch_hash(repo_path)
+        repo_name = os.path.basename(repo_path)
         hash_id = tool_utils.fetch_hash(relevant_fqdn)
         os.makedirs(DIR_FOR_TOOL_INFO_CACHE, exist_ok=True)
-        os.makedirs(os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_hash), exist_ok=True)
-        possible_path = os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_hash, f"{hash_id}.json")
+        os.makedirs(os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_name), exist_ok=True)
+        possible_path = os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_name, f"{hash_id}.json")
 
         if not os.path.exists(possible_path):
             if self.fqdn_index is None:
