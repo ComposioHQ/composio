@@ -6,6 +6,10 @@ from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysis
 
 
 class GetMethodBodyInput(BaseModel):
+    repo_path: str = Field(
+        ...,
+        description="Path to the repository",
+    )
     class_name: Optional[str] = Field(
         None,
         description="Fully qualified name of the class containing the target method",
@@ -39,9 +43,9 @@ class GetMethodBody(MethodAnalysisAction):
 
     def execute(self, request_data: GetMethodBodyInput) -> GetMethodBodyOutput:
         try:
-            self.load_fqdn_cache()
+            self.load_fqdn_cache(request_data.repo_path)
             method_artefacts = self.get_method_artefacts(
-                request_data.class_name, request_data.method_name
+                request_data.class_name, request_data.method_name, request_data.repo_path
             )
             return GetMethodBodyOutput(result=method_artefacts["body_ans"])
         except Exception as e:

@@ -23,7 +23,6 @@ from composio.tools.local.codeanalysis.constants import (
 class Status(str, Enum):
     NOT_STARTED = "not_started"
     LOADING_FQDNS = "loading_fqdns"
-    CREATING_CACHE = "creating_index"
     COMPLETED = "completed"
     FAILED = "failed"
 
@@ -32,10 +31,6 @@ class CreateCodeMapInput(BaseModel):
     dir_to_index_path: str = Field(
         ...,
         description="Absolute path to the directory that needs to be indexed for code analysis",
-    )
-    env_path: str = Field(
-        ...,
-        description="Path to the environment file containing necessary configuration for indexing",
     )
 
 
@@ -64,8 +59,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         self.REPO_DIR = os.path.normpath(
             os.path.abspath(request_data.dir_to_index_path)
         )
-        self.ENV_PATH = request_data.env_path
-
+        
         try:
             status = self.check_status(self.REPO_DIR)
 
@@ -81,7 +75,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             repo_hash = tool_utils.fetch_hash(self.REPO_DIR)
             self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_hash}.json")
 
-            self._process(status)
+            self._handle_loading_fqdns()
 
             return CreateCodeMapOutput(
                 result=f"Indexing completed for {request_data.dir_to_index_path}"
@@ -93,114 +87,16 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
                 result=f"Indexing failed for {request_data.dir_to_index_path}: {e}"
             )
 
-    def _process(self, status):
-        if status["status"] == Status.LOADING_FQDNS:
-            self._handle_loading_fqdns()
-        elif status["status"] == Status.CREATING_CACHE:
-            self._handle_creating_cache()
-
     def _handle_loading_fqdns(self):
         try:
             self.load_all_fqdns()
-            self._update_status(self.REPO_DIR, Status.CREATING_CACHE)
+            self._update_status(self.REPO_DIR, Status.COMPLETED)
             # self.create_fqdn_cache()
             # self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise RuntimeError(f"Failed to handle loading FQDNs: {e}")
 
-    def _handle_creating_cache(self):
-        if not os.path.exists(self.fqdn_cache_file):
-            raise FileNotFoundError("FQDN cache file not found")
-
-        try:
-            with open(self.fqdn_cache_file, "r") as f:
-                self.all_fqdns_df = json.load(f)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(f"Failed to load FQDN cache file: {e}")
-
-        try:
-            self.create_fqdn_cache()
-            self._update_status(self.REPO_DIR, Status.COMPLETED)
-        except Exception as e:
-            self._update_status(self.REPO_DIR, Status.FAILED)
-            raise RuntimeError(f"Failed to create FQDN cache: {e}")
-
-    def create_fqdn_cache(self):
-        """
-        Create a cache of tool information for each FQDN in the repository.
-
-        This method processes all FQDNs in the repository and stores detailed
-        information about each entity (class, function, variable) in a cache
-        for quick retrieval.
-
-        Returns:
-            None
-        """
-        assert hasattr(self, "all_fqdns_df"), "FQDN index not loaded"
-
-        all_fqdns = []
-        self.fqdn_index = {}
-        for _file_name, possible_fqdns in self.all_fqdns_df.items():
-            all_fqdns.extend([x["global_fqdn"] for x in possible_fqdns])
-            for fqdn_obj in possible_fqdns:
-                self.fqdn_index[fqdn_obj["global_fqdn"]] = fqdn_obj
-
-        freq = Counter(all_fqdns)
-        freq = sorted(freq.items(), key=lambda x: -x[1])
-
-        save_dir = DIR_FOR_TOOL_INFO_CACHE
-        os.makedirs(save_dir, exist_ok=True)
-
-        all_fqdns_within_repo = [
-            x
-            for fqdns_list_in_file in self.all_fqdns_df.values()
-            for x in fqdns_list_in_file
-        ]
-
-        all_fqdns_within_repo = [
-            x
-            for x in all_fqdns_within_repo
-            if x["global_type"] in ["class", "function"]
-        ]
-
-        print(
-            f"Distribution of FQDNs: {Counter([x['global_type'] for x in all_fqdns_within_repo])}"
-        )
-
-        for elem_fqdn in tqdm(all_fqdns_within_repo):
-            try:
-                str_to_hash = elem_fqdn["global_fqdn"]
-                hash_id = tool_utils.fetch_hash(str_to_hash)
-                save_path = os.path.join(save_dir, f"{hash_id}.json")
-
-                if not os.path.exists(save_path):
-                    with open(save_path, "w") as fd:
-                        json.dump({}, fd)
-
-                with open(save_path, "r") as fd:
-                    hashed_dict = json.load(fd)
-
-                if str_to_hash in hashed_dict:
-                    continue
-
-                elem = lsp_helper.fetch_relevant_elem(
-                    elem_fqdn["global_module"],
-                    self.REPO_DIR,
-                    elem_fqdn["global_fqdn"],
-                    elem_fqdn["global_type"],
-                    self.ENV_PATH,
-                )
-
-                if isinstance(elem, list):
-                    hashed_dict[str_to_hash] = [x.__dict__ for x in elem]
-                else:
-                    raise ValueError("Expected a list of elements")
-
-                with open(save_path, "w") as fd:
-                    json.dump(hashed_dict, fd, indent=1)
-            except Exception as e:
-                print(f"Error in processing: {elem_fqdn['global_fqdn']}: {e}")
 
     def load_all_fqdns(self):
         """
@@ -245,8 +141,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             # Fetch the script object for the file
             script_obj = lsp_helper.fetch_script_obj_for_file_in_repo(
                 file_path=file_absolute_path,
-                repo_path=self.REPO_DIR,
-                environment_path=self.ENV_PATH,
+                repo_path=self.REPO_DIR
             )
 
             # Fetch class and function definition nodes
