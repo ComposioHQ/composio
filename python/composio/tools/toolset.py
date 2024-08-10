@@ -3,12 +3,12 @@ Composio SDK tools.
 """
 
 import base64
+import binascii
 import hashlib
 import itertools
 import json
 import os
 import time
-import binascii
 import typing as t
 
 import typing_extensions as te
@@ -23,7 +23,7 @@ from composio.client.collections import (
     ConnectedAccountModel,
     FileType,
     SuccessExecuteActionResponseModel,
-    TriggerSubscription
+    TriggerSubscription,
 )
 from composio.client.exceptions import ComposioClientError
 from composio.constants import (
@@ -313,16 +313,22 @@ class ComposioToolSet(WithLogger):
             )
 
         try:
-            success_response_model = SuccessExecuteActionResponseModel.model_validate(output)
+            success_response_model = SuccessExecuteActionResponseModel.model_validate(
+                output
+            )
         except Exception:
             return output
 
         return self._save_var_files(
             file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
-            success_response_model=success_response_model
+            success_response_model=success_response_model,
         )
 
-    def _save_var_files(self, file_name_prefix: str, success_response_model: SuccessExecuteActionResponseModel) -> dict:
+    def _save_var_files(
+        self,
+        file_name_prefix: str,
+        success_response_model: SuccessExecuteActionResponseModel,
+    ) -> dict:
         execution_status = True
         resp_data = success_response_model.response_data
 
@@ -331,13 +337,19 @@ class ComposioToolSet(WithLogger):
                 file_model = FileType.model_validate(val)
                 _ensure_output_dir_exists()
 
-                cache_filename = f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+                cache_filename = (
+                    f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+                )
                 cache_filepath = output_dir / cache_filename
 
-                local_filepath = file_model.name.replace('/', '_')
+                local_filepath = file_model.name.replace("/", "_")
 
-                _write_file(cache_filepath, base64.urlsafe_b64decode(file_model.content))
-                _write_file(local_filepath, base64.urlsafe_b64decode(file_model.content))
+                _write_file(
+                    cache_filepath, base64.urlsafe_b64decode(file_model.content)
+                )
+                _write_file(
+                    local_filepath, base64.urlsafe_b64decode(file_model.content)
+                )
 
                 resp_data[key] = str(local_filepath)
             except binascii.Error:

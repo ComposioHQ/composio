@@ -400,6 +400,7 @@ class TriggerModel(BaseModel):
 
 class ExecutionDetailsModel(BaseModel):
     """Execution details data model."""
+
     executed: bool
 
 
@@ -786,7 +787,7 @@ def _check_file_uploadable(param_field: dict) -> bool:
 
 
 def _check_file_downloadable(param_field: dict) -> bool:
-    return set(param_field.keys()) == {'name', 'content'}
+    return set(param_field.keys()) == {"name", "content"}
 
 
 class ActionParametersModel(BaseModel):
