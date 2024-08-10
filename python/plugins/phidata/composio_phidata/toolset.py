@@ -3,8 +3,10 @@ PhiData tool spec.
 """
 import json
 import typing as t
+
 from phi.tools.function import Function
 from pydantic import validate_call
+
 from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
 
@@ -51,11 +53,11 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         Wrap composio tool as Phidata `Function` object.
         """
-        name = schema["function"]["name"]
-        description = schema["function"]["description"]
-        parameters = schema["function"]["parameters"]
+        name = schema["name"]
+        description = schema["description"]
+        parameters = schema["parameters"]
 
-        def function(**kwargs: t.Any) -> t.Dict:
+        def function(**kwargs: t.Any) -> str:
             """Composio tool wrapped as Phidata `Function`."""
             return json.dumps(
                 self.execute_action(
@@ -75,27 +77,39 @@ class ComposioToolSet(BaseComposioToolSet):
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
-    ) -> t.Sequence[Function]:
+    ) -> t.List[Function]:
         """
-        Get composio tools wrapped as  Phidata `Function` objects.
+        Get composio tools wrapped as Lyzr `Tool` objects.
 
         :param actions: List of actions to wrap
         :param entity_id: Entity ID to use for executing function calls.
-        :return: Composio tools wrapped as Phidata `Function` objects
+        :return: Composio tools wrapped as `Tool` objects
         """
-        return super().get_actions(actions)
+        return [
+            self._wrap_tool(
+                schema=schema.model_dump(exclude_none=True),
+                entity_id=self.entity_id,
+            )
+            for schema in self.get_action_schemas(actions=actions)
+        ]
 
     def get_tools(
         self,
         apps: t.Sequence[AppType],
         tags: t.Optional[t.List[TagType]] = None,
-    ) -> t.Sequence[Function]:
+    ) -> t.List[Function]:
         """
-        Get composio tools wrapped as Phidata `Function` objects.
+        Get composio tools wrapped as Lyzr `Tool` objects.
 
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
         :param entity_id: Entity ID to use for executing function calls.
-        :return: Composio tools wrapped as Phidata `Function` objects
+        :return: Composio tools wrapped as `Tool` objects
         """
-        return super().get_tools(apps, tags)
+        return [
+            self._wrap_tool(
+                schema=schema.model_dump(exclude_none=True),
+                entity_id=self.entity_id,
+            )
+            for schema in self.get_action_schemas(apps=apps, tags=tags)
+        ]
