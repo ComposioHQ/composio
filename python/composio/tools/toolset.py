@@ -8,6 +8,7 @@ import itertools
 import json
 import os
 import time
+import binascii
 import typing as t
 
 import typing_extensions as te
@@ -20,9 +21,9 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     ConnectedAccountModel,
-    FileModel,
+    FileType,
     SuccessExecuteActionResponseModel,
-    TriggerSubscription,
+    TriggerSubscription
 )
 from composio.client.exceptions import ComposioClientError
 from composio.constants import (
@@ -310,33 +311,43 @@ class ComposioToolSet(WithLogger):
                 output=output,
                 entity_id=entity_id,
             )
-        try:
-            # Save the variables of type file to the composio/output directory.
-            output_modified = self._save_var_files(
-                f"{action.name}_{entity_id}_{time.time()}", output
-            )
-            return output_modified
-        except Exception:
-            pass
-        return output
 
-    def _save_var_files(self, file_name_prefix: str, output: dict) -> dict:
-        success_response_model = SuccessExecuteActionResponseModel.model_validate(
-            output
+        try:
+            success_response_model = SuccessExecuteActionResponseModel.model_validate(output)
+        except Exception:
+            return output
+
+        return self._save_var_files(
+            file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
+            success_response_model=success_response_model
         )
-        resp_data = json.loads(success_response_model.response_data)
+
+    def _save_var_files(self, file_name_prefix: str, success_response_model: SuccessExecuteActionResponseModel) -> dict:
+        execution_status = True
+        resp_data = success_response_model.response_data
+
         for key, val in resp_data.items():
             try:
-                file_model = FileModel.model_validate(val)
+                file_model = FileType.model_validate(val)
                 _ensure_output_dir_exists()
-                output_file_path = (
-                    output_dir
-                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
-                )
-                _write_file(output_file_path, base64.b64decode(file_model.content))
-                resp_data[key] = str(output_file_path)
+
+                cache_filename = f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+                cache_filepath = output_dir / cache_filename
+
+                local_filepath = file_model.name.replace('/', '_')
+
+                _write_file(cache_filepath, base64.urlsafe_b64decode(file_model.content))
+                _write_file(local_filepath, base64.urlsafe_b64decode(file_model.content))
+
+                resp_data[key] = str(local_filepath)
+            except binascii.Error:
+                execution_status = False
+                resp_data[key] = "Invalid File! Unable to decode."
             except Exception:
                 pass
+
+        if execution_status is False:
+            success_response_model.execution_details = {"executed": False}
         success_response_model.response_data = resp_data
         return success_response_model.model_dump()
 
@@ -548,7 +559,7 @@ class ComposioToolSet(WithLogger):
     def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("properties") == FileModel.schema().get("properties"):
+            if param_details.get("properties") == FileType.schema().get("properties"):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
                     "type": "string",
@@ -557,7 +568,7 @@ class ComposioToolSet(WithLogger):
                 }
             elif param_details.get("allOf", [{}])[0].get(
                 "properties"
-            ) == FileModel.schema().get("properties"):
+            ) == FileType.schema().get("properties"):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {

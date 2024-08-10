@@ -400,7 +400,6 @@ class TriggerModel(BaseModel):
 
 class ExecutionDetailsModel(BaseModel):
     """Execution details data model."""
-
     executed: bool
 
 
@@ -408,10 +407,10 @@ class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
     execution_details: ExecutionDetailsModel
-    response_data: str
+    response_data: t.Dict
 
 
-class FileModel(BaseModel):
+class FileType(BaseModel):
     name: str = Field(
         ..., description="File name, contains extension to indetify the file type"
     )
@@ -784,6 +783,10 @@ def _check_file_uploadable(param_field: dict) -> bool:
         field_name in param_field.get("properties", {})
         for field_name in ["name", "content"]
     )
+
+
+def _check_file_downloadable(param_field: dict) -> bool:
+    return set(param_field.keys()) == {'name', 'content'}
 
 
 class ActionParametersModel(BaseModel):
