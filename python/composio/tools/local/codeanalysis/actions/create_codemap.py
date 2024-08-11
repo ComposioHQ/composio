@@ -4,6 +4,7 @@ from collections import Counter
 from enum import Enum
 from pathlib import Path
 from typing import Type
+from composio.tools.local.codeanalysis.tool_utils import retry_handler
 
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
@@ -40,7 +41,6 @@ class CreateCodeMapOutput(BaseModel):
         description="Outcome of the code map creation process, including success or failure status and any relevant details",
     )
 
-
 class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
     """
     Creates a Fully Qualified Domain Name (FQDN) cache for a repository.
@@ -59,6 +59,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         self.REPO_DIR = os.path.normpath(
             os.path.abspath(request_data.dir_to_index_path)
         )
+        self.failed_files = []
         
         try:
             status = self.check_status(self.REPO_DIR)
@@ -112,15 +113,28 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             )
 
             self.all_fqdns_df = {}
-            for _file in tqdm(python_file_paths, desc="Processing Python files"):
-                _rel_path = os.path.relpath(_file, self.REPO_DIR)
-                self.all_fqdns_df[_rel_path] = self.process_python_file_fqdns(_file)
+            # while len(python_file_paths) > 0:
+            while len(self.all_fqdns_df) == 0:
+                self.failed_files = []
+                for _file in tqdm(python_file_paths, desc="Processing Python files"):
+                    _rel_path = os.path.relpath(_file, self.REPO_DIR)
+                    try:
+                        fqdn = self.process_python_file_fqdns(_file)
+                        # print(_rel_path, len(fqdn))
+                        self.all_fqdns_df[_rel_path] = self.process_python_file_fqdns(_file)
+                    except Exception as e:
+                        print(f"Failed to process FQDNs for file {_file}: {e}")
+                        lsp_helper.clear_cache()
+                        self.failed_files.append(_file)
+
+                python_file_paths = self.failed_files
 
             with open(self.fqdn_cache_file, "w") as f:
                 json.dump(self.all_fqdns_df, f, indent=4)
         except Exception as e:
-            raise RuntimeError(f"Failed to load all FQDNs: {e}")
+            print(f"Failed to load all FQDNs: {e}")
 
+    @retry_handler(max_attempts=2, delay=1)
     def process_python_file_fqdns(self, file_absolute_path: str) -> list:
         """
         Process a Python file to find the Fully Qualified Domain Names (FQDNs) of various entities.
@@ -219,13 +233,13 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         }
         if error:
             status_data["error"] = error
-        status_file = Path(repo_path) / ".indexing_status.json"
+        status_file = Path(repo_path) / "../.indexing_status.json"
         with open(status_file, "w", encoding="utf-8") as f:
             json.dump(status_data, f)
         return status_data
 
     def check_status(self, repo_path: str) -> dict:
-        status_file = Path(repo_path) / ".indexing_status.json"
+        status_file = Path(repo_path) / "../.indexing_status.json"
         if not status_file.exists():
             return {"status": Status.NOT_STARTED}
         with open(status_file, "r", encoding="utf-8") as f:

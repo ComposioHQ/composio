@@ -1,11 +1,15 @@
 import os
 import sys
+from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Union
 
 import jedi
 from jedi.api.classes import Completion, Name
 
 from composio.tools.local.codeanalysis import tree_sitter_related
+
+def clear_cache():
+    jedi.cache.clear_time_caches()
 
 
 def fetch_script_obj_for_file_in_repo(
@@ -213,9 +217,10 @@ def fetch_global_and_nested_fqdns(
     ]
 
     # Handle non-global entities
+    potential_parent_fqdns = set(
+            deepcopy(global_functions_fqdns+global_classes_fqdns))
     potential_parent_fqdns = sorted(
-        set(global_functions_fqdns + global_classes_fqdns), key=lambda fqdn: -len(fqdn)
-    )
+        potential_parent_fqdns, key=lambda x: -len(x))
 
     for ref in all_references:
         if ref["global_type"] != "function":
