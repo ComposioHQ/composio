@@ -2,18 +2,18 @@ import json
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Type, Dict, Any
+from typing import Any, Dict, Type
 
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
 
 from composio.tools.local.base import Action
 from composio.tools.local.codeanalysis import (
+    chunker,
+    embedder,
     lsp_helper,
     tool_utils,
     tree_sitter_related,
-    chunker,
-    embedder
 )
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
@@ -49,7 +49,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
     Creates a code map for a repository by indexing and analyzing its contents.
 
     This class is responsible for:
-    1. Creating a Fully Qualified Domain Name (FQDN) cache for various code entities 
+    1. Creating a Fully Qualified Domain Name (FQDN) cache for various code entities
        such as classes, functions, and variables.
     2. Generating an index of the repository's Python files.
     3. Creating a vector store from chunked file contents for efficient searching.
@@ -95,7 +95,8 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             self._update_status(self.REPO_DIR, Status.FAILED, str(e))
             return CreateCodeMapOutput(
                 result=f"Indexing failed for {request_data.dir_to_index_path}: {e}"
-            )        
+            )
+
     def _process(self, status: Dict[str, Any]) -> None:
         """
         Process the indexing operation based on the current status.
@@ -119,14 +120,14 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             if status["status"] == Status.LOADING_FQDNS:
                 self.load_all_fqdns()
                 status = self._update_status(self.REPO_DIR, Status.LOADING_INDEX)
-            
+
             if status["status"] == Status.LOADING_INDEX:
                 self.create_index()
                 self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise RuntimeError(f"Failed to process indexing operation: {e}")
-        
+
     def create_index(self):
         """
         Create an index of the Python files in the repository.
@@ -144,10 +145,12 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             chunks, metadatas, ids = [], [], []
             num_lines = {}
 
-            for file in tqdm(python_files, total=len(python_files), desc="Processing files"):
+            for file in tqdm(
+                python_files, total=len(python_files), desc="Processing files"
+            ):
                 with open(file, "r", encoding="utf-8") as f:
                     file_content = f.read()
-                
+
                 chunk, metadata, id = chunking.chunk(file_content, file)
                 num_lines[file] = len(file_content.splitlines())
                 chunks.extend(chunk)
@@ -158,9 +161,11 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
                 raise ValueError("No valid chunks were created from the files.")
 
             documents = chunker.construct_chunks(chunks, metadatas, ids, num_lines)
-            
+
             try:
-                embedder.get_vector_store_from_chunks(self.REPO_DIR, documents, ids, metadatas)
+                embedder.get_vector_store_from_chunks(
+                    self.REPO_DIR, documents, ids, metadatas
+                )
             except Exception as e:
                 raise ValueError(f"Failed to create vector store: {e}")
 
@@ -168,7 +173,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         except Exception as e:
             print(f"Failed to create index: {e}")
             raise
-        
+
     def load_all_fqdns(self):
         """
         Load all Fully Qualified Domain Names (FQDNs) from the repository.
@@ -193,7 +198,9 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             for file_path in tqdm(python_file_paths, desc="Processing Python files"):
                 rel_path = os.path.relpath(file_path, self.REPO_DIR)
                 try:
-                    self.all_fqdns_df[rel_path] = self.process_python_file_fqdns(file_path)
+                    self.all_fqdns_df[rel_path] = self.process_python_file_fqdns(
+                        file_path
+                    )
                 except Exception as e:
                     print(f"Failed to process FQDNs for file {file_path}: {e}")
                     lsp_helper.clear_cache()
@@ -312,4 +319,3 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             return {"status": Status.NOT_STARTED}
         with open(status_file, "r", encoding="utf-8") as f:
             return json.load(f)
-
