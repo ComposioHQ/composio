@@ -343,7 +343,7 @@ class ComposioToolSet(WithLogger):
                 )
                 cache_filepath = output_dir / cache_filename
 
-                local_filepath = file_model.name.replace("/", "_")
+                local_filepath = f"./{file_model.name.replace('/', '_')}"
 
                 _write_file(
                     cache_filepath, base64.urlsafe_b64decode(file_model.content)
