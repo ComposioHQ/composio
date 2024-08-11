@@ -8,13 +8,12 @@ from jedi.api.classes import Completion, Name
 
 from composio.tools.local.codeanalysis import tree_sitter_related
 
+
 def clear_cache():
     jedi.cache.clear_time_caches()
 
 
-def fetch_script_obj_for_file_in_repo(
-    file_path: str, repo_path: str
-) -> jedi.Script:
+def fetch_script_obj_for_file_in_repo(file_path: str, repo_path: str) -> jedi.Script:
     """
     Fetches the Jedi script object for a file in a repository.
 
@@ -218,9 +217,9 @@ def fetch_global_and_nested_fqdns(
 
     # Handle non-global entities
     potential_parent_fqdns = set(
-            deepcopy(global_functions_fqdns+global_classes_fqdns))
-    potential_parent_fqdns = sorted(
-        potential_parent_fqdns, key=lambda x: -len(x))
+        deepcopy(global_functions_fqdns + global_classes_fqdns)
+    )
+    potential_parent_fqdns = sorted(potential_parent_fqdns, key=lambda x: -len(x))
 
     for ref in all_references:
         if ref["global_type"] != "function":
@@ -469,8 +468,7 @@ def fetch_relevant_elem(
         raise ValueError(f"Unsupported expected type '{expected_type}'")
 
     entity_objs = [
-        entity_class_map[expected_type](name, file_name, repo_dir)
-        for name in all_names
+        entity_class_map[expected_type](name, file_name, repo_dir) for name in all_names
     ]
 
     return entity_objs
@@ -521,9 +519,7 @@ class EntityObj:
 
 
 class ClassObj(EntityObj):
-    def __init__(
-        self, goto_obj: Name, file_path: str, repo_dir_where_used: str
-    ):
+    def __init__(self, goto_obj: Name, file_path: str, repo_dir_where_used: str):
         """
         Initializes a ClassObj instance.
 
@@ -617,9 +613,7 @@ class ClassObj(EntityObj):
         :param repo_dir: The repository directory.
         :return: A tuple containing lists of statement completions and function completions.
         """
-        new_script_obj = fetch_script_obj_for_file_in_repo(
-            global_path, repo_dir
-        )
+        new_script_obj = fetch_script_obj_for_file_in_repo(global_path, repo_dir)
 
         with open(global_path, "r") as fd:
             all_lines = fd.readlines()
@@ -794,11 +788,7 @@ class ClassObj(EntityObj):
         )
 
         object_function_completions = [
-            FunctionObj(
-                _x,
-                _class_obj.global_path,
-                _class_obj.repo_dir_where_used
-            )
+            FunctionObj(_x, _class_obj.global_path, _class_obj.repo_dir_where_used)
             for _x in object_function_completions
         ]
 
@@ -950,9 +940,7 @@ class ClassObj(EntityObj):
 
 
 class FunctionObj(EntityObj):
-    def __init__(
-        self, goto_obj: Name, file_path: str, repo_dir_where_used: str
-    ):
+    def __init__(self, goto_obj: Name, file_path: str, repo_dir_where_used: str):
         """
         Initializes a FunctionObj instance.
 

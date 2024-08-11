@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 from composio.tools.local.base import Action
-from composio.tools.local.codeanalysis import tool_utils, lsp_helper
+from composio.tools.local.codeanalysis import lsp_helper, tool_utils
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
     DIR_FOR_TOOL_INFO_CACHE,
@@ -26,7 +26,9 @@ class BaseCodeAnalysisAction(Action, ABC):
 
     def load_fqdn_cache(self, repo_path: str):
         repo_name = os.path.basename(repo_path)
-        self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json")
+        self.fqdn_cache_file = os.path.join(
+            DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json"
+        )
         if not os.path.exists(self.fqdn_cache_file):
             raise FileNotFoundError(
                 f"FQDN cache file not found: {self.fqdn_cache_file}"
@@ -41,7 +43,9 @@ class BaseCodeAnalysisAction(Action, ABC):
             for fqdn_obj in possible_fqdns
         }
 
-    def get_matching_items(self, query_name: Optional[str], item_type: str) -> List[str]:
+    def get_matching_items(
+        self, query_name: Optional[str], item_type: str
+    ) -> List[str]:
         if not self.fqdn_index:
             raise ValueError("FQDN index not loaded")
 
@@ -62,7 +66,9 @@ class BaseCodeAnalysisAction(Action, ABC):
         hash_id = tool_utils.fetch_hash(relevant_fqdn)
         os.makedirs(DIR_FOR_TOOL_INFO_CACHE, exist_ok=True)
         os.makedirs(os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_name), exist_ok=True)
-        possible_path = os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_name, f"{hash_id}.json")
+        possible_path = os.path.join(
+            DIR_FOR_TOOL_INFO_CACHE, repo_name, f"{hash_id}.json"
+        )
 
         if not os.path.exists(possible_path):
             if self.fqdn_index is None:
@@ -72,14 +78,14 @@ class BaseCodeAnalysisAction(Action, ABC):
                 elem_fqdn["global_module"],
                 repo_path,
                 elem_fqdn["global_fqdn"],
-                elem_fqdn["global_type"]
+                elem_fqdn["global_type"],
             )
             data = {}
             if isinstance(elem, list):
                 data[relevant_fqdn] = [x.__dict__ for x in elem]
             else:
                 raise ValueError("Expected a list of elements")
-            
+
             with open(possible_path, "w") as fd:
                 json.dump(data, fd, indent=1)
         else:

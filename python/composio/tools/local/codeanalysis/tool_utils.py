@@ -1,9 +1,9 @@
 import hashlib
 import os
 import sys
-from typing import Optional
 import time
 from functools import wraps
+from typing import Optional
 
 
 def is_test_file(file_path: str) -> bool:
@@ -121,6 +121,7 @@ def fetch_hash(message) -> str:
     hex_dig = hash_object.hexdigest()
     return hex_dig
 
+
 def retry_handler(max_attempts=3, delay=1):
     def decorator(func):
         @wraps(func)
@@ -134,5 +135,7 @@ def retry_handler(max_attempts=3, delay=1):
                     if attempts == max_attempts:
                         raise RuntimeError(f"Failed after {max_attempts} attempts: {e}")
                     time.sleep(delay)
+
         return wrapper
+
     return decorator

@@ -1,4 +1,4 @@
-from typing import Type, Optional
+from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -47,7 +47,9 @@ class GetMethodSignature(MethodAnalysisAction):
         try:
             self.load_fqdn_cache(request_data.repo_path)
             method_artefacts = self.get_method_artefacts(
-                request_data.class_name, request_data.method_name, request_data.repo_path
+                request_data.class_name,
+                request_data.method_name,
+                request_data.repo_path,
             )
             return GetMethodSignatureOutput(result=method_artefacts["signature_ans"])
         except Exception as e:

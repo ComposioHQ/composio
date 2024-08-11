@@ -4,7 +4,6 @@ from collections import Counter
 from enum import Enum
 from pathlib import Path
 from typing import Type
-from composio.tools.local.codeanalysis.tool_utils import retry_handler
 
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
@@ -19,6 +18,7 @@ from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
     DIR_FOR_TOOL_INFO_CACHE,
 )
+from composio.tools.local.codeanalysis.tool_utils import retry_handler
 
 
 class Status(str, Enum):
@@ -41,6 +41,7 @@ class CreateCodeMapOutput(BaseModel):
         description="Outcome of the code map creation process, including success or failure status and any relevant details",
     )
 
+
 class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
     """
     Creates a Fully Qualified Domain Name (FQDN) cache for a repository.
@@ -60,7 +61,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             os.path.abspath(request_data.dir_to_index_path)
         )
         self.failed_files = []
-        
+
         try:
             status = self.check_status(self.REPO_DIR)
 
@@ -74,7 +75,9 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
 
             os.makedirs(DIR_FOR_FQDN_CACHE, exist_ok=True)
             repo_name = os.path.basename(self.REPO_DIR)
-            self.fqdn_cache_file = os.path.join(DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json")
+            self.fqdn_cache_file = os.path.join(
+                DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json"
+            )
 
             self._handle_loading_fqdns()
 
@@ -92,12 +95,9 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         try:
             self.load_all_fqdns()
             self._update_status(self.REPO_DIR, Status.COMPLETED)
-            # self.create_fqdn_cache()
-            # self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise RuntimeError(f"Failed to handle loading FQDNs: {e}")
-
 
     def load_all_fqdns(self):
         """
@@ -113,21 +113,13 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             )
 
             self.all_fqdns_df = {}
-            # while len(python_file_paths) > 0:
-            while len(self.all_fqdns_df) == 0:
-                self.failed_files = []
-                for _file in tqdm(python_file_paths, desc="Processing Python files"):
-                    _rel_path = os.path.relpath(_file, self.REPO_DIR)
-                    try:
-                        fqdn = self.process_python_file_fqdns(_file)
-                        # print(_rel_path, len(fqdn))
-                        self.all_fqdns_df[_rel_path] = self.process_python_file_fqdns(_file)
-                    except Exception as e:
-                        print(f"Failed to process FQDNs for file {_file}: {e}")
-                        lsp_helper.clear_cache()
-                        self.failed_files.append(_file)
-
-                python_file_paths = self.failed_files
+            for _file in tqdm(python_file_paths, desc="Processing Python files"):
+                _rel_path = os.path.relpath(_file, self.REPO_DIR)
+                try:
+                    self.all_fqdns_df[_rel_path] = self.process_python_file_fqdns(_file)
+                except Exception as e:
+                    print(f"Failed to process FQDNs for file {_file}: {e}")
+                    lsp_helper.clear_cache()
 
             with open(self.fqdn_cache_file, "w") as f:
                 json.dump(self.all_fqdns_df, f, indent=4)
@@ -154,8 +146,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         try:
             # Fetch the script object for the file
             script_obj = lsp_helper.fetch_script_obj_for_file_in_repo(
-                file_path=file_absolute_path,
-                repo_path=self.REPO_DIR
+                file_path=file_absolute_path, repo_path=self.REPO_DIR
             )
 
             # Fetch class and function definition nodes
