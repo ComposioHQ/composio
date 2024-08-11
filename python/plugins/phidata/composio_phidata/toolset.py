@@ -79,11 +79,11 @@ class ComposioToolSet(BaseComposioToolSet):
         actions: t.Sequence[ActionType],
     ) -> t.List[Function]:
         """
-        Get composio tools wrapped as Lyzr `Tool` objects.
+        Get composio tools wrapped as Phidata `Function` objects.
 
         :param actions: List of actions to wrap
         :param entity_id: Entity ID to use for executing function calls.
-        :return: Composio tools wrapped as `Tool` objects
+        :return: Composio tools wrapped as `Function` objects
         """
         return [
             self._wrap_tool(
@@ -99,12 +99,12 @@ class ComposioToolSet(BaseComposioToolSet):
         tags: t.Optional[t.List[TagType]] = None,
     ) -> t.List[Function]:
         """
-        Get composio tools wrapped as Lyzr `Tool` objects.
+        Get composio tools wrapped as Lyzr `Function` objects.
 
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
         :param entity_id: Entity ID to use for executing function calls.
-        :return: Composio tools wrapped as `Tool` objects
+        :return: Composio tools wrapped as `Function` objects
         """
         return [
             self._wrap_tool(
