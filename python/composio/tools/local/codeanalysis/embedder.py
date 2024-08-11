@@ -4,10 +4,10 @@ import os
 from composio.tools.local.codeanalysis.constants import DEEPLAKE_FOLDER, EMBEDDER
 
 
-def get_vector_store(repo_path):
+def get_vector_store(repo_path, overwrite=True):
     repo_name = os.path.basename(repo_path)
     deeplake_repo_path = os.path.join(DEEPLAKE_FOLDER, repo_name)
-    deeplake_vector_store = DeepLakeVectorStore(path=deeplake_repo_path, overwrite=True)
+    deeplake_vector_store = DeepLakeVectorStore(path=deeplake_repo_path, overwrite=overwrite)
     return deeplake_vector_store
 
 

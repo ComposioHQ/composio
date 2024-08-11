@@ -5,50 +5,129 @@ from tree_sitter import Parser
 from composio.tools.local.codeanalysis.constants import TREE_SITTER_CACHE
 
 
+from typing import Union
+
+
 class Span:
-    
-    def __init__(self, start, end):
+    """
+    Represents a span of text with start and end positions.
+    """
+
+    def __init__(self, start: int, end: int):
+        """
+        Initialize a Span object.
+
+        Args:
+            start (int): The starting position of the span.
+            end (int): The ending position of the span.
+
+        Raises:
+            ValueError: If start is greater than end.
+        """
+        if start > end:
+            raise ValueError("Start position must be less than or equal to end position.")
         self.start = start
         self.end = end
 
     def extract(self, s: str) -> str:
         return "\n".join(s.splitlines()[self.start:self.end])
 
-    def __add__(self, other):
+    def __add__(self, other: Union[int, 'Span']) -> 'Span':
         if isinstance(other, int):
             return Span(self.start + other, self.end + other)
         elif isinstance(other, Span):
             return Span(self.start, other.end)
         else:
-            raise NotImplementedError()
+            raise TypeError("Unsupported operand type for +: '{}' and '{}'".format(type(self).__name__, type(other).__name__))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.end - self.start
+
+    def __repr__(self) -> str:
+        return f"Span(start={self.start}, end={self.end})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Span):
+            return NotImplemented
+        return self.start == other.start and self.end == other.end
     
+
 def get_line_number(index: int, source_code: str) -> int:
-    # unoptimized, use binary search
+    """
+    Get the line number for a given character index in the source code.
+
+    Args:
+        index (int): The character index to find the line number for.
+        source_code (str): The full source code string.
+
+    Returns:
+        int: The line number (0-indexed) corresponding to the given index.
+
+    Raises:
+        ValueError: If the index is negative or greater than the length of the source code.
+    """
+    if index < 0 or index > len(source_code):
+        raise ValueError(f"Index {index} is out of range for the given source code.")
+
     lines = source_code.splitlines(keepends=True)
     total_chars = 0
-    line_number = 0
-    while total_chars <= index:
-        if line_number == len(lines):
+    for line_number, line in enumerate(lines):
+        total_chars += len(line)
+        if total_chars > index:
             return line_number
-        total_chars += len(lines[line_number])
-        line_number += 1
-    return line_number - 1
 
-def count_length_without_whitespace(s: str):
-    string_without_whitespace = re.sub(r'\s', '', s)
-    return len(string_without_whitespace)
+    return len(lines) - 1 
 
+import re
+from typing import Union
+
+def count_length_without_whitespace(s: Union[str, bytes]) -> int:
+    """
+    Count the length of a string or bytes object after removing all whitespace.
+
+    Args:
+        s (Union[str, bytes]): The input string or bytes object.
+
+    Returns:
+        int: The length of the input after removing all whitespace.
+
+    Raises:
+        TypeError: If the input is neither a string nor a bytes object.
+    """
+    if isinstance(s, str):
+        return len(re.sub(r'\s', '', s))
+    elif isinstance(s, bytes):
+        return len(re.sub(rb'\s', b'', s))
+    else:
+        raise TypeError(f"Input must be str or bytes, not {type(s).__name__}")
 
 def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
-    # Recursively form chunks with a maximum chunk size of max_chunk_size
+    """
+    Chunk the abstract syntax tree (AST) of source code into manageable spans.
+
+    This function recursively traverses the AST, creating chunks of code that respect
+    the maximum chunk size. It then processes these chunks to ensure they meet
+    certain criteria, such as minimum content length and the presence of line breaks.
+
+    Args:
+        tree: The root node of the AST.
+        source_code_bytes (bytes): The source code as a bytes object.
+        max_chunk_size (int, optional): The maximum size of a single chunk in bytes. 
+                                        Defaults to 1536 (512 * 3).
+        coalesce (int, optional): The minimum number of non-whitespace characters 
+                                  a chunk should contain. Defaults to 50.
+
+    Returns:
+        List[Span]: A list of Span objects representing the final chunks of code,
+                    where each Span contains the start and end line numbers.
+    """
     def chunker_helper(node, source_code_bytes, start_position=0):
         chunks = []
         current_chunk = Span(start_position, start_position)
+
         for child in node.children:
             child_span = Span(child.start_byte, child.end_byte)
+
             if len(child_span) > max_chunk_size:
                 chunks.append(current_chunk)
                 chunks.extend(chunker_helper(child, source_code_bytes, child.start_byte))
@@ -60,32 +139,33 @@ def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
                 current_chunk += child_span
         if len(current_chunk) > 0:
             chunks.append(current_chunk)
+
         return chunks
 
     chunks = chunker_helper(tree.root_node, source_code_bytes)
 
-    # removing gaps
     for prev, curr in zip(chunks[:-1], chunks[1:]):
         prev.end = curr.start
 
-    # combining small chunks with bigger ones
     new_chunks = []
-    i = 0
     current_chunk = Span(0, 0)
-    while i < len(chunks):
-        current_chunk += chunks[i]
-        if count_length_without_whitespace(
-                source_code_bytes[current_chunk.start:current_chunk.end].decode("utf-8")) > coalesce \
-                and "\n" in source_code_bytes[current_chunk.start:current_chunk.end].decode("utf-8"):
+    for chunk in chunks:
+        current_chunk += chunk
+        chunk_content = source_code_bytes[current_chunk.start:current_chunk.end].decode("utf-8")
+        if (count_length_without_whitespace(chunk_content) > coalesce and
+            "\n" in chunk_content):
             new_chunks.append(current_chunk)
-            current_chunk = Span(chunks[i].end, chunks[i].end)
-        i += 1
-    if len(current_chunk) > 0:
+            current_chunk = Span(chunk.end, chunk.end)
+    
+    if current_chunk:
         new_chunks.append(current_chunk)
 
-    line_chunks = [Span(get_line_number(chunk.start, source_code=source_code_bytes),
-                        get_line_number(chunk.end, source_code=source_code_bytes)) for chunk in new_chunks]
-    line_chunks = [chunk for chunk in line_chunks if len(chunk) > 0]
+    line_chunks = []
+    for chunk in new_chunks:
+        start_line = get_line_number(chunk.start, source_code=source_code_bytes)
+        end_line = get_line_number(chunk.end, source_code=source_code_bytes)
+        if start_line < end_line:
+            line_chunks.append(Span(start_line, end_line))
 
     return line_chunks
 
