@@ -21,6 +21,7 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     ConnectedAccountModel,
+    ExecutionDetailsModel,
     FileType,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
@@ -359,7 +360,9 @@ class ComposioToolSet(WithLogger):
                 pass
 
         if execution_status is False:
-            success_response_model.execution_details = {"executed": False}
+            success_response_model.execution_details = ExecutionDetailsModel(
+                executed=False
+            )
         success_response_model.response_data = resp_data
         return success_response_model.model_dump()
 
