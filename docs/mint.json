@@ -129,9 +129,10 @@
           "icon": "code",
           "iconType": "solid",
           "pages": [
-        "javascript/langchain",
-        "javascript/cloudflare",
-        "javascript/openai"
+            "javascript/langchain",
+            "javascript/cloudflare",
+            "javascript/openai",
+            "javascript/vercel"
           ]
         }
       ]
