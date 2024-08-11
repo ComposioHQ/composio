@@ -13,10 +13,12 @@ from composio.tools.local.codeanalysis import (
     lsp_helper,
     tool_utils,
     tree_sitter_related,
+    chunker,
+    embedder
 )
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
-    DIR_FOR_TOOL_INFO_CACHE,
+    TREE_SITTER_CACHE,
 )
 from composio.tools.local.codeanalysis.tool_utils import retry_handler
 
@@ -24,6 +26,7 @@ from composio.tools.local.codeanalysis.tool_utils import retry_handler
 class Status(str, Enum):
     NOT_STARTED = "not_started"
     LOADING_FQDNS = "loading_fqdns"
+    LOADING_INDEX = "loading_index"
     COMPLETED = "completed"
     FAILED = "failed"
 
@@ -74,12 +77,13 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
                 status = self._update_status(self.REPO_DIR, Status.LOADING_FQDNS)
 
             os.makedirs(DIR_FOR_FQDN_CACHE, exist_ok=True)
+            os.makedirs(TREE_SITTER_CACHE, exist_ok=True)
             repo_name = os.path.basename(self.REPO_DIR)
             self.fqdn_cache_file = os.path.join(
                 DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json"
             )
 
-            self._handle_loading_fqdns()
+            self._process(status)
 
             return CreateCodeMapOutput(
                 result=f"Indexing completed for {request_data.dir_to_index_path}"
@@ -90,14 +94,34 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
             return CreateCodeMapOutput(
                 result=f"Indexing failed for {request_data.dir_to_index_path}: {e}"
             )
-
-    def _handle_loading_fqdns(self):
+        
+    def _process(self, status):
         try:
-            self.load_all_fqdns()
-            self._update_status(self.REPO_DIR, Status.COMPLETED)
+            if status["status"] == Status.LOADING_FQDNS:
+                self.load_all_fqdns()
+                status = self._update_status(self.REPO_DIR, Status.LOADING_INDEX)
+            if status["status"] == Status.LOADING_INDEX:
+                self.create_index()
+                status = self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise RuntimeError(f"Failed to handle loading FQDNs: {e}")
+    
+    def create_index(self):
+        python_files = tool_utils.find_python_files(self.REPO_DIR)
+        chunking = chunker.Chunking()
+        chunks, metadatas, ids = [], [], []
+        num_lines = {}
+
+        for file in tqdm(python_files, total=len(python_files)):
+            file_content = open(file, "r").read()
+            chunk, metadata, id = chunking.chunk(file_content, file)
+            num_lines[file] = len(file_content.split("\n"))
+            chunks.extend(chunk)
+            metadatas.extend(metadata)
+            ids.extend(id)
+        documents = chunker.construct_chunks(chunks, metadatas, ids, num_lines)
+        embedder.get_vector_store_from_chunks(self.REPO_DIR, documents, ids, metadatas)
 
     def load_all_fqdns(self):
         """
@@ -224,13 +248,13 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         }
         if error:
             status_data["error"] = error
-        status_file = Path(repo_path) / "../.indexing_status.json"
+        status_file = Path(repo_path) / ".indexing_status.json"
         with open(status_file, "w", encoding="utf-8") as f:
             json.dump(status_data, f)
         return status_data
 
     def check_status(self, repo_path: str) -> dict:
-        status_file = Path(repo_path) / "../.indexing_status.json"
+        status_file = Path(repo_path) / ".indexing_status.json"
         if not status_file.exists():
             return {"status": Status.NOT_STARTED}
         with open(status_file, "r", encoding="utf-8") as f:
