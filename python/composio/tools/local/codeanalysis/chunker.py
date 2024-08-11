@@ -1,11 +1,9 @@
-from tree_sitter import Language
 import subprocess
 import re
-from tree_sitter import Parser
+import os
+from tree_sitter import Parser, Language
 from composio.tools.local.codeanalysis.constants import TREE_SITTER_CACHE
-
-
-from typing import Union
+from typing import List, Dict, Tuple, Any, Union
 
 
 class Span:
@@ -170,58 +168,110 @@ def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
     return line_chunks
 
 class Chunking:
+    """
+    A class for chunking Python source code using tree-sitter.
 
-    def __init__(self):
-        subprocess.run(
-            f"git clone https://github.com/tree-sitter/tree-sitter-python {TREE_SITTER_CACHE}/python",
-            shell=True)
-        Language.build_library(f'{TREE_SITTER_CACHE}/build/python.so', [f"{TREE_SITTER_CACHE}/python"])
-        subprocess.run(f"cp {TREE_SITTER_CACHE}/build/python.so /tmp/python.so", shell=True) 
-        self.language = Language(f"/tmp/python.so", "python")
+    This class provides functionality to set up tree-sitter, load the Python language,
+    and chunk Python source code into smaller, manageable pieces.
+
+    Attributes:
+        language (Language): The loaded Python language for tree-sitter parsing.
+
+    Methods:
+        _setup_tree_sitter(): Sets up the tree-sitter environment.
+        _load_language(): Loads the Python language for tree-sitter.
+        chunk(): Chunks the given file content into smaller pieces.
+    """
+
+    def __init__(self, repo_dir: str):
+        self._setup_tree_sitter()
+        self.language = self._load_language()
+        self.repo_dir = repo_dir
+
+    def _setup_tree_sitter(self):
+        python_repo = f"{TREE_SITTER_CACHE}/python"
+        if not os.path.exists(python_repo):
+            subprocess.run(
+                ["git", "clone", "https://github.com/tree-sitter/tree-sitter-python", python_repo],
+                check=True
+            )
+        
+        build_path = f'{TREE_SITTER_CACHE}/build/python.so'
+        if not os.path.exists(build_path):
+            os.makedirs(os.path.dirname(build_path), exist_ok=True)
+            Language.build_library(build_path, [python_repo])
+
+    def _load_language(self) -> Language:
+        return Language(f"{TREE_SITTER_CACHE}/build/python.so", "python")
 
     def chunk(
             self,
             file_content: str,
             file_path: str,
             score: float = 1.0,
-            additional_metadata: dict[str, str] = {},
+            additional_metadata: Dict[str, str] = {},
             max_chunk_size: int = 512 * 3,
-            chunk_size: int = 30,
-            overlap: int = 15
-    ):
-
+    ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
         parser = Parser()
         parser.set_language(self.language)
-        tree = parser.parse(bytes(file_content, "utf-8"))
-        ids = []
-        metadatas = []
+        tree = parser.parse(file_content.encode('utf-8'))
 
-        source_code_bytes = bytes(file_content, "utf-8")
+        source_code_bytes = file_content.encode('utf-8')
         spans = chunker(tree, source_code_bytes, max_chunk_size)
+        
         ids = [f"{file_path}:{span.start}:{span.end}" for span in spans]
         chunks = [span.extract(file_content) for span in spans]
-        
-        for span in spans:
-            metadata = {
+        metadatas = [
+            {
                 "file_path": file_path,
+                "repo_dir": self.repo_dir,
                 "start": span.start,
                 "end": span.end,
+                "score": score,
                 **additional_metadata
             }
-            metadatas.append(metadata)
+            for span in spans
+        ]
         
         return chunks, metadatas, ids
+    
+def construct_chunks(chunks: List[str], metadatas: List[Dict[str, Any]], ids: List[str], num_lines: Dict[str, int]) -> List[str]:
+    """
+    Construct formatted chunks with additional metadata.
 
+    Args:
+        chunks (List[str]): List of code chunks.
+        metadatas (List[Dict[str, Any]]): List of metadata dictionaries for each chunk.
+        ids (List[str]): List of unique identifiers for each chunk.
+        num_lines (Dict[str, int]): Dictionary mapping file paths to their total number of lines.
 
-def construct_chunks(chunks, metadatas, ids, num_lines):
-    rets = []
-    for i, (id, chunk, metadata) in enumerate(zip(ids, chunks, metadatas)):
+    Returns:
+        List[str]: List of formatted chunks with additional context.
+    """
+    formatted_chunks = []
+    for chunk, metadata in zip(chunks, metadatas):
         file_path = metadata["file_path"]
         num_lines_in_file = num_lines[file_path]
         start = metadata["start"]
         end = metadata["end"]
-        chunk = "\n".join([f"{start+i+1}| {x}" for i,x in enumerate(chunk.splitlines())])
-        chunk = f"""[File {file_path} ({num_lines_in_file} lines total)]\n({start} lines above)\n{chunk}\n({num_lines_in_file-end} lines below)"""
-        metadatas[i]["chunk"] = chunk
-        rets.append(chunk)
-    return rets
+        
+        # Add line numbers to each line in the chunk
+        numbered_chunk = "\n".join(f"{start+i+1}| {line}" for i, line in enumerate(chunk.splitlines()))
+        
+        # Construct the formatted chunk with file information and context
+        relative_file_path = file_path.replace(metadata["repo_dir"], "")
+        if relative_file_path.startswith("/"):
+            relative_file_path = relative_file_path[1:]
+
+        formatted_chunk = (
+            f"[File {relative_file_path} ({num_lines_in_file} lines total)]\n"
+            f"({start} lines above)\n"
+            f"{numbered_chunk}\n"
+            f"({num_lines_in_file-end} lines below)"
+        )
+        
+        # Update metadata with the formatted chunk
+        metadata["chunk"] = formatted_chunk
+        formatted_chunks.append(formatted_chunk)
+    
+    return formatted_chunks

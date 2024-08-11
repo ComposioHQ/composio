@@ -140,7 +140,7 @@ class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
         """
         try:
             python_files = tool_utils.find_python_files(self.REPO_DIR)
-            chunking = chunker.Chunking()
+            chunking = chunker.Chunking(self.REPO_DIR)
             chunks, metadatas, ids = [], [], []
             num_lines = {}
 
