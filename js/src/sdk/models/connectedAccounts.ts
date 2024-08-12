@@ -80,7 +80,7 @@ export class ConnectionRequest {
      * @param {string} connectedAccountId The unique identifier of the connected account.
      * @param {string} [redirectUrl] The redirect URL for completing the connection flow.
      */
-    constructor(connectionStatus: string, connectedAccountId: string, redirectUrl: string | null = null, private readonly client: Composio) {
+    constructor(connectionStatus: string, connectedAccountId: string, redirectUrl: string | null = null) {
         this.connectionStatus = connectionStatus;
         this.connectedAccountId = connectedAccountId;
         this.redirectUrl = redirectUrl;
@@ -100,11 +100,14 @@ export class ConnectionRequest {
         redirectUrl?: string;
         entityId?: string;
     }) {
-        const connectedAccount = await this.client.connectedAccounts.get({
-            connectedAccountId: this.connectedAccountId,
+        const connectedAccount = await apiClient.connections.getConnection({
+            path:{
+               connectedAccountId: this.connectedAccountId
+            }
         });
         return apiClient.connections.initiateConnection({
             body: {
+                // @ts-ignore
                 integrationId: connectedAccount.integrationId,
                 //@ts-ignore
                 data: data.fieldInputs,
@@ -124,9 +127,13 @@ export class ConnectionRequest {
     async waitUntilActive(timeout = 60) {
         const startTime = Date.now();
         while (Date.now() - startTime < timeout * 1000) {
-            const connection = await this.client.connectedAccounts.get({
-                connectedAccountId: this.connectedAccountId,
-            });
+            // @ts-ignore
+            const connection = await apiClient.connections.getConnection({
+                path: {
+                    connectedAccountId: this.connectedAccountId
+                }
+            }).then(res=>res.data);
+            //@ts-ignore
             if (connection.status === 'ACTIVE') {
                 return connection;
             }

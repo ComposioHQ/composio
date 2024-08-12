@@ -1,8 +1,9 @@
 
 import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
+
 //@ts-ignore
-import {  TriggersService } from './client';
+import {  TriggersService } from '../client/index';
 export class Triggers extends TriggersService  {
     trigger_to_client_event = "trigger_to_client";
 
