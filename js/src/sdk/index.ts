@@ -1,28 +1,25 @@
 import axios, { AxiosInstance } from 'axios';
 import { ConnectedAccounts, ConnectionRequest } from './models/connectedAccounts';
-import { Apps } from './models/apps';
-import { Actions } from './models/actions';
-import { Triggers } from './models/triggers';
-import { Integrations } from './models/integrations';
-import { ActiveTriggers } from './models/activeTriggers';
-import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
+
+import { ActionsControllerV1Service, ActionsControllerV2Service, AppConnectorService, AppService, ConnectionsService, TriggersService } from './client';
 import { getEnvVariable } from '../utils/shared';
 import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
 
+import client from "./client/client"
+import {client as axiosClient} from "./client/services.gen"
+
+import {Triggers} from "./models/triggers"
 export class Composio {
     public apiKey: string;
     public baseUrl: string;
-    private http: AxiosInstance;
-
-
-    connectedAccounts: ConnectedAccounts;
-    apps: Apps;
-    actions: Actions;
-    triggers: Triggers;
-    integrations: Integrations;
-    activeTriggers: ActiveTriggers;
-    config: typeof OpenAPI;
-
+   
+    connectedAccounts: ConnectionsService;
+    apps: AppService;
+    actions: ActionsControllerV1Service;
+    actionsv2: ActionsControllerV2Service;
+    triggers: Triggers & TriggersService;
+    integrations: AppConnectorService;
+  
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
         this.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
         if (!this.apiKey) {
@@ -30,32 +27,21 @@ export class Composio {
         }
 
         this.baseUrl = baseUrl || Composio.getApiUrlBase();
-        this.http = axios.create({
-            baseURL: this.baseUrl,
-            headers: {
-                'X-API-KEY': `${this.apiKey}`,
-                'X-SOURCE': 'js_sdk',
-                'X-RUNTIME': runtime
+        axiosClient.setConfig({
+            baseURL: baseUrl,
+            headers:{
+                'x-api-key': this.apiKey
             }
-        });
+        })
 
-        this.config = {
-            ...OpenAPI,
-            BASE: this.baseUrl,
-            HEADERS: {
-                'X-API-Key': `${this.apiKey}`,
-                'X-SOURCE': 'js_sdk',
-                // @ts-ignore
-                'X-RUNTIME': runtime
-            }
-        }
+        this.connectedAccounts = client.connections
+        this.actions = client.actionsV1
+        this.actionsv2 = client.actionsV2
+        this.triggers = { ...client.triggers, ...triggerModel}
+        this.integrations = client.appConnector;
 
-        this.connectedAccounts = new ConnectedAccounts(this);
-        this.apps = new Apps(this);
-        this.actions = new Actions(this);
-        this.triggers = new Triggers(this);
-        this.integrations = new Integrations(this);
-        this.activeTriggers = new ActiveTriggers(this);
+        this.apps = client.apps;
+        this.connectedAccounts = client.connections;
 
     }
 
@@ -130,11 +116,15 @@ export class Entity {
             appKey: action.appKey!
         });
         if ((app.yaml as any).no_auth) {
-            return this.client.actions.execute({
-                actionName: actionName,
-                requestBody: {
-                    input: params,
-                    appName: action.appKey
+            return this.client.actionsv2.({
+                {
+                    body:{
+                        actionName: actionName,
+                        requestBody: {
+                            input: params,
+                            appName: action.appKey
+                        }
+                    }
                 }
             });
         }

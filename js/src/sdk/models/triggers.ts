@@ -1,14 +1,11 @@
-import { CancelablePromise, ListTriggersData, ListTriggersResponse, SetupTriggerData, SetupTriggerResponse, listTriggers, setupTrigger } from "../client";
-import { Composio } from "../";
+
 import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
-
-export class Triggers {
+import {  TriggersService } from './client';
+export class Triggers extends TriggersService  {
     trigger_to_client_event = "trigger_to_client";
 
-    constructor(private client: Composio) {
-        this.client = client;
-    }
+
 
     /**
      * Retrieves a list of all triggers in the Composio platform.
@@ -19,7 +16,7 @@ export class Triggers {
      * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
      * @throws {ApiError} If the request fails.
      */
-    list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
+    static list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
         return listTriggers(data, this.client.config);
     }
 
@@ -30,11 +27,11 @@ export class Triggers {
      * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
      * @throws {ApiError} If the request fails.
      */
-    setup(data: SetupTriggerData): CancelablePromise<SetupTriggerResponse> {
+    static setup(data: SetupTriggerData): CancelablePromise<SetupTriggerResponse> {
         return setupTrigger(data, this.client.config);
     }
 
-    async subscribe(fn: (data: TriggerData) => void, filters:{
+    static async subscribe(fn: (data: TriggerData) => void, filters:{
         appName?: string,
         triggerId?  : string;
         connectionId?: string;
@@ -71,7 +68,7 @@ export class Triggers {
         });
     }
 
-    async unsubscribe() {
+    static async unsubscribe() {
         const clientId = await this.client.getClientId();
         PusherUtils.triggerUnsubscribe(clientId);
     }

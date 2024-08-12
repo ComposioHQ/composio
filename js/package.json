@@ -6,14 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc  --project . --outDir lib",
-    "type-docs": "typedoc"
+    "type-docs": "typedoc",
+     "openapispec:generate": "npx @hey-api/openapi-ts"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240718.0",
-    "@hey-api/openapi-ts": "^0.46.3",
+    "@hey-api/openapi-ts": "^0.52.4",
     "@types/cli-progress": "^3.11.6",
     "@types/colors": "^1.2.1",
     "@types/dockerode": "^3.3.30",
