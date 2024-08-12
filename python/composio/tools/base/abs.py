@@ -65,6 +65,9 @@ class _Attributes:
     display_name: str
     """Display compatible name."""
 
+    description: str
+    """Description string."""
+
 
 class _Request(t.Generic[ModelType]):
     """Request util."""
@@ -187,6 +190,11 @@ class ActionMeta(type):
             "display_name",
             getattr(cls, "display_name", inflection.humanize(cls.__name__)),
         )
+        setattr(
+            cls,
+            "description",
+            (cls.__doc__ or cls.display_name).lstrip().rstrip(),
+        )
 
 
 class Action(
@@ -274,9 +282,6 @@ class Tool(WithLogger, _Attributes):
 
     name: str
     """Tool name."""
-
-    description: str
-    """Tool description."""
 
     _schema: t.Optional[t.Dict] = None
     """Schema for the app."""
