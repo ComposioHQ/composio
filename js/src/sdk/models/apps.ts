@@ -1,10 +1,16 @@
-import { CancelablePromise, GetAppData, GetAppResponse, ListAllAppsResponse, getApp, listAllApps } from "../client";
-import { Composio } from "../"
+import apiClient from "../client/client"
+
+type CancelablePromise<T> = Promise<T> & {
+  cancel: () => void;
+}
+export type GetAppData = {
+    appKey: string;
+};
+type GetAppResponse = any
+type ListAllAppsResponse = any
 
 export class Apps {
-    constructor(private readonly client: Composio) {
-        this.client = client;
-    }
+    constructor() {}
 
     /**
      * Retrieves a list of all available apps in the Composio platform.
@@ -15,7 +21,8 @@ export class Apps {
      * @throws {ApiError} If the request fails.
      */
     list(): CancelablePromise<ListAllAppsResponse> {
-        return listAllApps(this.client.config);
+        //@ts-ignore
+        return apiClient.apps.getApps()
     }
 
     /**
@@ -28,7 +35,12 @@ export class Apps {
      * @throws {ApiError} If the request fails.
      */
     get(data: GetAppData): CancelablePromise<GetAppResponse> {
-        return getApp(data, this.client.config);
+        //@ts-ignore
+        return apiClient.apps.getApp({
+            path:{
+                appName: data.appKey
+            }
+        })
     }
 }
 

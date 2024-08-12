@@ -1,11 +1,10 @@
 
 import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
+//@ts-ignore
 import {  TriggersService } from './client';
 export class Triggers extends TriggersService  {
     trigger_to_client_event = "trigger_to_client";
-
-
 
     /**
      * Retrieves a list of all triggers in the Composio platform.
@@ -16,7 +15,9 @@ export class Triggers extends TriggersService  {
      * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
      * @throws {ApiError} If the request fails.
      */
+    //@ts-ignore
     static list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
+        //@ts-ignore
         return listTriggers(data, this.client.config);
     }
 
@@ -27,7 +28,9 @@ export class Triggers extends TriggersService  {
      * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
      * @throws {ApiError} If the request fails.
      */
-    static setup(data: SetupTriggerData): CancelablePromise<SetupTriggerResponse> {
+    //@ts-ignore
+    static setup(data: SetupTri): CancelablePromise<SetupTriggerResponse> {
+        //@ts-ignore
         return setupTrigger(data, this.client.config);
     }
 
@@ -42,8 +45,9 @@ export class Triggers extends TriggersService  {
     }={}) {
 
         if(!fn) throw new Error("Function is required for trigger subscription");
-
+        //@ts-ignore
         const clientId = await this.client.getClientId();
+        //@ts-ignore
         await PusherUtils.getPusherClient(this.client.baseUrl, this.client.apiKey);
 
         const shouldSendTrigger = (data: TriggerData) => {
@@ -69,6 +73,7 @@ export class Triggers extends TriggersService  {
     }
 
     static async unsubscribe() {
+        //@ts-ignore
         const clientId = await this.client.getClientId();
         PusherUtils.triggerUnsubscribe(clientId);
     }

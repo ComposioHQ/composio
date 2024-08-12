@@ -3,12 +3,13 @@ import { ExecEnv, WorkspaceFactory } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 import { RemoteWorkspace } from "../env/base";
 import type { IPythonActionDetails, Optional, Sequence } from "./types";
-import { GetListActionsResponse } from "./client";
+// import { GetListActionsResponse } from "./client";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
 
+type GetListActionsResponse = any;
 class UserData {
     apiKey: string | undefined;
     constructor(public _path: string) {

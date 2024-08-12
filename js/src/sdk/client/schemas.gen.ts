@@ -826,7 +826,7 @@ export const $ConnectorListItemDTO = {
                 }
             ],
             description: 'Creation date of the connector',
-            examples: ['2024-08-12T09:09:48.202Z']
+            examples: ['2024-08-12T12:03:38.807Z']
         },
         updatedAt: {
             oneOf: [
@@ -840,7 +840,7 @@ export const $ConnectorListItemDTO = {
                 }
             ],
             description: 'Last update date of the connector',
-            examples: ['2024-08-12T09:09:48.202Z']
+            examples: ['2024-08-12T12:03:38.808Z']
         },
         enabled: {
             type: 'boolean',

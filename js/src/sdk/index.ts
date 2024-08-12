@@ -1,94 +1,79 @@
 import axios, { AxiosInstance } from 'axios';
 import { ConnectedAccounts, ConnectionRequest } from './models/connectedAccounts';
-
-import { ActionsControllerV1Service, ActionsControllerV2Service, AppConnectorService, AppService, ConnectionsService, TriggersService } from './client';
+import { Apps } from './models/apps';
+import { Actions } from './models/actions';
+import { Triggers } from './models/triggers';
+import { Integrations } from './models/integrations';
+import { ActiveTriggers } from './models/activeTriggers';
+// import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
 import { getEnvVariable } from '../utils/shared';
 import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
+import { client as axiosClient } from "./client/services.gen"
+import apiClient from "./client/client"
 
-import client from "./client/client"
-import {client as axiosClient} from "./client/services.gen"
-
-import {Triggers} from "./models/triggers"
 export class Composio {
     public apiKey: string;
     public baseUrl: string;
-   
-    connectedAccounts: ConnectionsService;
-    apps: AppService;
-    actions: ActionsControllerV1Service;
-    actionsv2: ActionsControllerV2Service;
-    triggers: Triggers & TriggersService;
-    integrations: AppConnectorService;
-  
+
+    connectedAccounts: ConnectedAccounts;
+    apps: Apps;
+    actions: Actions;
+    triggers: Triggers;
+    integrations: Integrations;
+    activeTriggers: ActiveTriggers;
+    // config: typeof OpenAPI;
+
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
         this.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
         if (!this.apiKey) {
             throw new Error('API key is missing');
         }
-
-        this.baseUrl = baseUrl || Composio.getApiUrlBase();
+        this.baseUrl = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "";
         axiosClient.setConfig({
             baseURL: baseUrl,
-            headers:{
-                'x-api-key': this.apiKey
+            headers: {
+                'X-API-KEY': `${this.apiKey}`,
+                'X-SOURCE': 'js_sdk',
+                'X-RUNTIME': runtime
             }
         })
-
-        this.connectedAccounts = client.connections
-        this.actions = client.actionsV1
-        this.actionsv2 = client.actionsV2
-        this.triggers = { ...client.triggers, ...triggerModel}
-        this.integrations = client.appConnector;
-
-        this.apps = client.apps;
-        this.connectedAccounts = client.connections;
+  
+        this.connectedAccounts = new ConnectedAccounts();
+        this.apps = new Apps();
+        this.actions = new Actions();
+        this.triggers = new Triggers();
+        this.integrations = new Integrations();
+        this.activeTriggers = new ActiveTriggers();
 
     }
 
     public async getClientId(): Promise<string> {
-        const response = await this.http.get('/v1/client/auth/client_info',{
-            headers: {
-                'X-API-KEY': `${this.apiKey}`
+        const response = await apiClient.clientAuthService.getUserInfo();
+        if (response.status !== 200) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return (response.data as unknown as Record<string, Record<string, string>>).client.id;
+    }
+
+
+    static async generateAuthKey(): Promise<string> {
+        const response = await apiClient.cli.handleCliCodeExchange();
+        if (response.status !== 200) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        return (response?.data as Record<string,string>).key;
+    }
+
+    static async validateAuthSession(key: string, code: string): Promise<string> {
+        const response = await apiClient.cli.handleCliCodeVerification({
+            query:{
+                key, code
             }
         });
         if (response.status !== 200) {
             throw new Error(`HTTP Error: ${response.status}`);
         }
-        return response.data.client.id;
-    }
-
-    static getApiUrlBase(): string {
-        return getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) as string;
-    }
-
-    static async generateAuthKey(baseUrl?: string): Promise<string> {
-        const http = axios.create({
-            baseURL: baseUrl || this.getApiUrlBase(),
-            headers: {
-                'Authorization': ''
-            }
-        });
-        const response = await http.get('/v1/cli/generate_cli_session');
-        if (response.status !== 200) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response.data.key;
-    }
-
-    static async validateAuthSession(key: string, code: string, baseUrl?: string): Promise<string> {
-        const http = axios.create({
-            baseURL: baseUrl || this.getApiUrlBase(),
-            headers: {
-                'Authorization': ''
-            }
-        });
-        const response = await http.get(`/v1/cli/verify_cli_code`, {
-            params: { key, code }
-        });
-        if (response.status !== 200) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response.data.apiKey;
+        return (response.data as unknown as Record<string,string>).apiKey;
     }
 
     getEntity(id: string = 'default'): Entity {
@@ -116,20 +101,16 @@ export class Entity {
             appKey: action.appKey!
         });
         if ((app.yaml as any).no_auth) {
-            return this.client.actionsv2.({
-                {
-                    body:{
-                        actionName: actionName,
-                        requestBody: {
-                            input: params,
-                            appName: action.appKey
-                        }
-                    }
+            return this.client.actions.execute({
+                actionName: actionName,
+                requestBody: {
+                    input: params,
+                    appName: action.appKey
                 }
             });
         }
         let connectedAccount = null;
-        if(connectedAccountId) {
+        if (connectedAccountId) {
             connectedAccount = await this.client.connectedAccounts.get({
                 connectedAccountId: connectedAccountId
             });
@@ -156,7 +137,7 @@ export class Entity {
         });
     }
 
-    async getConnection(app?: string, connectedAccountId?: string): Promise<GetConnectedAccountResponse | null> {
+    async getConnection(app?: string, connectedAccountId?: string): Promise<any | null> {
         if (connectedAccountId) {
             return await this.client.connectedAccounts.get({
                 connectedAccountId
@@ -169,7 +150,7 @@ export class Entity {
             user_uuid: this.id,
         });
 
-        if(!connectedAccounts.items || connectedAccounts.items.length === 0) {
+        if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
             return null;
         }
 
@@ -192,7 +173,7 @@ export class Entity {
         });
     }
 
-    async setupTrigger(app: string, triggerName: string, config: { [key: string]: any }): Promise<SetupTriggerResponse> {
+    async setupTrigger(app: string, triggerName: string, config: { [key: string]: any }): Promise<any> {
         /**
          * Enable a trigger for an entity.
          *
@@ -204,16 +185,16 @@ export class Entity {
         if (!connectedAccount) {
             throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
         }
-        return this.client.triggers.setup({
-            triggerName: triggerName,
-            connectedAccountId: connectedAccount.id!,
-            requestBody: {
-                triggerConfig: config,
-            }
-        });
+        // return this.client.triggers.setup({
+        //     triggerName: triggerName,
+        //     connectedAccountId: connectedAccount.id!,
+        //     requestBody: {
+        //         triggerConfig: config,
+        //     }
+        // });
     }
 
-    async disableTrigger(triggerId: string): Promise<PatchUpdateActiveTriggerStatusResponse> {
+    async disableTrigger(triggerId: string): Promise<any> {
         /**
          * Disable a trigger for an entity.
          *
@@ -222,6 +203,7 @@ export class Entity {
         return this.client.activeTriggers.disable({ triggerId: triggerId });
     }
 
+    //@ts-ignore
     async getConnections(): Promise<ListAllConnectionsResponse["items"]> {
         /**
          * Get all connections for an entity.
@@ -232,20 +214,20 @@ export class Entity {
         return connectedAccounts.items!;
     }
 
-    async getActiveTriggers(): Promise<ListActiveTriggersResponse["triggers"]> {
+    async getActiveTriggers(): Promise<any> {
         /**
          * Get all active triggers for an entity.
          */
         const connectedAccounts = await this.getConnections();
         const activeTriggers = await this.client.activeTriggers.list({
-            connectedAccountIds: connectedAccounts!.map(account => account.id!).join(",")
+            // connectedAccountIds: connectedAccounts!.map(account => account.id!).join(",")
         });
         return activeTriggers.triggers!;
     }
 
     async initiateConnection(
         appName: string,
-        authMode?: AuthScheme,
+        authMode?: any,
         authConfig?: { [key: string]: any },
         redirectUrl?: string,
         integrationId?: string

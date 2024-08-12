@@ -1,8 +1,9 @@
-import { CancelablePromise, listAllConnections, createConnection, GetConnectedAccountResponse, GetConnectedAccountData, CreateConnectionData, CreateConnectionResponse, ListAllConnectionsData, ListAllConnectionsResponse, getConnectedAccount } from "../client";
-import { Composio } from "../";
+
+import client from "../client/client";
+import apiClient from "../client/client"
 
 export class ConnectedAccounts {
-    constructor(private readonly client: Composio) {
+    constructor() {
     }
 
     /**
@@ -14,8 +15,11 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<ListAllConnectionsResponse>} A promise that resolves to the list of all connected accounts.
      * @throws {ApiError} If the request fails.
      */
-    list(data: ListAllConnectionsData = {}): CancelablePromise<ListAllConnectionsResponse> {
-        return listAllConnections(data, this.client.config);
+    list(data: any): any{
+        return apiClient.connections.getConnections({
+            query: data
+        })
+
     }
 
     /**
@@ -27,8 +31,10 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<CreateConnectionResponse>} A promise that resolves to the connection status and details.
      * @throws {ApiError} If the request fails.
      */
-    create(data: CreateConnectionData = {}): CancelablePromise<CreateConnectionResponse> {
-        return createConnection(data, this.client.config);
+    create(data: any = {}): any {
+        return apiClient.connections.initiateConnection({
+            body: data
+        });
     }
 
     /**
@@ -40,8 +46,10 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<GetConnectedAccountResponse>} A promise that resolves to the details of the connected account.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetConnectedAccountData): CancelablePromise<GetConnectedAccountResponse> {
-        return getConnectedAccount(data, this.client.config);
+    get(data: any): any {
+        return apiClient.connections.getConnection({
+            path: data
+        });
     }
 
     /**
@@ -54,10 +62,10 @@ export class ConnectedAccounts {
      * @throws {ApiError} If the request fails.
      */
     async initiate(
-        data: CreateConnectionData["requestBody"]
-    ): Promise<ConnectionRequest> {
-        const response = await createConnection({requestBody: data}, this.client.config);
-        return new ConnectionRequest(response.connectionStatus!, response.connectedAccountId!, response.redirectUrl, this.client);
+        data: any
+    ): Promise<any> {
+        return await client.connections.initiateConnection({body: data});
+       
     }
 }
 
@@ -95,14 +103,15 @@ export class ConnectionRequest {
         const connectedAccount = await this.client.connectedAccounts.get({
             connectedAccountId: this.connectedAccountId,
         });
-        return createConnection({
-            requestBody: {
+        return apiClient.connections.initiateConnection({
+            body: {
                 integrationId: connectedAccount.integrationId,
+                //@ts-ignore
                 data: data.fieldInputs,
                 redirectUri: data.redirectUrl,
                 userUuid: data.entityId,
-            }
-        }, this.client.config);
+            } 
+        });
     }
 
     /**

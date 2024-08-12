@@ -1,5 +1,4 @@
-import { CancelablePromise, GetActionData, GetActionResponse, GetListActionsData, GetListActionsResponse, ExecuteActionData, ExecuteActionResponse, getAction, getListActions, executeAction } from "../client";
-import { Composio } from "../";
+import apiClient from "../client/client";
 
 /**
  * The `Actions` class provides methods to interact with the Composio platform's actions.
@@ -18,8 +17,88 @@ import { Composio } from "../";
  * to interact with actions in the Composio platform. This includes fetching, listing, and
  * executing actions.
  */
+
+export type GetListActionsData = {
+    /**
+     * Name of the apps like "github", "linear" separated by a comma
+     */
+    apps?: string;
+    /**
+     * Filter by Action names
+     */
+    actions?: string;
+    /**
+     * Filter by Action tags
+     */
+    tags?: string;
+    /**
+     * Filter by use case
+     */
+    useCase?: string | undefined;
+    /**
+     * Limit of use-cases based search
+     */
+    usecaseLimit?: string;
+    /**
+     * Show all actions - i.e disable pagination
+     */
+    showAll?: boolean;
+    /**
+     * Show actions enabled for the API Key
+     */
+    showEnabledOnly?: boolean;
+    /**
+     * Use smart tag filtering
+     */
+    filterImportantActions?: boolean;
+}
+
+export type ExecuteActionData = {
+    /**
+     * The name of the action to execute.
+     */
+    actionName: string;
+    requestBody?: {
+        /**
+         * The unique identifier of the connection to use for executing the action.
+         */
+        connectedAccountId?: string;
+        /**
+         * An object containing the input parameters for the action. If you want to execute 
+         * NLP based action (i.e text), you can use text parameter instead of input.
+         */
+        input?: {
+            [key: string]: unknown;
+        };
+        appName?: string;
+        /**
+         * The text to supply to the action which will be automatically converted to 
+         * appropriate input parameters.
+         */
+        text?: string;
+    };
+};
+
+export type ExecuteActionResponse = {
+    /**
+     * An object containing the details of the action execution.
+     */
+    execution_details?: {
+        /**
+         * A boolean indicating whether the action was executed successfully.
+         *
+         */
+        executed?: boolean;
+    };
+    /**
+     * An object containing the response data from the action execution.
+     */
+    response_data?: {
+        [key: string]: unknown;
+    };
+};
 export class Actions {
-    constructor(private readonly client: Composio) {
+    constructor() {
     }
     /**
      * Retrieves details of a specific action in the Composio platform by providing its action name.
@@ -30,8 +109,13 @@ export class Actions {
      * @returns {CancelablePromise<GetActionResponse[0]>} A promise that resolves to the details of the action.
      * @throws {ApiError} If the request fails.
      */
-    async get(data: GetActionData): Promise<GetActionResponse[0]> {
-        const actions = await getAction(data, this.client.config);
+    async get(data: { actionName: string; }): Promise<any[0]> {
+        const actions = await apiClient.actionsV1.v1GetAction({
+            path:{
+                actionId: data.actionName
+            }
+        });
+        // @ts-ignore
         return actions[0]!;
     }
 
@@ -44,8 +128,9 @@ export class Actions {
      * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    list(data: GetListActionsData = {}): CancelablePromise<GetListActionsResponse> {
-        return getListActions(data, this.client.config);
+    list(data: GetListActionsData = {}) {
+        // @ts-ignore
+        return apiClient.actionsV2.v2ListActions(data);
     }
 
     /**
@@ -57,7 +142,8 @@ export class Actions {
      * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    execute(data: ExecuteActionData): CancelablePromise<ExecuteActionResponse> {
-        return executeAction(data, this.client.config);
+    execute(data: ExecuteActionData): any {
+        //@ts-ignore
+        return apiClient.actionsV2.v2ExecuteAction(data);
     }
 }

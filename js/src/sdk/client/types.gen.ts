@@ -1878,6 +1878,36 @@ export type TriggersControllerHandlePusherEventsResponse = unknown;
 
 export type TriggersControllerHandlePusherEventsError = unknown;
 
+export type AdminControllerSentryDnsResponse = unknown;
+
+export type AdminControllerSentryDnsError = unknown;
+
+export type CliControllerHandleCliCodeExchangeResponse = GenerateCLISessionResDTO;
+
+export type CliControllerHandleCliCodeExchangeError = unknown;
+
+export type CliControllerGetCliCodeData = {
+    query: {
+        code?: string;
+        key: string;
+    };
+};
+
+export type CliControllerGetCliCodeResponse = GetCLISessionResDTO;
+
+export type CliControllerGetCliCodeError = unknown;
+
+export type CliControllerHandleCliCodeVerificationData = {
+    query: {
+        code?: string;
+        key: string;
+    };
+};
+
+export type CliControllerHandleCliCodeVerificationResponse = VerifyCLICodeResDTO;
+
+export type CliControllerHandleCliCodeVerificationError = unknown;
+
 export type MetadataControllerGetMetadataData = {
     query: {
         email: string;

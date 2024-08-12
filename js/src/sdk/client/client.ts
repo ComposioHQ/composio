@@ -6,6 +6,7 @@ export default {
     actionsV2: SDKClient.ActionsControllerV2Service,
     apiKeys: SDKClient.ApiKeysService,
     clientAuthService: SDKClient.ClientAuthService,
+    cli: SDKClient.CliService,
     appConnector: SDKClient.AppConnectorService,
 
     apps: SDKClient.AppService,

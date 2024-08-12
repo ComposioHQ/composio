@@ -1,9 +1,12 @@
-import { CancelablePromise, GetActiveTriggerData, GetActiveTriggerResponse, ListActiveTriggersData, ListActiveTriggersResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse, getActiveTrigger, listActiveTriggers, updateActiveTriggerStatus } from "../client";
+// import { CancelablePromise, GetActiveTriggerData, GetActiveTriggerResponse, ListActiveTriggersData, ListActiveTriggersResponse, PatchUpdateActiveTriggerStatusData, PatchUpdateActiveTriggerStatusResponse, getActiveTrigger, listActiveTriggers, updateActiveTriggerStatus } from "../client";
+import { AnyARecord } from "dns";
 import { Composio } from "../";
 
+import apiClient from "../client/client"
+
+
 export class ActiveTriggers {
-    constructor(private readonly client: Composio) {
-        this.client = client;
+    constructor() {
     }
 
     /**
@@ -15,8 +18,8 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<GetActiveTriggerResponse>} A promise that resolves to the details of the active trigger.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetActiveTriggerData): CancelablePromise<GetActiveTriggerResponse> {
-        return getActiveTrigger(data, this.client.config);
+    get(data: any): any {
+        return apiClient.triggers.getTrigger(data);
     }
 
     /**
@@ -28,8 +31,8 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<ListActiveTriggersResponse>} A promise that resolves to the list of all active triggers.
      * @throws {ApiError} If the request fails.
      */
-    list(data: ListActiveTriggersData = {}): CancelablePromise<ListActiveTriggersResponse> {
-        return listActiveTriggers(data, this.client.config);
+    list(data: any = {}): any {
+        return apiClient.triggers.getActiveTriggers(data);
     }
 
     /**
@@ -40,13 +43,13 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
      * @throws {ApiError} If the request fails.
      */
-    enable(data: {triggerId: PatchUpdateActiveTriggerStatusData["triggerId"]}): CancelablePromise<PatchUpdateActiveTriggerStatusResponse> {
-        return updateActiveTriggerStatus({
-            triggerId: data.triggerId,
-            requestBody: {
+    enable(data: {triggerId: any}): any {
+        return apiClient.triggers.switchTriggerInstanceStatus({
+            path: data,
+            body:{
                 enabled: true
             }
-        }, this.client.config);
+        });
     }
 
     /**
@@ -57,12 +60,12 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
      * @throws {ApiError} If the request fails.
      */
-    disable(data: {triggerId: PatchUpdateActiveTriggerStatusData["triggerId"]}): CancelablePromise<PatchUpdateActiveTriggerStatusResponse> {
-        return updateActiveTriggerStatus({
-            triggerId: data.triggerId,
-            requestBody: {
+    disable(data: {triggerId: any}): any {
+        return apiClient.triggers.switchTriggerInstanceStatus({
+            path: data,
+            body: {
                 enabled: false
             }
-        }, this.client.config);
+        });
     }
 }
