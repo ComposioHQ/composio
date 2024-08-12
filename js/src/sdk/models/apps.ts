@@ -1,13 +1,13 @@
+import { AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
 
-type CancelablePromise<T> = Promise<T> & {
-  cancel: () => void;
-}
 export type GetAppData = {
     appKey: string;
 };
-type GetAppResponse = any
-type ListAllAppsResponse = any
+
+export type GetAppResponse = SingleAppInfoResDTO;
+
+export type ListAllAppsResponse = AppListResDTO
 
 export class Apps {
     constructor() {}
@@ -20,9 +20,9 @@ export class Apps {
      * @returns {Promise<ListAllAppsResponse>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    list(): CancelablePromise<ListAllAppsResponse> {
-        //@ts-ignore
-        return apiClient.apps.getApps()
+    list(): Promise<AppListResDTO> {
+
+        return apiClient.apps.getApps().then(res => res.data!)
     }
 
     /**
@@ -34,13 +34,12 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetAppData): CancelablePromise<GetAppResponse> {
-        //@ts-ignore
+    get(data: GetAppData): Promise<GetAppResponse> {
         return apiClient.apps.getApp({
             path:{
                 appName: data.appKey
             }
-        })
+        }).then(res=>res.data!)
     }
 }
 
