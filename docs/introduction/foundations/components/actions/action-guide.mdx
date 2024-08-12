@@ -93,7 +93,7 @@ Check out the coding guides provided in the examples section to have a better un
 
     tool_set = ComposioToolSet()
 
-    tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
+    tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE])
 
     print(tools)
     ```
@@ -130,7 +130,9 @@ Check out the coding guides provided in the examples section to have a better un
 
   use_case="Star a repo on github"
 
-  action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
+  # can pass multiple apps
+  action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
+
   tools = toolset.get_actions(actions=action_enums)
 
   # use tools as per your framework
