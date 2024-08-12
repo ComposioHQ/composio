@@ -48,7 +48,7 @@ core_requires = [
     # TODO: Extract as workspace dependencies
     "fastapi",  # Tool API
     "uvicorn",  # Tool server
-    "paramiko",  # Host workspace
+    "paramiko>=3.4.1",  # Host workspace
     "docker>=7.1.0",  # Docker workspace
     "docker>=7.1.0",  # Docker workspace
     "e2b-code-interpreter",  # E2B workspace
@@ -72,7 +72,7 @@ all_requirements = core_requires + tools_require
 
 setup(
     name="composio_core",
-    version="0.4.1",
+    version="0.5.1",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
