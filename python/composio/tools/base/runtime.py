@@ -2,6 +2,7 @@
 
 import inspect
 import typing as t
+from abc import abstractmethod
 from pathlib import Path
 
 import inflection
@@ -62,6 +63,9 @@ class RuntimeAction(
     def filemanagers(self) -> FileManagers:
         return self._filemanagers()
 
+    def execute(self, request: ActionRequest, metadata: t.Dict) -> ActionResponse:
+        raise NotImplementedError()
+
 
 class RuntimeToolMeta(type):
     """Tool metaclass."""
@@ -110,6 +114,11 @@ class RuntimeTool(LocalToolMixin, metaclass=RuntimeToolMeta):
 
     gid = "runtime"
     """Group ID for this tool."""
+
+    @classmethod
+    @abstractmethod
+    def actions(cls) -> t.List[t.Type[RuntimeAction]]:
+        """Get collection of actions for the tool."""
 
 
 def _create_tool_class(

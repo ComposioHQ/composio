@@ -142,6 +142,9 @@ def _update_apps(apps: t.List[AppModel]) -> None:
         ).store()
 
     for tool in LocalClient.tools().values():
+        if tool.enum in app_names:
+            continue
+
         app_names.append(tool.enum)
         enums.base.AppData(
             name=tool.name,

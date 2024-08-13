@@ -50,6 +50,9 @@ class LocalAction(
     def filemanagers(self) -> FileManagers:
         return self._filemanagers()
 
+    def execute(self, request: ActionRequest, metadata: t.Dict) -> ActionResponse:
+        raise NotImplementedError()
+
 
 class LocalToolMeta(type):
     """Tool metaclass."""
@@ -96,7 +99,7 @@ class LocalToolMeta(type):
 class LocalToolMixin(Tool):
     @classmethod
     @abstractmethod
-    def actions(cls) -> t.List[t.Type[LocalAction]]:
+    def actions(cls) -> t.List[t.Type[t.Any]]:
         """Get collection of actions for the tool."""
 
     @classmethod
@@ -203,3 +206,8 @@ class LocalTool(LocalToolMixin, metaclass=LocalToolMeta):
 
     gid = "local"
     """Group ID for this tool."""
+
+    @classmethod
+    @abstractmethod
+    def actions(cls) -> t.List[t.Type[LocalAction]]:
+        """Get collection of actions for the tool."""

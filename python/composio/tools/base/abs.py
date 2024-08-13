@@ -292,11 +292,6 @@ class Tool(WithLogger, _Attributes):
     def __init_subclass__(cls, autoload: bool = False) -> None:
         """Initialize a tool class."""
 
-    def __init__(self) -> None:
-        """Initialize tool class."""
-        super().__init__()
-        self._path = Path(__file__).parent
-
     @classmethod
     def get(cls, enum: ActionEnum) -> t.Type[Action]:
         """Returns the"""
