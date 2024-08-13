@@ -1,0 +1,105 @@
+---
+title: "Using Composio With PhiData"
+sidebarTitle: "PhiData SDK"
+icon: "robot"
+description: "Integrate Composio with PhiData agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **PhiData assistants** to **connect** with many **tools**!
+
+### Install Packages & Connect a Tool
+
+<Tip>
+  Goal: Star a repository on GitHub with natural language & PhiData Assistant
+</Tip>
+
+These commands prepare your environment for seamless interaction between PhiData and Github.
+
+<CodeGroup>
+  ```bash Run Command 
+  pip install composio-phidata
+
+  #Connect your Github so agents can use it
+  composio add github
+
+  #Check all supported apps
+  composio apps
+
+  ```
+</CodeGroup>
+
+<Steps>
+
+<Step title="Import Base Packages">
+<CodeGroup>
+  ```python Default Imports & Configuration
+    from composio_phidata import Action, ComposioToolSet
+
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Fetch all Github PhiData Tools via Composio">
+<CodeGroup>
+  ```python Tools For Github
+    toolset = ComposioToolSet()
+    composio_tools = toolset.get_actions(
+        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+    )
+  ```
+</CodeGroup>
+</Step>
+<Step title="Setup the Assistant and Execute the Task">
+<CodeGroup>
+  ```python PhiData Agent executes the task
+    from phi.assistant import Assistant
+    
+    assistant = Assistant(tools=composio_tools, show_tool_calls=True)
+
+    assistant.print_response("Can you star sawradip/sawradip repo?")
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Check Response">
+<CodeGroup>
+  ```bash Executing Agents
+╭──────────┬────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Message  │ Can you star sawradip/sawradip repo?                                                           │
+├──────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Response │                                                                                                │
+│ (5.7s)   │ - Running: github_star_a_repository_for_the_authenticated_user(owner=sawradip, repo=sawradip) │
+│          │                                                                                                │
+│          │ I have successfully starred the repository `sawradip/sawradip` for you.                        │
+╰──────────┴────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ```
+
+</CodeGroup>
+
+</Step>
+</Steps>
+### Use Specific Actions
+<CodeGroup>
+  ```bash Filter Specific Action
+  # To restrict agents from using all the actions, filter specific actions 
+  composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+  ```
+</CodeGroup>
+
+### Use Specific Apps
+
+<CodeGroup>
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  composio_toolset.get_tools(apps=[App.ASANA, App.GITHUB])
+  ```
+</CodeGroup>
+
+### Filter apps actions by tags
+
+<CodeGroup>
+  ```bash Filter Actions by Tags 
+  # To restrict agents from using all actions, filter the actions by tags 
+  composio_toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
+  ```
+</CodeGroup>
