@@ -2,7 +2,7 @@ import os
 import re
 from datetime import datetime
 from composio.client.collections import TriggerEventData
-from composio_crewai import Action, ComposioToolSet
+from composio_phidata import Action, ComposioToolSet
 from phi.assistant.assistant import Assistant
 from phi.workflow.workflow import Workflow
 
