@@ -177,6 +177,7 @@
         {
           "group": "How Tos",
           "pages": [
+            "introduction/foundations/howtos/get_api_key",
             "patterns/howtos/usecase",
             "patterns/howtos/tool-finding",
             "patterns/howtos/listing-connections",
@@ -222,7 +223,6 @@
       "group": "API Reference",
       "icon": "robot",
       "pages": [
-        "api-reference/get_api_key",
         {
           "icon": "code",
           "group": "apps",
