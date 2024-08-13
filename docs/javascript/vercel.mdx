@@ -1,0 +1,89 @@
+---
+title: "Using Composio JS SDK with Vercel AI SDK"
+sidebarTitle: "Vercel AI SDK"
+icon: "code"
+description: "Use Composio JS SDK with Vercel AI SDK"
+---
+
+<Steps>
+<Step title="Import Dependencies">
+ <CodeGroup>
+      ```javascript Import Vercel AI and Vercel AIToolSet
+import { openai } from "@ai-sdk/openai";
+import { VercelAIToolSet } from "composio-core";
+import dotenv from "dotenv";
+import { generateText } from "ai";
+dotenv.config();
+      ```
+    </CodeGroup>
+</Step>
+<Step title="Define method to let user connect their Google account">
+
+ <CodeGroup>
+      ```typescript Define method to let user connect their Google account
+dotenv.config();
+
+const toolset = new VercelAIToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const appName = "googlesheets";
+
+async function setupUserConnectionIfNotExists(entityId) {
+        const entity = await toolset.client.getEntity(entityId);
+        const connection = await entity.getConnection(appName);
+
+        if (!connection) {
+            const newConnection = await entity.initiateConnection(appName);
+            console.log("Log in via: ", newConnection.redirectUrl);
+            return newConnection.waitUntilActive(60);
+        }
+
+        return connection;
+}
+      ```
+    </CodeGroup>
+
+Learn more about entities [here](introduction/foundations/components/entity/entity-guide)
+
+</Step>
+
+<Step title="Setup Agent with Vercel AI">
+
+<CodeGroup>
+      ```typescript Define your Agent
+async function executeAgent(entityName) {
+        const entity = await toolset.client.getEntity(entityName);
+        await setupUserConnectionIfNotExists(entity.id);
+
+        const tools = await toolset.get_tools({ apps: ["googlesheets"] }, entity.id);
+        const output = await generateText({
+            model: openai("gpt-4-turbo"),
+            streamText: false,
+            tools,
+            prompt: 'Create a google sheet titled "Leads" and populate it with 5 random entries containing first name, last name, and email.', 
+            maxToolRoundtrips: 5,
+        });
+
+        console.log("🎉Output from agent: ", output.text);
+}
+      ```
+    </CodeGroup>
+
+</Step>
+
+<Step title="Invoke Your Agent">
+
+<CodeGroup>
+      ```typescript  Invoke the Agent
+      executeAgent("default_user")
+      ```
+    </CodeGroup>
+
+Tada 🎉! It was this simple to create a powerful Agent with Composio and Vercel AI.
+</Step>
+
+<Step title="Complete code snippet">
+View the complete code snippet [here](https://github.com/ComposioHQ/composio/blob/master/js/examples/vercel/demo.mjs)
+</Step>
+</Steps>

@@ -10,6 +10,7 @@ import os
 import time
 import typing as t
 
+import typing_extensions as te
 from pydantic import BaseModel
 from pydantic.v1.main import BaseModel as V1BaseModel
 
@@ -48,7 +49,23 @@ from composio.utils.url import get_api_url_base
 
 ParamType = t.TypeVar("ParamType")
 
+_KeyType = t.Union[AppType, ActionType]
+MetadataType = t.Dict[_KeyType, t.Dict]
+
 output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+
+
+_ProcessorType = t.Callable[[t.Dict], t.Dict]
+
+
+class ProcessorsType(te.TypedDict):
+    """Request and response processors."""
+
+    pre: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    """Request processors."""
+
+    post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    """Response processors."""
 
 
 class ComposioToolSet(WithLogger):
@@ -67,6 +84,8 @@ class ComposioToolSet(WithLogger):
         entity_id: str = DEFAULT_ENTITY_ID,
         workspace_id: t.Optional[str] = None,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
+        metadata: t.Optional[MetadataType] = None,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> None:
         """
         Initialize composio toolset
@@ -80,6 +99,62 @@ class ComposioToolSet(WithLogger):
         :param workspace_env: Environment where actions should be executed,
             you can choose from `host`, `docker`, `flyio` and `e2b`.
         :param workspace_id: Workspace ID for loading an existing workspace
+        :param metadata: Additional metadata for executing an action or an
+            action which belongs to a specific app. The additional metadata
+            needs to be JSON serialisable dictionary. For example
+
+            ```python
+            toolset = ComposioToolset(
+                ...,
+                metadata={
+                    App.IMAGEANALYSER: {
+                        "base_url": "https://image.analyser/api",
+                    },
+                    Action.IMAGEANALYSER_GTP4:{
+                        "openai_api_key": "sk-proj-somekey",
+                    }
+                }
+            )
+            ```
+        :param processors: Request and response processors, use these to
+            pre-process requests before executing an action and post-process
+            the response after an action has been executed. The processors can
+            be defined at app and action level. The order of execution will be
+
+            `App pre-processor -> Action pre-processor -> execute action -> Action post-processor -> App post-processor`
+
+            Heres and example of a request pre-processor
+
+            ```python
+            def _add_cwd_if_missing(request: t.Dict) -> t.Dict:
+                if "cwd" not in request:
+                    request["cwd"] = "~/project"
+                return request
+
+            def _sanitise_file_search_request(request: t.Dict) -> t.Dict:
+                if ".tox" not in request["exclude"]:
+                    request["exclude"].append(".tox")
+                return request
+
+            def _limit_file_search_response(response: t.Dict) -> t.Dict:
+                if len(response["results"]) > 100:
+                    response["results"] = response["results"][:100]
+                return response
+
+            toolset = ComposioToolset(
+                ...,
+                processors={
+                    "pre": {
+                        App.FILETOOL: _add_cwd_if_missing,
+                        Action.FILETOOL_SEARCH: _sanitise_file_search_request,
+                    },
+                    "post": {
+                        Action.FILETOOL_SEARCH: _limit_file_search_response,
+                    }
+                }
+            )
+            ```
+
         """
         super().__init__()
         self.entity_id = entity_id
@@ -95,6 +170,10 @@ class ComposioToolSet(WithLogger):
         except FileNotFoundError:
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
+        self._processors = (
+            processors if processors is not None else {"post": {}, "pre": {}}
+        )
+        self._metadata = metadata or {}
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
         self._runtime = runtime
@@ -218,12 +297,8 @@ class ComposioToolSet(WithLogger):
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
-        self.check_connected_account(
-            action=action,
-        )
-        output = self.client.get_entity(
-            id=entity_id,
-        ).execute(
+        self.check_connected_account(action=action)
+        output = self.client.get_entity(id=entity_id).execute(
             action=action,
             params=params,
             text=text,
@@ -309,14 +384,78 @@ class ComposioToolSet(WithLogger):
             f"\ntype={type(param)} \nvalue={param}"
         )
 
+    def _get_metadata(self, key: _KeyType) -> t.Dict:
+        metadata = self._metadata.get(key)  # type: ignore
+        if metadata is not None:
+            return metadata
+
+        try:
+            return self._metadata.get(Action(t.cast(ActionType, key)), {})  # type: ignore
+        except ValueError:
+            return self._metadata.get(App(t.cast(AppType, key)), {})  # type: ignore
+
+    def _add_metadata(self, action: Action, metadata: t.Optional[t.Dict]) -> t.Dict:
+        metadata = metadata or {}
+        metadata.update(self._get_metadata(key=App(action.app)))
+        metadata.update(self._get_metadata(key=action))
+        return metadata
+
+    def _get_processor(
+        self,
+        key: _KeyType,
+        type_: te.Literal["post", "pre"],
+    ) -> t.Optional[_ProcessorType]:
+        """Get processor for given app or action"""
+        processor = self._processors.get(type_, {}).get(key)  # type: ignore
+        if processor is not None:
+            return processor
+
+        try:
+            return self._processors.get(type_, {}).get(Action(t.cast(ActionType, key)))  # type: ignore
+        except ValueError:
+            return self._processors.get(type_, {}).get(App(t.cast(AppType, key)))  # type: ignore
+
+    def _process(
+        self,
+        key: _KeyType,
+        data: t.Dict,
+        type_: te.Literal["pre", "post"],
+    ) -> t.Dict:
+        processor = self._get_processor(key=key, type_=type_)
+        if processor is not None:
+            data = processor(data)
+        return data
+
+    def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
+        return self._process(
+            key=action,
+            data=self._process(
+                key=App(action.app),
+                data=request,
+                type_="pre",
+            ),
+            type_="pre",
+        )
+
+    def _process_respone(self, action: Action, response: t.Dict) -> t.Dict:
+        return self._process(
+            key=App(action.app),
+            data=self._process(
+                key=action,
+                data=response,
+                type_="post",
+            ),
+            type_="post",
+        )
+
     def execute_action(
         self,
         action: ActionType,
         params: dict,
         metadata: t.Optional[t.Dict] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
-        text: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
+        text: t.Optional[str] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -331,20 +470,29 @@ class ComposioToolSet(WithLogger):
         """
         self.logger.info(f"Executing action: {action}")
         action = Action(action)
-        params = self._serialize_execute_params(param=params)
-        if action.is_local:
-            return self._execute_local(
+        params = self._process_request(
+            action=action,
+            request=self._serialize_execute_params(
+                param=params,
+            ),
+        )
+        metadata = self._add_metadata(action=action, metadata=metadata)
+        response = (
+            self._execute_local(
                 action=action,
                 params=params,
                 metadata=metadata,
             )
-        return self._execute_remote(
-            action=action,
-            params=params,
-            entity_id=entity_id,
-            text=text,
-            connected_account_id=connected_account_id,
+            if action.is_local
+            else self._execute_remote(
+                action=action,
+                params=params,
+                entity_id=entity_id,
+                connected_account_id=connected_account_id,
+                text=text,
+            )
         )
+        return self._process_respone(action=action, response=response)
 
     def get_action_schemas(
         self,

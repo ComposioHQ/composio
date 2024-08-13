@@ -93,7 +93,7 @@ Check out the coding guides provided in the examples section to have a better un
 
     tool_set = ComposioToolSet()
 
-    tools = tool_set.getActions(actions=[Action.GITHUB_CREATE_ISSUE])
+    tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE])
 
     print(tools)
     ```
@@ -112,7 +112,7 @@ Check out the coding guides provided in the examples section to have a better un
         apiKey: process.env.COMPOSIO_API_KEY,
       });
 
-    const tools = await toolset.get_actions({actions: ['github_issues_create']});
+    const tools = await toolset.getActions({actions: ['github_issues_create']});
     ```
     </CodeGroup>
     </Tab>
@@ -130,7 +130,9 @@ Check out the coding guides provided in the examples section to have a better un
 
   use_case="Star a repo on github"
 
-  action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
+  # can pass multiple apps
+  action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
+
   tools = toolset.get_actions(actions=action_enums)
 
   # use tools as per your framework
@@ -141,7 +143,22 @@ Check out the coding guides provided in the examples section to have a better un
   <Tab title="Javascript">
   <CodeGroup>
   ```Javascript Fetching Actions using natural language use-case
-  //coming soon
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+    useCase: "create github issues"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
   ```
   </CodeGroup>
   </Tab>
@@ -186,7 +203,22 @@ tools = toolset.get_actions(actions=action_enums)
 <Tab title="Javascript">
 <CodeGroup>
 ```javascript Fetching Actions via Apps
-coming soon
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+     apps: "github"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
 ```
 </CodeGroup>
 </Tab>
@@ -225,17 +257,15 @@ tool_set.execute_action(
 )
 ```
 ```javascript javascript
-import dotenv from 'dotenv';
-dotenv.config();
 
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "user_identifier"
 });
 
-const entity = toolset.client.getEntity('user_email_id');
-toolset.executeAction(
+await toolset.executeAction(
    'slack_chat_post_message',
     {
         text: 'Hello, world!',
@@ -276,13 +306,11 @@ toolset.executeAction(
       agent_executor.invoke({"input": task})
       ```
       ```javascript javascript
-      import dotenv from 'dotenv';
+      import { LangchainToolSet } from "composio-core";
       import { ChatOpenAI } from "@langchain/openai";
       import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-      import { LangchainToolSet } from "composio-core";
       import { pull } from "langchain/hub";
 
-      dotenv.config();
 
       (async () => {
         const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
@@ -292,18 +320,15 @@ toolset.executeAction(
 
         const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
         const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
-
-        async function createGithubIssue(issueDetails) {
-            const result = await agentExecutor.invoke({
-                input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
-            });
-            return result.output;
-        }
-
-        await createGithubIssue({
+        const issueDetails = {
             TITLE: "Sample issue",
             DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
+        };
+
+        const result = await agentExecutor.invoke({
+          input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
         });
+        return result.output;
       })();
       ```
     </CodeGroup>
@@ -321,11 +346,11 @@ toolset.executeAction(
     <CodeGroup>
     ```python python
     tools = composio_toolset.get_tools(apps=[App.ASANA])
-    // Not a good idea.
     ```
     ```javascript javascript
-    const tools = composio_toolset.get_tools(apps=[App.ASANA])
-    // Not a good idea.
+    const tools = toolset.getTools({
+      apps: ["github"]
+    })
     ```
     </CodeGroup>
 </Warning>
