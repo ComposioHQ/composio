@@ -1,0 +1,19 @@
+FROM techcomposio/swe-agent
+
+WORKDIR /opt
+
+RUN git clone https://github.com/swe-bench/{{ repo_name }}.git
+ENV REPO_DIR=/opt/{{ repo_name }}
+
+WORKDIR /opt/{{ repo_name }}
+
+RUN git -c advice.detachedHead=false checkout {{ repo_name }}
+
+RUN {{conda_create_cmd}}
+SHELL ["conda", "run", "-n", "{{ testbed }}", "/bin/bash", "-c"]
+
+{% if pre_install_cmds -%}
+{% for cmd in pre_install_cmds -%}
+RUN {{ cmd }}
+{% endfor -%}
+{% endif -%}

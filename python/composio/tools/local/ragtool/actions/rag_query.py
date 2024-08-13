@@ -25,7 +25,9 @@ class RagToolQuery(Action[RagToolQueryRequest, RagToolQueryResponse]):
     _tags = ["Knowledge Base"]
     _tool_name = "ragtool"
 
-    def execute(self, request: RagToolQueryRequest, authorisation_data: dict) -> dict:
+    def execute(
+        self, request_data: RagToolQueryRequest, authorisation_data: dict
+    ) -> dict:
         """Query the knowledge base and return the response"""
         if authorisation_data is None:
             authorisation_data = {}
@@ -43,7 +45,7 @@ class RagToolQuery(Action[RagToolQueryRequest, RagToolQueryResponse]):
             print(f"Failed to initialize App: {e}")
             raise Exception(f"Failed to initialize App: {e}") from e
 
-        query = request.query
+        query = request_data.query
 
         if embedchain_app:
             try:

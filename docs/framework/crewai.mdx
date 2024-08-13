@@ -61,7 +61,6 @@ These commands prepare your environment for seamless interaction between CrewAI 
 
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
     ```
 
 </CodeGroup>
@@ -72,7 +71,6 @@ These commands prepare your environment for seamless interaction between CrewAI 
 
 <CodeGroup>
     ```python CrewAI Agent Executes Task
-
     # Define agent
     crewai_agent = Agent(
         role="Github Agent",
@@ -83,15 +81,13 @@ These commands prepare your environment for seamless interaction between CrewAI 
         ),
         verbose=True,
         tools=tools,
-        llm=openai_client,
+        llm=llm,
     )
-
     task = Task(
-        description="Star a repo ComposioHQ/composio on GitHub",
+        description="Star a repo composiohq/composio on GitHub",
         agent=crewai_agent,
         expected_output="if the star happened"
     )
-
     task.execute()
     ```
 
@@ -104,14 +100,14 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <CodeGroup>
     ```bash Executing Agents
     > Entering new CrewAgentExecutor chain...[0m
-    I need to star a repository on GitHub, specifically the repo "ComposioHQ/composio".
+    I need to star a repository on GitHub, specifically the repo "composiohq/composio".
 
     Action:
     github_star_repo
 
     Action Input:
     {
-    "owner": "ComposioHQ",
+    "owner": "composiohq",
     "repo": "composio"
     }
 
@@ -120,7 +116,6 @@ These commands prepare your environment for seamless interaction between CrewAI 
 
     > Finished chain.[0m
     > {'execution_details': {'executed': True}, 'response_data': ''}
-
     ```
 
 </CodeGroup>
@@ -139,9 +134,9 @@ These commands prepare your environment for seamless interaction between CrewAI 
 ### Use Specific Apps
 
 <CodeGroup>
-  ```bash Filter Specific App 
-  # To restrict agents from using all tools, filter specific tools 
-  composio_toolset = ComposioToolSet() 
-  tools = composio_toolset.get_tools(apps=[App.GITHUB]) 
-  ```
+    ```bash Filter Specific App 
+    # To restrict agents from using all tools, filter specific tools 
+    composio_toolset = ComposioToolSet() 
+    tools = composio_toolset.get_tools(apps=[App.GITHUB]) 
+    ```
 </CodeGroup>

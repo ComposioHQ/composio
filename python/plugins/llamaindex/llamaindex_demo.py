@@ -10,14 +10,14 @@ from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4-turbo")
 
 
 def main():
     # Get All the tools
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_actions(
-        actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
     )
 
     prefix_messages = [
@@ -38,7 +38,9 @@ def main():
         verbose=True,
     ).as_agent()
 
-    response = agent.chat("Hello! I would like to star a repo SamparkAI/docs on GitHub")
+    response = agent.chat(
+        "Hello! I would like to star a repo composiohq/composio on GitHub"
+    )
     print("Response:", response)
 
 

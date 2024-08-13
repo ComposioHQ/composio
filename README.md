@@ -1,3 +1,7 @@
+<p>
+  <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
+</p>
+
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
@@ -12,6 +16,9 @@
   </a>
   <a href="https://pypi.org/project/composio-core/">
   <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
+  </a>
+  <a href="https://www.npmjs.com/package/composio-core">
+  <img alt="NPM" src="https://img.shields.io/npm/v/composio-core?style=plastic&logo=npm&logoColor=white&label=latest&color=blue&cacheSeconds=60">
   </a>
   <a href="https://pypi.org/project/composio-core/">
   <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
@@ -65,13 +72,14 @@
 - [🚀 Getting Started with Python](#-getting-started-with-python)
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
-- [🚀 Getting Started with Javascript ](#-getting-started-with-javascript)
-  - [1. Install the Composio SDK](#1-install-the-composio-sdk)
-  - [2. Setup the OpenAI and Composio Tool Set](#2-setup-the-openai-and-composio-tool-set)
+- [🚀 Getting Started with Javascript](#-getting-started-with-javascript)
+  - [1. **Install the Composio SDK**:](#1-install-the-composio-sdk)
+  - [2. **Setup the OpenAI and Composio Tool Set**:](#2-setup-the-openai-and-composio-tool-set)
+  - [3. **Run your script**:](#3-run-your-script)
 - [💡 Examples](#-examples)
-  - [Competitor Researcher](#competitor-researcher)
-  - [Todolist to Calendar](#todolist-to-calendar)
-  - [Github to Trello](#github-to-trello)
+  - [Python Examples](#python-examples)
+  - [Javascript Examples](#javascript-examples)
+- [Star History](#star-history)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
 - [🔗 Links](#-links)
@@ -89,7 +97,7 @@ Composio is the best toolset to integrate AI Agents to best Agentic Tools and us
 
 - **100+ Tools**: Support for a range of different categories
 
-  - **Softwares**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
+  - **Software**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
   - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
   - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
   - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
@@ -98,7 +106,7 @@ Composio is the best toolset to integrate AI Agents to best Agentic Tools and us
 
 - **Frameworks**: Use tools with agent frameworks like **OpenAI, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, Julep, Lyzr**, and more in a single line of code.
 - **Managed Authorisation**: Supports six different auth protocols. _Access Token, Refresh token, OAuth, API Keys, JWT, and more_ abstracted out so you can focus on the building agents.
-- **Accuracy**: Get _upto 40% better agentic accuracy_ in your tool calls due to better tool designs.
+- **Accuracy**: Get _up to 40% better agentic accuracy_ in your tool calls due to better tool designs.
 - **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
 - **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
 
@@ -137,7 +145,7 @@ composio_tool_set = ComposioToolSet()
 
 # Get GitHub tools that are pre-configured
 actions = composio_tool_set.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
 my_task = "Star a repo composiodev/composio on GitHub"
@@ -247,11 +255,11 @@ For more details, refer to the [Composio SDK Documentation](https://docs.composi
 
 ## 💡 Examples
 
-### [Competitor Researcher](https://docs.composio.dev/guides/examples/CompetitorResearcher)
+### [Python Examples](https://docs.composio.dev/guides/python/)
 
-### [Todolist to Calendar](https://docs.composio.dev/guides/examples/todo-to-calendar)
+### [Javascript Examples](https://docs.composio.dev/guides/javascript/)
 
-### [Github to Trellox](https://docs.composio.dev/guides/examples/github-trello)
+
 
 ## Star History
 
@@ -280,6 +288,6 @@ Composio is licensed under the Elastic License - see the [LICENSE](https://githu
 
 ## 💪 Thanks To All Contributors
 
-<a href="https://composio.dev/contributors?utm_source=github">
+<a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
 </a>

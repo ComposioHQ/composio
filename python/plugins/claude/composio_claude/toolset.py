@@ -3,10 +3,9 @@ import typing as t
 from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
 from anthropic.types.beta.tools.tool_param import ToolParam
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.tools.env.factory import ExecEnv
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
@@ -29,7 +28,7 @@ class ComposioToolset(BaseComposioToolSet):
         composio_tools = ComposioToolset()
 
         # Define task.
-        task = "Star a repo SamparkAI/composio_sdk on GitHub"
+        task = "Star a repo composiohq/composio on GitHub"
 
         # Get GitHub tools that are pre-configured
         actions = composio_toolset.get_tools(tools=[App.GITHUB])
@@ -40,7 +39,7 @@ class ComposioToolset(BaseComposioToolSet):
             max_tokens=1024,
             tools=composio_tools,
             messages=[
-                {"role": "user", "content": "Star me sawradip/sawradip repo in github."},
+                {"role": "user", "content": "Star me composiohq/composio repo in github."},
             ],
         )
         print(response)
@@ -57,7 +56,7 @@ class ComposioToolset(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_env: ExecEnv = ExecEnv.DOCKER,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
     ) -> None:
         """
@@ -74,7 +73,7 @@ class ComposioToolset(BaseComposioToolSet):
             runtime="claude",
             entity_id=entity_id,
             output_in_file=output_in_file,
-            workspace_env=workspace_env,
+            workspace_config=workspace_config,
             workspace_id=workspace_id,
         )
         self.schema = SchemaType.CLAUDE
@@ -87,7 +86,7 @@ class ComposioToolset(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "Seperate `entity_id` can not be provided during "
+                "separate `entity_id` can not be provided during "
                 "intialization and handelling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:

@@ -17,6 +17,29 @@ Actions are tasks which your agent can perform. Actions can be performed on the 
 
 Check out the coding guides provided in the examples section to have a better understanding.
 
+<div
+  style={{
+    width: '100%',
+    position: 'relative',
+    paddingTop: '56.25%',
+  }}>
+  <iframe
+    src="https://app.supademo.com/embed/clxuiweel0j7e12o2o1jhrk5t"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+      position: 'absolute',
+      top: 0,left: 0, width: '100%', height: '100%',
+      border: '3px solid #5E43CE',
+      borderRadius: '10px',
+    }}/>
+</div>
+
+
 ## **Types of Actions**
 
 <Tabs>
@@ -35,74 +58,193 @@ Check out the coding guides provided in the examples section to have a better un
     Example: Use the `getConnection` endpoint to call GitHub, create an issue on
     your server, and fetch the access token. [Learn
     more](https://docs.composio.dev/actions/local-code)
+
+    Local Actions are operations executed directly on the user's local system. 
+    This allows for performing tasks such as file manipulations, running scripts, 
+    or interacting with local resources, providing flexibility for scenarios where 
+    cloud execution is not suitable.
+
+    Local actions are particularly useful for:
+    - Managing and organizing files and directories
+    - Executing local scripts or programs
+    - Integrating with local development environments
+
+    By leveraging local actions, you can maintain control over your local 
+    resources while utilizing the powerful capabilities of Composio for remote interactions and executions.
   </Tab>
 </Tabs>
 
-## Working with Actions
-
+---
+## Working with Actions (Fetch and Execute)
 <Steps>
-<Step title="Fetch Actions">
+<Step title="Fetching Actions">
 
+<AccordionGroup>
+<Accordion title="Fetching Actions via Name (Static)">
+  <Tabs>
+
+    <Tab title="Python">
+    <CodeGroup>
+    ```python Fetching Actions via Name
+
+    from composio_openai import ComposioToolSet, Action 
+    # you can choose framework of your choice using composio_framework
+    # ex. from composio_langchain import ComposioToolSet, Action
+
+    tool_set = ComposioToolSet()
+
+    tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+
+    print(tools)
+    ```
+    </CodeGroup>
+    </Tab>
+
+    <Tab title="Javascript">
+    <CodeGroup>
+    ```javascript Fetching Actions via Name
+    import dotenv from 'dotenv';
+    dotenv.config();
+
+    import { OpenAIToolSet } from "composio-core";
+
+    const toolset = new OpenAIToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+      });
+
+    const tools = await toolset.getActions({actions: ['github_issues_create']});
+    ```
+    </CodeGroup>
+    </Tab>
+  </Tabs>
+
+</Accordion>
+
+<Accordion title="Fetching Actions using natural language use-case (Dynamic)">
+
+<Tabs>
+
+  <Tab title="Python">
+  <CodeGroup>
+  ```Python Fetching Actions using natural language use-case
+
+  use_case="Star a repo on github"
+
+  # can pass multiple apps
+  action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
+
+  tools = toolset.get_actions(actions=action_enums)
+
+  # use tools as per your framework
+  ```
+  </CodeGroup>
+  </Tab>
+
+  <Tab title="Javascript">
+  <CodeGroup>
+  ```Javascript Fetching Actions using natural language use-case
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+    useCase: "create github issues"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
+  ```
+  </CodeGroup>
+  </Tab>
+
+  <Tab title="CLI">
+  <CodeGroup>
+  ```bash Fetching Actions using natural language use-case
+  composio actions --use-case 'get channel messages' --app 'slack'
+  ```
+  </CodeGroup>
+  </Tab>
+</Tabs>
+</Accordion>
+
+<Accordion title="Fetching Actions via Apps">
+
+<Warning> 
+Efficiency can be significantly enhanced by selectively filtering actions rather than assigning all available actions of an application to the agent. 
+</Warning>
+
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-```python Get Action/s Input Schema
+```python Fetching Actions via Apps & Tags
+tools = toolset.get_tools(apps=[App.GITHUB]) 
 
-from composio_openai import ComposioToolSet, Action
+# Filter by tags
+tag = "users"
 
-tool_set = ComposioToolSet()
+action_enums = toolset.find_actions_by_tags(
+    App.GITHUB,
+    tags=[tag], 
+)
 
-tools = tool_set.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
-
-print(tools)
+tools = toolset.get_actions(actions=action_enums)
 ```
 </CodeGroup>
+</Tab>
 
-The response will include the **Action's ID, Name and Input/Output schema** in **JSON Def**
-
+<Tab title="Javascript">
 <CodeGroup>
-```JSON Sample Response
-[
-  {
-    "name": "github_create_issue",
-    "display_name": "Create Issue",
-    "description": "Create a new issue in a repository.",
-    "parameters": {
-      "properties": {
-        "owner": {
-          "description": "Owner of the repository",
-          "examples": [
-            "openai",
-            "facebook"
-          ],
-          "title": "Owner",
-          "type": "string"
-        }...
-      },
-      "required": [
-        "owner"...
-      ],
-      "title": "CreateIssueRequest",
-      "type": "object"
-    },
-    "response": {
-      "properties": {
-        ...
-      }
-    },
-    "appId": "46f40473-cc29-4b52-98e0-a812ff2b44e3",
-    "appKey": "github",
-    "logo": "https://i.imgur.com/FAXkSDq.png",
-    "appName": "Github",
-    "enabled": true
-  }
-]
-```
+```javascript Fetching Actions via Apps
+import { LangchainToolSet } from "composio-core";
 
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+     apps: "github"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
+```
 </CodeGroup>
+</Tab>
+
+<Tab title="CLI">
+<CodeGroup>
+```bash Fetching Actions via Apps
+composio actions --app 'github' --tag 'code' 
+# Don't use tag if you want all actions
+```
+</CodeGroup>
+</Tab>
+
+</Tabs>
+
+</Accordion>
+</AccordionGroup>
 </Step>
 
 <Step title="Execute the action">
+<Tabs>
+
+<Tab title="Execute Action">
+Execute Action
 <CodeGroup>
-```python Execute Action
+```python python
 
 from composio import ComposioToolSet, Action
 
@@ -114,7 +256,112 @@ tool_set.execute_action(
     entity_id="melissa",
 )
 ```
+```javascript javascript
+
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "user_identifier"
+});
+
+await toolset.executeAction(
+   'slack_chat_post_message',
+    {
+        text: 'Hello, world!',
+        channel: 'D04N8SVQKKU'
+    },
+   entity.id
+);
+```
 </CodeGroup>
-When executed successfully, action's response will be output. Output schema as returned by the /actions endpoint.
+</Tab>
+
+<Tab title="Execute Action with Natural Language">
+    Execute Action with Natural Language
+    <CodeGroup>
+      ```python python
+      from langchain.agents import create_openai_functions_agent, AgentExecutor
+      from langchain import hub
+      from langchain_openai import ChatOpenAI
+      from composio_langchain import ComposioToolSet, Action, App
+      import os
+
+
+      llm = ChatOpenAI(model="gpt-4o")
+
+      prompt = hub.pull("hwchase17/openai-functions-agent")
+
+      # Get All the tools
+      composio_toolset = ComposioToolSet()
+      tools = composio_toolset.get_tools(apps=[App.GITHUB], tags=[])
+
+      # Define task
+      task = "Star a repo theyashwanthsai/theyashwanthsai on GitHub"
+
+      agent = create_openai_functions_agent(llm, tools, prompt)
+      agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+      # Execute using agent_executor
+      agent_executor.invoke({"input": task})
+      ```
+      ```javascript javascript
+      import { LangchainToolSet } from "composio-core";
+      import { ChatOpenAI } from "@langchain/openai";
+      import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+      import { pull } from "langchain/hub";
+
+
+      (async () => {
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+        const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
+        const tools = await composioToolset.getActions({ actions: ["github_issues_create"] });
+        const prompt = await pull("hwchase17/openai-functions-agent");
+
+        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+        const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+        const issueDetails = {
+            TITLE: "Sample issue",
+            DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
+        };
+
+        const result = await agentExecutor.invoke({
+          input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
+        });
+        return result.output;
+      })();
+      ```
+    </CodeGroup>
+    This code demonstrates how to use natural language to execute an action. By defining a task and using the `AgentExecutor`, you can perform complex actions with simple language commands.
+  </Tab>
+</Tabs>
 </Step>
 </Steps>
+
+--- 
+## Action Selection and Filtering
+
+<Warning>
+    Directly invoking actions is generally discouraged as it can lead to significant performance issues when implemented in a production environment.
+    <CodeGroup>
+    ```python python
+    tools = composio_toolset.get_tools(apps=[App.ASANA])
+    ```
+    ```javascript javascript
+    const tools = toolset.getTools({
+      apps: ["github"]
+    })
+    ```
+    </CodeGroup>
+</Warning>
+
+Some Composio tools provide a wide array of over 100 actions. However, there are several considerations to keep in mind:
+
+- **Performance Impact**: The performance and decision-making accuracy of agents can diminish when they are overwhelmed with too many choices.
+- **Model Limitations**: OpenAI Models imposes a limit, supporting no more than 128 actions per request. Exceeding this limit results in errors.
+  
+<Info>Empirical evidence indicates that agents perform optimally when limited to fewer than 20 actions.</Info>
+
+To address these issues, it is crucial to streamline the number of actions presented to agents. 
+This can be effectively managed by employing various action filtering techniques.
+

@@ -14,7 +14,7 @@ from unittest import mock
 
 import pysher
 import typing_extensions as te
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
 
 from composio.client.base import BaseClient, Collection
@@ -70,6 +70,7 @@ class ConnectedAccountModel(BaseModel):
     appUniqueId: str
     integrationId: str
     connectionParams: AuthConnectionParamsModel
+
     clientUniqueUserId: t.Optional[str] = None
 
     # Override arbitrary model config.
@@ -411,8 +412,10 @@ class SuccessExecuteActionResponseModel(BaseModel):
 
 
 class FileModel(BaseModel):
-    name: str
-    content: bytes
+    name: str = Field(
+        ..., description="File name, contains extension to indetify the file type"
+    )
+    content: bytes = Field(..., description="File content in base64")
 
 
 class Connection(BaseModel):
@@ -495,7 +498,7 @@ class TriggerSubscription(logging.WithLogger):
         callback: TriggerCallback,
         data: TriggerEventData,
         filters: _TriggerEventFilters,
-    ) -> None:
+    ) -> t.Any:
         """Handle callback."""
         for name, check in (
             ("app_name", data.appName),
@@ -513,16 +516,17 @@ class TriggerSubscription(logging.WithLogger):
                 f"Skipping `{callback.__name__}` since "
                 f"`{name}` filter does not match the event metadata",
             )
-            return
+            return None
 
         try:
-            callback(data)
+            return callback(data)
         except BaseException:
             self.logger.info(
                 f"Erorr executing `{callback.__name__}` for "
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
             )
+            return None
 
     def _parse_payload(self, event: str) -> t.Optional[TriggerEventData]:
         """Parse event payload."""
@@ -800,7 +804,6 @@ class ActionModel(BaseModel):
 
     name: str
     display_name: str
-    description: t.Optional[str]
     parameters: ActionParametersModel
     response: ActionResponseModel
     appKey: str
@@ -810,6 +813,7 @@ class ActionModel(BaseModel):
     enabled: bool
 
     logo: t.Optional[str] = None
+    description: t.Optional[str] = None
 
 
 class Actions(Collection[ActionModel]):
@@ -855,7 +859,11 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            local_items = self.client.local.get_action_schemas(
+            from composio.tools.local.handler import (  # pylint: disable=import-outside-toplevel
+                LocalClient,
+            )
+
+            local_items = LocalClient().get_action_schemas(
                 apps=local_apps, actions=local_actions, tags=tags
             )
             return [self.model(**item) for item in local_items]
@@ -918,16 +926,22 @@ class Actions(Collection[ActionModel]):
 
         if limit is not None:
             queries["limit"] = str(limit)
+
         response = self._raise_if_required(
             response=self.client.http.get(
-                url=str(self.endpoint(queries=queries)),
+                url=str(
+                    self.endpoint(
+                        queries=queries,
+                    )
+                )
             )
         )
+
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required_triggers = [t.cast(Action, action).name for action in actions]
-            items = [item for item in items if item.name in required_triggers]
+            required = [t.cast(Action, action).name for action in actions]
+            items = [item for item in items if item.name in required]
 
         if len(tags) > 0:
             required_tags = [tag.app if isinstance(tag, Tag) else tag for tag in tags]
@@ -967,24 +981,25 @@ class Actions(Collection[ActionModel]):
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
-            return self.client.local.execute_action(
-                action=action,
-                request_data=params,
-            )
+            return self.client.local.execute_action(action=action, request_data=params)
 
-        actions = self.get(
-            actions=[action],
-        )
+        actions = self.get(actions=[action])
         if len(actions) == 0:
             raise ComposioClientError(f"Action {action} not found")
 
         (action_model,) = actions
         action_req_schema = action_model.parameters.properties
-        modified_params = {}
+        modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in params.items():
             file_readable = False
             if isinstance(action_req_schema[param], dict):
                 file_readable = action_req_schema[param].get("file_readable", False)
+                file_uploadable = (
+                    action_req_schema[param].get("allOf", [{}])[0].get("properties")
+                    or action_req_schema[param].get("properties")
+                    or {}
+                ) == FileModel.schema().get("properties")
+
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
                     file_content = file.read()
@@ -995,6 +1010,20 @@ class Actions(Collection[ActionModel]):
                         modified_params[param] = base64.b64encode(file_content).decode(
                             "utf-8"
                         )
+            elif file_uploadable and isinstance(value, str):
+                if os.path.isfile(value):
+                    with open(value, "rb") as file:
+                        file_content = file.read()
+                    encoded_data = base64.b64encode(file_content).decode("utf-8")
+                    encoded_data_with_filename = {
+                        "name": os.path.basename(value),
+                        "content": encoded_data,
+                    }
+                    modified_params[param] = encoded_data_with_filename
+                elif value == "":
+                    pass
+                else:
+                    return {"error": f"File with path {value} not found"}
             else:
                 modified_params[param] = value
 
@@ -1064,6 +1093,7 @@ class Integrations(Collection[IntegrationModel]):
         auth_mode: t.Optional[str] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_auth: bool = False,
+        force_new_integration: bool = False,
     ) -> IntegrationModel:
         """
         Create a new integration
@@ -1085,12 +1115,32 @@ class Integrations(Collection[IntegrationModel]):
 
         if auth_mode is not None:
             request["authScheme"] = auth_mode
+
+        if auth_config is not None:
             request["authConfig"] = auth_config or {}
+
+        if force_new_integration:
+            request["forceNewIntegration"] = force_new_integration
 
         response = self._raise_if_required(
             response=self.client.http.post(
                 url=str(self.endpoint),
                 json=request,
             )
+        )
+        return IntegrationModel(**response.json())
+
+    def get_by_id(
+        self,
+        integration_id: str,
+    ) -> IntegrationModel:
+        """
+        Get an integration by its ID.
+
+        :param integration_id: Integration ID string.
+        :return: Integration model.
+        """
+        response = self._raise_if_required(
+            self.client.http.get(url=str(self.endpoint / integration_id))
         )
         return IntegrationModel(**response.json())

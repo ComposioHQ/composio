@@ -1,30 +1,30 @@
 import atexit
 import threading
 import typing as t
-from enum import Enum
 
 from composio.exceptions import ComposioSDKError
-from composio.tools.env.base import Workspace
+from composio.tools.env.base import Workspace, WorkspaceConfigType
+from composio.tools.env.docker.workspace import Config as DockerWorkspaceConfig
 from composio.tools.env.docker.workspace import DockerWorkspace
+from composio.tools.env.e2b.workspace import Config as E2BWorkspaceConfig
+from composio.tools.env.e2b.workspace import E2BWorkspace
+from composio.tools.env.flyio.workspace import Config as FlyIOWorkspaceConfig
+from composio.tools.env.flyio.workspace import FlyIOWorkspace
+from composio.tools.env.host.workspace import Config as HostWorkspaceConfig
 from composio.tools.env.host.workspace import HostWorkspace
 from composio.utils.logging import get as get_logger
 
 
-KEY_WORKSPACE_MANAGER = "workspace"
-KEY_CONTAINER_NAME = "container_name"
-KEY_PARENT_PIDS = "parent_pids"
-KEY_IMAGE_NAME = "image_name"
-KEY_WORKSPACE_ID = "workspace_id"
-KEY_WORKSPACE_TYPE = "type"
+WorkspaceTypeVar = t.TypeVar("WorkspaceTypeVar")
 
 
-class ExecEnv(Enum):
+class WorkspaceType:
     """Workspace execution environment."""
 
-    HOST = "host"
-    DOCKER = "docker"
-    FLYIO = "flyio"
-    E2B = "e2b"
+    Host = HostWorkspaceConfig
+    Docker = DockerWorkspaceConfig
+    FlyIO = FlyIOWorkspaceConfig
+    E2B = E2BWorkspaceConfig
 
 
 class WorkspaceFactory:
@@ -53,20 +53,31 @@ class WorkspaceFactory:
         return workspace
 
     @classmethod
-    def new(cls, env: ExecEnv, **kwargs: t.Any) -> Workspace:
+    def _initialize_workspace(cls, config: WorkspaceConfigType) -> Workspace:
+        """Initialize a workspace from the config."""
+        if isinstance(config, HostWorkspaceConfig):
+            return HostWorkspace(config=config)
+
+        if isinstance(config, DockerWorkspaceConfig):
+            return DockerWorkspace(config=config)
+
+        if isinstance(config, E2BWorkspaceConfig):
+            return E2BWorkspace(config=config)
+
+        if isinstance(config, FlyIOWorkspaceConfig):
+            return FlyIOWorkspace(config=config)
+
+        raise ValueError(f"Invalid workspace config: {config}")
+
+    @classmethod
+    def new(cls, config: WorkspaceConfigType) -> Workspace:
         """Create a new workspace."""
-        workspace: Workspace
-        if env == ExecEnv.HOST:
-            workspace = HostWorkspace(**kwargs)
-        elif env == ExecEnv.DOCKER:
-            logger = get_logger(name="workspace_factory_new")
-            logger.info(f"Creating docker workspace with kwargs: {kwargs}")
-            workspace = DockerWorkspace(**kwargs)
-        else:
-            raise ComposioSDKError(
-                f"Workspace environment `{env}` is not supported currently!"
-            )
+        logger = get_logger()
+        logger.debug(f"Creating workspace with {config=}")
+        workspace = cls._initialize_workspace(config=config)
+
         cls._workspaces[workspace.id] = workspace
+        cls._workspaces[workspace.id].setup()
         return cls.set_recent_workspace(workspace=workspace)
 
     @classmethod
@@ -91,14 +102,21 @@ class WorkspaceFactory:
     @classmethod
     def teardown(cls) -> None:
         """Teardown the workspace factory."""
+        logger = get_logger(name="atexit")
+        if len(cls._workspaces) == 0:
+            return
+
+        logger.debug("Tearing down workspace factory")
         for workspace in cls._workspaces.values():
-            get_logger(name="factory").info("Tearing down: %s", workspace)
+            if workspace.persistent:
+                logger.debug("%s is a persistent workspace, skipping")
+                continue
+
+            logger.debug("Tearing down %s", workspace)
             workspace.teardown()
 
 
 @atexit.register
 def _teardown() -> None:
     """Teardown the workspace factory at exit."""
-    logger = get_logger(name="atexit")
-    logger.debug("Tearing down workspace factory")
     WorkspaceFactory.teardown()

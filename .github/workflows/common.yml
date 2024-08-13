@@ -2,8 +2,7 @@ name: main_workflow
 on:
   push:
     branches:
-      - develop
-      - main
+      - master
   pull_request:
 
 jobs:
@@ -30,6 +29,7 @@ jobs:
           time pipenv install --verbose --dev --skip-lock
           time pipenv run pip install -e .[all]
           time pipenv lock
+          time pipenv run composio --help
 
   linter_checks:
     defaults:

@@ -25,7 +25,7 @@ async function executeAgent(entityName, eventBody) {
     const prompt = await pull("hwchase17/openai-functions-agent");
 
     // Step 4: Create an instance of ChatOpenAI
-    const llm = new ChatOpenAI({ model: "gpt-4o", apiKey: process.env.OPEN_AI_API_KEY });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo", apiKey: process.env.OPEN_AI_API_KEY });
 
     // Step 5: Prepare the input data
     const body = `We received the following data: ${JSON.stringify(eventBody)}`;

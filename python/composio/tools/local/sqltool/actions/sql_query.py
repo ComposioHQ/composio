@@ -12,10 +12,8 @@ class SqlQueryRequest(BaseModel):
 
 
 class SqlQueryResponse(BaseModel):
-    # Define output schema for your action
-    # Example:
-    # result: str = Field(..., description="Result of the action")
-    result: str = Field(..., description="Result after executing the query")
+    execution_details: dict = Field(..., description="Execution details")
+    response_data: str = Field(..., description="Result after executing the query")
 
 
 class SqlQuery(Action):
@@ -36,19 +34,37 @@ class SqlQuery(Action):
         # Example:
         # response_data = {"result": "Processed text: " + request_data.text}
         # Implement logic to process input and return output
+
         import sqlite3  # pylint: disable=import-outside-toplevel
+        from pathlib import Path  # pylint: disable=import-outside-toplevel
 
-        # Connect to the database
-        connection = sqlite3.connect(request_data.connection_string)
-        cursor = connection.cursor()
+        # Check if the database file exists
+        if not Path(request_data.connection_string).exists():
+            return {
+                "execution_details": {"executed": False},
+                "response_data": f"Error: Database file '{request_data.connection_string}' does not exist.",
+            }
 
-        # Execute the query
-        cursor.execute(request_data.query)
+        try:
+            # Use 'with' statement to manage the database connection
+            with sqlite3.connect(request_data.connection_string) as connection:
+                cursor = connection.cursor()
 
-        response_data = cursor.fetchall()
-        connection.commit()
-        # Close the connection
-        connection.close()
+                # Execute the query
+                cursor.execute(request_data.query)
 
-        # Prepare the response data
-        return {"execution_details": {"executed": True}, "response_data": response_data}
+                response_data = cursor.fetchall()
+                connection.commit()
+
+            # Prepare the response data
+            return {
+                "execution_details": {"executed": True},
+                "response_data": response_data,
+            }
+        except sqlite3.Error as e:
+            print(f"SQLite error: {str(e)}")
+
+            return {
+                "execution_details": {"executed": False},
+                "response_data": f"SQLite error: {str(e)}",
+            }

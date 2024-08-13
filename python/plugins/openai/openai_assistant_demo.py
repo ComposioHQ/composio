@@ -1,8 +1,9 @@
 from datetime import datetime
 
 import dotenv
-from composio_openai import Action, ComposioToolSet
 from openai import OpenAI
+
+from composio_openai import Action, ComposioToolSet
 
 
 # Load environment variables from .env

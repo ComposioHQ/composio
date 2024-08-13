@@ -6,6 +6,7 @@ import typing as t
 
 import click
 
+from composio import __version__
 from composio.cli.actions import _actions
 from composio.cli.add import _add
 from composio.cli.apps import _apps
@@ -14,6 +15,7 @@ from composio.cli.execute import _execute
 from composio.cli.integrations import _integrations
 from composio.cli.login import _login
 from composio.cli.logout import _logout
+from composio.cli.serve import _serve
 from composio.cli.triggers import _triggers
 from composio.cli.utils.params import EnumParam
 from composio.cli.whoami import _whoami
@@ -51,7 +53,14 @@ class HelpDYMGroup(DYMGroup):
         handler=handle_exceptions,
     ),
 )
-@click.help_option("--help", "-help", "-h")
+@click.help_option(
+    "-h",
+    "-help",
+    "--help",
+)
+@click.version_option(
+    version=__version__,
+)
 @click.option(
     "-v",
     "level",
@@ -76,3 +85,4 @@ composio.add_command(_triggers)
 composio.add_command(_integrations)
 composio.add_command(_connections)
 composio.add_command(_execute)
+composio.add_command(_serve)

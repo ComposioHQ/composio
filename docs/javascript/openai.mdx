@@ -1,0 +1,117 @@
+---
+title: "Using Composio JS SDK with OpenAI"
+sidebarTitle: "Quickstart (OpenAI)"
+icon: "code"
+description: "Use Composio JS SDK with OpenAI to create a github issue creation agent"
+---
+
+## Demo
+
+ <iframe
+    src="https://codesandbox.io/p/devbox/test-wnktj6?embed=1&file=%2Findex.mjs&showConsole=true"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+    width: '100%',
+    height: '500px',
+    border: '3px solid #5E43CE',
+    borderRadius: '10px',
+    }}/>
+<Steps>
+<Step title="Get Composio API Key">
+Follow this [Get API Key](/introduction/foundations/howtos/get_api_key) to get your Composio API Key
+</Step>
+<Step title="Install Dependencies">
+<CodeGroup>
+      ```bash Install dependencies
+npm install composio-core openai 
+yarn add composio-core openai 
+pnpm add composio-core openai
+      ```
+    </CodeGroup>
+</Step>
+
+<Step title="Define method to let user connect their GitHub account">
+
+ <CodeGroup>
+      ```typescript index.mjs
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+const COMPOSIO_API_KEY = "<your-composio-api-key>"
+const OPEN_AI_API_KEY = "<your-openai-api-key>"
+const toolset = new OpenAIToolSet({apiKey: COMPOSIO_API_KEY,});
+
+const appName = 'github';
+
+async function setupUserConnectionIfNotExists(entityId) {
+        const entity = toolset.client.getEntity(entityId);
+        const connection = await entity.getConnection(appName);
+
+        if (!connection) {
+            const connection = await entity.initiateConnection(appName);
+            console.log("Log in via: ", connection.redirectUrl);
+            return connection.waitUntilActive(60);
+        }
+
+        return connection;
+}
+      ```
+    </CodeGroup>
+
+Learn more about entities [here](introduction/foundations/components/entity/entity-guide)
+
+</Step>
+
+<Step title="Setup Agent with OpenAI">
+
+<CodeGroup>
+      ```typescript index.mjs
+async function executeAgent(repo,entityName="default") {
+        const entity = toolset.client.getEntity(entityName)
+        await setupUserConnectionIfNotExists(entity.id);
+
+        const tools = await toolset.getActions({ actions: ["github_issues_create"] }, entity.id);
+        const instruction = `Make an issue with sample title in the repo - ${repo}`
+
+        const client = new OpenAI({ apiKey: OPEN_AI_API_KEY })
+        const response = await client.chat.completions.create({
+            model: "gpt-4-turbo",
+            messages: [{
+                role: "user",
+                content: instruction,
+            }],
+            tools: tools,
+            tool_choice: "auto",
+        })
+
+        console.log(response.choices[0].message.tool_calls);
+        await toolset.handleToolCall(response, entity.id);
+}
+
+      ```
+    </CodeGroup>
+
+</Step>
+
+<Step title="Invoke Your Agent">
+
+<CodeGroup>
+      ```typescript  index.mjs
+      executeAgent("himanshu-dixit/custom-repo-breaking")
+      ```
+    </CodeGroup>
+
+Tada 🎉! It was this simple to create a powerful Agent with Composio and OpenAI.
+</Step>
+
+<Step title="Complete code snippet">
+View the full snippet [here](https://github.com/composiohq/composio/tree/master/js/examples/openai/sample.mjs)
+</Step>
+</Steps>
+
+

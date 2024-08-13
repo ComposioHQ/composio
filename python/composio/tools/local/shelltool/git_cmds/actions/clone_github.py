@@ -1,16 +1,15 @@
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import (
-    get_logger,
-    git_clone_cmd,
-    git_reset_cmd,
-)
+from composio.tools.local.shelltool.utils import git_clone_cmd, git_reset_cmd
+from composio.utils.logging import WithLogger
+from composio.utils.logging import get as get_logger
 
 
 LONG_TIMEOUT = 200
@@ -38,7 +37,7 @@ class GithubCloneResponse(ShellExecResponse):
     pass
 
 
-class GithubCloneCmd(BaseExecCommand):
+class GithubCloneCmd(BaseExecCommand, WithLogger):
     """
     Clones a github repository at a given commit-id.
     """
@@ -59,7 +58,11 @@ class GithubCloneCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output[STDERR],
+            stderr="",
+            exit_code=int(output[EXIT_CODE]),
+        )
 
     def reset_to_base_commit(
         self, request_data: GithubCloneRequest, authorisation_data: dict
@@ -74,4 +77,8 @@ class GithubCloneCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return ShellExecResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return ShellExecResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )

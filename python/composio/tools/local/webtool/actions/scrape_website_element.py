@@ -31,13 +31,13 @@ class ScrapeWebsiteElement(
     _tool_name = "webtool"
 
     def execute(
-        self, request: ScrapeWebsiteElementToolRequest, authorisation_data: dict
+        self, request_data: ScrapeWebsiteElementToolRequest, authorisation_data: dict
     ) -> dict:
         """Scrape a specific element from the website and return its content"""
         if authorisation_data is None:
             authorisation_data = {}
-        url = request.website_url
-        selector = request.element_selector
+        url = request_data.website_url
+        selector = request_data.element_selector
         try:
             # pylint: disable=import-outside-toplevel
             from bs4 import BeautifulSoup

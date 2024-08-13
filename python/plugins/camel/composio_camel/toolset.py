@@ -5,11 +5,12 @@ Camel tool spec.
 import typing as t
 
 # pylint: disable=E0611
-from camel.functions import OpenAIFunction
+from camel.toolkits import OpenAIFunction
 
-from composio.client.enums import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.tools.env.base import WorkspaceConfigType
 from composio.tools.schema import OpenAISchema, SchemaType
 
 
@@ -34,7 +35,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
         composio_toolset = ComposioToolSet()
         tools = composio_toolset.get_actions(
-            actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+            actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
         )
 
         # set up LLM model
@@ -71,7 +72,7 @@ class ComposioToolSet(BaseComposioToolSet):
         # set up agent
 
         prompt = (
-            "I have craeted a new Github Repo,"
+            "I have created a new Github Repo,"
             "Please star my github repository: camel-ai/camel"
         )
         user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)
@@ -89,6 +90,8 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
+        workspace_id: t.Optional[str] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -104,6 +107,8 @@ class ComposioToolSet(BaseComposioToolSet):
             runtime="camel",
             entity_id=entity_id,
             output_in_file=output_in_file,
+            workspace_id=workspace_id,
+            workspace_config=workspace_config,
         )
         self.schema = SchemaType.OPENAI
 
@@ -115,8 +120,8 @@ class ComposioToolSet(BaseComposioToolSet):
             and self.entity_id != entity_id
         ):
             raise ValueError(
-                "Seperate `entity_id` can not be provided during "
-                "intialization and handelling tool calls"
+                "Separate `entity_id` can not be provided during "
+                "intialization and handling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:
             entity_id = self.entity_id
@@ -186,7 +191,7 @@ class ComposioToolSet(BaseComposioToolSet):
         """
         return [
             self._wrap_tool(  # type: ignore
-                **t.cast(
+                t.cast(
                     OpenAISchema,
                     self.schema.format(
                         schema.model_dump(
@@ -194,7 +199,7 @@ class ComposioToolSet(BaseComposioToolSet):
                         )
                     ),
                 ).model_dump(),
-                entity_id=entity_id
+                entity_id=entity_id,
             )
             for schema in self.get_action_schemas(apps=apps, tags=tags)
         ]

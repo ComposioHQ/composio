@@ -5,9 +5,10 @@ CrewAI demo.
 import os
 
 import dotenv
-from composio_crewai import App, ComposioToolSet
 from crewai import Agent, Task
 from langchain_openai import ChatOpenAI
+
+from composio_crewai import App, ComposioToolSet
 
 
 # Load environment variables from .env
@@ -35,10 +36,13 @@ crewai_agent = Agent(
 
 # Define task
 task = Task(
-    description="Star a repo SamparkAI/docs on GitHub",
+    description="Star a repo composiohq/composio on GitHub",
     agent=crewai_agent,
     expected_output="if the star happened",
 )
 
 # Execute task
-task.execute()
+try:
+    task.execute_sync()  # type: ignore
+except AttributeError:
+    task.execute()  # type: ignore

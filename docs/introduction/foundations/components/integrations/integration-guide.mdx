@@ -14,39 +14,3 @@ Integrations are tool configurations (eg. Permissions to ask for when connecting
 Once an integration is established, it can be utilized by an **unlimited number of users** to connect their accounts. So ideally you will only build **one integration per tool or application** and **allow all your users to connect using it**.
 
 To authenticate users with a specific tool, create a new integration by selecting the desired tool on the [Tools Page](https://app.composio.dev/apps). Integrations can be established using either default credentials or by registering a new developer application and setting the necessary authentication and permission scopes.
-
-## Creating a New Integration  (~ 2️⃣ 🕰️ minutes )
-
-To facilitate actions on behalf of your users, start by selecting the app you want to integrate.
-
-<Steps>
-
-<Step title="Selecting the Preferred Tool">
-  <AccordionGroup title="Tool Selection Options">
-    <Accordion title="Default Tools">
-      Choose from a list of tools already supported by Composio. [View all supported tools](https://app.composio.dev/apps).
-    </Accordion>
-    <Accordion title="Custom Tools: YAML Configuration">
-      Integrate your custom tools that comply with OAuth, Apikey, or other supported authentication standards. [Learn more](https://docs.composio.dev/integrations/custom-integration) (feature coming soon).
-    </Accordion>
-  </AccordionGroup>
-  In this guide, we will select 'Slack' from the available default tools. Go to the [tools page](https://app.composio.dev/apps), select [Slack](https://app.composio.dev/app/slack), and click the 'Setup' button in the upper right corner.
-</Step>
-
-<Step title="Configuring the Integration">
-  Integrating tools that use OAuth or similar authentication methods typically requires registering a developer application. Composio provides default credentials for quick setup. However, for a more customized user experience, where the authorization page displays "Authorizing YOURAPP" instead of "Authorizing Composio," you should register your own application and enter the required credentials.
-
-  <AccordionGroup title="Configuration Options">
-    <Accordion title="Use Default Composio Credentials">
-      Ideal for rapid testing and deployment. Note that the authorization page will display Composio's name, which may not be suitable for all production environments.
-    </Accordion>
-    <Accordion title="Use Your Own Credentials">
-      Configure your integration with custom credentials. [See how to configure credentials for Slack](https://docs.composio.dev/apps/slack).
-    </Accordion>
-  </AccordionGroup>
-</Step>
-<Step title="Finalizing the Integration">
-  Assign a name to your integration and save your integration. Upon saving, you will be directed to the integration's page. 
-  Here, locate the integration ID, which is essential for referencing this integration in your application code.
-</Step>
-</Steps>

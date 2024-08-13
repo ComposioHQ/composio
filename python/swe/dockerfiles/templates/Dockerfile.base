@@ -1,0 +1,22 @@
+FROM composio/swe:pyenv
+
+# Switch user
+USER user
+
+# Go to user dir
+WORKDIR /home/user
+
+# Install required python version
+RUN /home/user/.pyenv/bin/pyenv install {{python}}.0
+
+# Create development environment for agent
+RUN /home/user/.pyenv/versions/{{python}}.0/bin/python -m venv /home/user/.dev/
+
+# Upgrade packages
+RUN /home/user/.dev/bin/python -m pip install --upgrade pip setuptools wheel \
+    --trusted-host pypi.org \
+    --trusted-host pypi.python.org \
+    --trusted-host files.pythonhosted.org
+
+# Switch to root
+USER root

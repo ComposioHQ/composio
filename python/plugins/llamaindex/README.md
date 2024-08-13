@@ -38,7 +38,7 @@ from llama_index.core.tools import FunctionTool
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4-turbo")
 ```
 
 #### 2. Fetch GitHub llamaindex Tools via Composio
@@ -51,7 +51,7 @@ from composio_llamaindex import App, Action, ComposioToolSet
 # Get All the tools
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(
-    actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 print(tools)
 ```
@@ -86,6 +86,6 @@ agent = FunctionCallingAgentWorker(
 Validate the execution and response from the agent to ensure the task was completed successfully.
 
 ```bash
-response = agent.chat("Hello! I would like to star a repo SamparkAI/docs on GitHub")
+response = agent.chat("Hello! I would like to star a repo composiohq/composio on GitHub")
 print("Response:", response)
 ```

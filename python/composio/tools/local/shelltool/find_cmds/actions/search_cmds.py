@@ -1,12 +1,13 @@
 from pydantic import Field
 
+from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.local.shelltool.shell_exec.actions.exec import (
     BaseExecCommand,
     ShellExecResponse,
     ShellRequest,
     exec_cmd,
 )
-from composio.tools.local.shelltool.utils import get_logger
+from composio.utils.logging import get as get_logger
 
 
 logger = get_logger("workspace")
@@ -42,7 +43,11 @@ class SearchDirCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return SearchDirResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return SearchDirResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )
 
 
 class SearchFileRequest(ShellRequest):
@@ -74,7 +79,11 @@ class SearchFileCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return SearchFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return SearchFileResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )
 
 
 class FindFileRequest(ShellRequest):
@@ -98,7 +107,7 @@ class FindFileCmd(BaseExecCommand):
     """
     Searches for files by name within a specified directory or the current directory if none is specified.
     Example:
-        - To find a file, provide the workspace ID, the file name, and optionally a directory.
+        - To find a file, provide the file name, and optionally a directory.
         - The response will list any files found and indicate whether the search was successful.
     """
 
@@ -115,4 +124,8 @@ class FindFileCmd(BaseExecCommand):
             authorisation_data=authorisation_data,
             shell_id=request_data.shell_id,
         )
-        return FindFileResponse(stdout=output["stdout"], stderr=output["stderr"])
+        return FindFileResponse(
+            stdout=output[STDOUT],
+            stderr=output[STDERR],
+            exit_code=int(output[EXIT_CODE]),
+        )

@@ -56,14 +56,14 @@ These commands prepare your environment for seamless interaction between Lyzr an
             prompt_persona="You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs",
         )
 
-        composio_toolset = ComposioToolSet().get_lyzr_tool(Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER)
+        composio_toolset = ComposioToolSet().get_lyzr_tool(Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
 
         task = Task(
             name="Github Starring",
             agent=lyzr_agent,
             tool=composio_toolset,
             model=open_ai_text_completion_model,
-            instructions="Star a repo ComposioHQ/composio on GitHub",
+            instructions="Star a repo composiohq/composio on GitHub",
         )
 
         LinearSyncPipeline(name="Composio Lyzr", completion_message="Task completed",tasks=[task]).run()

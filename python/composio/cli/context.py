@@ -4,6 +4,7 @@ CLI Context.
 
 import os
 import typing as t
+import webbrowser
 from functools import update_wrapper
 from pathlib import Path
 
@@ -20,9 +21,10 @@ from composio.constants import (
 )
 from composio.core.cls.catch_all_exceptions import init_sentry
 from composio.storage.user import UserData
-from composio.tools.env.factory import ExecEnv
+from composio.tools.env.factory import WorkspaceType
 from composio.tools.toolset import ComposioToolSet
 from composio.utils import logging
+from composio.utils.url import get_web_url
 
 
 _context: t.Optional["Context"] = None
@@ -99,7 +101,7 @@ class Context(logging.WithLogger):
         if self._toolset is None:
             self._toolset = ComposioToolSet(
                 api_key=self.user_data.api_key,
-                workspace_env=ExecEnv.HOST,
+                workspace_config=WorkspaceType.Host(),
             )
         return self._toolset
 
@@ -144,7 +146,7 @@ def set_context(context: Context) -> None:
 
 
 def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
-    """Marks a callback as wanting to receive the current context object as first argument."""
+    """Marks a callback to raise failure if the user is not logged in."""
     global _context
     if _context is None:
         _context = Context()
@@ -160,3 +162,51 @@ def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
         return f(*args, **kwargs)
 
     return update_wrapper(wapper, f)
+
+
+def ensure_login(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
+    """Marks a callback to login first, if an user is not logged in."""
+    global _context
+    if _context is None:
+        _context = Context()
+
+    def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        if (
+            not t.cast(Context, _context).is_logged_in()
+            and not t.cast(Context, _context).using_api_key_from_env()
+        ):
+            login_flow(context=_context)
+        return f(*args, **kwargs)
+
+    return update_wrapper(wapper, f)
+
+
+def login_flow(
+    context: t.Optional[Context],
+    no_browser: bool = False,
+):
+    if context is None:
+        context = Context()
+    key = Composio.generate_auth_key()
+    url = get_web_url(path=f"?cliKey={key}")
+    context.console.print(
+        "> Please login using the following link"
+        if no_browser
+        else "> Redirecting you to the login page"
+    )
+    context.console.print(f"> [green]{url}[/green]")
+    if not no_browser:
+        webbrowser.open(url)
+    code = click.prompt("> Enter authentication code")
+    api_key = Composio.validate_auth_session(
+        key=key,
+        code=code,
+    )
+    if context.using_api_key_from_env() and api_key != context.user_data.api_key:
+        context.console.print(
+            "> [yellow]WARNING: API Key from environment does not match "
+            "with the one retrieved from login[/yellow]"
+        )
+    context.user_data.api_key = api_key
+    context.user_data.store()
+    context.console.print("✔ [green]Authenticated successfully![/green]")
