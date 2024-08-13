@@ -2,6 +2,10 @@
 
 This guide provides detailed steps to create a Scheduler Agent that leverages LangGraph and ChatGPT to schedule your events based on received emails. Ensure you have Python 3.8 or higher installed.
 
+### Workflow
+
+![workflow](./images/workflow.png)
+
 ### Steps to Run
 Navigate to the Project Directory: Change to the directory where the setup.sh, main.py, requirements.txt, and README.md files are located. For example:
 
