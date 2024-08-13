@@ -60,15 +60,7 @@
   },
   "tabs": [
     {
-      "name": "Guides",
-      "url": "patterns"
-    },
-    {
-      "name": "Examples",
-      "url": "guides"
-    },
-    {
-      "name": "API",
+      "name": "API Reference",
       "url": "api-reference"
     }
   ],
@@ -79,12 +71,17 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-        "introduction/intro/quickstart",
+        "introduction/intro/quickstart"
+      ]
+    },
+
+    {
+      "group": "Fundamentals",
+      "pages": [
         {
           "group": "Core Concepts",
           "pages": [
             "introduction/foundations/basic",
-            "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/action-guide",
@@ -93,107 +90,112 @@
             "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/actions/local-code"
           ]
-        }
+        },
+        "supported-tools/supported-tools"
       ]
     },
+    
     {
-      "group": "Python",
+      "group": "SDKs and Frameworks",
       "pages": [
-        "python/introduction",
         {
-          "group": "With Frameworks",
-          "icon": "code",
-          "iconType": "solid",
+          "group": "Python",
           "pages": [
-      "framework/langchain",
-        "framework/autogen",
-        "framework/crewai",
-        "framework/lyzr",
-        "framework/openai",
-        "framework/julep",
-        "framework/griptape",
-        "framework/llamaindex",
-        "framework/camelai",
-        "framework/praisonai",
-        "framework/langgraph"
-          ]
-        }
-      ]
-    },
+            "python/introduction",
             {
-      "group": "Javascript",
-      "pages": [
-       "javascript/openai",
+              "group": "With Frameworks",
+              "icon": "code",
+              "iconType": "solid",
+              "pages": [
+                "framework/langchain",
+                "framework/autogen",
+                "framework/crewai",
+                "framework/lyzr",
+                "framework/openai",
+                "framework/julep",
+                "framework/griptape",
+                "framework/llamaindex",
+                "framework/camelai",
+                "framework/praisonai",
+                "framework/langgraph"
+              ]
+            }
+          ]
+        },
         {
-          "group": "With frameworks",
-          "icon": "code",
-          "iconType": "solid",
+          "group": "Javascript",
           "pages": [
-            "javascript/langchain",
-            "javascript/cloudflare",
             "javascript/openai",
-            "javascript/vercel"
+            {
+              "group": "With frameworks",
+              "icon": "code",
+              "iconType": "solid",
+              "pages": [
+                "javascript/langchain",
+                "javascript/cloudflare",
+                "javascript/openai",
+                "javascript/vercel"
+              ]
+            }
+          ]
+        },
+        {
+          "group": "SweKit(Python)",
+          "pages": [
+            "swekit/introduction",
+            "swekit/workspace-env",
+            "swekit/custom-tools",
+            "swekit/benchmarks"
+          ]
+        },
+        {
+          "group": "SweKit (JS)",
+          "pages": [
+            "swekit-js/introduction",
+            "swekit-js/workspace-env"
           ]
         }
       ]
     },
     {
-      "group": "CLI",
-      "pages": [
-        "sdk/cli/install",
-        "sdk/cli/trigger"
-      ]
-    },
-    {
-      "group": "SweKit",
-      "pages": [
-        "swekit/introduction",
-        "swekit/workspace-env",
-        "swekit/custom-tools",
-        "swekit/benchmarks"
-      ]
-    },
-    {
-      "group": "SweKit.js",
-      "pages": [
-        "swekit-js/introduction",
-        "swekit-js/workspace-env"
-      ]
-    },
-
-     {
       "group": "Guides",
       "pages": [
-      {
-        "group": "Patterns",
-        "pages": [
-          "patterns/functions/multiple-users",
-          "patterns/functions/triggers"
-        ]
-      },
-      {
-        "group": "How Tos",
-        "pages": [
-          "patterns/howtos/usecase",
-          "patterns/howtos/tool-finding",
-          "patterns/howtos/listing-connections",
-          "patterns/howtos/listing-integrations"
-        ] 
-      },
-      {
-        "group": "Going to Production",
-        "pages": [
-          "patterns/production-guide/prod"
-        ]
-      }
-    ]
+        {
+          "group": "Triggers using CLI",
+          "pages": [
+            "sdk/cli/install",
+            "sdk/cli/trigger"
+          ]
+        },
+        {
+          "group": "Patterns",
+          "pages": [
+            "patterns/functions/multiple-users",
+            "patterns/functions/triggers"
+          ]
+        },
+        {
+          "group": "How Tos",
+          "pages": [
+            "patterns/howtos/usecase",
+            "patterns/howtos/tool-finding",
+            "patterns/howtos/listing-connections",
+            "patterns/howtos/listing-integrations"
+          ] 
+        },
+        {
+          "group": "Going to Production",
+          "pages": [
+            "patterns/production-guide/prod"
+          ]
+        }
+      ]
     },
     {
       "group": "Examples",
       "pages": [
-        "guides/examples/Example",
-    {
-          "group": "Python Guides", 
+        {
+          "group": "Python Examples", 
           "pages":[
             "guides/python/investment-analyst",
             "guides/python/research-assistant",
@@ -203,23 +205,24 @@
             "guides/python/interpreter_agent",
             "guides/python/news-summary",
             "guides/python/calendar-agent"
-        ]
-      },
-      {
-        "group":"Javascript Guides",
-        "pages":[
-          "guides/javascript/calendar-agent",
-          "guides/javascript/code-execution-agent",
-          "guides/javascript/rag_agent",
-          "guides/javascript/investment-analyst"
-        ]
-      }
-        ]
+          ]
+        },
+        {
+          "group":"Javascript Examples",
+          "pages":[
+            "guides/javascript/calendar-agent",
+            "guides/javascript/code-execution-agent",
+            "guides/javascript/rag_agent",
+            "guides/javascript/investment-analyst"
+          ]
+        }
+      ]
     },
     {
-      "group": "Endpoints",
+      "group": "API Reference",
       "icon": "robot",
       "pages": [
+        "api-reference/get_api_key",
         {
           "icon": "code",
           "group": "apps",
