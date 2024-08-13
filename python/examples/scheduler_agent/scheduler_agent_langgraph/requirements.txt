@@ -1,0 +1,3 @@
+composio-core
+composio-langgraph
+python-dotenv
