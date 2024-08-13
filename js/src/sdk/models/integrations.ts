@@ -1,7 +1,4 @@
-// import { CancelablePromise, ListAllIntegrationsResponse, GetIntegrationData, GetIntegrationResponse, listAllIntegrations, getIntegration, ListAllIntegrationsData, createIntegration, CreateIntegrationData, CreateIntegrationResponse } from "../client";
-// import { Composio } from "../";
 import apiClient from "../client/client"
-
 
 export type ListAllIntegrationsData = {
     /**
@@ -75,9 +72,6 @@ export type CreateIntegrationData = {
 
 
 export class Integrations {
-    constructor() {
-
-    }
 
     /**
      * Retrieves a list of all available integrations in the Composio platform.
@@ -87,10 +81,10 @@ export class Integrations {
      * @returns {Promise<ListAllIntegrationsResponse>} A promise that resolves to the list of all integrations.
      * @throws {ApiError} If the request fails.
      */
-    list(data: ListAllIntegrationsData = {}): any {
+    static list(data: ListAllIntegrationsData = {}) {
         return apiClient.appConnector.listGlobalConnectors({
             query: data
-        });
+        }).then(res=>res.data)
     }
 
     /**
@@ -102,10 +96,10 @@ export class Integrations {
      * @returns {CancelablePromise<GetIntegrationResponse>} A promise that resolves to the details of the integration.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetIntegrationData): any {
+    static get(data: GetIntegrationData): any {
         return apiClient.appConnector.getConnectorInfo({
             path: data
-        });
+        }).then(res => res.data)
     }
 
     /**
@@ -117,7 +111,7 @@ export class Integrations {
      * @returns {CancelablePromise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
      * @throws {ApiError} If the request fails.
      */
-    create(
+    static create(
         data: CreateIntegrationData["requestBody"]
     ): any {
 
@@ -126,8 +120,13 @@ export class Integrations {
         }
 
         return apiClient.appConnector.createConnector({
-            // @ts-ignore
-            body: data
+            body: {
+                name: data?.name!,
+                appId: data?.appId!,
+                authConfig: data?.authConfig! as any,
+                authScheme: data?.authScheme,
+                useComposioAuth: data?.useComposioAuth!
+            }
         });
     }
 }

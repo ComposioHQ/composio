@@ -98,8 +98,6 @@ export type ExecuteActionResponse = {
     };
 };
 export class Actions {
-    constructor() {
-    }
     /**
      * Retrieves details of a specific action in the Composio platform by providing its action name.
      * 
@@ -109,14 +107,14 @@ export class Actions {
      * @returns {CancelablePromise<GetActionResponse[0]>} A promise that resolves to the details of the action.
      * @throws {ApiError} If the request fails.
      */
-    async get(data: { actionName: string; }): Promise<any[0]> {
+    static async get(data: { actionName: string; }){
         const actions = await apiClient.actionsV1.v1GetAction({
             path:{
                 actionId: data.actionName
             }
         });
-        // @ts-ignore
-        return actions[0]!;
+
+        return (actions.data! as unknown as any[])[0];
     }
 
     /**
@@ -128,9 +126,10 @@ export class Actions {
      * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    list(data: GetListActionsData = {}) {
-        // @ts-ignore
-        return apiClient.actionsV2.v2ListActions(data);
+    static list(data: GetListActionsData = {}) {
+        return apiClient.actionsV2.v2ListActions({
+            body: data
+        });
     }
 
     /**
@@ -142,8 +141,12 @@ export class Actions {
      * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    execute(data: ExecuteActionData): any {
-        //@ts-ignore
-        return apiClient.actionsV2.v2ExecuteAction(data);
+    static execute(data: ExecuteActionData): any {
+        return apiClient.actionsV2.v2ExecuteAction({
+            body: data.requestBody,
+            path:{
+                actionId: data.actionName
+            }
+        });
     }
 }

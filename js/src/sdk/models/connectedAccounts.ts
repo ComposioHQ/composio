@@ -15,10 +15,10 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<ListAllConnectionsResponse>} A promise that resolves to the list of all connected accounts.
      * @throws {ApiError} If the request fails.
      */
-    list(data: any): any{
+    static list(data: any): any{
         return apiClient.connections.getConnections({
             query: data
-        })
+        }).then(res=>res.data)
 
     }
 
@@ -31,10 +31,10 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<CreateConnectionResponse>} A promise that resolves to the connection status and details.
      * @throws {ApiError} If the request fails.
      */
-    create(data: any = {}): any {
+    static create(data: any = {}): any {
         return apiClient.connections.initiateConnection({
             body: data
-        });
+        }).then(res=>res.data)
     }
 
     /**
@@ -46,10 +46,10 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<GetConnectedAccountResponse>} A promise that resolves to the details of the connected account.
      * @throws {ApiError} If the request fails.
      */
-    get(data: any): any {
+    static get(data: { connectedAccountId :string}): any {
         return apiClient.connections.getConnection({
             path: data
-        });
+        }).then(res => res.data)
     }
 
     /**
@@ -61,11 +61,10 @@ export class ConnectedAccounts {
      * @returns {CancelablePromise<ConnectionRequest>} A promise that resolves to the connection request model.
      * @throws {ApiError} If the request fails.
      */
-    async initiate(
+    static async initiate(
         data: any
     ): Promise<any> {
-        return await client.connections.initiateConnection({body: data});
-       
+        return await client.connections.initiateConnection({ body: data }).then(res => res.data)
     }
 }
 

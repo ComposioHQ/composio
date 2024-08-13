@@ -1,6 +1,7 @@
 
 import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
+import {User} from "./user"
 
 //@ts-ignore
 import {  TriggersService } from '../client/index';
@@ -30,7 +31,7 @@ export class Triggers extends TriggersService  {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    static setup(data: SetupTri): CancelablePromise<SetupTriggerResponse> {
+    static setup(data: any): CancelablePromise<SetupTriggerResponse> {
         //@ts-ignore
         return setupTrigger(data, this.client.config);
     }
@@ -47,9 +48,9 @@ export class Triggers extends TriggersService  {
 
         if(!fn) throw new Error("Function is required for trigger subscription");
         //@ts-ignore
-        const clientId = await this.client.getClientId();
+        const clientId = await User.getClientId();
         //@ts-ignore
-        await PusherUtils.getPusherClient(this.client.baseUrl, this.client.apiKey);
+        await PusherUtils.getPusherClient(User.baseUrl, User.apiKey);
 
         const shouldSendTrigger = (data: TriggerData) => {
            if(Object.keys(filters).length === 0) return true;
@@ -75,7 +76,7 @@ export class Triggers extends TriggersService  {
 
     static async unsubscribe() {
         //@ts-ignore
-        const clientId = await this.client.getClientId();
+        const clientId = await User.getClientId();
         PusherUtils.triggerUnsubscribe(clientId);
     }
 }

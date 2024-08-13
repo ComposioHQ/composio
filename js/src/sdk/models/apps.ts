@@ -10,17 +10,15 @@ export type GetAppResponse = SingleAppInfoResDTO;
 export type ListAllAppsResponse = AppListResDTO
 
 export class Apps {
-    constructor() {}
-
     /**
      * Retrieves a list of all available apps in the Composio platform.
      * 
      * This method allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
      * 
-     * @returns {Promise<ListAllAppsResponse>} A promise that resolves to the list of all apps.
+     * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    list(): Promise<AppListResDTO> {
+    static list(): Promise<AppListResDTO> {
 
         return apiClient.apps.getApps().then(res => res.data!)
     }
@@ -34,7 +32,7 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetAppData): Promise<GetAppResponse> {
+    static get(data: GetAppData): Promise<GetAppResponse> {
         return apiClient.apps.getApp({
             path:{
                 appName: data.appKey
