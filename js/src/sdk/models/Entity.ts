@@ -1,10 +1,10 @@
-import { Composio } from "..";
 import { ConnectionRequest } from "./connectedAccounts";
 import {Actions} from "./actions"
 import { Apps } from "./apps";
 import { Integrations } from "./integrations";
 import { ActiveTriggers } from "./activeTriggers";
 import { ConnectedAccounts } from "./connectedAccounts";
+import { ExecuteActionResDTO } from "../client";
 
 
 export class Entity {
@@ -14,7 +14,7 @@ export class Entity {
         this.id = id;
     }
 
-    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<Record<string, any>> {
+    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
         const action = await Actions.get({
             actionName: actionName
         });
@@ -74,6 +74,7 @@ export class Entity {
             user_uuid: this.id,
         });
 
+        console.log(connectedAccountId)
         if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
             return null;
         }
@@ -98,13 +99,6 @@ export class Entity {
     }
 
     async setupTrigger(app: string, triggerName: string, config: { [key: string]: any; }): Promise<any> {
-        /**
-         * Enable a trigger for an entity.
-         *
-         * @param app App name
-         * @param triggerName Trigger name
-         * @param config Trigger config
-         */
         const connectedAccount = await this.getConnection(app);
         if (!connectedAccount) {
             throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
@@ -112,16 +106,11 @@ export class Entity {
     }
 
     async disableTrigger(triggerId: string): Promise<any> {
-        /**
-         * Disable a trigger for an entity.
-         *
-         * @param triggerId Trigger ID
-         */
         return ActiveTriggers.disable({ triggerId: triggerId });
     }
 
     //@ts-ignore
-    async getConnections(): Promise<ListAllConnectionsResponse["items"]> {
+    async getConnections(): Promise<any> {
         /**
          * Get all connections for an entity.
          */
@@ -173,7 +162,9 @@ export class Entity {
                 useComposioAuth: true,
             });
         }
+        
 
+        console.log("hi")
         // Initiate the connection process
         return ConnectedAccounts.initiate({
             integrationId: integration!.id!,

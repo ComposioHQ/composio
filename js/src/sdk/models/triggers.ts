@@ -3,9 +3,9 @@ import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
 import {User} from "./user"
 
-//@ts-ignore
-import {  TriggersService } from '../client/index';
-export class Triggers extends TriggersService  {
+import apiClient from "../client/client"
+import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
+export class Triggers {
     trigger_to_client_event = "trigger_to_client";
 
     /**
@@ -18,9 +18,11 @@ export class Triggers extends TriggersService  {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    static list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
+    static list(data: TriggersControllerListTriggersData = {}): Promise<TriggersControllerListTriggersResponse> {
         //@ts-ignore
-        return listTriggers(data, this.client.config);
+        return apiClient.triggers.listTriggers({
+            query: data
+        }).then(res => res.data)
     }
 
     /**
@@ -31,9 +33,9 @@ export class Triggers extends TriggersService  {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    static setup(data: any): CancelablePromise<SetupTriggerResponse> {
+    static setup(data: any):{status:"string"}{
         //@ts-ignore
-        return setupTrigger(data, this.client.config);
+        return apiClient.triggers.enableTrigger(data).then(res=>res.data);
     }
 
     static async subscribe(fn: (data: TriggerData) => void, filters:{

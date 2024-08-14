@@ -6,9 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc  --project . --outDir lib",
+    "build:watch": "tsc --project . --outDir lib --watch",
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts",
-    "start-client": "ts-node src/sdk/baseClient.ts"
+    "start-client": "ts-node src/sdk/baseClient.ts",
+    "debug": "ts-node src/sdk/baseClient.ts"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",

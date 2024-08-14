@@ -1,4 +1,4 @@
-import { CoreTool, GenerateTextResult, tool } from "ai";
+import { tool } from "ai";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 

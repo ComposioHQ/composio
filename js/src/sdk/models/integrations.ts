@@ -127,6 +127,6 @@ export class Integrations {
                 authScheme: data?.authScheme,
                 useComposioAuth: data?.useComposioAuth!
             }
-        });
+        }).then(res=>res.data);
     }
 }

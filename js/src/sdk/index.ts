@@ -11,40 +11,37 @@ import { User } from './models/user';
 import { Entity } from './models/Entity';
 
 export class Composio {
-    public apiKey: string;
-    public baseUrl: string;
 
-    connectedAccounts: ConnectedAccounts;
-    apps: Apps;
-    actions: Actions;
-    triggers: Triggers;
-    integrations: Integrations;
-    activeTriggers: ActiveTriggers;
-    // config: typeof OpenAPI;
+    connectedAccounts: typeof ConnectedAccounts;
+    apps: typeof Apps;
+    actions: typeof Actions;
+    triggers: typeof Triggers;
+    integrations: typeof Integrations;
+    activeTriggers: typeof ActiveTriggers;
 
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-        this.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
-        if (!this.apiKey) {
+        User.baseUrl = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "";
+        User.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
+
+        if (!User.apiKey) {
             throw new Error('API key is missing');
         }
-        this.baseUrl = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "";
-        User.baseUrl = this.baseUrl;
-        User.apiKey = this.apiKey;
+ 
         axiosClient.setConfig({
             baseURL: baseUrl,
             headers: {
-                'X-API-KEY': `${this.apiKey}`,
+                'X-API-KEY': `${User.apiKey}`,
                 'X-SOURCE': 'js_sdk',
                 'X-RUNTIME': runtime
             }
         })
   
-        this.connectedAccounts = new ConnectedAccounts();
-        this.apps = new Apps();
-        this.actions = new Actions();
-        this.triggers = new Triggers();
-        this.integrations = new Integrations();
-        this.activeTriggers = new ActiveTriggers();
+        this.connectedAccounts = ConnectedAccounts;
+        this.apps = Apps;
+        this.actions = Actions;
+        this.triggers = Triggers;
+        this.integrations = Integrations;
+        this.activeTriggers = ActiveTriggers;
 
     }
 

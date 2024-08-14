@@ -19,7 +19,6 @@ export class Apps {
      * @throws {ApiError} If the request fails.
      */
     static list(): Promise<AppListResDTO> {
-
         return apiClient.apps.getApps().then(res => res.data!)
     }
 
@@ -32,7 +31,7 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    static get(data: GetAppData): Promise<GetAppResponse> {
+    static get(data: GetAppData) {
         return apiClient.apps.getApp({
             path:{
                 appName: data.appKey

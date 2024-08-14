@@ -672,7 +672,7 @@ export type ActionExecutionResDto = {
 
 export type status = 'success' | 'error';
 
-export type ActionExecutionDTO = {
+export type ActionExecutionReqDTO = {
     connectedAccountId?: string;
     appName?: string;
     entityId?: string;
@@ -681,6 +681,49 @@ export type ActionExecutionDTO = {
         [key: string]: unknown;
     };
     text?: string;
+};
+
+export type ActionExecutionResDTO = {
+    connectedAccountId?: string;
+    appName?: string;
+    entityId?: string;
+    endpoint?: string;
+    input?: {
+        [key: string]: unknown;
+    };
+    text?: string;
+};
+
+export type ActionDetails = {
+    appId?: string;
+    appKey: string;
+    appName: string;
+    description: string;
+    displayName: string;
+    enabled: boolean;
+    logo: string;
+    name: string;
+    parameters: {
+        [key: string]: unknown;
+    };
+    response: {
+        [key: string]: unknown;
+    };
+    tags: Array<(string)>;
+};
+
+export type ActionsListResponseDTO = {
+    items: Array<ActionDetails>;
+    page: number;
+    totalPages: number;
+};
+
+export type ExecuteActionResDTO = {
+    response_data: {
+        [key: string]: unknown;
+    };
+    status: 'success' | 'error';
+    upstreamStatusCode: number;
 };
 
 export type ActionsQueryDTO = {
@@ -706,6 +749,10 @@ export type ActionsQueryDTO = {
     usecaseLimit?: number;
     filterImportantActions?: boolean;
     showAll?: boolean;
+};
+
+export type ActionsControllerV1 = {
+    getAction: Array<unknown>;
 };
 
 export type ConnectionParams = {
@@ -1598,32 +1645,32 @@ export type ActionsControllerV1ListActionsData = {
     };
 };
 
-export type ActionsControllerV1ListActionsResponse = unknown;
+export type ActionsControllerV1ListActionsResponse = ActionsListResponseDTO;
 
 export type ActionsControllerV1ListActionsError = unknown;
 
 export type ActionsControllerV1ExecuteActionData = {
     /**
-     * ActionExecutionDTO
+     * ActionExecutionReqDTO
      */
-    body?: ActionExecutionDTO;
+    body?: ActionExecutionReqDTO;
     path: {
         actionId: string;
     };
 };
 
-export type ActionsControllerV1ExecuteActionResponse = unknown;
+export type ActionsControllerV1ExecuteActionResponse = ExecuteActionResDTO;
 
 export type ActionsControllerV1ExecuteActionError = unknown;
 
 export type ActionsControllerV1ExecuteActionProxyData = {
     /**
-     * ActionExecutionDTO
+     * ActionExecutionReqDTO
      */
-    body?: ActionExecutionDTO;
+    body?: ActionExecutionReqDTO;
 };
 
-export type ActionsControllerV1ExecuteActionProxyResponse = unknown;
+export type ActionsControllerV1ExecuteActionProxyResponse = ExecuteActionResDTO;
 
 export type ActionsControllerV1ExecuteActionProxyError = unknown;
 
@@ -1633,7 +1680,7 @@ export type ActionsControllerV1GetActionData = {
     };
 };
 
-export type ActionsControllerV1GetActionResponse = unknown;
+export type ActionsControllerV1GetActionResponse = ActionDetails;
 
 export type ActionsControllerV1GetActionError = unknown;
 
@@ -1976,31 +2023,31 @@ export type ActionsControllerV2ListActionsData = {
     };
 };
 
-export type ActionsControllerV2ListActionsResponse = unknown;
+export type ActionsControllerV2ListActionsResponse = ActionsListResponseDTO;
 
 export type ActionsControllerV2ListActionsError = unknown;
 
 export type ActionsControllerV2ExecuteActionData = {
     /**
-     * ActionExecutionDTO
+     * ActionExecutionReqDTO
      */
-    body?: ActionExecutionDTO;
+    body?: ActionExecutionReqDTO;
     path: {
         actionId: string;
     };
 };
 
-export type ActionsControllerV2ExecuteActionResponse = unknown;
+export type ActionsControllerV2ExecuteActionResponse = ExecuteActionResDTO;
 
 export type ActionsControllerV2ExecuteActionError = unknown;
 
 export type ActionsControllerV2ExecuteActionProxyData = {
     /**
-     * ActionExecutionDTO
+     * ActionExecutionReqDTO
      */
-    body?: ActionExecutionDTO;
+    body?: ActionExecutionReqDTO;
 };
 
-export type ActionsControllerV2ExecuteActionProxyResponse = unknown;
+export type ActionsControllerV2ExecuteActionProxyResponse = ExecuteActionResDTO;
 
 export type ActionsControllerV2ExecuteActionProxyError = unknown;

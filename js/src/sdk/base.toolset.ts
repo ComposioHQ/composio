@@ -78,6 +78,7 @@ export class ComposioToolSet {
                 await this.workspace.workspace?.teardown();
             });
         }
+
     }
 
     async setup() {
@@ -93,7 +94,7 @@ export class ComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
         await this.setup();
-        let actions: GetListActionsResponse["items"] = (await this.client.actions.list({
+        let actions = (await this.client.actions.list({
             actions: filters.actions?.join(","),
             showAll: true
         })).items;

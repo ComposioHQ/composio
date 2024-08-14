@@ -1,11 +1,11 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
-import { ExecEnv } from "../env/factory";
+
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { GetListActionsResponse } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
+import { ActionsListResponseDTO } from "../sdk/client";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -24,7 +24,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         apiKey?: Optional<string>,
         baseUrl?: Optional<string>,
         entityId?: string,
-        workspaceConfig: WorkspaceConfig
+        workspaceConfig?: WorkspaceConfig
       }
     ) {
         super(
@@ -41,7 +41,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         const mainActions = await this.getActionsSchema(filters, entityId);
-        return mainActions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
+        return mainActions.map((action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
                 description: action.description!,
@@ -74,7 +74,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
         const mainActions = await this.getToolsSchema(filters, entityId);
-        return mainActions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
+        return mainActions.map((action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
             const formattedSchema: OpenAI.FunctionDefinition = {
                 name: action.name!,
                 description: action.description!,

@@ -1,14 +1,12 @@
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Dict, Sequence } from "../sdk/types";
-import { GetListActionsResponse } from "../sdk/client";
+import {ActionsControllerV2ListActionsResponse, ActionsListResponseDTO } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
@@ -98,7 +96,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<DynamicStructuredTool>> {
         const actions = await this.getActionsSchema(filters as any, entityId);
-        return actions!.map((tool: NonNullable<GetListActionsResponse["items"]>[0]) =>
+        return actions!.map((tool: NonNullable<ActionsListResponseDTO["items"]>[0]) =>
             this._wrapTool(
                 tool,
                 entityId || this.entityId
@@ -125,7 +123,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
         const tools = await this.getToolsSchema(filters, entityId);
-        return tools.map((tool: NonNullable<GetListActionsResponse["items"]>[0]) =>
+        return tools.map((tool: NonNullable<ActionsControllerV2ListActionsResponse["items"]>[0]) =>
             this._wrapTool(
                 tool,
                 entityId || this.entityId

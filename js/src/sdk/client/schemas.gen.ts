@@ -826,7 +826,7 @@ export const $ConnectorListItemDTO = {
                 }
             ],
             description: 'Creation date of the connector',
-            examples: ['2024-08-12T12:03:38.807Z']
+            examples: ['2024-08-13T03:09:15.422Z']
         },
         updatedAt: {
             oneOf: [
@@ -840,7 +840,7 @@ export const $ConnectorListItemDTO = {
                 }
             ],
             description: 'Last update date of the connector',
-            examples: ['2024-08-12T12:03:38.808Z']
+            examples: ['2024-08-13T03:09:15.422Z']
         },
         enabled: {
             type: 'boolean',
@@ -1070,7 +1070,7 @@ export const $ActionExecutionResDto = {
     required: ['response_data', 'status', 'upstreamStatusCode']
 } as const;
 
-export const $ActionExecutionDTO = {
+export const $ActionExecutionReqDTO = {
     properties: {
         connectedAccountId: {
             type: 'string'
@@ -1092,6 +1092,109 @@ export const $ActionExecutionDTO = {
         }
     },
     type: 'object'
+} as const;
+
+export const $ActionExecutionResDTO = {
+    properties: {
+        connectedAccountId: {
+            type: 'string'
+        },
+        appName: {
+            type: 'string'
+        },
+        entityId: {
+            type: 'string'
+        },
+        endpoint: {
+            type: 'string'
+        },
+        input: {
+            type: 'object'
+        },
+        text: {
+            type: 'string'
+        }
+    },
+    type: 'object'
+} as const;
+
+export const $ActionDetails = {
+    properties: {
+        appId: {
+            type: 'string'
+        },
+        appKey: {
+            type: 'string'
+        },
+        appName: {
+            type: 'string'
+        },
+        description: {
+            type: 'string'
+        },
+        displayName: {
+            type: 'string'
+        },
+        enabled: {
+            type: 'boolean'
+        },
+        logo: {
+            type: 'string'
+        },
+        name: {
+            type: 'string'
+        },
+        parameters: {
+            type: 'object'
+        },
+        response: {
+            type: 'object'
+        },
+        tags: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        }
+    },
+    type: 'object',
+    required: ['appKey', 'appName', 'description', 'displayName', 'enabled', 'logo', 'name', 'parameters', 'response', 'tags']
+} as const;
+
+export const $ActionsListResponseDTO = {
+    properties: {
+        items: {
+            items: {
+                '$ref': '#/components/schemas/ActionDetails'
+            },
+            type: 'array'
+        },
+        page: {
+            type: 'number'
+        },
+        totalPages: {
+            type: 'number'
+        }
+    },
+    type: 'object',
+    required: ['items', 'page', 'totalPages']
+} as const;
+
+export const $ExecuteActionResDTO = {
+    properties: {
+        response_data: {
+            type: 'object'
+        },
+        status: {
+            enum: ['success', 'error'],
+            type: 'string'
+        },
+        upstreamStatusCode: {
+            type: 'number'
+        }
+    },
+    type: 'object',
+    required: ['response_data', 'status', 'upstreamStatusCode']
 } as const;
 
 export const $ActionsQueryDTO = {
@@ -1132,6 +1235,17 @@ export const $ActionsQueryDTO = {
         }
     },
     type: 'object'
+} as const;
+
+export const $ActionsControllerV1 = {
+    properties: {
+        getAction: {
+            items: {},
+            type: 'array'
+        }
+    },
+    type: 'object',
+    required: ['getAction']
 } as const;
 
 export const $ConnectionParams = {

@@ -1,3 +1,4 @@
+import { ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
 import apiClient from "../client/client";
 
 /**
@@ -98,6 +99,7 @@ export type ExecuteActionResponse = {
     };
 };
 export class Actions {
+
     /**
      * Retrieves details of a specific action in the Composio platform by providing its action name.
      * 
@@ -126,10 +128,22 @@ export class Actions {
      * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    static list(data: GetListActionsData = {}) {
+    static list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         return apiClient.actionsV2.v2ListActions({
-            body: data
-        });
+            query: {
+                actions: data.actions,
+                apps: data.apps,
+                showAll: data.showAll,
+                tags: data.tags,
+                useCase: data.useCase as string,
+                filterImportantActions: data.filterImportantActions,
+                showEnabledOnly: data.showEnabledOnly
+                
+            }
+        }).then(res=>{
+            const resp = res;
+            return res.data!
+        })
     }
 
     /**
@@ -141,12 +155,12 @@ export class Actions {
      * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    static execute(data: ExecuteActionData): any {
+    static execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
         return apiClient.actionsV2.v2ExecuteAction({
             body: data.requestBody,
             path:{
                 actionId: data.actionName
             }
-        });
+        }).then(res=>res.data!)
     }
 }

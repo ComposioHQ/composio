@@ -6,65 +6,35 @@ export class ConnectedAccounts {
     constructor() {
     }
 
-    /**
-     * Retrieves a list of all connected accounts in the Composio platform.
-     * 
-     * It supports pagination and filtering based on various parameters such as app ID, integration ID, and connected account ID. The response includes an array of connection objects, each containing details like the connector ID, connection parameters, status, creation/update timestamps, and associated app information.
-     * 
-     * @param {ListAllConnectionsData} data The data for the request.
-     * @returns {CancelablePromise<ListAllConnectionsResponse>} A promise that resolves to the list of all connected accounts.
-     * @throws {ApiError} If the request fails.
-     */
+    
     static list(data: any): any{
         return apiClient.connections.getConnections({
             query: data
-        }).then(res=>res.data)
+        }).then(res=>{
+            return res.data
+        })
 
     }
 
-    /**
-     * Connects an account to the Composio platform.
-     * 
-     * This method allows you to connect an external app account with Composio. It requires the integration ID in the request body and returns the connection status, connection ID, and a redirect URL (if applicable) for completing the connection flow.
-     * 
-     * @param {CreateConnectionData} data The data for the request.
-     * @returns {CancelablePromise<CreateConnectionResponse>} A promise that resolves to the connection status and details.
-     * @throws {ApiError} If the request fails.
-     */
     static create(data: any = {}): any {
         return apiClient.connections.initiateConnection({
             body: data
         }).then(res=>res.data)
     }
 
-    /**
-     * Retrieves details of a specific account connected to the Composio platform by providing its connected account ID.
-     * 
-     * The response includes the integration ID, connection parameters (such as scope, base URL, client ID, token type, access token, etc.), connection ID, status, and creation/update timestamps.
-     * 
-     * @param {GetConnectedAccountData} data The data for the request.
-     * @returns {CancelablePromise<GetConnectedAccountResponse>} A promise that resolves to the details of the connected account.
-     * @throws {ApiError} If the request fails.
-     */
     static get(data: { connectedAccountId :string}): any {
         return apiClient.connections.getConnection({
             path: data
         }).then(res => res.data)
     }
 
-    /**
-     * Initiates a new connected account on the Composio platform.
-     * 
-     * This method allows you to start the process of connecting an external app account with Composio. It requires the integration ID and optionally the entity ID, additional parameters, and a redirect URL.
-     * 
-     * @param {CreateConnectionData["requestBody"]} data The data for the request.
-     * @returns {CancelablePromise<ConnectionRequest>} A promise that resolves to the connection request model.
-     * @throws {ApiError} If the request fails.
-     */
     static async initiate(
         data: any
-    ): Promise<any> {
-        return await client.connections.initiateConnection({ body: data }).then(res => res.data)
+    ): Promise<ConnectionRequest> {
+        const res =  await client.connections.initiateConnection({ body: data }).then(res => res.data)
+
+        //@ts-ignore
+        return new ConnectionRequest(res?.connectionStatus!, res?.connectedAccountId!, res?.redirectUrl!)
     }
 }
 

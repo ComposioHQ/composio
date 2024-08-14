@@ -45,14 +45,6 @@ export class ActiveTriggers {
         }).then(res => res.data)
     }
 
-    /**
-     * Disables the previously disabled trigger.
-     * 
-     * @param {Object} data The data for the request.
-     * @param {string} data.triggerId Id of the trigger
-     * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
-     * @throws {ApiError} If the request fails.
-     */
     static disable(data: {triggerId: any}): any {
         return apiClient.triggers.switchTriggerInstanceStatus({
             path: data,
