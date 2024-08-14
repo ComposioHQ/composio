@@ -5,7 +5,6 @@ from sentence_transformers import SentenceTransformer
 
 from composio.tools.local.codeanalysis.constants import DEEPLAKE_FOLDER, EMBEDDER
 
-
 def get_vector_store(repo_path: str, overwrite: bool = True) -> DeepLakeVectorStore:
     """
     Get or create a DeepLakeVectorStore for the given repository.
