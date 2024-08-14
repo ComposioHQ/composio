@@ -1,4 +1,4 @@
-name: Run test
+name: Run JS SDK test
 
 on:
   push:
@@ -22,7 +22,9 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '20'
+    - name: Install dependencies
+      run: npm install -g pnpm@8.15.7
     - name: Install packages in js folder
       run: cd js && pnpm install
     - name: pnpm build
