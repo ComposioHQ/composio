@@ -1,9 +1,11 @@
 import os
-from typing import List, Any, Dict, Union
+from typing import Any, Dict, List, Union
+
 from deeplake.core.vectorstore.deeplake_vectorstore import DeepLakeVectorStore
 from sentence_transformers import SentenceTransformer
 
 from composio.tools.local.codeanalysis.constants import DEEPLAKE_FOLDER, EMBEDDER
+
 
 def get_vector_store(repo_path: str, overwrite: bool = True) -> DeepLakeVectorStore:
     """
@@ -39,6 +41,7 @@ def get_vector_store(repo_path: str, overwrite: bool = True) -> DeepLakeVectorSt
     except OSError as e:
         raise OSError(f"Failed to create or access vector store: {str(e)}") from e
 
+
 class Embedding:
     def __init__(self):
         self.model = SentenceTransformer(EMBEDDER)
@@ -61,18 +64,19 @@ class Embedding:
 
         try:
             embeddings = self.model.encode(
-                texts,
-                batch_size=256,
-                show_progress_bar=True,
-                convert_to_numpy=True
+                texts, batch_size=256, show_progress_bar=True, convert_to_numpy=True
             )
             return embeddings.tolist()
         except Exception as e:
             raise RuntimeError(f"Failed to compute embeddings: {str(e)}") from e
 
 
-
-def get_vector_store_from_chunks(repo_path: str, documents: List[str], ids: List[str], metadatas: List[Dict[str, Any]]) -> DeepLakeVectorStore:
+def get_vector_store_from_chunks(
+    repo_path: str,
+    documents: List[str],
+    ids: List[str],
+    metadatas: List[Dict[str, Any]],
+) -> DeepLakeVectorStore:
     """
     Create or update a vector store with the given documents, ids, and metadata.
 
@@ -96,7 +100,7 @@ def get_vector_store_from_chunks(repo_path: str, documents: List[str], ids: List
         vector_store = get_vector_store(repo_path)
         embed_model = Embedding()
         embeddings = embed_model.compute(documents)
-        
+
         # Batch processing for better performance
         batch_size = 1000
         for i in range(0, len(documents), batch_size):
@@ -104,14 +108,19 @@ def get_vector_store_from_chunks(repo_path: str, documents: List[str], ids: List
             vector_store.add(
                 text=ids[i:batch_end],
                 embedding=embeddings[i:batch_end],
-                metadata=metadatas[i:batch_end]
+                metadata=metadatas[i:batch_end],
             )
 
         return vector_store
     except Exception as e:
-        raise RuntimeError(f"Error in vector store creation or embedding: {str(e)}") from e
+        raise RuntimeError(
+            f"Error in vector store creation or embedding: {str(e)}"
+        ) from e
 
-def get_topn_chunks_from_query(vector_store: DeepLakeVectorStore, query: str, top_n: int = 5) -> Dict:
+
+def get_topn_chunks_from_query(
+    vector_store: DeepLakeVectorStore, query: str, top_n: int = 5
+) -> Dict:
     """
     Retrieve the top N most relevant chunks from the vector store based on the given query.
 
