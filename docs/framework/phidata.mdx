@@ -17,14 +17,13 @@ These commands prepare your environment for seamless interaction between PhiData
 
 <CodeGroup>
   ```bash Run Command 
-  pip install composio-phidata
+pip install composio-phidata
 
-  #Connect your Github so agents can use it
-  composio add github
+#Connect your Github so agents can use it
+composio add github
 
-  #Check all supported apps
-  composio apps
-
+#Check all supported apps
+composio apps
   ```
 </CodeGroup>
 
@@ -33,30 +32,28 @@ These commands prepare your environment for seamless interaction between PhiData
 <Step title="Import Base Packages">
 <CodeGroup>
   ```python Default Imports & Configuration
-    from composio_phidata import Action, ComposioToolSet
-
+from composio_phidata import Action, ComposioToolSet
   ```
-
 </CodeGroup>
 </Step>
 <Step title="Fetch all Github PhiData Tools via Composio">
 <CodeGroup>
   ```python Tools For Github
-    toolset = ComposioToolSet()
-    composio_tools = toolset.get_actions(
-        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
-    )
+toolset = ComposioToolSet()
+composio_tools = toolset.get_actions(
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+)
   ```
 </CodeGroup>
 </Step>
 <Step title="Setup the Assistant and Execute the Task">
 <CodeGroup>
   ```python PhiData Agent executes the task
-    from phi.assistant import Assistant
-    
-    assistant = Assistant(tools=composio_tools, show_tool_calls=True)
+from phi.assistant import Assistant
 
-    assistant.print_response("Can you star composiohq/composio repo?")
+assistant = Assistant(tools=composio_tools, show_tool_calls=True)
+
+assistant.print_response("Can you star composiohq/composio repo?")
   ```
 
 </CodeGroup>
@@ -76,8 +73,8 @@ These commands prepare your environment for seamless interaction between PhiData
 ### Use Specific Actions
 <CodeGroup>
   ```bash Filter Specific Action
-  # To restrict agents from using all the actions, filter specific actions 
-  composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+# To restrict agents from using all the actions, filter specific actions 
+composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
   ```
 </CodeGroup>
 
@@ -85,8 +82,8 @@ These commands prepare your environment for seamless interaction between PhiData
 
 <CodeGroup>
   ```bash Filter Specific App 
-  # To restrict agents from using all tools, filter specific tools 
-  composio_toolset.get_tools(apps=[App.ASANA, App.GITHUB])
+# To restrict agents from using all tools, filter specific tools 
+composio_toolset.get_tools(apps=[App.ASANA, App.GITHUB])
   ```
 </CodeGroup>
 
@@ -94,7 +91,7 @@ These commands prepare your environment for seamless interaction between PhiData
 
 <CodeGroup>
   ```bash Filter Actions by Tags 
-  # To restrict agents from using all actions, filter the actions by tags 
-  composio_toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
+# To restrict agents from using all actions, filter the actions by tags 
+composio_toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
   ```
 </CodeGroup>
