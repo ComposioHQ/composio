@@ -26,7 +26,7 @@ from composio import ComposioToolSet
 
 toolset = ComposioToolSet(entity_id="default")
 
-entity = toolset.getEntity(id='default')
+entity = toolset.get_entity(id='default')
 ```
 </CodeGroup>
 </Tab>
@@ -269,13 +269,13 @@ openai_client = OpenAI()
 # can be configured to use the entity id of the user
 tool_set = ComposioToolSet(entity_id="melissa") 
 
-actions = z.get_actions(app_name = App.GITHUB)
+actions = tool_set.get_tools(apps=[App.GITHUB])
 ```
 </CodeGroup>
 </Tab>
 <Tab title="Javascript">
 <CodeGroup>
-```python Execute Agent
+```javascript Execute Agent
 import { OpenAIToolSet } from "composio-core";
 import { OpenAI } from "openai";
 
@@ -332,18 +332,36 @@ Now, let's call our agent for this entity to perform the task on Github on behal
 <Tab title="Python">
 <CodeGroup>
 ```python execute agent
-const task = "Star a repo composiohq/composio on GitHub"
 
-const response = await openAI.chat.completions.create({
-    model: "gpt-4-turbo-preview",
-    tools: tools,
-    messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: task },
-    ],
-});
+my_task = "Star a repo composiohq/composio on GitHub"
 
-await toolset.handle_tool_calls(response, entity.id);
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions,  # type: ignore
+)
+
+
+# create a thread
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+response_after_tool_calls = tool_set.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+
+
+
 ```
 </CodeGroup>
 
