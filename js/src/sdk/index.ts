@@ -11,7 +11,6 @@ import { User } from './models/user';
 import { Entity } from './models/Entity';
 
 export class Composio {
-
     connectedAccounts: typeof ConnectedAccounts;
     apps: typeof Apps;
     actions: typeof Actions;
@@ -26,7 +25,6 @@ export class Composio {
         if (!User.apiKey) {
             throw new Error('API key is missing');
         }
- 
         axiosClient.setConfig({
             baseURL: baseUrl,
             headers: {

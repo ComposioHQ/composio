@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc  --project . --outDir lib",
-    "build:watch": "tsc --project . --outDir lib --watch",
+    "build:watch": "nodemon --watch src --ext 'ts' --exec tsc --project . --outDir lib --watch",
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "start-client": "ts-node src/sdk/baseClient.ts",
