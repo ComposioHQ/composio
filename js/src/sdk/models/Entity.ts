@@ -163,8 +163,6 @@ export class Entity {
             });
         }
         
-
-        console.log("hi")
         // Initiate the connection process
         return ConnectedAccounts.initiate({
             integrationId: integration!.id!,
