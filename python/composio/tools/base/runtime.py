@@ -92,7 +92,7 @@ class RuntimeToolMeta(type):
         cls.file = Path(inspect.getfile(cls))
         cls.description = t.cast(str, cls.__doc__).lstrip().rstrip()
 
-        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
+        setattr(cls, "name", getattr(cls, "name", inflection.underscore(cls.__name__)))
         setattr(cls, "enum", getattr(cls, "enum", cls.name).upper())
         setattr(
             cls,

@@ -41,7 +41,7 @@ class CodeQueryRequest(BaseModel):
 
 
 class CodeQueryResponse(BaseModel):
-    response: str = Field(..., description="The response to the question")
+    response: dict = Field(..., description="The response to the question")
 
 
 class CodeQuery(LocalAction[CodeQueryRequest, CodeQueryResponse]):

@@ -179,7 +179,7 @@ class ActionMeta(type):
             raise RuntimeError(f"Please implement {name}.execute")
 
         setattr(cls, "file", getattr(cls, "file", Path(inspect.getfile(cls))))
-        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
+        setattr(cls, "name", getattr(cls, "name", inflection.underscore(cls.__name__)))
         setattr(
             cls,
             "enum",
@@ -243,12 +243,9 @@ class Action(
         cls._schema = {
             "name": cls.name,
             "enum": cls.enum,
-            "appKey": cls.tool,
             "appName": cls.tool,
             "appId": generate_app_id(cls.tool),
-            "logo": "empty",
             "tags": cls.tags(),
-            "enabled": True,
             "displayName": cls.display_name,
             "description": description,
             "parameters": cls.request.schema(),
@@ -353,4 +350,5 @@ class Tool(WithLogger, _Attributes):
         if cls.gid not in registry:
             registry[cls.gid] = {}
         registry[cls.gid][cls.enum] = cls()
+        # TOFIX
         registry[cls.gid][cls.name] = registry[cls.gid][cls.enum]

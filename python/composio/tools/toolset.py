@@ -544,6 +544,11 @@ class ComposioToolSet(WithLogger):
         items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
         for item in items:
             item = self.action_preprocessing(item)
+
+        # Temporary
+        for item in items:
+            item.name = f"{item.appName}_{item.name}".lower()
+
         return items
 
     def action_preprocessing(self, action_item: ActionModel) -> ActionModel:

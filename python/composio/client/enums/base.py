@@ -14,6 +14,7 @@ from composio.storage.base import LocalStorage
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}
+_local_actions: t.Dict[str, "ActionData"] = {}
 _runtime_actions: t.Dict[str, "ActionData"] = {}
 
 EntityType = t.TypeVar("EntityType", bound=LocalStorage)
@@ -88,7 +89,6 @@ class TriggerData(LocalStorage):
 
     app: str
     "Name of the app where this trigger belongs to."
-    _cache: Path = TRIGGERS_CACHE
 
 
 class _AnnotatedEnum(t.Generic[EntityType]):
@@ -143,11 +143,18 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         """Enum slug value."""
         return self._slug
 
+    def _cache(self) -> None:
+        """Create cache for the enum."""
+        from composio.client import Composio  # pylint: disable=import-outside-toplevel
+
+        client = Composio.get_latest()
+        client.http.get(url=str(client.actions.endpoint))
+
     def load(self) -> EntityType:
         """Load action data."""
         if self._slug is None:
             raise ValueError(
-                "Cannot load `AppData` object without initializing object."
+                f"Cannot load `{self._model.__class__}` object without initializing object."
             )
 
         if self._slug in _runtime_actions:
@@ -158,6 +165,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 f"Metadata file for `{self._slug}` not found, "
                 "Please run `composio apps update` to fix this"
             )
+
         if self._slug not in _model_cache:
             _model_cache[self._slug] = self._model.load(self._path / self._slug)
         return t.cast(EntityType, _model_cache[self._slug])

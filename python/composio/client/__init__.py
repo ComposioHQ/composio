@@ -48,6 +48,7 @@ from composio.utils.url import get_api_url_base
 
 
 _valid_keys: t.Set[str] = set()
+_clients: t.List["Composio"] = []
 
 
 class Composio(BaseClient):
@@ -79,6 +80,14 @@ class Composio(BaseClient):
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
         self.connected_accounts = ConnectedAccounts(client=self)
+        _clients.append(self)
+
+    @staticmethod
+    def get_latest() -> "Composio":
+        """Get latest composio client from the runtime stack."""
+        if len(_clients) == 0:
+            _ = Composio()
+        return _clients[-1]
 
     @property
     def api_key(self) -> str:

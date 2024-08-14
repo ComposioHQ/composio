@@ -26,5 +26,5 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
 
     def execute(self, request: CalculatorRequest, metadata: Dict) -> CalculatorResponse:
         return CalculatorResponse(
-            result=eval(request.operation)  # pylint: disable=eval-used
+            result=str(eval(request.operation))  # pylint: disable=eval-used
         )
