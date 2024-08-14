@@ -25,6 +25,7 @@ export class Composio {
         if (!User.apiKey) {
             throw new Error('API key is missing');
         }
+
         axiosClient.setConfig({
             baseURL: baseUrl,
             headers: {
@@ -33,7 +34,7 @@ export class Composio {
                 'X-RUNTIME': runtime
             }
         })
-  
+        
         this.connectedAccounts = ConnectedAccounts;
         this.apps = Apps;
         this.actions = Actions;

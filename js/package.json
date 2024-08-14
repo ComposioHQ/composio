@@ -6,11 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc  --project . --outDir lib",
-    "build:watch": "nodemon --watch src --ext 'ts' --exec tsc --project . --outDir lib --watch",
+    "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts",
-    "start-client": "ts-node src/sdk/baseClient.ts",
-    "debug": "ts-node src/sdk/baseClient.ts"
+    "start-client": "ts-node src/sdk/baseClient.ts"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
@@ -18,6 +17,8 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240718.0",
     "@hey-api/openapi-ts": "^0.52.4",
+    "@swc/core": "^1.7.10",
+    "@swc/helpers": "^0.5.12",
     "@types/cli-progress": "^3.11.6",
     "@types/colors": "^1.2.1",
     "@types/dockerode": "^3.3.30",
@@ -26,6 +27,7 @@
     "@types/winston": "^2.4.4",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
+    "regenerator-runtime": "^0.14.1",
     "terser-webpack-plugin": "^5.3.10",
     "ts-loader": "^9.5.1",
     "typedoc": "^0.25.13",
