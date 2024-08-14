@@ -6,9 +6,6 @@ on:
       working-directory:
         required: true
         type: string
-  push:
-    branches:
-      - master
 
 jobs:
   run-tests:

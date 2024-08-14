@@ -1,6 +1,9 @@
 name: Run Examples Tests
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
 
 jobs:
   test-examples:
