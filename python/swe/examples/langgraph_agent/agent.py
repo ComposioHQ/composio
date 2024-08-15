@@ -29,7 +29,7 @@ openai_client = ChatOpenAI(
     model="gpt-4-turbo",
 )
 composio_toolset = ComposioToolSet(
-    workspace_config=WorkspaceType.Host()
+    workspace_config=WorkspaceType.Docker(image="composio/composio:dev", per)
 )
 
 # Get required tools
@@ -96,7 +96,6 @@ def create_agent(system_prompt, tools):
         ]
     )
     llm = ChatOpenAI(temperature=0, streaming=True, model="gpt-4-1106-preview")
-    # anthropic = ChatAnthropic(temperature=0, streaming=True, model_name="claude-3-5-sonnet-20240620")
     return prompt | llm.bind_tools(tools)
 
 
@@ -176,11 +175,16 @@ if __name__ == "__main__":
 He graduated from IIT Bombay in 2017 with a B.Tech in Computer Science and Engineering.
 He started his career in Rubrik as a SWE and later became founding PM at Nirvana Insurance.
 At Composio, he is leading Tech and Product teams and is responsible for building products
-around AI Agents."""
+around AI Agents.
+Make the site with multiple pages, include a blog, a contact page, and a home page.
+Make the website as classy as possible, use a minimalist approach, think through the design before you start coding.
+You would start from the directory /Users/karanvaidya/codes/composio_sdk/python/swe/examples/langgraph_agent.
+Create the website in the directory /Users/karanvaidya/codes/composio_sdk/python/swe/examples/langgraph_agent/personal_website which is an empty directory.
+Image of Karan: /Users/karanvaidya/Downloads/IMG_20171230_084709_Bokeh.jpeg"""
                     )
                 ]
             },
-            {"recursion_limit": 50},
+            {"recursion_limit": 75},
         )
 
         print(final_state["messages"][-1].content)
