@@ -24,7 +24,7 @@ from composio.tools.local.sqltool import SqlTool
 from composio.tools.local.system import SystemTools
 from composio.tools.local.webtool import WebTool
 from composio.tools.local.zep import ZepTool
-
+from .pdfparser import PDFParser
 
 TOOLS_PATH = Path(__file__).parent
 
@@ -51,4 +51,5 @@ TOOLS = [
     WebTool,
     ZepTool,
     ImageAnalyserTool,
+    PDFParser,
 ]
