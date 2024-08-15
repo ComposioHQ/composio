@@ -1,20 +1,23 @@
 """Tool abstractions."""
 
 import base64
-import inspect
 import os
 import traceback
 import typing as t
 from abc import abstractmethod
 from pathlib import Path
 
-import inflection
 from pydantic import BaseModel, Field
 
+from composio.tools.base.abs import (
+    Action,
+    ActionRequest,
+    ActionResponse,
+    Tool,
+    ToolBuilder,
+)
 from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
-
-from .abs import Action, ActionRequest, ActionResponse, Tool
 
 
 class FileModel(BaseModel):
@@ -68,32 +71,19 @@ class LocalToolMeta(type):
         if name == "LocalTool":
             return
 
-        cls = t.cast(t.Type[LocalTool], cls)
-        for method in ("actions",):
-            if getattr(getattr(cls, method), "__isabstractmethod__", False):
-                raise RuntimeError(f"Please implement {name}.{method}")
-
-            if not inspect.ismethod(getattr(cls, method)):
-                raise RuntimeError(f"Please implement {name}.{method} as class method")
-
-        cls.file = Path(inspect.getfile(cls))
-        cls.description = t.cast(str, cls.__doc__).lstrip().rstrip()
-
-        setattr(cls, "name", getattr(cls, "name", inflection.underscore(cls.__name__)))
-        setattr(cls, "enum", getattr(cls, "enum", cls.name).upper())
-        setattr(
-            cls,
-            "display_name",
-            getattr(cls, "display_name", inflection.humanize(cls.__name__)),
+        ToolBuilder.validate(
+            obj=cls,  # type: ignore
+            name=name,
+            methods=("actions",),
         )
-        setattr(cls, "_actions", getattr(cls, "_actions", {}))
-        for action in cls.actions():
-            action.tool = cls.name
-            action.enum = f"{cls.enum}_{action.name.upper()}"
-            cls._actions[action.enum] = action
-
+        ToolBuilder.set_metadata(
+            obj=cls,  # type: ignore
+        )
+        ToolBuilder.setup_children(
+            obj=cls,  # type: ignore
+        )
         if autoload:
-            cls.register()
+            t.cast(t.Type["Tool"], cls).register()  # type: ignore
 
 
 class LocalToolMixin(Tool):
