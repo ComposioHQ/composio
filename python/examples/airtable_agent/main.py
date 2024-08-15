@@ -27,6 +27,16 @@ airtable_reader_agent = Agent(
     llm=llm,
 )
 
+# Define the Airtable Schema Agent
+airtable_schema_agent = Agent(
+    role="Airtable Schema Agent",
+    goal="See/edit the structure of a base, like table names or field types",
+    backstory="You are an expert in retrieving and editing Schema from Airtable.",
+    verbose=True,
+    tools=airtable_tools,
+    llm=llm,
+)
+
 # Define the Airtable Writer Agent
 airtable_writer_agent = Agent(
     role="Airtable Writer Agent",
@@ -48,6 +58,13 @@ read_task = Task(
     expected_output="A summary of the data read from the Airtable table"
 )
 
+# Define the task for getting te Airtable schema
+schema_task = Task(
+    description=f"Get the schema of the table '{table_name}' in the Airtable base '{base_id}'. This schema will be used later when writing data to Airtable.",
+    agent=airtable_schema_agent,
+    expected_output="The schema of the Airtable."
+)
+
 # Define the task for writing to Airtable
 write_task = Task(
     description=f"Based on the data read, create a new record in the '{table_name}' table in the Airtable base '{base_id}' with a summary of the findings.",
@@ -57,8 +74,8 @@ write_task = Task(
 
 # Create the crew with the agents and tasks
 crew = Crew(
-    agents=[airtable_reader_agent, airtable_writer_agent],
-    tasks=[read_task, write_task],
+    agents=[airtable_reader_agent, airtable_schema_agent, airtable_writer_agent],
+    tasks=[read_task, schema_task, write_task],
 )
 
 # Kickoff the process and print the result

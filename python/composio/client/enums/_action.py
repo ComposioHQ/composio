@@ -27,6 +27,7 @@ class SentinalObject:
 class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     """Class to represent `Action` entity."""
 
+    AIRTABLE_GET_SCHEMA: "Action"
     AIRTABLE_READ: "Action"
     AIRTABLE_WRITE: "Action"
     APIFY_CREATE_APIFY_ACTOR: "Action"
