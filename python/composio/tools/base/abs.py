@@ -2,6 +2,7 @@
 
 import hashlib
 import inspect
+import json
 import typing as t
 from abc import abstractmethod
 from pathlib import Path
@@ -26,14 +27,14 @@ registry: RegistryType = {"runtime": {}, "local": {}}
 
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
-    full = t.cast(
-        t.Dict,
-        jsonref.replace_refs(
-            obj=data,
-            lazy_load=False,
-        ),
+    return json.loads(
+        jsonref.dumps(
+            jsonref.replace_refs(
+                obj=data,
+                lazy_load=False,
+            )
+        )
     )
-    return full
 
 
 def generate_app_id(name: str) -> str:
