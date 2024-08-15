@@ -1,7 +1,9 @@
-from composio.tools.local.base import Action, Tool
 import typing as t
 
+from composio.tools.local.base import Action, Tool
+
 from .actions import Read, Write
+
 
 class AirtableTool(Tool):
     """Airtable Tools"""

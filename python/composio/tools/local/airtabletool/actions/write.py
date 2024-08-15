@@ -1,14 +1,24 @@
 import os
+
 from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
+
 
 class WriteAirtableRequest(BaseModel):
     base_id: str = Field(..., description="Airtable base ID, provided by the user")
-    table_name: str = Field(..., description="Name of the table to write to, provided by the user")
-    records: list = Field(..., description="List of records to write, example: '[{'Name': 'John'}, {'Name': 'Marc'}]'")
+    table_name: str = Field(
+        ..., description="Name of the table to write to, provided by the user"
+    )
+    records: list = Field(
+        ...,
+        description="List of records to write, example: '[{'Name': 'John'}, {'Name': 'Marc'}]'",
+    )
+
 
 class WriteAirtableResponse(BaseModel):
     created_records: list = Field(..., description="List of created record IDs")
+
 
 class Write(Action[WriteAirtableRequest, WriteAirtableResponse]):
     """
@@ -21,7 +31,9 @@ class Write(Action[WriteAirtableRequest, WriteAirtableResponse]):
     _tags = ["Airtable"]
     _tool_name = "airtabletool"
 
-    def execute(self, request_data: WriteAirtableRequest, authorisation_data: dict) -> dict:
+    def execute(
+        self, request_data: WriteAirtableRequest, authorisation_data: dict
+    ) -> dict:
         """Write records to the specified Airtable"""
         try:
             # pylint: disable=import-outside-toplevel

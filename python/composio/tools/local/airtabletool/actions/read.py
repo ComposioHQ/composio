@@ -1,13 +1,20 @@
 import os
+
 from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
+
 
 class ReadAirtableRequest(BaseModel):
     base_id: str = Field(..., description="Airtable base ID, provided by the user")
-    table_name: str = Field(..., description="Name of the table to read from, provided by the user")
+    table_name: str = Field(
+        ..., description="Name of the table to read from, provided by the user"
+    )
+
 
 class ReadAirtableResponse(BaseModel):
     records: list = Field(..., description="List of records from the Airtable")
+
 
 class Read(Action[ReadAirtableRequest, ReadAirtableResponse]):
     """
@@ -20,7 +27,9 @@ class Read(Action[ReadAirtableRequest, ReadAirtableResponse]):
     _tags = ["Airtable"]
     _tool_name = "airtabletool"
 
-    def execute(self, request_data: ReadAirtableRequest, authorisation_data: dict) -> dict:
+    def execute(
+        self, request_data: ReadAirtableRequest, authorisation_data: dict
+    ) -> dict:
         """Read records from the specified Airtable"""
         try:
             # pylint: disable=import-outside-toplevel
