@@ -5,13 +5,19 @@ import { Integrations } from "./integrations";
 import { ActiveTriggers } from "./activeTriggers";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { ExecuteActionResDTO } from "../client";
+import { BackendClient } from "./backendClient";
+import { Triggers } from "./triggers";
 
 
 export class Entity {
     id: string;
+    backendClient: BackendClient;
+    triggerModel: Triggers;
 
-    constructor(id: string = 'default') {
+    constructor(backendClient: BackendClient, id: string = 'default') {
+        this.backendClient = backendClient;
         this.id = id;
+        this.triggerModel = new Triggers(this.backendClient);
     }
 
     async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
@@ -103,6 +109,11 @@ export class Entity {
         if (!connectedAccount) {
             throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
         }
+        return this.triggerModel.setup({
+            app: app,
+            triggerName: triggerName,
+            config: config
+        });
     }
 
     async disableTrigger(triggerId: string): Promise<any> {
