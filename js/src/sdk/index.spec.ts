@@ -15,7 +15,7 @@ describe("Basic SDK spec suite", () => {
     it("without apiKey, error should be thrown", () => {
         expect(() => {
             new Composio();
-        }).toThrow('API key is missing');
+        }).toThrow('API Key is required for initializing the client');
     });
 
     it("get entity and then fetch connection",async()=>{
