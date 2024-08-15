@@ -1,9 +1,8 @@
-import { get } from "http";
 import { BackendClient } from "../models/backendClient";
 import { getTestConfig } from "../../../config/getTestConfig";
 
 
-export const getBackendInstance = (): BackendClient => {
+export const getBackendClient = (): BackendClient => {
     const testConfig = getTestConfig();
     if (testConfig["COMPOSIO_API_KEY"] === undefined) {
         throw new Error("COMPOSIO_API_KEY is not set in the test config");
