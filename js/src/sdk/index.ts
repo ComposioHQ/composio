@@ -20,6 +20,7 @@ export class Composio {
     backendClient: BackendClient;
 
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
+    
         const baseURLParsed = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "https://backend.composio.dev";
         const apiKeyParsed = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
  

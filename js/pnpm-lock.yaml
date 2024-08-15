@@ -124,6 +124,9 @@ devDependencies:
   jest:
     specifier: ^29.7.0
     version: 29.7.0(@types/node@20.14.2)(ts-node@10.9.2)
+  jest-html-reporters:
+    specifier: ^3.1.7
+    version: 3.1.7
   regenerator-runtime:
     specifier: ^0.14.1
     version: 0.14.1
@@ -2652,6 +2655,11 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /define-lazy-prop@2.0.0:
+    resolution: {integrity: sha512-Ds09qNh8yw3khSjiJjiUInaGX9xlqZDY7JVryGxdxV7NPeuqQfplOpQ66yJFZut3jLa5zOwkXw1g9EI2uKh4Og==}
+    engines: {node: '>=8'}
+    dev: true
+
   /defu@6.1.4:
     resolution: {integrity: sha512-mEQCMmwJu317oSz8CwdIOdwf3xMif1ttiM8LTufzc3g6kR+9Pe236twL8j3IYT1F7GfRgGcW6MWxzZjLIkuHIg==}
     dev: true
@@ -3322,6 +3330,12 @@ packages:
       hasown: 2.0.2
     dev: true
 
+  /is-docker@2.2.1:
+    resolution: {integrity: sha512-F+i2BKsFrH66iaUFc0woD8sLy8getkwTwtOBjvs56Cx4CgJDeKQeqfz8wAYiSb8JOprWhHH5p77PbmYCvvUuXQ==}
+    engines: {node: '>=8'}
+    hasBin: true
+    dev: true
+
   /is-extglob@2.1.1:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
     engines: {node: '>=0.10.0'}
@@ -3387,6 +3401,13 @@ packages:
   /is-stream@3.0.0:
     resolution: {integrity: sha512-LnQR4bZ9IADDRSkvpqMGvt/tEJWclzklNgSw48V5EAaAeDd6qGvN8ei6k5p0tvxSR171VmGyHuTiAOfxAbr8kA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dev: true
+
+  /is-wsl@2.2.0:
+    resolution: {integrity: sha512-fKzAra0rGJUUBwGBgNkHZuToZcn+TtXHpeCgmkMJMMYx1sQDYaCSyjJBSCa2nH1DGm7s3n1oBnohoVTBaN7Lww==}
+    engines: {node: '>=8'}
+    dependencies:
+      is-docker: 2.2.1
     dev: true
 
   /isexe@2.0.0:
@@ -3645,6 +3666,13 @@ packages:
       walker: 1.0.8
     optionalDependencies:
       fsevents: 2.3.3
+    dev: true
+
+  /jest-html-reporters@3.1.7:
+    resolution: {integrity: sha512-GTmjqK6muQ0S0Mnksf9QkL9X9z2FGIpNSxC52E0PHDzjPQ1XDu2+XTI3B3FS43ZiUzD1f354/5FfwbNIBzT7ew==}
+    dependencies:
+      fs-extra: 10.1.0
+      open: 8.4.2
     dev: true
 
   /jest-leak-detector@29.7.0:
@@ -4607,6 +4635,15 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       mimic-fn: 4.0.0
+    dev: true
+
+  /open@8.4.2:
+    resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
+    engines: {node: '>=12'}
+    dependencies:
+      define-lazy-prop: 2.0.0
+      is-docker: 2.2.1
+      is-wsl: 2.2.0
     dev: true
 
   /openai@4.51.0:
