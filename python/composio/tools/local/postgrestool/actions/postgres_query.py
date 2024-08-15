@@ -35,7 +35,7 @@ class PostgresQuery(Action):
             # pylint: enable=import-outside-toplevel
         except ModuleNotFoundError as e:
             raise ModuleNotFoundError(
-                "The 'psycopg2' package is required for OpenAI analysis. Please install it using 'pip install psycopg2'."
+                "The 'psycopg2' package is required for using the postgres tool. Please install it using 'pip install psycopg2'."
             ) from e
         try:
             # Connect to the PostgreSQL database
