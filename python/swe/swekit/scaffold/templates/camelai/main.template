@@ -4,6 +4,7 @@ from agent import composio_toolset,agent
 from composio_camel import Action
 from prompts import DESCRIPTION
 from camel.messages import BaseMessage
+from camel.utils import print_text_animated
 from colorama import Fore
 
 

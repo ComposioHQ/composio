@@ -1,6 +1,6 @@
 import argparse
 
-from agent import composio_toolset, graph
+from agent import composio_toolset, graph, agent
 
 from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
@@ -8,6 +8,7 @@ from swekit.config.store import IssueConfig
 from composio_camel import Action
 from prompts import DESCRIPTION
 from camel.messages import BaseMessage
+from camel.utils import print_text_animated
 from colorama import Fore
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
