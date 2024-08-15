@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/index.js",
   "scripts": {
-     "test": "jest",
+    "test": "jest --testMatch=\"**/*.spec.ts\"",
     "build": "tsc  --project . --outDir lib",
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
