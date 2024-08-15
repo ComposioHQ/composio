@@ -166,17 +166,10 @@ class FileManager(WithLogger):
         Search for a word in files matching the given pattern.
 
         :param word: The term to search for
-        :param pattern: The file, directory, or glob pattern to search in (if not provided, searches in the current working directory)
+        :param pattern: The file, directory, or glob pattern to search in
         :param recursive: If True, search recursively in subdirectories
-        :param case_insensitive: If True, perform case-insensitive search (default is True)
-        :return: A dictionary with file paths as keys and lists of (line number, line content) tuples as values
-
-        Examples of patterns:
-        - "*.py" : Search in all Python files in the current directory
-        - "src/*.txt" : Search in all text files in the 'src' directory
-        - "**/*.md" : Search in all Markdown files in the current directory and all subdirectories
-        - "/path/to/specific/file.js" : Search in a specific file
-        - "/path/to/directory" : Search in all files in a specific directory
+        :param case_insensitive: If True, perform case-insensitive search
+        :return: A dictionary with file paths as keys and lists of (line number, line content) tuples
         """
         if pattern is None:
             pattern = self.working_dir
@@ -184,52 +177,34 @@ class FileManager(WithLogger):
             pattern = Path(pattern)
 
         results: t.Dict[str, t.List[t.Tuple[int, str]]] = {}
-        paths_to_search: t.List[Path] = []
-
         if pattern.is_file():
             paths_to_search = [pattern]
         elif pattern.is_dir():
-            if recursive:
-                paths_to_search = list(pattern.rglob("*"))
-            else:
-                paths_to_search = list(pattern.glob("*"))
+            paths_to_search = pattern.rglob("*") if recursive else pattern.glob("*")
         else:
-            if recursive:
-                paths_to_search = list(self.working_dir.rglob(str(pattern)))
-            else:
-                paths_to_search = list(self.working_dir.glob(str(pattern)))
+            glob_func = self.working_dir.rglob if recursive else self.working_dir.glob
+            paths_to_search = glob_func(str(pattern))
 
+        word_lower = word.lower() if case_insensitive else word
         for file_path in paths_to_search:
             if file_path.is_file() and not file_path.name.startswith("."):
                 try:
                     with file_path.open("r", encoding="utf-8") as f:
+                        rel_path = str(file_path.relative_to(self.working_dir))
                         for i, line in enumerate(f, 1):
-                            if case_insensitive:
-                                word_lower = word.lower()
-                                if word_lower in line.lower():
-                                    rel_path = str(
-                                        file_path.relative_to(self.working_dir)
-                                    )
-                                    if rel_path not in results:
-                                        results[rel_path] = []
-                                    results[rel_path].append((i, line.strip()))
-                            else:
-                                if word in line:
-                                    rel_path = str(
-                                        file_path.relative_to(self.working_dir)
-                                    )
-                                    if rel_path not in results:
-                                        results[rel_path] = []
-                                    results[rel_path].append((i, line.strip()))
-                except UnicodeDecodeError:
-                    # Skip binary files
+                            content = line.lower() if case_insensitive else line
+                            if word_lower in content:
+                                if rel_path not in results:
+                                    results[rel_path] = []
+                                results[rel_path].append((i, line.strip()))
+                except (UnicodeDecodeError, OSError):
+                    # Skip binary files and handle OS errors
                     pass
 
         if not results:
             self.logger.debug(f'No matches found for "{word}" in {pattern}')
-            return {}
 
-        num_matches: int = sum(len(matches) for matches in results.values())
+        num_matches = sum(len(matches) for matches in results.values())
         self.logger.debug(f'Found {num_matches} matches for "{word}" in {pattern}')
         return results
 
