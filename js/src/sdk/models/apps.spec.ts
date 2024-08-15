@@ -13,11 +13,10 @@ describe("Apps class tests", () => {
 
     it("should create an Apps instance and retrieve apps list", async () => {
         const appsList = await apps.list();
-        expect(appsList).toBeDefined();
-        expect(appsList.items).toBeInstanceOf(Array);
-        expect(appsList.items).not.toHaveLength(0);
+        expect(appsList).toBeInstanceOf(Array);
+        expect(appsList).not.toHaveLength(0);
 
-        const firstItem = appsList.items[0];
+        const firstItem = appsList[0];
         expect(firstItem).toHaveProperty('appId');
         expect(firstItem).toHaveProperty('key');
         expect(firstItem).toHaveProperty('name');

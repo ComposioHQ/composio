@@ -1,4 +1,4 @@
-import { AppListResDTO, SingleAppInfoResDTO } from "../client";
+import { AppInfoResponseDto, AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 
@@ -23,8 +23,8 @@ export class Apps {
      * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    list(): Promise<AppListResDTO> {
-        return apiClient.apps.getApps().then(res => res.data!)
+    list(): Promise<AppInfoResponseDto[]> {
+        return apiClient.apps.getApps().then(res => res.data!.items)
     }
 
     /**
