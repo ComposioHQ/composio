@@ -13,15 +13,17 @@ export class Entity {
     id: string;
     backendClient: BackendClient;
     triggerModel: Triggers;
+    actionsModel: Actions;
 
     constructor(backendClient: BackendClient, id: string = 'default') {
         this.backendClient = backendClient;
         this.id = id;
         this.triggerModel = new Triggers(this.backendClient);
+        this.actionsModel = new Actions(this.backendClient);
     }
 
     async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
-        const action = await Actions.get({
+        const action = await this.actionsModel.get({
             actionName: actionName
         });
         if (!action) {
@@ -31,7 +33,7 @@ export class Entity {
             appKey: action.appKey!
         });
         if ((app.yaml as any).no_auth) {
-            return Actions.execute({
+            return this.actionsModel.execute({
                 actionName: actionName,
                 requestBody: {
                     input: params,
@@ -56,7 +58,7 @@ export class Entity {
 
             connectedAccount = connectedAccounts.items![0];
         }
-        return Actions.execute({
+        return this.actionsModel.execute({
             actionName: actionName,
             requestBody: {
                 connectedAccountId: connectedAccount.id,

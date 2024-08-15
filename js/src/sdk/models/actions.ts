@@ -1,5 +1,6 @@
 import { ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
 import apiClient from "../client/client";
+import { BackendClient } from "./backendClient";
 
 /**
  * The `Actions` class provides methods to interact with the Composio platform's actions.
@@ -99,6 +100,11 @@ export type ExecuteActionResponse = {
     };
 };
 export class Actions {
+    backendClient: BackendClient;
+
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient;
+    }
 
     /**
      * Retrieves details of a specific action in the Composio platform by providing its action name.
@@ -109,9 +115,9 @@ export class Actions {
      * @returns {CancelablePromise<GetActionResponse[0]>} A promise that resolves to the details of the action.
      * @throws {ApiError} If the request fails.
      */
-    static async get(data: { actionName: string; }){
+    async get(data: { actionName: string; }) {
         const actions = await apiClient.actionsV1.v1GetAction({
-            path:{
+            path: {
                 actionId: data.actionName
             }
         });
@@ -128,7 +134,7 @@ export class Actions {
      * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    static list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
+    list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         return apiClient.actionsV2.v2ListActions({
             query: {
                 actions: data.actions,
@@ -138,9 +144,9 @@ export class Actions {
                 useCase: data.useCase as string,
                 filterImportantActions: data.filterImportantActions,
                 showEnabledOnly: data.showEnabledOnly
-                
+
             }
-        }).then(res=>{
+        }).then(res => {
             const resp = res;
             return res.data!
         })
@@ -155,12 +161,12 @@ export class Actions {
      * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    static execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
+    execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
         return apiClient.actionsV2.v2ExecuteAction({
             body: data.requestBody,
-            path:{
+            path: {
                 actionId: data.actionName
             }
-        }).then(res=>res.data!)
+        }).then(res => res.data!)
     }
 }
