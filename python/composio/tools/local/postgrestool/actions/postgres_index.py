@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
-from composio.tools.local.base import Action
 import psycopg2
 from psycopg2 import sql
+from pydantic import BaseModel, Field
+
+from composio.tools.local.base import Action
+
 
 class PostgresIndexRequest(BaseModel):
     connection_string: str = Field(..., description="Database connection string")
@@ -9,9 +11,11 @@ class PostgresIndexRequest(BaseModel):
     column_name: str = Field(..., description="Name of the column to create index on")
     index_name: str = Field(..., description="Name of the index to be created")
 
+
 class PostgresIndexResponse(BaseModel):
     execution_details: dict = Field(..., description="Execution details")
     response_data: str = Field(..., description="Result after creating the index")
+
 
 class PostgresIndex(Action):
     """
@@ -44,7 +48,7 @@ class PostgresIndex(Action):
                     create_index_query = sql.SQL("CREATE INDEX {} ON {} ({})").format(
                         sql.Identifier(request_data.index_name),
                         sql.Identifier(request_data.table_name),
-                        sql.Identifier(request_data.column_name)
+                        sql.Identifier(request_data.column_name),
                     )
                     cursor.execute(create_index_query)
 
