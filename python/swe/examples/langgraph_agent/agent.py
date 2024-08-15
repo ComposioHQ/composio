@@ -7,8 +7,6 @@ from typing import Annotated, Literal, Sequence, TypedDict
 import dotenv
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-# from custom_tools import say
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
