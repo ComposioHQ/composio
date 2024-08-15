@@ -10,7 +10,7 @@ import { ExecuteActionResDTO } from "../client";
 export class Entity {
     id: string;
 
-    constructor(id: string = 'DEFAULT_ENTITY_ID') {
+    constructor(id: string = 'default') {
         this.id = id;
     }
 
