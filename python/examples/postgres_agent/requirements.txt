@@ -1,0 +1,6 @@
+../.. -e .
+composio-langchain
+python-dotenv
+langchain-openai
+psycopg2-binary
+crewai

@@ -13,6 +13,7 @@ from composio.tools.local.filetool import FileTool
 from composio.tools.local.greptile import Greptile
 from composio.tools.local.imageanalyser import ImageAnalyserTool
 from composio.tools.local.mathematical import Mathematical
+from composio.tools.local.postgrestool import PostgresTool
 from composio.tools.local.ragtool import RagTool
 from composio.tools.local.shelltool.file_cmds import FileEditTool
 from composio.tools.local.shelltool.find_cmds import SearchTool
@@ -37,6 +38,7 @@ TOOLS = [
     CodeMapTool,
     EmbedTool,
     Mathematical,
+    PostgresTool,
     FileTool,
     Greptile,
     RagTool,

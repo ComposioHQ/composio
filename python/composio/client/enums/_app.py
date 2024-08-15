@@ -65,6 +65,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     OKTA: "App"
     PAGERDUTY: "App"
     PERPLEXITYAI: "App"
+    POSTGRESTOOL: "App"
     POSTHOG: "App"
     RAGTOOL: "App"
     SCHEDULER: "App"
