@@ -54,6 +54,7 @@ core_requires = [
     "e2b-code-interpreter",  # E2B workspace
     "gql",  # FlyIO workspace
     "requests_toolbelt",  # FlyIO workspace
+    "uvicorn",
 ]
 
 tools_require = [
