@@ -5,32 +5,32 @@ from pydantic import BaseModel, Field
 from composio.tools.local.base import Action
 
 
-class ReadAirtableRequest(BaseModel):
+class ReadAllAirtableRequest(BaseModel):
     base_id: str = Field(..., description="Airtable base ID, provided by the user")
     table_name: str = Field(
         ..., description="Name of the table to read from, provided by the user"
     )
 
 
-class ReadAirtableResponse(BaseModel):
-    records: list = Field(..., description="List of records from the Airtable")
+class ReadAllAirtableResponse(BaseModel):
+    records: list = Field(..., description="List of all the records from the Airtable")
 
 
-class Read(Action[ReadAirtableRequest, ReadAirtableResponse]):
+class ReadAll(Action[ReadAllAirtableRequest, ReadAllAirtableResponse]):
     """
-    Read records from an Airtable
+    Read all records from an Airtable
     """
 
-    _display_name = "Read from Airtable"
-    _request_schema = ReadAirtableRequest
-    _response_schema = ReadAirtableResponse
+    _display_name = "Read all - Airtable"
+    _request_schema = ReadAllAirtableRequest
+    _response_schema = ReadAllAirtableResponse
     _tags = ["Airtable"]
     _tool_name = "airtabletool"
 
     def execute(
-        self, request_data: ReadAirtableRequest, authorisation_data: dict
+        self, request_data: ReadAllAirtableRequest, authorisation_data: dict
     ) -> dict:
-        """Read records from the specified Airtable"""
+        """Read all records from the specified Airtable"""
         try:
             # pylint: disable=import-outside-toplevel
             from pyairtable import Api
