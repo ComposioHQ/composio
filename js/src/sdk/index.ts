@@ -6,41 +6,32 @@ import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
 import { getEnvVariable } from '../utils/shared';
 import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
-import { client as axiosClient } from "./client/services.gen"
-import { User } from './models/user';
+import { BackendClient } from './models/backendClient';
 import { Entity } from './models/Entity';
 
 export class Composio {
-    connectedAccounts: typeof ConnectedAccounts;
-    apps: typeof Apps;
-    actions: typeof Actions;
-    triggers: typeof Triggers;
-    integrations: typeof Integrations;
-    activeTriggers: typeof ActiveTriggers;
+    connectedAccounts: ConnectedAccounts;
+    apps:  Apps;
+    actions:  Actions;
+    triggers:  Triggers;
+    integrations:  Integrations;
+    activeTriggers:  ActiveTriggers;
+
+    backendClient: BackendClient;
 
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-        User.baseUrl = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "";
-        User.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
-
-        if (!User.apiKey) {
-            throw new Error('API key is missing');
-        }
-
-        axiosClient.setConfig({
-            baseURL: baseUrl,
-            headers: {
-                'X-API-KEY': `${User.apiKey}`,
-                'X-SOURCE': 'js_sdk',
-                'X-RUNTIME': runtime
-            }
-        })
+        const baseURLParsed = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "https://backend.composio.dev";
+        const apiKeyParsed = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
+ 
+        this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);
+        this.connectedAccounts = new ConnectedAccounts(this.backendClient);
+        this.triggers = new Triggers(this.backendClient);
         
-        this.connectedAccounts = ConnectedAccounts;
-        this.apps = Apps;
-        this.actions = Actions;
-        this.triggers = Triggers;
-        this.integrations = Integrations;
-        this.activeTriggers = ActiveTriggers;
+        this.apps = new Apps();
+        this.actions = new Actions();
+
+        this.integrations = new Integrations();
+        this.activeTriggers = new ActiveTriggers();
 
     }
 

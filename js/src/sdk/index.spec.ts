@@ -11,14 +11,14 @@ describe("Basic SDK spec suite", () => {
     it("create basic client", () => {
         new Composio(COMPOSIO_API_KEY)
     });
-    
+
     it("without apiKey, error should be thrown", () => {
         expect(() => {
             new Composio();
         }).toThrow('API key is missing');
     });
 
-    it("get entity",async()=>{
+    it("get entity and then fetch connection",async()=>{
         const app = "github"
         const composio = new Composio(COMPOSIO_API_KEY, BACKEND_HERMES_URL);
         const entity = composio.getEntity("default")
@@ -27,4 +27,5 @@ describe("Basic SDK spec suite", () => {
         const connection = await entity.getConnection(app);
         expect(connection.appUniqueId).toBe(app);
     })
+    
 });

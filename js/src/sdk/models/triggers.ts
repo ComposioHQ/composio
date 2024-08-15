@@ -1,12 +1,17 @@
 
 import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
-import {User} from "./user"
+import {BackendClient} from "./backendClient"
 
 import apiClient from "../client/client"
 import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
+
+    backendClient: BackendClient;
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient;
+    }
 
     /**
      * Retrieves a list of all triggers in the Composio platform.
@@ -18,7 +23,7 @@ export class Triggers {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    static list(data: TriggersControllerListTriggersData = {}): Promise<TriggersControllerListTriggersResponse> {
+     list(data: TriggersControllerListTriggersData = {}): Promise<TriggersControllerListTriggersResponse> {
         //@ts-ignore
         return apiClient.triggers.listTriggers({
             query: data
@@ -33,12 +38,12 @@ export class Triggers {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    static setup(data: any):{status:"string"}{
+    setup(data: any):{status:"string"}{
         //@ts-ignore
         return apiClient.triggers.enableTrigger(data).then(res=>res.data);
     }
 
-    static async subscribe(fn: (data: TriggerData) => void, filters:{
+    async subscribe(fn: (data: TriggerData) => void, filters:{
         appName?: string,
         triggerId?  : string;
         connectionId?: string;
@@ -50,9 +55,9 @@ export class Triggers {
 
         if(!fn) throw new Error("Function is required for trigger subscription");
         //@ts-ignore
-        const clientId = await User.getClientId();
+        const clientId = await this.backendClient.getClientId();
         //@ts-ignore
-        await PusherUtils.getPusherClient(User.baseUrl, User.apiKey);
+        await PusherUtils.getPusherClient(this.backendClient.baseUrl, this.backendClient.apiKey);
 
         const shouldSendTrigger = (data: TriggerData) => {
            if(Object.keys(filters).length === 0) return true;
@@ -76,9 +81,9 @@ export class Triggers {
         });
     }
 
-    static async unsubscribe() {
+    async unsubscribe() {
         //@ts-ignore
-        const clientId = await User.getClientId();
+        const clientId = await this.backendClient.getClientId();
         PusherUtils.triggerUnsubscribe(clientId);
     }
 }

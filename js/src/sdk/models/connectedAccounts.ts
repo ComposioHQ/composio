@@ -1,11 +1,14 @@
 
 import client from "../client/client";
 import apiClient from "../client/client"
+import { BackendClient } from "./backendClient";
 
 export class ConnectedAccounts {
-    constructor() {
-    }
+    backendClient: BackendClient;
 
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient; 
+    }
     
     static list(data: any): any{
         return apiClient.connections.getConnections({
