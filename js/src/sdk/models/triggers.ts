@@ -38,9 +38,19 @@ export class Triggers {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    setup(data: any):{status:"string"}{
+    async setup(connectedAccountId, triggerName, config: Record<string, any>):{status:"string",triggerId:string}{
         //@ts-ignore
-        return apiClient.triggers.enableTrigger(data).then(res=>res.data);
+        const {data,error} = await apiClient.triggers.enableTrigger({
+            path:{
+                connectedAccountId,
+                triggerName
+            },
+            body: {
+                triggerConfig: config
+            }
+        })
+
+        return data as unknown as {status:"string",triggerId:string};
     }
 
     async subscribe(fn: (data: TriggerData) => void, filters:{

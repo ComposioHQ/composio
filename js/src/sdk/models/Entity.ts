@@ -109,11 +109,8 @@ export class Entity {
         if (!connectedAccount) {
             throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
         }
-        return this.triggerModel.setup({
-            app: app,
-            triggerName: triggerName,
-            config: config
-        });
+        const trigger = await this.triggerModel.setup(connectedAccount.id!, triggerName, config);
+        return trigger;
     }
 
     async disableTrigger(triggerId: string): Promise<any> {
@@ -121,7 +118,7 @@ export class Entity {
     }
 
     //@ts-ignore
-    async getConnections(): Promise<any> {
+    async getConnections(){
         /**
          * Get all connections for an entity.
          */
@@ -131,15 +128,15 @@ export class Entity {
         return connectedAccounts.items!;
     }
 
-    async getActiveTriggers(): Promise<any> {
+    async getActiveTriggers() {
         /**
          * Get all active triggers for an entity.
          */
         const connectedAccounts = await this.getConnections();
         const activeTriggers = await ActiveTriggers.list({
-            // connectedAccountIds: connectedAccounts!.map(account => account.id!).join(",")
+           connectedAccountIds: connectedAccounts!.map((account:any) => account.id!).join(",")
         });
-        return activeTriggers.triggers!;
+        return activeTriggers;
     }
 
     async initiateConnection(

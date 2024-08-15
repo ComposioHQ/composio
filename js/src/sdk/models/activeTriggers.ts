@@ -25,7 +25,9 @@ export class ActiveTriggers {
      * @throws {ApiError} If the request fails.
      */
     static list(data: any = {}): any {
-        return apiClient.triggers.getActiveTriggers(data).then(res => (res.data as Record<string,string>).triggers)
+        return apiClient.triggers.getActiveTriggers({
+            query: data
+        }).then(res => (res.data as Record<string,string>).triggers)
     }
 
     /**

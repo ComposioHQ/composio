@@ -1,10 +1,11 @@
 import { describe, it, expect } from "@jest/globals";
-import { getBackendClient } from "../testUtils/getBackendInstance";
+import { getBackendClient } from "../testUtils/getBackendClient";
 import { Entity } from "./Entity";
 
 describe("Entity class tests", () => {
     let backendClient = getBackendClient();
     let entity: Entity;
+    let triggerId: string;
 
     beforeAll(() => {
         entity = new Entity(backendClient, "default");
@@ -31,18 +32,21 @@ describe("Entity class tests", () => {
         expect(triggers.length).toBeGreaterThan(0);
     });
 
-    // it("setup trigger", async () => {
-    //     const trigger = await entity.setupTrigger("github", "test", {});
-    //     expect(trigger.status).toBe("success");
-    // });
+    it("setup trigger", async () => {
+        const trigger = await entity.setupTrigger("gmail", "gmail_new_gmail_message", { "userId": "me", "interval": 60, "labelIds": "INBOX" });
+  
+        triggerId = trigger.triggerId;
+        expect(trigger.status).toBe("success");
+        expect(trigger.triggerId).toBeDefined();
+    });
 
-    // it("disable trigger", async () => {
-    //     const trigger = await entity.disableTrigger("test");
-    //     expect(trigger.status).toBe("success");
-    // });
+    it("disable trigger", async () => {
+        const trigger = await entity.disableTrigger(triggerId);
+        expect(trigger.status).toBe("success");
+    });
 
-    // it("initiate connection", async () => {
-    //     const connection = await entity.initiateConnection("github");
-    //     expect(connection.connectionStatus).toBe("INITIATED");
-    // });
+    it("initiate connection", async () => {
+        const connection = await entity.initiateConnection("github");
+        expect(connection.connectionStatus).toBe("INITIATED");
+    });
 });
