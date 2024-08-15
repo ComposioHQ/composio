@@ -1,4 +1,5 @@
 
+import { ConnectionsControllerGetConnectionsData, ConnectionsControllerGetConnectionData, ConnectionsControllerGetConnectionsResponse, GetConnectionsResponseDto } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
@@ -10,16 +11,16 @@ export class ConnectedAccounts {
         this.backendClient = backendClient; 
     }
     
-    static list(data: any): any{
+    list(data: ConnectionsControllerGetConnectionsData): Promise<GetConnectionsResponseDto>{
         return apiClient.connections.getConnections({
             query: data
         }).then(res=>{
-            return res.data
+            return res.data!
         })
 
     }
 
-    static create(data: any = {}): any {
+     create(data: any = {}): any {
         return apiClient.connections.initiateConnection({
             body: data
         }).then(res=>res.data)

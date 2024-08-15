@@ -161,12 +161,14 @@ export class Actions {
      * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
-        return apiClient.actionsV2.v2ExecuteAction({
+    async execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
+        const {data:res,error} = await apiClient.actionsV2.v2ExecuteAction({
             body: data.requestBody,
             path: {
                 actionId: data.actionName
             }
-        }).then(res => res.data!)
+        })
+
+        return res!
     }
 }

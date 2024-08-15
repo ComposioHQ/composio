@@ -22,6 +22,23 @@ describe("Entity class tests", () => {
         expect(connection.appUniqueId).toBe(app);
     });
 
+    it("execute action", async () => {
+        const connectedAccount = await entity.getConnection("github");
+
+        expect(connectedAccount).toHaveProperty('id');
+        expect(connectedAccount).toHaveProperty('appUniqueId', 'github');
+        const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
+        const requestBody = {};
+      
+        const executionResult = await entity.execute(actionName, requestBody, undefined, connectedAccount.id);
+        expect(executionResult).toBeDefined();
+        // @ts-ignore
+        expect(executionResult.execution_details).toHaveProperty('executed', true);
+        expect(executionResult.response_data["authorizations_url"]).toBeDefined();
+    });
+
+  
+
     it("get connections", async () => {
         const connections = await entity.getConnections();
         expect(connections.length).toBeGreaterThan(0);
@@ -49,4 +66,5 @@ describe("Entity class tests", () => {
         const connection = await entity.initiateConnection("github");
         expect(connection.connectionStatus).toBe("INITIATED");
     });
+    
 });
