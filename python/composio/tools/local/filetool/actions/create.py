@@ -77,10 +77,14 @@ class CreateFile(BaseFileAction):
                 success=True,
             )
         except FileExistsError as e:
-            return CreateFileResponse(error=f"File or directory already exists: {str(e)}")
+            return CreateFileResponse(
+                error=f"File or directory already exists: {str(e)}"
+            )
         except PermissionError as e:
             return CreateFileResponse(error=f"Permission denied: {str(e)}")
         except FileNotFoundError as e:
-            return CreateFileResponse(error=f"Parent directory does not exist: {str(e)}")
+            return CreateFileResponse(
+                error=f"Parent directory does not exist: {str(e)}"
+            )
         except OSError as e:
             return CreateFileResponse(error=f"OS error occurred: {str(e)}")

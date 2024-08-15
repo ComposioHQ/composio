@@ -121,7 +121,9 @@ class ExecCommand(BaseExecCommand):
         output_dir = shell.exec(cmd="pwd")
         current_shell_pwd = f"Currently in {output_dir[STDOUT]}"
         if output[STDERR] != "":
-            current_shell_pwd = f"Failed to get current directory, error: {output_dir[STDERR]}"
+            current_shell_pwd = (
+                f"Failed to get current directory, error: {output_dir[STDERR]}"
+            )
         return ShellExecResponse(
             stdout=output[STDOUT],
             stderr=output[STDERR],

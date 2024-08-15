@@ -1,21 +1,17 @@
 from inputs import from_github
+from langchain_core.messages import HumanMessage
 
 from agent import composio_toolset, graph
+
 from composio_langgraph import Action
-from langchain_core.messages import HumanMessage
+
 
 def main() -> None:
     """Run the agent."""
     repo, issue = from_github()
     try:
         final_state = graph.invoke(
-            {
-                "messages": [
-                    HumanMessage(
-                        content=f"{issue} in the repo: {repo}"
-                    )
-                ]
-            },
+            {"messages": [HumanMessage(content=f"{issue} in the repo: {repo}")]},
             {"recursion_limit": 50},
         )
 

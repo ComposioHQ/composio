@@ -1,24 +1,21 @@
 """CrewAI SWE Agent"""
 
+import operator
 import os
+from typing import Annotated, Literal, Sequence, TypedDict
 
 import dotenv
-
-#from custom_tools import say
-from langchain_openai import ChatOpenAI
-
-from typing import Literal, Annotated, Sequence, TypedDict
-import operator
-from dotenv import load_dotenv
-from langchain.globals import set_llm_cache
-from langchain_community.cache import SQLiteCache
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+# from custom_tools import say
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
+from prompts import frontend_engineer_prompt, pm_prompt
+
 from composio_langgraph import Action, App, ComposioToolSet, WorkspaceType
-from prompts import frontend_engineer_prompt,pm_prompt
+
 
 # Load environment variables from .env
 dotenv.load_dotenv()
@@ -29,7 +26,9 @@ openai_client = ChatOpenAI(
     model="gpt-4-turbo",
 )
 composio_toolset = ComposioToolSet(
-    workspace_config=WorkspaceType.Docker(image="composio/composio:dev", persistent=True)
+    workspace_config=WorkspaceType.Docker(
+        image="composio/composio:dev", persistent=True
+    )
 )
 
 # Get required tools
@@ -51,7 +50,7 @@ coder_tools = [
             App.SHELLTOOL,
             App.BROWSERTOOL,
         ]
-    )
+    ),
 ]
 
 coder_tool_node = ToolNode(coder_tools)
@@ -65,16 +64,19 @@ pm_tools = composio_toolset.get_tools(
 
 pm_tool_node = ToolNode(pm_tools)
 
+
 # Define AgentState
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     sender: str
+
 
 # Agent names
 coding_agent_name = "Coder"
 coder_tool_node_name = "coder_tool"
 pm_agent_name = "PM"
 pm_tool_node_name = "pm_tool"
+
 
 # Helper function for agent nodes
 def create_agent_node(agent, name):
@@ -105,13 +107,19 @@ coding_node = create_agent_node(coding_agent, coding_agent_name)
 pm_agent = create_agent(pm_prompt, pm_tools)
 pm_node = create_agent_node(pm_agent, pm_agent_name)
 
+
 # Router function
-def router(state) -> Literal["call_tool", "pm", "__end__", "continue",]:
+def router(
+    state,
+) -> Literal["call_tool", "pm", "__end__", "continue",]:
     last_message = state["messages"][-1]
     sender = state["sender"]
     if last_message.tool_calls:
         return "call_tool"
-    if "LANDING PAGE READY FOR REVIEW" in last_message.content and sender == coding_agent_name:
+    if (
+        "LANDING PAGE READY FOR REVIEW" in last_message.content
+        and sender == coding_agent_name
+    ):
         return "pm"
     if "LANDING PAGE LOOKS GOOD" in last_message.content and sender == pm_agent_name:
         return "__end__"
@@ -138,9 +146,7 @@ workflow.add_conditional_edges(
 )
 
 workflow.add_conditional_edges(
-  pm_tool_node_name,
-  lambda x: x["sender"],
-  {pm_agent_name: pm_agent_name}
+    pm_tool_node_name, lambda x: x["sender"], {pm_agent_name: pm_agent_name}
 )
 
 workflow.add_conditional_edges(

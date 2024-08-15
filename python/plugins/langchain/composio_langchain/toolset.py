@@ -122,9 +122,11 @@ class ComposioToolSet(BaseComposioToolSet):
         action = schema["name"]
         description = schema["description"]
         schema_params = schema["parameters"]
-        
+
         if len(description) > 1024:
-            self.logger.debug(f"Description for {action} is > 1024 characters. Truncating it.")
+            self.logger.debug(
+                f"Description for {action} is > 1024 characters. Truncating it."
+            )
             description = description[:1024]
 
         action_func = self._wrap_action(

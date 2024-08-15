@@ -1,13 +1,13 @@
 import argparse
 
+from langchain_core.messages import HumanMessage
+
 from agent import composio_toolset, graph
+
+from composio_langgraph import Action
 
 from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
-
-from langchain_core.messages import HumanMessage
-
-from composio_langgraph import Action
 
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
@@ -15,7 +15,7 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
 
     # Set the workspace for the tools to run.
     composio_toolset.set_workspace_id(workspace_id)
-    
+
     # get the git tree
     git_tree_response = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_REPO_TREE,
@@ -76,5 +76,5 @@ if __name__ == "__main__":
         dry_run=False,
         test_range=test_range,
         test_instance_ids=test_instance_ids_list,
-        #image_name="composio/composio:dev", # if you are doing local dev
+        # image_name="composio/composio:dev", # if you are doing local dev
     )
