@@ -41,11 +41,12 @@ export class Composio {
         // Instantiate models with dependencies as needed.
         this.connectedAccounts = new ConnectedAccounts(this.backendClient);
         this.triggers = new Triggers(this.backendClient);
-        this.apps = new Apps();
+        this.apps = new Apps(this.backendClient);
         this.actions = new Actions(this.backendClient);
         this.integrations = new Integrations();
         this.activeTriggers = new ActiveTriggers();
     }
+    
 
     /**
      * Retrieves an Entity instance associated with a given ID.

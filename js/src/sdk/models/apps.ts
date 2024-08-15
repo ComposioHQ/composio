@@ -1,5 +1,6 @@
 import { AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
+import { BackendClient } from "./backendClient";
 
 export type GetAppData = {
     appKey: string;
@@ -10,6 +11,10 @@ export type GetAppResponse = SingleAppInfoResDTO;
 export type ListAllAppsResponse = AppListResDTO
 
 export class Apps {
+    backendClient: BackendClient;
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient;
+    }
     /**
      * Retrieves a list of all available apps in the Composio platform.
      * 
@@ -18,7 +23,7 @@ export class Apps {
      * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    static list(): Promise<AppListResDTO> {
+    list(): Promise<AppListResDTO> {
         return apiClient.apps.getApps().then(res => res.data!)
     }
 
@@ -31,7 +36,7 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    static get(data: GetAppData) {
+    get(data: GetAppData) {
         return apiClient.apps.getApp({
             path:{
                 appName: data.appKey

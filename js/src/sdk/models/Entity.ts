@@ -14,12 +14,14 @@ export class Entity {
     backendClient: BackendClient;
     triggerModel: Triggers;
     actionsModel: Actions;
+    apps: Apps;
 
     constructor(backendClient: BackendClient, id: string = 'default') {
         this.backendClient = backendClient;
         this.id = id;
         this.triggerModel = new Triggers(this.backendClient);
         this.actionsModel = new Actions(this.backendClient);
+        this.apps = new Apps(this.backendClient);
     }
 
     async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
@@ -29,7 +31,7 @@ export class Entity {
         if (!action) {
             throw new Error("Could not find action: " + actionName);
         }
-        const app = await Apps.get({
+        const app = await this.apps.get({
             appKey: action.appKey!
         });
         if ((app.yaml as any).no_auth) {
@@ -150,7 +152,7 @@ export class Entity {
     ): Promise<ConnectionRequest> {
 
         // Get the app details from the client
-        const app = await Apps.get({ appKey: appName });
+        const app = await this.apps.get({ appKey: appName });
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
         let integration = integrationId ? await Integrations.get({ integrationId: integrationId }) : null;
