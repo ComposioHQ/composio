@@ -63,9 +63,9 @@ class BaseExecCommand(Action):
       2. Or if you want to `ls -a` use this tool to run the command.
       3. Or if you want to `cd` to a directory, use this tool to run the command.
 
-    You should only include a *SINGLE* command in the command section and then
+    You should only include a SINGLE command in the command section and then
     wait for a response from the shell before continuing with more discussion
-    and commands. If you'd like to issue two commands at once, PLEASE DO NOT DO THAT!
+    and commands.
 
     You're free to use any other bash commands you want (e.g. find, grep, cat,
     ls, cd) in addition to the special commands listed above. However, the
@@ -92,7 +92,7 @@ class ExecCommand(BaseExecCommand):
 
     You should only include a *SINGLE* command in the command section and then
     wait for a response from the shell before continuing with more discussion
-    and commands. If you'd like to issue two commands at once, PLEASE DO NOT DO THAT!
+    and commands.
 
     You're free to use any other bash commands you want (e.g. find, grep, cat,
     ls, cd) in addition to the special commands listed above. However, the

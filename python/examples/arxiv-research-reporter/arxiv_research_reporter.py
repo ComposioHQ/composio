@@ -12,14 +12,14 @@ dotenv.load_dotenv()
 llm = OpenAI(model="gpt-4o")
 
 research_topic = "LLM agents function calling"
-target_repo = "sawradip/sawradip"
+target_repo = "composiohq/composio"
 n_issues = 3
 
 
 def main():
     # Get All the tools
     composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_actions(actions=[Action.GITHUB_ISSUES_CREATE])
+    tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
     arxiv_tool = ArxivToolSpec()
 
     prefix_messages = [

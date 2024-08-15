@@ -33,7 +33,7 @@
     "thumbsRating": true
   },
   "search": {
-    "prompt": "Make my agents useful _/\\_ ..."
+    "prompt": "Make my agents useful ..."
   },
   "metadata": {
     "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
@@ -65,7 +65,7 @@
     },
     {
       "name": "Examples",
-      "url": "guides"
+      "url": "examples"
     },
     {
       "name": "API",
@@ -84,7 +84,6 @@
           "group": "Core Concepts",
           "pages": [
             "introduction/foundations/basic",
-            "introduction/foundations/howtos/get_api_key",
             "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/action-guide",
@@ -115,7 +114,8 @@
         "framework/llamaindex",
         "framework/camelai",
         "framework/praisonai",
-        "framework/langgraph"
+        "framework/langgraph",
+        "framework/phidata"
           ]
         }
       ]
@@ -129,22 +129,23 @@
           "icon": "code",
           "iconType": "solid",
           "pages": [
-        "javascript/langchain",
-        "javascript/cloudflare",
-        "javascript/openai"
+            "javascript/langchain",
+            "javascript/cloudflare",
+            "javascript/openai",
+            "javascript/vercel"
           ]
         }
       ]
     },
     {
-      "group": "CLI",
+      "group": "SweKit (JS)",
       "pages": [
-        "sdk/cli/install",
-        "sdk/cli/trigger"
+        "swekit-js/introduction",
+        "swekit-js/workspace-env"
       ]
     },
     {
-      "group": "SweKit",
+      "group": "SweKit (Python)",
       "pages": [
         "swekit/introduction",
         "swekit/workspace-env",
@@ -152,14 +153,6 @@
         "swekit/benchmarks"
       ]
     },
-    {
-      "group": "SweKit.js",
-      "pages": [
-        "swekit-js/introduction",
-        "swekit-js/workspace-env"
-      ]
-    },
-
      {
       "group": "Guides",
       "pages": [
@@ -171,8 +164,16 @@
         ]
       },
       {
+        "group": "Using CLI",
+        "pages": [
+          "patterns/cli/install",
+          "patterns/cli/trigger"
+        ]
+      },
+      {
         "group": "How Tos",
         "pages": [
+          "patterns/howtos/get_api_key",
           "patterns/howtos/usecase",
           "patterns/howtos/tool-finding",
           "patterns/howtos/listing-connections",
@@ -190,27 +191,27 @@
     {
       "group": "Examples",
       "pages": [
-        "guides/examples/Example",
+        "examples/examples/Example",
     {
           "group": "Python Guides", 
           "pages":[
-            "guides/python/investment-analyst",
-            "guides/python/research-assistant",
-            "guides/python/sql-agent",
-            "guides/python/competitor-researcher",
-            "guides/python/rag_agent",
-            "guides/python/interpreter_agent",
-            "guides/python/news-summary",
-            "guides/python/calendar-agent"
+            "examples/python/investment-analyst",
+            "examples/python/research-assistant",
+            "examples/python/sql-agent",
+            "examples/python/competitor-researcher",
+            "examples/python/rag_agent",
+            "examples/python/interpreter_agent",
+            "examples/python/news-summary",
+            "examples/python/calendar-agent"
         ]
       },
       {
         "group":"Javascript Guides",
         "pages":[
-          "guides/javascript/calendar-agent",
-          "guides/javascript/code-execution-agent",
-          "guides/javascript/rag_agent",
-          "guides/javascript/investment-analyst"
+          "examples/javascript/calendar-agent",
+          "examples/javascript/code-execution-agent",
+          "examples/javascript/rag_agent",
+          "examples/javascript/investment-analyst"
         ]
       }
         ]
@@ -282,6 +283,18 @@
     }
   },
   "redirects": [
+    {
+      "source": "/introduction/foundations/howtos/get_api_key",
+      "destination": "/patterns/howtos/get_api_key"
+    },
+    {
+      "source": "/sdk/cli/trigger",
+      "destination": "/patterns/cli/trigger"
+    },
+    {
+      "source": "/guides/:slug1*",
+      "destination": "/examples/:slug1*"
+    },
     {
       "source": "/apps/usecases/langchain_blogs/:slug2*",
       "destination": "https://composio.dev/tools/:slug2*"

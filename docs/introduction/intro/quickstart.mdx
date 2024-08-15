@@ -68,8 +68,6 @@ composio_toolset = ComposioToolSet()
 <Tab title="JS">
 <CodeGroup>
 ```javascript Initialise the Composio Tool Set
-import dotenv from 'dotenv';
-dotenv.config();
 
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
@@ -182,7 +180,7 @@ var resp = response.choices[0].message.tool_calls
 console.log(resp);
 
 // Execute
-await composio_toolset.handle_tool_call(response);
+await composio_toolset.handleToolCall(response);
 ```
 </CodeGroup>
 </Tab>
@@ -266,8 +264,6 @@ print(response_after_tool_calls)
 <CodeGroup>
 ```javascript Complete Code
 // Importing necessary modules from the openai and composio-core packages
-import dotenv from 'dotenv';
-dotenv.config();
 
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
@@ -304,7 +300,7 @@ var resp = response.choices[0].message.tool_calls
 console.log(resp);
 
 // Handling the tool call using Composio ToolSet
-await composio_toolset.handle_tool_call(response);
+await composio_toolset.handleToolCall(response);
 
 ```
 </CodeGroup>

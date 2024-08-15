@@ -65,7 +65,7 @@ export function jsonSchemaToTsField(
 }
 
 
-function jsonSchemaPropertiesToTSTypes(value: any) {
+function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
     if(!value.type) {
         return z.object({});
     }
@@ -85,7 +85,7 @@ function jsonSchemaPropertiesToTSTypes(value: any) {
             zodType = z.boolean().describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
             break;
         case "array":
-            zodType = z.array(jsonSchemaToModel(value.items)).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+            zodType = z.array(jsonSchemaPropertiesToTSTypes(value.items)).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
             break;
         case "object":
             zodType = jsonSchemaToModel(value).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
@@ -115,7 +115,7 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
             const anyOfTypes = value.anyOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
             zodType = z.union(anyOfTypes).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
         } else if (value.type) {
-            zodType = jsonSchemaPropertiesToTSTypes(value.type);
+            zodType = jsonSchemaPropertiesToTSTypes(value);
         } else {
             throw new Error(`Missing 'type' property in JSON schema for key: ${key}`);
         }

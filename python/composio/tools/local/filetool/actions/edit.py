@@ -56,7 +56,6 @@ class EditFileResponse(BaseFileResponse):
 
 class EditFile(BaseFileAction):
     """
-
     Use this tools to edit a file.
     THE EDIT COMMAND REQUIRES INDENTATION.
 
@@ -83,7 +82,6 @@ class EditFile(BaseFileAction):
     Result: print(x) will be replaced in the file as first line.
     First and Second line will be removed as end line = 3
     Rest of the file will be unchanged.
-
 
     This action edits a specific part of the file, if you want to rewrite the
     complete file, use `write` tool instead."""

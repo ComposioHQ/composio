@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from composio.tools.local.browsertool import BrowserTool
+from composio.tools.local.clickup.clickup import ClickupLocal
 from composio.tools.local.codeformat import CodeFormatTool
 from composio.tools.local.codegrep import CodeGrepTool
 from composio.tools.local.codeindex import CodeIndexTool
@@ -20,6 +21,7 @@ from composio.tools.local.shelltool.history_keeper import HistoryFetcherTool
 from composio.tools.local.shelltool.shell_exec import ShellTool
 from composio.tools.local.spidertool import SpiderTool
 from composio.tools.local.sqltool import SqlTool
+from composio.tools.local.system import SystemTools
 from composio.tools.local.webtool import WebTool
 from composio.tools.local.zep import ZepTool
 
@@ -29,6 +31,7 @@ TOOLS_PATH = Path(__file__).parent
 TOOLS = [
     CodeIndexTool,
     CodeFormatTool,
+    ClickupLocal,
     BrowserTool,
     CodeGrepTool,
     CodeMapTool,
@@ -44,6 +47,7 @@ TOOLS = [
     ShellTool,
     SpiderTool,
     SqlTool,
+    SystemTools,
     WebTool,
     ZepTool,
     ImageAnalyserTool,

@@ -21,12 +21,12 @@ each user would be represented as an individual entity.
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```Python Create or get an entity
+```python Create or get an entity
 from composio import ComposioToolSet
 
 toolset = ComposioToolSet(entity_id="default")
 
-entity = toolset.getEntity(id='default')
+entity = toolset.get_entity(id='default')
 ```
 </CodeGroup>
 </Tab>
@@ -34,16 +34,13 @@ entity = toolset.getEntity(id='default')
 <Tab title="Javascript">
 <CodeGroup>
 ```javascript Create or get an entity
-import dotenv from 'dotenv';
-dotenv.config();
-
 import { Composio } from "composio-core";
 
 const composio_client = new Composio({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const entity = await composio_client.getEntity('user_email_id');
+const entity = composio_client.getEntity('user_email_id');
 ```
 </CodeGroup>
 </Tab>
@@ -199,12 +196,17 @@ const client = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY
 });
 
-const entity = await client.getEntity({ id: "default" });
+const entity = await client.getEntity("default");
 
 // Get the integration id from the dashboard
-const integration = await client.integrations.get({ integrationId: "{{integration_id}}" });
+const integration = await client.integrations.get({
+    integrationId: "{{integration_id}}"
+});
 
-console.log("integration.expectedInputFields", integration.expectedInputFields)
+console.log(
+    "Expected input fields for the integration:",
+    integration.expectedInputFields
+)
 ```
 </CodeGroup>
 
@@ -212,22 +214,19 @@ Complete Authentication process by passing the auth config to the initiate conne
 
 <CodeGroup>
 ```javascript javascript
-const entity = await client.getEntity({ id: "default" });
+const entity = await client.getEntity("default");
 
 const params = {
     "api_key": "YOUR_API_KEY"
 }
-const connection = await entity.initiateConnection('serpapi',null, params);
+const connection = await entity.initiateConnection(
+    'serpapi',
+    null,
+    params
+);
 ```
 </CodeGroup>
 
-</Tab>
-<Tab title="API">
-<CodeGroup>
-```bash Connecting an account
-Coming soon!
-```
-</CodeGroup>
 </Tab>
 </Tabs>
 
@@ -270,34 +269,104 @@ openai_client = OpenAI()
 # can be configured to use the entity id of the user
 tool_set = ComposioToolSet(entity_id="melissa") 
 
-actions = entity.get_actions(app_name = App.GITHUB)
+actions = tool_set.get_tools(apps=[App.GITHUB])
 ```
 </CodeGroup>
-
-Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
-
+</Tab>
+<Tab title="Javascript">
 <CodeGroup>
-```python Execute Agent
-actions = tool_set.get_tools(apps=[App.GITHUB])
+```javascript Execute Agent
+import { OpenAIToolSet } from "composio-core";
+import { OpenAI } from "openai";
 
-my_task = "Star a repo composiohq/composio on GitHub"
+const toolset = new OpenAIToolSet({ entityId: "melissa"});
 
-response = openai_client.chat.completions.create(
-    model="gpt-4-turbo-preview",
-    tools=actions,  # Passing actions we fetched earlier.
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": my_task},
-    ],
-)
-tool_set.handle_tool_calls(response=response, entity_id="melissa") # entity_id is optional as it has been set in the toolset
+task = "Star a repo composiohq/composio on GitHub"
+
+const llm = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+const composioToolset = new OpenAIToolSet();
+
+const tools = await composioToolset.getTools({
+    apps: ["github"],
+});
+const assistantThread = await llm.beta.threads.create({
+    messages: [
+        {
+            role: "assistant",
+            content: "You are an assistant tasked with starring a repository on GitHub."
+        }
+    ]
+});
+
+const assistant = await llm.beta.assistants.create({
+    name: "SWE agent",
+    instructions: `Your goal is to star the repository: ComposioHq/composio`,
+    model: "gpt-4o",
+    tools: tools
+});
+
+  await llm.beta.threads.messages.create(
+    assistantThread.id,
+    {
+      role: "user",
+      content: issue
+    }
+  );
+  const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
+    assistant_id: assistant.id,
+    instructions: `Repo is: ${repo} and your goal is to ${issue}`,
+    tool_choice: "required"
+  });
+ 
+  await composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
 ```
 </CodeGroup>
 
 </Tab>
+</Tabs>
 
+Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python execute agent
+
+my_task = "Star a repo composiohq/composio on GitHub"
+
+# Setup openai assistant
+assistant_instruction = "You are a super intelligent personal assistant"
+
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions,  # type: ignore
+)
+
+
+# create a thread
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+
+# Execute Agent with integrations
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+response_after_tool_calls = tool_set.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+
+
+
+```
+</CodeGroup>
+
+</Tab>
 <Tab title="Javascript">
-
 <CodeGroup>
 ```javascript Fetch tools
 import { OpenAIToolSet } from "composio-core";
@@ -310,28 +379,7 @@ const entity = toolset.client.getEntity('default');
 const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
-
-Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
-
-<CodeGroup>
-```javascript execute agent
-const task = "Star a repo composiohq/composio on GitHub"
-
-const response = await openAI.chat.completions.create({
-    model: "gpt-4-turbo-preview",
-    tools: tools,
-    messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: task },
-    ],
-});
-
-await toolset.handle_tool_call(response, entity.id);
-```
-</CodeGroup>
-
 </Tab>
-
 </Tabs>
 
 You can use the above pattern to make agents at a user level to perform tasks on their behalf.
