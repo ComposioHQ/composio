@@ -29,7 +29,7 @@ openai_client = ChatOpenAI(
     model="gpt-4-turbo",
 )
 composio_toolset = ComposioToolSet(
-    workspace_config=WorkspaceType.Docker(image="composio/composio:dev", per)
+    workspace_config=WorkspaceType.Docker(image="composio/composio:dev", persistent=True)
 )
 
 # Get required tools
@@ -178,9 +178,7 @@ At Composio, he is leading Tech and Product teams and is responsible for buildin
 around AI Agents.
 Make the site with multiple pages, include a blog, a contact page, and a home page.
 Make the website as classy as possible, use a minimalist approach, think through the design before you start coding.
-You would start from the directory /Users/karanvaidya/codes/composio_sdk/python/swe/examples/langgraph_agent.
-Create the website in the directory /Users/karanvaidya/codes/composio_sdk/python/swe/examples/langgraph_agent/personal_website which is an empty directory.
-Image of Karan: /Users/karanvaidya/Downloads/IMG_20171230_084709_Bokeh.jpeg"""
+Image of Karan: /root/karan_image.jpeg"""
                     )
                 ]
             },
