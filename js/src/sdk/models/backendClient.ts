@@ -36,6 +36,11 @@ export class BackendClient {
             throw new Error(`API Key is required for initializing the client`);
         }
 
+        // Validate baseUrl
+        if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+            throw new Error(`Base URL is not valid, got ${baseUrl}`);
+        }
+
         this.initializeApiClient();
     }
 
