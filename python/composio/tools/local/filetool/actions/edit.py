@@ -103,6 +103,7 @@ class EditFile(BaseFileAction):
                     path=request_data.file_path,
                 )
             )
+            
             if file is None:
                 raise FileNotFoundError(f"File not found: {request_data.file_path}")
 
