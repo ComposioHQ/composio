@@ -8,6 +8,7 @@ module.exports = {
         "html"
     ],
     reporters: [
-        "default"
+        "default",
+        "jest-html-reporters"
     ],
 };

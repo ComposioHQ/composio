@@ -27,7 +27,7 @@ describe("ComposioToolSet class tests", () => {
         expect(tools).toBeInstanceOf(Array);
     });
 
-    it.failing("should execute an action", async () => {
+    it("should execute an action", async () => {
    
        const actionName = "github_issues_create";
        const requestBody = {

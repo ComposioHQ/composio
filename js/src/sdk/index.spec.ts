@@ -14,7 +14,7 @@ describe("Basic SDK spec suite", () => {
         expect(() => new Composio()).toThrow('API Key is required for initializing the client');
     });
 
-    it.failing("should get an entity and then fetch a connection", async () => {
+    it("should get an entity and then fetch a connection", async () => {
         const app = "github";
         const composio = new Composio(COMPOSIO_API_KEY, BACKEND_HERMES_URL);
         const entity = composio.getEntity("default");

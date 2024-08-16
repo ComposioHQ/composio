@@ -5,6 +5,9 @@ import {BackendClient} from "./backendClient"
 
 import apiClient from "../client/client"
 import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
+
+type RequiredQuery = TriggersControllerListTriggersData["query"];
+
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
 
@@ -23,10 +26,12 @@ export class Triggers {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-     list(data: TriggersControllerListTriggersData = {}): Promise<TriggersControllerListTriggersResponse> {
+    list(data?: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
         //@ts-ignore
         return apiClient.triggers.listTriggers({
-            query: data
+            query: {
+                appNames: data?.appNames,
+            }
         }).then(res => res.data)
     }
 

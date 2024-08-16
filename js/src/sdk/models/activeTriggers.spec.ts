@@ -18,14 +18,11 @@ describe("Apps class tests", () => {
         expect(activeTriggersList).not.toHaveLength(0);
     });
 
-    it.failing("should get a list of actions", async () => {
+    it("should get a list of actions", async () => {
         const activeTriggersList = await activeTriggers.list();
-        const firstTrigger
-         = activeTriggersList[0];
-        const activeTrigger = await activeTriggers.get({ 
-            path:{
-                triggerId: firstTrigger
-                .id
+        const firstTrigger= activeTriggersList[0];
+        const activeTrigger = await activeTriggers.get({ path:{
+                triggerId: firstTrigger.id
             }
         });
         expect(activeTrigger).toBeDefined();

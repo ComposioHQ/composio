@@ -16,13 +16,13 @@ describe("Entity class tests", () => {
         expect(entity.id).toBe("default");
     });
 
-    it.failing("get connection", async () => {
+    it("get connection", async () => {
         const app = "github";
         const connection = await entity.getConnection(app);
         expect(connection.appUniqueId).toBe(app);
     });
 
-    it.failing("execute action", async () => {
+    it("execute action", async () => {
         const connectedAccount = await entity.getConnection("github");
 
         expect(connectedAccount).toHaveProperty('id');

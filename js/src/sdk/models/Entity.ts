@@ -93,7 +93,6 @@ export class Entity {
             user_uuid: this.id,
         });
 
-        console.log(connectedAccountId)
         if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
             return null;
         }

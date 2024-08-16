@@ -19,7 +19,7 @@ export class ActiveTriggers {
      */
      get(data: any): any {
         //@ts-ignore
-        return apiClient.triggers.getTrigger({ data }).then(res => res.data)
+        return apiClient.triggers.getTrigger(data).then(res => res.data)
     }
 
     /**

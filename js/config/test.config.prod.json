@@ -1,4 +1,4 @@
 {
     "COMPOSIO_API_KEY": "cq5ke4zt8e7a1lmen823",
-    "BACKEND_HERMES_URL": "https://backend.composio.dev"
+    "BACKEND_HERMES_URL": "http://127.0.0.1:9900"
 }
