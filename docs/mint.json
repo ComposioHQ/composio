@@ -93,6 +93,7 @@
         {
           "group": "Advanced",
           "pages": [
+            "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/integrations/custom-integration"
