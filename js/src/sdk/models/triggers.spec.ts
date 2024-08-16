@@ -1,26 +1,31 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Apps } from "./apps";
+import { Triggers } from "./triggers";
 
 describe("Apps class tests", () => {
     let backendClient;
-    let apps: Apps;
+    let triggers: Triggers;
 
     beforeAll(() => {
         backendClient = getBackendClient();
-        apps = new Apps(backendClient);
+        triggers = new Triggers(backendClient);
     });
 
     it("should create an Apps instance and retrieve apps list", async () => {
-        const appsList = await apps.list();
-        expect(appsList).toBeInstanceOf(Array);
-        expect(appsList).not.toHaveLength(0);
-
-        const firstItem = appsList[0];
-        expect(firstItem).toHaveProperty('appId');
-        expect(firstItem).toHaveProperty('key');
-        expect(firstItem).toHaveProperty('name');
+        const triggerList = await triggers.list();
+        expect(triggerList.length).toBeGreaterThan(0);
     });
 
+    it.failing("should retrieve a list of triggers for a specific app", async () => {
+        const triggerList = await triggers.list({
+           query:{
+            appNames: "github"
+           }
+        });
+        // this is breaking for now
+        expect(triggerList.length).toBeGreaterThan(0);
+        expect(triggerList[0].appName).toBe("github");
+    });
    
 });

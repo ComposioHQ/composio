@@ -1,3 +1,4 @@
+import { AppConnectorControllerDeleteConnectorData } from "../client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 
@@ -138,4 +139,8 @@ export class Integrations {
             return res.data
         });
     }
+
+    delete(data: AppConnectorControllerDeleteConnectorData): any {
+        return apiClient.appConnector.deleteConnector(data).then(res=>res.data)
+    }   
 }

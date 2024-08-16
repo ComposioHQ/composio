@@ -39,4 +39,12 @@ describe("Integrations class tests", () => {
         expect(integration.appId).toBe("01e22f33-dc3f-46ae-b58d-050e4d2d1909");
         expect(integration.authScheme).toBe("OAUTH2");
     });
+
+    it("should delete the created integration", async () => {
+        const integration = await integrations.delete({
+            path:{
+                integrationId: createdIntegrationId
+            }
+        });
+    });
 });
