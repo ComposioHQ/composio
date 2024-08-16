@@ -7,7 +7,7 @@ import typing as t
 
 from pydantic import BaseModel
 
-from composio.tools.local.base.action import Action
+from composio.tools.local.base import Action
 
 
 class AddMemoryRequest(BaseModel):
