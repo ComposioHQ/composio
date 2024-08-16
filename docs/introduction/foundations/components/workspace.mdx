@@ -1,0 +1,257 @@
+---
+title: "Workspace Environments"
+sidebarTitle: "Workspace Environments"
+icon: "server"
+description: "Configure and utilize different workspace environments for running your agents securely and with custom configurations."
+---
+
+## Overview
+
+Workspace environments facilitate **isolated** and **secure** execution of tools with **customizable configurations**. This provides a range of environments tailored to your agents' needs, encompassing **security**, **configuration**, **CPU allocation**, and **network port access** for public services.
+
+## Why Workspace Environments Matters?
+
+Workspace environments are essential for:
+- **Security**: Isolating execution to protect the host system and sensitive data.
+- **Specific Configuration Needs**: Tailoring the environment to the requirements of different agents.
+- **Resource Allocation**: Allocating specific CPU and memory resources to agents.
+- **Networking**: Configuring open ports for services that need to be accessible publicly.
+
+## Supported Environments
+
+<CardGroup cols={2}>
+  <Card
+    title="Local"
+    icon="laptop"
+    href="#local-environment"
+  >
+    Run agents directly on your local machine.
+  </Card>
+  <Card
+    title="Docker"
+    icon="docker"
+    href="#docker-environment"
+  >
+    Isolate agents in Docker containers for enhanced security.
+  </Card>
+  <Card
+    title="E2B"
+    icon="cloud"
+    href="#e2b-environment"
+  >
+    Utilize E2B sandboxes for cloud-based execution.
+  </Card>
+  <Card
+    title="Fly.io"
+    icon="plane"
+    href="#flyio-environment"
+  >
+    Deploy agents on Fly.io for scalable, distributed execution.
+  </Card>
+</CardGroup>
+
+## Configuring Workspace Environments
+
+### Configurable Parameters
+
+When configuring your workspace environment, consider the following customizable parameters to tailor the environment to your SWE agents' needs:
+
+- **`github_access_token`**: Optional. This token is used for GitHub operations. If not provided, the token from the active composio account will be utilized.
+- **`environment`**: Optional. A set of key-value pairs representing environment variables specific to the workspace's needs.
+- **`persistent`**: A boolean flag, when set to `True`, ensures that the workspace persists beyond the execution of an agent. This is particularly useful for scenarios where you want your agent to deploy a service, such as a website, and require that the service remains active and accessible after the agent's task is complete.
+- **`ports`**: Optional. A dictionary specifying the port mappings for services that need to be publicly accessible. For example, if your agent is running a web server, you can map the internal port to an external one to allow public access.
+
+These parameters empower you to customize the security, configuration, resource allocation, and networking aspects of your workspace environment, ensuring optimal conditions for your SWE agents' operation.
+
+### Local Environment
+
+To run your agent on the local machine:
+
+<CodeGroup>
+  ```python Python
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Host()
+)
+```
+
+  ```javascript JS
+import { Workspace } from "composio-core"
+
+toolset = new OpenAIToolset({
+    workspaceConfig: Workspace.Host({})
+})
+```
+</CodeGroup>
+
+
+### Docker Environment
+
+For enhanced security and isolation, use Docker:
+
+
+<CodeGroup>
+  ```python Python
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker()
+)
+```
+
+```javascript JS
+import { OpenAIToolset, Workspace } from "composio-core"
+
+toolset = new OpenAIToolset({
+  workspaceConfig: Workspace.Docker({})
+})
+```
+</CodeGroup>
+
+You can configure exposed ports for development:
+<CodeGroup>
+```python Python
+#Opening ports on Docker for web apps
+toolset = ComposioToolSet(
+  workspace_config=WorkspaceType.Docker(
+    ports={
+      8001: 8001,
+    }
+  )
+)
+```
+
+```javascript JS
+//Opening ports on Docker for web apps
+toolset = new OpenAIToolset({
+  workspaceConfig: Workspace.Docker({
+    ports: {
+      8001: 8001,
+    }
+  })
+})
+```
+</CodeGroup>
+<Info>
+  For more details on configuring Docker ports for Python, refer to the [Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run).
+</Info>
+<Info>
+  For more details on configuring Docker ports for Javascript, refer to the [Dockerode SDK documentation](https://www.npmjs.com/package/dockerode).
+</Info>
+
+### E2B Environment
+
+To use E2B sandboxes for cloud-based execution:
+<CodeGroup>
+```python Python E2B Environment
+from composio import ComposioToolSet, WorkspaceType
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.E2B(),
+)
+
+```
+```javascript JS E2B Environment
+import { OpenAIToolset, Workspace } from "composio-core"
+
+toolset = new OpenAIToolset({
+  workspaceConfig: Workspace.E2B({})
+})
+
+```
+</CodeGroup>
+
+<Warning>
+  To use E2B sandboxes, you need to set the `E2B_API_KEY` environment variable with your E2B API key.
+</Warning>
+
+### FlyIO Environment
+
+For scalable, distributed execution on Fly.io:
+
+<CodeGroup>
+```python Fly.io Environment
+from composio import ComposioToolSet, WorkspaceType
+
+toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.FlyIO(),
+)
+```
+
+```javascript JS
+Coming Soon
+```
+</CodeGroup>
+
+You can configure ports for development or deployment:
+
+<CodeGroup>
+```python Python
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.FlyIO(
+        image="angrybayblade/composio:dev",
+        ports=[{
+            "ports": [{"port": 443, "handlers": ["tls", "http"]}],
+            "internal_port": 80,
+            "protocol": "tcp"
+        }],
+    )
+)
+```
+
+```javascript JS
+Coming Soon
+```
+</CodeGroup>
+
+<Info>
+  For more information on configuring network ports on Fly.io machines, check the [Fly.io Machines API documentation](https://fly.io/docs/machines/api/machines-resource/#create-a-machine-with-services).
+</Info>
+
+<Warning>
+  To use Fly.io, you need to set the `FLY_API_TOKEN` environment variable with your Fly.io API token.
+</Warning>
+
+### Customizing Workspace Environment Variables
+
+You can customize the workspace environment by adding environment variables while creating workspace.
+<CodeGroup>
+``` python Python
+composio_toolset = ComposioToolSet(
+    workspace_config=WorkspaceType.Docker(
+        environment={
+            "SOME_API_TOKEN": "<SOME_API_TOKEN>",
+        }
+    )
+)
+```
+
+```javascript JS
+composio_toolset = new OpenAIToolset({
+    workspaceConfig: WorkspaceType.Docker({
+        environment: {
+            "SOME_API_TOKEN": "<SOME_API_TOKEN>",
+        }
+    })
+})
+```
+</CodeGroup>
+
+
+### Retrieve Workspace Network Details
+
+To effectively manage and interact with your workspace configuration, the `ComposioToolSet()` object exposes several properties:
+
+<AccordionGroup>
+  <Accordion title="Workspace Host" defaultOpen>
+    Access the workspace's hostname using `toolset.workspace.host`. This hostname, which is typically `localhost` for Docker and local environments, becomes a publicly accessible address for E2B and Fly.io workspaces. It's vital for hosting services and establishing network connections. Retrieve it manually or programmatically with `as_prompt`.
+  </Accordion>
+
+  <Accordion title="Workspace Ports">
+    The `toolset.workspace.ports` property lists the workspace's open ports, informing you about the available network interfaces for your services. This knowledge is key for communication setup and service hosting.
+  </Accordion>
+
+  <Accordion title="Workspace Summary">
+    Invoke `toolset.workspace.as_prompt()` to generate a summary of the workspace details, including hostname and open ports. Ideal for support agents, this method provides a quick and clear overview of the workspace configuration.
+  </Accordion>
+</AccordionGroup>
+
+These tools are designed to provide you with all the necessary details for efficient workspace management and service deployment.
