@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx playwright test",
     "build": "tsc  --project . --outDir lib",
     "type-docs": "typedoc"
   },
@@ -14,6 +14,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240718.0",
     "@hey-api/openapi-ts": "^0.46.3",
+    "@playwright/test": "^1.46.0",
     "@types/cli-progress": "^3.11.6",
     "@types/colors": "^1.2.1",
     "@types/dockerode": "^3.3.30",
@@ -43,6 +44,7 @@
     "cli-progress": "^3.12.0",
     "colors": "^1.4.0",
     "dockerode": "^4.0.2",
+    "dotenv": "^16.4.5",
     "e2b": "^0.16.1",
     "enumify": "^2.0.0",
     "hono": "^4.4.11",
