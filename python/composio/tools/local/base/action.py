@@ -17,10 +17,13 @@ from composio.utils.logging import WithLogger
 
 
 def _check_file_uploadable(param_field: dict) -> bool:
-    return isinstance(param_field, dict) and (
-        param_field.get("title") in ["File", "FileType"]) and all(
-        field_name in param_field.get("properties", {})
-        for field_name in ["name", "content"]
+    return (
+        isinstance(param_field, dict)
+        and (param_field.get("title") in ["File", "FileType"])
+        and all(
+            field_name in param_field.get("properties", {})
+            for field_name in ["name", "content"]
+        )
     )
 
 
