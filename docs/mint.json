@@ -79,64 +79,60 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-        "introduction/intro/quickstart",
+        "introduction/intro/quickstart"
+      ]
+    },
+    {
+      "group": "Basics",
+      "pages": [
+        "introduction/foundations/basic",
+        "introduction/foundations/components/entity/entity-guide",
+        "introduction/foundations/components/actions/action-guide",
+        "introduction/foundations/components/triggers/trigger-guide",
+        "introduction/foundations/components/local_tools",
         {
-          "group": "Core Concepts",
+          "group": "Advanced",
           "pages": [
-            "introduction/foundations/basic",
-            "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/local_tools",
-            "introduction/foundations/components/integrations/custom-integration",
-            "introduction/foundations/components/actions/local-code"
+            "introduction/foundations/components/workspace",
+            "introduction/foundations/components/integrations/custom-integration"
+
           ]
         }
       ]
     },
     {
-      "group": "Python",
-      "pages": [
-        "python/introduction",
-        {
-          "group": "With Frameworks",
-          "icon": "code",
-          "iconType": "solid",
-          "pages": [
-      "framework/langchain",
-        "framework/autogen",
-        "framework/crewai",
-        "framework/lyzr",
-        "framework/openai",
-        "framework/julep",
-        "framework/griptape",
+      "group":"Supported Frameworks",
+
+      "pages":[
+        "framework/langchain",
         "framework/llamaindex",
-        "framework/camelai",
-        "framework/praisonai",
-        "framework/langgraph",
-        "framework/phidata"
-          ]
-        }
-      ]
-    },
-            {
-      "group": "Javascript",
-      "pages": [
-       "javascript/openai",
+        "framework/crewai",
+        "javascript/cloudflare",
+        "javascript/vercel",
+
         {
-          "group": "With frameworks",
-          "icon": "code",
-          "iconType": "solid",
+          "group": "Other Frameworks",
           "pages": [
+            "framework/autogen",
+            "framework/crewai",
+            "framework/lyzr",
+            "framework/openai",
+            "framework/julep",
+            "framework/griptape",
+            "framework/camelai",
+            "framework/praisonai",
+            "framework/langgraph",
+            "framework/phidata",
             "javascript/langchain",
-            "javascript/cloudflare",
-            "javascript/openai",
-            "javascript/vercel"
+            "javascript/openai"
           ]
         }
       ]
+      
+
     },
+    
     {
       "group": "SweKit (JS)",
       "pages": [
