@@ -93,7 +93,7 @@ const composio_toolset = new OpenAIToolSet({
 <Tab title="Python">
 <CodeGroup>
 ```python Get GitHub action for starring a repo
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+tools = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 ```
 </CodeGroup>
 </Tab>
@@ -115,7 +115,8 @@ actions: ["github_start_repo"]
 <Tab title="Python">
 <CodeGroup>
 ```python Star a repository using LLM
-my_task = "Star a repo composiohq/composio on GitHub"
+task = "Star a repo composiohq/composio on GitHub"
+
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
     tools=tools,
@@ -124,8 +125,6 @@ response = openai_client.chat.completions.create(
         {"role": "user", "content": task},
     ],
 )
-print(response)
-
 ```
 </CodeGroup>
 </Tab>
@@ -185,6 +184,7 @@ Replace `OPENAIKEY`.
 <Tab title="Python">
 <CodeGroup>
 ```python Complete Code
+
 ## Step 1
 #!pip install composio_core
 #!pip install composio_openai
@@ -194,33 +194,21 @@ Replace `OPENAIKEY`.
 
 ## Step 3
 from openai import OpenAI
-from composio_openai import ComposioToolSet, App,Action
+from composio_openai import ComposioToolSet, App, Action
 
-openai_client = OpenAI(api_key="******OPENAIKEY******")
+openai_client = OpenAI()
 
 # Initialise the Composio Tool Set
-composio_toolset = ComposioToolSet(api_key="**\*\***COMPOSIO_API_KEY**\*\***")
+composio_toolset = ComposioToolSet()
 
 ## Step 4
 # Get GitHub tools that are pre-configured
-actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
-
+tools = composio_toolset.get_actions(
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+)
 
 ## Step 5
-my_task = "Star a repo composiohq/composio on GitHub"
-openai_client = OpenAI()
-composio_toolset = ComposioToolSet()
-
-# Define task.
 task = "Star a repo composiohq/composio on GitHub"
-
-# Get GitHub tools that are pre-configured
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
-# Extension of system prompt(Not using at this moment)
-_ = composio_toolset.get_agent_instructions(
-    apps=[App.GITHUB],
-)
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
@@ -231,10 +219,10 @@ response = openai_client.chat.completions.create(
         {"role": "user", "content": task},
     ],
 )
-print(response)
 
 # Execute the function calls.
 result = composio_toolset.handle_tool_calls(response)
+
 print(result)
 ```
 </CodeGroup>
