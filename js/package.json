@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/index.js",
   "scripts": {
-    "test": "jest --testMatch=\"**/*.spec.ts\" --detectOpenHandles",
+    "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
     "test:coverage": "jest --coverage --testMatch=\"**/*.spec.ts\"",
     "build": "tsc  --project . --outDir lib",
