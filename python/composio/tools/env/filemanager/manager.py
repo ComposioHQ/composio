@@ -160,6 +160,12 @@ class FileManager(Sessionable):
         self._recent = self._files[path]
         return self._recent
 
+    def create_directory(self, path: t.Union[str, Path]) -> Path:
+        """Create a new directory."""
+        path = self.working_dir / path
+        path.mkdir(parents=True, exist_ok=False)
+        return path
+
     def grep(
         self,
         word: str,

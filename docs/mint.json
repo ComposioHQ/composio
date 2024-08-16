@@ -114,7 +114,8 @@
         "framework/llamaindex",
         "framework/camelai",
         "framework/praisonai",
-        "framework/langgraph"
+        "framework/langgraph",
+        "framework/phidata"
           ]
         }
       ]

@@ -70,19 +70,30 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     and modify the edit command you issue accordingly. Issuing the same command
     a second time will just lead to the same error message again.
 
-    If a lint error occurs, the edit will not be applied. Review the error message,
-    adjust your edit accordingly, and try again.
-    Raises:
-        - FileNotFoundError: If the file does not exist.
-        - PermissionError: If the user does not have permission to edit the file.
-        - OSError: If an OS-specific error occurs.
-    Note:
-        This action edits a specific part of the file, if you want to rewrite the
-        complete file, use `write` tool instead.
-    """
+    If start line and end line are the same,
+    the new text will be added at the start line &
+    text at end line will be still in the new edited file.
+
+    Examples A - Start line == End line
+    Start line: 1
+    End line: 1
+    Text: "print(x)"
+    Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
+
+    Examples B - Start line != End line
+    Start line: 1
+    End line: 3
+    Text: "print(x)"
+    Result: print(x) will be replaced in the file as first line.
+    First and Second line will be removed as end line = 3
+    Rest of the file will be unchanged.
+
+    This action edits a specific part of the file, if you want to rewrite the
+    complete file, use `write` tool instead."""
+
+    display_name = "Edit a file"
 
     def execute(self, request: EditFileRequest, metadata: Dict) -> EditFileResponse:
-        """Execute action."""
         file_manager = self.filemanagers.get(request.file_manager_id)
         try:
             file = (
@@ -90,6 +101,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
                 if request.file_path is None
                 else file_manager.open(path=request.file_path)
             )
+
             if file is None:
                 raise FileNotFoundError(f"File not found: {request.file_path}")
 

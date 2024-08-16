@@ -77,6 +77,7 @@ jobs:
             openai,
             praisonai,
             langgraph,
+            phidata,
           ]
     runs-on: ${{ matrix.os }}
     steps:

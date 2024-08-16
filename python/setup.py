@@ -54,6 +54,7 @@ core_requires = [
     "e2b-code-interpreter",  # E2B workspace
     "gql",  # FlyIO workspace
     "requests_toolbelt",  # FlyIO workspace
+    "uvicorn",
 ]
 
 tools_require = [
@@ -72,7 +73,7 @@ all_requirements = core_requires + tools_require
 
 setup(
     name="composio_core",
-    version="0.5.1",
+    version="0.4.2",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
