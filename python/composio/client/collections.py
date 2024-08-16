@@ -415,7 +415,7 @@ class FileType(BaseModel):
     name: str = Field(
         ..., description="File name, contains extension to indetify the file type"
     )
-    content: bytes = Field(..., description="File content in base64")
+    content: str = Field(..., description="File content in base64")
 
 
 class Connection(BaseModel):
