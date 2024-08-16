@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base.action import Action
+from composio.tools.local.base import Action
 
 
 system_prompt = "You are an expert assistant that analyzes images and provides detailed descriptions to answer questions about them."
