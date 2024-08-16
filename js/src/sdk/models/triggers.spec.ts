@@ -71,8 +71,6 @@ describe("Apps class tests", () => {
         });
 
         await triggers.unsubscribe();
-        
-        process.exit(0);
 
     });
    

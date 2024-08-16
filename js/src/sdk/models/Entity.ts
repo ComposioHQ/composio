@@ -17,6 +17,7 @@ export class Entity {
     apps: Apps;
     connectedAccounts: ConnectedAccounts;
     integrations: Integrations;
+    activeTriggers: ActiveTriggers;
 
     constructor(backendClient: BackendClient, id: string = 'default') {
         this.backendClient = backendClient;
@@ -26,6 +27,7 @@ export class Entity {
         this.apps = new Apps(this.backendClient);
         this.connectedAccounts = new ConnectedAccounts(this.backendClient);
         this.integrations = new Integrations(this.backendClient);
+        this.activeTriggers = new ActiveTriggers(this.backendClient);
     }
 
     async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
@@ -142,7 +144,7 @@ export class Entity {
          * Get all active triggers for an entity.
          */
         const connectedAccounts = await this.getConnections();
-        const activeTriggers = await ActiveTriggers.list({
+        const activeTriggers = await this.activeTriggers.list({
            connectedAccountIds: connectedAccounts!.map((account:any) => account.id!).join(",")
         });
         return activeTriggers;
