@@ -7,6 +7,7 @@ from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
+from composio.tools.toolset import MetadataType, ProcessorsType
 
 
 class ComposioToolset(BaseComposioToolSet):
@@ -58,6 +59,8 @@ class ComposioToolset(BaseComposioToolSet):
         output_in_file: bool = False,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
+        metadata: t.Optional[MetadataType] = None,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -75,6 +78,8 @@ class ComposioToolset(BaseComposioToolSet):
             output_in_file=output_in_file,
             workspace_config=workspace_config,
             workspace_id=workspace_id,
+            metadata=metadata,
+            processors=processors,
         )
         self.schema = SchemaType.CLAUDE
 

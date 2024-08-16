@@ -6,6 +6,7 @@ from llama_index.core.tools import FunctionTool
 
 from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.tools.toolset import MetadataType, ProcessorsType
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
@@ -60,6 +61,8 @@ class ComposioToolSet(BaseComposioToolSet):
         entity_id: str = DEFAULT_ENTITY_ID,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
+        metadata: t.Optional[MetadataType] = None,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -74,6 +77,8 @@ class ComposioToolSet(BaseComposioToolSet):
             entity_id=entity_id,
             workspace_config=workspace_config,
             workspace_id=workspace_id,
+            metadata=metadata,
+            processors=processors,
         )
         self._runtime = "llamaindex"
 
