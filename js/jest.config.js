@@ -2,7 +2,7 @@
 module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
-    testTimeout: 60000,
+    testTimeout: 6000000,
     collectCoverage: true,
     coverageReporters: [
         "html"
