@@ -7,3 +7,4 @@ lib/
 /blob-report/
 /playwright/
 .env
+/tests/auth_state/*
