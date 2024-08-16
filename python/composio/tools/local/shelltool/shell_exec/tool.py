@@ -2,8 +2,7 @@
 
 import typing as t
 
-from composio.tools.local.base.action import Action
-from composio.tools.local.base.tool import Tool
+from composio.tools.local.base import Action, Tool
 from composio.tools.local.shelltool.shell_exec.actions.exec import ExecCommand
 from composio.tools.local.shelltool.shell_exec.actions.new import CreateShell
 from composio.tools.local.shelltool.shell_exec.actions.spawn import SpawnProcess
