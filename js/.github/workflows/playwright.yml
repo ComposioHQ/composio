@@ -15,13 +15,16 @@ jobs:
         node-version: lts/*
     - name: Install dependencies
       run: npm ci
+      working-directory: ./composio/js
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+      working-directory: ./composio/js
     - name: Run Playwright tests
       run: npx playwright test
+      working-directory: ./composio/js
     - uses: actions/upload-artifact@v4
       if: always()
       with:
         name: playwright-report
-        path: playwright-report/
+        path: composio/js/playwright-report/
         retention-days: 30
