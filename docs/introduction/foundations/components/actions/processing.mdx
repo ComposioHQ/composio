@@ -49,17 +49,17 @@ def action_postprocessor(output_data):
 composio_toolset = ComposioToolSet(
     processors={
         "pre": {
-            App.FILETOOL: tool_preprocessor,
-            Action.FILETOOL_FIND_FILE: action_preprocessor,
+            App.GITHUB: tool_preprocessor,
+            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_preprocessor,
         },
         "post": {
-            App.FILETOOL: tool_postprocessor,
-            Action.FILETOOL_FIND_FILE: action_postprocessor,
+            App.GITHUB: tool_postprocessor,
+            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_postprocessor,
         },
     },
 )
 
-tools = composio_toolset.get_tools(apps=[App.FILETOOL])
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
 ```
 </CodeGroup>
 </Step>
