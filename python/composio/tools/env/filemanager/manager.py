@@ -166,10 +166,17 @@ class FileManager(WithLogger):
         Search for a word in files matching the given pattern.
 
         :param word: The term to search for
-        :param pattern: The file, directory, or glob pattern to search in
+        :param pattern: The file, directory, or glob pattern to search in (if not provided, searches in the current working directory)
         :param recursive: If True, search recursively in subdirectories
-        :param case_insensitive: If True, perform case-insensitive search
-        :return: A dictionary with file paths as keys and lists of (line number, line content) tuples
+        :param case_insensitive: If True, perform case-insensitive search (default is True)
+        :return: A dictionary with file paths as keys and lists of (line number, line content) tuples as values
+
+        Examples of patterns:
+        - "*.py" : Search in all Python files in the current directory
+        - "src/*.txt" : Search in all text files in the 'src' directory
+        - "**/*.md" : Search in all Markdown files in the current directory and all subdirectories
+        - "/path/to/specific/file.js" : Search in a specific file
+        - "/path/to/directory" : Search in all files in a specific directory
         """
         if pattern is None:
             pattern = self.working_dir
@@ -204,7 +211,7 @@ class FileManager(WithLogger):
         if not results:
             self.logger.debug(f'No matches found for "{word}" in {pattern}')
 
-        num_matches = sum(len(matches) for matches in results.values())
+        num_matches: int = sum(len(matches) for matches in results.values())
         self.logger.debug(f'Found {num_matches} matches for "{word}" in {pattern}')
         return results
 
