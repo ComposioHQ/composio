@@ -55,13 +55,13 @@ export class Entity {
                 connectedAccountId: connectedAccountId
             });
         } else {
-            const connectedAccounts = this.connectedAccounts.list({
+            const connectedAccounts = await this.connectedAccounts.list({
                 user_uuid: this.id,
-                appNames: [action.appKey!],
+                appNames: action.appKey,
                 status: 'ACTIVE'
             });
             // @ts-ignore
-            if (connectedAccounts.items!.length === 0) {
+            if (connectedAccounts?.items!.length === 0) {
                 throw new Error('No connected account found');
             }
 
@@ -71,7 +71,8 @@ export class Entity {
         return this.actionsModel.execute({
             actionName: actionName,
             requestBody: {
-                connectedAccountId: connectedAccount.id,
+                // @ts-ignore
+                connectedAccountId: connectedAccount?.id as unknown as string,
                 input: params,
                 appName: action.appKey,
                 text: text

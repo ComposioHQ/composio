@@ -28,9 +28,11 @@ describe("Apps class tests", () => {
     });
 
     it.failing("should execute an action with a connected account for GitHub", async () => {
+
         const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
-        const connectedAccount = await connectedAccouns.list({query:{ appNames: ['github'] }});
-        const connectionId = connectedAccount.items[0].id;
+        const connectedAccountsResult = await connectedAccouns.list({query:{ appNames: ['github'] }});
+        expect(connectedAccountsResult.items).not.toHaveLength(0);
+        const connectionId = connectedAccountsResult.items[0].id;
 
         const executionResult = await actions.execute({
             actionName: actionName,
