@@ -210,6 +210,7 @@ class FileManager(WithLogger):
 
         if not results:
             self.logger.debug(f'No matches found for "{word}" in {pattern}')
+            return {}
 
         num_matches: int = sum(len(matches) for matches in results.values())
         self.logger.debug(f'Found {num_matches} matches for "{word}" in {pattern}')
