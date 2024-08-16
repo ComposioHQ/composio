@@ -41,10 +41,11 @@ describe("Integrations class tests", () => {
     });
 
     it("should delete the created integration", async () => {
-        // const integration = await integrations.delete({
-        //     path:{
-        //         integrationId: createdIntegrationId
-        //     }
-        // });
+        if (!createdIntegrationId) return;
+        await integrations.delete({
+            path:{
+                integrationId: createdIntegrationId
+            }
+        });
     });
 });
