@@ -46,7 +46,7 @@ describe("Apps class tests", () => {
         },);
 
         expect(trigger.status).toBe("success");
-        expect(trigger.triggerId).toBe("success");
+        expect(trigger.triggerId).toBeTruthy();
 
         triggerId = trigger.triggerId;
     })
