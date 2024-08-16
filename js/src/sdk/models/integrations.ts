@@ -1,4 +1,5 @@
 import apiClient from "../client/client"
+import { BackendClient } from "./backendClient";
 
 export type ListAllIntegrationsData = {
     /**
@@ -73,6 +74,12 @@ export type CreateIntegrationData = {
 
 export class Integrations {
 
+    backendClient: BackendClient;
+
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient;
+    }
+
     /**
      * Retrieves a list of all available integrations in the Composio platform.
      * 
@@ -81,7 +88,7 @@ export class Integrations {
      * @returns {Promise<ListAllIntegrationsResponse>} A promise that resolves to the list of all integrations.
      * @throws {ApiError} If the request fails.
      */
-    static list(data: ListAllIntegrationsData = {}) {
+    list(data: ListAllIntegrationsData = {}) {
         return apiClient.appConnector.listGlobalConnectors({
             query: data
         }).then(res=>res.data)
@@ -96,7 +103,7 @@ export class Integrations {
      * @returns {CancelablePromise<GetIntegrationResponse>} A promise that resolves to the details of the integration.
      * @throws {ApiError} If the request fails.
      */
-    static get(data: GetIntegrationData): any {
+    get(data: GetIntegrationData): any {
         return apiClient.appConnector.getConnectorInfo({
             path: data
         }).then(res => res.data)
@@ -111,7 +118,7 @@ export class Integrations {
      * @returns {CancelablePromise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
      * @throws {ApiError} If the request fails.
      */
-    static create(
+    create(
         data: CreateIntegrationData["requestBody"]
     ): any {
 
@@ -127,6 +134,8 @@ export class Integrations {
                 authScheme: data?.authScheme,
                 useComposioAuth: data?.useComposioAuth!
             }
-        }).then(res=>res.data);
+        }).then(res=>{
+            return res.data
+        });
     }
 }

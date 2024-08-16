@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { ConnectedAccounts } from "./connectedAccounts";
-import { ConnectionsControllerGetConnectionsData } from "../client";
 
 describe("ConnectedAccounts class tests", () => {
     let backendClient;

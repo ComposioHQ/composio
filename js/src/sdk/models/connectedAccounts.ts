@@ -26,7 +26,7 @@ export class ConnectedAccounts {
         }).then(res=>res.data)
     }
 
-    static get(data: { connectedAccountId :string}): any {
+    static get(data: { connectedAccountId :string}) {
         return apiClient.connections.getConnection({
             path: data
         }).then(res => res.data)
