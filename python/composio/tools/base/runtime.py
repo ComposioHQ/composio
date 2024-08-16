@@ -44,7 +44,7 @@ class ArgSpec(BaseModel):
     """Default value"""
 
 
-class RuntimeAction(
+class RuntimeAction(  # pylint: disable=abstract-method
     SentinalObject,
     Action[ActionRequest, ActionResponse],
     abs=True,
@@ -66,9 +66,6 @@ class RuntimeAction(
     @property
     def filemanagers(self) -> FileManagers:
         return self._filemanagers()
-
-    def execute(self, request: ActionRequest, metadata: t.Dict) -> ActionResponse:
-        raise NotImplementedError()
 
 
 class RuntimeToolMeta(type):

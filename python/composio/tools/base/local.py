@@ -31,7 +31,7 @@ class FileModel(BaseModel):
     )
 
 
-class LocalAction(
+class LocalAction(  # pylint: disable=abstract-method
     Action[ActionRequest, ActionResponse],
     abs=True,
 ):
@@ -52,9 +52,6 @@ class LocalAction(
     @property
     def filemanagers(self) -> FileManagers:
         return self._filemanagers()
-
-    def execute(self, request: ActionRequest, metadata: t.Dict) -> ActionResponse:
-        raise NotImplementedError()
 
 
 class LocalToolMeta(type):
