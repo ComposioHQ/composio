@@ -11,9 +11,16 @@ import inflection
 import jsonref
 from pydantic import BaseModel
 
-from composio.client.collections import _check_file_uploadable
+# from composio.client.collections import _check_file_uploadable
 from composio.client.enums.base import SentinalObject
 from composio.utils.logging import WithLogger
+
+
+def _check_file_uploadable(param_field: dict) -> bool:
+    return (param_field.get("title") in ["File", "FileType"]) and all(
+        field_name in param_field.get("properties", {})
+        for field_name in ["name", "content"]
+    )
 
 
 def generate_hashed_appId(input_string):
