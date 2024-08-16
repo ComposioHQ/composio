@@ -20,10 +20,12 @@ describe("Apps class tests", () => {
 
     it.failing("should get a list of actions", async () => {
         const activeTriggersList = await activeTriggers.list();
-        const firstTrgigger = activeTriggersList[0];
+        const firstTrigger
+         = activeTriggersList[0];
         const activeTrigger = await activeTriggers.get({ 
             path:{
-                triggerId: firstTrgigger.id
+                triggerId: firstTrigger
+                .id
             }
         });
         expect(activeTrigger).toBeDefined();
