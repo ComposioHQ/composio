@@ -15,6 +15,8 @@ export class Entity {
     triggerModel: Triggers;
     actionsModel: Actions;
     apps: Apps;
+    connectedAccounts: ConnectedAccounts;
+    integrations: Integrations;
 
     constructor(backendClient: BackendClient, id: string = 'default') {
         this.backendClient = backendClient;
@@ -22,6 +24,8 @@ export class Entity {
         this.triggerModel = new Triggers(this.backendClient);
         this.actionsModel = new Actions(this.backendClient);
         this.apps = new Apps(this.backendClient);
+        this.connectedAccounts = new ConnectedAccounts(this.backendClient);
+        this.integrations = new Integrations(this.backendClient);
     }
 
     async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
@@ -45,19 +49,21 @@ export class Entity {
         }
         let connectedAccount = null;
         if (connectedAccountId) {
-            connectedAccount = await ConnectedAccounts.get({
+            connectedAccount = await this.connectedAccounts.get({
                 connectedAccountId: connectedAccountId
             });
         } else {
-            const connectedAccounts = await ConnectedAccounts.list({
+            const connectedAccounts = this.connectedAccounts.list({
                 user_uuid: this.id,
                 appNames: [action.appKey!],
                 status: 'ACTIVE'
             });
+            // @ts-ignore
             if (connectedAccounts.items!.length === 0) {
                 throw new Error('No connected account found');
             }
 
+            // @ts-ignore
             connectedAccount = connectedAccounts.items![0];
         }
         return this.actionsModel.execute({
@@ -73,14 +79,14 @@ export class Entity {
 
     async getConnection(app?: string, connectedAccountId?: string): Promise<any | null> {
         if (connectedAccountId) {
-            return await ConnectedAccounts.get({
+            return await this.connectedAccounts.get({
                 connectedAccountId
             });
         }
 
         let latestAccount = null;
         let latestCreationDate: Date | null = null;
-        const connectedAccounts = await ConnectedAccounts.list({
+        const connectedAccounts = await this.connectedAccounts.list({
             user_uuid: this.id,
         });
 
@@ -103,7 +109,7 @@ export class Entity {
             return null;
         }
 
-        return ConnectedAccounts.get({
+        return this.connectedAccounts.get({
             connectedAccountId: latestAccount.id!
         });
     }
@@ -121,12 +127,11 @@ export class Entity {
         return ActiveTriggers.disable({ triggerId: triggerId });
     }
 
-    //@ts-ignore
     async getConnections(){
         /**
          * Get all connections for an entity.
          */
-        const connectedAccounts = await ConnectedAccounts.list({
+        const connectedAccounts = await this.connectedAccounts.list({
             user_uuid: this.id
         });
         return connectedAccounts.items!;
@@ -155,10 +160,10 @@ export class Entity {
         const app = await this.apps.get({ appKey: appName });
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-        let integration = integrationId ? await Integrations.get({ integrationId: integrationId }) : null;
+        let integration = integrationId ? await this.integrations.get({ integrationId: integrationId }) : null;
         // Create a new integration if not provided
         if (!integration && authMode) {
-            integration = await Integrations.create({
+            integration = await this.integrations.create({
                 appId: app.appId!,
                 name: `integration_${timestamp}`,
                 authScheme: authMode,
@@ -168,7 +173,7 @@ export class Entity {
         }
 
         if (!integration && !authMode) {
-            integration = await Integrations.create({
+            integration = await this.integrations.create({
                 appId: app.appId!,
                 name: `integration_${timestamp}`,
                 useComposioAuth: true,
@@ -176,7 +181,7 @@ export class Entity {
         }
         
         // Initiate the connection process
-        return ConnectedAccounts.initiate({
+        return this.connectedAccounts.initiate({
             integrationId: integration!.id!,
             userUuid: this.id,
             redirectUri: redirectUrl,

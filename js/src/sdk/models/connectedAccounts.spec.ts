@@ -39,7 +39,7 @@ describe("ConnectedAccounts class tests", () => {
       
         const connectionId = connectionsList.items[0].id;
 
-        const connection = await ConnectedAccounts.get({ connectedAccountId: connectionId });
+        const connection = await connectedAccounts.get({ connectedAccountId: connectionId });
         // @ts-ignore
         expect(connection.id).toBe(connectionId);
     });
@@ -53,7 +53,7 @@ describe("ConnectedAccounts class tests", () => {
 
         const connectionId = connectionsList.items[0].id;
 
-        const connection = await ConnectedAccounts.get({ connectedAccountId: connectionId });
+        const connection = await connectedAccounts.get({ connectedAccountId: connectionId });
         // @ts-ignore
         expect(connection.id).toBe(connectionId);
     });

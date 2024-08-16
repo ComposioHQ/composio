@@ -53,6 +53,24 @@ export class Triggers {
         return data as unknown as {status:"string",triggerId:string};
     }
 
+    enable(data: { triggerId: any }): any {
+        return apiClient.triggers.switchTriggerInstanceStatus({
+            path: data,
+            body: {
+                enabled: true
+            }
+        }).then(res => res.data)
+    }
+
+    disable(data: { triggerId: any }): any {
+        return apiClient.triggers.switchTriggerInstanceStatus({
+            path: data,
+            body: {
+                enabled: false
+            }
+        }).then(res => res.data)
+    }
+
     async subscribe(fn: (data: TriggerData) => void, filters:{
         appName?: string,
         triggerId?  : string;

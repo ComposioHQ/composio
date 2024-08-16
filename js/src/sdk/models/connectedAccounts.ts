@@ -11,7 +11,7 @@ export class ConnectedAccounts {
         this.backendClient = backendClient; 
     }
     
-    list(data: ConnectionsControllerGetConnectionsData): Promise<GetConnectionsResponseDto>{
+    list(data: Record<string, any> = {}): Promise<GetConnectionsResponseDto>{
         return apiClient.connections.getConnections({
             query: data
         }).then(res=>{
@@ -26,13 +26,13 @@ export class ConnectedAccounts {
         }).then(res=>res.data)
     }
 
-    static get(data: { connectedAccountId :string}) {
+    get(data: { connectedAccountId :string}) {
         return apiClient.connections.getConnection({
             path: data
         }).then(res => res.data)
     }
 
-    static async initiate(
+    async initiate(
         data: any
     ): Promise<ConnectionRequest> {
         const res =  await client.connections.initiateConnection({ body: data }).then(res => res.data)

@@ -7,7 +7,7 @@ module.exports = {
     coverageReporters: [
         "html"
     ],
-    "reporters": [
+    reporters: [
         "default"
     ],
 };
