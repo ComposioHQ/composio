@@ -12,6 +12,7 @@ from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.env.base import WorkspaceConfigType
 from composio.tools.schema import OpenAISchema, SchemaType
+from composio.tools.toolset import MetadataType, ProcessorsType
 
 
 # pylint: enable=E0611
@@ -90,8 +91,10 @@ class ComposioToolSet(BaseComposioToolSet):
         base_url: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         output_in_file: bool = False,
-        workspace_id: t.Optional[str] = None,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
+        workspace_id: t.Optional[str] = None,
+        metadata: t.Optional[MetadataType] = None,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -107,8 +110,10 @@ class ComposioToolSet(BaseComposioToolSet):
             runtime="camel",
             entity_id=entity_id,
             output_in_file=output_in_file,
-            workspace_id=workspace_id,
             workspace_config=workspace_config,
+            workspace_id=workspace_id,
+            metadata=metadata,
+            processors=processors,
         )
         self.schema = SchemaType.OPENAI
 
