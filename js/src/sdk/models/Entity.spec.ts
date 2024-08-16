@@ -16,7 +16,7 @@ describe("Entity class tests", () => {
         expect(entity.id).toBe("default");
     });
 
-    it("get connection", async () => {
+    it("get connection for github", async () => {
         const app = "github";
         const connection = await entity.getConnection(app);
         expect(connection.appUniqueId).toBe(app);
