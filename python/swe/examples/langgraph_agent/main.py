@@ -1,7 +1,6 @@
+from agent import composio_toolset, graph
 from inputs import from_github
 from langchain_core.messages import HumanMessage
-
-from agent import composio_toolset, graph
 
 from composio_langgraph import Action
 
