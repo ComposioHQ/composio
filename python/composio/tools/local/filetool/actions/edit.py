@@ -65,13 +65,17 @@ class EditFile(BaseFileAction):
     If a lint error occurs, the edit will not be applied.
     Review the error message, adjust your edit accordingly.
 
-    Examples A -
+    If start line and end line are the same,
+    the new text will be added at the start line &
+    text at end line will be still in the new edited file.
+
+    Examples A - Start line == End line
     Start line: 1
     End line: 1
     Text: "print(x)"
     Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
 
-    Examples B -
+    Examples B - Start line != End line
     Start line: 1
     End line: 3
     Text: "print(x)"
@@ -99,6 +103,7 @@ class EditFile(BaseFileAction):
                     path=request_data.file_path,
                 )
             )
+
             if file is None:
                 raise FileNotFoundError(f"File not found: {request_data.file_path}")
 
