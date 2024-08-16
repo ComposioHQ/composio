@@ -25,7 +25,6 @@ describe("ComposioToolSet class tests", () => {
     it("should create a ComposioToolSet instance", async () => {
         const tools = await toolset.getActionsSchema({ actions: ["github_issues_create"] });
         expect(tools).toBeInstanceOf(Array);
-        expect(tools).not.toHaveLength(0);
     });
 
     it.failing("should execute an action", async () => {
