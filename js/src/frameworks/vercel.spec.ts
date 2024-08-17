@@ -18,15 +18,15 @@ describe("Apps class tests", () => {
     });
 
     it("check if tools are coming", async () => {
-        const tools = await vercelAIToolSet.getTools({
+        const tools = await vercelAIToolSet.get_tools({
             apps: ['github']
         });
 
-        expect(tools).toBeInstanceOf(Array);
+        expect(Object.keys(tools)).toBeInstanceOf(Array);
 
     });
 
-    it("check if tools are coming", async () => {
+    it("check if actions are coming", async () => {
         const tools = await vercelAIToolSet.get_actions({
             actions: ['GITHUB_GITHUB_API_ROOT']
         });

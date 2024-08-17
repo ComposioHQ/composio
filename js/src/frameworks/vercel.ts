@@ -45,10 +45,11 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     return tools;
   }
 
+  // change this implementation
   async get_tools(filters: {
-    apps: Sequence<string>;
-    tags: Optional<Array<string>>;
-    useCase: Optional<string>;
+    apps: Array<string>;
+    tags?: Optional<Array<string>>;
+    useCase?: Optional<string>;
   }): Promise<{ [key: string]: any }> {
     const actionsList = await this.client.actions.list({
       apps: filters.apps.join(","),
