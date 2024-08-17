@@ -220,42 +220,145 @@
       "group": "Endpoints",
       "icon": "robot",
       "pages": [
-        {
-          "icon": "code",
-          "group": "apps",
-          "pages": [
-            "api-reference/apps/list-all-apps"
-          ]
-        },
-        {
-          "icon": "rectangles-mixed",
-          "group": "connections",
-          "pages": [
-            "api-reference/connectedaccounts/list-all-connected-accounts",
-            "api-reference/connectedaccounts/connect-an-account",
-            "api-reference/connectedaccounts/get-a-connected-account",
-            "api-reference/connectedaccounts/delete-a-connected-account"
-          ]
-        },
-        {
-          "icon": "database",
-          "group": "integrations",
-          "pages": [
-            "api-reference/integrations/get-an-integration",
-            "api-reference/integrations/update-an-integration",
-            "api-reference/integrations/list-all-integrations",
-            "api-reference/integrations/create-a-new-integration"
-          ]
-        },
-        {
-          "group": "actions",
-          "pages": [
-            "api-reference/actions/get-a-specific-action",
-            "api-reference/actions/get-list-of-actions",
-            "api-reference/actions/execute-action"
-          ]
-        }
-      ]
+  {
+    "group": "Client Auth",
+    "pages": [
+      "api-reference/client-auth/identify-client",
+      "api-reference/client-auth/google-login",
+      "api-reference/client-auth/track-client",
+      "api-reference/client-auth/send-magic-link",
+      "api-reference/client-auth/logout-api",
+      "api-reference/client-auth/verify-magic-link",
+      "api-reference/client-auth/get-user-info",
+      "api-reference/client-auth/pusher-user-auth",
+      "api-reference/client-auth/delete-client"
+    ]
+  },
+  {
+    "group": "Team",
+    "pages": [
+      "api-reference/team/invite-member",
+      "api-reference/team/list-members",
+      "api-reference/team/remove-member"
+    ]
+  },
+  {
+    "group": "API Keys",
+    "pages": [
+      "api-reference/api-keys/list-api-keys",
+      "api-reference/api-keys/generate-api-key",
+      "api-reference/api-keys/delete-api-key"
+    ]
+  },
+  {
+    "group": "App",
+    "pages": [
+      "api-reference/app/get-apps",
+      "api-reference/app/add-open-api-spec",
+      "api-reference/app/get-opena-api-specs",
+      "api-reference/app/delete-open-api-spec-tool",
+      "api-reference/app/get-open-api-spec-logs",
+      "api-reference/app/add-custom-repo",
+      "api-reference/app/get-app",
+      "api-reference/app/sync-apps",
+      "api-reference/app/get-custom-repo"
+    ]
+  },
+  {
+    "group": "App Connector",
+    "pages": [
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/get-connector-info",
+      "api-reference/app-connector/delete-connector",
+      "api-reference/app-connector/patch-connector",
+      "api-reference/app-connector/patch-post-connector"
+    ]
+  },
+  {
+    "group": "Actions Controller V 1",
+    "pages": [
+      "api-reference/actions-controller-v-1/list-actions",
+      "api-reference/actions-controller-v-1/execute-action",
+      "api-reference/actions-controller-v-1/execute-action-proxy",
+      "api-reference/actions-controller-v-1/get-action"
+    ]
+  },
+  {
+    "group": "Connections",
+    "pages": [
+      "api-reference/connections/get-connections",
+      "api-reference/connections/initiate-connection",
+      "api-reference/connections/get-connection",
+      "api-reference/connections/delete-connection",
+      "api-reference/connections/disable-connection",
+      "api-reference/connections/enable-connection"
+    ]
+  },
+  {
+    "group": "App Login",
+    "pages": [
+      "api-reference/app-login/handle-o-auth-2-callback",
+      "api-reference/app-login/verify-o-auth-2-login"
+    ]
+  },
+  {
+    "group": "Triggers",
+    "pages": [
+      "api-reference/triggers/list-triggers",
+      "api-reference/triggers/handle-trigger",
+      "api-reference/triggers/enable-trigger",
+      "api-reference/triggers/get-trigger",
+      "api-reference/triggers/get-active-triggers",
+      "api-reference/triggers/switch-post-trigger-instance-status",
+      "api-reference/triggers/switch-trigger-instance-status",
+      "api-reference/triggers/disable-trigger",
+      "api-reference/triggers/delete-trigger",
+      "api-reference/triggers/set-callback-url",
+      "api-reference/triggers/set-callback-url-1",
+      "api-reference/triggers/get-webhook-url",
+      "api-reference/triggers/get-logs",
+      "api-reference/triggers/handle-pusher-events"
+    ]
+  },
+  {
+    "group": "Admin",
+    "pages": [
+      "api-reference/admin/sentry-dns"
+    ]
+  },
+  {
+    "group": "CLI",
+    "pages": [
+      "api-reference/cli/handle-cli-code-exchange",
+      "api-reference/cli/get-cli-code",
+      "api-reference/cli/handle-cli-code-verification"
+    ]
+  },
+  {
+    "group": "Metadata",
+    "pages": [
+      "api-reference/metadata/get-metadata",
+      "api-reference/metadata/update-metadata",
+      "api-reference/metadata/toggle-trigger-state",
+      "api-reference/metadata/get-toggle-info"
+    ]
+  },
+  {
+    "group": "Logs",
+    "pages": [
+      "api-reference/logs/get-logs"
+    ]
+  },
+  {
+    "group": "Actions Controller V 2",
+    "pages": [
+      "api-reference/actions-controller-v-2/list-actions",
+      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions-controller-v-2/execute-action-proxy"
+    ]
+  }
+]
     }
   ],
   "integrations": {
