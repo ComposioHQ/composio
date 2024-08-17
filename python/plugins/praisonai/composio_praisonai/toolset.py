@@ -180,7 +180,7 @@ class ComposioToolSet(BaseComposioToolSet):
         tools_section_parts = ["\n"]
         tools_section_parts.append("    tools:")
         for tool_name in tool_names:
-            tools_section_parts.append(f"    - {tool_name}")
+            tools_section_parts.append(f"    - {tool_name}")  # noqa E221
 
         return "\n".join(tools_section_parts)
 
