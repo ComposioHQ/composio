@@ -86,7 +86,7 @@ class OpenAIAnalyzer(MediaAnalyzer):
 
     def _encode_image(self, file_path: str) -> str:
         with open(file_path, "rb") as image_file:
-            return f"data:image/jpeg;base64,{base64.b64encode(image_file.read()).decode('utf-8')}"
+            return f"data:image/jpeg;base64,{base64.b64encode(image_file.read()).decode('utf-8')}"  # noqa E702
 
 
 class ClaudeAnalyzer(MediaAnalyzer):
