@@ -41,8 +41,8 @@ def _connections(
         return
 
     for connection in context.client.connected_accounts.get(active=active):
-        context.console.print(f"• Id : {connection.id}")
-        context.console.print(f"  App: {connection.appUniqueId}")
+        context.console.print(f"• Id : {connection.id}")  # noqa: E203
+        context.console.print(f"  App: {connection.appUniqueId}")  # noqa: E203
 
 
 class GetExamples(HelpfulCmdBase, click.Command):
@@ -62,8 +62,12 @@ def _get(context: Context, id: str) -> None:
         connection = context.client.get_entity().get_connection(
             connected_account_id=id,
         )
-        context.console.print(f"[green]App   :[/green] {connection.appUniqueId}")
-        context.console.print(f"[green]Id    :[/green] {connection.id}")
-        context.console.print(f"[green]Status:[/green] {connection.status}")
+        context.console.print(
+            f"[green]App   :[/green] {connection.appUniqueId}"  # noqa: E203
+        )
+        context.console.print(f"[green]Id    :[/green] {connection.id}")  # noqa: E203
+        context.console.print(
+            f"[green]Status:[/green] {connection.status}"  # noqa: E203
+        )
     except ComposioSDKError as e:
         raise click.ClickException(message=e.message) from e
