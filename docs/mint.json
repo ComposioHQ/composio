@@ -223,15 +223,10 @@
   {
     "group": "Client Auth",
     "pages": [
-      "api-reference/client-auth/identify-client",
-      "api-reference/client-auth/google-login",
-      "api-reference/client-auth/track-client",
       "api-reference/client-auth/send-magic-link",
       "api-reference/client-auth/logout-api",
       "api-reference/client-auth/verify-magic-link",
-      "api-reference/client-auth/get-user-info",
-      "api-reference/client-auth/pusher-user-auth",
-      "api-reference/client-auth/delete-client"
+      "api-reference/client-auth/get-user-info"
     ]
   },
   {
@@ -255,13 +250,7 @@
     "pages": [
       "api-reference/app/get-apps",
       "api-reference/app/add-open-api-spec",
-      "api-reference/app/get-opena-api-specs",
-      "api-reference/app/delete-open-api-spec-tool",
-      "api-reference/app/get-open-api-spec-logs",
-      "api-reference/app/add-custom-repo",
-      "api-reference/app/get-app",
-      "api-reference/app/sync-apps",
-      "api-reference/app/get-custom-repo"
+      "api-reference/app/get-opena-api-specs"
     ]
   },
   {
@@ -271,8 +260,7 @@
       "api-reference/app-connector/create-connector",
       "api-reference/app-connector/get-connector-info",
       "api-reference/app-connector/delete-connector",
-      "api-reference/app-connector/patch-connector",
-      "api-reference/app-connector/patch-post-connector"
+      "api-reference/app-connector/patch-connector"
     ]
   },
   {
@@ -296,13 +284,6 @@
     ]
   },
   {
-    "group": "App Login",
-    "pages": [
-      "api-reference/app-login/handle-o-auth-2-callback",
-      "api-reference/app-login/verify-o-auth-2-login"
-    ]
-  },
-  {
     "group": "Triggers",
     "pages": [
       "api-reference/triggers/list-triggers",
@@ -310,38 +291,12 @@
       "api-reference/triggers/enable-trigger",
       "api-reference/triggers/get-trigger",
       "api-reference/triggers/get-active-triggers",
-      "api-reference/triggers/switch-post-trigger-instance-status",
-      "api-reference/triggers/switch-trigger-instance-status",
       "api-reference/triggers/disable-trigger",
       "api-reference/triggers/delete-trigger",
       "api-reference/triggers/set-callback-url",
       "api-reference/triggers/set-callback-url-1",
       "api-reference/triggers/get-webhook-url",
-      "api-reference/triggers/get-logs",
-      "api-reference/triggers/handle-pusher-events"
-    ]
-  },
-  {
-    "group": "Admin",
-    "pages": [
-      "api-reference/admin/sentry-dns"
-    ]
-  },
-  {
-    "group": "CLI",
-    "pages": [
-      "api-reference/cli/handle-cli-code-exchange",
-      "api-reference/cli/get-cli-code",
-      "api-reference/cli/handle-cli-code-verification"
-    ]
-  },
-  {
-    "group": "Metadata",
-    "pages": [
-      "api-reference/metadata/get-metadata",
-      "api-reference/metadata/update-metadata",
-      "api-reference/metadata/toggle-trigger-state",
-      "api-reference/metadata/get-toggle-info"
+      "api-reference/triggers/get-logs"
     ]
   },
   {
