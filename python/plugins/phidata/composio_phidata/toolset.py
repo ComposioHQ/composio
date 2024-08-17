@@ -9,6 +9,7 @@ from pydantic import validate_call
 
 from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.tools.toolset import MetadataType, ProcessorsType
 
 from composio_openai import ComposioToolSet as BaseComposioToolSet
 
@@ -26,6 +27,8 @@ class ComposioToolSet(BaseComposioToolSet):
         output_in_file: bool = False,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
         workspace_id: t.Optional[str] = None,
+        metadata: t.Optional[MetadataType] = None,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> None:
         """
         Initialize composio toolset.
@@ -42,6 +45,8 @@ class ComposioToolSet(BaseComposioToolSet):
             output_in_file=output_in_file,
             workspace_config=workspace_config,
             workspace_id=workspace_id,
+            metadata=metadata,
+            processors=processors,
         )
         self._runtime = "phidata"
 
