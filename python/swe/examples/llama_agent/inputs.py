@@ -22,7 +22,7 @@ def read_user_input(
         try:
             return validator(value)
         except Exception as e:
-            print(f"Invalid value for `{metavar}` error parsing `{value}`; {e}")
+            print(f"Invalid value for `{metavar}` error parsing `{value}`: {e}")
 
 
 def _github_repository_name_validator(name: str) -> t.Tuple[str, str]:
