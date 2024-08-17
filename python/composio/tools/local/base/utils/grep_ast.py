@@ -102,7 +102,8 @@ class TreeContext:
             if compiled_pat.search(line):
                 if self.color:
                     highlighted_line = compiled_pat.sub(
-                        lambda match: f"\033[1;31m{match.group()}\033[0m", line
+                        lambda match: f"\033[1;31m{match.group()}\033[0m",  # noqa E702
+                        line,
                     )
                     self.output_lines[i] = highlighted_line
                 found.add(i)
