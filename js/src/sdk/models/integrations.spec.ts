@@ -12,7 +12,7 @@ describe("Integrations class tests", () => {
         integrations = new Integrations(backendClient);
     });
 
-    it("should create an Integrations instance and retrieve integrations list", async () => {
+    it("Retrieve integrations list", async () => {
         const integrationsList = await integrations.list();
         expect(integrationsList?.items).toBeInstanceOf(Array);
         expect(integrationsList?.items).not.toHaveLength(0);    
@@ -22,8 +22,9 @@ describe("Integrations class tests", () => {
         const integrationCreation = await integrations.create({
             appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
             name: "test_integration_220",
-            authScheme: "OAUTH2",
-            useComposioAuth: true
+            useComposioAuth: true,
+            // @ts-ignore
+            forceNewIntegration:true
         });
         expect(integrationCreation.id).toBeTruthy();
         expect(integrationCreation.appName).toBe("github");
