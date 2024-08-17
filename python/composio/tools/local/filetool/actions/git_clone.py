@@ -63,7 +63,7 @@ def git_clone_cmd(repo: str, commit_id: str) -> str:
     if not github_access_token and os.environ.get("ALLOW_CLONE_WITHOUT_REPO") != "true":
         raise RuntimeError("Cannot clone github repository without github access token")
 
-    clone_url = f"https://{github_access_token+'@' if github_access_token else ''}github.com/{repo}.git"
+    clone_url = f"https://{github_access_token + '@' if github_access_token else ''}github.com/{repo}.git"
 
     if commit_id:
         commands = [
