@@ -210,7 +210,7 @@ class TaskEnvContextManager:
         if patch is None:
             self.log.write(f"Patch is `None` ({patch_type})")
             with open(self.log_file, "a", encoding="utf-8") as f:
-                f.write(f"{APPLY_PATCH_FAIL}; Prediction patch is `None`")
+                f.write(f"{APPLY_PATCH_FAIL}; Prediction patch is `None`")  # noqa E702
             return False
 
         # Write patch to temporary patch file in parent directory
@@ -261,9 +261,11 @@ class TaskEnvContextManager:
         log_cmd = "Revert" if revert else "Apply"
         if out_patch.returncode != 0:
             # Patch apply failed
-            self.log.write(f"{log_cmd} patch failed ({patch_type})", level=ERROR)
+            self.log.write(
+                f"{log_cmd} patch failed ({patch_type})", level=ERROR  # noqa 225
+            )
             with open(self.log_file, "a", encoding="utf-8") as f:
-                f.write(f"{APPLY_PATCH_FAIL}; ({patch_type})\nOutput:\n")
+                f.write(f"{APPLY_PATCH_FAIL}; ({patch_type})\nOutput:\n")  # noqa 702
                 f.write(out_patch.stdout)
                 if out_patch.stderr:
                     f.write(out_patch.stderr)
@@ -310,7 +312,7 @@ class TaskEnvContextManager:
                 test_cmd = f"{self.cmd_conda_run} {instance['test_cmd']}"
 
             with open(self.log_file, "a", encoding="utf-8") as f:
-                f.write(f"Test Script: {test_cmd};\n")
+                f.write(f"Test Script: {test_cmd};\n")  # noqa 702
 
             out_test = self.exec(
                 test_cmd.split(), shell=False, timeout=self.timeout, check=False
