@@ -1,5 +1,3 @@
-import psycopg2
-from psycopg2 import sql
 from pydantic import BaseModel, Field
 
 from composio.tools.local.base import Action
