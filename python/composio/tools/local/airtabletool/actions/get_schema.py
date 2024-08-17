@@ -1,13 +1,22 @@
 import os
+
 from pydantic import BaseModel, Field
+
 from composio.tools.local.base import Action
+
 
 class GetSchemaRequest(BaseModel):
     base_id: str = Field(..., description="Airtable base ID, provided by the user")
-    table_name: str = Field(..., description="Name of the table to get schema from, provided by the user")
+    table_name: str = Field(
+        ..., description="Name of the table to get schema from, provided by the user"
+    )
+
 
 class GetSchemaResponse(BaseModel):
-    schema: dict = Field(..., description="See the structure of a base, like table names or field types")
+    schema: dict = Field(
+        ..., description="See the structure of a base, like table names or field types"
+    )
+
 
 class GetSchema(Action[GetSchemaRequest, GetSchemaResponse]):
     """
