@@ -58,6 +58,14 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
+    "runtime_tools": {
+        "file": EXAMPLES_PATH / "runtime_tools" / "langchain_math.py",
+        "match": {
+            "type": "stdout",
+            "values": ["Multiplying the numbers:  445 669 8886"],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
+    },
     "crewai": {
         "file": PLUGINS / "crew_ai" / "crewai_demo.py",
         "match": {
