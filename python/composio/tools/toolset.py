@@ -496,13 +496,16 @@ class ComposioToolSet(WithLogger):
         """
         self.logger.info(f"Executing action: {action}")
         action = Action(action)
-        params = self._process_request(
-            action=action,
-            request=self._serialize_execute_params(
-                param=params,
-            ),
-        )
-        metadata = self._add_metadata(action=action, metadata=metadata)
+        is_runtime = action.is_runtime
+        self.logger.debug(f"Action: {action}, runtime: {is_runtime}")
+        if not is_runtime:
+            params = self._process_request(
+                action=action,
+                request=self._serialize_execute_params(
+                    param=params,
+                ),
+            )
+            metadata = self._add_metadata(action=action, metadata=metadata)
         response = (
             self._execute_local(
                 action=action,
@@ -518,6 +521,8 @@ class ComposioToolSet(WithLogger):
                 text=text,
             )
         )
+        if is_runtime:
+            return response
         return self._process_respone(action=action, response=response)
 
     def get_action_schemas(
