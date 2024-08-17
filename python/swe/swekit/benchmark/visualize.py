@@ -57,6 +57,7 @@ def generate_html_1(issues_data, output_file):
                 <th>Agent Thought</th>
             </tr>
         """
+        # flake8: noqa: E221, E222
         for entry in data:
             html_content += f"""
                 <tr>
@@ -66,6 +67,7 @@ def generate_html_1(issues_data, output_file):
                     <td>{entry['agent_thought']}</td>
                 </tr>
             """
+        # flake8: noqa: E221, E222
         html_content += "</table>"
     html_content += """
     </body>
