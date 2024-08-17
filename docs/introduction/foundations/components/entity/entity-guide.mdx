@@ -2,120 +2,41 @@
 title: "🧑‍🤝‍🧑 Accounts/Entity"
 sidebarTitle: "Accounts/Entity"
 icon: "users"
-description: "Manage all the connected accounts of your Users & Organizations 🧑‍🤝‍🧑 via entities"
+description: "Manage all the connected accounts of your Users"
 ---
 
 ## Introduction to Entities
 
-- Within Composio, an entity acts as a central hub representing either a user or an organization. 
-- This entity consolidates all their connected accounts, providing a unified view of their integrations. 
-- For instance, if you have million users connecting various accounts (Github, Hubspot, Slack, etc.) within your application,
-each user would be represented as an individual entity. 
-- All the accounts linked by a user would then be neatly organized as connected accounts under their respective entity.
+- **Each unique user** is represented by a **unique entity id**.
+- If you have **two users, Jessica and Melissa**, they will have **unique entity ids**.
 
 ## Introduction to Connected Accounts
-- When a user connects their account through any of our integrations, a `connected_account` object is created. This object securely stores authentication data such as access tokens and refresh tokens.
+- When a user connects their account, a `connected_account` object is created. 
+- This object securely stores **authentication data** such as **access tokens and refresh tokens**.
 
-### Create or get an entity
-
-<Tabs>
-<Tab title="Python">
-<CodeGroup>
-```python Create or get an entity
-from composio import ComposioToolSet
-
-toolset = ComposioToolSet(entity_id="default")
-
-entity = toolset.get_entity(id='default')
-```
-</CodeGroup>
-</Tab>
-
-<Tab title="Javascript">
-<CodeGroup>
-```javascript Create or get an entity
-import { Composio } from "composio-core";
-
-const composio_client = new Composio({
-    apiKey: process.env.COMPOSIO_API_KEY,
-});
-
-const entity = composio_client.getEntity('user_email_id');
-```
-</CodeGroup>
-</Tab>
-</Tabs>
 
 ### Connect an account for an entity
 <Tabs>
-<Tab title="Via Dashboard">
-The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
-For deploying in a production environment, utilize the SDK or API methods.
-<div
-  style={{
-    width: '100%',
-    position: 'relative',
-    paddingTop: '56.25%',
-  }}>
-  <iframe
-    src="https://app.supademo.com/embed/cly1z8i4g0lwy149zfx6h4ee2"
-    frameBorder="0"
-    title="Direct Action Execution"
-    allow="clipboard-write"
-    webkitallowfullscreen="true"
-    mozallowfullscreen="true"
-    allowfullscreen
-    style={{
-      position: 'absolute',
-      top: 0,left: 0, width: '100%', height: '100%',
-      border: '3px solid #5E43CE',
-      borderRadius: '10px',
-    }}/>
-</div>
-
-</Tab>
-
-<Tab title="CLI">
-<CodeGroup>
-```bash Adding a connection for an entity
-composio add github -e default # replace `default` with the entity id
-
-# you can also use -s to specify scopes ex. -s "repo,user"
-# you can also use -i to specify the integration id ex. -i 123456
-```
-</CodeGroup>
-</Tab>
 <Tab title="Python OAuth2 Apps">
 <CodeGroup>
 ```python get the entity and auth scheme for an app
 from composio import ComposioToolSet, App
 
-toolset = ComposioToolSet(entity_id="default")
-
-app = App.Github
+toolset = ComposioToolSet(entity_id="Jessica")
 
 entity = toolset.get_entity()
-schemes = toolset.get_auth_schemes(app=app)
 
-print(schemes) # this should print all the auth schemes for the app
-# filter next step based on the scheme
-# some apps have multiple auth schemes ex. Github has OAuth2 and Basic Auth
-```
-</CodeGroup>
+from composio.client.exceptions import NoItemsFound
 
-Complete Authentication process for OAuth2 application. 
-
-<CodeGroup>
-```python Complete Auth for OAuth2
 try:
     entity.get_connection(app=App.GITHUB)
 
-    print(f"Entity {entity_id} is already authenticated with GitHub")
+    print(f"User {entity_id} is already authenticated with GitHub")
 
 except NoItemsFound as e:
 
     # Create a request to initiate connection
-    request = entity.initiate_connection(App.Github, redirect_url="https://google.com")
+    request = entity.initiate_connection(App.GITHUB, redirect_url="https://google.com")
 
     print(
         f"Please authenticate {App.GITHUB} in the browser and come back here. URL: {request.redirectUrl}"
@@ -123,16 +44,8 @@ except NoItemsFound as e:
 
     # Poll until the connection is active
     connected_account = request.wait_until_active(client=composio_client, timeout=100)
-
-    # also possible to check on redirect url
-    # connected_account = entity.get_connection(app=App.GITHUB)
-
-except Exception as e:
-    print(e)
-
 ```
 </CodeGroup>
-
 </Tab>
 <Tab title="Python Non OAuth2 Apps">
 <CodeGroup>
@@ -144,17 +57,7 @@ toolset = ComposioToolSet(entity_id="default")
 app = App.SERPAPI
 
 entity = toolset.get_entity()
-schemes = toolset.get_auth_schemes(app=app)
 
-print(schemes) # this should print all the auth schemes for the app
-# filter next step based on the scheme
-# some apps have multiple auth schemes ex. Github has OAuth2 and Basic Auth
-```
-</CodeGroup>
-Complete Authentication process for non OAuth2 application. 
-
-<CodeGroup>
-```python Complete Auth for Other Auth Schemes
 try:
     entity.get_connection(app=App.SERPAPI)
 
@@ -179,10 +82,6 @@ except NoItemsFound as e:
     connected_account = connection_request.wait_until_active(client=toolset.client)
 
     # use this connected_account to perform tasks on behalf of the entity
-
-except Exception as e:
-    print(e)
-
 ```
 </CodeGroup>
 
@@ -226,6 +125,42 @@ const connection = await entity.initiateConnection(
 );
 ```
 </CodeGroup>
+
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash Adding a connection for an entity
+composio add github -e default # replace `default` with the entity id
+
+# you can also use -s to specify scopes ex. -s "repo,user"
+# you can also use -i to specify the integration id ex. -i 123456
+```
+</CodeGroup>
+</Tab>
+<Tab title="Via Dashboard">
+The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
+For deploying in a production environment, utilize the SDK or API methods.
+<div
+  style={{
+    width: '100%',
+    position: 'relative',
+    paddingTop: '56.25%',
+  }}>
+  <iframe
+    src="https://app.supademo.com/embed/cly1z8i4g0lwy149zfx6h4ee2"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+      position: 'absolute',
+      top: 0,left: 0, width: '100%', height: '100%',
+      border: '3px solid #5E43CE',
+      borderRadius: '10px',
+    }}/>
+</div>
 
 </Tab>
 </Tabs>
