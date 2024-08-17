@@ -4,6 +4,7 @@ import { getBackendClient } from "../testUtils/getBackendClient";
 import { Triggers } from "./triggers";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { Entity } from "./Entity";
+
 describe("Apps class tests", () => {
     let backendClient;
     let triggers: Triggers;
@@ -33,6 +34,27 @@ describe("Apps class tests", () => {
         expect(triggerList[0].appName).toBe("github");
     });
 
+
+});
+
+
+describe("Apps class tests subscribe", () => {
+    let backendClient;
+    let triggers: Triggers;
+    let connectedAccounts: ConnectedAccounts;
+    let entity: Entity;
+
+    let triggerId: string;
+
+    beforeAll(() => {
+        backendClient = getBackendClient();
+        triggers = new Triggers(backendClient);
+        connectedAccounts = new ConnectedAccounts(backendClient);
+        entity = new Entity(backendClient, "default");
+    });
+
+
+
     it("should create a new trigger for gmail", async () => {
         const connectedAccount = await connectedAccounts.list({ query: { user_uuid: 'default' } });
 
@@ -61,7 +83,7 @@ describe("Apps class tests", () => {
     });
 
     it("should subscribe to a trigger", async () => {
-         await triggers.subscribe((data) => {
+        await triggers.subscribe((data) => {
             // Explicitly passing the data to an empty function body
         }, {
             appName: "gmail",
@@ -71,5 +93,5 @@ describe("Apps class tests", () => {
         await triggers.unsubscribe();
 
     });
-   
+
 });

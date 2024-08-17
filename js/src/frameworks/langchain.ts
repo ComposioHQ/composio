@@ -49,7 +49,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
             apiKey?: Optional<string>,
             baseUrl?: Optional<string>,
             entityId?: string,
-            workspaceConfig: WorkspaceConfig
+            workspaceConfig?: WorkspaceConfig
         }
     ) {
         super(
