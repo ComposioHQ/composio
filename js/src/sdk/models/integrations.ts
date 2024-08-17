@@ -34,6 +34,7 @@ export type CreateIntegrationData = {
          * The unique identifier of the app associated with the connector.
          */
         appId?: string;
+        forceNewIntegration?: boolean;
         /**
          * An object containing the authentication configuration for the connector.
          */
@@ -133,7 +134,8 @@ export class Integrations {
                 appId: data?.appId!,
                 authConfig: data?.authConfig! as any,
                 authScheme: data?.authScheme,
-                useComposioAuth: data?.useComposioAuth!
+                useComposioAuth: data?.useComposioAuth!,
+                forceNewIntegration: true
             }
         }).then(res=>{
             return res.data
