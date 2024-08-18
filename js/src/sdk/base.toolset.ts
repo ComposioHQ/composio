@@ -3,12 +3,13 @@ import { ExecEnv, WorkspaceFactory } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 import { RemoteWorkspace } from "../env/base";
 import type { IPythonActionDetails, Optional, Sequence } from "./types";
-import { GetListActionsResponse } from "./client";
+// import { GetListActionsResponse } from "./client";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
 
+type GetListActionsResponse = any;
 class UserData {
     apiKey: string | undefined;
     constructor(public _path: string) {
@@ -77,6 +78,7 @@ export class ComposioToolSet {
                 await this.workspace.workspace?.teardown();
             });
         }
+
     }
 
     async setup() {
@@ -92,7 +94,7 @@ export class ComposioToolSet {
         entityId?: Optional<string>
     ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
         await this.setup();
-        let actions: GetListActionsResponse["items"] = (await this.client.actions.list({
+        let actions = (await this.client.actions.list({
             actions: filters.actions?.join(","),
             showAll: true
         })).items;
@@ -175,6 +177,7 @@ export class ComposioToolSet {
 
     async execute_action(
         action: string,
+        // this need to improve
         params: Record<string, any>,
         entityId: string = "default"
     ): Promise<Record<string, any>> {

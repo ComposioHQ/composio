@@ -1,0 +1,33 @@
+name: Run JS SDK test
+
+on:
+  push:
+  workflow_dispatch:
+    
+
+jobs:
+  run-js-tests:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+    - name: Install dependencies
+      run: npm install -g pnpm@8.15.7
+    - name: Install packages in js folder
+      run: cd js && pnpm install
+    - name: pnpm build
+      run: cd js && pnpm build
+    - name: run test
+      run: cd js && pnpm test

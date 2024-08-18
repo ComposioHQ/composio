@@ -2,9 +2,10 @@ import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
+  apiKey: "cc0fu8lookgq1ov8z4xx9n",
   });
   
+
   async function setupUserConnectionIfNotExists(entityId) {
     const entity = await toolset.client.getEntity(entityId);
     const connection = await entity.getConnection('github');
