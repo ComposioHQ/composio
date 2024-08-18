@@ -35,24 +35,18 @@ date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
 
 # Define the tools
-tools = composio_toolset.get_actions(
-        actions=[
-        Action.GITHUB_GET_CODE_CHANGES_IN_PR,
-        Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,
-        Action.GITHUB_ISSUES_CREATE,
-        Action.SLACKBOT_CHAT_POST_MESSAGE,
-        ]
-)
+email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
+
 
 def extract_sender_email(payload):
     delivered_to_header_found = False
-    for header in payload["headers"]:
+    for header in payload:
         if header.get("name", "") == "Delivered-To" and header.get("value", "") != "":
             delivered_to_header_found = True
     print("delivered_to_header_found: ", delivered_to_header_found)
     if not delivered_to_header_found:
         return None
-    for header in payload["headers"]:
+    for header in payload:
         if header["name"] == "From":
             # Regular expression to extract email from the 'From' header value
             match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
@@ -62,14 +56,15 @@ def extract_sender_email(payload):
 
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
-@listener.callback(filters={"trigger_name": "github_pull_request_event"})
+@listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def review_new_pr(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    print(payload)
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return
@@ -91,7 +86,7 @@ def review_new_pr(event: TriggerEventData) -> None:
         )
     ]
     agent = FunctionCallingAgentWorker(
-    tools=tools,  # Tools available for the agent to use
+    tools=schedule_tool,  # Tools available for the agent to use
     llm=llm,  # Language model for processing requests
     prefix_messages=prefix_messages,  # Initial system messages for context
     max_function_calls=10,  # Maximum number of function calls allowed
@@ -116,5 +111,7 @@ def review_new_pr(event: TriggerEventData) -> None:
     print(response)
 
 print("Listener started!")
-print("Create a pr to get the review")
+print("Waiting for email")
 listener.listen()
+
+#{'threadId': '191642ddf473ae3a', 'messageId': '191642ddf473ae3a', 'messageTimestamp': '2024-08-18T06:29:59Z', 'messageText': '\r\n', 'attachmentList': [], 'subject': 'Trigger test 3', 'sender': 'Prathit Joshi <prathit3.14@gmail.com>', 'to': 'buhbruh61@gmail.com', 'triggerName': 'gmail_new_gmail_message'}

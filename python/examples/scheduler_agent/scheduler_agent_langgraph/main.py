@@ -153,14 +153,16 @@ listener = composio_toolset.create_trigger_listener()
 
 @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:
+    print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    email_content = payload.get("snippet")
-    email_sender = extract_sender_email(payload["payload"])
-
+    email_content = payload.get("messageText")
+    print(payload)
+    email_sender = payload.get("sender")
     if email_sender is None:
         print("No sender email found")
         return
+    print(email_sender)
 
     print(f"Processing email from: {email_sender}")
     output = process_email(email_sender, email_content, thread_id)
