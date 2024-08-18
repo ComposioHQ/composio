@@ -136,6 +136,24 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._slug in self.__annotations__ or self._slug in _runtime_actions:
             return
 
+        from composio.tools.base.abs import (
+            action_registry,
+            tool_registry,
+            trigger_registry,
+        )
+
+        for _, actions in action_registry.items():
+            if self._slug in actions:
+                return
+
+        for _, triggers in trigger_registry.items():
+            if self._slug in triggers:
+                return
+
+        for _, tools in tool_registry.items():
+            if self._slug in tools:
+                return
+
         raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
 
     @property
@@ -165,6 +183,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if self._model is ActionData:
             for gid, actions in action_registry.items():
+                print(actions, self._slug)
                 if self._slug in actions:
                     action = actions[self._slug]
                     data = ActionData(
