@@ -2,6 +2,7 @@
 
 import hashlib
 import inspect
+import json
 import typing as t
 from abc import abstractmethod
 from pathlib import Path
@@ -15,25 +16,29 @@ from composio.client.enums import Action as ActionEnum
 from composio.utils.logging import WithLogger
 
 
-GroupID = t.Literal["runtime", "local"]
+GroupID = t.Literal["runtime", "local", "api"]
 ModelType = t.TypeVar("ModelType")
 ActionResponse = t.TypeVar("ActionResponse")
 ActionRequest = t.TypeVar("ActionRequest")
 Loadable = t.TypeVar("Loadable")
-RegistryType = t.Dict[GroupID, t.Dict[str, "Tool"]]
+ToolRegistry = t.Dict[GroupID, t.Dict[str, "Tool"]]
+ActionsRegistry = t.Dict[GroupID, t.Dict[str, "Action"]]
+TriggersRegistry = t.Dict[GroupID, t.Dict[str, t.Any]]
 
-registry: RegistryType = {"runtime": {}, "local": {}}
+tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
+action_registry: ActionsRegistry = {"runtime": {}, "local": {}, "api": {}}
+trigger_registry: TriggersRegistry = {"runtime": {}, "local": {}, "api": {}}
 
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
-    full = t.cast(
-        t.Dict,
-        jsonref.replace_refs(
-            obj=data,
-            lazy_load=False,
-        ),
+    return json.loads(
+        jsonref.dumps(
+            jsonref.replace_refs(
+                obj=data,
+                lazy_load=False,
+            )
+        )
     )
-    return full
 
 
 def generate_app_id(name: str) -> str:
@@ -146,6 +151,50 @@ class _Response(t.Generic[ModelType]):
         return remove_json_ref(schema)
 
 
+class ActionBuilder:
+    @staticmethod
+    def set_generics(name: str, obj: t.Type["Action"]) -> None:
+        try:
+            (generic,) = getattr(obj, "__orig_bases__")
+            request, response = t.get_args(generic)
+            if request == ActionRequest or response == ActionResponse:
+                raise ValueError(f"Invalid type generics, ({request}, {response})")
+        except ValueError as e:
+            raise ValueError(
+                "Invalid action class definition, please define your class "
+                "using request and response type generics; "
+                f"class {name}(Action[RequestModel, ResponseModel])"
+            ) from e
+
+        setattr(obj, "request", _Request(request))
+        setattr(obj, "response", _Response(response))
+
+    @staticmethod
+    def validate(name: str, obj: t.Type["Action"]) -> None:
+        if getattr(getattr(obj, "execute"), "__isabstractmethod__", False):
+            raise RuntimeError(f"Please implement {name}.execute")
+
+    @staticmethod
+    def set_metadata(obj: t.Type["Action"]) -> None:
+        setattr(obj, "file", getattr(obj, "file", Path(inspect.getfile(obj))))
+        setattr(obj, "name", getattr(obj, "name", inflection.underscore(obj.__name__)))
+        setattr(
+            obj,
+            "enum",
+            getattr(obj, "enum", inflection.underscore(obj.__name__).upper()),
+        )
+        setattr(
+            obj,
+            "display_name",
+            getattr(obj, "display_name", inflection.humanize(obj.__name__)),
+        )
+        setattr(
+            obj,
+            "description",
+            (obj.__doc__ or obj.display_name).lstrip().rstrip(),
+        )
+
+
 class ActionMeta(type):
     """Action metaclass."""
 
@@ -161,40 +210,9 @@ class ActionMeta(type):
             return
 
         cls = t.cast(t.Type["Action"], cls)
-        try:
-            (generic,) = getattr(cls, "__orig_bases__")
-            request, response = t.get_args(generic)
-            if request == ActionRequest or response == ActionResponse:
-                raise ValueError(f"Invalid type generics, ({request}, {response})")
-        except ValueError as e:
-            raise ValueError(
-                "Invalid action class definition, please define your class "
-                "using request and response type generics; "
-                f"class {name}(Action[RequestModel, ResponseModel])"
-            ) from e
-
-        setattr(cls, "request", _Request(request))
-        setattr(cls, "response", _Response(response))
-        if getattr(getattr(cls, "execute"), "__isabstractmethod__", False):
-            raise RuntimeError(f"Please implement {name}.execute")
-
-        setattr(cls, "file", getattr(cls, "file", Path(inspect.getfile(cls))))
-        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
-        setattr(
-            cls,
-            "enum",
-            getattr(cls, "enum", inflection.underscore(cls.__name__).upper()),
-        )
-        setattr(
-            cls,
-            "display_name",
-            getattr(cls, "display_name", inflection.humanize(cls.__name__)),
-        )
-        setattr(
-            cls,
-            "description",
-            (cls.__doc__ or cls.display_name).lstrip().rstrip(),
-        )
+        ActionBuilder.validate(name=name, obj=cls)
+        ActionBuilder.set_generics(name=name, obj=cls)
+        ActionBuilder.set_metadata(obj=cls)
 
 
 class Action(
@@ -224,6 +242,9 @@ class Action(
     requires: t.Optional[t.List[str]] = None
     """List of dependencies required to run this action."""
 
+    no_auth: bool = False
+    """If set `True`, the action requires a connected account."""
+
     def __init_subclass__(cls, abs: bool = False) -> None:
         """Initialize subclas."""
 
@@ -243,12 +264,9 @@ class Action(
         cls._schema = {
             "name": cls.name,
             "enum": cls.enum,
-            "appKey": cls.tool,
             "appName": cls.tool,
             "appId": generate_app_id(cls.tool),
-            "logo": "empty",
             "tags": cls.tags(),
-            "enabled": True,
             "displayName": cls.display_name,
             "description": description,
             "parameters": cls.request.schema(),
@@ -269,6 +287,54 @@ class Action(
         metadata: t.Dict,
     ) -> ActionResponse:
         """Execute the action."""
+
+
+class ToolBuilder:
+    @staticmethod
+    def validate(obj: t.Type["Tool"], name: str, methods: t.Tuple[str, ...]) -> None:
+        for method in methods:
+            if getattr(getattr(obj, method), "__isabstractmethod__", False):
+                raise RuntimeError(f"Please implement {name}.{method}")
+
+            if not inspect.ismethod(getattr(obj, method)):
+                raise RuntimeError(f"Please implement {name}.{method} as class method")
+
+    @staticmethod
+    def set_metadata(obj: t.Type["Tool"]) -> None:
+        setattr(obj, "description", (obj.__doc__ or "").lstrip().rstrip())
+        setattr(obj, "file", Path(inspect.getfile(obj)))
+        setattr(obj, "name", getattr(obj, "name", inflection.underscore(obj.__name__)))
+        setattr(obj, "enum", getattr(obj, "enum", obj.name).upper())
+        setattr(
+            obj,
+            "display_name",
+            getattr(obj, "display_name", inflection.humanize(obj.__name__)),
+        )
+        setattr(obj, "_actions", getattr(obj, "_actions", {}))
+        setattr(obj, "_triggers", getattr(obj, "_triggers", {}))
+
+    @staticmethod
+    def setup_children(obj: t.Type["Tool"]) -> None:
+        if obj.gid not in action_registry:
+            action_registry[obj.gid] = {}
+
+        for action in obj.actions():
+            action.tool = obj.name
+            action.enum = f"{obj.enum}_{action.name.upper()}"
+            obj._actions[action.enum] = action  # pylint: disable=protected-access
+            action_registry[obj.gid][action.enum] = action  # type: ignore
+
+        if not hasattr(obj, "triggers"):
+            return
+
+        if obj.gid not in trigger_registry:
+            trigger_registry[obj.gid] = {}
+
+        for trigger in obj.triggers():  # type: ignore
+            trigger.tool = obj.name
+            trigger.enum = f"{obj.enum}_{trigger.name.upper()}"
+            obj._triggers[trigger.enum] = trigger  # type: ignore  # pylint: disable=protected-access
+            trigger_registry[obj.gid][trigger.enum] = trigger  # type: ignore
 
 
 class Tool(WithLogger, _Attributes):
@@ -350,7 +416,6 @@ class Tool(WithLogger, _Attributes):
     @classmethod
     def register(cls: t.Type["Tool"]) -> None:
         """Register given tool to the registry."""
-        if cls.gid not in registry:
-            registry[cls.gid] = {}
-        registry[cls.gid][cls.enum] = cls()
-        registry[cls.gid][cls.name] = registry[cls.gid][cls.enum]
+        if cls.gid not in tool_registry:
+            tool_registry[cls.gid] = {}
+        tool_registry[cls.gid][cls.enum] = cls()

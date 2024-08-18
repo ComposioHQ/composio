@@ -1,22 +1,20 @@
 import argparse
 
-from agent import composio_toolset, graph, agent
+from agent import composio_toolset, graph
+from langchain_core.messages import HumanMessage
+
+from composio_langgraph import Action
 
 from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
 
-from composio_camel import Action
-from prompts import DESCRIPTION
-from camel.messages import BaseMessage
-from camel.utils import print_text_animated
-from colorama import Fore
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
     """Run benchmark on the agent."""
 
     # Set the workspace for the tools to run.
     composio_toolset.set_workspace_id(workspace_id)
-    
+
     # get the git tree
     git_tree_response = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_REPO_TREE,
@@ -26,11 +24,19 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
 
     # kick off the crew on the issue.
     try:
-        user_msg = BaseMessage.make_user_message(role_name="User", content=DESCRIPTION)
-        final_state = agent.step(user_msg)
-        for msg in final_state.msgs:
-            print_text_animated(Fore.GREEN + f"Agent response:\n{msg.content}\n")
-        return final_state
+        final_state = graph.invoke(
+            {
+                "messages": [
+                    HumanMessage(
+                        content=f"{issue_config.issue_desc} in the repo: {issue_config.repo_name}. Output to git tree command {git_tree_response}"
+                    )
+                ]
+            },
+            {"recursion_limit": 50},
+        )
+
+        print(final_state["messages"][-1].content)
+        return final_state["messages"][-1].content
     except Exception as e:
         print(e)
         return "Error found"
@@ -69,5 +75,5 @@ if __name__ == "__main__":
         dry_run=False,
         test_range=test_range,
         test_instance_ids=test_instance_ids_list,
-        #image_name="composio/composio:dev", # if you are doing local dev
+        # image_name="composio/composio:dev", # if you are doing local dev
     )

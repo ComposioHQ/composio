@@ -91,7 +91,7 @@ def update(context: Context, beta: bool = False) -> None:
     )
     actions = sorted(
         context.client.actions.get(allow_all=True),
-        key=lambda x: f"{x.appKey}_{x.name}",
+        key=lambda x: f"{x.appName}_{x.name}",
     )
     triggers = sorted(
         context.client.triggers.get(),
@@ -165,7 +165,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
     action_names = []
     for app in sorted(apps, key=lambda x: x.key):
         for action in actions:
-            if action.appKey != app.key:
+            if action.appName != app.key:
                 continue
 
             if (
@@ -174,7 +174,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             ):
                 _, newact = action.description.split("<<DEPRECATED use ", maxsplit=1)
                 deprecated[get_enum_key(name=action.name)] = (
-                    action.appKey.lower() + "_" + newact.replace(">>", "")
+                    action.appName.lower() + "_" + newact.replace(">>", "")
                 ).upper()
             else:
                 action_names.append(get_enum_key(name=action.name))
@@ -219,7 +219,7 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_name = app.key
-        for action in [action for action in actions if action.appKey == app_name]:
+        for action in [action for action in actions if action.appName == app_name]:
             if app_name not in tag_map:
                 tag_map[app_name] = set()
             tag_map[app_name].update(action.tags or [])

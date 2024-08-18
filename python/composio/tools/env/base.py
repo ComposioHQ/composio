@@ -232,10 +232,10 @@ class RemoteWorkspace(Workspace):
     def _upload(self, action: Action) -> None:
         """Upload action instance to tooling server."""
         from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
-            registry,
+            tool_registry,
         )
 
-        obj = registry["runtime"][action.app].get(action)
+        obj = tool_registry["runtime"][action.app].get(action)
         request = self._request(
             method="post",
             endpoint="/tools",

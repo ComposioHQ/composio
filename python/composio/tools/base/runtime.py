@@ -3,17 +3,21 @@
 import inspect
 import typing as t
 from abc import abstractmethod
-from pathlib import Path
 
 import inflection
 from pydantic import BaseModel, Field
 
 from composio.client.enums.base import ActionData, SentinalObject, add_runtime_action
+from composio.tools.base.abs import (
+    Action,
+    ActionRequest,
+    ActionResponse,
+    ToolBuilder,
+    tool_registry,
+)
 from composio.tools.base.local import LocalToolMixin
 from composio.tools.env.host.shell import Shell
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
-
-from .abs import Action, ActionRequest, ActionResponse, registry
 
 
 ActionCallable = t.Callable
@@ -40,7 +44,7 @@ class ArgSpec(BaseModel):
     """Default value"""
 
 
-class RuntimeAction(
+class RuntimeAction(  # pylint: disable=abstract-method
     SentinalObject,
     Action[ActionRequest, ActionResponse],
     abs=True,
@@ -63,9 +67,6 @@ class RuntimeAction(
     def filemanagers(self) -> FileManagers:
         return self._filemanagers()
 
-    def execute(self, request: ActionRequest, metadata: t.Dict) -> ActionResponse:
-        raise NotImplementedError()
-
 
 class RuntimeToolMeta(type):
     """Tool metaclass."""
@@ -82,28 +83,9 @@ class RuntimeToolMeta(type):
             return
 
         cls = t.cast(t.Type[RuntimeTool], cls)
-        for method in ("actions",):
-            if getattr(getattr(cls, method), "__isabstractmethod__", False):
-                raise RuntimeError(f"Please implement {name}.{method}")
-
-            if not inspect.ismethod(getattr(cls, method)):
-                raise RuntimeError(f"Please implement {name}.{method} as class method")
-
-        cls.file = Path(inspect.getfile(cls))
-        cls.description = t.cast(str, cls.__doc__).lstrip().rstrip()
-
-        setattr(cls, "name", getattr(cls, "mame", inflection.underscore(cls.__name__)))
-        setattr(cls, "enum", getattr(cls, "enum", cls.name).upper())
-        setattr(
-            cls,
-            "display_name",
-            getattr(cls, "display_name", inflection.humanize(cls.__name__)),
-        )
-        setattr(cls, "_actions", getattr(cls, "_actions", {}))
-        for action in cls.actions():
-            action.tool = cls.name
-            action.enum = f"{cls.enum}_{action.enum}"
-            cls._actions[action.enum] = action
+        ToolBuilder.validate(obj=cls, name=name, methods=("actions",))
+        ToolBuilder.set_metadata(obj=cls)
+        ToolBuilder.setup_children(obj=cls)
 
         if autoload:
             cls.register()
@@ -188,10 +170,10 @@ def _wrap(
     cls.__doc__ = f.__doc__
 
     existing_actions = []
-    if toolname in registry["runtime"]:
-        existing_actions = registry["runtime"][toolname].actions()
+    if toolname in tool_registry["runtime"]:
+        existing_actions = tool_registry["runtime"][toolname].actions()
     tool = _create_tool_class(name=toolname, actions=[cls, *existing_actions])  # type: ignore
-    registry["runtime"][toolname] = tool()
+    tool_registry["runtime"][toolname] = tool()
     add_runtime_action(cls.enum, cls.data)
     return cls
 

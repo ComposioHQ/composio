@@ -38,6 +38,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     FIRECRAWL: "App"
     GIT: "App"
     GITHUB: "App"
+    GITLAB: "App"
     GMAIL: "App"
     GOOGLECALENDAR: "App"
     GOOGLEDOCS: "App"

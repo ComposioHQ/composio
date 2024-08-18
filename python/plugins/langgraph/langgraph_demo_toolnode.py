@@ -52,7 +52,7 @@ for chunk in app.stream(
         "messages": [
             (
                 "human",
-                # "Star the Github Repository sawradip/sawradip",
+                # "Star the Github Repository composiohq/composio",
                 "Get my information.",
             )
         ]

@@ -806,11 +806,10 @@ class ActionModel(BaseModel):
     display_name: t.Optional[str] = None
     parameters: ActionParametersModel
     response: ActionResponseModel
-    appKey: str
+    appName: str
     appId: str
     tags: t.List[str]
-    appName: str
-    enabled: bool
+    enabled: bool = False
 
     logo: t.Optional[str] = None
     description: t.Optional[str] = None

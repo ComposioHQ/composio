@@ -2,14 +2,14 @@
 
 from pathlib import Path
 
-from composio.tools.base.abs import RegistryType, registry
+from composio.tools.base.abs import ToolRegistry, tool_registry
 
 
 TOOLS_PATH = Path(__file__).parent
 
 
 def load_local_tools() -> (
-    RegistryType
+    ToolRegistry
 ):  # pylint: disable=import-outside-toplevel,unused-import
     from composio.tools.local.browsertool import BrowserTool
     from composio.tools.local.codeformat import CodeFormatTool
@@ -30,4 +30,4 @@ def load_local_tools() -> (
     from composio.tools.local.webtool import Webtool
     from composio.tools.local.zep import Zeptool
 
-    return registry
+    return tool_registry

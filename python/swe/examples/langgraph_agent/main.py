@@ -1,23 +1,21 @@
+from agent import composio_toolset, graph
 from inputs import from_github
+from langchain_core.messages import HumanMessage
 
-from agent import composio_toolset,agent
-from composio_camel import Action
-from prompts import DESCRIPTION
-from camel.messages import BaseMessage
-from camel.utils import print_text_animated
-from colorama import Fore
+from composio_langgraph import Action
 
 
 def main() -> None:
     """Run the agent."""
     repo, issue = from_github()
-    user_msg = BaseMessage.make_user_message(role_name="User", content=DESCRIPTION)
     try:
-        final_state = agent.step(f"repo:{repo} and issue:{issue}")
+        final_state = graph.invoke(
+            {"messages": [HumanMessage(content=f"{issue} in the repo: {repo}")]},
+            {"recursion_limit": 50},
+        )
 
-        for msg in response.msgs:
-            print_text_animated(Fore.GREEN + f"Agent response:\n{msg.content}\n")
-        return msg.content
+        print(final_state["messages"][-1].content)
+        return final_state["messages"][-1].content
     except Exception as e:
         print(e)
     response = composio_toolset.execute_action(
