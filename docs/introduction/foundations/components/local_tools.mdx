@@ -26,55 +26,25 @@ In addition to the existing tools, a user can easily create their own tool and u
 <Steps>
 <Step title="Add the action Decorator">
 
-In your code, add ```@action(toolname=[TOOL_NAME], requires=["LIBRARIES REQUIRED"])``` decorater to the function that returns the response to the LLM. Specify the tool name as the decorater's parameter
-Save it in a file called custom_tools.py
+In your code, add ```@action(toolname=[TOOL_NAME], requires=["LIBRARIES"])``` decorater to the function that returns the response to the LLM.
+
+Specify the tool name as the decorater's parameter
 <CodeGroup>
-      ```python OpenAI
-    from composio import action
+```python Create a Custom Action using Decorator
+from composio import action
 
-    @action(toolname="cow", requires=["cowsay"])
-    def say(message: str) -> str:
-        """
-        Cow will say whatever you want it to say.
+@action(toolname="cow", requires=["cowsay"])
+def say(message: str) -> str:
+    """
+    Cow will say whatever you want it to say.
 
-        :param message: Message string
-        :return greeting: Formatted message.
-        """
-        import cowsay
+    :param message: Message string
+    :return greeting: Formatted message.
+    """
+    import cowsay
 
-        return cowsay.get_output_string("cow", message)
-   ```
-
-      ```python Anthropic
-    from composio import action
-
-    @action(toolname="cow", requires=["cowsay"])
-    def say(message: str) -> str:
-        """
-        Cow will say whatever you want it to say.
-
-        :param message: Message string
-        :return greeting: Formatted message.
-        """
-        import cowsay
-
-        return cowsay.get_output_string("cow", message)
-   ```
-      ```python Gemini
-    from composio import action
-
-    @action(toolname="cow", requires=["cowsay"])
-    def say(message: str) -> str:
-        """
-        Cow will say whatever you want it to say.
-
-        :param message: Message string
-        :return greeting: Formatted message.
-        """
-        import cowsay
-
-        return cowsay.get_output_string("cow", message)
-   ```
+    return cowsay.get_output_string("cow", message)
+```
 </CodeGroup>
 </Step>
 
@@ -83,52 +53,21 @@ Save it in a file called custom_tools.py
 Now that your Custom Action is ready, Import it in your main file and start using it with your LLM.
 Integrate this with any agentic framework you want!
 <CodeGroup>
-      ```python OpenAI
-    from composio import action
-    from custom_tools import say
+```python Use the custom tool
+from composio import action
+from custom_tools import say
 
-    composio_toolset = ComposioToolSet()
+composio_toolset = ComposioToolSet()
 
-    # Get required tools
-    tools = [
-        *composio_toolset.get_actions(
-            actions=[
-                say,  # This is the saved custom tool
-            ]
-        ),
-    ]
-   ```
-
-      ```python Anthropic
-    from composio import action
-    from custom_tools import say
-
-    composio_toolset = ComposioToolSet()
-
-    # Get required tools
-    tools = [
-        *composio_toolset.get_actions(
-            actions=[
-                say,  # This is an example of a custom tool
-            ]
-        ),
-    ]
-   ```
-      ```python Gemini
-    from composio import action
-    from custom_tools import say
-
-    composio_toolset = ComposioToolSet()
-
-    # Get required tools
-    tools = [
-        *composio_toolset.get_actions(
-            actions=[
-                say,  # This is an example of a custom tool
-            ]
-        ),
-    ]
-   ```
+# Get required tools
+tools = [
+    *composio_toolset.get_actions(
+        actions=[
+            say,  # This is the saved custom tool
+        ]
+    ),
+]
+```
 </CodeGroup>
 </Step>
 </Steps>
