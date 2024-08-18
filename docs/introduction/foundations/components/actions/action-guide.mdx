@@ -9,83 +9,37 @@ description: "Learn how to perform actions with a connected account."
 
 **Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
-Actions are tasks which your agent can perform. Actions can be performed on the tools which are integrated. Some examples of actions: 
+Actions are tasks which your agent can perform. Actions can be executed on the tools which are connected. 
 * Create a Google Calendar Event 
-* Fetch all the Subtitles of a Youtube Video 
 * Send an email
-* Star a github repo, etc.
-
-Check out the coding guides provided in the examples section to have a better understanding.
-
-<div
-  style={{
-    width: '100%',
-    position: 'relative',
-    paddingTop: '56.25%',
-  }}>
-  <iframe
-    src="https://app.supademo.com/embed/clxuiweel0j7e12o2o1jhrk5t"
-    frameBorder="0"
-    title="Direct Action Execution"
-    allow="clipboard-write"
-    webkitallowfullscreen="true"
-    mozallowfullscreen="true"
-    allowfullscreen
-    style={{
-      position: 'absolute',
-      top: 0,left: 0, width: '100%', height: '100%',
-      border: '3px solid #5E43CE',
-      borderRadius: '10px',
-    }}/>
-</div>
-
-
-## **Types of Actions**
 
 <Tabs>
   <Tab title="Default Actions">
-    Composio supports a variety of default actions for each supported
-    application.
+    Managed Actions available by default on Composio.
   </Tab>
   <Tab title="Custom Actions">
     Our platform offers an extensible interface for defining custom actions for
     both custom and default applications. [Learn
-    more.](https://app.composio.dev/apps/custom)
-  </Tab>
-  <Tab title="Local Code/Local Actions">
-    Composio enables fetching authentication parameters for any connection,
-    allowing you to execute code remotely and interact with API endpoints.
-    Example: Use the `getConnection` endpoint to call GitHub, create an issue on
-    your server, and fetch the access token. [Learn
-    more](https://docs.composio.dev/actions/local-code)
-
-    Local Actions are operations executed directly on the user's local system. 
-    This allows for performing tasks such as file manipulations, running scripts, 
-    or interacting with local resources, providing flexibility for scenarios where 
-    cloud execution is not suitable.
-
-    Local actions are particularly useful for:
-    - Managing and organizing files and directories
-    - Executing local scripts or programs
-    - Integrating with local development environments
-
-    By leveraging local actions, you can maintain control over your local 
-    resources while utilizing the powerful capabilities of Composio for remote interactions and executions.
+    more.](https://app.composio.dev/settings)
   </Tab>
 </Tabs>
 
 ---
-## Working with Actions (Fetch and Execute)
+## Working with Actions 
+
+Composio provides access to over **10,000 actions** by default. 
+To optimize LLM performance, it's crucial to select a **focused set of actions** (typically **15 or fewer**) that are **most relevant** to your specific task.
+
 <Steps>
-<Step title="Fetching Actions">
+<Step title="Choosing which actions to give LLM">
 
 <AccordionGroup>
-<Accordion title="Fetching Actions via Name (Static)">
+<Accordion title="Selecting Actions via Name (Static)">
   <Tabs>
 
     <Tab title="Python">
     <CodeGroup>
-    ```python Fetching Actions via Name
+    ```python Selecting Actions via Name
 
     from composio_openai import ComposioToolSet, Action 
     # you can choose framework of your choice using composio_framework
@@ -102,7 +56,7 @@ Check out the coding guides provided in the examples section to have a better un
 
     <Tab title="Javascript">
     <CodeGroup>
-    ```javascript Fetching Actions via Name
+    ```javascript Selecting Actions via Name
     import dotenv from 'dotenv';
     dotenv.config();
 
@@ -120,20 +74,20 @@ Check out the coding guides provided in the examples section to have a better un
 
 </Accordion>
 
-<Accordion title="Fetching Actions using natural language use-case (Dynamic)">
+<Accordion title="Selecting Actions using natural language use-case (Dynamic)">
 
 <Tabs>
 
   <Tab title="Python">
   <CodeGroup>
-  ```Python Fetching Actions using natural language use-case
+  ```Python Selecting Actions using natural language use-case
 
   use_case="Star a repo on github"
 
   # can pass multiple apps
   action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
 
-  tools = toolset.get_actions(actions=action_enums)
+  tools = tool_set.get_actions(actions=action_enums)
 
   # use tools as per your framework
   ```
@@ -142,7 +96,7 @@ Check out the coding guides provided in the examples section to have a better un
 
   <Tab title="Javascript">
   <CodeGroup>
-  ```Javascript Fetching Actions using natural language use-case
+  ```Javascript Selecting Actions using natural language use-case
 import { LangchainToolSet } from "composio-core";
 
 const toolset = new LangchainToolSet({
@@ -165,7 +119,7 @@ const actions = await toolset.getActions({
 
   <Tab title="CLI">
   <CodeGroup>
-  ```bash Fetching Actions using natural language use-case
+  ```bash Selecting Actions using natural language use-case
   composio actions --use-case 'get channel messages' --app 'slack'
   ```
   </CodeGroup>
@@ -173,7 +127,7 @@ const actions = await toolset.getActions({
 </Tabs>
 </Accordion>
 
-<Accordion title="Fetching Actions via Apps">
+<Accordion title="Selecting Actions via Apps">
 
 <Warning> 
 Efficiency can be significantly enhanced by selectively filtering actions rather than assigning all available actions of an application to the agent. 
@@ -184,8 +138,8 @@ Efficiency can be significantly enhanced by selectively filtering actions rather
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Fetching Actions via Apps & Tags
-tools = toolset.get_tools(apps=[App.GITHUB]) 
+```python Selecting Actions via Apps & Tags
+tools = tool_set.get_tools(apps=[App.GITHUB]) 
 
 # Filter by tags
 tag = "users"
@@ -195,14 +149,14 @@ action_enums = toolset.find_actions_by_tags(
     tags=[tag], 
 )
 
-tools = toolset.get_actions(actions=action_enums)
+tools = tool_set.get_actions(actions=action_enums)
 ```
 </CodeGroup>
 </Tab>
 
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Fetching Actions via Apps
+```javascript Selecting Actions via Apps
 import { LangchainToolSet } from "composio-core";
 
 const toolset = new LangchainToolSet({
@@ -225,7 +179,7 @@ const actions = await toolset.getActions({
 
 <Tab title="CLI">
 <CodeGroup>
-```bash Fetching Actions via Apps
+```bash Selecting Actions via Apps
 composio actions --app 'github' --tag 'code' 
 # Don't use tag if you want all actions
 ```
@@ -293,8 +247,8 @@ await toolset.executeAction(
       prompt = hub.pull("hwchase17/openai-functions-agent")
 
       # Get All the tools
-      composio_toolset = ComposioToolSet()
-      tools = composio_toolset.get_tools(apps=[App.GITHUB], tags=[])
+      tool_set = ComposioToolSet()
+      tools = tool_set.get_tools(apps=[App.GITHUB], tags=[])
 
       # Define task
       task = "Star a repo theyashwanthsai/theyashwanthsai on GitHub"
@@ -345,7 +299,7 @@ await toolset.executeAction(
     Directly invoking actions is generally discouraged as it can lead to significant performance issues when implemented in a production environment.
     <CodeGroup>
     ```python python
-    tools = composio_toolset.get_tools(apps=[App.ASANA])
+    tools = tool_set.get_tools(apps=[App.ASANA])
     ```
     ```javascript javascript
     const tools = toolset.getTools({
