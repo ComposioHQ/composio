@@ -92,7 +92,7 @@ format-and-check:
 
 .PHONY: env
 env: clean
-	if [[ "$$VIRTUAL_ENV" == "" ]];\
+	if [ -z "$$VIRTUAL_ENV"];\
 	then\
 		pipenv --rm;\
 		pipenv --clear;\
