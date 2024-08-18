@@ -2,14 +2,12 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
   AiTextGenerationToolInput,
-  // @ts-ignore
 } from "@cloudflare/workers-types";
-import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { GetListActionsResponse } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
+import {  ActionsControllerV1ListActionsResponse, ActionsListResponseDTO } from "../sdk/client";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -42,7 +40,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getActionsSchema(filters);
-    return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
+    return actions.map((action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
           const formattedSchema: AiTextGenerationToolInput["function"] = {
             name: action.name!,
             description: action.description!,
@@ -81,7 +79,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
+    return actions.map((action: NonNullable<ActionsControllerV1ListActionsResponse["items"]>[0]) => {
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
           description: action.description!,

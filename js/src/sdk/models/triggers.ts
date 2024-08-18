@@ -1,13 +1,19 @@
-import { CancelablePromise, ListTriggersData, ListTriggersResponse, SetupTriggerData, SetupTriggerResponse, listTriggers, setupTrigger } from "../client";
-import { Composio } from "../";
+
 import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
+import {BackendClient} from "./backendClient"
+
+import apiClient from "../client/client"
+import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
+
+type RequiredQuery = TriggersControllerListTriggersData["query"];
 
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
 
-    constructor(private client: Composio) {
-        this.client = client;
+    backendClient: BackendClient;
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient;
     }
 
     /**
@@ -19,8 +25,14 @@ export class Triggers {
      * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
      * @throws {ApiError} If the request fails.
      */
-    list(data: ListTriggersData = {}): CancelablePromise<ListTriggersResponse> {
-        return listTriggers(data, this.client.config);
+    //@ts-ignore
+    list(data?: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
+        //@ts-ignore
+        return apiClient.triggers.listTriggers({
+            query: {
+                appNames: data?.appNames,
+            }
+        }).then(res => res.data)
     }
 
     /**
@@ -30,8 +42,38 @@ export class Triggers {
      * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
      * @throws {ApiError} If the request fails.
      */
-    setup(data: SetupTriggerData): CancelablePromise<SetupTriggerResponse> {
-        return setupTrigger(data, this.client.config);
+    //@ts-ignore
+    async setup(connectedAccountId, triggerName, config: Record<string, any>):{status:"string",triggerId:string}{
+        //@ts-ignore
+        const {data,error} = await apiClient.triggers.enableTrigger({
+            path:{
+                connectedAccountId,
+                triggerName
+            },
+            body: {
+                triggerConfig: config
+            }
+        })
+
+        return data as unknown as {status:"string",triggerId:string};
+    }
+
+    enable(data: { triggerId: any }): any {
+        return apiClient.triggers.switchTriggerInstanceStatus({
+            path: data,
+            body: {
+                enabled: true
+            }
+        }).then(res => res.data)
+    }
+
+    disable(data: { triggerId: any }): any {
+        return apiClient.triggers.switchTriggerInstanceStatus({
+            path: data,
+            body: {
+                enabled: false
+            }
+        }).then(res => res.data)
     }
 
     async subscribe(fn: (data: TriggerData) => void, filters:{
@@ -45,9 +87,10 @@ export class Triggers {
     }={}) {
 
         if(!fn) throw new Error("Function is required for trigger subscription");
-
-        const clientId = await this.client.getClientId();
-        await PusherUtils.getPusherClient(this.client.baseUrl, this.client.apiKey);
+        //@ts-ignore
+        const clientId = await this.backendClient.getClientId();
+        //@ts-ignore
+        await PusherUtils.getPusherClient(this.backendClient.baseUrl, this.backendClient.apiKey);
 
         const shouldSendTrigger = (data: TriggerData) => {
            if(Object.keys(filters).length === 0) return true;
@@ -72,7 +115,8 @@ export class Triggers {
     }
 
     async unsubscribe() {
-        const clientId = await this.client.getClientId();
+        //@ts-ignore
+        const clientId = await this.backendClient.getClientId();
         PusherUtils.triggerUnsubscribe(clientId);
     }
 }

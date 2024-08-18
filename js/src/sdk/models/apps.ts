@@ -1,21 +1,30 @@
-import { CancelablePromise, GetAppData, GetAppResponse, ListAllAppsResponse, getApp, listAllApps } from "../client";
-import { Composio } from "../"
+import { AppInfoResponseDto, AppListResDTO, SingleAppInfoResDTO } from "../client";
+import apiClient from "../client/client"
+import { BackendClient } from "./backendClient";
+
+export type GetAppData = {
+    appKey: string;
+};
+
+export type GetAppResponse = SingleAppInfoResDTO;
+
+export type ListAllAppsResponse = AppListResDTO
 
 export class Apps {
-    constructor(private readonly client: Composio) {
-        this.client = client;
+    backendClient: BackendClient;
+    constructor(backendClient: BackendClient) {
+        this.backendClient = backendClient;
     }
-
     /**
      * Retrieves a list of all available apps in the Composio platform.
      * 
      * This method allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
      * 
-     * @returns {Promise<ListAllAppsResponse>} A promise that resolves to the list of all apps.
+     * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    list(): CancelablePromise<ListAllAppsResponse> {
-        return listAllApps(this.client.config);
+    list(): Promise<AppInfoResponseDto[]> {
+        return apiClient.apps.getApps().then(res => res.data!.items)
     }
 
     /**
@@ -27,8 +36,12 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetAppData): CancelablePromise<GetAppResponse> {
-        return getApp(data, this.client.config);
+    get(data: GetAppData) {
+        return apiClient.apps.getApp({
+            path:{
+                appName: data.appKey
+            }
+        }).then(res=>res.data!)
     }
 }
 
