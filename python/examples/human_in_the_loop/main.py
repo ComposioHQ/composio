@@ -99,7 +99,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         ),
     )
 ]
-    tools = composio_toolset.get_actions(actions=[Action.LINEAR_CREATE_LINEAR_ISSUE])
+    tools = composio_toolset.get_actions(apps=[App.LINEAR])
     # Process the message and post the response in the same channel or thread
     check_agent = FunctionCallingAgentWorker(
     tools=tools,
@@ -116,6 +116,7 @@ def callback_new_message(event: TriggerEventData) -> None:
             4. The format should be <id>:<content>
             5. If you decide NO, then dont call any agent and end operation.
             message:{message}
+            6. If the user does not give project id or team id find them out by using Linear Tool's actions.
             """
     result = check_agent.chat(query_task)
     print(result)
