@@ -315,6 +315,9 @@ class ToolBuilder:
 
     @staticmethod
     def setup_children(obj: t.Type["Tool"]) -> None:
+        if obj.gid not in action_registry:
+            action_registry[obj.gid] = {}
+
         for action in obj.actions():
             action.tool = obj.name
             action.enum = f"{obj.enum}_{action.name.upper()}"
@@ -323,6 +326,9 @@ class ToolBuilder:
 
         if not hasattr(obj, "triggers"):
             return
+
+        if obj.gid not in trigger_registry:
+            trigger_registry[obj.gid] = {}
 
         for trigger in obj.triggers():  # type: ignore
             trigger.tool = obj.name
