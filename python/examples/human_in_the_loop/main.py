@@ -34,7 +34,7 @@ def proc():
         action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
         params={
             "channel": "general",
-            "text": f"Are you sure you want to post message:{mail_message} from sender email:{sender_mail}",
+            "text": f"Are you sure you want to post message:{mail_message} from sender email:{sender_mail}. If yes, tag test_app and tell it the project id and team id.",
         },
     )
     slack_listener.listen()
