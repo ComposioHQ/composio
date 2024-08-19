@@ -498,13 +498,9 @@ class ComposioToolSet(WithLogger):
         action = Action(action)
         is_runtime = action.is_runtime
         self.logger.debug(f"Action: {action}, runtime: {is_runtime}")
+        params = self._serialize_execute_params(param=params)
         if not is_runtime:
-            params = self._process_request(
-                action=action,
-                request=self._serialize_execute_params(
-                    param=params,
-                ),
-            )
+            params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
         response = (
             self._execute_local(

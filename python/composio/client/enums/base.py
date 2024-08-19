@@ -11,6 +11,7 @@ import typing_extensions as te
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
+from composio.utils.logging import get_logger
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}
@@ -152,10 +153,14 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
         if not (self._path / self._slug).exists():
-            raise MetadataFileNotFound(
-                f"Metadata file for `{self._slug}` not found, "
-                "Please run `composio apps update` to fix this"
+            from composio.cli.apps import update
+            from composio.cli.context import get_context
+
+            logger = get_logger()
+            logger.debug(
+                f"Metadata file for `{self._slug}` not found, updating metadata"
             )
+            update(context=get_context())
         if self._slug not in _model_cache:
             _model_cache[self._slug] = self._model.load(self._path / self._slug)
         return t.cast(EntityType, _model_cache[self._slug])
