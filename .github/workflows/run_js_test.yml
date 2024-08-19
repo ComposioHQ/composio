@@ -30,4 +30,18 @@ jobs:
     - name: pnpm build
       run: cd js && pnpm build
     - name: run test
-      run: cd js && pnpm test
+      run: cd js && pnpm test:coverage
+
+    - name: Upload  `coverage` folder
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: js/coverage
+        retention-days: 1
+        
+    - name: Upload jest html-reporters folder
+      uses: actions/upload-artifact@v3
+      with:
+        name: html-report
+        path: js/html-report
+        retention-days: 1

@@ -6,3 +6,4 @@ lib/
 ks/test-results/*
 coverage/
 jest_html_reporters.html
+html-report/

@@ -10,7 +10,16 @@ module.exports = {
     ],
     reporters: [
         "default",
-        "jest-html-reporters"
+        ["jest-html-reporters", {
+            "pageTitle": "Composio SDK Coverage Report",
+            "publicPath": "./html-report",
+            "filename": "report.html",
+            "includeConsoleLog": true,
+            "includeTestCoverage": true,
+            "includeTime": true,
+            "showSummary": true,
+            "showTable": true,
+        }]
     ],
     "coveragePathIgnorePatterns": [
         "src/sdk/client/*",
