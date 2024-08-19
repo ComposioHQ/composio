@@ -153,8 +153,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._slug in _runtime_actions:
             return _runtime_actions[self._slug]  # type: ignore
         if not (self._path / self._slug).exists():
-            from composio.cli.apps import update
-            from composio.cli.context import get_context
+            from composio.cli.apps import update  # pylint: disable=import-outside-toplevel
+            from composio.cli.context import get_context  # pylint: disable=import-outside-toplevel
 
             logger = get_logger()
             logger.debug(
