@@ -58,3 +58,46 @@ jobs:
     - name: Print HTML report folder unique URL
       run: |
         echo "HTML report folder unique URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html'"
+
+    - name: Delete previous comment if exists
+      uses: actions/github-script@v6
+      continue-on-error: true
+      with:
+        script: |
+          const { issue: { number: issue_number }, repo: { owner, repo } } = context;
+          const comments = await github.rest.issues.listComments({
+            owner,
+            repo,
+            issue_number,
+          });
+          for (const comment of comments.data) {
+            if (comment.body.includes('JS SDK Coverage Report')) {
+              await github.rest.issues.deleteComment({
+                owner,
+                repo,
+                comment_id: comment.id,
+              });
+            }
+          }
+  
+    - name: Post the link as github comment
+      uses: actions/github-script@v6
+      continue-on-error: true
+      with:
+        script: |
+          const { issue: { number: issue_number }, repo: { owner, repo } } = context;
+          const comment_body = `
+          ## JS SDK Coverage Report
+          
+          Coverage report for JS SDK can be found at the following URL:
+          https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/coverage-${{ github.run_id }}/coverage/index.html
+          
+          HTML report folder can be found at the following URL:
+          https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html
+          `;
+          github.rest.issues.createComment({
+            issue_number,
+            owner,
+            repo,
+            body: comment_body,
+          });
