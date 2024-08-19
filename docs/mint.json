@@ -220,34 +220,13 @@
   {
     "group": "Client Auth",
     "pages": [
-      "api-reference/client-auth/send-magic-link",
-      "api-reference/client-auth/logout-api",
-      "api-reference/client-auth/verify-magic-link",
       "api-reference/client-auth/get-user-info"
-    ]
-  },
-  {
-    "group": "Team",
-    "pages": [
-      "api-reference/team/invite-member",
-      "api-reference/team/list-members",
-      "api-reference/team/remove-member"
-    ]
-  },
-  {
-    "group": "API Keys",
-    "pages": [
-      "api-reference/api-keys/list-api-keys",
-      "api-reference/api-keys/generate-api-key",
-      "api-reference/api-keys/delete-api-key"
     ]
   },
   {
     "group": "App",
     "pages": [
-      "api-reference/app/get-apps",
-      "api-reference/app/add-open-api-spec",
-      "api-reference/app/get-opena-api-specs"
+      "api-reference/app/get-apps"
     ]
   },
   {
@@ -261,12 +240,12 @@
     ]
   },
   {
-    "group": "Actions Controller V 1",
+    "group": "Actions Controller",
     "pages": [
-      "api-reference/actions-controller-v-1/list-actions",
-      "api-reference/actions-controller-v-1/execute-action",
-      "api-reference/actions-controller-v-1/execute-action-proxy",
-      "api-reference/actions-controller-v-1/get-action"
+      "api-reference/actions-controller-v-2/list-actions",
+      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions-controller-v-2/execute-action-proxy",
+       "api-reference/actions-controller-v-1/get-action"
     ]
   },
   {
@@ -300,14 +279,6 @@
     "group": "Logs",
     "pages": [
       "api-reference/logs/get-logs"
-    ]
-  },
-  {
-    "group": "Actions Controller V 2",
-    "pages": [
-      "api-reference/actions-controller-v-2/list-actions",
-      "api-reference/actions-controller-v-2/execute-action",
-      "api-reference/actions-controller-v-2/execute-action-proxy"
     ]
   }
 ]
