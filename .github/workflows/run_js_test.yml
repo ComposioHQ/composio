@@ -53,8 +53,8 @@ jobs:
       uses: ryand56/r2-upload-action@latest
       with:
         r2-account-id: 4d4f16c61d89ec64e760039c4ec50717
-        r2-access-key-id: de51cf08ce14b98079755fdbc6e3048
-        r2-secret-access-key: cb88d66644cbd83dbf0c1900aa592fd2264e8f1c73cebb1f538052286c784
+        r2-access-key-id: d1e51cf08ce14b98079755fdbc6e3048
+        r2-secret-access-key: 082cb88d66644cbd83dbf0c1900aa592fd2264e8f1c73cebb1f538052286c784
         r2-bucket: github-action
         source-dir: js/html-report
         destination-dir: html-report-${{ github.run_id }}/html-report
