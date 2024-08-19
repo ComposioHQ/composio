@@ -32,9 +32,6 @@ jobs:
     - name: run test
       run: cd js && pnpm test:coverage
 
-    - name: install aws cli
-      run: sudo apt-get install awscli
-
     - name: Upload `coverage` folder to R2
       uses: ryand56/r2-upload-action@latest
       with:
