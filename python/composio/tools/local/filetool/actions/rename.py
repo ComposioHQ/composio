@@ -58,15 +58,9 @@ class RenameFile(BaseFileAction):
                 message="File renamed successfully.",
             )
         except FileNotFoundError as e:
-            print("FileNotFoundError", e)
             return RenameFileResponse(error=f"File not found: {str(e)}")
-        except IsADirectoryError as e:
-            print("IsADirectoryError", e)
-            return RenameFileResponse(error=f"Cannot open a directory: {str(e)}")
         except PermissionError as e:
-            print("PermissionError", e)
             return RenameFileResponse(error=f"Permission denied: {str(e)}")
         except IOError as e:
-            print("IOError", e)
             return RenameFileResponse(error=f"Error reading file: {str(e)}")
 
