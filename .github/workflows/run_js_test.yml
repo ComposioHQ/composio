@@ -2,7 +2,9 @@ name: Run JS SDK test
 
 on:
   push:
-  workflow_dispatch:
+    branches:
+      - master
+  pull_request:
     
 
 jobs:
@@ -61,7 +63,7 @@ jobs:
 
 
     - name: Find Comment
-      uses: peter-evans/find-comment@v4
+      uses: peter-evans/find-comment@v3
       id: fc
       continue-on-error: true
       with:
