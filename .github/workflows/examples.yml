@@ -17,6 +17,22 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
+        package:
+          [
+            autogen,
+            camel,
+            claude,
+            crew_ai,
+            griptape,
+            julep,
+            langchain,
+            llamaindex,
+            lyzr,
+            openai,
+            praisonai,
+            langgraph,
+            phidata,
+          ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@master
@@ -36,10 +52,10 @@ jobs:
           sudo apt-get autoclean
 
           python -m pip install --upgrade pip pipenv pytest
-          ls -1 plugins | awk '$0="plugins/"$0"/"' | xargs -L1 pipenv run pip3 install
-          pipenv install
-          pipenv run pip3 install '.[all]'
-          pipenv run pip install 'numpy<2'
-          pipenv run composio apps update
+          python -m pip install plugins/${{matrix.package}}
+          python -m pip install '.[all]'
+          python -m pip install 'numpy<2' python-dotenv
           
-          CI=false COMPOSIO_BASE_URL=https://backend.composio.dev/api pipenv run pytest -vv tests/test_example.py
+          composio apps update
+
+          CI=false COMPOSIO_BASE_URL=https://backend.composio.dev/api PLUGIN_TO_TEST=${{matrix.package}} pytest -vv tests/test_example.py
