@@ -106,3 +106,6 @@ class WithLogger:
     def logger(self) -> logging.Logger:
         """Get the component logger."""
         return t.cast(logging.Logger, self._logger)
+
+
+get_logger = get

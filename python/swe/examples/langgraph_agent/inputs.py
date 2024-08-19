@@ -2,9 +2,9 @@ import re
 import typing as t
 from pathlib import Path
 
-from agent import composio_toolset
-
 from composio import Action
+
+from agent import composio_toolset
 
 
 InputType = t.TypeVar("InputType")
