@@ -10,8 +10,7 @@
     "build": "tsc  --project . --outDir lib",
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
-    "openapispec:generate": "npx @hey-api/openapi-ts",
-    "start-client": "ts-node src/sdk/baseClient.ts"
+    "openapispec:generate": "npx @hey-api/openapi-ts"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",

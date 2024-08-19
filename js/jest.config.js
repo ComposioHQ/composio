@@ -5,10 +5,17 @@ module.exports = {
     testTimeout: 6000000,
     collectCoverage: true,
     coverageReporters: [
-        "html"
+        "html",
+        "text",
     ],
     reporters: [
         "default",
         "jest-html-reporters"
     ],
+    "coveragePathIgnorePatterns": [
+        "src/sdk/client/*",
+        "src/env/*",
+        "src/sdk/testUtils/*",
+        "config/*",
+    ]
 };
