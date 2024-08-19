@@ -81,6 +81,7 @@ jobs:
       uses: peter-evans/create-or-update-comment@v4
       continue-on-error: true
       with:
+        edit-mode: replace
         issue-number: ${{ github.event.pull_request.number }}
         body: |
           This comment was written by a bot!
