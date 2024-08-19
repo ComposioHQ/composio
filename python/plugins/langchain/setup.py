@@ -23,7 +23,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "langchain>=0.1.0",
+        "langchain>=0.1.0,<0.2.0",
         "langchain-openai>=0.0.2.post1",
         "pydantic>=2.6.4",
         "langchainhub>=0.1.15",

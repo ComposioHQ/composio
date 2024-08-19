@@ -23,6 +23,7 @@ JULEP_API_URL = os.environ.get("JULEP_API_URL")
 # Plugin test definitions
 EXAMPLES = {
     "autogen": {
+        "plugin": "autogen",
         "file": PLUGINS / "autogen" / "autogen_demo.py",
         "match": {
             "type": "stdout",
@@ -36,6 +37,7 @@ EXAMPLES = {
         },
     },
     "llamaindex": {
+        "plugin": "llamaindex",
         "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
         "match": {
             "type": "stdout",
@@ -49,6 +51,7 @@ EXAMPLES = {
         },
     },
     "local_tools": {
+        "plugin": "autogen",
         "file": EXAMPLES_PATH / "local_tools" / "autogen_math.py",
         "match": {
             "type": "stdout",
@@ -59,6 +62,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
     "runtime_tools": {
+        "plugin": "langchain",
         "file": EXAMPLES_PATH / "runtime_tools" / "langchain_math.py",
         "match": {
             "type": "stdout",
@@ -67,6 +71,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
     "crewai": {
+        "plugin": "crewai",
         "file": PLUGINS / "crew_ai" / "crewai_demo.py",
         "match": {
             "type": "stdout",
@@ -81,6 +86,7 @@ EXAMPLES = {
     },
     # TOFIX(@kaave): httpcore.UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.
     # "julep": {
+    #     "plugin": "julep",
     #     "file": PLUGINS / "julep" / "julep_demo.py",
     #     "match": {
     #         "type": "stdout",
@@ -94,6 +100,7 @@ EXAMPLES = {
     #     },
     # },
     "langchain": {
+        "plugin": "langchain",
         "file": PLUGINS / "langchain" / "langchain_demo.py",
         "match": {
             "type": "stdout",
@@ -103,17 +110,19 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
-    # "langgraph": {
-    #     "file": PLUGINS / "langgraph" / "langgraph_demo.py",
-    #     "match": {
-    #         "type": "stdout",
-    #         "values": [
-    #             "{'execution_details': {'executed': True}, 'response_data': ''}"
-    #         ],
-    #     },
-    #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-    # },
+    "langgraph": {
+        "plugin": "langgraph",
+        "file": PLUGINS / "langgraph" / "langgraph_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "{'execution_details': {'executed': True}, 'response_data': ''}"
+            ],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
     "openai": {
+        "plugin": "openai",
         "file": PLUGINS / "openai" / "openai_demo.py",
         "match": {
             "type": "stdout",
@@ -124,6 +133,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "lyzr": {
+        "plugin": "lyzr",
         "file": PLUGINS / "lyzr" / "lyzr_demo.py",
         "match": {
             "type": "stdout",
@@ -134,6 +144,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     # "praisonai": {
+    #     "plugin": "praisonai",
     #     "file": PLUGINS / "praisonai" / "praisonai_demo.py",
     #     "match": {
     #         "type": "stdout",
@@ -156,6 +167,10 @@ def test_example(
     example_name: str, example: dict  # pylint: disable=unused-argument
 ) -> None:
     """Test an example with given environment."""
+    plugin_to_test = os.getenv("PLUGIN_TO_TEST")
+    if plugin_to_test is not None and plugin_to_test != example["plugin"]:
+        pytest.skip(f"Skipping {example['plugin']}")
+
     for key, val in example["env"].items():
         assert (
             val is not None
