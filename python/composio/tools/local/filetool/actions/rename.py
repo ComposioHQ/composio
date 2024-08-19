@@ -70,14 +70,3 @@ class RenameFile(BaseFileAction):
             print("IOError", e)
             return RenameFileResponse(error=f"Error reading file: {str(e)}")
 
-
-# write function to execute RenameFile.execute_on_file_manager
-def rename_file(
-    file_manager: FileManager, file_path: str, new_file_path: str
-) -> RenameFileResponse:
-    request = RenameFileRequest(old_file_path=file_path, new_file_path=new_file_path)
-    action = RenameFile()
-    return action.execute_on_file_manager(file_manager, request)
-
-
-rename_file(FileManager(), "test-dir", "test-2")
