@@ -63,6 +63,7 @@ jobs:
     - name: Find Comment
       uses: peter-evans/find-comment@v3
       id: fc
+      continue-on-error: true
       with:
         issue-number: ${{ github.event.pull_request.number }}
         comment-author: 'github-actions[bot]'
@@ -70,6 +71,7 @@ jobs:
 
     - name: Create or update comment
       uses: peter-evans/create-or-update-comment@v4
+      continue-on-error: true
       if: ${{ github.event_name == 'pull_request' }}
       with:
         issue-number: ${{ github.event.pull_request.number }}
