@@ -34,7 +34,9 @@ jobs:
     - name: run test
       run: cd js && pnpm test:coverage
 
+
     - name: Upload `coverage` folder to R2
+      if: ${{ always() }}
       uses: ryand56/r2-upload-action@latest
       with:
         r2-account-id: 4d4f16c61d89ec64e760039c4ec50717
@@ -45,10 +47,12 @@ jobs:
         destination-dir: coverage-${{ github.run_id }}/coverage
       
     - name: Print unique URL
+      if: ${{ always() }}
       run: |
         echo "URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/coverage-${{ github.run_id }}/coverage/index.html'"
        
     - name: Upload jest html-reporters folder to R2
+      if: ${{ always() }}
       uses: ryand56/r2-upload-action@latest
       with:
         r2-account-id: 4d4f16c61d89ec64e760039c4ec50717
@@ -58,11 +62,12 @@ jobs:
         source-dir: js/html-report
         destination-dir: html-report-${{ github.run_id }}/html-report
     - name: Print HTML report folder unique URL
+      if: ${{ always() }}
       run: |
         echo "HTML report folder unique URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html'"
 
-
     - name: Find Comment
+      if: ${{ always() }}
       uses: peter-evans/find-comment@v3
       id: fc
       continue-on-error: true
@@ -72,9 +77,9 @@ jobs:
         body-includes: This comment was written by a bot!
 
     - name: Create or update comment
+      if: ${{ github.event_name == 'pull_request' && always() }}
       uses: peter-evans/create-or-update-comment@v4
       continue-on-error: true
-      if: ${{ github.event_name == 'pull_request' }}
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body: |
@@ -84,7 +89,8 @@ jobs:
           Coverage report for JS SDK can be found at the following URL:
           https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/coverage-${{ github.run_id }}/coverage/index.html
           
-          HTML report folder can be found at the following URL:
+          Test report folder can be found at the following URL:
           https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html
         reactions: rocket
         comment-id: ${{ steps.fc.outputs.comment-id }}
+
