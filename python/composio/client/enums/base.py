@@ -136,7 +136,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._slug in self.__annotations__ or self._slug in _runtime_actions:
             return
 
-        from composio.tools.base.abs import (
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
             action_registry,
             tool_registry,
             trigger_registry,
@@ -183,7 +183,6 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if self._model is ActionData:
             for gid, actions in action_registry.items():
-                print(actions, self._slug)
                 if self._slug in actions:
                     action = actions[self._slug]
                     data = ActionData(
