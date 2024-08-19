@@ -35,25 +35,29 @@ jobs:
     - name: install aws cli
       run: sudo apt-get install awscli
 
-    - name: Upload `coverage` folder to S3 and print unique URL
-      env:
-        AWS_ACCESS_KEY_ID: de51cf08ce14b98079755fdbc6e3048
-        AWS_SECRET_ACCESS_KEY: cb88d66644cbd83dbf0c1900aa592fd2264e8f1c73cebb1f538052286c784
-        AWS_S3_ENDPOINT: https://4d4f16c61d89ec64e760039c4ec50717.r2.cloudflarestorage.com
+    - name: Upload `coverage` folder to R2
+      uses: ryand56/r2-upload-action@latest
+      with:
+        r2-account-id: 4d4f16c61d89ec64e760039c4ec50717
+        r2-access-key-id: d1e51cf08ce14b98079755fdbc6e3048
+        r2-secret-access-key: 082cb88d66644cbd83dbf0c1900aa592fd2264e8f1c73cebb1f538052286c784
+        r2-bucket: github-action
+        source-dir: js/coverage
+        destination-dir: coverage-${{ github.run_id }}/coverage
+      
+    - name: Print unique URL
       run: |
-        TIMESTAMP=$(date +%s)
-        UNIQUE_FOLDER="coverage-$TIMESTAMP"
-        aws s3 cp js/coverage "s3://$UNIQUE_FOLDER" --endpoint-url $AWS_S3_ENDPOINT --recursive
-        echo "Coverage folder unique URL: $AWS_S3_ENDPOINT/$UNIQUE_FOLDER"
-        
-        
-    - name: Upload jest html-reporters folder to S3
-      env:
-        AWS_ACCESS_KEY_ID: de51cf08ce14b98079755fdbc6e3048
-        AWS_SECRET_ACCESS_KEY: cb88d66644cbd83dbf0c1900aa592fd2264e8f1c73cebb1f538052286c784
-        AWS_S3_ENDPOINT: https://4d4f16c61d89ec64e760039c4ec50717.r2.cloudflarestorage.com
+        echo "URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/coverage-${{ github.run_id }}/coverage/index.html'"
+       
+    - name: Upload jest html-reporters folder to R2
+      uses: ryand56/r2-upload-action@latest
+      with:
+        r2-account-id: 4d4f16c61d89ec64e760039c4ec50717
+        r2-access-key-id: de51cf08ce14b98079755fdbc6e3048
+        r2-secret-access-key: cb88d66644cbd83dbf0c1900aa592fd2264e8f1c73cebb1f538052286c784
+        r2-bucket: github-action
+        source-dir: js/html-report
+        destination-dir: html-report-${{ github.run_id }}/html-report
+    - name: Print HTML report folder unique URL
       run: |
-        TIMESTAMP=$(date +%s)
-        UNIQUE_FOLDER="html-report-$TIMESTAMP"
-        aws s3 cp js/html-report "s3://$UNIQUE_FOLDER" --endpoint-url $AWS_S3_ENDPOINT --recursive
-        echo "HTML report folder unique URL: $AWS_S3_ENDPOINT/$UNIQUE_FOLDER"
+        echo "HTML report folder unique URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/'"
