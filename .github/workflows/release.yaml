@@ -11,16 +11,8 @@ on:
         default: false
 
 jobs:
-  # test-examples:
-  #   if: ${{ !inputs.skip_tests }}
-  #   uses: ./.github/workflows/examples.yml
-  #   with:
-  #     working-directory: ./python
-  #   secrets: inherit
-
   publish-core:
     name: Create Framework & Plugin Releases
-    # needs: test-examples
     defaults:
       run:
         working-directory: ./python
