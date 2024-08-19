@@ -582,6 +582,7 @@ class ComposioToolSet(WithLogger):
             if param_details.get("properties") == FileType.schema().get("properties"):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
+                    "default": param_details.get("default"),
                     "type": "string",
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
@@ -592,6 +593,7 @@ class ComposioToolSet(WithLogger):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {
+                        "default": param_details.get("default"),
                         "type": "string",
                         "format": "file-path",
                         "description": f"File path to {param_details.get('description', '')}",
