@@ -79,64 +79,61 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-        "introduction/intro/quickstart",
+        "introduction/intro/quickstart"
+      ]
+    },
+    {
+      "group": "Basics",
+      "pages": [
+        "introduction/foundations/basic",
+        "introduction/foundations/components/entity/entity-guide",
+        "introduction/foundations/components/actions/action-guide",
+        "introduction/foundations/components/triggers/trigger-guide",
+        "introduction/foundations/components/local_tools",
         {
-          "group": "Core Concepts",
+          "group": "Advanced",
           "pages": [
-            "introduction/foundations/basic",
-            "introduction/foundations/components/entity/entity-guide",
+            "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/local_tools",
-            "introduction/foundations/components/integrations/custom-integration",
-            "introduction/foundations/components/actions/local-code"
+            "introduction/foundations/components/workspace",
+            "introduction/foundations/components/integrations/custom-integration"
+
           ]
         }
       ]
     },
     {
-      "group": "Python",
-      "pages": [
-        "python/introduction",
-        {
-          "group": "With Frameworks",
-          "icon": "code",
-          "iconType": "solid",
-          "pages": [
-      "framework/langchain",
-        "framework/autogen",
-        "framework/crewai",
-        "framework/lyzr",
-        "framework/openai",
-        "framework/julep",
-        "framework/griptape",
+      "group":"Supported Frameworks",
+
+      "pages":[
+        "framework/langchain",
         "framework/llamaindex",
-        "framework/camelai",
-        "framework/praisonai",
-        "framework/langgraph",
-        "framework/phidata"
-          ]
-        }
-      ]
-    },
-            {
-      "group": "Javascript",
-      "pages": [
-       "javascript/openai",
+        "framework/crewai",
+        "javascript/cloudflare",
+        "javascript/vercel",
+
         {
-          "group": "With frameworks",
-          "icon": "code",
-          "iconType": "solid",
+          "group": "Other Frameworks",
           "pages": [
+            "framework/autogen",
+            "framework/crewai",
+            "framework/lyzr",
+            "framework/openai",
+            "framework/julep",
+            "framework/griptape",
+            "framework/camelai",
+            "framework/praisonai",
+            "framework/langgraph",
+            "framework/phidata",
             "javascript/langchain",
-            "javascript/cloudflare",
-            "javascript/openai",
-            "javascript/vercel"
+            "javascript/openai"
           ]
         }
       ]
+      
+
     },
+    
     {
       "group": "SweKit (JS)",
       "pages": [
@@ -220,42 +217,100 @@
       "group": "Endpoints",
       "icon": "robot",
       "pages": [
-        {
-          "icon": "code",
-          "group": "apps",
-          "pages": [
-            "api-reference/apps/list-all-apps"
-          ]
-        },
-        {
-          "icon": "rectangles-mixed",
-          "group": "connections",
-          "pages": [
-            "api-reference/connectedaccounts/list-all-connected-accounts",
-            "api-reference/connectedaccounts/connect-an-account",
-            "api-reference/connectedaccounts/get-a-connected-account",
-            "api-reference/connectedaccounts/delete-a-connected-account"
-          ]
-        },
-        {
-          "icon": "database",
-          "group": "integrations",
-          "pages": [
-            "api-reference/integrations/get-an-integration",
-            "api-reference/integrations/update-an-integration",
-            "api-reference/integrations/list-all-integrations",
-            "api-reference/integrations/create-a-new-integration"
-          ]
-        },
-        {
-          "group": "actions",
-          "pages": [
-            "api-reference/actions/get-a-specific-action",
-            "api-reference/actions/get-list-of-actions",
-            "api-reference/actions/execute-action"
-          ]
-        }
-      ]
+  {
+    "group": "Client Auth",
+    "pages": [
+      "api-reference/client-auth/send-magic-link",
+      "api-reference/client-auth/logout-api",
+      "api-reference/client-auth/verify-magic-link",
+      "api-reference/client-auth/get-user-info"
+    ]
+  },
+  {
+    "group": "Team",
+    "pages": [
+      "api-reference/team/invite-member",
+      "api-reference/team/list-members",
+      "api-reference/team/remove-member"
+    ]
+  },
+  {
+    "group": "API Keys",
+    "pages": [
+      "api-reference/api-keys/list-api-keys",
+      "api-reference/api-keys/generate-api-key",
+      "api-reference/api-keys/delete-api-key"
+    ]
+  },
+  {
+    "group": "App",
+    "pages": [
+      "api-reference/app/get-apps",
+      "api-reference/app/add-open-api-spec",
+      "api-reference/app/get-opena-api-specs"
+    ]
+  },
+  {
+    "group": "App Connector",
+    "pages": [
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/get-connector-info",
+      "api-reference/app-connector/delete-connector",
+      "api-reference/app-connector/patch-connector"
+    ]
+  },
+  {
+    "group": "Actions Controller V 1",
+    "pages": [
+      "api-reference/actions-controller-v-1/list-actions",
+      "api-reference/actions-controller-v-1/execute-action",
+      "api-reference/actions-controller-v-1/execute-action-proxy",
+      "api-reference/actions-controller-v-1/get-action"
+    ]
+  },
+  {
+    "group": "Connections",
+    "pages": [
+      "api-reference/connections/get-connections",
+      "api-reference/connections/initiate-connection",
+      "api-reference/connections/get-connection",
+      "api-reference/connections/delete-connection",
+      "api-reference/connections/disable-connection",
+      "api-reference/connections/enable-connection"
+    ]
+  },
+  {
+    "group": "Triggers",
+    "pages": [
+      "api-reference/triggers/list-triggers",
+      "api-reference/triggers/handle-trigger",
+      "api-reference/triggers/enable-trigger",
+      "api-reference/triggers/get-trigger",
+      "api-reference/triggers/get-active-triggers",
+      "api-reference/triggers/disable-trigger",
+      "api-reference/triggers/delete-trigger",
+      "api-reference/triggers/set-callback-url",
+      "api-reference/triggers/set-callback-url-1",
+      "api-reference/triggers/get-webhook-url",
+      "api-reference/triggers/get-logs"
+    ]
+  },
+  {
+    "group": "Logs",
+    "pages": [
+      "api-reference/logs/get-logs"
+    ]
+  },
+  {
+    "group": "Actions Controller V 2",
+    "pages": [
+      "api-reference/actions-controller-v-2/list-actions",
+      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions-controller-v-2/execute-action-proxy"
+    ]
+  }
+]
     }
   ],
   "integrations": {

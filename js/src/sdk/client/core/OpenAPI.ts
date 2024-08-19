@@ -39,7 +39,7 @@ export type OpenAPIConfig = {
 	};
 };
 
-export const COMPOSIO_BASE_URL = "https://backend.composio.dev/api";
+export const COMPOSIO_BASE_URL = "https://backend.composio.dev/";
 
 export const OpenAPI: OpenAPIConfig = {
 	BASE: COMPOSIO_BASE_URL,

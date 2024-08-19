@@ -5,7 +5,7 @@ CrewAI demo.
 import os
 
 import dotenv
-from crewai import Agent, Task
+from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
 from composio_crewai import App, ComposioToolSet
@@ -41,8 +41,7 @@ task = Task(
     expected_output="if the star happened",
 )
 
-# Execute task
-try:
-    task.execute_sync()  # type: ignore
-except AttributeError:
-    task.execute()  # type: ignore
+my_crew = Crew(agents=[crewai_agent], tasks=[task])
+
+result = my_crew.kickoff()
+print(result)

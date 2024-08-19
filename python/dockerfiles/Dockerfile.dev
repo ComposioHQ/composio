@@ -20,7 +20,7 @@ RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio for dependency caching
 # Install composio
-RUN python -m pip install composio-core[all]==0.4.2 fastapi playwright uvicorn
+RUN python -m pip install composio-core[all]==0.4.5 fastapi playwright uvicorn
 
 # Install playwright deps
 RUN playwright install-deps
@@ -45,8 +45,6 @@ RUN useradd -rm -d /home/user -s /bin/bash -g root -G sudo -u 1000 user
 
 # Define entry point
 COPY entrypoint.sh /root/entrypoint.sh
-
-COPY ./IMG_20171230_084709_Bokeh.jpeg /root/karan_image.jpeg
 
 # Run entrypoint.sh
 ENTRYPOINT [ "/root/entrypoint.sh" ]

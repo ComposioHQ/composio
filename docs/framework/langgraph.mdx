@@ -1,6 +1,6 @@
 ---
 title: "🦜🕸️ Using Composio With LangGraph"
-sidebarTitle: "LangGraph SDK"
+sidebarTitle: "LangGraph"
 icon: "spider-web"
 description: "Integrate Composio with LangGraph Agentic workfows & enable them to interact seamlessly with external apps, enhancing their functionality and reach."
 ---
@@ -20,56 +20,83 @@ Ensure you have the necessary packages installed and connect your GitHub account
     pip install composio-langgraph
     # login to composio
     composio login
-    # Connect your GitHub using command below, so agents can use it. 
-    composio add github
-    # Check all different apps which you can connect with
-    composio apps
     ```
 </CodeGroup>
 
 ### Goal: Use LangGraph Agent to Interact with Github using Composio
 
 <Steps>
+<Step title="Connect GitHub account">
+
+- Connect user `Jessica` GitHub account to allow your agents to utilize GitHub functionalities.
+<Tabs>
+<Tab title="CLI">
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python">
+<CodeGroup>
+```python Authenticate GitHub Account 
+from composio_langgraph import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+
 <Step title="Import Base Packages">
 
-Prepare your environment by initializing necessary imports from LangGraph & LangChain for setting up your agent.
+- Prepare your environment by initializing necessary imports from LangGraph & LangChain for setting up your agent.
 
 <CodeGroup>
-    ```python Default Imports
-    from typing import Literal
+```python Default Imports
+from typing import Literal
 
-    from langchain_openai import ChatOpenAI
-    from langgraph.graph import MessagesState, StateGraph
-    from langgraph.prebuilt import ToolNode
-    ```
+from langchain_openai import ChatOpenAI
+from langgraph.graph import MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode
+```
 </CodeGroup>
 
 </Step>
 
 <Step title="Fetch GitHub LangGraph Tools via Composio">
 
-Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtaned from `ComposioToolSet`.
+- Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtaned from `ComposioToolSet`.
 
 <CodeGroup>
-    ```python Get tools
-    from composio_langgraph import Action, ComposioToolSet
+```python Get tools
+from composio_langgraph import Action, ComposioToolSet
 
-    # Initialize the toolset for GitHub
-    composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_actions(
-        actions=[
-            Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER,
-            Action.GITHUB_USERS_GET_AUTHENTICATED,
-        ])
-    tool_node = ToolNode(tools)
-    ```
+# Initialize the toolset for GitHub
+composio_toolset = ComposioToolSet(entity_id="Jessica")
+tools = composio_toolset.get_actions(
+    actions=[
+        Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER,
+        Action.GITHUB_USERS_GET_AUTHENTICATED,
+    ])
+tool_node = ToolNode(tools)
+```
 </CodeGroup>
 
 </Step>
 
 <Step title="Prepare the model">
 
-Initialize the LLM class and bind obtained functions to the model.
+- Initialize the LLM class and bind obtained functions to the model.
 
 <CodeGroup>
     ```python Define model
@@ -83,15 +110,15 @@ Initialize the LLM class and bind obtained functions to the model.
 
 <Step title="Define the Graph Nodes">
 
-LangGraph expects you to define different nodes of the agentic workflow as separate functions. Here we define a node for calling the LLM model.
+- LangGraph expects you to define different nodes of the agentic workflow as separate functions.
 
 <CodeGroup>
-    ```python Define nodes
-    def call_model(state: MessagesState):
-        messages = state["messages"]
-        response = model_with_tools.invoke(messages)
-        return {"messages": [response]}
-    ```
+```python Define nodes
+def call_model(state: MessagesState):
+    messages = state["messages"]
+    response = model_with_tools.invoke(messages)
+    return {"messages": [response]}
+```
 </CodeGroup>
 
 </Step>
@@ -99,33 +126,35 @@ LangGraph expects you to define different nodes of the agentic workflow as separ
 
 <Step title="Define the Graph Nodes and Edges">
 
-To establish the agent's workflow, we begin by initializing the workflow with `agent` and `tools` nodes, followed by specifying the connecting edges between nodes, finally compiling the workflow. These edges can be straightforward or conditional, depending on the workflow requirements.
+- We begin by initializing the workflow with `agent` and `tools` nodes, followed by specifying the connecting edges between nodes, finally compiling the workflow.
+
+- These edges can be straightforward or conditional, depending on the workflow requirements.
 
 <CodeGroup>
-    ```python Define edges
-    def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
-        messages = state["messages"]
-        last_message = messages[-1]
-        if last_message.tool_calls:
-            return "tools"
-        return "__end__"
+```python Define edges
+def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+    messages = state["messages"]
+    last_message = messages[-1]
+    if last_message.tool_calls:
+        return "tools"
+    return "__end__"
 
 
-    workflow = StateGraph(MessagesState)
+workflow = StateGraph(MessagesState)
 
-    # Define the two nodes we will cycle between
-    workflow.add_node("agent", call_model)
-    workflow.add_node("tools", tool_node)
+# Define the two nodes we will cycle between
+workflow.add_node("agent", call_model)
+workflow.add_node("tools", tool_node)
 
-    workflow.add_edge("__start__", "agent")
-    workflow.add_conditional_edges(
-        "agent",
-        should_continue,
-    )
-    workflow.add_edge("tools", "agent")
+workflow.add_edge("__start__", "agent")
+workflow.add_conditional_edges(
+    "agent",
+    should_continue,
+)
+workflow.add_edge("tools", "agent")
 
-    app = workflow.compile()
-    ```
+app = workflow.compile()
+```
 </CodeGroup>
 
 </Step>
@@ -134,24 +163,24 @@ To establish the agent's workflow, we begin by initializing the workflow with `a
 
 <Step title="Invoke & Check Response">
 
-After the compilation of workflow, we invoke the LLM with a task, and stream the response.
+- After the compilation of workflow, we invoke the LLM with a task, and stream the response.
 
 <CodeGroup>
-    ```python Execute workflow
-    for chunk in app.stream(
-        {
-            "messages": [
-                (
-                    "human",
-                    # "Star the Github Repository composiohq/composio",
-                    "Get my information.",
-                )
-            ]
-        },
-        stream_mode="values",
-    ):
-        chunk["messages"][-1].pretty_print()
-    ```
+```python Execute workflow
+for chunk in app.stream(
+    {
+        "messages": [
+            (
+                "human",
+                # "Star the Github Repository composiohq/composio",
+                "Get my information.",
+            )
+        ]
+    },
+    stream_mode="values",
+):
+    chunk["messages"][-1].pretty_print()
+```
 </CodeGroup>
 
 </Step>

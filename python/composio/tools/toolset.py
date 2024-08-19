@@ -3,6 +3,7 @@ Composio SDK tools.
 """
 
 import base64
+import binascii
 import hashlib
 import itertools
 import json
@@ -20,7 +21,8 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     ConnectedAccountModel,
-    FileModel,
+    ExecutionDetailsModel,
+    FileType,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
@@ -310,33 +312,57 @@ class ComposioToolSet(WithLogger):
                 output=output,
                 entity_id=entity_id,
             )
-        try:
-            # Save the variables of type file to the composio/output directory.
-            output_modified = self._save_var_files(
-                f"{action.name}_{entity_id}_{time.time()}", output
-            )
-            return output_modified
-        except Exception:
-            pass
-        return output
 
-    def _save_var_files(self, file_name_prefix: str, output: dict) -> dict:
-        success_response_model = SuccessExecuteActionResponseModel.model_validate(
-            output
+        try:
+            success_response_model = SuccessExecuteActionResponseModel.model_validate(
+                output
+            )
+        except Exception:
+            return output
+
+        return self._save_var_files(
+            file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
+            success_response_model=success_response_model,
         )
-        resp_data = json.loads(success_response_model.response_data)
+
+    def _save_var_files(
+        self,
+        file_name_prefix: str,
+        success_response_model: SuccessExecuteActionResponseModel,
+    ) -> dict:
+        execution_status = True
+        resp_data = success_response_model.response_data
+
         for key, val in resp_data.items():
             try:
-                file_model = FileModel.model_validate(val)
+                file_model = FileType.model_validate(val)
                 _ensure_output_dir_exists()
-                output_file_path = (
-                    output_dir
-                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+
+                cache_filename = (
+                    f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
                 )
-                _write_file(output_file_path, base64.b64decode(file_model.content))
-                resp_data[key] = str(output_file_path)
+                cache_filepath = output_dir / cache_filename
+
+                local_filepath = f"./{file_model.name.replace('/', '_')}"
+
+                _write_file(
+                    cache_filepath, base64.urlsafe_b64decode(file_model.content)
+                )
+                _write_file(
+                    local_filepath, base64.urlsafe_b64decode(file_model.content)
+                )
+
+                resp_data[key] = str(local_filepath)
+            except binascii.Error:
+                execution_status = False
+                resp_data[key] = "Invalid File! Unable to decode."
             except Exception:
                 pass
+
+        if execution_status is False:
+            success_response_model.execution_details = ExecutionDetailsModel(
+                executed=False
+            )
         success_response_model.response_data = resp_data
         return success_response_model.model_dump()
 
@@ -470,13 +496,12 @@ class ComposioToolSet(WithLogger):
         """
         self.logger.info(f"Executing action: {action}")
         action = Action(action)
-        params = self._process_request(
-            action=action,
-            request=self._serialize_execute_params(
-                param=params,
-            ),
-        )
-        metadata = self._add_metadata(action=action, metadata=metadata)
+        is_runtime = action.is_runtime
+        self.logger.debug(f"Action: {action}, runtime: {is_runtime}")
+        params = self._serialize_execute_params(param=params)
+        if not is_runtime:
+            params = self._process_request(action=action, request=params)
+            metadata = self._add_metadata(action=action, metadata=metadata)
         response = (
             self._execute_local(
                 action=action,
@@ -492,6 +517,8 @@ class ComposioToolSet(WithLogger):
                 text=text,
             )
         )
+        if is_runtime:
+            return response
         return self._process_respone(action=action, response=response)
 
     def get_action_schemas(
@@ -554,19 +581,21 @@ class ComposioToolSet(WithLogger):
     def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("properties") == FileModel.schema().get("properties"):
+            if param_details.get("properties") == FileType.schema().get("properties"):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
+                    "default": param_details.get("default"),
                     "type": "string",
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
                 }
             elif param_details.get("allOf", [{}])[0].get(
                 "properties"
-            ) == FileModel.schema().get("properties"):
+            ) == FileType.schema().get("properties"):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {
+                        "default": param_details.get("default"),
                         "type": "string",
                         "format": "file-path",
                         "description": f"File path to {param_details.get('description', '')}",
