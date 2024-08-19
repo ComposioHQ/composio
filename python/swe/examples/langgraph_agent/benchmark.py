@@ -1,12 +1,13 @@
 import argparse
 
-from agent import composio_toolset, graph
 from langchain_core.messages import HumanMessage
 
 from composio_langgraph import Action
 
 from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
+
+from agent import composio_toolset, graph
 
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
