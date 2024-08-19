@@ -128,7 +128,9 @@ def _parse_docstring(
 ) -> t.Tuple[str, t.Dict[str, str], t.Optional[t.Tuple[str, str]],]:
     """Parse docstring for descriptions."""
     if docstr is None:
-        raise ValueError("Docstring is None, Please provide a docstring for runtime tools")
+        raise ValueError(
+            "Docstring is None, Please provide a docstring for runtime tools"
+        )
     header, *descriptions = docstr.lstrip().rstrip().split("\n")
     params = {}
     returns = None
