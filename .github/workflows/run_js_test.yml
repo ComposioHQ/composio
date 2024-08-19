@@ -60,4 +60,4 @@ jobs:
         destination-dir: html-report-${{ github.run_id }}/html-report
     - name: Print HTML report folder unique URL
       run: |
-        echo "HTML report folder unique URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/'"
+        echo "HTML report folder unique URL: 'https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html'"
