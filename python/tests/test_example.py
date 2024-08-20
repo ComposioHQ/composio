@@ -100,30 +100,14 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
-<<<<<<< Updated upstream
     "langgraph": {
-        "plugin": "langgraph",
         "file": PLUGINS / "langgraph" / "langgraph_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}"
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
-=======
-    # "langgraph": {
-    #     "file": PLUGINS / "langgraph" / "langgraph_demo.py",
-    #     "match": {
-    #         "type": "stdout",
-    #         "values": [
-    #             "Action executed successfully"
-    #         ],
-    #     },
-    #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-    # },
->>>>>>> Stashed changes
     "openai": {
         "plugin": "openai",
         "file": PLUGINS / "openai" / "openai_demo.py",
@@ -166,14 +150,9 @@ def test_example(
     example_name: str, example: dict  # pylint: disable=unused-argument
 ) -> None:
     """Test an example with given environment."""
-<<<<<<< Updated upstream
     plugin_to_test = os.getenv("PLUGIN_TO_TEST")
     if plugin_to_test is not None and plugin_to_test != example["plugin"]:
         pytest.skip(f"Skipping {example['plugin']}")
-=======
-    if "_tools" not in example_name:
-        return
->>>>>>> Stashed changes
 
     for key, val in example["env"].items():
         assert (
