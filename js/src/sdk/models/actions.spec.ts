@@ -43,8 +43,8 @@ describe("Apps class tests", () => {
             }
         });
 
-        expect(executionResult).toHaveProperty('execution_details.executed', true);
-        expect(executionResult).toHaveProperty('response_data.authorizations_url');
+        expect(executionResult).toHaveProperty('successfull', true);
+        expect((executionResult as any).data).toHaveProperty('authorizations_url');
     });
 
     it("should execute an action of noauth app", async () => {
