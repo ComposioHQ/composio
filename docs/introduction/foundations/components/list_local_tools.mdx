@@ -5,7 +5,7 @@ description: List of Local Tools you can readily use for your Agents
 
 ## Browser Tools
 <AccordionGroup>
-<Accordion title="Browser Search">
+<Accordion title="Browser Search - In Beta">
     <CardGroup cols={1}>
         <Card title="Click Element" horizontal='true'>
               <Accordion title="Code Snippet">
@@ -13,7 +13,7 @@ description: List of Local Tools you can readily use for your Agents
                         ```python Python
                         toolset = ComposioToolSet()
                         toolset.execute_action(
-                            action=[Action.SHELLTOOL]
+                            action=[Action.BROWSERTOOL]
                             params={
                                 
                             }
@@ -211,13 +211,15 @@ description: List of Local Tools you can readily use for your Agents
               <Accordion title="Code Snippet">
               <CodeGroup>
                   ```python Python
-                  toolset = ComposioToolSet()
-                  toolset.execute_action(
-                      action=[Action.SHELLTOOL]
-                      params={
-                          
-                      }
-                  )
+                    from composio import ComposioToolSet, App, Action
+                    toolset = ComposioToolSet()
+                    website_link="https://app.composio.dev"
+                    toolset.execute_action(
+                        action=Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,
+                        params={
+                            "website_url":website_link,
+                            },
+                    )
                   ```
                   ```javascript JS
                       toolset = ComposioToolSet()
@@ -231,16 +233,20 @@ description: List of Local Tools you can readily use for your Agents
               </CodeGroup>
             </Accordion>
         </Card>
-        <Card title="Scrape Website Element" href="https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/webtool" horizontal='true' >
+        <Card title="Scrape Website Element" horizontal='true' >
               <Accordion title="Code Snippet">
               <CodeGroup>
                   ```python Python
+                  from composio import ComposioToolSet, App, Action
                   toolset = ComposioToolSet()
+                  website_link="https://app.composio.dev"
+                  web_element = "CSS Selector for the element of your choice"
                   toolset.execute_action(
-                      action=[Action.SHELLTOOL]
+                      action=Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,
                       params={
-                          
-                      }
+                          "website_url":website_link,
+                          "element_selector":web_element,
+                          },
                   )
                   ```
                   ```javascript JS
@@ -265,13 +271,15 @@ description: List of Local Tools you can readily use for your Agents
               <Accordion title="Code Snippet">
               <CodeGroup>
                   ```python Python
-                    toolset = ComposioToolSet()
-                    toolset.execute_action(
-                        action=[Action.SHELLTOOL]
-                        params={
-                            
-                        }
-                    )
+                  from composio import ComposioToolSet, App, Action
+                  toolset = ComposioToolSet()
+                  website_link="https://app.composio.dev"
+                  toolset.execute_action(
+                      action=Action.SPIDERTOOL_SCRAPE,
+                      params={
+                          "website_url":website_link,
+                          },
+                  )
                   ```
                   ```javascript JS
                       toolset = ComposioToolSet()
@@ -289,12 +297,14 @@ description: List of Local Tools you can readily use for your Agents
               <Accordion title="Code Snippet">
               <CodeGroup>
                   ```python Python
+                  from composio import ComposioToolSet, App, Action
                   toolset = ComposioToolSet()
+                  website_link="https://app.composio.dev"
                   toolset.execute_action(
-                      action=[Action.SHELLTOOL]
+                      action=Action.SPIDERTOOL_CRAWL,
                       params={
-                          
-                      }
+                          "website_url":website_link,
+                          },
                   )
                   ```
                   ```javascript JS
@@ -318,17 +328,20 @@ description: List of Local Tools you can readily use for your Agents
 <AccordionGroup>
 <Accordion title="File Manager Tool">
     <CardGroup cols={1}>
-      <Card title="Manage the files in your Local Workspace" horizontal='true' >
+      <Card title="Create File" horizontal='true' >
      <Accordion title="Code Snippet" >
           <CodeGroup>
               ```python Python
-              toolset = ComposioToolSet()
-              toolset.execute_action(
-                  action=[Action.SHELLTOOL]
-                  params={
-                      
-                  }
-              )
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            path = "path/to/directory"
+            toolset.execute_action(
+                action=Action.FILETOOL_CREATE_FILE,
+                params={
+                    "path":path,
+                    "is_directory":False,
+                    },
+            )
               ```
               ```javascript JS
                   toolset = ComposioToolSet()
@@ -344,16 +357,22 @@ description: List of Local Tools you can readily use for your Agents
 
       </Accordion>
         </Card>
-        <Card title="Create, Edit and Find Files" horizontal='true' >
+        <Card title="Find Files" horizontal='true' >
      <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
+          from composio import ComposioToolSet, App, Action
           toolset = ComposioToolSet()
+          pattern = "file_name"
+
           toolset.execute_action(
-              action=[Action.SHELLTOOL]
+              action=Action.FILETOOL_FIND_FILE,
               params={
-                  
-              }
+                  "pattern":pattern,
+                  "case_sensitive":True
+                  "include":["List of directories to search in"],
+                  "exclude":["List of directories to exclude while searching"]
+                  },
           )
           ```
           ```javascript JS
@@ -374,12 +393,18 @@ description: List of Local Tools you can readily use for your Agents
      <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
+          from composio import ComposioToolSet, App, Action
           toolset = ComposioToolSet()
+          repo_name="composiohq/composio"
+          destination = "file/path"
           toolset.execute_action(
-              action=[Action.SHELLTOOL]
+              action=Action.FILETOOL_GIT_CLONE,
               params={
-                  
-              }
+                  "repo_name":repo_name,
+                  "destination":destination
+                  "just_reset":True,
+                  "commit_id":"The commit id you want to set it to"
+                  },
           )
           ```
           ```javascript JS
@@ -396,7 +421,7 @@ description: List of Local Tools you can readily use for your Agents
         </Card>
     </CardGroup>
 
-      [Github Link to the Tool here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
+      [Github Link to more Actions here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
 </Accordion>
 
 <Accordion title="Shell Commands">
@@ -505,39 +530,17 @@ description: List of Local Tools you can readily use for your Agents
       <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
+          from composio import ComposioToolSet, App, Action
           toolset = ComposioToolSet()
+          repo_name="composiohq/composio"
+          destination = "file/path"
           toolset.execute_action(
-              action=[Action.SHELLTOOL]
+              action=Action.GREPTILE_CODE_QUERY,
               params={
-                  
-              }
-          )
-          ```
-          ```javascript JS
-              toolset = ComposioToolSet()
-              toolset.execute_action(
-                  action=[Action.SHELLTOOL]
-                  params={
-                      
-                  }
-              )
-          ```
-      </CodeGroup>
-      
-
-      </Accordion>
-    </Card>
-      <Card title="Talk to your CodeBase" >
-
-      <Accordion title="Code Snippet">
-      <CodeGroup>
-          ```python Python
-          toolset = ComposioToolSet()
-          toolset.execute_action(
-              action=[Action.SHELLTOOL]
-              params={
-                  
-              }
+                  "id":"id of the message",
+                  "content":"message content"
+                  "role":"user",#default role is user, can change to system
+                  },
           )
           ```
           ```javascript JS
@@ -567,13 +570,17 @@ description: List of Local Tools you can readily use for your Agents
       <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
-          toolset = ComposioToolSet()
-          toolset.execute_action(
-              action=[Action.SHELLTOOL]
-              params={
-                  
-              }
-          )
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            path = "path/to/sqldb"
+            query = "SELECT * FROM <TABLE_NAME>" #example query
+            toolset.execute_action(
+                action=Action.SQLTOOL_SQL_QUERY,
+                params={
+                      "query":query,
+                      "connection_string":path,
+                    },
+            )
           ```
           ```javascript JS
               toolset = ComposioToolSet()
@@ -625,13 +632,19 @@ description: List of Local Tools you can readily use for your Agents
       <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
-          toolset = ComposioToolSet()
-          toolset.execute_action(
-              action=[Action.SHELLTOOL]
-              params={
-                  
-              }
-          )
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            text = """
+                Paris is the capital of France. It is known for its art, fashion, and culture.,
+                Berlin is the capital of Germany. It is famous for its history and vibrant culture.,
+                Tokyo is the capital of Japan. It is known for its technology and cuisine.,
+                Canberra is the capital of Australia. It is known for its modern architecture and museums.,
+                # Add more data as needed
+            """
+            toolset.execute_action(
+                action=Action.RAGTOOL_ADD_CONTENT_TO_RAG_TOOL,
+                params={"content":text},
+            )
           ```
           ```javascript JS
               toolset = ComposioToolSet()
@@ -653,13 +666,13 @@ description: List of Local Tools you can readily use for your Agents
       <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
-          toolset = ComposioToolSet()
-          toolset.execute_action(
-              action=[Action.SHELLTOOL]
-              params={
-                  
-              }
-          )
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            text="What is Paris known for?"
+            toolset.execute_action(
+                action=Action.RAGTOOL_RAG_TOOL_QUERY,
+                params={"query":text},
+            )
           ```
           ```javascript JS
               toolset = ComposioToolSet()
@@ -687,12 +700,12 @@ description: List of Local Tools you can readily use for your Agents
       <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
+          from composio import ComposioToolSet, App, Action
           toolset = ComposioToolSet()
+          image_path = "path/to/images/folder"
           toolset.execute_action(
-              action=[Action.SHELLTOOL]
-              params={
-                  
-              }
+              action=Action.EMBEDTOOL_CREATE_IMAGE_VECTOR_STORE,
+              params={"path":image_path},
           )
           ```
           ```javascript JS
@@ -715,12 +728,18 @@ description: List of Local Tools you can readily use for your Agents
       <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
+          from composio import ComposioToolSet, App, Action
           toolset = ComposioToolSet()
+          search_query = "Describe the image you want to find"
+          path_to_vector_store = "path/where/images/folder/was/located"
+          max_results = 2
           toolset.execute_action(
-              action=[Action.SHELLTOOL]
+              action=Action.EMBEDTOOL_CREATE_IMAGE_VECTOR_STORE,
               params={
-                  
-              }
+                  "search_query":search_query,
+                  "indexed_directory":path_to_vector_store,
+                  "max_results":max_results,
+                  },
           )
           ```
           ```javascript JS
