@@ -231,7 +231,7 @@ class AuthSchemeField(BaseModel):
     description: str
     type: str
 
-    displayName: t.Optional[str] = None
+    display_name: t.Optional[str] = None
 
     required: bool = False
     expected_from_customer: bool = True

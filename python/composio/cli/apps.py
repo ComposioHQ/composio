@@ -252,11 +252,12 @@ def _update_triggers(
 ) -> None:
     """Get Trigger enum."""
     trigger_names = []
-    enums.base.TRIGGERS_CACHE.mkdir(
-        exist_ok=True,
-    )
+    enums.base.TRIGGERS_CACHE.mkdir(exist_ok=True)
     for app in apps:
-        for trigger in [trigger for trigger in triggers if trigger.appKey == app.key]:
+        for trigger in triggers:
+            if trigger.appKey != app.key:
+                continue
+
             trigger_names.append(get_enum_key(name=trigger.name).upper())
             enums.base.TriggerData(
                 name=trigger.name,

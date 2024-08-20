@@ -11,7 +11,6 @@ import typing_extensions as te
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
-from composio.utils.logging import get_logger
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}

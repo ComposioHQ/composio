@@ -131,15 +131,15 @@ def _collect_input_fields(
         if field.get("expected_from_customer", True) and expected_from_customer:
             if field.get("required", False):
                 value = input(
-                    f"> Enter {field.get('displayName', field.get('name'))}: "
+                    f"> Enter {field.get('display_name', field.get('name'))}: "
                 )
                 if not value:
                     raise click.ClickException(
-                        f"{field.get('displayName', field.get('name'))} is required"
+                        f"{field.get('display_name', field.get('name'))} is required"
                     )
             else:
                 value = input(
-                    f"Enter {field.get('displayName', field.get('name'))} (Optional):"
+                    f"Enter {field.get('display_name', field.get('name'))} (Optional):"
                 ) or t.cast(
                     str,
                     field.get("default"),

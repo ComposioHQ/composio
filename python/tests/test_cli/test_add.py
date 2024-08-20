@@ -15,7 +15,7 @@ class TestComposioAdd(BaseCliTest):
         self.run("add", "scheduler")
         self.assert_exit_code(code=1)
         self.assert_stderr(
-            match="Scheduler does not require authentication",
+            match="scheduler does not require authentication",
         )
 
     def test_add_github(self) -> None:
@@ -30,9 +30,7 @@ class TestComposioAdd(BaseCliTest):
 
     def test_add_serpapi(self) -> None:
         """Test `composio add` with no-auth."""
-        self.run("add", "serpapi", input="Y")
-
-        print(self.result)
+        self.run("add", "serpapi", input="y")
         self.assert_stdout_regex(
             match=re.compile("Enter API Key"),
         )
