@@ -36,7 +36,8 @@ def remove_json_ref(data: t.Dict) -> t.Dict:
             jsonref.replace_refs(
                 obj=data,
                 lazy_load=False,
-            )
+            ),
+            indent=2,
         )
     )
 

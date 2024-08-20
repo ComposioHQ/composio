@@ -178,7 +178,6 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 ).upper()
             else:
                 action_names.append(get_enum_key(name=action.name))
-
             enums.base.ActionData(
                 name=action.name,
                 app=app.key,

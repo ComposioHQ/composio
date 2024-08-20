@@ -152,9 +152,9 @@ class HostWorkspace(Workspace):
 
         registry = load_local_tools()
         tool = (
-            registry["runtime"][action.app]
+            registry["runtime"][action.app.upper()]
             if action.is_runtime
-            else registry["local"][action.app]
+            else registry["local"][action.app.upper()]
         )
         return tool.execute(
             action=action.slug,

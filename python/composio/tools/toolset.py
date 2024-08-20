@@ -36,13 +36,13 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
     Workspace,
     WorkspaceConfigType,
 )
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
-from composio.tools.local.base import Action as LocalAction
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import WithLogger
@@ -271,7 +271,7 @@ class ComposioToolSet(WithLogger):
         ]:
             raise ComposioSDKError(
                 f"No connected account found for app `{action.app}`; "
-                f"Run `composio add {action.app}` to fix this"
+                f"Run `composio add {action.app.lower()}` to fix this"
             )
 
     def _execute_local(
@@ -568,13 +568,13 @@ class ComposioToolSet(WithLogger):
                 self.check_connected_account(action=item.name)
             items = items + remote_items
 
-        items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
+        for act in runtime_actions:
+            schema = act.schema()
+            schema["name"] = act.enum
+            items.append(ActionModel(**schema))
+
         for item in items:
             item = self.action_preprocessing(item)
-
-        # Temporary
-        for item in items:
-            item.name = f"{item.appName}_{item.name}".lower()
 
         return items
 

@@ -39,7 +39,7 @@ class LocalClient(WithLogger):
         action_schemas: t.List[t.Dict] = []
 
         for app in apps:
-            action_schemas += [action.schema() for action in tools[app.name].actions()]
+            action_schemas += [action.schema() for action in tools[app.slug].actions()]
 
         for action in actions:
             action_schemas.append(
@@ -55,6 +55,10 @@ class LocalClient(WithLogger):
                 for action_schema in action_schemas
                 if bool(set(tags) & set(action_schema["tags"]))
             ]
+
+        for schema in action_schemas:
+            schema["name"] = schema["enum"]
+
         return action_schemas
 
 

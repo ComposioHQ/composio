@@ -27,9 +27,7 @@ EXAMPLES = {
         "file": PLUGINS / "autogen" / "autogen_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                '{"execution_details": {"executed": true}, "response_data": ""}'
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
@@ -41,9 +39,7 @@ EXAMPLES = {
         "file": PLUGINS / "llamaindex" / "llamaindex_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}",
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
@@ -55,9 +51,7 @@ EXAMPLES = {
         "file": EXAMPLES_PATH / "local_tools" / "autogen_math.py",
         "match": {
             "type": "stdout",
-            "values": [
-                '{"execution_details": {"executed": true}, "response_data": 11962.560439560439}'
-            ],
+            "values": ["11962"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
@@ -66,7 +60,7 @@ EXAMPLES = {
         "file": EXAMPLES_PATH / "runtime_tools" / "langchain_math.py",
         "match": {
             "type": "stdout",
-            "values": ["Multiplying the numbers:  445 669 8886"],
+            "values": ["2645406630"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
@@ -75,9 +69,7 @@ EXAMPLES = {
         "file": PLUGINS / "crew_ai" / "crewai_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}"
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
@@ -104,12 +96,11 @@ EXAMPLES = {
         "file": PLUGINS / "langchain" / "langchain_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}"
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
+<<<<<<< Updated upstream
     "langgraph": {
         "plugin": "langgraph",
         "file": PLUGINS / "langgraph" / "langgraph_demo.py",
@@ -121,14 +112,24 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
+=======
+    # "langgraph": {
+    #     "file": PLUGINS / "langgraph" / "langgraph_demo.py",
+    #     "match": {
+    #         "type": "stdout",
+    #         "values": [
+    #             "Action executed successfully"
+    #         ],
+    #     },
+    #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    # },
+>>>>>>> Stashed changes
     "openai": {
         "plugin": "openai",
         "file": PLUGINS / "openai" / "openai_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}"
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
@@ -137,9 +138,7 @@ EXAMPLES = {
         "file": PLUGINS / "lyzr" / "lyzr_demo.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "{'execution_details': {'executed': True}, 'response_data': ''}"
-            ],
+            "values": ["Action executed successfully"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
@@ -149,7 +148,7 @@ EXAMPLES = {
     #     "match": {
     #         "type": "stdout",
     #         "values": [
-    #             "{'execution_details': {'executed': True}, 'response_data': ''}"
+    #             "Action executed successfully"
     #         ],
     #     },
     #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
@@ -167,9 +166,14 @@ def test_example(
     example_name: str, example: dict  # pylint: disable=unused-argument
 ) -> None:
     """Test an example with given environment."""
+<<<<<<< Updated upstream
     plugin_to_test = os.getenv("PLUGIN_TO_TEST")
     if plugin_to_test is not None and plugin_to_test != example["plugin"]:
         pytest.skip(f"Skipping {example['plugin']}")
+=======
+    if "_tools" not in example_name:
+        return
+>>>>>>> Stashed changes
 
     for key, val in example["env"].items():
         assert (

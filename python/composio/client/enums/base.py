@@ -154,7 +154,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             if self._slug in tools:
                 return
 
-        raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
+        raise ValueError(
+            f"Invalid value `{self._slug}` for `{self.__class__.__name__}`"
+        )
 
     @property
     def slug(self) -> str:

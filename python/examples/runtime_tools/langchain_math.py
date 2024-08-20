@@ -7,15 +7,16 @@ from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
 @action(toolname="math", requires=["smtplib"])
-def multiply(a: int, b: int, c: int):
+def multiply(a: int, b: int, c: int) -> int:
     """
     Multiply three numbers
-    a: int
-    b: int
-    c: int
+
+    :param a: Number a
+    :param b: Number b
+    :param c: Number c
+    :return result: Result of the multiplication
     """
-    print("Multiplying the numbers: ", a, b, c)
-    return {"execution_details": {"executed": True, "result": a * b * c}}
+    return a * b * c
 
 
 llm = ChatOpenAI(model="gpt-4-turbo")
@@ -24,9 +25,6 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Get All the tools
 tools = ComposioToolSet().get_actions(actions=[multiply])
-print(tools)
-
-
 task = "Calculate the forumula 445*669*8886"
 
 agent = create_openai_functions_agent(llm, tools, prompt)

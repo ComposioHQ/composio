@@ -152,7 +152,7 @@ def _wrap(
 
         data = ActionData(
             name=f.__name__,
-            app=toolname,
+            app=toolname.upper(),
             tags=tags,
             no_auth=True,
             is_local=True,
@@ -170,6 +170,7 @@ def _wrap(
     cls.__doc__ = f.__doc__
 
     existing_actions = []
+    toolname = toolname.upper()
     if toolname in tool_registry["runtime"]:
         existing_actions = tool_registry["runtime"][toolname].actions()
     tool = _create_tool_class(name=toolname, actions=[cls, *existing_actions])  # type: ignore
