@@ -134,18 +134,10 @@
     },
     
     {
-      "group": "SweKit (JS)",
+      "group": "SweKit",
       "pages": [
         "swekit-js/introduction",
-        "swekit-js/workspace-env"
-      ]
-    },
-    {
-      "group": "SweKit (Python)",
-      "pages": [
         "swekit/introduction",
-        "swekit/workspace-env",
-        "swekit/custom-tools",
         "swekit/benchmarks"
       ]
     },
