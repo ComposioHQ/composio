@@ -95,11 +95,12 @@ def callback_new_message(event: TriggerEventData) -> None:
     ChatMessage(
         role="system",
         content=(
-            "Take input from the user on team id and project id and create an issue on Linear "
+            "Find team id and project id and create an issue on Linear. Ask the user once, if he says find it out. Stop asking"
+            "Once the issue is created, say the issue is created and end the workflow. EXIT"
         ),
     )
 ]
-    tools = composio_toolset.get_actions(apps=[App.LINEAR])
+    tools = composio_toolset.get_tools(apps=[App.LINEAR])
     # Process the message and post the response in the same channel or thread
     check_agent = FunctionCallingAgentWorker(
     tools=tools,
@@ -116,7 +117,7 @@ def callback_new_message(event: TriggerEventData) -> None:
             4. The format should be <id>:<content>
             5. If you decide NO, then dont call any agent and end operation.
             message:{message}
-            6. If the user does not give project id or team id find them out by using Linear Tool's actions.
+            6. If the user does not give project_id or team_id find them out by using Linear Tool's actions.
             """
     result = check_agent.chat(query_task)
     print(result)
