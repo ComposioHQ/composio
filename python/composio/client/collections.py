@@ -398,17 +398,12 @@ class TriggerModel(BaseModel):
     logo: t.Optional[str] = None
 
 
-class ExecutionDetailsModel(BaseModel):
-    """Execution details data model."""
-
-    executed: bool
-
-
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
-    execution_details: ExecutionDetailsModel
-    response_data: t.Dict
+    successfull: bool
+    data: t.Dict
+    error: t.Optional[str] = None
 
 
 class FileType(BaseModel):

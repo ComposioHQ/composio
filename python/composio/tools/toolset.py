@@ -21,7 +21,6 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     ConnectedAccountModel,
-    ExecutionDetailsModel,
     FileType,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
@@ -314,10 +313,12 @@ class ComposioToolSet(WithLogger):
             )
 
         try:
+            self.logger.debug("Trying to validate success response model")
             success_response_model = SuccessExecuteActionResponseModel.model_validate(
                 output
             )
         except Exception:
+            self.logger.debug("Failed to validate success response model")
             return output
 
         return self._save_var_files(
@@ -330,24 +331,19 @@ class ComposioToolSet(WithLogger):
         file_name_prefix: str,
         success_response_model: SuccessExecuteActionResponseModel,
     ) -> dict:
-        execution_status = True
-        resp_data = success_response_model.response_data
+        execution_status = success_response_model.successfull
+        resp_data = success_response_model.data
 
         for key, val in resp_data.items():
             try:
                 file_model = FileType.model_validate(val)
                 _ensure_output_dir_exists()
 
-                cache_filename = (
-                    f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
+                local_filepath = (
+                    output_dir
+                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
                 )
-                cache_filepath = output_dir / cache_filename
 
-                local_filepath = f"./{file_model.name.replace('/', '_')}"
-
-                _write_file(
-                    cache_filepath, base64.urlsafe_b64decode(file_model.content)
-                )
                 _write_file(
                     local_filepath, base64.urlsafe_b64decode(file_model.content)
                 )
@@ -360,10 +356,8 @@ class ComposioToolSet(WithLogger):
                 pass
 
         if execution_status is False:
-            success_response_model.execution_details = ExecutionDetailsModel(
-                executed=False
-            )
-        success_response_model.response_data = resp_data
+            success_response_model.error = "Execution failed"
+        success_response_model.data = resp_data
         return success_response_model.model_dump()
 
     def _write_to_file(
