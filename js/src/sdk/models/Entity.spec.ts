@@ -32,12 +32,9 @@ describe("Entity class tests", () => {
       
         const executionResult = await entity.execute(actionName, requestBody, undefined, connectedAccount.id);
         expect(executionResult).toBeDefined();
-        // @ts-ignore
-        expect(executionResult.execution_details).toHaveProperty('executed', true);
-        expect(executionResult.response_data["authorizations_url"]).toBeDefined();
+        expect(executionResult).toHaveProperty('successfull', true);
+        expect(executionResult).toHaveProperty('data.authorizations_url');
     });
-
-  
 
     it("get connections", async () => {
         const connections = await entity.getConnections();

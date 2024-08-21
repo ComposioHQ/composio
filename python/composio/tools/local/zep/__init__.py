@@ -1,3 +1,3 @@
 """Zep as composio tool."""
 
-from .tool import ZepTool
+from .tool import Zeptool

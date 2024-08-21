@@ -2,9 +2,8 @@ import typing as t
 
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -44,7 +43,7 @@ class SearchWordResponse(BaseFileResponse):
     error: str = Field(default="", description="Error message if any")
 
 
-class SearchWord(BaseFileAction):
+class SearchWord(LocalAction[SearchWordRequest, SearchWordResponse]):
     """
     - Search for a specific word or phrase across multiple files
     in your workspace by specifying a pattern.
@@ -70,30 +69,30 @@ class SearchWord(BaseFileAction):
         - FileNotFoundError: If the specified pattern doesn't match any files.
     """
 
-    _display_name = "Search Word in Files"
-    _request_schema = SearchWordRequest
-    _response_schema = SearchWordResponse
-
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: SearchWordRequest  # type: ignore
+    def execute(
+        self, request: SearchWordRequest, metadata: t.Dict
     ) -> SearchWordResponse:
         try:
-            results = file_manager.grep(
-                word=request_data.word,
-                pattern=request_data.pattern,
-                recursive=request_data.recursive,
-                case_insensitive=request_data.case_insensitive,
+            results = self.filemanagers.get(request.file_manager_id).grep(
+                word=request.word,
+                pattern=request.pattern,
+                recursive=request.recursive,
+                case_insensitive=request.case_insensitive,
             )
             num_files: int = len(results)
             if num_files > 100:
                 return SearchWordResponse(
                     results=dict(list(results.items())[:100]),
-                    message=f'Warning: More than 100 files matched for "{request_data.word}" in {request_data.pattern}". Sending the first 100 results. Consider narrowing your search.',
+                    message=(
+                        f'Warning: More than 100 files matched for "{request.word}" '
+                        f'in "{request.pattern}". Sending the first 100 results. '
+                        "Consider narrowing your search."
+                    ),
                 )
             if num_files == 0:
                 return SearchWordResponse(
                     results={},
-                    message=f'No files matched for "{request_data.word}" in {request_data.pattern}".',
+                    message=f'No files matched for "{request.word}" in {request.pattern}".',
                 )
             return SearchWordResponse(results=results)
         except ValueError as e:

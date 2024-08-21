@@ -1,8 +1,9 @@
+from typing import Dict
+
 from pydantic import Field, field_validator
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -38,13 +39,9 @@ class CreateFileResponse(BaseFileResponse):
         default=None,
         description="Path of the created file or directory.",
     )
-    success: bool = Field(
-        default=False,
-        description="Whether the file or directory was created successfully",
-    )
 
 
-class CreateFile(BaseFileAction):
+class CreateFile(LocalAction[CreateFileRequest, CreateFileResponse]):
     """
     Creates a new file or directory within a shell session.
     Example:
@@ -60,31 +57,22 @@ class CreateFile(BaseFileAction):
         - OSError: If an OS-specific error occurs.
     """
 
-    _display_name = "Create a new file or directory"
-    _request_schema = CreateFileRequest
-    _response_schema = CreateFileResponse
+    def execute(self, request: CreateFileRequest, metadata: Dict) -> CreateFileResponse:
+        if request.is_directory:
+            return CreateFileResponse(
+                path=str(
+                    self.filemanagers.get(
+                        request.file_manager_id,
+                    ).create_directory(
+                        path=request.path,
+                    )
+                ),
+            )
 
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: CreateFileRequest  # type: ignore
-    ) -> CreateFileResponse:
-        try:
-            if request_data.is_directory:
-                created_path = file_manager.create_directory(path=request_data.path)
-            else:
-                created_path = file_manager.create(path=request_data.path).path
-            return CreateFileResponse(
-                path=str(created_path),
-                success=True,
+        return CreateFileResponse(
+            path=str(
+                self.filemanagers.get(request.file_manager_id)
+                .create(path=request.path)
+                .path
             )
-        except FileExistsError as e:
-            return CreateFileResponse(
-                error=f"File or directory already exists: {str(e)}"
-            )
-        except PermissionError as e:
-            return CreateFileResponse(error=f"Permission denied: {str(e)}")
-        except FileNotFoundError as e:
-            return CreateFileResponse(
-                error=f"Parent directory does not exist: {str(e)}"
-            )
-        except OSError as e:
-            return CreateFileResponse(error=f"OS error occurred: {str(e)}")
+        )

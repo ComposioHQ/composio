@@ -1,17 +1,13 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import GetWorkspaceHistory
 
 
-class HistoryFetcherTool(Tool):
-    """
-    local workspace tool which can maintain history across commands.
-    """
+class HistoryFetcher(LocalTool, autoload=True):
+    """Local workspace tool which can maintain history across commands"""
 
-    def actions(self) -> list[t.Type[Action]]:
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
         return [GetWorkspaceHistory]
-
-    def triggers(self) -> list:
-        return []

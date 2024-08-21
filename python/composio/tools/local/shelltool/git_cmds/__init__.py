@@ -1,1 +1,1 @@
-from .tool import GitCmdTool
+from .tool import Git

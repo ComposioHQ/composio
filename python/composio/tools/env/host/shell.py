@@ -6,11 +6,12 @@ import select
 import subprocess
 import time
 import typing as t
+from abc import abstractmethod
 from pathlib import Path
 
 import paramiko
 
-from composio.tools.env.base import Shell
+from composio.tools.env.base import Sessionable
 from composio.tools.env.constants import ECHO_EXIT_CODE, EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.id import generate_id
 
@@ -32,6 +33,18 @@ _ANSI_ESCAPE = re.compile(
 
 
 _DEV_SOURCE = Path("/home/user/.dev/bin/activate")
+
+
+class Shell(Sessionable):
+    """Abstract shell session."""
+
+    def sanitize_command(self, cmd: str) -> bytes:
+        """Prepare command string."""
+        return (cmd.rstrip() + "\n").encode()
+
+    @abstractmethod
+    def exec(self, cmd: str) -> t.Dict:
+        """Execute command on container."""
 
 
 # TODO: Execute in a virtual environment
@@ -150,7 +163,7 @@ class HostShell(Shell):
             EXIT_CODE: self._get_exit_code(),
         }
 
-    def stop(self) -> None:
+    def teardown(self) -> None:
         """Stop and remove the running shell."""
         self._process.kill()
 
@@ -255,6 +268,6 @@ class SSHShell(Shell):
             EXIT_CODE: str(self._exit_status()),
         }
 
-    def stop(self) -> None:
+    def teardown(self) -> None:
         """Close the SSH channel."""
         self.channel.close()

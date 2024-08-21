@@ -16,13 +16,13 @@ describe("ComposioToolSet class tests", () => {
        expect(tools).not.toHaveLength(0);
     });
 
-    it("should create a ComposioToolSet instance", async () => {
+    it("should create a ComposioToolSet instance with apps and tags", async () => {
         const tools = await toolset.getToolsSchema({ apps: ["github"], tags: ["important"] });
         expect(tools).toBeInstanceOf(Array);
         expect(tools).not.toHaveLength(0);
     });
 
-    it("should create a ComposioToolSet instance", async () => {
+    it("should create a ComposioToolSet instance with actions", async () => {
         const tools = await toolset.getActionsSchema({ actions: ["github_issues_create"] });
         expect(tools).toBeInstanceOf(Array);
     });
@@ -41,8 +41,8 @@ describe("ComposioToolSet class tests", () => {
        const executionResult = await toolset.executeAction(actionName, requestBody, "default");
        expect(executionResult).toBeDefined();
        // @ts-ignore
-       expect(executionResult.execution_details).toHaveProperty('executed', true);
-       expect(executionResult.response_data).toBeDefined();
+       expect(executionResult).toHaveProperty('successfull', true);
+       expect(executionResult.data).toBeDefined();
 
     });
 

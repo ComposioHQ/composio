@@ -62,6 +62,7 @@ while True:
         tasks=[sql_task, code_interpreter_task],
         memory=True,
         manager_agent=sql_agent,
+        cache=False,
     )
 
     result = crew.kickoff()
