@@ -42,7 +42,7 @@ class GetPageDetails(BaseBrowserAction):
     an accessibility snapshot.
     """
 
-    _display_name = "GetPageDetails"
+    display_name = "GetPageDetails"
     _request_schema = GetPageDetailsRequest
     _response_schema = GetPageDetailsResponse
 

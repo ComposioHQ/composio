@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class ShellCreateRequest(BaseModel):
@@ -18,22 +18,15 @@ class ShellCreateResponse(BaseModel):
     )
 
 
-class CreateShell(Action[ShellCreateRequest, ShellCreateResponse]):
+class CreateShell(LocalAction[ShellCreateRequest, ShellCreateResponse]):
     """Use this tool to create a new shell session."""
 
-    _display_name = "Create Shell"
-    _tool_name = "shell"
-    _request_schema = ShellCreateRequest
-    _response_schema = ShellCreateResponse
     _tags = ["workspace", "shell", "create"]
-
-    run_on_shell = True
 
     def execute(
         self,
-        request_data: ShellCreateRequest,
-        authorisation_data: dict,
+        request: ShellCreateRequest,
+        metadata: dict,
     ) -> ShellCreateResponse:
         """Execute a shell command."""
-        shell = authorisation_data.get("workspace").shells.new()  # type: ignore
-        return ShellCreateResponse(shell_id=shell.id)
+        return ShellCreateResponse(shell_id=self.shells.new().id)

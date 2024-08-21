@@ -1,8 +1,9 @@
+from typing import Dict
+
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -35,7 +36,7 @@ class WriteResponse(BaseFileResponse):
     )
 
 
-class Write(BaseFileAction):
+class Write(LocalAction[WriteRequest, WriteResponse]):
     """
     Write the given content to a file.
 
@@ -45,23 +46,14 @@ class Write(BaseFileAction):
     of the file use `edit` tool instead.
     """
 
-    _display_name = "Edit a file"
-    _request_schema = WriteRequest
-    _response_schema = WriteResponse
-
-    def execute_on_file_manager(
-        self,
-        file_manager: FileManager,
-        request_data: WriteRequest,  # type: ignore
-    ) -> WriteResponse:
+    def execute(self, request: WriteRequest, metadata: Dict) -> WriteResponse:
         try:
+            filemanager = self.filemanagers.get(request.file_manager_id)
             (
-                file_manager.recent
-                if request_data.file_path is None
-                else file_manager.open(
-                    path=request_data.file_path,
-                )
-            ).write(text=request_data.text)
+                filemanager.recent
+                if request.file_path is None
+                else filemanager.open(path=request.file_path)
+            ).write(text=request.text)
             return WriteResponse()
         except FileNotFoundError as e:
             return WriteResponse(error=f"File not found: {str(e)}")

@@ -49,7 +49,7 @@ class NavigateHistory(BaseBrowserAction):
     backward or forward, for a specified number of steps.
     """
 
-    _display_name = "Navigate History"
+    display_name = "Navigate History"
 
     _request_schema = NavigateHistoryRequest
     _response_schema = NavigateHistoryResponse

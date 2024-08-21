@@ -53,7 +53,7 @@ class GetElementDetails(BaseBrowserAction):
     - Verifying element properties and attributes
     """
 
-    _display_name = "GetElementDetails"
+    display_name = "GetElementDetails"
     _request_schema = GetElementDetailsRequest
     _response_schema = GetElementDetailsResponse
 

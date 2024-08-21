@@ -3,7 +3,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.base.utils.grep_utils import get_files_excluding_gitignore
 from composio.tools.local.base.utils.repomap import RepoMap
 
@@ -39,7 +39,9 @@ class GenerateRankedTagsResponse(BaseModel):
     )
 
 
-class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsResponse]):
+class GenerateRankedTags(
+    LocalAction[GenerateRankedTagsRequest, GenerateRankedTagsResponse]
+):
     """
     Generates ranked tags for specified files of interest within a repository.
 
@@ -67,14 +69,14 @@ class GenerateRankedTags(Action[GenerateRankedTagsRequest, GenerateRankedTagsRes
     ```
     """
 
-    _display_name = "Generate Ranked Tags"
+    display_name = "Generate Ranked Tags"
     _request_schema: Type[GenerateRankedTagsRequest] = GenerateRankedTagsRequest
     _response_schema: Type[GenerateRankedTagsResponse] = GenerateRankedTagsResponse
     _tags = ["repo", "tags", "code-analysis"]
     _tool_name = "codemap"
 
     def execute(
-        self, request_data: GenerateRankedTagsRequest, authorisation_data: dict = {}
+        self, request_data: GenerateRankedTagsRequest, metadata: dict = {}
     ) -> GenerateRankedTagsResponse:
         repo_root = Path(request_data.code_directory).resolve()
 

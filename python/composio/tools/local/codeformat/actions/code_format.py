@@ -4,7 +4,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class CodeFormatRequest(BaseModel):
@@ -32,7 +32,7 @@ class CodeFormatResponse(BaseModel):
     )
 
 
-class FormatAndLintCodebase(Action[CodeFormatRequest, CodeFormatResponse]):
+class FormatAndLintCodebase(LocalAction[CodeFormatRequest, CodeFormatResponse]):
     """
     Performs code formatting and linting using ruff, addressing style issues and checking for errors.
 
@@ -47,14 +47,14 @@ class FormatAndLintCodebase(Action[CodeFormatRequest, CodeFormatResponse]):
     This action provides a comprehensive tool for code quality improvement and standardization.
     """
 
-    _display_name = "Format and Lint Codebase"
+    display_name = "Format and Lint Codebase"
     _request_schema: Type[CodeFormatRequest] = CodeFormatRequest
     _response_schema: Type[CodeFormatResponse] = CodeFormatResponse
     _tags = ["formatting"]
     _tool_name = "codeformat"
 
     def execute(
-        self, request_data: CodeFormatRequest, authorisation_data: dict = {}
+        self, request_data: CodeFormatRequest, metadata: dict = {}
     ) -> CodeFormatResponse:
         try:
             path = Path(request_data.path)

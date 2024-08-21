@@ -46,7 +46,7 @@ class ClickElement(BaseBrowserAction):
     - Successful click
     """
 
-    _display_name = "ClickElement"
+    display_name = "ClickElement"
     _request_schema = ClickElementRequest
     _response_schema = ClickElementResponse
 

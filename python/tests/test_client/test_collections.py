@@ -26,19 +26,19 @@ class TestTriggerNamesSerialization:
         result = to_trigger_names(trigger_list)
         assert (
             result
-            == "github_commit_event,slack_receive_message,youtube_new_activity_trigger"
+            == "GITHUB_COMMIT_EVENT,SLACK_RECEIVE_MESSAGE,YOUTUBE_NEW_ACTIVITY_TRIGGER"
         )
 
     def test_converts_trigger_strings_to_comma_separated_string(self):
         trigger_list = [
-            "github_commit_event",
-            "slack_receive_message",
-            "youtube_new_activity_trigger",
+            "GITHUB_COMMIT_EVENT",
+            "SLACK_RECEIVE_MESSAGE",
+            "YOUTUBE_NEW_ACTIVITY_TRIGGER",
         ]
         result = to_trigger_names(trigger_list)
         assert (
             result
-            == "github_commit_event,slack_receive_message,youtube_new_activity_trigger"
+            == "GITHUB_COMMIT_EVENT,SLACK_RECEIVE_MESSAGE,YOUTUBE_NEW_ACTIVITY_TRIGGER"
         )
 
     def test_converts_mix_of_trigger_objects_and_strings(self):
@@ -50,7 +50,7 @@ class TestTriggerNamesSerialization:
         result = to_trigger_names(trigger_list)
         assert (
             result
-            == "github_commit_event,slack_receive_message,youtube_new_activity_trigger"
+            == "GITHUB_COMMIT_EVENT,SLACK_RECEIVE_MESSAGE,YOUTUBE_NEW_ACTIVITY_TRIGGER"
         )
 
 

@@ -43,7 +43,7 @@ class GotoPage(BaseBrowserAction):
     The action takes a URL and an optional timeout as input parameters.
     """
 
-    _display_name = "GotoPage"
+    display_name = "GotoPage"
     _request_schema = GotoPageRequest
     _response_schema = GotoPageResponse
 

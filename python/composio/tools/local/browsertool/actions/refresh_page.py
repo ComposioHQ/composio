@@ -47,7 +47,7 @@ class RefreshPage(BaseBrowserAction):
     refreshing a web page.
     """
 
-    _display_name = "RefreshPage"
+    display_name = "RefreshPage"
     _request_schema = RefreshPageRequest
     _response_schema = RefreshPageResponse
 

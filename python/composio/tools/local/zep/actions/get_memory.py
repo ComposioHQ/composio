@@ -2,12 +2,14 @@
 Action for getting memory.
 """
 
+# pylint: disable=import-outside-toplevel
+
 import os
 import typing as t
 
 from pydantic import BaseModel
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class GetMemoryRequest(BaseModel):
@@ -26,32 +28,21 @@ class GetMemoryResponse(BaseModel):
     relevant_summaries: t.List[t.Dict]
 
 
-class GetMemory(Action):
+class GetMemory(LocalAction[GetMemoryRequest, GetMemoryResponse]):
     """Get memory from zep session."""
 
-    _display_name = "Create A Zep Session"
+    display_name = "Create A Zep Session"
     _request_schema = GetMemoryRequest
     _response_schema = GetMemoryResponse
     _tags = ["memory", "history"]
     _tool_name = "zeptool"
 
-    def execute(
-        self,
-        request_data: GetMemoryRequest,
-        authorisation_data: dict,
-    ) -> GetMemoryResponse:
-        """Create session."""
-        from zep_cloud.client import Zep  # pylint: disable=import-outside-toplevel
+    def execute(self, request: GetMemoryRequest, metadata: t.Dict) -> GetMemoryResponse:
+        """Get memory from session."""
+        from zep_cloud.client import Zep
 
-        client = Zep(
-            api_key=os.environ.get(
-                "ZEP_API_KEY",
-                authorisation_data.get("api_key"),
-            ),
-        )
-        result = client.memory.get(
-            session_id=request_data.session_id,
-        )
+        client = Zep(api_key=os.environ.get("ZEP_API_KEY", metadata.get("api_key")))
+        result = client.memory.get(session_id=request.session_id)
         return GetMemoryResponse(
             messages=[message.dict() for message in result.messages or []],
             summary=result.summary.dict() if result.summary is not None else {},

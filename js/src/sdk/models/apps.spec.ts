@@ -30,7 +30,7 @@ describe("Apps class tests", () => {
         // @ts-ignore
         expect(app.auth_schemes[0]).toHaveProperty('auth_mode', 'OAUTH2');
         expect(app).toHaveProperty('key', appKey);
-        expect(app).toHaveProperty('name', 'Github');
+        expect(app).toHaveProperty('name', 'github');
         expect(app).toHaveProperty('description');
     });
 

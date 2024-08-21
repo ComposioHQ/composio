@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class QueryImageVectorStoreInputSchema(BaseModel):
@@ -21,12 +21,17 @@ class QueryImageVectorStoreOutputSchema(BaseModel):
     )
 
 
-class QueryImageVectorStore(Action):
+class QueryImageVectorStore(
+    LocalAction[
+        QueryImageVectorStoreInputSchema,
+        QueryImageVectorStoreOutputSchema,
+    ]
+):
     """
     Query Vector Store for images
     """
 
-    _display_name = "Query Image Vector Store"
+    display_name = "Query Image Vector Store"
     _request_schema = QueryImageVectorStoreInputSchema
     _response_schema = QueryImageVectorStoreOutputSchema
     _tags = ["query_image_embeddings"]
@@ -34,13 +39,13 @@ class QueryImageVectorStore(Action):
 
     def execute(
         self,
-        request_data: QueryImageVectorStoreInputSchema,
-        authorisation_data: dict = {},
+        request: QueryImageVectorStoreInputSchema,
+        metadata: dict = {},
     ) -> QueryImageVectorStoreOutputSchema:
         import chromadb  # pylint: disable=C0415
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
-        image_collection_name = Path(request_data.indexed_directory).name + "_images"
+        image_collection_name = Path(request.indexed_directory).name + "_images"
         index_storage_path = Path.home() / ".composio" / "image_index_storage"
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
         chroma_collection = chroma_client.get_collection(image_collection_name)
@@ -50,11 +55,11 @@ class QueryImageVectorStore(Action):
                 model_name="clip-ViT-B-32"
             )
         )
-        query_embeddings = text_embedding_function([request_data.search_query])
+        query_embeddings = text_embedding_function([request.search_query])
 
         search_results = chroma_collection.query(
             query_embeddings=query_embeddings,
-            n_results=request_data.max_results,
+            n_results=request.max_results,
         )
         if search_results is None:
             return QueryImageVectorStoreOutputSchema(

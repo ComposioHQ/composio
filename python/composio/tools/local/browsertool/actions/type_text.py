@@ -59,7 +59,7 @@ class TypeText(BaseBrowserAction):
 
     """
 
-    _display_name = "TypeText"
+    display_name = "TypeText"
     _request_schema = TypeTextRequest
     _response_schema = TypeTextResponse
 
