@@ -606,20 +606,20 @@ class ComposioToolSet(WithLogger):
                 param_type = param_details["type"]
                 description = param_details.get("description", "").rstrip(".")
                 if description:
-                    param_details[
-                        "description"
-                    ] = f"{description}. Please provide a value of type {param_type}."
+                    param_details["description"] = (
+                        f"{description}. Please provide a value of type {param_type}."
+                    )
                 else:
-                    param_details[
-                        "description"
-                    ] = f"Please provide a value of type {param_type}."
+                    param_details["description"] = (
+                        f"Please provide a value of type {param_type}."
+                    )
 
             if param_name in required_params:
                 description = param_details.get("description", "")
                 if description:
-                    param_details[
-                        "description"
-                    ] = f"{description.rstrip('.')}. This parameter is required."
+                    param_details["description"] = (
+                        f"{description.rstrip('.')}. This parameter is required."
+                    )
                 else:
                     param_details["description"] = "This parameter is required."
 

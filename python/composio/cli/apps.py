@@ -317,9 +317,7 @@ def _update_annotations(
             and child.target.id != "_deprecated"  # type: ignore
         ]
         if set(cls_attributes) == set(attributes):
-            console.print(
-                f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]"
-            )
+            console.print(f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]")
             return
 
         def _filter(child: ast.AST) -> bool:

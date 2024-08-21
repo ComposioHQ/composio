@@ -125,10 +125,16 @@ def _parse_annotated_type(
 
 def _parse_docstring(
     docstr: str,
-) -> t.Tuple[str, t.Dict[str, str], t.Optional[t.Tuple[str, str]],]:
+) -> t.Tuple[
+    str,
+    t.Dict[str, str],
+    t.Optional[t.Tuple[str, str]],
+]:
     """Parse docstring for descriptions."""
     if docstr is None:
-        raise ValueError("Docstring is None, Please provide a docstring for runtime tools")
+        raise ValueError(
+            "Docstring is None, Please provide a docstring for runtime tools"
+        )
     header, *descriptions = docstr.lstrip().rstrip().split("\n")
     params = {}
     returns = None
@@ -149,7 +155,12 @@ def _parse_docstring(
 
 def _build_executable_from_args(
     f: t.Callable,
-) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool,]:
+) -> t.Tuple[
+    t.Callable,
+    t.Type[BaseModel],
+    t.Type[BaseModel],
+    bool,
+]:
     """Build execute action from function arguments."""
     argspec = inspect.getfullargspec(f)
     defaults = dict(
@@ -228,9 +239,12 @@ def _build_executable_from_args(
     )
 
 
-def _parse_schemas(
-    f: t.Callable, runs_on_shell: bool
-) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool,]:
+def _parse_schemas(f: t.Callable, runs_on_shell: bool) -> t.Tuple[
+    t.Callable,
+    t.Type[BaseModel],
+    t.Type[BaseModel],
+    bool,
+]:
     """Parse action callable schemas."""
     argspec = inspect.getfullargspec(f)
     if _is_simple_action(argspec=argspec):
