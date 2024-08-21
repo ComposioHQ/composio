@@ -14,7 +14,7 @@ from composio.utils import logging
 
 DEFAULT_RUNTIME = "composio"
 SOURCE_HEADER = "python_sdk"
-DEFAULT_REQUEST_TIMEOUT = 30.0
+DEFAULT_REQUEST_TIMEOUT = 60.0
 
 
 class AsyncHttpClient(AsyncSession, logging.WithLogger):
