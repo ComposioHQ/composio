@@ -41,8 +41,8 @@ describe("ComposioToolSet class tests", () => {
        const executionResult = await toolset.executeAction(actionName, requestBody, "default");
        expect(executionResult).toBeDefined();
        // @ts-ignore
-       expect(executionResult.execution_details).toHaveProperty('executed', true);
-       expect(executionResult.response_data).toBeDefined();
+       expect(executionResult).toHaveProperty('successfull', true);
+       expect(executionResult.data).toBeDefined();
 
     });
 

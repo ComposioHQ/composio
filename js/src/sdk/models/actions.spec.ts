@@ -16,8 +16,8 @@ describe("Apps class tests", () => {
     });
 
     it("should get a specific action", async () => {
-        const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
-        const action = await actions.get({ actionName });
+        const actionName = "GITHUB_GITHUB_API_ROOT";
+        const action = await actions.get({ actionName: actionName.toLowerCase() });
         expect(action).toHaveProperty('name', actionName);
     });
 
@@ -48,7 +48,6 @@ describe("Apps class tests", () => {
     });
 
     it("should execute an action of noauth app", async () => {
-        return;
         const actionName = "codeinterpreter_execute_code";
         const input = { code_to_execute: 'print("Hello World");' };
 
@@ -60,10 +59,9 @@ describe("Apps class tests", () => {
             }
         });
 
-        expect(executionResult).toHaveProperty('execution_details.executed', true);
+        expect(executionResult).toHaveProperty('successfull', true);
         //@ts-ignore
-        const parsedResponseData = JSON.parse(executionResult.response_data);
-        expect(parsedResponseData).toHaveProperty('stdout', 'Hello World\n');
-        expect(parsedResponseData).toHaveProperty('stderr', '');
+        expect((executionResult as any).data).toHaveProperty('stdout', 'Hello World\n');
+        expect((executionResult as any).data).toHaveProperty('stderr', '');
     });
 });

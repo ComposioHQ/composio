@@ -114,6 +114,9 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
         if (value.anyOf) {
             const anyOfTypes = value.anyOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
             zodType = z.union(anyOfTypes).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
+        } else if (value.allOf) {
+            const allOfTypes = value.allOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
+            zodType = z.intersection(allOfTypes[0], allOfTypes.slice(1).reduce((acc: z.ZodTypeAny, schema: z.ZodTypeAny) => acc.and(schema), allOfTypes[0])).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
         } else if (value.type) {
             zodType = jsonSchemaPropertiesToTSTypes(value);
         } else {
