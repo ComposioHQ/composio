@@ -117,6 +117,14 @@ class _Request(t.Generic[ModelType]):
                     "description"
                 ] += f" Note: choose value only from following options - {prop['enum']}"
 
+            if (
+                "allOf" in prop
+                and len(prop["allOf"]) == 1
+                and prop["allOf"][0]["title"] == "FileType"
+            ):
+                (schema,) = prop.pop("allOf")
+                prop.update(schema)
+
         request["properties"] = properties
         return request
 
