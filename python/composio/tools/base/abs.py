@@ -244,7 +244,7 @@ class Action(
     """List of dependencies required to run this action."""
 
     no_auth: bool = False
-    """If set `True`, the action requires a connected account."""
+    """If set `True`, the action does not require a connected account."""
 
     def __init_subclass__(cls, abs: bool = False) -> None:
         """Initialize subclas."""
