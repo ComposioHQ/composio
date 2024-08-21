@@ -17,7 +17,7 @@ from hashlib import md5
 from pathlib import Path
 
 import typing_extensions as te
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -240,9 +240,13 @@ def create_app() -> FastAPI:
         return get_runtime_actions()
 
     @app.get("/api/download")
-    def _download_file_or_dir(request: Request):
+    def _download_file_or_dir(file: t.Optional[str] = None):
         """Get list of available developer tools."""
-        path = Path(request.query_params["file"])
+        if not file:
+            raise HTTPException(
+                status_code=400, detail="File path is required as query parameter"
+            )
+        path = Path(file)
         if not path.exists():
             return Response(
                 content=APIResponse[None](
