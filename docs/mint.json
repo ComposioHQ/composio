@@ -96,7 +96,8 @@
           "pages": [
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/processing",
-            "introduction/foundations/components/workspace"
+            "introduction/foundations/components/workspace",
+            "introduction/foundations/components/list_local_tools"
           ]
         }
       ]

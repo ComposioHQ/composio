@@ -1,0 +1,624 @@
+---
+title: "Available Local Tools"
+description: List of Local Tools you can readily use for your Agents
+sidebarTitle: Available Local Tools
+icon: "gear"
+---
+
+Composio provides you with hundreds of tools and thousands of prebuilt actions, which contains both:
+
+- Managed and run at Composio’s end
+
+You can check out the list of all [tools](https://app.composio.dev/apps?category=all) and [actions](https://app.composio.dev/apps?category=all) that Composio supports
+
+- Running and executed locally at the user’s machine.
+
+The second kind is termed as Local Tools.
+
+
+Here's a list of local tools that Composio supports:
+## Browser Tools
+<AccordionGroup>
+
+<Accordion title="Web Scraper">
+    <CardGroup cols={1}>
+        <Card title="Scrape Website Content" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                    from composio import ComposioToolSet, App, Action
+                    toolset = ComposioToolSet()
+                    website_link="https://app.composio.dev"
+                    toolset.execute_action(
+                        action=Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,
+                        params={
+                            "website_url":website_link,
+                            },
+                    )
+                  ```
+                  ```javascript JS
+                COMING SOON
+
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Scrape Website Element" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  from composio import ComposioToolSet, App, Action
+                  toolset = ComposioToolSet()
+                  website_link="https://app.composio.dev"
+                  web_element = "CSS Selector for the element of your choice"
+                  toolset.execute_action(
+                      action=Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,
+                      params={
+                          "website_url":website_link,
+                          "element_selector":web_element,
+                          },
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+    </CardGroup>
+     [Here's the Github Link to the tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/webtool)
+</Accordion>
+
+<Accordion title="Spider Crawler">
+    <CardGroup cols={1}>
+        <Card title="Scrape Website with Spider" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  from composio import ComposioToolSet, App, Action
+                  toolset = ComposioToolSet()
+                  website_link="https://app.composio.dev"
+                  toolset.execute_action(
+                      action=Action.SPIDERTOOL_SCRAPE,
+                      params={
+                          "website_url":website_link,
+                          },
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Crawl Website with Spider" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  from composio import ComposioToolSet, App, Action
+                  toolset = ComposioToolSet()
+                  website_link="https://app.composio.dev"
+                  toolset.execute_action(
+                      action=Action.SPIDERTOOL_CRAWL,
+                      params={
+                          "website_url":website_link,
+                          },
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+    </CardGroup>
+    [Here's the Github link to the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/spidertool)
+</Accordion>
+
+<Accordion title="Browser Search - In Beta">
+    <CardGroup cols={1}>
+        <Card title="Click Element" horizontal='true'>
+              <Accordion title="Code Snippet">
+                    <CodeGroup>
+                        ```python Python
+                        toolset = ComposioToolSet()
+                        toolset.execute_action(
+                            action=[Action.BROWSERTOOL]
+                            params={
+                                
+                            }
+                        )
+                        ```
+                        ```javascript JS
+                        COMING SOON
+                        ```
+                    </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Execute Script" horizontal='true' cols={1}>
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.SHELLTOOL]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Get Element Details" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.SHELLTOOL]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Get Screenshots" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.BROWSERTOOL_GET_SCREENSHOTS]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Go to Page" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.SHELLTOOL]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Navigate History" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.SHELLTOOL]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Refresh Page" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.SHELLTOOL]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+        <Card title="Scroll Page" horizontal='true' >
+              <Accordion title="Code Snippet">
+              <CodeGroup>
+                  ```python Python
+                  toolset = ComposioToolSet()
+                  toolset.execute_action(
+                      action=[Action.SHELLTOOL]
+                      params={
+                          
+                      }
+                  )
+                  ```
+                  ```javascript JS
+                COMING SOON
+
+                  ```
+              </CodeGroup>
+            </Accordion>
+        </Card>
+
+    </CardGroup>
+      [Here's the Github Link](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/browsertool)
+</Accordion>
+</AccordionGroup>
+
+## File Management
+<AccordionGroup>
+<Accordion title="File Manager Tool">
+    <CardGroup cols={1}>
+      <Card title="Create File" horizontal='true' >
+     <Accordion title="Code Snippet" >
+          <CodeGroup>
+              ```python Python
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            path = "path/to/directory"
+            toolset.execute_action(
+                action=Action.FILETOOL_CREATE_FILE,
+                params={
+                    "path":path,
+                    "is_directory":False,
+                    },
+            )
+              ```
+              ```javascript JS
+            COMING SOON
+
+              ```
+          </CodeGroup>
+          [Github Link to the Tool here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
+
+      </Accordion>
+        </Card>
+        <Card title="Find Files" horizontal='true' >
+     <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          from composio import ComposioToolSet, App, Action
+          toolset = ComposioToolSet()
+          pattern = "file_name"
+
+          toolset.execute_action(
+              action=Action.FILETOOL_FIND_FILE,
+              params={
+                  "pattern":pattern,
+                  "case_sensitive":True
+                  "include":["List of directories to search in"],
+                  "exclude":["List of directories to exclude while searching"]
+                  },
+          )
+          ```
+          ```javascript JS
+        COMING SOON
+
+          ```
+      </CodeGroup>
+      [Github Link to the Tool here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
+
+      </Accordion>
+        </Card>
+        <Card title="Perform Git Operations" horizontal='true' >
+     <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          from composio import ComposioToolSet, App, Action
+          toolset = ComposioToolSet()
+          repo_name="composiohq/composio"
+          destination = "file/path"
+          toolset.execute_action(
+              action=Action.FILETOOL_GIT_CLONE,
+              params={
+                  "repo_name":repo_name,
+                  "destination":destination
+                  "just_reset":True,
+                  "commit_id":"The commit id you want to set it to"
+                  },
+          )
+          ```
+          ```javascript JS
+        COMING SOON
+
+          ```
+      </CodeGroup>
+      </Accordion>
+        </Card>
+    </CardGroup>
+
+      [Github Link to more Actions here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
+</Accordion>
+
+<Accordion title="Shell Commands">
+  <CardGroup cols={1}>
+  <Card title="Execute Shell Commands" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          toolset = ComposioToolSet()
+          toolset.execute_action(
+              action=[Action.SHELLTOOL]
+              params={
+                  
+              }
+          )
+          ```
+          ```javascript JS
+        COMING SOON
+
+          ```
+      </CodeGroup>
+      [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/shelltool)
+
+      </Accordion>
+    </Card>
+  </CardGroup>
+
+</Accordion>
+</AccordionGroup>
+
+## Project Management
+<AccordionGroup>
+<Accordion title="ClickUp">
+  <CardGroup cols={1}>
+  <Card title="Create Tasks and Checklists" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          toolset = ComposioToolSet()
+          toolset.execute_action(
+              action=[Action.SHELLTOOL]
+              params={
+                  
+              }
+          )
+          ```
+          ```javascript JS
+        COMING SOON
+
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card>
+      <Card title="Manage your Entire Workspace" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          toolset = ComposioToolSet()
+          toolset.execute_action(
+              action=[Action.SHELLTOOL]
+              params={
+                  
+              }
+          )
+          ```
+          ```javascript JS
+        COMING SOON
+
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card>
+  </CardGroup>
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/clickup)
+
+</Accordion>
+</AccordionGroup>
+## Code Assistance Tools
+<Accordion title="Greptile">
+
+  <CardGroup cols={1}>
+  <Card title="Understands your entire CodeBase" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          from composio import ComposioToolSet, App, Action
+          toolset = ComposioToolSet()
+          repo_name="composiohq/composio"
+          destination = "file/path"
+          toolset.execute_action(
+              action=Action.GREPTILE_CODE_QUERY,
+              params={
+                  "id":"id of the message",
+                  "content":"message content",
+                  "role":"user",#default role is user, can change to system
+                  },
+          )
+          ```
+          ```javascript JS
+        COMING SOON
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card>
+  </CardGroup>
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/greptile)
+
+</Accordion>
+
+<Accordion title="SQL Tool">
+
+  <CardGroup cols={1}>
+  <Card title="Tool to Perform SQL operations on Database" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            path = "path/to/sqldb"
+            query = "SELECT * FROM <TABLE_NAME>" #example query
+            toolset.execute_action(
+                action=Action.SQLTOOL_SQL_QUERY,
+                params={
+                      "query":query,
+                      "connection_string":path,
+                    },
+            )
+          ```
+          ```javascript JS
+          COMING SOON
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card>      
+  </CardGroup>
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/sqltool)
+
+</Accordion>
+
+
+## On Demand RAG Tools
+<AccordionGroup>
+<Accordion title="Create a RAG">
+  <CardGroup cols={1}>
+  <Card title="Add your text in a Vector Store" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            text = """
+                Paris is the capital of France. It is known for its art, fashion, and culture.,
+                Berlin is the capital of Germany. It is famous for its history and vibrant culture.,
+                Tokyo is the capital of Japan. It is known for its technology and cuisine.,
+                Canberra is the capital of Australia. It is known for its modern architecture and museums.,
+                # Add more data as needed
+            """
+            toolset.execute_action(
+                action=Action.RAGTOOL_ADD_CONTENT_TO_RAG_TOOL,
+                params={"content":text},
+            )
+          ```
+          ```javascript JS
+          COMING SOON
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card>      
+
+      <Card title="Query the Vector Store" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+            from composio import ComposioToolSet, App, Action
+            toolset = ComposioToolSet()
+            text="What is Paris known for?"
+            toolset.execute_action(
+                action=Action.RAGTOOL_RAG_TOOL_QUERY,
+                params={"query":text},
+            )
+          ```
+          ```javascript JS
+        COMING SOON
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card> 
+  </CardGroup>
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/ragtool)
+
+</Accordion>
+
+<Accordion title="Image Search with RAG">
+  <CardGroup cols={1}>
+  <Card title="Create image embeddings" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          from composio import ComposioToolSet, App, Action
+          toolset = ComposioToolSet()
+          image_path = "path/to/images/folder"
+          toolset.execute_action(
+              action=Action.EMBEDTOOL_CREATE_IMAGE_VECTOR_STORE,
+              params={"path":image_path},
+          )
+          ```
+          ```javascript JS
+          COMING SOON
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card>      
+
+      <Card title="Search for any Image by describing it" >
+
+      <Accordion title="Code Snippet">
+      <CodeGroup>
+          ```python Python
+          from composio import ComposioToolSet, App, Action
+          toolset = ComposioToolSet()
+          search_query = "Describe the image you want to find"
+          path_to_vector_store = "path/where/images/folder/was/located"
+          max_results = 2
+          toolset.execute_action(
+              action=Action.EMBEDTOOL_CREATE_IMAGE_VECTOR_STORE,
+              params={
+                  "search_query":search_query,
+                  "indexed_directory":path_to_vector_store,
+                  "max_results":max_results,
+                  },
+          )
+          ```
+          ```javascript JS
+          COMING SOON
+          ```
+      </CodeGroup>
+      
+
+      </Accordion>
+    </Card> 
+  </CardGroup>
+
+  [Github Link for the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/embedtool)
+</Accordion>
+</AccordionGroup>
