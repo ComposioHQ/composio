@@ -85,23 +85,40 @@ class _Request(t.Generic[ModelType]):
     def schema(self) -> t.Dict:
         """Build request schema."""
         request = t.cast(t.Type[BaseModel], self.model).model_json_schema(by_alias=True)
+        request = remove_json_ref(request)
+        if "$defs" in request:
+            del request["$defs"]
+
         properties = request.get("properties", {})
-        for details in properties.values():
-            if details.get("file_readable", False):
-                details["oneOf"] = [
+        for prop in properties.values():
+            if prop.get("file_readable", False):
+                prop["oneOf"] = [
                     {
-                        "type": details.get("type"),
-                        "description": details.get("description", ""),
+                        "type": prop.get("type"),
+                        "description": prop.get("description", ""),
                     },
                     {
                         "type": "string",
                         "format": "file-path",
-                        "description": f"File path to {details.get('description', '')}",
+                        "description": f"File path to {prop.get('description', '')}",
                     },
                 ]
-                del details["type"]  # Remove original type to avoid conflict in oneOf
+                del prop["type"]  # Remove original type to avoid conflict in oneOf
+                continue
+
+            if (
+                "allOf" in prop
+                and len(prop["allOf"]) == 1
+                and "enum" in prop["allOf"][0]
+            ):
+                (schema,) = prop.pop("allOf")
+                prop.update(schema)
+                prop[
+                    "description"
+                ] += f" Note: choose value only from following options - {prop['enum']}"
+
         request["properties"] = properties
-        return remove_json_ref(request)
+        return request
 
     def parse(self, request: t.Dict) -> ModelType:
         """Parse request."""
