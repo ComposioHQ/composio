@@ -4,7 +4,7 @@ from typing import List, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class CreateVectorStoreInputSchema(BaseModel):
@@ -17,13 +17,13 @@ class CreateVectorStoreOutputSchema(BaseModel):
 
 
 class CreateImageVectorStore(
-    Action[CreateVectorStoreInputSchema, CreateVectorStoreOutputSchema]
+    LocalAction[CreateVectorStoreInputSchema, CreateVectorStoreOutputSchema]
 ):
     """
     Creates Vector Store for all image files in the specified folder
     """
 
-    _display_name = "Create Image Vector Store"
+    display_name = "Create Image Vector Store"
     _request_schema: Type[CreateVectorStoreInputSchema] = CreateVectorStoreInputSchema
     _response_schema: Type[
         CreateVectorStoreOutputSchema
@@ -48,12 +48,14 @@ class CreateImageVectorStore(
         return image_files
 
     def execute(
-        self, request_data: CreateVectorStoreInputSchema, authorisation_data: dict = {}
+        self,
+        request: CreateVectorStoreInputSchema,
+        metadata: dict,
     ) -> CreateVectorStoreOutputSchema:
         import chromadb  # pylint: disable=C0415
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
-        image_collection_name = Path(request_data.folder_path).name + "_images"
+        image_collection_name = Path(request.folder_path).name + "_images"
         index_storage_path = Path.home() / ".composio" / "image_index_storage"
         index_storage_path.mkdir(parents=True, exist_ok=True)
 
@@ -73,7 +75,7 @@ class CreateImageVectorStore(
         )
 
         # Find image files
-        image_files = self.find_image_files(request_data.folder_path)
+        image_files = self.find_image_files(request.folder_path)
 
         if not image_files:
             return CreateVectorStoreOutputSchema(

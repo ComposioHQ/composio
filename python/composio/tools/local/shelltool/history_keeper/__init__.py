@@ -1,1 +1,1 @@
-from .tool import HistoryFetcherTool
+from .tool import HistoryFetcher

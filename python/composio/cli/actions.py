@@ -96,6 +96,9 @@ def _actions(
     if context.click_ctx.invoked_subcommand:
         return
 
+    if enabled:
+        context.console.print("[yellow]`--enabled` is deprecated![/yellow]")
+
     if use_case is not None and len(apps) == 0:
         raise click.ClickException(
             "To search by a use case you need to specify atleast one app name."
@@ -107,12 +110,7 @@ def _actions(
             allow_all=True,
             limit=limit,
         )
-        if enabled:
-            actions = [integration for integration in actions if integration.enabled]
-            context.console.print("[green]Showing actions which are enabled[/green]")
-        else:
-            context.console.print("[green]Showing all actions[/green]")
-
+        context.console.print("[green]Showing all actions[/green]")
         enum_strs = []
         for action in actions:
             if len(tags) > 0 and all(tag not in action.tags for tag in tags):

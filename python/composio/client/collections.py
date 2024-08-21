@@ -231,7 +231,7 @@ class AuthSchemeField(BaseModel):
     description: str
     type: str
 
-    displayName: t.Optional[str] = None
+    display_name: t.Optional[str] = None
 
     required: bool = False
     expected_from_customer: bool = True
@@ -398,17 +398,12 @@ class TriggerModel(BaseModel):
     logo: t.Optional[str] = None
 
 
-class ExecutionDetailsModel(BaseModel):
-    """Execution details data model."""
-
-    executed: bool
-
-
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
-    execution_details: ExecutionDetailsModel
-    response_data: t.Dict
+    successfull: bool
+    data: t.Dict
+    error: t.Optional[str] = None
 
 
 class FileType(BaseModel):
@@ -818,14 +813,13 @@ class ActionModel(BaseModel):
     """Action data model."""
 
     name: str
-    display_name: str
+    display_name: t.Optional[str] = None
     parameters: ActionParametersModel
     response: ActionResponseModel
-    appKey: str
+    appName: str
     appId: str
     tags: t.List[str]
-    appName: str
-    enabled: bool
+    enabled: bool = False
 
     logo: t.Optional[str] = None
     description: t.Optional[str] = None
@@ -874,12 +868,10 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            from composio.tools.local.handler import (  # pylint: disable=import-outside-toplevel
-                LocalClient,
-            )
-
-            local_items = LocalClient().get_action_schemas(
-                apps=local_apps, actions=local_actions, tags=tags
+            local_items = self.client.local.get_action_schemas(
+                apps=local_apps,
+                actions=local_actions,
+                tags=tags,
             )
             return [self.model(**item) for item in local_items]
 

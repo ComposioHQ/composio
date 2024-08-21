@@ -11,10 +11,10 @@ import typing_extensions as te
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
-from composio.utils.logging import get_logger
 
 
 _model_cache: t.Dict[str, LocalStorage] = {}
+_local_actions: t.Dict[str, "ActionData"] = {}
 _runtime_actions: t.Dict[str, "ActionData"] = {}
 
 EntityType = t.TypeVar("EntityType", bound=LocalStorage)
@@ -89,7 +89,6 @@ class TriggerData(LocalStorage):
 
     app: str
     "Name of the app where this trigger belongs to."
-    _cache: Path = TRIGGERS_CACHE
 
 
 class _AnnotatedEnum(t.Generic[EntityType]):
@@ -118,7 +117,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     ) -> None:
         """Create an Enum"""
         if hasattr(value, "sentinal"):
-            value = value().get_tool_merged_action_name()  # type: ignore
+            self._slug = value.enum  # type: ignore
+            return
 
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
@@ -133,40 +133,158 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             self._slug = self._deprecated[self._slug]
             return
 
-        if (
-            self._slug not in self.__annotations__
-            and self._slug not in _runtime_actions
-        ):
-            raise ValueError(f"Invalid value `{value}` for `{self.__class__.__name__}`")
+        if self._slug in self.__annotations__ or self._slug in _runtime_actions:
+            return
+
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
+            action_registry,
+            tool_registry,
+            trigger_registry,
+        )
+
+        for _, actions in action_registry.items():
+            if self._slug in actions:
+                return
+
+        for _, triggers in trigger_registry.items():
+            if self._slug in triggers:
+                return
+
+        for _, tools in tool_registry.items():
+            if self._slug in tools:
+                return
+
+        raise ValueError(
+            f"Invalid value `{self._slug}` for `{self.__class__.__name__}`"
+        )
 
     @property
     def slug(self) -> str:
         """Enum slug value."""
         return self._slug
 
+    def _cache_from_local(self) -> t.Optional[EntityType]:
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
+            action_registry,
+            tool_registry,
+            trigger_registry,
+        )
+
+        data: t.Optional[t.Union[AppData, TriggerData, ActionData]] = None
+        if self._model is AppData:
+            for tools in tool_registry.values():
+                if self._slug in tools:
+                    app = tools[self._slug]
+                    data = AppData(
+                        name=app.name,
+                        is_local=app.gid not in ("runtime", "local"),
+                        path=self._path / self._slug,
+                    )
+                    break
+            return data  # type: ignore
+
+        if self._model is ActionData:
+            for gid, actions in action_registry.items():
+                if self._slug in actions:
+                    action = actions[self._slug]
+                    data = ActionData(
+                        name=action.name,
+                        app=action.tool,
+                        tags=action.tags(),
+                        no_auth=action.no_auth,
+                        is_local=(
+                            tool_registry[gid][action.tool.upper()].gid
+                            not in ("runtime", "local")
+                        ),
+                        path=self._path / self._slug,
+                    )
+                    break
+            return data  # type: ignore
+
+        if self._model is TriggerData:
+            for gid, triggers in trigger_registry.items():
+                if self._slug in triggers:
+                    trigger = triggers[self._slug]
+                    data = TriggerData(
+                        name=trigger.name,
+                        app=trigger.tool,
+                        path=self._path / self._slug,
+                    )
+                    break
+            return data  # type: ignore
+
+        return data  # type: ignore
+
+    def _cache_from_remote(self) -> EntityType:
+        from composio.client import Composio  # pylint: disable=import-outside-toplevel
+
+        client = Composio.get_latest()
+        data: t.Union[AppData, TriggerData, ActionData]
+        if self._model is AppData:
+            response = client.http.get(
+                url=str(client.apps.endpoint / self.slug),
+            ).json()
+            data = AppData(
+                name=response["name"],
+                path=self._path / self._slug,
+                is_local=False,
+            )
+
+        if self._model is ActionData:
+            response = client.http.get(
+                url=str(client.actions.endpoint / self.slug),
+            ).json()
+            data = ActionData(
+                name=response["name"],
+                app=response["appName"],
+                tags=response["tags"],
+                no_auth=False,  # TOFIX: Get this from the backend
+                is_local=False,
+                is_runtime=False,
+                shell=False,
+                path=self._path / self._slug,
+            )
+
+        if self._model is AppData:
+            response = client.http.get(
+                url=str(client.apps.endpoint / self.slug),
+            ).json()
+            data = AppData(
+                name=response["name"],
+                path=self._path / self._slug,
+                is_local=False,
+            )
+
+        return data  # type: ignore
+
+    def _cache(self) -> None:
+        """Create cache for the enum."""
+        data = self._cache_from_local() or self._cache_from_remote()
+        _model_cache[self._slug] = data
+        try:
+            data.store()
+        except (OSError, PermissionError):
+            pass
+
     def load(self) -> EntityType:
         """Load action data."""
         if self._slug is None:
             raise ValueError(
-                "Cannot load `AppData` object without initializing object."
-            )
-        if self._slug in _runtime_actions:
-            return _runtime_actions[self._slug]  # type: ignore
-        if not (self._path / self._slug).exists():
-            from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
-                update,
-            )
-            from composio.cli.context import (  # pylint: disable=import-outside-toplevel
-                get_context,
+                f"Cannot load `{self._model.__class__}` object without initializing object."
             )
 
-            logger = get_logger()
-            logger.debug(
-                f"Metadata file for `{self._slug}` not found, updating metadata"
-            )
-            update(context=get_context())
+        if self._slug in _model_cache:
+            return t.cast(EntityType, _model_cache[self._slug])
+
+        if self._slug in _runtime_actions:
+            return _runtime_actions[self._slug]  # type: ignore
+
+        if not (self._path / self._slug).exists():
+            self._cache()
+
         if self._slug not in _model_cache:
             _model_cache[self._slug] = self._model.load(self._path / self._slug)
+
         return t.cast(EntityType, _model_cache[self._slug])
 
     @classmethod
