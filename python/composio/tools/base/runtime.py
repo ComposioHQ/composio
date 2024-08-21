@@ -167,6 +167,7 @@ def _wrap(
         t.Type[WrappedAction],
         type(inflection.camelize(f.__name__), (WrappedAction,), {}),
     )
+    # TODO(Viraj): Add error handling if docstring is not provided
     cls.__doc__ = f.__doc__
 
     existing_actions = []

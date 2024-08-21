@@ -417,6 +417,7 @@ class Tool(WithLogger, _Attributes):
     @classmethod
     def register(cls: t.Type["Tool"]) -> None:
         """Register given tool to the registry."""
+        # TODO(Viraj): Check if the tool is already registered
         if cls.gid not in tool_registry:
             tool_registry[cls.gid] = {}
         tool_registry[cls.gid][cls.enum] = cls()
