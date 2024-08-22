@@ -55,8 +55,14 @@ Coming soon!
 </Tab>
 <Tab title="Using API">
 <CodeGroup>
-```API Enable Trigger using API
-Coming soon!
+```API curl
+curl --request POST \
+  --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/{triggerName} \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: <x-api-key>' \
+  --data '{
+  "triggerConfig": {}
+}'
 ```
 </CodeGroup>
 </Tab>

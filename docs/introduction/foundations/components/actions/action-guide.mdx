@@ -189,6 +189,15 @@ composio actions --app 'github' --tag 'code'
 </Tabs>
 
 </Accordion>
+<Accordion title="List Actions Via API">
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v2/actions \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+</Accordion>
 </AccordionGroup>
 </Step>
 
@@ -287,6 +296,25 @@ await toolset.executeAction(
       ```
     </CodeGroup>
     This code demonstrates how to use natural language to execute an action. By defining a task and using the `AgentExecutor`, you can perform complex actions with simple language commands.
+  </Tab>
+
+  <Tab title="Execute Action Via API">
+  <CodeGroup>
+  ```curl cURL
+  curl --request POST \
+  --url https://backend.composio.dev/api/v2/actions/{actionId}/execute \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: <x-api-key>' \
+  --data '{
+  "connectedAccountId": "<string>",
+  "appName": "<string>",
+  "entityId": "<string>",
+  "endpoint": "<string>",
+  "input": {},
+  "text": "<string>"
+}'
+  ```
+  </CodeGroup>
   </Tab>
 </Tabs>
 </Step>

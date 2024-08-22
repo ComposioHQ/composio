@@ -87,6 +87,32 @@ const connection = await entity.initiateConnection(
 ```
 </CodeGroup>
 </Tab>
+
+<Tab title="API">
+<CodeGroup>
+```curl curl
+curl --request POST \
+  --url https://backend.composio.dev/api/v1/integrations \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: <x-api-key>' \
+  --data '{
+  "name": "<string>",
+  "authScheme": "<string>",
+  "authConfig": {
+    "scopes": [
+      "<string>"
+    ],
+    "user_scopes": [
+      "<string>"
+    ]
+  },
+  "useComposioAuth": true,
+  "appId": "<string>",
+  "forceNewIntegration": true
+}'
+```
+</CodeGroup>
+</Tab>
 </Tabs>
 
 </Step>
@@ -120,6 +146,16 @@ const composio_toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
     entityId: "Jessica",
 });
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="API">
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v1/integrations/{integrationId} \
+  --header 'X-API-Key: <x-api-key>'
 ```
 </CodeGroup>
 </Tab>
@@ -167,6 +203,15 @@ const response = await openai_client.chat.completions.create({
 ```
 </CodeGroup>
 </Tab>
+<Tab title="API">
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v2/actions \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+</Tab>
 </Tabs>
 
 </Step>
@@ -185,6 +230,24 @@ print(result)
 <CodeGroup>
 ```javascript Execute Function calls for Jessica
 await composio_toolset.handleToolCall(response);
+```
+</CodeGroup>
+</Tab>
+<Tab title="API">
+<CodeGroup>
+```curl curl
+curl --request POST \
+  --url https://backend.composio.dev/api/v2/actions/{actionId}/execute \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: <x-api-key>' \
+  --data '{
+  "connectedAccountId": "<string>",
+  "appName": "<string>",
+  "entityId": "<string>",
+  "endpoint": "<string>",
+  "input": {},
+  "text": "<string>"
+}'
 ```
 </CodeGroup>
 </Tab>
