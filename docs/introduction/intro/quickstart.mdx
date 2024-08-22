@@ -94,21 +94,11 @@ const connection = await entity.initiateConnection(
 curl --request POST \
   --url https://backend.composio.dev/api/v1/integrations \
   --header 'Content-Type: application/json' \
-  --header 'X-API-Key: <x-api-key>' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
   --data '{
-  "name": "<string>",
-  "authScheme": "<string>",
-  "authConfig": {
-    "scopes": [
-      "<string>"
-    ],
-    "user_scopes": [
-      "<string>"
-    ]
-  },
-  "useComposioAuth": true,
-  "appId": "<string>",
-  "forceNewIntegration": true
+  "name": "connect_1",
+  "appId": "GITHUB",
+  "useComposioAuth": true
 }'
 ```
 </CodeGroup>
@@ -151,11 +141,12 @@ const composio_toolset = new OpenAIToolSet({
 </Tab>
 
 <Tab title="API">
+Find a list of all integrations and their ids here
 <CodeGroup>
 ```curl curl
 curl --request GET \
-  --url https://backend.composio.dev/api/v1/integrations/{integrationId} \
-  --header 'X-API-Key: <x-api-key>'
+  --url https://backend.composio.dev/api/v1/integrations \
+  --header 'X-API-Key: ENTER YOUR API KEY'
 ```
 </CodeGroup>
 </Tab>
@@ -204,11 +195,12 @@ const response = await openai_client.chat.completions.create({
 </CodeGroup>
 </Tab>
 <Tab title="API">
+You can get a list of Actions for a particular App like this. In this case we obtain all the Github Actions
 <CodeGroup>
 ```curl curl
 curl --request GET \
-  --url https://backend.composio.dev/api/v2/actions \
-  --header 'X-API-Key: <x-api-key>'
+  --url 'https://backend.composio.dev/api/v2/actions?appNames=GITHUB' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE'
 ```
 </CodeGroup>
 </Tab>
@@ -237,16 +229,15 @@ await composio_toolset.handleToolCall(response);
 <CodeGroup>
 ```curl curl
 curl --request POST \
-  --url https://backend.composio.dev/api/v2/actions/{actionId}/execute \
+  --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
   --header 'Content-Type: application/json' \
-  --header 'X-API-Key: <x-api-key>' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
   --data '{
-  "connectedAccountId": "<string>",
-  "appName": "<string>",
-  "entityId": "<string>",
-  "endpoint": "<string>",
-  "input": {},
-  "text": "<string>"
+  "entityId": "Jessica",
+  "input": {
+    "repo": "composio",
+    "owner": "composiohq"
+  }
 }'
 ```
 </CodeGroup>

@@ -171,12 +171,10 @@ For deploying in a production environment, utilize the SDK or API methods.
 curl --request POST \
   --url https://backend.composio.dev/api/v1/connectedAccounts \
   --header 'Content-Type: application/json' \
-  --header 'X-API-Key: <x-api-key>' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
   --data '{
-  "data": "<string>",
-  "integrationId": "<string>",
-  "redirectUri": "<string>",
-  "userUuid": "<string>"
+  "integrationId": "ENTER THE INTEGRATION ID HERE",
+  "userUuid": "ENTER ENTITY ID HERE"
 }'
 ```
 </CodeGroup>
@@ -311,7 +309,7 @@ Get Action Details for a Specific Action
 <CodeGroup>
 ```curl curl
 curl --request GET \
-  --url https://backend.composio.dev/api/v1/actions/{actionId} \
+  --url https://backend.composio.dev/api/v1/actions/GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER \
   --header 'X-API-Key: <x-api-key>'
 ```
 </CodeGroup>
@@ -376,16 +374,15 @@ const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 <CodeGroup>
 ```curl curl
 curl --request POST \
-  --url https://backend.composio.dev/api/v2/actions/{actionId}/execute \
+  --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
   --header 'Content-Type: application/json' \
-  --header 'X-API-Key: <x-api-key>' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
   --data '{
-  "connectedAccountId": "<string>",
-  "appName": "<string>",
-  "entityId": "<string>",
-  "endpoint": "<string>",
-  "input": {},
-  "text": "<string>"
+  "entityId": "Jessica",
+  "input": {
+    "repo": "composio",
+    "owner": "composiohq"
+  }
 }'
 ```
 </CodeGroup>

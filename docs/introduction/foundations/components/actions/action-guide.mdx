@@ -301,17 +301,16 @@ await toolset.executeAction(
   <Tab title="Execute Action Via API">
   <CodeGroup>
   ```curl cURL
-  curl --request POST \
-  --url https://backend.composio.dev/api/v2/actions/{actionId}/execute \
+curl --request POST \
+  --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
   --header 'Content-Type: application/json' \
-  --header 'X-API-Key: <x-api-key>' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
   --data '{
-  "connectedAccountId": "<string>",
-  "appName": "<string>",
-  "entityId": "<string>",
-  "endpoint": "<string>",
-  "input": {},
-  "text": "<string>"
+  "entityId": "Jessica",
+  "input": {
+    "repo": "composio",
+    "owner": "composiohq"
+  }
 }'
   ```
   </CodeGroup>
