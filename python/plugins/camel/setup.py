@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_camel",
-    version="0.5.0",
+    version="0.5.1",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Claude LLMs.",
@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core==0.5.0", "camel-ai>=0.1.5.7"],
+    install_requires=["composio_core==0.5.1", "camel-ai>=0.1.5.7"],
     include_package_data=True,
 )
