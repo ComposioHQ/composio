@@ -234,8 +234,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             response = client.http.get(
                 url=str(client.actions.endpoint / self.slug),
             ).json()
-            if isinstance(response, list):
-                response, *_ = response
+            # if isinstance(response, list):
+            #     response, *_ = response
             data = ActionData(
                 name=response["name"],
                 app=response["appName"],
