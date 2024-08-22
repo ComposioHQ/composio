@@ -17,7 +17,11 @@ toolset = ComposioToolSet()
 tools = toolset.get_tools(apps=[App.RAGTOOL])
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
-llm = ChatOpenAI(model="gpt-4o")
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("OPENAI_API_KEY not found in environment variables")
+llm = ChatOpenAI(api_key=api_key, model="gpt-4o")
+#llm = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"], model="gpt-4o")
 
 # User-provided description of the data to be added and the query
 additional_content_list = [

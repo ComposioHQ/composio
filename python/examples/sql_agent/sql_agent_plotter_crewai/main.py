@@ -9,7 +9,7 @@ from composio import Action, App
 
 
 
-llm = ChatOpenAI(model="gpt-4-turbo")
+llm = ChatOpenAI(api_key="Enter the key here", model="gpt-4o")
 
 while True:
     main_task = input("Enter the task you want to perform (or type 'exit' to quit): ")

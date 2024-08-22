@@ -1,9 +1,22 @@
 import os
+import dotenv
 from composio_langchain import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
+from langchain_openai import ChatOpenAI
 
+dotenv.load_dotenv()
 toolset = ComposioToolSet()
 tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
+
+
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key is None:
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
+
+llm = ChatOpenAI(
+    api_key=api_key,
+    model="gpt-4o"
+)
 
 python_executor_agent = Agent(
     role="Python Code Executor",

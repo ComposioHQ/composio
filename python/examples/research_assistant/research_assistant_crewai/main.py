@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from composio_langchain import App, ComposioToolSet
+from composio_langchain import App, ComposioToolSet,Action
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
@@ -20,6 +20,7 @@ composio_toolset = ComposioToolSet()
 # Using .get_tools we are able to add various tools needed by the agents to execute its objective
 # in this case its serpapi, giving the agent access to the internet
 tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+# tools2= composio_toolset.get_actions(actions=[Action.SEARCH_INTERNET])
 
 # Define the Researcher agent with its role, goal, and backstory
 researcher = Agent(
@@ -38,7 +39,7 @@ researcher = Agent(
 # Define the research task with its description and expected output
 task = Task(
     description="""
-    Research about open source LLMs vs closed source LLMs.
+    Research about Apple stocks vs tesla stocks
     Your final answer MUST be a full analysis report
     """,  # you can add your own topic after "Research about {your topic}"
     expected_output="When the research report is ready",  # Define the expected output

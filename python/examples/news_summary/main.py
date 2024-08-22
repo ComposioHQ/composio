@@ -53,10 +53,11 @@ agent_executor = AgentExecutor(
     agent=agent, tools=tools, verbose=True, handle_parsing_errors=True
 )
 agent_executor.return_intermediate_steps = True
+
 res = agent_executor.invoke(
     {
-        "input": "Use SERP to find the one latest AI news, take only description of article."
+        "input": "Use SERP to find the latest AI news. The query should be 'latest artificial intelligence news'. Take only the description of the top article."
     }
 )
 
-res2 = agent_executor.invoke({"input": res["output"] + " Summarize this"})
+res2 = agent_executor.invoke({"input": "Summarize this: " + res["output"]})

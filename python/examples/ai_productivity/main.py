@@ -1,6 +1,6 @@
 import dotenv
 from openai import OpenAI
-
+import os
 from composio_openai import App, ComposioToolSet
 from composio.utils.logging import get as get_logger
 
@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 dotenv.load_dotenv()
 
 # Initialize tools.
+#
 openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 
