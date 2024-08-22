@@ -1,17 +1,21 @@
 import os
 import tempfile
-from composio.tools.env.base import SessionFactory
+
 import pytest
 
-from composio.tools.local.filetool.actions.chwdir import ChangeWorkingDirectory, ChwdirRequest
+from composio.tools.env.base import SessionFactory
+from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.local.filetool.actions.chwdir import (
+    ChangeWorkingDirectory,
+    ChwdirRequest,
+)
+from composio.tools.local.filetool.actions.create import CreateFile, CreateFileRequest
 from composio.tools.local.filetool.actions.edit import EditFile, EditFileRequest
 from composio.tools.local.filetool.actions.find import FindFile, FindFileRequest
 from composio.tools.local.filetool.actions.grep import SearchWord, SearchWordRequest
 from composio.tools.local.filetool.actions.list import ListFiles, ListRequest
 from composio.tools.local.filetool.actions.open import OpenFile, OpenFileRequest
 from composio.tools.local.filetool.actions.write import Write, WriteRequest
-from composio.tools.local.filetool.actions.create import CreateFile, CreateFileRequest
-from composio.tools.env.filemanager.manager import FileManager
 
 
 @pytest.fixture(scope="module")
@@ -45,7 +49,6 @@ def mock_data(temp_dir):
 
 @pytest.mark.usefixtures("mock_data")
 class TestFiletool:
-
     def test_list_files(self, file_manager):
         list_action = ListFiles()
         list_action._filemanagers = lambda: file_manager
@@ -81,8 +84,10 @@ class TestFiletool:
 
         # Edit file
         edit_response = edit_action.execute(
-            EditFileRequest(text="    print('Hello, Edited World!')", start_line=2, end_line=2),
-            {}
+            EditFileRequest(
+                text="    print('Hello, Edited World!')", start_line=2, end_line=2
+            ),
+            {},
         )
         assert "Hello, Edited World!" in edit_response.updated_text
 
@@ -95,16 +100,14 @@ class TestFiletool:
         create_action._filemanagers = lambda: file_manager
         write_action = Write()
         write_action._filemanagers = lambda: file_manager
-        
+
         response = create_action.execute(
-            CreateFileRequest(path="new_file.txt", is_directory=False),
-            {}
+            CreateFileRequest(path="new_file.txt", is_directory=False), {}
         )
         assert not response.error
-        
+
         response = write_action.execute(
-            WriteRequest(file_path="new_file.txt", text="This is a new file"),
-            {}
+            WriteRequest(file_path="new_file.txt", text="This is a new file"), {}
         )
         assert not response.error
 
@@ -157,8 +160,10 @@ class TestFiletool:
 
         # Edit file1.txt
         edit_response = edit_action.execute(
-            EditFileRequest(file_path="file1.txt", text="New content line", start_line=1, end_line=1),
-            {}
+            EditFileRequest(
+                file_path="file1.txt", text="New content line", start_line=1, end_line=1
+            ),
+            {},
         )
         assert "New content line" in edit_response.updated_text
 
@@ -179,7 +184,9 @@ class TestFiletool:
         assert "file1.txt" in response.results
 
         # Case-sensitive search
-        response = grep_action.execute(SearchWordRequest(word="CONTENT", case_insensitive=False), {})
+        response = grep_action.execute(
+            SearchWordRequest(word="CONTENT", case_insensitive=False), {}
+        )
         assert "file1.txt" not in response.results
 
     def test_recursive_search(self, file_manager):
@@ -191,7 +198,9 @@ class TestFiletool:
         assert os.path.join("dir1", "file3.txt") in response.results
 
         # Non-recursive search
-        response = grep_action.execute(SearchWordRequest(word="file3", recursive=False), {})
+        response = grep_action.execute(
+            SearchWordRequest(word="file3", recursive=False), {}
+        )
         assert os.path.join("dir1", "file3.txt") not in response.results
 
     def test_find_with_depth(self, file_manager):
@@ -215,21 +224,26 @@ class TestFiletool:
         write_action._filemanagers = lambda: file_manager
 
         # Try to open a non-existent file
-        response = open_action.execute(OpenFileRequest(file_path="non_existent.txt"), {})
+        response = open_action.execute(
+            OpenFileRequest(file_path="non_existent.txt"), {}
+        )
         assert response.error is not None
 
         # Try to write to a directory
-        response = write_action.execute(WriteRequest(file_path="dir1", text="This should fail"), {})
-        assert "Is a directory" in response.error or "Permission denied" in response.error
+        response = write_action.execute(
+            WriteRequest(file_path="dir1", text="This should fail"), {}
+        )
+        assert (
+            "Is a directory" in response.error or "Permission denied" in response.error
+        )
 
     def test_create_file(self, file_manager, temp_dir):
         create_action = CreateFile()
         create_action._filemanagers = lambda: file_manager
-        
+
         # Test creating a new file
         response = create_action.execute(
-            CreateFileRequest(path="new_file.txt", is_directory=False),
-            {}
+            CreateFileRequest(path="new_file.txt", is_directory=False), {}
         )
         assert not response.error
         assert response.path.endswith("new_file.txt")
@@ -237,8 +251,7 @@ class TestFiletool:
 
         # Test creating a new directory
         response = create_action.execute(
-            CreateFileRequest(path="new_dir", is_directory=True),
-            {}
+            CreateFileRequest(path="new_dir", is_directory=True), {}
         )
         assert not response.error
         assert response.path.endswith("new_dir")
@@ -248,14 +261,11 @@ class TestFiletool:
         with pytest.raises(FileNotFoundError) as excinfo:
             create_action.execute(
                 CreateFileRequest(path="non_existent_dir/file.txt", is_directory=False),
-                {}
+                {},
             )
         assert "No such file or directory" in str(excinfo.value)
 
         # Test creating a file with an invalid name
         with pytest.raises(ValueError) as excinfo:
-            create_action.execute(
-                CreateFileRequest(path="", is_directory=False),
-                {}
-            )
+            create_action.execute(CreateFileRequest(path="", is_directory=False), {})
         assert "Path cannot be empty" in str(excinfo.value)
