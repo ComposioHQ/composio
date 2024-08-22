@@ -26,8 +26,13 @@ ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
 
 
-class MetadataFileNotFound(ComposioSDKError):
-    """Raise when matadata file is missing."""
+class EnumStringNotFound(ComposioSDKError):
+    """Raise when user provides invalid enum string."""
+
+    def __init__(self, value: str, enum: str) -> None:
+        super().__init__(
+            message=f"Invalid value `{value}` for enum class `{enum}`",
+        )
 
 
 class SentinalObject:
@@ -139,81 +144,36 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
             action_registry,
             tool_registry,
-            trigger_registry,
         )
 
-        for _, actions in action_registry.items():
+        for gid, actions in action_registry.items():
             if self._slug in actions:
+                action = actions[self._slug]
+                _model_cache[self._slug] = ActionData(
+                    name=action.name,
+                    app=action.tool,
+                    tags=action.tags(),
+                    no_auth=action.no_auth,
+                    is_local=gid in ("runtime", "local"),
+                    path=self._path / self._slug,
+                )
                 return
 
-        for _, triggers in trigger_registry.items():
-            if self._slug in triggers:
-                return
-
-        for _, tools in tool_registry.items():
+        for gid, tools in tool_registry.items():
             if self._slug in tools:
+                _model_cache[self._slug] = AppData(
+                    name=tools[self._slug].name,
+                    is_local=gid in ("runtime", "local"),
+                    path=self._path / self._slug,
+                )
                 return
 
-        raise ValueError(
-            f"Invalid value `{self._slug}` for `{self.__class__.__name__}`"
-        )
+        raise EnumStringNotFound(value=self._slug, enum=self.__class__.__name__)
 
     @property
     def slug(self) -> str:
         """Enum slug value."""
         return self._slug
-
-    def _cache_from_local(self) -> t.Optional[EntityType]:
-        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
-            action_registry,
-            tool_registry,
-            trigger_registry,
-        )
-
-        data: t.Optional[t.Union[AppData, TriggerData, ActionData]] = None
-        if self._model is AppData:
-            for tools in tool_registry.values():
-                if self._slug in tools:
-                    app = tools[self._slug]
-                    data = AppData(
-                        name=app.name,
-                        is_local=app.gid not in ("runtime", "local"),
-                        path=self._path / self._slug,
-                    )
-                    break
-            return data  # type: ignore
-
-        if self._model is ActionData:
-            for gid, actions in action_registry.items():
-                if self._slug in actions:
-                    action = actions[self._slug]
-                    data = ActionData(
-                        name=action.name,
-                        app=action.tool,
-                        tags=action.tags(),
-                        no_auth=action.no_auth,
-                        is_local=(
-                            tool_registry[gid][action.tool.upper()].gid
-                            not in ("runtime", "local")
-                        ),
-                        path=self._path / self._slug,
-                    )
-                    break
-            return data  # type: ignore
-
-        if self._model is TriggerData:
-            for gid, triggers in trigger_registry.items():
-                if self._slug in triggers:
-                    trigger = triggers[self._slug]
-                    data = TriggerData(
-                        name=trigger.name,
-                        app=trigger.tool,
-                        path=self._path / self._slug,
-                    )
-                    break
-            return data  # type: ignore
-
-        return data  # type: ignore
 
     def _cache_from_remote(self) -> EntityType:
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
@@ -234,6 +194,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             response = client.http.get(
                 url=str(client.actions.endpoint / self.slug),
             ).json()
+            if isinstance(response, list):
+                response, *_ = response
             data = ActionData(
                 name=response["name"],
                 app=response["appName"],
@@ -245,21 +207,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 path=self._path / self._slug,
             )
 
-        if self._model is AppData:
-            response = client.http.get(
-                url=str(client.apps.endpoint / self.slug),
-            ).json()
-            data = AppData(
-                name=response["name"],
-                path=self._path / self._slug,
-                is_local=False,
-            )
-
         return data  # type: ignore
 
     def _cache(self) -> None:
         """Create cache for the enum."""
-        data = self._cache_from_local() or self._cache_from_remote()
+        data = self._cache_from_remote()
         _model_cache[self._slug] = data
         try:
             data.store()

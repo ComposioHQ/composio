@@ -175,13 +175,13 @@ def ensure_login(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
             not t.cast(Context, _context).is_logged_in()
             and not t.cast(Context, _context).using_api_key_from_env()
         ):
-            login_flow(context=_context)
+            login(context=_context)
         return f(*args, **kwargs)
 
     return update_wrapper(wapper, f)
 
 
-def login_flow(
+def login(
     context: t.Optional[Context],
     no_browser: bool = False,
 ):

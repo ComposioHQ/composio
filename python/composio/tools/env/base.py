@@ -31,7 +31,7 @@ def _read_env_var(name: str, default: t.Any) -> str:
 
     value = os.environ.get(name, default)
     if value is None:
-        raise ValueError(f"Please provide value for `{name}`")
+        raise ComposioSDKError(f"Please provide value for `{name}`")
     return value
 
 
@@ -42,7 +42,7 @@ class Sessionable(WithLogger, ABC):
 
     def __str__(self) -> str:
         """String representation."""
-        return f"Shell(type={self.__class__.__name__}, id={self.id})"
+        return f"Sessionable(type={self.__class__.__name__}, id={self.id})"
 
     __repr__ = __str__
 
@@ -107,7 +107,7 @@ class SessionFactory(WithLogger, t.Generic[SessionableType]):
 
         if id not in self._session:
             raise ComposioSDKError(
-                message=f"No shell found with ID: {id}",
+                message=f"No {self.__class__.__name__} session found with ID: {id}",
             )
         shell = self._session[id]
         self.recent = shell
