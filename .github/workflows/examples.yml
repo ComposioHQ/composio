@@ -55,7 +55,5 @@ jobs:
           python -m pip install plugins/${{matrix.package}}
           python -m pip install '.[all]'
           python -m pip install 'numpy<2' python-dotenv
-          
-          composio apps update
 
           CI=false COMPOSIO_BASE_URL=https://backend.composio.dev/api PLUGIN_TO_TEST=${{matrix.package}} pytest -vv tests/test_example.py

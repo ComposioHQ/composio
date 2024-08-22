@@ -81,6 +81,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SPOTIFY: "App"
     SQLTOOL: "App"
     STRAVA: "App"
+    SYSTEM_TOOLS: "App"
     TASKADE: "App"
     TAVILY: "App"
     TRELLO: "App"

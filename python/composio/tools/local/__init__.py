@@ -27,6 +27,7 @@ def load_local_tools() -> (
     from composio.tools.local.shelltool.shell_exec import Shelltool
     from composio.tools.local.spidertool import Spidertool
     from composio.tools.local.sqltool import Sqltool
+    from composio.tools.local.system.system_tool import SystemTools
     from composio.tools.local.webtool import Webtool
     from composio.tools.local.zep import Zeptool
 
