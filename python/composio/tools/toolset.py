@@ -25,6 +25,7 @@ from composio.client.collections import (
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
+from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -411,7 +412,7 @@ class ComposioToolSet(WithLogger):
 
         try:
             return self._metadata.get(Action(t.cast(ActionType, key)), {})  # type: ignore
-        except ValueError:
+        except EnumStringNotFound:
             return self._metadata.get(App(t.cast(AppType, key)), {})  # type: ignore
 
     def _add_metadata(self, action: Action, metadata: t.Optional[t.Dict]) -> t.Dict:
@@ -432,7 +433,7 @@ class ComposioToolSet(WithLogger):
 
         try:
             return self._processors.get(type_, {}).get(Action(t.cast(ActionType, key)))  # type: ignore
-        except ValueError:
+        except EnumStringNotFound:
             return self._processors.get(type_, {}).get(App(t.cast(AppType, key)))  # type: ignore
 
     def _process(

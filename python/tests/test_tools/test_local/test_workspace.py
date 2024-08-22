@@ -24,9 +24,9 @@ def test_outputs() -> None:
         action=Action.SHELLTOOL_EXEC_COMMAND,
         params={"cmd": f"ls {PATH}"},
     )
-    assert output[EXIT_CODE] == 0
-    assert output[STDERR] == ""
-    assert "test_workspace.py" in output[STDOUT]
+    assert output["data"][EXIT_CODE] == 0
+    assert output["data"][STDERR] == ""
+    assert "test_workspace.py" in output["data"][STDOUT]
 
 
 def test_stderr() -> None:
@@ -38,7 +38,7 @@ def test_stderr() -> None:
         action=Action.SHELLTOOL_EXEC_COMMAND,
         params={"cmd": "ls ./random"},
     )
-    assert "No such file or directory" in output[STDERR]
+    assert "No such file or directory" in output["data"][STDERR]
 
 
 def _check_output(output: dict) -> None:
