@@ -104,6 +104,10 @@ jobs:
           sudo apt-get autoclean
           pip install --user --upgrade setuptools
           pip install tox==4.6.3
+      - name: Build docker images
+        run: |
+          cd dockerfiles
+          make dev
       - name: Unittests
         run: |
           COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} tox -e unittests
