@@ -108,9 +108,9 @@ jobs:
         run: |
           cd dockerfiles
           make dev
-      - name: Unittests
+      - name: Unittests 
         run: |
-          COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }} E2B_API_KEY=${{ secrets.E2B_API_KEY }} tox -e unittests
+          COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }} E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }} tox -e unittests
       - if: matrix.python-version == '3.10'
         name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
