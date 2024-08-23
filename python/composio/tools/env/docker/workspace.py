@@ -129,7 +129,10 @@ class DockerWorkspace(RemoteWorkspace):
         """Wait for docker workspace to get started."""
         while True:
             try:
-                if self._request(endpoint="", method="get").status_code == 200:
+                if (
+                    self._request(endpoint="", method="get", log=False).status_code
+                    == 200
+                ):
                     return
             except requests.ConnectionError:
                 time.sleep(0.1)

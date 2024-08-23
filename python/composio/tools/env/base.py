@@ -217,9 +217,10 @@ class RemoteWorkspace(Workspace):
         method: str,
         json: t.Optional[t.Dict] = None,
         timeout: t.Optional[float] = 300.0,
+        log: bool = True,
     ) -> requests.Response:
         """Make request to the tooling server."""
-        return requests.request(
+        response = requests.request(
             url=f"{self.url}{endpoint}",
             method=method,
             json=json,
@@ -228,6 +229,21 @@ class RemoteWorkspace(Workspace):
             },
             timeout=timeout,
         )
+        if log:
+            self.logger.debug(
+                f"Making HTTP request on {self.id}\n"
+                f"Request: {method.upper()} {endpoint} @ {self.url}\n"
+                f"Response: {response.status_code} -> {response.text}"
+            )
+        if response.status_code == 500:
+            raise ComposioSDKError(
+                message=(
+                    f"Error requesting data from {self}, "
+                    f"Request: {method.upper()} {endpoint} @ {self.url}\n"
+                    f"Response: {response.status_code} -> {response.text}"
+                ),
+            )
+        return response
 
     def _upload(self, action: Action) -> None:
         """Upload action instance to tooling server."""

@@ -141,6 +141,17 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._slug in self.__annotations__ or self._slug in _runtime_actions:
             return
 
+        if self._cache_from_local() is not None:
+            return
+
+        raise EnumStringNotFound(value=self._slug, enum=self.__class__.__name__)
+
+    @property
+    def slug(self) -> str:
+        """Enum slug value."""
+        return self._slug
+
+    def _cache_from_local(self) -> t.Optional[EntityType]:
         from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
             action_registry,
             tool_registry,
@@ -157,7 +168,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                     is_local=gid in ("runtime", "local"),
                     path=self._path / self._slug,
                 )
-                return
+                return _model_cache[self._slug]  # type: ignore
 
         for gid, tools in tool_registry.items():
             if self._slug in tools:
@@ -166,14 +177,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                     is_local=gid in ("runtime", "local"),
                     path=self._path / self._slug,
                 )
-                return
+                return _model_cache[self._slug]  # type: ignore
 
-        raise EnumStringNotFound(value=self._slug, enum=self.__class__.__name__)
-
-    @property
-    def slug(self) -> str:
-        """Enum slug value."""
-        return self._slug
+        return None
 
     def _cache_from_remote(self) -> EntityType:
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
@@ -196,6 +202,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             ).json()
             if isinstance(response, list):
                 response, *_ = response
+
             data = ActionData(
                 name=response["name"],
                 app=response["appName"],
@@ -211,7 +218,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
     def _cache(self) -> None:
         """Create cache for the enum."""
-        data = self._cache_from_remote()
+        data = self._cache_from_local() or self._cache_from_remote()
         _model_cache[self._slug] = data
         try:
             data.store()

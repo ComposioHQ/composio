@@ -5,6 +5,7 @@ import typing as t
 from abc import abstractmethod
 
 import inflection
+import typing_extensions as te
 from pydantic import BaseModel, Field
 
 from composio.client.enums.base import ActionData, SentinalObject, add_runtime_action
@@ -276,13 +277,12 @@ def _build_executable_from_args(
             shell_argument = arg
             continue
 
-        if getattr(annot, "__name__", "") == "Annotated":
+        if isinstance(annot, te._AnnotatedAlias):  # pylint: disable=protected-access
             annottype, description, default = _parse_annotated_type(
                 argument=arg,
                 annotation=annot,
             )
             default = defaults.get(arg, default)
-
         else:
             annottype, _ = _parse_raw_type(argument=arg, annotation=annot)
             if arg != "return" and arg not in paramdesc:
