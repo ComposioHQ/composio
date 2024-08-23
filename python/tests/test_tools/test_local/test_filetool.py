@@ -1,3 +1,4 @@
+# pylint: disable=protected-access,no-member,unsupported-membership-test,unspecified-encoding,not-an-iterable,unsubscriptable-object,unused-argument
 import os
 import tempfile
 
