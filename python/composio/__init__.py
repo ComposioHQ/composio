@@ -10,13 +10,13 @@ from composio.client.enums import (
     TriggerType,
 )
 from composio.tools import ComposioToolSet
-from composio.tools.env.base import Shell
+from composio.tools.base.runtime import action
 from composio.tools.env.factory import (
     WorkspaceConfigType,
     WorkspaceFactory,
     WorkspaceType,
 )
-from composio.tools.local.base.decorators import action
+from composio.tools.env.host.shell import Shell
 
 
 __all__ = (
@@ -37,4 +37,4 @@ __all__ = (
     "action",
 )
 
-__version__ = "0.4.5"
+__version__ = "0.5.3"

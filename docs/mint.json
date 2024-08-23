@@ -96,7 +96,8 @@
           "pages": [
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/processing",
-            "introduction/foundations/components/workspace"
+            "introduction/foundations/components/workspace",
+            "introduction/foundations/components/list_local_tools"
           ]
         }
       ]
@@ -108,24 +109,22 @@
         "framework/langchain",
         "framework/llamaindex",
         "framework/crewai",
-        "javascript/cloudflare",
-        "javascript/vercel",
-
+        "framework/openai",
+        "framework/autogen",
         {
           "group": "Other Frameworks",
           "pages": [
-            "framework/autogen",
-            "framework/crewai",
-            "framework/lyzr",
-            "framework/openai",
-            "framework/julep",
-            "framework/griptape",
-            "framework/camelai",
-            "framework/praisonai",
             "framework/langgraph",
             "framework/phidata",
+            "framework/camelai",
+            "javascript/cloudflare",
+            "javascript/vercel",
+            "javascript/openai",
             "javascript/langchain",
-            "javascript/openai"
+            "framework/lyzr",
+            "framework/praisonai",
+            "framework/julep",
+            "framework/griptape"
           ]
         }
       ]

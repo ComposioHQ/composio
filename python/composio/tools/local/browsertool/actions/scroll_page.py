@@ -65,7 +65,7 @@ class ScrollPage(BaseBrowserAction):
     - selector_type: The type of selector to use for finding the element (e.g., css, xpath).
     """
 
-    _display_name = "Scroll Page"
+    display_name = "Scroll Page"
     _request_schema = ScrollPageRequest
     _response_schema = ScrollPageResponse
 

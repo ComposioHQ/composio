@@ -1,21 +1,37 @@
-"""Decorators for local tools."""
+"""Tool abstractions."""
 
 import inspect
 import typing as t
+from abc import abstractmethod
 
 import inflection
 from pydantic import BaseModel, Field
 
-from composio.client.enums import Action
-from composio.client.enums.base import ActionData
-from composio.tools.env.base import Shell
-from composio.tools.local.handler import add_runtime_action
-from composio.utils.enums import get_enum_key
-
-from .action import Action as LocalAction
+from composio.client.enums.base import ActionData, SentinalObject, add_runtime_action
+from composio.tools.base.abs import (
+    Action,
+    ActionRequest,
+    ActionResponse,
+    ToolBuilder,
+    tool_registry,
+)
+from composio.tools.base.local import LocalToolMixin
+from composio.tools.env.host.shell import Shell
+from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
 
 
 ActionCallable = t.Callable
+
+
+class FileModel(BaseModel):
+    name: str = Field(
+        ...,
+        description="File name, contains extension to indetify the file type",
+    )
+    content: bytes = Field(
+        ...,
+        description="File content in base64",
+    )
 
 
 class ArgSpec(BaseModel):
@@ -28,58 +44,139 @@ class ArgSpec(BaseModel):
     """Default value"""
 
 
+class RuntimeAction(  # pylint: disable=abstract-method
+    SentinalObject,
+    Action[ActionRequest, ActionResponse],
+    abs=True,
+):
+    """Local action abstraction."""
+
+    _shells: t.Callable[[], Shells]
+    _browsers: t.Callable[[], Browsers]
+    _filemanagers: t.Callable[[], FileManagers]
+
+    @property
+    def shells(self) -> Shells:
+        return self._shells()
+
+    @property
+    def browsers(self) -> Browsers:
+        return self._browsers()
+
+    @property
+    def filemanagers(self) -> FileManagers:
+        return self._filemanagers()
+
+
+class RuntimeToolMeta(type):
+    """Tool metaclass."""
+
+    def __init__(  # pylint: disable=self-cls-assignment,unused-argument
+        cls,
+        name: str,
+        bases: t.Tuple,
+        dict_: t.Dict,
+        autoload: bool = False,
+    ) -> None:
+        """Initialize action class."""
+        if name == "RuntimeTool":
+            return
+
+        cls = t.cast(t.Type[RuntimeTool], cls)
+        ToolBuilder.validate(obj=cls, name=name, methods=("actions",))
+        ToolBuilder.set_metadata(obj=cls)
+        ToolBuilder.setup_children(obj=cls)
+
+        if autoload:
+            cls.register()
+
+
+class RuntimeTool(LocalToolMixin, metaclass=RuntimeToolMeta):
+    """Local tool class."""
+
+    gid = "runtime"
+    """Group ID for this tool."""
+
+    @classmethod
+    @abstractmethod
+    def actions(cls) -> t.List[t.Type[RuntimeAction]]:
+        """Get collection of actions for the tool."""
+
+
+def _create_tool_class(
+    name: str,
+    actions: t.List[t.Type[RuntimeAction]],
+) -> t.Type[RuntimeTool]:
+    """Create runtime tool class."""
+
+    class _Tool:
+        gid = "runtime"
+
+        @classmethod
+        def actions(cls) -> t.List[type[RuntimeAction]]:
+            return actions
+
+    _Tool.__doc__ = f"{name.title()} tool."
+
+    return type(inflection.camelize(name), (_Tool, RuntimeTool), dict(_Tool.__dict__))
+
+
 def _wrap(
     f: t.Callable,
     toolname: str,
     tags: t.List,
+    file: str,
     request_schema: t.Type[BaseModel],
     response_schema: t.Type[BaseModel],
     runs_on_shell: bool = False,
     requires: t.Optional[t.List[str]] = None,
-    file: t.Optional[str] = None,
-) -> t.Type[LocalAction]:
+) -> t.Type[RuntimeAction]:
     """Wrap action class with given params."""
 
+    _file = file
     _requires = requires
 
-    class WrappedAction(LocalAction):
+    class WrappedAction(RuntimeAction[request_schema, response_schema]):  # type: ignore
         """Wrapped action class."""
 
         _tags: t.List[str] = tags
-        _tool_name: str = toolname
-        _display_name: str = f.__name__
 
-        _request_schema = request_schema
-        _response_schema = response_schema
+        tool = toolname
+        name = f.__name__
+        enum = f.__name__.upper()
+        display_name = f.__name__
 
-        _history_maintains: bool = False
-        run_on_shell: bool = runs_on_shell
+        file = _file
         requires = _requires
-        module = file
+        run_on_shell: bool = runs_on_shell
 
-        def execute(self, request_data: t.Any, authorisation_data: dict) -> t.Any:
-            return f(request_data, authorisation_data)
-
-    cls = type(inflection.camelize(f.__name__), (WrappedAction,), {})
-    cls.__doc__ = f.__doc__
-
-    instance = cls()
-    Action.add(
-        name=get_enum_key(name=instance.get_tool_merged_action_name()),
-        data=ActionData(
-            name=instance.action_name,
-            app=instance.tool_name,
-            tags=tags or [],
+        data = ActionData(
+            name=f.__name__,
+            app=toolname.upper(),
+            tags=tags,
             no_auth=True,
             is_local=True,
             is_runtime=True,
-            shell=runs_on_shell,
-        ),
+            shell=run_on_shell,
+        )
+
+        def execute(self, request: t.Any, metadata: dict) -> t.Any:
+            return f(request, metadata)
+
+    cls = t.cast(
+        t.Type[WrappedAction],
+        type(inflection.camelize(f.__name__), (WrappedAction,), {}),
     )
-    add_runtime_action(
-        name=instance.action_name,
-        cls=cls,
-    )
+    # TODO(Viraj): Add error handling if docstring is not provided
+    cls.__doc__ = f.__doc__
+
+    existing_actions = []
+    toolname = toolname.upper()
+    if toolname in tool_registry["runtime"]:
+        existing_actions = tool_registry["runtime"][toolname].actions()
+    tool = _create_tool_class(name=toolname, actions=[cls, *existing_actions])  # type: ignore
+    tool_registry["runtime"][toolname] = tool()
+    add_runtime_action(cls.enum, cls.data)
     return cls
 
 
@@ -207,9 +304,9 @@ def _build_executable_from_args(
         response_schema,
     )
 
-    def execute(request_data: BaseModel, metadata: t.Dict) -> BaseModel:
+    def execute(request: BaseModel, metadata: t.Dict) -> BaseModel:
         """Wrapper for action callable."""
-        kwargs = request_data.model_dump()
+        kwargs = request.model_dump()
         if shell_argument is not None:
             kwargs[shell_argument] = metadata["workspace"].shells.recent
 
@@ -250,10 +347,10 @@ def action(
     runs_on_shell: bool = False,
     tags: t.Optional[t.List[str]] = None,
     requires: t.Optional[t.List] = None,
-) -> t.Callable[[ActionCallable], t.Type[LocalAction]]:
+) -> t.Callable[[ActionCallable], t.Type[RuntimeAction]]:
     """Marks a callback as wanting to receive the current context object as first argument."""
 
-    def wrapper(f: ActionCallable) -> t.Type[LocalAction]:
+    def wrapper(f: ActionCallable) -> t.Type[RuntimeAction]:
         """Action wrapper."""
         file = inspect.getfile(f)
         f, RequestSchema, ResponseSchema, _runs_on_shell = _parse_schemas(
@@ -264,11 +361,11 @@ def action(
             f=f,
             toolname=toolname,
             tags=tags or [],
+            file=file,
             request_schema=RequestSchema,
             response_schema=ResponseSchema,
             runs_on_shell=_runs_on_shell,
             requires=requires,
-            file=file,
         )
 
     return wrapper

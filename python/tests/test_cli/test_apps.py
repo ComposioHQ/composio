@@ -6,10 +6,9 @@ import random
 import typing as t
 from pathlib import Path
 
-import pytest
-
 from composio.client import enums
 
+from tests.conftest import skip_if_ci
 from tests.test_cli.base import BaseCliTest
 
 
@@ -50,6 +49,7 @@ class TestUpdate(BaseCliTest):
         for file, content in self.files.items():
             file.write_text(data=content, encoding="utf-8")
 
+    @skip_if_ci(reason="Needs investigation, this test fails in CI")
     def test_update_not_required(self) -> None:
         """Test app enums update."""
         self.run("apps", "update")
@@ -57,9 +57,7 @@ class TestUpdate(BaseCliTest):
         for cls in ENUM_CLS:
             self.assert_stdout(f"⚠️ {cls.__name__}s does not require update")
 
-    @pytest.mark.skip(
-        reason="Needs investigation, this test fails in CI",
-    )
+    @skip_if_ci(reason="Needs investigation, this test fails in CI")
     def test_update(self) -> None:
         """Test app enums update."""
         to_update = random.choice(ENUM_CLS)

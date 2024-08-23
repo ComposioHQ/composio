@@ -21,7 +21,7 @@ def test_outputs() -> None:
         workspace_config=WorkspaceType.Host(),
     )
     output = toolset.execute_action(
-        action=Action.SHELL_EXEC_COMMAND,
+        action=Action.SHELLTOOL_EXEC_COMMAND,
         params={"cmd": f"ls {PATH}"},
     )
     assert output[EXIT_CODE] == 0
@@ -35,7 +35,7 @@ def test_stderr() -> None:
         workspace_config=WorkspaceType.Host(),
     )
     output = toolset.execute_action(
-        action=Action.SHELL_EXEC_COMMAND,
+        action=Action.SHELLTOOL_EXEC_COMMAND,
         params={"cmd": "ls ./random"},
     )
     assert "No such file or directory" in output[STDERR]

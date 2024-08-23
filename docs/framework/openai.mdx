@@ -1,6 +1,6 @@
 ---
 title: "Using Composio With OpenAI"
-sidebarTitle: "OpenAI (Python)"
+sidebarTitle: "OpenAI"
 icon: "robot"
 description: "Enable OpenAI assistants to seamlessly interact with external apps via Composio for enhanced functionality"
 ---
@@ -16,34 +16,35 @@ description: "Enable OpenAI assistants to seamlessly interact with external apps
 
 These steps prepare your environment to enable interactions between OpenAI and GitHub through Composio.
 
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-  ```bash python 
-  pip install composio-openai
+```bash Connect your Github Account
+pip install composio-openai
 
-  # Connect your GitHub so agents can interact with it
+# Connect your GitHub so agents can interact with it
 
-  composio add github
-
-  # Check all supported apps
-
-  composio apps
-  ```
-  ```javascript javascript
-  npm install openai
-  npm install composio-core
-  // Connect your GitHub so agents can interact with it
-
-  composio add github
-
-  // Check all supported apps
-
-  composio apps
-  ```
+composio add github
+```
 </CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
+```javascript Connect your Github Account
+npm install openai
+npm install composio-core
+// Connect your GitHub so agents can interact with it
 
+composio add github
+```
+</CodeGroup>
+</Tab>
+</Tabs>
 <Steps>
 
 <Step title="Import Base Packages & Configure OpenAI Client">
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
   ```python python
   from openai import OpenAI
@@ -53,6 +54,10 @@ These steps prepare your environment to enable interactions between OpenAI and G
   # Initialise the Composio Tool Set
   composio_toolset = ComposioToolSet()
   ```
+</CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
   ```javascript javascript
   import dotenv from 'dotenv';
   dotenv.config();
@@ -71,14 +76,22 @@ These steps prepare your environment to enable interactions between OpenAI and G
   });
   ```
 </CodeGroup>
+</Tab>
+</Tabs>
 </Step>
 <Step title="Fetch All GitHub Tools via Composio">
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
   ```python python
   # Get GitHub tools that are pre-configured
   # Retrieve actions
   actions = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
   ```
+</CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
   ```javascript javascript
   // Get GitHub tools that are pre-configured
   // Retrieve actions
@@ -87,35 +100,42 @@ These steps prepare your environment to enable interactions between OpenAI and G
   });
   ```
 </CodeGroup>
+</Tab>
+</Tabs>
 </Step>
 <Step title="Execute the Task via OpenAI Assistant APIs"> 
+<Tabs>
+<Tab title="Python">
 <CodeGroup>
-  ```python python
-  my_task = "Star a repo composiohq/composio on GitHub"
+  ```python Execute an action using LL
+my_task = "Star a repo composiohq/composio on GitHub"
 
-  # Setup openai assistant
+# Setup openai assistant
 
-  assistant_instruction = "You are a super intelligent personal assistant"
+assistant_instruction = "You are a super intelligent personal assistant"
 
-  # Prepare assistant
+# Prepare assistant
 
-  assistant = openai_client.beta.assistants.create(
-  name="Personal Assistant",
-  instructions=assistant_instruction,
-  model="gpt-4-turbo-preview",
-  tools=actions, # type: ignore
-  )
+assistant = openai_client.beta.assistants.create(
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions, # type: ignore
+)
 
-  # create a thread
+# create a thread
 
-  thread = openai_client.beta.threads.create()
-  message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
 
-  # Execute Agent with integrations
+# Execute Agent with integrations
 
-  run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
-
-  ```
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+```
+</CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
   ```javascript javascript
   const instruction = "Star a repo composiohq/composio on GitHub";
   
@@ -128,7 +148,11 @@ These steps prepare your environment to enable interactions between OpenAI and G
   });
   ```
   </CodeGroup>
+</Tab>
+</Tabs>
 </Step>
+
+
 <Step title="Handle Tool Calls and Check Response">
 <CodeGroup>
   ```python python

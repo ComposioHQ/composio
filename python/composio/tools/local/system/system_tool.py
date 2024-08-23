@@ -1,17 +1,15 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import Notify, ScreenCapture
 
 
-class SystemTools(Tool):
+class SystemTools(LocalTool, autoload=True):
     """
     System Tools for LLM
     """
 
-    def actions(self) -> list[t.Type[Action]]:
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
         return [ScreenCapture, Notify]
-
-    def triggers(self) -> list:
-        return []
