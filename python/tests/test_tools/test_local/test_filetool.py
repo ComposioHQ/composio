@@ -42,11 +42,11 @@ def mock_data(temp_dir):
     os.makedirs(os.path.join(temp_dir, "dir2"))
 
     # Create files with content
-    with open(os.path.join(temp_dir, "file1.txt"), "w") as f:
+    with open(os.path.join(temp_dir, "file1.txt"), "w", encoding="utf-8") as f:
         f.write("This is file1 content\nWith multiple lines\n")
-    with open(os.path.join(temp_dir, "file2.py"), "w") as f:
+    with open(os.path.join(temp_dir, "file2.py"), "w", encoding="utf-8") as f:
         f.write("def test_function():\n    print('Hello, World!')\n")
-    with open(os.path.join(temp_dir, "dir1", "file3.txt"), "w") as f:
+    with open(os.path.join(temp_dir, "dir1", "file3.txt"), "w", encoding="utf-8") as f:
         f.write("This is file3 in dir1\n")
 
 
@@ -56,10 +56,10 @@ class TestFiletool:
         list_action = ListFiles()
         list_action._filemanagers = lambda: file_manager
         response = list_action.execute(ListRequest(), {})
-        assert ("dir1", "dir") in response.files
-        assert ("dir2", "dir") in response.files
-        assert ("file1.txt", "file") in response.files
-        assert ("file2.py", "file") in response.files
+        assert any(item == ("dir1", "dir") for item in response.files)
+        assert any(item == ("dir2", "dir") for item in response.files)
+        assert any(item == ("file1.txt", "file") for item in response.files)
+        assert any(item == ("file2.py", "file") for item in response.files)
 
     def test_find_files(self, file_manager):
         find_action = FindFile()
@@ -115,7 +115,7 @@ class TestFiletool:
         assert not response.error
 
         # Verify file was created
-        with open(os.path.join(temp_dir, "new_file.txt"), "r") as f:
+        with open(os.path.join(temp_dir, "new_file.txt"), "r", encoding="utf-8") as f:
             content = f.read()
         assert content == "This is a new file"
 
