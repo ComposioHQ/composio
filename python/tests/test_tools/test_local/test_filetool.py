@@ -3,7 +3,9 @@ import tempfile
 
 import pytest
 
+from composio import Action
 from composio.tools.env.base import SessionFactory
+from composio.tools.env.factory import WorkspaceType
 from composio.tools.env.filemanager.manager import FileManager
 from composio.tools.local.filetool.actions.chwdir import (
     ChangeWorkingDirectory,
@@ -16,6 +18,7 @@ from composio.tools.local.filetool.actions.grep import SearchWord, SearchWordReq
 from composio.tools.local.filetool.actions.list import ListFiles, ListRequest
 from composio.tools.local.filetool.actions.open import OpenFile, OpenFileRequest
 from composio.tools.local.filetool.actions.write import Write, WriteRequest
+from composio.tools.toolset import ComposioToolSet
 
 
 @pytest.fixture(scope="module")
@@ -269,3 +272,77 @@ class TestFiletool:
         with pytest.raises(ValueError) as excinfo:
             create_action.execute(CreateFileRequest(path="", is_directory=False), {})
         assert "Path cannot be empty" in str(excinfo.value)
+
+    def test_filetool_with_toolset(self, file_manager, temp_dir):
+        toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
+
+        chdir_response = toolset.execute_action(
+            Action.FILETOOL_CHANGE_WORKING_DIRECTORY, {"path": temp_dir}
+        )
+        assert not chdir_response.get("error")
+
+        # List files
+        list_response = toolset.execute_action(Action.FILETOOL_LIST_FILES, {})
+        assert ("file1.txt", "file") in list_response["files"]
+        assert ("dir1", "dir") in list_response["files"]
+
+        # Find .txt files
+        find_response = toolset.execute_action(
+            Action.FILETOOL_FIND_FILE, {"pattern": "*.txt"}
+        )
+        assert "file1.txt" in find_response["results"]
+        assert os.path.join("dir1", "file3.txt") in find_response["results"]
+
+        # Search for content
+        grep_response = toolset.execute_action(
+            Action.FILETOOL_SEARCH_WORD, {"word": "content"}
+        )
+        assert "file1.txt" in grep_response["results"]
+
+        # Edit file
+        edit_response = toolset.execute_action(
+            Action.FILETOOL_EDIT_FILE,
+            {
+                "file_path": "file1.txt",
+                "text": "New content line",
+                "start_line": 1,
+                "end_line": 1,
+            },
+        )
+        assert "New content line" in edit_response["updated_text"]
+
+        # Verify changes
+        open_response = toolset.execute_action(
+            Action.FILETOOL_OPEN_FILE, {"file_path": "file1.txt"}
+        )
+        assert "New content line" in open_response["lines"][1]
+
+        # Change directory
+        chdir_response = toolset.execute_action(
+            Action.FILETOOL_CHANGE_WORKING_DIRECTORY, {"path": "dir1"}
+        )
+        assert not chdir_response.get("error")
+
+        # List files in new directory
+        list_response = toolset.execute_action(Action.FILETOOL_LIST_FILES, {})
+        assert ("file3.txt", "file") in list_response["files"]
+
+        # Change back to parent directory
+        toolset.execute_action(Action.FILETOOL_CHANGE_WORKING_DIRECTORY, {"path": ".."})
+
+        # Create and write to a new file
+        toolset.execute_action(
+            Action.FILETOOL_CREATE_FILE,
+            {"path": "new_file.txt", "is_directory": False},
+        )
+        write_response = toolset.execute_action(
+            Action.FILETOOL_WRITE,
+            {"file_path": "new_file.txt", "text": "This is a new file"},
+        )
+        assert not write_response.get("error")
+
+        # Verify new file content
+        open_response = toolset.execute_action(
+            Action.FILETOOL_OPEN_FILE, {"file_path": "new_file.txt"}
+        )
+        assert "This is a new file" in open_response["lines"][1]
