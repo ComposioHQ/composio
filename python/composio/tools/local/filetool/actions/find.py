@@ -64,26 +64,16 @@ class FindFile(LocalAction[FindFileRequest, FindFileResponse]):
     match the given pattern.
 
     Usage examples:
-    1. Find all Python files:
-       pattern: "*.py"
-    2. Find all text files starting with "test_":
-       pattern: "test_*.txt"
-    3. Find all Markdown files in any subdirectory:
-       pattern: "**/*.md"
-    4. Find CSV files with names like "data001.csv", "data002.csv", etc.:
-       pattern: "data???.csv"
-    5. Find all "main.js" files in the "src" directory and its subdirectories:
-       pattern: "src/**/main.js"
+    1. All Python files: "*.py"
+    2. Text files starting with "test_": "test_*.txt"
+    3. Markdown files in any subdirectory: "**/*.md"
+    4. CSV files like "data001.csv", "data002.csv": "data???.csv"
+    5. "main.js" in "src" and subdirs: "src/**/main.js"
 
     Note: The search automatically excludes the '.git' directory.
 
     Returns:
-    - A list of file paths (as strings) relative to the working directory that match the search pattern.
-
-    Raises:
-    - ValueError: If the pattern is empty or invalid.
-    - PermissionError: If there's no permission to access certain directories.
-    - OSError: If there's an issue with the file system operations.
+    - A list of file paths relative to the working directory that match the search pattern.
     """
 
     def execute(self, request: FindFileRequest, metadata: t.Dict) -> FindFileResponse:

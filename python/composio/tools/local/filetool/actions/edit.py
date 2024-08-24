@@ -65,28 +65,17 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     If you'd like to add the line '        print(x)' you must fully write
     that out, with all those spaces before the code!
 
-    If the system detects a syntax error, the edit will not be executed.
-    Simply try to edit the file again, but make sure to read the error message
-    and modify the edit command you issue accordingly. Issuing the same command
-    a second time will just lead to the same error message again.
+    If a syntax error is detected, the edit won't be executed. Review the error
+    message and modify your edit command accordingly.
 
-    If start line and end line are the same,
-    the new text will be added at the start line &
-    text at end line will be still in the new edited file.
+    When start and end lines are the same, the new text is inserted at that line,
+    preserving the original line's content.
 
-    Examples A - Start line == End line
-    Start line: 1
-    End line: 1
-    Text: "print(x)"
-    Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
+    Ex A: Start=End=1, Text: "print(x)"
+    Result: Adds "print(x)" as first line, rest unchanged.
 
-    Examples B - Start line != End line
-    Start line: 1
-    End line: 3
-    Text: "print(x)"
-    Result: print(x) will be replaced in the file as first line.
-    First and Second line will be removed as end line = 3
-    Rest of the file will be unchanged.
+    Ex B: Start=1, End=3, Text: "print(x)"
+    Result: Replaces lines 1-3 with "print(x)", rest unchanged.
 
     This action edits a specific part of the file, if you want to rewrite the
     complete file, use `write` tool instead."""
