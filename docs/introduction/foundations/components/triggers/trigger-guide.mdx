@@ -54,9 +54,20 @@ Coming soon!
 </CodeGroup>
 </Tab>
 <Tab title="Using API">
+When you Initiate a Connection, you receive the connectionAccountID
 <CodeGroup>
-```API Enable Trigger using API
-Coming soon!
+```API curl
+curl --request POST \
+  --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/GITHUB_PULL_REQUEST_EVENT \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: <x-api-key>' \
+  --data '{
+  "triggerConfig": {
+    "owner":"composiohq",
+    "repo":"composio"
+  }
+}'
+
 ```
 </CodeGroup>
 </Tab>
