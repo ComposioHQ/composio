@@ -69,9 +69,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```javascript Authenticate Jessica's GitHub Account
                     import { Composio } from "composio-core";
 
-                    const client = new Composio({
-                    apiKey: process.env.COMPOSIO_API_KEY
-                });
+                    const client = new Composio(
+                    process.env.COMPOSIO_API_KEY
+                    );
 
                     const entity = await client.getEntity("Jessica");
                     const connection = await entity.initiateConnection('github');
@@ -80,7 +80,6 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```
                 </CodeGroup>
             </Tab>
-
         </Tabs>
 
         <Warning>
@@ -143,10 +142,11 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     response = openai_client.chat.completions.create(
                     model="gpt-4-turbo-preview",
                     tools=tools,
-                    messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": task},
-                    ],
+                    messages=
+                        [
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": task},
+                        ],
                     )
                     ```
                 </CodeGroup>
@@ -169,15 +169,14 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```
                 </CodeGroup>
             </Tab>
-
             <Tab title="API">
             You can get a list of Actions for a particular App like this. In this case we obtain all the Github Actions
             <CodeGroup>
-            ```curl curl
-            curl --request GET \
-            --url 'https://backend.composio.dev/api/v2/actions?appNames=GITHUB' \
-            --header 'X-API-Key: ADD YOUR API KEY HERE'
-            ```
+              ```curl curl
+              curl --request GET \
+              --url 'https://backend.composio.dev/api/v2/actions?appNames=GITHUB' \
+              --header 'X-API-Key: ADD YOUR API KEY HERE'
+              ```
             </CodeGroup>
             </Tab>
         </Tabs>
@@ -207,20 +206,21 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             <Tab title="API">
             <CodeGroup>
             ```curl curl
-            curl --request POST \
-            --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
-            --header 'Content-Type: application/json' \
-            --header 'X-API-Key: ADD YOUR API KEY HERE' \
-            --data '{
-            "entityId": "Jessica",
-            "input": {
-                "repo": "composio",
-                "owner": "composiohq"
-            }
-            }'
-            ```
+              curl --request POST \
+              --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
+              --header 'Content-Type: application/json' \
+              --header 'X-API-Key: ADD YOUR API KEY HERE' \
+              --data '{
+              "entityId": "Jessica",
+              "input": {
+                  "repo": "composio",
+                  "owner": "composiohq"
+              }
+              }'
+             ```
             </CodeGroup>
             </Tab>
+
         </Tabs>
     </Step>
 
@@ -240,13 +240,13 @@ Congratulations! You've just:
 <Frame caption="Explore Advanced Composio Features">
     <Card title="Level Up Your Composio Skills" icon="rocket" iconType="duotone">
         <CardGroup cols={3}>
-            <Card title="Tool Triggers" icon="bolt" href="/triggers/trigger-guide">
+            <Card title="Tool Triggers" icon="bolt" href="/introduction/foundations/components/triggers/trigger-guide">
                 Master advanced tool execution
             </Card>
             <Card title="AI Frameworks" icon="brain" href="/framework/langchain">
                 Integrate cutting-edge AI models
             </Card>
-            <Card title="Custom Actions" icon="wand-magic-sparkles" href="/actions/action-guide">
+            <Card title="Custom Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide">
                 Create powerful custom workflows
             </Card>
         </CardGroup>

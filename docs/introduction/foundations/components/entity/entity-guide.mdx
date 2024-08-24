@@ -91,11 +91,11 @@ except NoItemsFound as e:
 ```javascript Get the entity and auth scheme for an app
 import { Composio } from "composio-core";
 
-const client = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
-});
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
 
-const entity = await client.getEntity("default");
+const entity = await client.getEntity("Jessica");
 
 // Get the integration id from the dashboard
 const integration = await client.integrations.get({
@@ -113,7 +113,7 @@ Complete Authentication process by passing the auth config to the initiate conne
 
 <CodeGroup>
 ```javascript javascript
-const entity = await client.getEntity("default");
+const entity = await client.getEntity("Jessica");
 
 const params = {
     "api_key": "YOUR_API_KEY"
@@ -236,7 +236,7 @@ from openai import OpenAI
 openai_client = OpenAI()
 
 # can be configured to use the entity id of the user
-tool_set = ComposioToolSet(entity_id="melissa") 
+tool_set = ComposioToolSet(entity_id="Jessica") 
 
 actions = tool_set.get_tools(apps=[App.GITHUB])
 ```
@@ -244,52 +244,15 @@ actions = tool_set.get_tools(apps=[App.GITHUB])
 </Tab>
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Execute Agent
+```javascript Fetch tools
 import { OpenAIToolSet } from "composio-core";
-import { OpenAI } from "openai";
 
-const toolset = new OpenAIToolSet({ entityId: "melissa"});
-
-task = "Star a repo composiohq/composio on GitHub"
-
-const llm = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-const composioToolset = new OpenAIToolSet();
-
-const tools = await composioToolset.getTools({
-    apps: ["github"],
-});
-const assistantThread = await llm.beta.threads.create({
-    messages: [
-        {
-            role: "assistant",
-            content: "You are an assistant tasked with starring a repository on GitHub."
-        }
-    ]
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const assistant = await llm.beta.assistants.create({
-    name: "SWE agent",
-    instructions: `Your goal is to star the repository: ComposioHq/composio`,
-    model: "gpt-4o",
-    tools: tools
-});
-
-  await llm.beta.threads.messages.create(
-    assistantThread.id,
-    {
-      role: "user",
-      content: issue
-    }
-  );
-  const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
-    assistant_id: assistant.id,
-    instructions: `Repo is: ${repo} and your goal is to ${issue}`,
-    tool_choice: "required"
-  });
- 
-  await composioToolset.waitAndHandleAssistantToolCalls(llm as any, stream, assistantThread, "default");
+const entity = toolset.client.getEntity('Jessica');
+const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
 
@@ -357,15 +320,59 @@ print(response_after_tool_calls)
 </Tab>
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Fetch tools
+```javascript Execute Agent
 import { OpenAIToolSet } from "composio-core";
+import { OpenAI } from "openai";
+import { config } from "process";
 
-const toolset = new OpenAIToolSet({
+const task = "Star a repo composiohq/composio on GitHub";
+const repo = "composio";
+const owner = "composiohq";
+
+const llm = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+const composioToolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "Jessica",
 });
 
-const entity = toolset.client.getEntity('default');
-const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
+const tools = await composioToolset.getTools({
+    apps: ["github"],
+});
+const assistantThread = await llm.beta.threads.create({
+    messages: [
+        {
+            role: "assistant",
+            content:
+                "You are an assistant tasked with starring a repository on GitHub.",
+        },
+    ],
+});
+
+const assistant = await llm.beta.assistants.create({
+    name: "SWE agent",
+    instructions: `Your goal is to star the repository: ComposioHq/composio`,
+    model: "gpt-4o",
+    tools: tools,
+});
+
+await llm.beta.threads.messages.create(assistantThread.id, {
+    role: "user",
+    content: task,
+});
+const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
+    assistant_id: assistant.id,
+    instructions: `Repo is: ${repo} and your goal is to ${task}`,
+    tool_choice: "required",
+});
+
+await composioToolset.waitAndHandleAssistantToolCalls(
+    llm,
+    stream,
+    assistantThread,
+    "default",
+);
 ```
 </CodeGroup>
 </Tab>

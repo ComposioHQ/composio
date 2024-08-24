@@ -216,7 +216,7 @@ tool_set = ComposioToolSet(api_key="COMPOSIO_API_KEY")
 tool_set.execute_action(
     action=Action.SLACK_CHAT_POST_MESSAGE,
     params={"text": "Hello, world!", "channel": "D04N8SVQKKU"},
-    entity_id="melissa",
+    entity_id="Jessica",
 )
 ```
 ```javascript javascript
@@ -225,7 +225,7 @@ import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
-    entityId: "user_identifier"
+    entityId: "Jessica"
 });
 
 await toolset.executeAction(
