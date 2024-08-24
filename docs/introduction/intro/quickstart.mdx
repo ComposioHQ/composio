@@ -69,9 +69,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```javascript Authenticate Jessica's GitHub Account
                     import { Composio } from "composio-core";
 
-                    const client = new Composio({
-                    apiKey: process.env.COMPOSIO_API_KEY
-                });
+                    const client = new Composio(
+                    process.env.COMPOSIO_API_KEY
+                    );
 
                     const entity = await client.getEntity("Jessica");
                     const connection = await entity.initiateConnection('github');
@@ -142,10 +142,11 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     response = openai_client.chat.completions.create(
                     model="gpt-4-turbo-preview",
                     tools=tools,
-                    messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": task},
-                    ],
+                    messages=
+                        [
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": task},
+                        ],
                     )
                     ```
                 </CodeGroup>
@@ -210,13 +211,13 @@ Congratulations! You've just:
 <Frame caption="Explore Advanced Composio Features">
     <Card title="Level Up Your Composio Skills" icon="rocket" iconType="duotone">
         <CardGroup cols={3}>
-            <Card title="Tool Triggers" icon="bolt" href="/triggers/trigger-guide">
+            <Card title="Tool Triggers" icon="bolt" href="/introduction/foundations/components/triggers/trigger-guide">
                 Master advanced tool execution
             </Card>
             <Card title="AI Frameworks" icon="brain" href="/framework/langchain">
                 Integrate cutting-edge AI models
             </Card>
-            <Card title="Custom Actions" icon="wand-magic-sparkles" href="/actions/action-guide">
+            <Card title="Custom Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide">
                 Create powerful custom workflows
             </Card>
         </CardGroup>
