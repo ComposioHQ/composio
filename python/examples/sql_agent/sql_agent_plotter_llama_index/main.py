@@ -10,10 +10,9 @@ from composio.tools.local import filetool, sqltool
 dotenv.load_dotenv()
 toolset = ComposioToolSet()
 sql_tool = toolset.get_tools(apps=[App.SQLTOOL])
-file_tool = toolset.get_tools(apps=[App.FILETOOL])
 code_interpretor_tool = toolset.get_tools(apps=[App.CODEINTERPRETER])
+tools = toolset.get_tools(apps=[App.SQLTOOL, App.CODEINTERPRETER])
 
-tools = toolset.get_tools(apps=[App.SQLTOOL, App.FILETOOL, App.CODEINTERPRETER])
 llm = OpenAI(model="gpt-4o")
 
 prefix_messages = [
@@ -34,7 +33,7 @@ agent = FunctionCallingAgentWorker(
     verbose=True,
 ).as_agent()
 
-human_description = "The database to use is companydb"
+human_description = "The database to use is company.db"
 human_input = "Query the table MOCK_DATA for all rows and plot a graph between first names and salary by using code interpretor"
 response = agent.chat(
     "Database description =" + human_description + "Task to perform:" + human_input
