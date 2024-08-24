@@ -20,25 +20,49 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <CodeGroup>
     ```bash Run Command
     pip install composio_crewai
-
-    #Connect your Github so agents can use it.
-    composio add github #Also try - composio add notion
-
-    #Check all different apps which you can connect with
-    composio apps
-
     ```
 
 </CodeGroup>
 
+
 ### Goal: Use Crew Agent to Interact with Github using Composio
 
 <Steps>
+<Step title="Connect Github account">
+- Connect a user Jessica's Github account to allow our agents to utilize GitHub functionalities.
+<Tabs>
+<Tab title="CLI">
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python">
+<CodeGroup>
+```python Authenticate Jessica's GitHub Account 
+from composio_crewai import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+
+
 <Step title="Import Base Packages">
 
 <CodeGroup>
     ```python Default Imports
-
     from crewai import Agent, Task, Crew
     from langchain_openai import ChatOpenAI
 
@@ -59,7 +83,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
 
     # Get All the tools
 
-    composio_toolset = ComposioToolSet()
+    composio_toolset = ComposioToolSet(entity_id="Jessica")
     tools = composio_toolset.get_tools(apps=[App.GITHUB])
     ```
 

@@ -169,6 +169,16 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```
                 </CodeGroup>
             </Tab>
+            <Tab title="API">
+            You can get a list of Actions for a particular App like this. In this case we obtain all the Github Actions
+            <CodeGroup>
+              ```curl curl
+              curl --request GET \
+              --url 'https://backend.composio.dev/api/v2/actions?appNames=GITHUB' \
+              --header 'X-API-Key: ADD YOUR API KEY HERE'
+              ```
+            </CodeGroup>
+            </Tab>
         </Tabs>
     </Step>
 
@@ -192,6 +202,25 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```
                 </CodeGroup>
             </Tab>
+
+            <Tab title="API">
+            <CodeGroup>
+            ```curl curl
+              curl --request POST \
+              --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
+              --header 'Content-Type: application/json' \
+              --header 'X-API-Key: ADD YOUR API KEY HERE' \
+              --data '{
+              "entityId": "Jessica",
+              "input": {
+                  "repo": "composio",
+                  "owner": "composiohq"
+              }
+              }'
+             ```
+            </CodeGroup>
+            </Tab>
+
         </Tabs>
     </Step>
 
