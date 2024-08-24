@@ -86,7 +86,7 @@ except NoItemsFound as e:
 </CodeGroup>
 
 </Tab>
-<Tab title="Javascript All apps">
+<Tab title="JS All apps">
 <CodeGroup>
 ```javascript Get the entity and auth scheme for an app
 import { Composio } from "composio-core";
@@ -163,6 +163,22 @@ For deploying in a production environment, utilize the SDK or API methods.
 </div>
 
 </Tab>
+
+<Tab title="Via API">
+## Initiate Connections API
+<CodeGroup>
+```curl cURL 
+curl --request POST \
+  --url https://backend.composio.dev/api/v1/connectedAccounts \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
+  --data '{
+  "integrationId": "ENTER THE INTEGRATION ID HERE",
+  "userUuid": "ENTER ENTITY ID HERE"
+}'
+```
+</CodeGroup>
+</Tab>
 </Tabs>
 
 ### Get All Connected accounts 
@@ -185,6 +201,24 @@ coming soon
 ```
 </CodeGroup>
 
+</Tab>
+
+<Tab title="API">
+Returns a list of Connections for an integration
+<CodeGroup>
+```curl cURL 
+curl --request GET \
+  --url https://backend.composio.dev/api/v1/connectedAccounts \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+
+Returns Connections for a Connected Account ID
+```curl cURL 
+curl --request GET \
+  --url https://backend.composio.dev/api/v1/connectedAccounts/{connectedAccountId} \
+  --header 'X-API-Key: <x-api-key>'
+```
 </Tab>
 </Tabs>
 
@@ -222,6 +256,26 @@ const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 ```
 </CodeGroup>
 
+</Tab>
+
+<Tab title="Via API">
+Retrieve a list of all Actions based on Query Parameters.
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v2/actions \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+
+Get Action Details for a Specific Action
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v1/actions/GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
 </Tab>
 </Tabs>
 
@@ -319,6 +373,24 @@ await composioToolset.waitAndHandleAssistantToolCalls(
     assistantThread,
     "default",
 );
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="Via API">
+<CodeGroup>
+```curl curl
+curl --request POST \
+  --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
+  --data '{
+  "entityId": "Jessica",
+  "input": {
+    "repo": "composio",
+    "owner": "composiohq"
+  }
+}'
 ```
 </CodeGroup>
 </Tab>
