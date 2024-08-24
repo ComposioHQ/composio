@@ -19,29 +19,54 @@ These steps prepare your environment to enable interactions between OpenAI and G
 <CodeGroup>
   ```bash python 
   pip install composio-openai
-
-  # Connect your GitHub so agents can interact with it
-
-  composio add github
-
-  # Check all supported apps
-
-  composio apps
   ```
   ```javascript javascript
   npm install openai
   npm install composio-core
-  // Connect your GitHub so agents can interact with it
-
-  composio add github
-
-  // Check all supported apps
-
-  composio apps
   ```
 </CodeGroup>
 
 <Steps>
+
+<Step title="Connect GitHub account">
+- Connect a user Jessica’s Github account to allow your agents to utilize GitHub functionalities.
+
+<CodeGroup>
+```python Python-Authenticate Jessica’s Github Account
+from composio_openai import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+
+```javascript Javascript-Authenticate Jessica’s Github Account
+import { OpenAIToolSet } from "composio-core";
+
+const composio_toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "Jessica"
+});
+
+const entity = await composio_toolset.client.getEntity("Jessica");
+const params = {
+    "api_key": "YOUR_API_KEY"
+}
+const connection = await entity.initiateConnection(
+    'github',
+    null,
+    params
+);
+```
+</CodeGroup>
+
+</Step>
 
 <Step title="Import Base Packages & Configure OpenAI Client">
 <CodeGroup>
