@@ -107,7 +107,7 @@ class SessionFactory(WithLogger, t.Generic[SessionableType]):
 
         if id not in self._session:
             raise ComposioSDKError(
-                message=f"No shell found with ID: {id}",
+                message=f"No session of type {self._factory.__name__} found with ID: {id}",
             )
         shell = self._session[id]
         self.recent = shell
