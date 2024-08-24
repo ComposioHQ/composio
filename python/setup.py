@@ -73,7 +73,7 @@ all_requirements = core_requires + tools_require
 
 setup(
     name="composio_core",
-    version="0.5.3",
+    version="0.5.4",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
