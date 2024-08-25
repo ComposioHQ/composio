@@ -63,6 +63,6 @@ def test_sessionable() -> None:
 
     with pytest.raises(
         ComposioSDKError,
-        match="No SomeFactory session found with ID: id",
+        match="No session of type SomeSessionable found with ID: id",
     ):
         assert factory.get(id="id")
