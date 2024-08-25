@@ -189,6 +189,15 @@ composio actions --app 'github' --tag 'code'
 </Tabs>
 
 </Accordion>
+<Accordion title="List Actions Via API">
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v2/actions \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+</Accordion>
 </AccordionGroup>
 </Step>
 
@@ -207,7 +216,7 @@ tool_set = ComposioToolSet(api_key="COMPOSIO_API_KEY")
 tool_set.execute_action(
     action=Action.SLACK_CHAT_POST_MESSAGE,
     params={"text": "Hello, world!", "channel": "D04N8SVQKKU"},
-    entity_id="melissa",
+    entity_id="Jessica",
 )
 ```
 ```javascript javascript
@@ -216,7 +225,7 @@ import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
-    entityId: "user_identifier"
+    entityId: "Jessica"
 });
 
 await toolset.executeAction(
@@ -287,6 +296,24 @@ await toolset.executeAction(
       ```
     </CodeGroup>
     This code demonstrates how to use natural language to execute an action. By defining a task and using the `AgentExecutor`, you can perform complex actions with simple language commands.
+  </Tab>
+
+  <Tab title="Execute Action Via API">
+  <CodeGroup>
+  ```curl cURL
+curl --request POST \
+  --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: ADD YOUR API KEY HERE' \
+  --data '{
+  "entityId": "Jessica",
+  "input": {
+    "repo": "composio",
+    "owner": "composiohq"
+  }
+}'
+  ```
+  </CodeGroup>
   </Tab>
 </Tabs>
 </Step>
