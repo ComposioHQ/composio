@@ -1,13 +1,5 @@
 from composio.tools.env.host.shell import HostShell
 
-def passwd_change_protocol_prompt(instance):
-    instance.protocol.prompt = "hostname #"
-    instance.protocol.password_input = False
-
-
-def passwd_write_password_to_transport(instance):
-    instance.writeln("MockSSH: password is %s" % instance.valid_password)
-
 
 def test_host_shell() -> None:
     shell = HostShell()
