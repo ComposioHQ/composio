@@ -27,14 +27,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build
+        env:
+          COMPOSIO_BASE_URL: https://backend.composio.dev/api
+          COMPOSIO_API_KEY: ${{secrets.COMPOSIO_API_KEY_RELEASE}}
         run: |
           sudo apt-get update --fix-missing
           sudo apt-get autoremove
           sudo apt-get autoclean
+          
+          # Setup release
           python -m pip install --upgrade pip
-          pip install twine build
+          python -m pip install .
+          python -m composio.cli apps update
 
           # Build dist
+          pip install twine build
           python -m build
       - name: Publish Core to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

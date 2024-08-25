@@ -13,6 +13,7 @@ import pydantic
 from pydantic import BaseModel, Field
 
 from composio.client.enums import Action as ActionEnum
+from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
 
 
@@ -55,6 +56,10 @@ def generate_app_id(name: str) -> str:
             hash_string[20:],
         )
     )
+
+
+class InvalidClassDefinition(ComposioSDKError):
+    """Raise when a class is not defined properly."""
 
 
 class ExecuteResponse(BaseModel):
@@ -117,14 +122,6 @@ class _Request(t.Generic[ModelType]):
                     "description"
                 ] += f" Note: choose value only from following options - {prop['enum']}"
 
-            if (
-                "allOf" in prop
-                and len(prop["allOf"]) == 1
-                and prop["allOf"][0]["title"] == "FileType"
-            ):
-                (schema,) = prop.pop("allOf")
-                prop.update(schema)
-
         request["properties"] = properties
         return request
 
@@ -186,7 +183,7 @@ class ActionBuilder:
             if request == ActionRequest or response == ActionResponse:
                 raise ValueError(f"Invalid type generics, ({request}, {response})")
         except ValueError as e:
-            raise ValueError(
+            raise InvalidClassDefinition(
                 "Invalid action class definition, please define your class "
                 "using request and response type generics; "
                 f"class {name}(Action[RequestModel, ResponseModel])"
@@ -198,7 +195,7 @@ class ActionBuilder:
     @staticmethod
     def validate(name: str, obj: t.Type["Action"]) -> None:
         if getattr(getattr(obj, "execute"), "__isabstractmethod__", False):
-            raise RuntimeError(f"Please implement {name}.execute")
+            raise InvalidClassDefinition(f"Please implement {name}.execute")
 
     @staticmethod
     def set_metadata(obj: t.Type["Action"]) -> None:
@@ -212,7 +209,11 @@ class ActionBuilder:
         setattr(
             obj,
             "display_name",
-            getattr(obj, "display_name", inflection.humanize(obj.__name__)),
+            getattr(
+                obj,
+                "display_name",
+                inflection.humanize(inflection.underscore(obj.__name__)),
+            ),
         )
         setattr(
             obj,
@@ -320,22 +321,29 @@ class ToolBuilder:
     def validate(obj: t.Type["Tool"], name: str, methods: t.Tuple[str, ...]) -> None:
         for method in methods:
             if getattr(getattr(obj, method), "__isabstractmethod__", False):
-                raise RuntimeError(f"Please implement {name}.{method}")
+                raise InvalidClassDefinition(f"Please implement {name}.{method}")
 
             if not inspect.ismethod(getattr(obj, method)):
-                raise RuntimeError(f"Please implement {name}.{method} as class method")
+                raise InvalidClassDefinition(
+                    f"Please implement {name}.{method} as class method"
+                )
 
     @staticmethod
     def set_metadata(obj: t.Type["Tool"]) -> None:
-        setattr(obj, "description", (obj.__doc__ or "").lstrip().rstrip())
         setattr(obj, "file", Path(inspect.getfile(obj)))
+        setattr(obj, "gid", getattr(obj, "gid", "local"))
         setattr(obj, "name", getattr(obj, "name", inflection.underscore(obj.__name__)))
         setattr(obj, "enum", getattr(obj, "enum", obj.name).upper())
         setattr(
             obj,
             "display_name",
-            getattr(obj, "display_name", inflection.humanize(obj.__name__)),
+            getattr(
+                obj,
+                "display_name",
+                inflection.humanize(inflection.underscore(obj.__name__)),
+            ),
         )
+        setattr(obj, "description", (obj.__doc__ or obj.display_name).lstrip().rstrip())
         setattr(obj, "_actions", getattr(obj, "_actions", {}))
         setattr(obj, "_triggers", getattr(obj, "_triggers", {}))
 

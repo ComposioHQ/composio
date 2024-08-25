@@ -8,9 +8,9 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.exceptions import ComposioSDKError
 
 
 class ConnectionsExamples(HelpfulCmdBase, DYMGroup):
@@ -32,10 +32,7 @@ class ConnectionsExamples(HelpfulCmdBase, DYMGroup):
 )
 @click.help_option("--help", "-h", "-help")
 @pass_context
-def _connections(
-    context: Context,
-    active: bool = False,
-) -> None:
+def _connections(context: Context, active: bool = False) -> None:
     """List composio connections for your account"""
     if context.click_ctx.invoked_subcommand:
         return
@@ -55,15 +52,13 @@ class GetExamples(HelpfulCmdBase, click.Command):
 @_connections.command(name="get", cls=GetExamples)
 @click.argument("id", type=str)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _get(context: Context, id: str) -> None:
     """Get connection information"""
-    try:
-        connection = context.client.get_entity().get_connection(
-            connected_account_id=id,
-        )
-        context.console.print(f"[green]App   :[/green] {connection.appUniqueId}")
-        context.console.print(f"[green]Id    :[/green] {connection.id}")
-        context.console.print(f"[green]Status:[/green] {connection.status}")
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    connection = context.client.get_entity().get_connection(
+        connected_account_id=id,
+    )
+    context.console.print(f"[green]App   :[/green] {connection.appUniqueId}")
+    context.console.print(f"[green]Id    :[/green] {connection.id}")
+    context.console.print(f"[green]Status:[/green] {connection.status}")

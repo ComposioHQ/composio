@@ -26,6 +26,7 @@ from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
 from composio.tools.env.base import ENV_ACCESS_TOKEN
+from composio.tools.local import load_local_tools
 from composio.utils.logging import get as get_logger
 
 
@@ -94,6 +95,8 @@ class ExecuteActionRequest(BaseModel):
 
 def create_app() -> FastAPI:
     """Create Fast API app."""
+    load_local_tools()
+
     access_token = os.environ.get(ENV_ACCESS_TOKEN)
     tooldir = tempfile.TemporaryDirectory()
     app = FastAPI(on_shutdown=[tooldir.cleanup])

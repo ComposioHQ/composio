@@ -76,7 +76,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v2
         with:
@@ -104,9 +104,13 @@ jobs:
           sudo apt-get autoclean
           pip install --user --upgrade setuptools
           pip install tox==4.6.3
+      - name: Build docker images
+        run: |
+          cd dockerfiles
+          make ci
       - name: Unittests
         run: |
-          COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} tox -e unittests
+          COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }} E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }} tox -e unittests
       - if: matrix.python-version == '3.10'
         name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1

@@ -168,23 +168,25 @@ class LocalToolMixin(Tool):
                 metadata=metadata,
             )
             return {
-                **response.model_dump(),
-                "successfull": True,
+                "data": response.model_dump(),
                 "error": None,
+                "successfull": True,
             }
         except ExecutionFailed as e:
             self.logger.error(f"Error executing `{action}`: {e}")
             return {
-                "successfull": False,
+                "data": None,
                 "error": e.message,
+                "successfull": False,
                 **e.extra,
             }
         except Exception as e:
             self.logger.error(f"Error executing `{action}`: {e}")
             self.logger.debug(traceback.format_exc())
             return {
-                "successfull": False,
+                "data": None,
                 "error": str(e),
+                "successfull": False,
             }
 
 
