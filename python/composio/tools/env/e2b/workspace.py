@@ -85,7 +85,7 @@ class E2BWorkspace(RemoteWorkspace):
                 f"composio serve -h '0.0.0.0' -p {self.port}"
             ),
         )
-        while self._request(endpoint="", method="get").status_code != 200:
+        while self._request(endpoint="", method="get", log=False).status_code != 200:
             time.sleep(1)
         process.wait()
 

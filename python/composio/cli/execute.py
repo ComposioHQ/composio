@@ -4,8 +4,8 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.client import Action
-from composio.exceptions import ComposioSDKError
 
 
 @click.command(name="execute")
@@ -22,6 +22,9 @@ from composio.exceptions import ComposioSDKError
     type=str,
     help="Metadata for executing an action",
 )
+@handle_exceptions(
+    {"cls": json.JSONDecodeError, "message": "Invalid JSON format for parameters"}
+)
 @pass_context
 def _execute(
     context: Context,
@@ -30,17 +33,12 @@ def _execute(
     metadata: t.Optional[str] = None,
 ) -> None:
     """Execute a Composio action"""
-    try:
-        context.console.print(
-            json.dumps(
-                obj=context.toolset.execute_action(
-                    action=Action(action),
-                    params=json.loads(params) if params else {},
-                    metadata=json.loads(metadata) if metadata else {},
-                )
+    context.console.print(
+        json.dumps(
+            obj=context.toolset.execute_action(
+                action=Action(action),
+                params=json.loads(params) if params else {},
+                metadata=json.loads(metadata) if metadata else {},
             )
         )
-    except json.JSONDecodeError as e:
-        raise click.ClickException("Invalid JSON format for parameters") from e
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    )

@@ -13,11 +13,11 @@ from pathlib import Path
 import click
 
 from composio.cli.context import Context, get_context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.exceptions import ComposioSDKError
 from composio.tools.local.handler import LocalClient
 from composio.utils import get_enum_key
 
@@ -41,23 +41,22 @@ class AppsExamples(HelpfulCmdBase, DYMGroup):
     default=False,
     help="Only show apps which are enabled",
 )
+@handle_exceptions()
 @pass_context
 def _apps(context: Context, enabled: bool = False) -> None:
     """List composio tools/apps which you have access to"""
     if context.click_ctx.invoked_subcommand:
         return
 
-    try:
-        apps = context.client.apps.get()
-        if enabled:
-            apps = [app for app in apps if app.enabled]
-            context.console.print("[green]Showing apps which are enabled[/green]")
-        else:
-            context.console.print("[green]Showing all apps[/green]")
-        for app in apps:
-            context.console.print(f"• {app.key}")
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    apps = context.client.apps.get()
+    if enabled:
+        apps = [app for app in apps if app.enabled]
+        context.console.print("[green]Showing apps which are enabled[/green]")
+    else:
+        context.console.print("[green]Showing all apps[/green]")
+
+    for app in apps:
+        context.console.print(f"• {app.key}")
 
 
 class UpdateExamples(HelpfulCmdBase, click.Command):
@@ -74,13 +73,11 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
     help="Include beta apps.",
 )
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _update(context: Context, beta: bool = False) -> None:
     """Updates local Apps database."""
-    try:
-        update(context=context, beta=beta)
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    update(context=context, beta=beta)
 
 
 def update(context: Context, beta: bool = False) -> None:

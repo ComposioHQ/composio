@@ -5,9 +5,11 @@ import typing as t
 from abc import abstractmethod
 
 import inflection
+import typing_extensions as te
 from pydantic import BaseModel, Field
 
 from composio.client.enums.base import ActionData, SentinalObject, add_runtime_action
+from composio.exceptions import ComposioSDKError
 from composio.tools.base.abs import (
     Action,
     ActionRequest,
@@ -20,7 +22,8 @@ from composio.tools.env.host.shell import Shell
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
 
 
-ActionCallable = t.Callable
+class InvalidRuntimeAction(ComposioSDKError):
+    """Raise when invalid action definition is found"""
 
 
 class FileModel(BaseModel):
@@ -167,8 +170,8 @@ def _wrap(
         t.Type[WrappedAction],
         type(inflection.camelize(f.__name__), (WrappedAction,), {}),
     )
-    # TODO(Viraj): Add error handling if docstring is not provided
     cls.__doc__ = f.__doc__
+    cls.description = f.__doc__  # type: ignore
 
     existing_actions = []
     toolname = toolname.upper()
@@ -182,10 +185,10 @@ def _wrap(
 
 def _is_simple_action(argspec: inspect.FullArgSpec) -> bool:
     """Check if the action is defined with `request_data` and `metadata`"""
-    if "request_data" not in argspec.args and "metadata" not in argspec.args:
+    if "request" not in argspec.args and "metadata" not in argspec.args:
         return False
 
-    if not issubclass(argspec.annotations["request_data"], BaseModel):
+    if not issubclass(argspec.annotations["request"], BaseModel):
         raise ValueError("`request_data` needs to be a `pydantic.BaseModel` object")
 
     if not issubclass(argspec.annotations["return"], BaseModel):
@@ -224,10 +227,6 @@ def _parse_docstring(
     docstr: str,
 ) -> t.Tuple[str, t.Dict[str, str], t.Optional[t.Tuple[str, str]],]:
     """Parse docstring for descriptions."""
-    if docstr is None:
-        raise ValueError(
-            "Docstring is None, Please provide a docstring for runtime tools"
-        )
     header, *descriptions = docstr.lstrip().rstrip().split("\n")
     params = {}
     returns = None
@@ -257,8 +256,14 @@ def _build_executable_from_args(
             reversed(argspec.defaults or []),
         )
     )
+    docstr = getattr(f, "__doc__")
+    if docstr is None:
+        raise InvalidRuntimeAction(
+            message=f"Runtime action `{f.__name__}` is missing docstring"
+        )
+
     header, paramdesc, returns = _parse_docstring(
-        docstr=getattr(f, "__doc__"),
+        docstr=docstr,
     )
     request_schema: t.Dict[str, t.Any] = {
         "__annotations__": {},
@@ -271,21 +276,36 @@ def _build_executable_from_args(
         if annot is Shell:
             shell_argument = arg
             continue
-        if getattr(annot, "__name__", "") == "Annotated":
+
+        if isinstance(annot, te._AnnotatedAlias):  # pylint: disable=protected-access
             annottype, description, default = _parse_annotated_type(
                 argument=arg,
                 annotation=annot,
             )
+            default = defaults.get(arg, default)
         else:
-            annottype, description = _parse_raw_type(argument=arg, annotation=annot)
-            description = paramdesc.get(arg, description)
-            default = defaults.get(arg, ...)
-            if arg == "return" and returns is not None:
+            annottype, _ = _parse_raw_type(argument=arg, annotation=annot)
+            if arg != "return" and arg not in paramdesc:
+                raise InvalidRuntimeAction(
+                    f"Please provide description for `{arg}` on runtime action `{f.__name__}`"
+                )
+
+            if arg == "return":
+                if returns is None:
+                    raise InvalidRuntimeAction(
+                        f"Please provide description for `{arg}` on runtime action `{f.__name__}`"
+                    )
                 _, description = returns
+            else:
+                description = paramdesc[arg]
+
+            default = defaults.get(arg, ...)
 
         if arg == "return":
             if returns is not None:
                 arg, _ = returns
+            else:
+                arg = "result"
             response_schema[arg] = Field(default=default, description=description)
             response_schema["__annotations__"][arg] = annottype
             continue
@@ -335,7 +355,7 @@ def _parse_schemas(
     if _is_simple_action(argspec=argspec):
         return (
             f,
-            argspec.annotations["request_data"],
+            argspec.annotations["request"],
             argspec.annotations["return"],
             runs_on_shell,
         )
@@ -345,15 +365,15 @@ def _parse_schemas(
 def action(
     toolname: str,
     runs_on_shell: bool = False,
-    tags: t.Optional[t.List[str]] = None,
     requires: t.Optional[t.List] = None,
-) -> t.Callable[[ActionCallable], t.Type[RuntimeAction]]:
+    tags: t.Optional[t.List[str]] = None,
+) -> t.Callable[[t.Callable], t.Type[RuntimeAction]]:
     """Marks a callback as wanting to receive the current context object as first argument."""
 
-    def wrapper(f: ActionCallable) -> t.Type[RuntimeAction]:
+    def wrapper(f: t.Callable) -> t.Type[RuntimeAction]:
         """Action wrapper."""
         file = inspect.getfile(f)
-        f, RequestSchema, ResponseSchema, _runs_on_shell = _parse_schemas(
+        f, request_schema, response_schema, _runs_on_shell = _parse_schemas(
             f=f,
             runs_on_shell=runs_on_shell,
         )
@@ -362,8 +382,8 @@ def action(
             toolname=toolname,
             tags=tags or [],
             file=file,
-            request_schema=RequestSchema,
-            response_schema=ResponseSchema,
+            request_schema=request_schema,
+            response_schema=response_schema,
             runs_on_shell=_runs_on_shell,
             requires=requires,
         )

@@ -7,9 +7,9 @@ Usage:
 
 import click
 
-from composio.cli.context import Context, login_flow, pass_context
+from composio.cli.context import Context, login, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.exceptions import ComposioSDKError
 
 
 class Examples(HelpfulCmdBase, click.Command):
@@ -29,6 +29,7 @@ class Examples(HelpfulCmdBase, click.Command):
     help="Prevent from opening browser window",
 )
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _login(
     context: Context,
@@ -49,7 +50,4 @@ def _login(
         )
 
     context.console.print("\n> [green]Authenticating...[/green]")
-    try:
-        login_flow(context=context, no_browser=no_browser)
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    login(context=context, no_browser=no_browser)
