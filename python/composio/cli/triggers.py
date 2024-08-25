@@ -11,10 +11,10 @@ import typing as t
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client.exceptions import NoItemsFound
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.exceptions import ComposioSDKError
 
 
 class TriggersExamples(HelpfulCmdBase, DYMGroup):
@@ -52,6 +52,7 @@ class TriggersExamples(HelpfulCmdBase, DYMGroup):
     help="Filter by app name",
     multiple=True,
 )
+@handle_exceptions()
 @pass_context
 def _triggers(
     context: Context,
@@ -63,21 +64,18 @@ def _triggers(
     if context.click_ctx.invoked_subcommand:
         return
 
-    try:
-        if active or len(trigger_ids):
-            triggers = context.client.active_triggers.get(trigger_ids=list(trigger_ids))
-            if not triggers:
-                raise click.ClickException("No active triggers found!")
-            context.console.print("[green]Showing active triggers[/green]")
-            for trg in triggers:
-                context.console.print(f"• Name: {trg.triggerName}\n  ID: {trg.id}")
-            return
+    if active or len(trigger_ids):
+        triggers = context.client.active_triggers.get(trigger_ids=list(trigger_ids))
+        if not triggers:
+            raise click.ClickException("No active triggers found!")
+        context.console.print("[green]Showing active triggers[/green]")
+        for trg in triggers:
+            context.console.print(f"• Name: {trg.triggerName}\n  ID: {trg.id}")
+        return
 
-        context.console.print("[green]Showing all triggers[/green]")
-        for _trigger in context.client.triggers.get(apps=list(app_names)):
-            context.console.print(f"• {_trigger.name}")
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    context.console.print("[green]Showing all triggers[/green]")
+    for _trigger in context.client.triggers.get(apps=list(app_names)):
+        context.console.print(f"• {_trigger.name}")
 
 
 class GetTriggerExamples(HelpfulCmdBase, click.Command):
@@ -90,33 +88,32 @@ class GetTriggerExamples(HelpfulCmdBase, click.Command):
 @_triggers.command(name="get", cls=GetTriggerExamples)
 @click.argument("id", type=str)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions(
+    {
+        "cls": NoItemsFound,
+        "message": (
+            "No trigger found with the specified ID or it's not active; "
+            "To list all active triggers, use the command: "
+            "\n\tcomposio triggers --active"
+        ),
+    }
+)
 @pass_context
 def _get(context: Context, id: str) -> None:
     """Get a specific trigger information."""
     context.console.print(
         f"\n[green]> Getting more details about trigger: {id}...[/green]\n"
     )
-    try:
-        (trigger,) = context.client.active_triggers.get(trigger_ids=[id])
-        context.console.print(f"[bold]Trigger Name:[/bold] {trigger.triggerName}")
-        context.console.print(f"[bold]Trigger ID:[/bold] {trigger.id}")
-        context.console.print(f"[bold]Connection ID:[/bold] {trigger.connectionId}")
-        context.console.print(
-            f"[bold]Connection Config:[/bold] {json.dumps(trigger.triggerConfig, indent=2)}"
-        )
-        context.console.print(
-            f"[bold]Disable this trigger using[/bold]: [red]composio-cli disable-trigger {id}[/red]"
-        )
-    except NoItemsFound as e:
-        raise click.ClickException(
-            message=(
-                "No trigger found with the specified ID or it's not active; "
-                "To list all active triggers, use the command: "
-                "\n\tcomposio triggers --active"
-            )
-        ) from e
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    (trigger,) = context.client.active_triggers.get(trigger_ids=[id])
+    context.console.print(f"[bold]Trigger Name:[/bold] {trigger.triggerName}")
+    context.console.print(f"[bold]Trigger ID:[/bold] {trigger.id}")
+    context.console.print(f"[bold]Connection ID:[/bold] {trigger.connectionId}")
+    context.console.print(
+        f"[bold]Connection Config:[/bold] {json.dumps(trigger.triggerConfig, indent=2)}"
+    )
+    context.console.print(
+        f"[bold]Disable this trigger using[/bold]: [red]composio-cli disable-trigger {id}[/red]"
+    )
 
 
 class EnableTriggerExamples(HelpfulCmdBase, click.Command):
@@ -129,37 +126,33 @@ class EnableTriggerExamples(HelpfulCmdBase, click.Command):
 @_triggers.command(name="enable", cls=EnableTriggerExamples)
 @click.argument("name", type=str)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _enable_trigger(context: Context, name: str) -> None:
     """Enable a trigger for an app"""
     context.console.print(f"Enabling trigger [green]{name}[/green]")
-    try:
-        triggers = context.client.triggers.get(triggers=[name])
-        if len(triggers) == 0:
-            raise click.ClickException(f"Trigger with name {name} not found")
-        trigger = triggers[0]
-        connected_account = context.client.get_entity().get_connection(
-            app=trigger.appKey
-        )
+    triggers = context.client.triggers.get(triggers=[name])
+    if len(triggers) == 0:
+        raise click.ClickException(f"Trigger with name {name} not found")
+    trigger = triggers[0]
+    connected_account = context.client.get_entity().get_connection(app=trigger.appKey)
 
-        config = {}
-        properties = trigger.config.properties or {}
-        for field in trigger.config.required or []:
-            field_props = properties[field]
-            field_title = field_props.title or field
-            field_description = field_props.description or ""
-            config[field] = click.prompt(text=f"{field_title} ({field_description})")
+    config = {}
+    properties = trigger.config.properties or {}
+    for field in trigger.config.required or []:
+        field_props = properties[field]
+        field_title = field_props.title or field
+        field_description = field_props.description or ""
+        config[field] = click.prompt(text=f"{field_title} ({field_description})")
 
-        response = context.client.triggers.enable(
-            name=name,
-            connected_account_id=connected_account.id,
-            config=config,
-        )
-        context.console.print(
-            f"Enabled trigger with ID: [green]{response['triggerId']}[/green]"
-        )
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    response = context.client.triggers.enable(
+        name=name,
+        connected_account_id=connected_account.id,
+        config=config,
+    )
+    context.console.print(
+        f"Enabled trigger with ID: [green]{response['triggerId']}[/green]"
+    )
 
 
 class DisableTriggerExamples(HelpfulCmdBase, click.Command):
@@ -172,18 +165,16 @@ class DisableTriggerExamples(HelpfulCmdBase, click.Command):
 @_triggers.command(name="disable", cls=DisableTriggerExamples)
 @click.argument("id", type=str)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _disable_trigger(context: Context, id: str) -> None:
     """Disable a trigger for an app"""
     context.console.print(f"Disabling trigger [green]{id}[/green]")
-    try:
-        response = context.client.triggers.disable(id=id)
-        if response["status"] == "success":
-            context.console.print(f"Disabled trigger with ID: [green]{id}[/green]")
-            return
-        raise click.ClickException(f"Could not disable trigger with ID: {id}")
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    response = context.client.triggers.disable(id=id)
+    if response["status"] == "success":
+        context.console.print(f"Disabled trigger with ID: [green]{id}[/green]")
+        return
+    raise click.ClickException(f"Could not disable trigger with ID: {id}")
 
 
 @_triggers.group(name="callbacks")
@@ -201,6 +192,7 @@ class SetCallbackExamples(HelpfulCmdBase, click.Command):
 @_callbacks.command(name="set", cls=SetCallbackExamples)
 @click.argument("url", type=str)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _set_callback(context: Context, url: str) -> None:
     """
@@ -208,11 +200,8 @@ def _set_callback(context: Context, url: str) -> None:
 
     Note: Currently this command will set the provided URL as global callback URL
     """
-    try:
-        response = context.client.triggers.callbacks.set(url=url)
-        context.console.print(response["message"])
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message)
+    response = context.client.triggers.callbacks.set(url=url)
+    context.console.print(response["message"])
 
 
 class GetCallbackExamples(HelpfulCmdBase, click.Command):
@@ -224,13 +213,11 @@ class GetCallbackExamples(HelpfulCmdBase, click.Command):
 
 @_callbacks.command(name="get", cls=GetCallbackExamples)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _get_callback(context: Context) -> None:
     """
     Get callback URL
     """
-    try:
-        response = context.client.triggers.callbacks.get()
-        context.console.print(response)
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message)
+    response = context.client.triggers.callbacks.get()
+    context.console.print(response)

@@ -11,10 +11,10 @@ import click
 import pyperclip
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import App
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.exceptions import ComposioSDKError
 from composio.utils.enums import get_enum_key
 
 
@@ -82,6 +82,7 @@ class ActionsExamples(HelpfulCmdBase, DYMGroup):
     default=False,
     help="Copy actions as a list of `Action` enum instances.",
 )
+@handle_exceptions()
 @pass_context
 def _actions(
     context: Context,
@@ -103,37 +104,35 @@ def _actions(
         raise click.ClickException(
             "To search by a use case you need to specify atleast one app name."
         )
-    try:
-        actions = context.client.actions.get(
-            apps=[App(app) for app in apps],
-            use_case=use_case,
-            allow_all=True,
-            limit=limit,
+
+    context.console.print("[green]Showing all actions[/green]")
+    actions = context.client.actions.get(
+        apps=[App(app) for app in apps],
+        limit=limit,
+        allow_all=True,
+        use_case=use_case,
+    )
+
+    enum_strs = []
+    for action in actions:
+        if len(tags) > 0 and all(tag not in action.tags for tag in tags):
+            continue
+        enum_strs.append(f"Action.{get_enum_key(name=action.name)}")
+        context.console.print(f"• {action.name} ({enum_strs[-1]})")
+
+    if len(tags) > 0 and len(enum_strs) == 0:
+        raise click.ClickException(
+            f"Could not find actions with following tags {set(tags)}"
         )
-        context.console.print("[green]Showing all actions[/green]")
-        enum_strs = []
-        for action in actions:
-            if len(tags) > 0 and all(tag not in action.tags for tag in tags):
-                continue
-            enum_strs.append(f"Action.{get_enum_key(name=action.name)}")
-            context.console.print(f"• {action.name} ({enum_strs[-1]})")
 
-        if len(tags) > 0 and len(enum_strs) == 0:
-            raise click.ClickException(
-                f"Could not find actions with following tags {set(tags)}"
-            )
-
-        if copy_enums or (
-            click.prompt(
-                "Do you copy these actions as enums?",
-                type=click.Choice(
-                    choices=("y", "n"),
-                    case_sensitive=False,
-                ),
-            )
-            == "y"
-        ):
-            pyperclip.copy(text="[" + ", ".join(enum_strs) + "]")
-
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    if copy_enums or (
+        click.prompt(
+            "Do you copy these actions as enums?",
+            type=click.Choice(
+                choices=("y", "n"),
+                case_sensitive=False,
+            ),
+        )
+        == "y"
+    ):
+        pyperclip.copy(text="[" + ", ".join(enum_strs) + "]")

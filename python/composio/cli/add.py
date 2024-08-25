@@ -11,7 +11,7 @@ import webbrowser
 import click
 
 from composio.cli.context import Context, ensure_login, pass_context
-from composio.cli.utils.decorators import pass_entity_id
+from composio.cli.utils.decorators import handle_exceptions, pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
 from composio.client import Composio, Entity
 from composio.client.collections import (
@@ -22,7 +22,6 @@ from composio.client.collections import (
 )
 from composio.client.exceptions import ComposioClientError
 from composio.constants import DEFAULT_ENTITY_ID
-from composio.exceptions import ComposioSDKError
 from composio.utils.url import get_web_url
 
 
@@ -76,6 +75,7 @@ class AddIntegrationExamples(HelpfulCmd):
     help="Override the existing account.",
 )
 @pass_entity_id
+@handle_exceptions()
 @ensure_login
 @pass_context
 def _add(
@@ -89,21 +89,16 @@ def _add(
     force: bool = False,
 ) -> None:
     """Add a new integration."""
-    try:
-        add_integration(
-            name=name.lower().strip(),
-            context=context,
-            entity_id=entity_id,
-            integration_id=integration_id,
-            no_browser=no_browser,
-            auth_mode=auth_mode,
-            scopes=scopes,
-            force=force,
-        )
-    except ComposioSDKError as e:
-        raise click.ClickException(
-            message=e.message,
-        ) from e
+    add_integration(
+        name=name.lower().strip(),
+        context=context,
+        entity_id=entity_id,
+        integration_id=integration_id,
+        no_browser=no_browser,
+        auth_mode=auth_mode,
+        scopes=scopes,
+        force=force,
+    )
 
 
 def _replace_connection() -> bool:
@@ -266,10 +261,7 @@ def _get_auth_config(
     scopes = scopes or ()
     if len(scopes) == 0:
         return None
-
-    return {
-        "scopes": ",".join(scopes),
-    }
+    return {"scopes": ",".join(scopes)}
 
 
 def _handle_oauth(
