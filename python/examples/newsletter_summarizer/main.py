@@ -20,7 +20,7 @@ llm = ChatOpenAI(model="gpt-4-turbo")
 # Define the Email Fetcher Agent
 email_fetcher_agent = Agent(
     role="Email Fetcher Agent",
-    goal="Fetch recent newsletter emails from the inbox. Look for labels 'newsletter' over the last week.",
+    goal="Fetch recent newsletter emails from the inbox. Please look for labels 'newsletter' only for last 7 days. Don't add any other unncessary filters.",
     verbose=True,
     memory=True,
     backstory=f"You are an expert in retrieving and organizing email content, with a keen eye for identifying relevant newsletters. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading.",
@@ -88,24 +88,24 @@ send_summary_task = Task(
         "Ensure the email has a clear, engaging subject line and well-formatted content. "
         "Use the following structure for the email:\n\n"
         f"Subject: Your Weekly News Digest - {datetime.now().strftime('%B %d, %Y')}\n\n"
-        "Weekly News Digest\n"
-        "==================\n\n"
-        "Dear Reader,\n\n"
-        "Here's your curated summary of this week's top news items and insights:\n\n"
+        "<h1>Weekly News Digest</h1>\n\n"
+        "<p>Dear Reader,</p>\n\n"
+        "<p>Here's your curated summary of this week's top news items and insights:</p>\n\n"
         "[Insert summarized content here]\n\n"
-        "Each main section should be separated by a line of dashes, like this:\n"
-        "--------------------\n\n"
+        "Each main section should be separated by a horizontal rule, like this:\n"
+        "<hr>\n\n"
         "Structure the content logically, with clear sections for each summarized newsletter or topic area.\n"
-        "Use appropriate formatting such as bold text (using asterisks) for headlines, "
-        "bullet points (using dashes) for key points, and line breaks for readability.\n\n"
-        "Include relevant links using markdown format: [Link Text](URL)\n\n"
+        "Use appropriate HTML formatting such as <strong> for headlines, "
+        "<ul> and <li> for bullet points, and <br> for line breaks to enhance readability.\n\n"
+        "Include relevant links using HTML anchor tags: <a href='URL'>Link Text</a>\n\n"
         "Include a brief introduction at the beginning to set the context and a conclusion at the end "
         "to summarize the key takeaways and trends observed across the newsletters.\n\n"
-        "Footer:\n"
-        "For more details on these stories, click on the provided links or stay tuned to our next update. "
-        "If you have any questions or feedback, please don't hesitate to reach out.\n\n"
-        "Best regards,\nYour Newsletter Summary Team\n\n"
-        "Important: Do not use double quotes/single quotes in the email content."
+        "<footer>\n"
+        "<p>For more details on these stories, click on the provided links or stay tuned to our next update. "
+        "If you have any questions or feedback, please don't hesitate to reach out.</p>\n\n"
+        "<p>Best regards,<br>Your Newsletter Summary Team</p>\n"
+        "</footer>\n\n"
+        "Important: Ensure all HTML tags are properly closed and nested correctly."
     ),
     expected_output="Confirmation that the well-formatted, detailed summary email with important links has been sent to investtradegame@gmail.com",
     tools=gmail_tools,
