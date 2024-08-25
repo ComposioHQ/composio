@@ -284,21 +284,21 @@ class TestFiletool:
 
         # List files
         list_response = toolset.execute_action(Action.FILETOOL_LIST_FILES, {})
-        assert ("file1.txt", "file") in list_response["files"]
-        assert ("dir1", "dir") in list_response["files"]
+        assert ("file1.txt", "file") in list_response["data"]["files"]
+        assert ("dir1", "dir") in list_response["data"]["files"]
 
         # Find .txt files
         find_response = toolset.execute_action(
             Action.FILETOOL_FIND_FILE, {"pattern": "*.txt"}
         )
-        assert "file1.txt" in find_response["results"]
-        assert os.path.join("dir1", "file3.txt") in find_response["results"]
+        assert "file1.txt" in find_response["data"]["results"]
+        assert os.path.join("dir1", "file3.txt") in find_response["data"]["results"]
 
         # Search for content
         grep_response = toolset.execute_action(
             Action.FILETOOL_SEARCH_WORD, {"word": "content"}
         )
-        assert "file1.txt" in grep_response["results"]
+        assert "file1.txt" in grep_response["data"]["results"]
 
         # Edit file
         edit_response = toolset.execute_action(
@@ -310,13 +310,13 @@ class TestFiletool:
                 "end_line": 1,
             },
         )
-        assert "New content line" in edit_response["updated_text"]
+        assert "New content line" in edit_response["data"]["updated_text"]
 
         # Verify changes
         open_response = toolset.execute_action(
             Action.FILETOOL_OPEN_FILE, {"file_path": "file1.txt"}
         )
-        assert "New content line" in open_response["lines"][1]
+        assert "New content line" in open_response["data"]["lines"][1]
 
         # Change directory
         chdir_response = toolset.execute_action(
@@ -326,7 +326,7 @@ class TestFiletool:
 
         # List files in new directory
         list_response = toolset.execute_action(Action.FILETOOL_LIST_FILES, {})
-        assert ("file3.txt", "file") in list_response["files"]
+        assert ("file3.txt", "file") in list_response["data"]["files"]
 
         # Change back to parent directory
         toolset.execute_action(Action.FILETOOL_CHANGE_WORKING_DIRECTORY, {"path": ".."})
@@ -346,4 +346,4 @@ class TestFiletool:
         open_response = toolset.execute_action(
             Action.FILETOOL_OPEN_FILE, {"file_path": "new_file.txt"}
         )
-        assert "This is a new file" in open_response["lines"][1]
+        assert "This is a new file" in open_response["data"]["lines"][1]
