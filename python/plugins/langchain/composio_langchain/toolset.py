@@ -98,20 +98,12 @@ class ComposioToolSet(
         action = schema["name"]
         description = schema["description"]
         schema_params = schema["parameters"]
-
-        if len(description) > 1024:
-            self.logger.debug(
-                f"Description for {action} is > 1024 characters. Truncating it."
-            )
-            description = description[:1024]
-
         action_func = self._wrap_action(
             action=action,
             description=description,
             schema_params=schema_params,
             entity_id=entity_id,
         )
-
         parameters = json_schema_to_model(
             json_schema=schema_params,
         )

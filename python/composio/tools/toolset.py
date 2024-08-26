@@ -75,8 +75,8 @@ class ComposioToolSet(WithLogger):
     _remote_client: t.Optional[Composio] = None
     _workspace: t.Optional[Workspace] = None
 
-    _runtime: str
-    _description_char_limit: int
+    _runtime: str = "composio"
+    _description_char_limit: int = 1024
 
     def __init_subclass__(cls, runtime: str, description_char_limit: int) -> None:
         cls._runtime = runtime
@@ -252,15 +252,11 @@ class ComposioToolSet(WithLogger):
             self._remote_client = Composio(
                 api_key=self.api_key,
                 base_url=self.base_url,
-                runtime=self.runtime,
+                runtime=self._runtime,
             )
             self._remote_client.local = self._local_client
 
         return self._remote_client
-
-    @property
-    def runtime(self) -> t.Optional[str]:
-        return self._runtime
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -634,6 +630,11 @@ class ComposioToolSet(WithLogger):
                     ] = f"{description.rstrip('.')}. This parameter is required."
                 else:
                     param_details["description"] = "This parameter is required."
+
+        if action_item.description is not None:
+            action_item.description = action_item.description[
+                : self._description_char_limit
+            ]
 
         return action_item
 
