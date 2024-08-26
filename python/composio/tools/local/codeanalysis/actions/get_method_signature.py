@@ -6,7 +6,7 @@ from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysis
 from composio.tools.base.local import LocalAction
 
 
-class GetMethodSignatureInput(BaseModel):
+class GetMethodSignatureRequest(BaseModel):
     repo_path: str = Field(
         ...,
         description="Path to the repository",
@@ -20,14 +20,14 @@ class GetMethodSignatureInput(BaseModel):
     )
 
 
-class GetMethodSignatureOutput(BaseModel):
+class GetMethodSignatureResponse(BaseModel):
     result: str = Field(
         ...,
         description="Retrieved method signature as a string, including return type and parameters",
     )
 
 
-class GetMethodSignature(LocalAction[GetMethodSignatureInput, GetMethodSignatureOutput], MethodAnalysisAction):
+class GetMethodSignature(LocalAction[GetMethodSignatureRequest, GetMethodSignatureResponse], MethodAnalysisAction):
     """
     Retrieves the signature of a specified method.
 
@@ -39,14 +39,14 @@ class GetMethodSignature(LocalAction[GetMethodSignatureInput, GetMethodSignature
     """
 
     _display_name = "Get Method Signature"
-    _request_schema: Type[GetMethodSignatureInput] = GetMethodSignatureInput
-    _response_schema: Type[GetMethodSignatureOutput] = GetMethodSignatureOutput
+    _request_schema: Type[GetMethodSignatureRequest] = GetMethodSignatureRequest
+    _response_schema: Type[GetMethodSignatureResponse] = GetMethodSignatureResponse
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
     def execute(
-        self, request_data: GetMethodSignatureInput
-    ) -> GetMethodSignatureOutput:
+        self, request_data: GetMethodSignatureRequest
+    ) -> GetMethodSignatureResponse:
         try:
             self.load_fqdn_cache(request_data.repo_path)
             method_artefacts = self.get_method_artefacts(
@@ -54,6 +54,6 @@ class GetMethodSignature(LocalAction[GetMethodSignatureInput, GetMethodSignature
                 request_data.method_name,
                 request_data.repo_path,
             )
-            return GetMethodSignatureOutput(result=method_artefacts["signature_ans"])
+            return GetMethodSignatureResponse(result=method_artefacts["signature_ans"])
         except Exception as e:
             raise RuntimeError(f"Failed to execute {self.__class__.__name__}: {e}")

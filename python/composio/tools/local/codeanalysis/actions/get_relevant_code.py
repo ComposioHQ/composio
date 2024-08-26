@@ -6,7 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis import embedder
 
 
-class GetRelevantCodeInput(BaseModel):
+class GetRelevantCodeRequest(BaseModel):
     repo_path: str = Field(
         ...,
         description="Path to the repository",
@@ -17,14 +17,14 @@ class GetRelevantCodeInput(BaseModel):
     )
 
 
-class GetRelevantCodeOutput(BaseModel):
+class GetRelevantCodeResponse(BaseModel):
     result: str = Field(
         ...,
         description="Retrieved method body as a string, including any decorators and comments",
     )
 
 
-class GetRelevantCode(LocalAction):
+class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeResponse]):
     """
     Retrieves the body of a specified method.
 
@@ -36,10 +36,10 @@ class GetRelevantCode(LocalAction):
     """
 
     _display_name = "Get Relevant Code"
-    _request_schema: Type[GetRelevantCodeInput] = GetRelevantCodeInput
-    _response_schema: Type[GetRelevantCodeOutput] = GetRelevantCodeOutput
+    _request_schema: Type[GetRelevantCodeRequest] = GetRelevantCodeRequest
+    _response_schema: Type[GetRelevantCodeResponse] = GetRelevantCodeResponse
 
-    def execute(self, request_data: GetRelevantCodeInput) -> GetRelevantCodeOutput:
+    def execute(self, request_data: GetRelevantCodeRequest) -> GetRelevantCodeResponse:
         try:
             vector_store = embedder.get_vector_store(
                 request_data.repo_path, overwrite=False
@@ -50,6 +50,6 @@ class GetRelevantCode(LocalAction):
             result_string = "Query: " + query + sep
             for i, metadata in enumerate(results["metadata"]):
                 result_string += f"Chunk {i+1}: \n" + str(metadata["chunk"]) + sep
-            return GetRelevantCodeOutput(result=result_string)
+            return GetRelevantCodeResponse(result=result_string)
         except Exception as e:
             raise RuntimeError(f"Failed to execute GetRelevantCode: {e}")

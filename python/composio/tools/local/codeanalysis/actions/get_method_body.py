@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
 from composio.tools.base.local import LocalAction
 
-class GetMethodBodyInput(BaseModel):
+class GetMethodBodyRequest(BaseModel):
     repo_path: str = Field(
         ...,
         description="Path to the repository",
@@ -19,14 +19,14 @@ class GetMethodBodyInput(BaseModel):
     )
 
 
-class GetMethodBodyOutput(BaseModel):
+class GetMethodBodyResponse(BaseModel):
     result: str = Field(
         ...,
         description="Retrieved method body as a string, including any decorators and comments",
     )
 
 
-class GetMethodBody(LocalAction[GetMethodBodyInput, GetMethodBodyOutput], MethodAnalysisAction):
+class GetMethodBody(LocalAction[GetMethodBodyRequest, GetMethodBodyResponse], MethodAnalysisAction):
     """
     Retrieves the body of a specified method.
 
@@ -38,12 +38,12 @@ class GetMethodBody(LocalAction[GetMethodBodyInput, GetMethodBodyOutput], Method
     """
 
     _display_name = "Get Method Body"
-    _request_schema: Type[GetMethodBodyInput] = GetMethodBodyInput
-    _response_schema: Type[GetMethodBodyOutput] = GetMethodBodyOutput
+    _request_schema: Type[GetMethodBodyRequest] = GetMethodBodyRequest
+    _response_schema: Type[GetMethodBodyResponse] = GetMethodBodyResponse
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request_data: GetMethodBodyInput) -> GetMethodBodyOutput:
+    def execute(self, request_data: GetMethodBodyRequest) -> GetMethodBodyResponse:
         try:
             self.load_fqdn_cache(request_data.repo_path)
             method_artefacts = self.get_method_artefacts(
@@ -51,6 +51,6 @@ class GetMethodBody(LocalAction[GetMethodBodyInput, GetMethodBodyOutput], Method
                 request_data.method_name,
                 request_data.repo_path,
             )
-            return GetMethodBodyOutput(result=method_artefacts["body_ans"])
+            return GetMethodBodyResponse(result=method_artefacts["body_ans"])
         except Exception as e:
             raise RuntimeError(f"Failed to execute GetMethodBody: {e}")

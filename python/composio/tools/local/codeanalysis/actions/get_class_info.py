@@ -6,7 +6,7 @@ from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalys
 from composio.tools.base.local import LocalAction
 
 
-class GetClassInfoInput(BaseModel):
+class GetClassInfoRequest(BaseModel):
     repo_dir: str = Field(
         ..., description="Path to the root directory of the repository"
     )
@@ -15,14 +15,14 @@ class GetClassInfoInput(BaseModel):
     )
 
 
-class GetClassInfoOutput(BaseModel):
+class GetClassInfoResponse(BaseModel):
     result: str = Field(
         ...,
         description="Formatted string containing detailed information about the requested class",
     )
 
 
-class GetClassInfo(LocalAction[GetClassInfoInput, GetClassInfoOutput], BaseCodeAnalysisAction):
+class GetClassInfo(LocalAction[GetClassInfoRequest, GetClassInfoResponse], BaseCodeAnalysisAction):
     """
     Retrieves and formats information about a specified class.
 
@@ -31,12 +31,12 @@ class GetClassInfo(LocalAction[GetClassInfoInput, GetClassInfoOutput], BaseCodeA
     """
 
     _display_name = "Get Class Info"
-    _request_schema: Type[GetClassInfoInput] = GetClassInfoInput
-    _response_schema: Type[GetClassInfoOutput] = GetClassInfoOutput
+    _request_schema: Type[GetClassInfoRequest] = GetClassInfoRequest
+    _response_schema: Type[GetClassInfoResponse] = GetClassInfoResponse
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request_data: GetClassInfoInput) -> GetClassInfoOutput:
+    def execute(self, request_data: GetClassInfoRequest) -> GetClassInfoResponse:
         try:
             repo_path = request_data.repo_dir
             self.load_fqdn_cache(repo_path)
@@ -51,10 +51,10 @@ class GetClassInfo(LocalAction[GetClassInfoInput, GetClassInfoOutput], BaseCodeA
             class_results = self.get_item_results(matching_fqdns, repo_path)
 
             if not class_results:
-                return GetClassInfoOutput(result="No matching results found!")
+                return GetClassInfoResponse(result="No matching results found!")
 
             result_str = self.format_class_results(class_results)
-            return GetClassInfoOutput(result=result_str)
+            return GetClassInfoResponse(result=result_str)
         except Exception as e:
             raise RuntimeError(f"Failed to execute GetClassInfo: {e}")
 
