@@ -1,7 +1,6 @@
-import os
-import shutil  # Added import for shutil.rmtree
+# pylint: disable=protected-access,no-member,unsupported-membership-test,unspecified-encoding,not-an-iterable,unsubscriptable-object,unused-argument
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

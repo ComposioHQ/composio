@@ -165,7 +165,7 @@ class HostShell(Shell):
         # Attempt to read multiple times with a short delay
         max_attempts = 3
         output = None
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             output = self._read(cmd=cmd, wait=True)
             if output[STDOUT] or output[STDERR]:
                 break
