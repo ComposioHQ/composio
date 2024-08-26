@@ -3,7 +3,7 @@ from typing import Dict, List, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
-from python.composio.tools.base.local import LocalAction
+from composio.tools.base.local import LocalAction
 
 
 class GetClassInfoInput(BaseModel):

@@ -3,7 +3,7 @@ from typing import Optional, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
-from python.composio.tools.base.local import LocalAction
+from composio.tools.base.local import LocalAction
 
 
 class GetMethodSignatureInput(BaseModel):
