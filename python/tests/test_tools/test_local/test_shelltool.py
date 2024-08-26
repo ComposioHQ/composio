@@ -40,7 +40,7 @@ class TestShelltool():
         exec_action = ExecCommand()
         exec_action._shells = lambda: shell_factory
 
-        response = exec_action.execute(ShellExecRequest(cmd="pwd"), {})
+        response = exec_action.execute(ShellExecRequest(cmd="echo 'Hello, World!'"), {})
         print("response in test_exec_command", response)
 
         assert response.stdout.strip() == "Hello, World!"
