@@ -157,9 +157,12 @@ class HostShell(Shell):
 
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
+        self.logger.debug(f"Executing command: {cmd}")
         self._write(cmd=cmd)
+        output = self._read(cmd=cmd, wait=True)
+        self.logger.debug(f"Output: {output[STDOUT]}, Error: {output[STDERR]}, Exit Code: {self._get_exit_code()}")
         return {
-            **self._read(cmd=cmd, wait=True),
+            **output,
             EXIT_CODE: self._get_exit_code(),
         }
 

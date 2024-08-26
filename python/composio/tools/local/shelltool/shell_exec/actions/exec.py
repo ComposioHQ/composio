@@ -78,13 +78,18 @@ class ExecCommand(LocalAction[ShellExecRequest, ShellExecResponse]):
 
     def execute(self, request: ShellExecRequest, metadata: t.Dict) -> ShellExecResponse:
         """Execute a shell command."""
-        shell = self.shells.recent
+        shell = self.shells.get(id=request.shell_id)
         self.logger.debug(f"Executing {request.cmd} @ {shell}")
         output = shell.exec(cmd=request.cmd)
+        std_out = output[STDOUT]
+        std_err = output[STDERR]
+        exit_code = int(output[EXIT_CODE])
+        self.logger.debug(f"Output: {std_out}, Error: {std_err}, Exit Code: {exit_code}")
         outdir = shell.exec(cmd="pwd")
+        std_out_dir = outdir[STDOUT]
         return ShellExecResponse(
-            stdout=output[STDOUT],
-            stderr=output[STDERR],
-            exit_code=int(output[EXIT_CODE]),
-            current_shell_pwd=f"Currently in {outdir[STDOUT]}",
+            stdout=std_out,
+            stderr=std_err,
+            exit_code=exit_code,
+            current_shell_pwd=f"Currently in {std_out_dir}",
         )
