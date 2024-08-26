@@ -84,7 +84,9 @@ class ExecCommand(LocalAction[ShellExecRequest, ShellExecResponse]):
         std_out = output[STDOUT]
         std_err = output[STDERR]
         exit_code = int(output[EXIT_CODE])
-        self.logger.debug(f"Output: {std_out}, Error: {std_err}, Exit Code: {exit_code}")
+        self.logger.debug(
+            f"Output: {std_out}, Error: {std_err}, Exit Code: {exit_code}"
+        )
         outdir = shell.exec(cmd="pwd")
         std_out_dir = outdir[STDOUT]
         return ShellExecResponse(

@@ -158,10 +158,10 @@ class HostShell(Shell):
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
         self._write(cmd=cmd)
-        
+
         # Add a small delay to allow the command to start executing
         time.sleep(0.1)
-        
+
         # Attempt to read multiple times with a short delay
         max_attempts = 3
         output = None
@@ -172,7 +172,9 @@ class HostShell(Shell):
             time.sleep(0.5)
 
         if output is None:
-            raise TimeoutError(f"Command '{cmd}' did not produce any output within the timeout period.")
+            raise TimeoutError(
+                f"Command '{cmd}' did not produce any output within the timeout period."
+            )
 
         exit_code = self._get_exit_code()
         return {

@@ -1,4 +1,5 @@
 import os
+import shutil  # Added import for shutil.rmtree
 import tempfile
 from unittest.mock import MagicMock, patch
 
@@ -18,7 +19,6 @@ from composio.tools.local.shelltool.shell_exec.actions.spawn import (
     SpawnProcess,
     SpawnRequest,
 )
-import shutil  # Added import for shutil.rmtree
 
 
 @pytest.fixture(scope="module")
@@ -36,7 +36,7 @@ def shell_factory():
 
 
 @pytest.mark.usefixtures("temp_dir")
-class TestShelltool():
+class TestShelltool:
     def test_exec_command(self, shell_factory):
         exec_action = ExecCommand()
         exec_action._shells = lambda: shell_factory
