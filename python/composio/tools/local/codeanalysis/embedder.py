@@ -64,7 +64,7 @@ class Embedding:
 
         try:
             embeddings = self.model.encode(
-                texts, batch_size=256, show_progress_bar=True, convert_to_numpy=True
+                texts, batch_size=32, show_progress_bar=True, convert_to_numpy=True
             )
             return embeddings.tolist()
         except Exception as e:
