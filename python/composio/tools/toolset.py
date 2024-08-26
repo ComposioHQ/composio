@@ -75,11 +75,17 @@ class ComposioToolSet(WithLogger):
     _remote_client: t.Optional[Composio] = None
     _workspace: t.Optional[Workspace] = None
 
+    _runtime: str = "composio"
+    _description_char_limit: int = 1024
+
+    def __init_subclass__(cls, runtime: str, description_char_limit: int) -> None:
+        cls._runtime = runtime
+        cls._description_char_limit = description_char_limit
+
     def __init__(
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None,
         entity_id: str = DEFAULT_ENTITY_ID,
         workspace_id: t.Optional[str] = None,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
@@ -87,6 +93,7 @@ class ComposioToolSet(WithLogger):
         processors: t.Optional[ProcessorsType] = None,
         output_in_file: bool = False,
         logging_level: LogLevel = LogLevel.INFO,
+        **kwargs: t.Any,
     ) -> None:
         """
         Initialize composio toolset
@@ -177,8 +184,10 @@ class ComposioToolSet(WithLogger):
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
-        self._runtime = runtime
         self._local_client = LocalClient()
+
+        if len(kwargs) > 0:
+            self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
@@ -243,15 +252,11 @@ class ComposioToolSet(WithLogger):
             self._remote_client = Composio(
                 api_key=self.api_key,
                 base_url=self.base_url,
-                runtime=self.runtime,
+                runtime=self._runtime,
             )
             self._remote_client.local = self._local_client
 
         return self._remote_client
-
-    @property
-    def runtime(self) -> t.Optional[str]:
-        return self._runtime
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -625,6 +630,11 @@ class ComposioToolSet(WithLogger):
                     ] = f"{description.rstrip('.')}. This parameter is required."
                 else:
                     param_details["description"] = "This parameter is required."
+
+        if action_item.description is not None:
+            action_item.description = action_item.description[
+                : self._description_char_limit
+            ]
 
         return action_item
 

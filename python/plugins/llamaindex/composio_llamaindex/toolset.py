@@ -4,15 +4,17 @@ from inspect import Signature
 
 from llama_index.core.tools import FunctionTool
 
-from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
-from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools.toolset import MetadataType, ProcessorsType
+from composio import Action, ActionType, AppType, TagType
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="llamaindex",
+    description_char_limit=1024,
+):
     """
     Composio toolset for LlamaIndex framework.
 
@@ -53,34 +55,6 @@ class ComposioToolSet(BaseComposioToolSet):
         agent_executor.invoke({"input": task})
     ```
     """
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-        metadata: t.Optional[MetadataType] = None,
-        processors: t.Optional[ProcessorsType] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            entity_id=entity_id,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-            metadata=metadata,
-            processors=processors,
-        )
-        self._runtime = "llamaindex"
 
     def _wrap_action(
         self,
