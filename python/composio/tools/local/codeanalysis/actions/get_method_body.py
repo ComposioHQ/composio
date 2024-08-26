@@ -2,8 +2,9 @@ from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
 from composio.tools.base.local import LocalAction
+from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
+
 
 class GetMethodBodyRequest(BaseModel):
     repo_path: str = Field(
@@ -26,7 +27,9 @@ class GetMethodBodyResponse(BaseModel):
     )
 
 
-class GetMethodBody(LocalAction[GetMethodBodyRequest, GetMethodBodyResponse], MethodAnalysisAction):
+class GetMethodBody(
+    LocalAction[GetMethodBodyRequest, GetMethodBodyResponse], MethodAnalysisAction
+):
     """
     Retrieves the body of a specified method.
 

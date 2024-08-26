@@ -2,8 +2,8 @@ from typing import Dict, List, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
 from composio.tools.base.local import LocalAction
+from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
 
 
 class GetClassInfoRequest(BaseModel):
@@ -22,7 +22,9 @@ class GetClassInfoResponse(BaseModel):
     )
 
 
-class GetClassInfo(LocalAction[GetClassInfoRequest, GetClassInfoResponse], BaseCodeAnalysisAction):
+class GetClassInfo(
+    LocalAction[GetClassInfoRequest, GetClassInfoResponse], BaseCodeAnalysisAction
+):
     """
     Retrieves and formats information about a specified class.
 

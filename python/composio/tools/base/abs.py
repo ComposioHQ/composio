@@ -175,7 +175,6 @@ class _Response(t.Generic[ModelType]):
 
 
 class ActionBuilder:
-
     @staticmethod
     def get_generics(obj: t.Type["Action"]) -> t.Tuple[t.TypeVar, t.TypeVar]:
         for base in getattr(obj, "__orig_bases__"):

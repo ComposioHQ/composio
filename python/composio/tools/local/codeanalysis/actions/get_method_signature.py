@@ -2,8 +2,8 @@ from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
 from composio.tools.base.local import LocalAction
+from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
 
 
 class GetMethodSignatureRequest(BaseModel):
@@ -27,7 +27,10 @@ class GetMethodSignatureResponse(BaseModel):
     )
 
 
-class GetMethodSignature(LocalAction[GetMethodSignatureRequest, GetMethodSignatureResponse], MethodAnalysisAction):
+class GetMethodSignature(
+    LocalAction[GetMethodSignatureRequest, GetMethodSignatureResponse],
+    MethodAnalysisAction,
+):
     """
     Retrieves the signature of a specified method.
 

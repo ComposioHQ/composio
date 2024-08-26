@@ -11,7 +11,6 @@ from composio.tools.local.codeanalysis.constants import (
 
 
 class BaseCodeAnalysisAction:
-    
     def __init__(self):
         self.fqdn_cache_file = None
         self.all_fqdns_df = None
