@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import Optional, Type, Dict
 
 from pydantic import BaseModel, Field
 
@@ -48,14 +48,14 @@ class GetMethodSignature(
     _tool_name = "codeanalysis"
 
     def execute(
-        self, request_data: GetMethodSignatureRequest
+        self, request: GetMethodSignatureRequest, metadata: Dict
     ) -> GetMethodSignatureResponse:
         try:
-            self.load_fqdn_cache(request_data.repo_path)
+            self.load_fqdn_cache(request.repo_path)
             method_artefacts = self.get_method_artefacts(
-                request_data.class_name,
-                request_data.method_name,
-                request_data.repo_path,
+                request.class_name,
+                request.method_name,
+                request.repo_path,
             )
             return GetMethodSignatureResponse(result=method_artefacts["signature_ans"])
         except Exception as e:

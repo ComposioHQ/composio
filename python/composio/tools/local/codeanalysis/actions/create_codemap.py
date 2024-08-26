@@ -61,9 +61,9 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request_data: CreateCodeMapRequest) -> CreateCodeMapResponse:
+    def execute(self, request: CreateCodeMapRequest, metadata: Dict) -> CreateCodeMapResponse:
         self.REPO_DIR = os.path.normpath(
-            os.path.abspath(request_data.dir_to_index_path)
+            os.path.abspath(request.dir_to_index_path)
         )
         self.failed_files = []
 
@@ -72,7 +72,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
 
             if status["status"] == Status.COMPLETED:
                 return CreateCodeMapResponse(
-                    result=f"Indexing already exists for {request_data.dir_to_index_path}"
+                    result=f"Indexing already exists for {request.dir_to_index_path}"
                 )
 
             if status["status"] in [Status.NOT_STARTED, Status.FAILED]:
@@ -88,13 +88,13 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             self._process(status)
 
             return CreateCodeMapResponse(
-                result=f"Indexing completed for {request_data.dir_to_index_path}"
+                result=f"Indexing completed for {request.dir_to_index_path}"
             )
         except Exception as e:
             print(f"Failed to execute indexing: {e}")
             self._update_status(self.REPO_DIR, Status.FAILED, str(e))
             return CreateCodeMapResponse(
-                result=f"Indexing failed for {request_data.dir_to_index_path}: {e}"
+                result=f"Indexing failed for {request.dir_to_index_path}: {e}"
             )
 
     def _process(self, status: Dict[str, Any]) -> None:

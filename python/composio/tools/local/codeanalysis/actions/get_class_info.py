@@ -38,11 +38,11 @@ class GetClassInfo(
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request_data: GetClassInfoRequest) -> GetClassInfoResponse:
+    def execute(self, request: GetClassInfoRequest, metadata: Dict) -> GetClassInfoResponse:
         try:
-            repo_path = request_data.repo_dir
+            repo_path = request.repo_dir
             self.load_fqdn_cache(repo_path)
-            query_class_name = request_data.class_name
+            query_class_name = request.class_name
 
             if not isinstance(query_class_name, str):
                 raise ValueError(

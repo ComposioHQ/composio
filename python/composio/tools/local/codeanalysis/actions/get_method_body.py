@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import Optional, Type, Dict
 
 from pydantic import BaseModel, Field
 
@@ -46,13 +46,13 @@ class GetMethodBody(
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request_data: GetMethodBodyRequest) -> GetMethodBodyResponse:
+    def execute(self, request: GetMethodBodyRequest, metadata: Dict) -> GetMethodBodyResponse:
         try:
-            self.load_fqdn_cache(request_data.repo_path)
+            self.load_fqdn_cache(request.repo_path)
             method_artefacts = self.get_method_artefacts(
-                request_data.class_name,
-                request_data.method_name,
-                request_data.repo_path,
+                request.class_name,
+                request.method_name,
+                request.repo_path,
             )
             return GetMethodBodyResponse(result=method_artefacts["body_ans"])
         except Exception as e:
