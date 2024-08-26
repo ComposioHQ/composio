@@ -1,6 +1,7 @@
 import logging
 import typing as t
 
+import typing_extensions as te
 from griptape.tools import BaseTool
 from griptape.utils.decorators import activity
 from schema import Literal, Schema
@@ -113,6 +114,7 @@ class ComposioToolSet(
         cls = type(name, (GripTapeTool,), {})
         return cls()
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -125,34 +127,31 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `BaseTool` objects
         """
-
-        return [
-            self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id,
-            )
-            for tool in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """
         Get composio tools wrapped as GripTape `BaseTool` type objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `BaseTool` objects
         """
-
         return [
             self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
+                schema=tool.model_dump(
+                    exclude_none=True,
+                ),
                 entity_id=entity_id,
             )
-            for tool in self.get_action_schemas(apps=apps, tags=tags)
+            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

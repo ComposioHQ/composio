@@ -6,6 +6,7 @@ import types
 import typing as t
 from inspect import Signature
 
+import typing_extensions as te
 from lyzr_automata import Tool
 
 from composio import Action, ActionType, AppType, TagType
@@ -69,6 +70,7 @@ class ComposioToolSet(
             default_params={},
         )
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -78,29 +80,27 @@ class ComposioToolSet(
         Get composio tools wrapped as Lyzr `Tool` objects.
 
         :param actions: List of actions to wrap
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `Tool` objects
         """
-        return [
-            self._wrap_tool(
-                schema=schema.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for schema in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[Tool]:
+    ) -> t.List[Tool]:
         """
         Get composio tools wrapped as Lyzr `Tool` objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `Tool` objects
         """
         return [
@@ -108,5 +108,5 @@ class ComposioToolSet(
                 schema=schema.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for schema in self.get_action_schemas(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

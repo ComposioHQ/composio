@@ -1,5 +1,6 @@
 import typing as t
 
+import typing_extensions as te
 from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
 from anthropic.types.beta.tools.tool_param import ToolParam
 
@@ -71,6 +72,7 @@ class ComposioToolset(
             entity_id = self.entity_id
         return entity_id
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as `ToolParam` objects.
@@ -78,30 +80,21 @@ class ComposioToolset(
         :param actions: List of actions to wrap
         :return: Composio tools wrapped as `ToolParam` objects
         """
-        return [
-            ToolParam(
-                **t.cast(
-                    ClaudeSchema,
-                    self.schema.format(
-                        schema.model_dump(
-                            exclude_none=True,
-                        )
-                    ),
-                ).model_dump()
-            )
-            for schema in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
-    ) -> t.Sequence[ToolParam]:
+    ) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
+
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         return [
@@ -115,7 +108,7 @@ class ComposioToolset(
                     ),
                 ).model_dump()
             )
-            for schema in self.get_action_schemas(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]
 
     def execute_tool_call(

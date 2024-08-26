@@ -5,6 +5,7 @@ PhiData tool spec.
 import json
 import typing as t
 
+import typing_extensions as te
 from phi.tools.function import Function
 from pydantic import validate_call
 
@@ -51,10 +52,8 @@ class ComposioToolSet(
             entrypoint=validate_call(function),
         )
 
-    def get_actions(
-        self,
-        actions: t.Sequence[ActionType],
-    ) -> t.List[Function]:
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[Function]:
         """
         Get composio tools wrapped as Phidata `Function` objects.
 
@@ -62,31 +61,29 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `Function` objects
         """
-        return [
-            self._wrap_tool(
-                schema=schema.model_dump(exclude_none=True),
-                entity_id=self.entity_id,
-            )
-            for schema in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
     ) -> t.List[Function]:
         """
         Get composio tools wrapped as Lyzr `Function` objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID to use for executing function calls.
+
         :return: Composio tools wrapped as `Function` objects
         """
         return [
             self._wrap_tool(
-                schema=schema.model_dump(exclude_none=True),
+                schema=schema.model_dump(
+                    exclude_none=True,
+                ),
                 entity_id=self.entity_id,
             )
-            for schema in self.get_action_schemas(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

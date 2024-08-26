@@ -4,6 +4,7 @@ import typing as t
 from inspect import Signature
 
 import autogen
+import typing_extensions as te
 from autogen.agentchat.conversable_agent import ConversableAgent
 
 from composio import Action, ActionType, AppType, TagType
@@ -22,22 +23,25 @@ class ComposioToolSet(
 
     def register_tools(
         self,
-        tools: t.Sequence[AppType],
         caller: ConversableAgent,
         executor: ConversableAgent,
-        tags: t.Optional[t.Sequence[TagType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> None:
         """
         Register tools to the proxy agents.
 
-        :param tools: List of tools to register.
-        :param caller: Caller agent.
         :param executor: Executor agent.
-        :param tags: Filter by the list of given Tags.
+        :param caller: Caller agent.
+        :param apps: List of apps to wrap
+        :param actions: List of actions to wrap
+        :param tags: Filter the apps by given tags
+        :param entity_id: Entity ID for the function wrapper
         :param entity_id: Entity ID to use for executing function calls.
         """
-        schemas = self.get_action_schemas(apps=tools, tags=tags)
+        schemas = self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         for schema in schemas:
             self._register_schema_to_autogen(
                 schema=schema.model_dump(
@@ -50,11 +54,12 @@ class ComposioToolSet(
                 entity_id=entity_id or self.entity_id,
             )
 
+    @te.deprecated("Use `ComposioToolSet.register_tools` instead")
     def register_actions(
         self,
-        actions: t.Sequence[ActionType],
         caller: ConversableAgent,
         executor: ConversableAgent,
+        actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
     ):
         """
@@ -65,18 +70,12 @@ class ComposioToolSet(
         :param executor: Executor agent.
         :param entity_id: Entity ID to use for executing function calls.
         """
-        schemas = self.get_action_schemas(actions=actions)
-        for schema in schemas:
-            self._register_schema_to_autogen(
-                schema=schema.model_dump(
-                    exclude_defaults=True,
-                    exclude_none=True,
-                    exclude_unset=True,
-                ),
-                caller=caller,
-                executor=executor,
-                entity_id=entity_id or self.entity_id,
-            )
+        self.register_tools(
+            caller=caller,
+            executor=executor,
+            actions=actions,
+            entity_id=entity_id,
+        )
 
     def _process_function_name_for_registration(
         self,

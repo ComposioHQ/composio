@@ -1,6 +1,8 @@
 import os
 import typing as t
 
+import typing_extensions as te
+
 from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
@@ -164,6 +166,7 @@ class ComposioToolSet(
 
         return "\n".join(tools_section_parts)
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -176,33 +179,29 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: Name of the tools written
         """
-
-        return [
-            self._write_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for tool in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[str]:
         """
         Get composio tools written as ParisonAi supported tools.
 
-        :param actions: List of actions to write
-        :param entity_id: Entity ID to use for executing function calls.
+        :param actions: List of actions to wrap
+        :param apps: List of apps to wrap
+        :param tags: Filter the apps by given tags
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Name of the tools written
         """
-
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(apps=apps, tags=tags)
+            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]
