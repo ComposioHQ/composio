@@ -2,7 +2,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis import embedder
 
 
@@ -24,7 +24,7 @@ class GetRelevantCodeOutput(BaseModel):
     )
 
 
-class GetRelevantCode(Action):
+class GetRelevantCode(LocalAction):
     """
     Retrieves the body of a specified method.
 

@@ -3,7 +3,7 @@ from typing import Optional, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
-
+from python.composio.tools.base.local import LocalAction
 
 class GetMethodBodyInput(BaseModel):
     repo_path: str = Field(
@@ -26,7 +26,7 @@ class GetMethodBodyOutput(BaseModel):
     )
 
 
-class GetMethodBody(MethodAnalysisAction):
+class GetMethodBody(LocalAction[GetMethodBodyInput, GetMethodBodyOutput], MethodAnalysisAction):
     """
     Retrieves the body of a specified method.
 
@@ -40,6 +40,8 @@ class GetMethodBody(MethodAnalysisAction):
     _display_name = "Get Method Body"
     _request_schema: Type[GetMethodBodyInput] = GetMethodBodyInput
     _response_schema: Type[GetMethodBodyOutput] = GetMethodBodyOutput
+    _tags = ["index"]
+    _tool_name = "codeanalysis"
 
     def execute(self, request_data: GetMethodBodyInput) -> GetMethodBodyOutput:
         try:

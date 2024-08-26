@@ -1,14 +1,14 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import CreateCodeMap, GetClassInfo, GetMethodBody, GetMethodSignature, GetRelevantCode
 
 
-class CodeAnalysisTool(Tool):
+class CodeAnalysisTool(LocalTool, autoload=True):
     """Code index tool."""
 
-    def actions(self) -> t.List[t.Type[Action]]:
+    def actions(self) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
         return [CreateCodeMap, GetClassInfo, GetMethodBody, GetMethodSignature, GetRelevantCode]
 

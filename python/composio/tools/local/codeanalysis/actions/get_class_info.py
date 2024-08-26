@@ -3,6 +3,7 @@ from typing import Dict, List, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
+from python.composio.tools.base.local import LocalAction
 
 
 class GetClassInfoInput(BaseModel):
@@ -21,7 +22,7 @@ class GetClassInfoOutput(BaseModel):
     )
 
 
-class GetClassInfo(BaseCodeAnalysisAction):
+class GetClassInfo(LocalAction[GetClassInfoInput, GetClassInfoOutput], BaseCodeAnalysisAction):
     """
     Retrieves and formats information about a specified class.
 
@@ -32,6 +33,8 @@ class GetClassInfo(BaseCodeAnalysisAction):
     _display_name = "Get Class Info"
     _request_schema: Type[GetClassInfoInput] = GetClassInfoInput
     _response_schema: Type[GetClassInfoOutput] = GetClassInfoOutput
+    _tags = ["index"]
+    _tool_name = "codeanalysis"
 
     def execute(self, request_data: GetClassInfoInput) -> GetClassInfoOutput:
         try:

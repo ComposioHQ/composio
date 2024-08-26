@@ -1,9 +1,8 @@
 import json
 import os
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Dict, List, Optional
 
-from composio.tools.local.base import Action
 from composio.tools.local.codeanalysis import lsp_helper, tool_utils
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
@@ -11,10 +10,8 @@ from composio.tools.local.codeanalysis.constants import (
 )
 
 
-class BaseCodeAnalysisAction(Action, ABC):
-    _tags = ["index"]
-    _tool_name = "codeanalysis"
-
+class BaseCodeAnalysisAction:
+    
     def __init__(self):
         self.fqdn_cache_file = None
         self.all_fqdns_df = None
@@ -110,7 +107,7 @@ class BaseCodeAnalysisAction(Action, ABC):
         return results
 
 
-class MethodAnalysisAction(BaseCodeAnalysisAction, ABC):
+class MethodAnalysisAction(BaseCodeAnalysisAction):
     @abstractmethod
     def execute(self, request_data):
         pass

@@ -3,6 +3,7 @@ from typing import Optional, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
+from python.composio.tools.base.local import LocalAction
 
 
 class GetMethodSignatureInput(BaseModel):
@@ -26,7 +27,7 @@ class GetMethodSignatureOutput(BaseModel):
     )
 
 
-class GetMethodSignature(MethodAnalysisAction):
+class GetMethodSignature(LocalAction[GetMethodSignatureInput, GetMethodSignatureOutput], MethodAnalysisAction):
     """
     Retrieves the signature of a specified method.
 
@@ -40,6 +41,8 @@ class GetMethodSignature(MethodAnalysisAction):
     _display_name = "Get Method Signature"
     _request_schema: Type[GetMethodSignatureInput] = GetMethodSignatureInput
     _response_schema: Type[GetMethodSignatureOutput] = GetMethodSignatureOutput
+    _tags = ["index"]
+    _tool_name = "codeanalysis"
 
     def execute(
         self, request_data: GetMethodSignatureInput

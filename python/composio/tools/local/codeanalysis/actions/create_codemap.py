@@ -7,7 +7,7 @@ from typing import Any, Dict, Type
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis import (
     chunker,
     embedder,
@@ -44,7 +44,7 @@ class CreateCodeMapOutput(BaseModel):
     )
 
 
-class CreateCodeMap(Action[CreateCodeMapInput, CreateCodeMapOutput]):
+class CreateCodeMap(LocalAction[CreateCodeMapInput, CreateCodeMapOutput]):
     """
     Creates a code map for a repository by indexing and analyzing its contents.
 
