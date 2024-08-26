@@ -2,7 +2,7 @@ import os
 import dotenv
 from composio_langchain import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Process, Task
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from datetime import datetime
 
 # Load environment variables from .env file
@@ -15,7 +15,7 @@ toolset = ComposioToolSet()
 gmail_tools = toolset.get_tools(apps=[App.GMAIL])
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
-llm = ChatOpenAI(model="gpt-4-turbo")
+llm = ChatGroq(model="llama3.1-70b-versatile", stop_sequences=["\n\n"])
 
 # Define the Email Fetcher Agent
 email_fetcher_agent = Agent(
