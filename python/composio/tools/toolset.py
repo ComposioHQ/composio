@@ -43,6 +43,7 @@ from composio.tools.env.base import (
     WorkspaceConfigType,
 )
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
+from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogLevel, WithLogger
@@ -165,6 +166,11 @@ class ComposioToolSet(WithLogger):
 
         """
         super().__init__(logging_level=logging_level)
+        self.logger.info(
+            f"Logging is set to {self._logging_level}, "
+            "use `logging_level` argument or "
+            "`COMPOSIO_LOGGING_LEVEL` change this"
+        )
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url or get_api_url_base()
@@ -188,6 +194,9 @@ class ComposioToolSet(WithLogger):
 
         if len(kwargs) > 0:
             self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
+
+        self.logger.debug("Loading local tools")
+        load_local_tools()
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""

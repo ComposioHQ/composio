@@ -48,6 +48,7 @@ def _parse_log_level_from_env(default: int) -> int:
     level = os.environ.get(ENV_COMPOSIO_LOGGING_LEVEL)
     if level is None:
         return default
+
     try:
         return _LEVELS[LogLevel(level)]
     except (ValueError, KeyError):
@@ -105,6 +106,7 @@ class WithLogger:
             name=logger_name,
             level=logging_level,
         )
+        self._logging_level = logging._levelToName[self._logger.level]
 
     @property
     def logger(self) -> logging.Logger:
