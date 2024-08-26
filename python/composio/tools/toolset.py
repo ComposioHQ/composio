@@ -45,19 +45,17 @@ from composio.tools.env.base import (
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
-from composio.utils.logging import WithLogger
+from composio.utils.logging import LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
 
+_KeyType = t.Union[AppType, ActionType]
+_ProcessorType = t.Callable[[t.Dict], t.Dict]
+
+MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 
-_KeyType = t.Union[AppType, ActionType]
-MetadataType = t.Dict[_KeyType, t.Dict]
-
 output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-
-
-_ProcessorType = t.Callable[[t.Dict], t.Dict]
 
 
 class ProcessorsType(te.TypedDict):
@@ -73,8 +71,8 @@ class ProcessorsType(te.TypedDict):
 class ComposioToolSet(WithLogger):
     """Composio toolset."""
 
-    _remote_client: t.Optional[Composio] = None
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
+    _remote_client: t.Optional[Composio] = None
     _workspace: t.Optional[Workspace] = None
 
     def __init__(
@@ -82,12 +80,13 @@ class ComposioToolSet(WithLogger):
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
         runtime: t.Optional[str] = None,
-        output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
         workspace_id: t.Optional[str] = None,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
         metadata: t.Optional[MetadataType] = None,
         processors: t.Optional[ProcessorsType] = None,
+        output_in_file: bool = False,
+        logging_level: LogLevel = LogLevel.INFO,
     ) -> None:
         """
         Initialize composio toolset
@@ -158,7 +157,7 @@ class ComposioToolSet(WithLogger):
             ```
 
         """
-        super().__init__()
+        super().__init__(logging_level=logging_level)
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url or get_api_url_base()
@@ -444,6 +443,10 @@ class ComposioToolSet(WithLogger):
     ) -> t.Dict:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
+            self.logger.info(
+                f"Running {'request' if type_ == 'pre' else 'response'}"
+                f" through: {processor.__name__}"
+            )
             data = processor(data)
         return data
 
@@ -489,14 +492,13 @@ class ComposioToolSet(WithLogger):
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
-        self.logger.info(f"Executing action: {action}")
         action = Action(action)
-        is_runtime = action.is_runtime
-        self.logger.debug(f"Action: {action}, runtime: {is_runtime}")
         params = self._serialize_execute_params(param=params)
-        if not is_runtime:
+        if not action.is_runtime:
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
+
+        self.logger.info(f"Executing {action=} with {params=} and {metadata=}")
         response = (
             self._execute_local(
                 action=action,
@@ -512,9 +514,13 @@ class ComposioToolSet(WithLogger):
                 text=text,
             )
         )
-        if is_runtime:
-            return response
-        return self._process_respone(action=action, response=response)
+        response = (
+            response
+            if action.is_runtime
+            else self._process_respone(action=action, response=response)
+        )
+        self.logger.info(f"Got {response=} from {action=} with {params=}")
+        return response
 
     def get_action_schemas(
         self,
@@ -535,14 +541,10 @@ class ComposioToolSet(WithLogger):
             ],
         )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
+        items: t.List[ActionModel] = []
 
         local_actions = [action for action in actions if action.is_local]
         local_apps = [app for app in apps if app.is_local]
-
-        remote_actions = [action for action in actions if not action.is_local]
-        remote_apps = [app for app in apps if not app.is_local]
-
-        items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
             items += [
                 ActionModel(**item)
@@ -553,6 +555,8 @@ class ComposioToolSet(WithLogger):
                 )
             ]
 
+        remote_actions = [action for action in actions if not action.is_local]
+        remote_apps = [app for app in apps if not app.is_local]
         if len(remote_actions) > 0 or len(remote_apps) > 0:
             remote_items = self.client.actions.get(
                 apps=remote_apps,
@@ -569,11 +573,11 @@ class ComposioToolSet(WithLogger):
             items.append(ActionModel(**schema))
 
         for item in items:
-            item = self.action_preprocessing(item)
+            item = self._process_schema(item)
 
         return items
 
-    def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
+    def _process_schema(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
             if param_details.get("properties") == FileType.schema().get("properties"):

@@ -18,7 +18,7 @@ _logger: t.Optional[logging.Logger] = None
 """Global logger object for composio."""
 
 
-class Level(Enum):
+class LogLevel(Enum):
     """Logging level."""
 
     CRITICAL = "critical"
@@ -31,15 +31,15 @@ class Level(Enum):
     NOTSET = "notset"
 
 
-_LEVELS: t.Dict[Level, int] = {
-    Level.CRITICAL: logging.CRITICAL,
-    Level.FATAL: logging.FATAL,
-    Level.ERROR: logging.ERROR,
-    Level.WARNING: logging.WARNING,
-    Level.WARN: logging.WARN,
-    Level.INFO: logging.INFO,
-    Level.DEBUG: logging.DEBUG,
-    Level.NOTSET: logging.NOTSET,
+_LEVELS: t.Dict[LogLevel, int] = {
+    LogLevel.CRITICAL: logging.CRITICAL,
+    LogLevel.FATAL: logging.FATAL,
+    LogLevel.ERROR: logging.ERROR,
+    LogLevel.WARNING: logging.WARNING,
+    LogLevel.WARN: logging.WARN,
+    LogLevel.INFO: logging.INFO,
+    LogLevel.DEBUG: logging.DEBUG,
+    LogLevel.NOTSET: logging.NOTSET,
 }
 
 
@@ -49,13 +49,13 @@ def _parse_log_level_from_env(default: int) -> int:
     if level is None:
         return default
     try:
-        return _LEVELS[Level(level)]
+        return _LEVELS[LogLevel(level)]
     except (ValueError, KeyError):
         return default
 
 
 def setup(
-    level: Level = Level.INFO,
+    level: LogLevel = LogLevel.INFO,
     log_format: str = _DEFAULT_FORMAT,
 ) -> None:
     """Setup logging config."""
@@ -69,7 +69,7 @@ def setup(
 
 def get(
     name: t.Optional[str] = None,
-    level: int = logging.INFO,
+    level: LogLevel = LogLevel.INFO,
     log_format: str = _DEFAULT_FORMAT,
 ) -> logging.Logger:
     """Set up the logger."""
@@ -82,7 +82,7 @@ def get(
 
     # Create logger
     _logger = logging.getLogger(name or _DEFAULT_LOGGER_NAME)
-    _logger.setLevel(_parse_log_level_from_env(default=level))
+    _logger.setLevel(_parse_log_level_from_env(default=_LEVELS[level]))
     return _logger
 
 
@@ -93,6 +93,7 @@ class WithLogger:
         self,
         logger: t.Optional[logging.Logger] = None,
         logger_name: str = _DEFAULT_LOGGER_NAME,
+        logging_level: LogLevel = LogLevel.INFO,
     ) -> None:
         """
         Initialize the logger.
@@ -100,7 +101,10 @@ class WithLogger:
         :param logger: the logger object.
         :param logger_name: the default logger name, if a logger is not provided.
         """
-        self._logger = logger or get(name=logger_name)
+        self._logger = logger or get(
+            name=logger_name,
+            level=logging_level,
+        )
 
     @property
     def logger(self) -> logging.Logger:
