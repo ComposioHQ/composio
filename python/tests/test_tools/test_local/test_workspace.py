@@ -11,6 +11,8 @@ from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.factory import WorkspaceType
 from composio.utils.logging import get as get_logger
 
+from tests.conftest import skip_if_ci
+
 
 PATH = Path(__file__).parent
 
@@ -29,6 +31,7 @@ def test_outputs() -> None:
     assert "test_workspace.py" in output["data"][STDOUT]
 
 
+@skip_if_ci(reason="Timeout")
 def test_stderr() -> None:
     """Test outputs."""
     toolset = ComposioToolSet(

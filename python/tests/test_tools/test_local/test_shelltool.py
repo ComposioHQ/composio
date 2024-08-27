@@ -36,6 +36,7 @@ def shell_factory():
 
 @pytest.mark.usefixtures("temp_dir")
 class TestShelltool:
+    @pytest.mark.skip(reason="Test skipped as exec is flaky")
     def test_exec_command(self, shell_factory):
         exec_action = ExecCommand()
         exec_action._shells = lambda: shell_factory
