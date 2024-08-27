@@ -7,8 +7,8 @@ from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalys
 
 
 class GetClassInfoRequest(BaseModel):
-    repo_dir: str = Field(
-        ..., description="Path to the root directory of the repository"
+    repo_name: str = Field(
+        ..., description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'."
     )
     class_name: str = Field(
         ..., description="Name of the class for which information is requested"
@@ -42,7 +42,10 @@ class GetClassInfo(
         self, request: GetClassInfoRequest, metadata: Dict
     ) -> GetClassInfoResponse:
         try:
-            repo_path = request.repo_dir
+            repo_path = request.repo_name
+            if "/" in repo_path:
+                repo_path = repo_path.split("/")[-1]
+            
             self.load_fqdn_cache(repo_path)
             query_class_name = request.class_name
 

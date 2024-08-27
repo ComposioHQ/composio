@@ -7,9 +7,9 @@ from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysis
 
 
 class GetMethodSignatureRequest(BaseModel):
-    repo_path: str = Field(
+    repo_name: str = Field(
         ...,
-        description="Path to the repository",
+        description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'.",
     )
     class_name: Optional[str] = Field(
         None,
@@ -51,11 +51,14 @@ class GetMethodSignature(
         self, request: GetMethodSignatureRequest, metadata: Dict
     ) -> GetMethodSignatureResponse:
         try:
-            self.load_fqdn_cache(request.repo_path)
+            repo_path = request.repo_name
+            if "/" in repo_path:
+                repo_path = repo_path.split("/")[-1]
+            self.load_fqdn_cache(repo_path)
             method_artefacts = self.get_method_artefacts(
                 request.class_name,
                 request.method_name,
-                request.repo_path,
+                repo_path,
             )
             return GetMethodSignatureResponse(result=method_artefacts["signature_ans"])
         except Exception as e:

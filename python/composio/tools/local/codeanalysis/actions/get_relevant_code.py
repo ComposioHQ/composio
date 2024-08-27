@@ -7,9 +7,9 @@ from composio.tools.local.codeanalysis import embedder
 
 
 class GetRelevantCodeRequest(BaseModel):
-    repo_path: str = Field(
+    repo_name: str = Field(
         ...,
-        description="Path to the repository",
+        description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'.",
     )
     query: str = Field(
         ...,
@@ -43,7 +43,10 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
         self, request: GetRelevantCodeRequest, metadata: Dict
     ) -> GetRelevantCodeResponse:
         try:
-            vector_store = embedder.get_vector_store(request.repo_path, overwrite=False)
+            repo_path = request.repo_name
+            if "/" in repo_path:
+                repo_path = repo_path.split("/")[-1]
+            vector_store = embedder.get_vector_store(repo_path, overwrite=False)
             query = request.query
             results = embedder.get_topn_chunks_from_query(vector_store, query, top_n=5)
             sep = "\n" + "=" * 100 + "\n"
