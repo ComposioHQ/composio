@@ -101,6 +101,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "langgraph": {
+        "plugin": "langgraph",
         "file": PLUGINS / "langgraph" / "langgraph_demo.py",
         "match": {
             "type": "stdout",
