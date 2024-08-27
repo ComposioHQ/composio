@@ -10,6 +10,8 @@ import json
 import os
 import time
 import typing as t
+from functools import wraps
+from importlib.util import find_spec
 
 import typing_extensions as te
 from pydantic import BaseModel
@@ -67,6 +69,28 @@ class ProcessorsType(te.TypedDict):
 
     post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
     """Response processors."""
+
+
+def _check_agentops() -> bool:
+    """Check if AgentOps is installed and initialized."""
+    if find_spec("agentops") is None:
+        return False
+    import agentops  # pylint: disable=import-outside-toplevel
+
+    return agentops.get_api_key() is not None
+
+
+def _record_action_if_available(func: t.Callable) -> t.Callable:
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if _check_agentops():
+            import agentops  # pylint: disable=import-outside-toplevel
+
+            action_name = str(kwargs.get("action", "unknown_action"))
+            return agentops.record_action(action_name)(func)(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class ComposioToolSet(WithLogger):
@@ -486,6 +510,7 @@ class ComposioToolSet(WithLogger):
             type_="post",
         )
 
+    @_record_action_if_available
     def execute_action(
         self,
         action: ActionType,
