@@ -204,25 +204,25 @@ def build_image_and_container(
         ):
             raise Exception(clone_resp["error"])
 
-        git_clone_time = datetime.datetime.now() - start_time
-        logger.info("git clone completed, time taken: %s", git_clone_time)
+        # git_clone_time = datetime.datetime.now() - start_time
+        # logger.info("git clone completed, time taken: %s", git_clone_time)
 
-        start_time = datetime.datetime.now()
-        index_resp = composio_toolset.execute_action(
-            action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
-            params={
-                "dir_to_index_path": repo.split("/")[-1],
-            },
-        )
-        if (
-            isinstance(index_resp, dict)
-            and "success" in index_resp
-            and not index_resp["success"]
-        ):
-            raise Exception(index_resp["error"])
+        # start_time = datetime.datetime.now()
+        # index_resp = composio_toolset.execute_action(
+        #     action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
+        #     params={
+        #         "dir_to_index_path": repo.split("/")[-1],
+        #     },
+        # )
+        # if (
+        #     isinstance(index_resp, dict)
+        #     and "success" in index_resp
+        #     and not index_resp["success"]
+        # ):
+        #     raise Exception(index_resp["error"])
 
-        index_time = datetime.datetime.now() - start_time
-        logger.info("index completed, time taken: %s", index_time)
+        # index_time = datetime.datetime.now() - start_time
+        # logger.info("index completed, time taken: %s", index_time)
 
     return workspace.id
 
