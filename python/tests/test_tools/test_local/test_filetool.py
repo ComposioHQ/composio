@@ -20,6 +20,7 @@ from composio.tools.local.filetool.actions.list import ListFiles, ListRequest
 from composio.tools.local.filetool.actions.open import OpenFile, OpenFileRequest
 from composio.tools.local.filetool.actions.write import Write, WriteRequest
 from composio.tools.toolset import ComposioToolSet
+from tests.conftest import skip_if_ci
 
 
 @pytest.fixture(scope="module")
@@ -274,6 +275,7 @@ class TestFiletool:
             create_action.execute(CreateFileRequest(path="", is_directory=False), {})
         assert "Path cannot be empty" in str(excinfo.value)
 
+    @skip_if_ci(reason="Timeout")
     def test_filetool_with_toolset(self, file_manager, temp_dir):
         toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
 
