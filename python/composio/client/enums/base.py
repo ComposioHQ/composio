@@ -156,7 +156,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             action_registry,
             tool_registry,
         )
+        from composio.tools.local import (  # pylint: disable=import-outside-toplevel
+            load_local_tools,
+        )
 
+        load_local_tools()
         for gid, actions in action_registry.items():
             if self._slug in actions:
                 action = actions[self._slug]
