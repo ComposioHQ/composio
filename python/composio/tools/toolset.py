@@ -388,7 +388,7 @@ class ComposioToolSet(WithLogger):
     def _ensure_output_dir_exists(self):
         """Ensure the output directory exists."""
         if not self.output_dir.exists():
-            self.output_dir.mkdir()
+            self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def _save_var_files(
         self,
