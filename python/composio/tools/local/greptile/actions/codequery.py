@@ -38,6 +38,16 @@ class CodeQueryRequest(BaseModel):
         description="The repository to ask the question about. This should be a github repository. Example openai/docs, composiohq/composio",
         examples=["openai/docs", "composiohq/composio"],
     )
+    timeout: int = Field(
+        default=60,
+        description="The timeout for the Greptile API request. Default is 20 seconds",
+        examples=[60, 120, 180],
+    )
+    branch: str = Field(
+        default=None,
+        description="The branch to ask the question about. Default is master, if not specified. Example: main, master",
+        examples=["master", "main"],
+    )
 
 
 class CodeQueryResponse(BaseModel):
@@ -58,12 +68,12 @@ class CodeQuery(LocalAction[CodeQueryRequest, CodeQueryResponse]):
     _tags = ["code_query"]
 
     def execute(self, request: CodeQueryRequest, metadata: Dict) -> CodeQueryResponse:
-        token = os.getenv("GREPTILE_TOKEN")
+        token = metadata.get("greptile_token", os.getenv("GREPTILE_TOKEN"))
         if token is None:
             self.logger.error("GREPTILE_TOKEN is not set")
             raise ValueError("GREPTILE_TOKEN is not set")
 
-        github_token = os.getenv("GITHUB_TOKEN")
+        github_token = metadata.get("github_token", os.getenv("GITHUB_TOKEN"))
         if github_token is None:
             self.logger.error("GITHUB_TOKEN is not set")
             raise ValueError("GITHUB_TOKEN is not set")
@@ -78,13 +88,12 @@ class CodeQuery(LocalAction[CodeQueryRequest, CodeQueryResponse]):
         # Construct the data payload for the API request
         data = {
             "messages": [
-                {"content": "You are a helpful assistant", "role": "assistant"},
                 {"content": request.question, "role": "user"},
             ],
             "repositories": [
                 {
                     "remote": "github",
-                    "branch": "master",
+                    "branch": request.branch,
                     "repository": request.repository,
                 }
             ],
@@ -99,7 +108,7 @@ class CodeQuery(LocalAction[CodeQueryRequest, CodeQueryResponse]):
             "https://api.greptile.com/v2/query",
             headers=headers,
             data=json.dumps(data),
-            timeout=20,
+            timeout=request.timeout,
         )
 
         # Check if the request was successful
