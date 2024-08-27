@@ -49,9 +49,6 @@ class ShellExecResponse(BaseModel):
         description="Current shell's working directory",
     )
 
-    def something(self):
-        print("hello")
-
 
 class ExecCommand(LocalAction[ShellExecRequest, ShellExecResponse]):
     """
@@ -78,13 +75,14 @@ class ExecCommand(LocalAction[ShellExecRequest, ShellExecResponse]):
 
     def execute(self, request: ShellExecRequest, metadata: t.Dict) -> ShellExecResponse:
         """Execute a shell command."""
-        shell = self.shells.recent
+        shell = self.shells.get(id=request.shell_id)
         self.logger.debug(f"Executing {request.cmd} @ {shell}")
+
         output = shell.exec(cmd=request.cmd)
-        outdir = shell.exec(cmd="pwd")
+        self.logger.debug(output)
         return ShellExecResponse(
             stdout=output[STDOUT],
             stderr=output[STDERR],
             exit_code=int(output[EXIT_CODE]),
-            current_shell_pwd=f"Currently in {outdir[STDOUT]}",
+            current_shell_pwd=f"Currently in {shell.exec(cmd='pwd')[STDOUT].strip()}",
         )
