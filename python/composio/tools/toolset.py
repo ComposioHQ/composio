@@ -53,6 +53,9 @@ from composio.utils.logging import LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
 
+T = te.TypeVar("T")
+P = te.ParamSpec("P")
+
 _KeyType = t.Union[AppType, ActionType]
 _ProcessorType = t.Callable[[t.Dict], t.Dict]
 
@@ -81,7 +84,7 @@ def _check_agentops() -> bool:
     return agentops.get_api_key() is not None
 
 
-def _record_action_if_available(func: t.Callable) -> t.Callable:
+def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if _check_agentops():
@@ -89,9 +92,9 @@ def _record_action_if_available(func: t.Callable) -> t.Callable:
 
             action_name = str(kwargs.get("action", "unknown_action"))
             return agentops.record_action(action_name)(func)(self, *args, **kwargs)
-        return func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)  # type: ignore
 
-    return wrapper
+    return wrapper  # type: ignore
 
 
 class ComposioToolSet(WithLogger):
