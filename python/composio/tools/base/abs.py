@@ -203,10 +203,17 @@ class _Response(t.Generic[ModelType]):
 
 class ActionBuilder:
     @staticmethod
-    def set_generics(name: str, obj: t.Type["Action"]) -> None:
+    def get_generics(obj: t.Type["Action"]) -> t.Tuple[t.TypeVar, t.TypeVar]:
+        for base in getattr(obj, "__orig_bases__"):
+            args = t.get_args(base)
+            if len(args) == 2:
+                return args
+        raise ValueError("No type generics found")
+
+    @classmethod
+    def set_generics(cls, name: str, obj: t.Type["Action"]) -> None:
         try:
-            (generic,) = getattr(obj, "__orig_bases__")
-            request, response = t.get_args(generic)
+            request, response = cls.get_generics(obj=obj)
             if request == ActionRequest or response == ActionResponse:
                 raise ValueError(f"Invalid type generics, ({request}, {response})")
         except ValueError as e:

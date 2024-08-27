@@ -34,8 +34,9 @@ WORKDIR /root
 COPY ./composio /root/composio
 
 # Install from source
+RUN python -m pip install deeplake sentence-transformers
+RUN python -m pip install git+https://github.com/DataDog/jedi.git@92d0c807b0dcd115b1ffd0a4ed21e44db127c2fb#egg=jedi
 RUN python -m pip install /root/composio[all] --no-deps --force-reinstall
-
 # Remove cache
 RUN rm -rf /root/composio/
 
