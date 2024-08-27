@@ -1,5 +1,8 @@
 FROM {{ baseimage }}
 
+ENV COMPOSIO_API_KEY=d1mpj0r66jfsxelfofskad
+ENV COMPOSIO_LOGGING_LEVEL=DEBUG
+
 # Switch user
 USER user
 
@@ -7,7 +10,7 @@ USER user
 WORKDIR /home/user
 
 # Clone github repository
-RUN git config --global http.postBuffer 157286400 && git clone --depth 1 https://github.com/{{ repository }}
+RUN git config --global http.postBuffer 157286400 && git config --global --add safe.directory /home/user/{{ reponame }} && git clone --depth 1 https://github.com/{{ repository }}
 
 # Set repository as workdir
 WORKDIR /home/user/{{ reponame }}
@@ -17,6 +20,10 @@ RUN git fetch --depth 1 origin {{ basecommit}}
 
 # Checkout to base commit
 RUN git checkout {{ basecommit}}
+
+WORKDIR /home/user
+COPY index.py _index.py
+RUN python _index.py --repo {{ reponame }}
 
 {% if dependencies -%}
 # Install dependecies
@@ -45,5 +52,6 @@ RUN {{ cmd }}
 # Install package
 RUN /home/user/.dev/bin/python -m {{ install }} || echo "$?"
 
+ENV HOME=/home/user/
 # Switch to root
 USER root
