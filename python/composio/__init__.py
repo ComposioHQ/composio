@@ -17,6 +17,7 @@ from composio.tools.env.factory import (
     WorkspaceType,
 )
 from composio.tools.env.host.shell import Shell
+from composio.utils.logging import LogLevel
 
 
 __all__ = (
@@ -35,6 +36,7 @@ __all__ = (
     "WorkspaceFactory",
     "Shell",
     "action",
+    "LogLevel",
 )
 
 __version__ = "0.5.6"

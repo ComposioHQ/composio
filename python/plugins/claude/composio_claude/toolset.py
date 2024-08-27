@@ -1,16 +1,20 @@
 import typing as t
 
+import typing_extensions as te
 from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
 from anthropic.types.beta.tools.tool_param import ToolParam
 
-from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
+from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
-from composio.tools.toolset import MetadataType, ProcessorsType
 
 
-class ComposioToolset(BaseComposioToolSet):
+class ComposioToolset(
+    BaseComposioToolSet,
+    runtime="claude",
+    description_char_limit=1024,
+):
     """
     Composio toolset for Anthropic Claude platform.
 
@@ -51,37 +55,7 @@ class ComposioToolset(BaseComposioToolSet):
     ```
     """
 
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-        metadata: t.Optional[MetadataType] = None,
-        processors: t.Optional[ProcessorsType] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            runtime="claude",
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-            metadata=metadata,
-            processors=processors,
-        )
-        self.schema = SchemaType.CLAUDE
+    schema = SchemaType.CLAUDE
 
     def validate_entity_id(self, entity_id: str) -> str:
         """Validate entity ID."""
@@ -98,6 +72,7 @@ class ComposioToolset(BaseComposioToolSet):
             entity_id = self.entity_id
         return entity_id
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as `ToolParam` objects.
@@ -105,30 +80,21 @@ class ComposioToolset(BaseComposioToolSet):
         :param actions: List of actions to wrap
         :return: Composio tools wrapped as `ToolParam` objects
         """
-        return [
-            ToolParam(
-                **t.cast(
-                    ClaudeSchema,
-                    self.schema.format(
-                        schema.model_dump(
-                            exclude_none=True,
-                        )
-                    ),
-                ).model_dump()
-            )
-            for schema in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
-    ) -> t.Sequence[ToolParam]:
+    ) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
+
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         return [
@@ -142,7 +108,7 @@ class ComposioToolset(BaseComposioToolSet):
                     ),
                 ).model_dump()
             )
-            for schema in self.get_action_schemas(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]
 
     def execute_tool_call(

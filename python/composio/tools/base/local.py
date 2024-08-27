@@ -182,7 +182,7 @@ class LocalToolMixin(Tool):
             }
         except Exception as e:
             self.logger.error(f"Error executing `{action}`: {e}")
-            self.logger.debug(traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             return {
                 "data": None,
                 "error": str(e),

@@ -535,8 +535,13 @@ class TriggerSubscription(logging.WithLogger):
         """Filter events and call the callback function."""
         data = self._parse_payload(event=event)
         if data is None:
+            self.logger.error(f"Error parsing trigger payload: {event}")
             return
 
+        self.logger.info(
+            f"Received trigger event with trigger ID: {data.metadata.id} "
+            f"and trigger name: {data.metadata.triggerName}"
+        )
         awaitables: t.List[Future] = []
         with ThreadPoolExecutor() as executor:
             for callback, filters in self._callbacks:
@@ -577,11 +582,12 @@ class TriggerSubscription(logging.WithLogger):
             time.sleep(1)
 
 
-class _PusherClient:
+class _PusherClient(logging.WithLogger):
     """Pusher client for Composio SDK."""
 
     def __init__(self, client_id: str, base_url: str, api_key: str) -> None:
         """Initialize pusher client."""
+        super().__init__()
         self.client_id = client_id
         self.base_url = base_url
         self.api_key = api_key
@@ -714,6 +720,7 @@ class Triggers(Collection[TriggerModel]):
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """Subscribe to a trigger and receive trigger events."""
+        self.logger.info("Creating trigger subscription")
         response = self._raise_if_required(
             response=self.client.http.get(
                 url="/v1/client/auth/client_info",

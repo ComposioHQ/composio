@@ -1,12 +1,11 @@
 import os
 import typing as t
 
+import typing_extensions as te
+
 from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
-from composio.constants import DEFAULT_ENTITY_ID
-from composio.tools.env.base import WorkspaceConfigType
-from composio.tools.toolset import MetadataType, ProcessorsType
 
 
 _openapi_to_python = {
@@ -17,53 +16,28 @@ _openapi_to_python = {
 }
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="praisonai",
+    description_char_limit=1024,
+):
     """
-    Composio toolset for Langchain framework.
+    Composio toolset for PraisonAI framework.
     """
 
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-        metadata: t.Optional[MetadataType] = None,
-        processors: t.Optional[ProcessorsType] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
+    _tools_file = "tools.py"
+    _imports = [
+        "import typing as t",
+        "from typing import Type",
+        "from praisonai_tools import BaseTool",
+        "from composio_praisonai import ComposioToolSet",
+        "from langchain.pydantic_v1 import BaseModel, Field",
+    ]
 
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            runtime="praisonai",
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-            metadata=metadata,
-            processors=processors,
-        )
-
-        prefix_imports = [
-            "import typing as t",
-            "from typing import Type",
-            "from praisonai_tools import BaseTool",
-            "from composio_praisonai import ComposioToolSet",
-            "from langchain.pydantic_v1 import BaseModel, Field",
-        ]
-        self.tool_file_path = "tools.py"
-        if not os.path.exists(self.tool_file_path):
-            with open(self.tool_file_path, "w", encoding="utf-8") as tool_file:
-                tool_file.write("\n".join(prefix_imports) + "\n\n")
+    def _create_tool_file(self) -> None:
+        if not os.path.exists(self._tools_file):
+            with open(self._tools_file, "w", encoding="utf-8") as tool_file:
+                tool_file.write("\n".join(self._imports) + "\n\n")
 
     def _process_input_schema(
         self,
@@ -169,7 +143,10 @@ class ComposioToolSet(BaseComposioToolSet):
         )
 
         tool_str = input_model_str + "\n\n" + basetool_str
-        with open(self.tool_file_path, "r+", encoding="utf-8") as tool_file:
+        if not os.path.exists(self._tools_file):
+            self._create_tool_file()
+
+        with open(self._tools_file, "r+", encoding="utf-8") as tool_file:
             if tool_str not in tool_file.read():
                 tool_file.write("\n\n" + tool_str)
 
@@ -189,6 +166,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
         return "\n".join(tools_section_parts)
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -201,33 +179,29 @@ class ComposioToolSet(BaseComposioToolSet):
         :param entity_id: Entity ID to use for executing function calls.
         :return: Name of the tools written
         """
-
-        return [
-            self._write_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for tool in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[str]:
         """
         Get composio tools written as ParisonAi supported tools.
 
-        :param actions: List of actions to write
-        :param entity_id: Entity ID to use for executing function calls.
+        :param actions: List of actions to wrap
+        :param apps: List of apps to wrap
+        :param tags: Filter the apps by given tags
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Name of the tools written
         """
-
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(apps=apps, tags=tags)
+            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

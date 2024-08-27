@@ -56,7 +56,7 @@ class TestTriggerNamesSerialization:
 
 def test_trigger_subscription(capsys, caplog) -> None:
     """Test trigger subscription multiplexing."""
-    logging.setup(logging.Level.DEBUG)
+    logging.setup(logging.LogLevel.DEBUG)
     subscription = TriggerSubscription()
     subscription.set_alive()
 
