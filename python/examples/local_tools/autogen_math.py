@@ -37,7 +37,7 @@ user_proxy = UserProxyAgent(
 
 # Register the preferred Applications, with right executor.
 composio_toolset.register_tools(
-    tools=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy
+    apps=[App.MATHEMATICAL], caller=chatbot, executor=user_proxy
 )
 
 # Define task.

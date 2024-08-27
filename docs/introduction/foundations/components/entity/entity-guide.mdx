@@ -43,7 +43,7 @@ except NoItemsFound as e:
     )
 
     # Poll until the connection is active
-    connected_account = request.wait_until_active(client=composio_client, timeout=100)
+    connected_account = request.wait_until_active(client=toolset.client, timeout=100)
 ```
 </CodeGroup>
 </Tab>
