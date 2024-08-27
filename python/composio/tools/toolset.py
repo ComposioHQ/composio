@@ -13,6 +13,7 @@ import typing as t
 import warnings
 from functools import wraps
 from importlib.util import find_spec
+from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel
@@ -61,8 +62,6 @@ _ProcessorType = t.Callable[[t.Dict], t.Dict]
 
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
-
-output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
 
 
 class ProcessorsType(te.TypedDict):
@@ -135,6 +134,7 @@ class ComposioToolSet(WithLogger):
         processors: t.Optional[ProcessorsType] = None,
         output_in_file: bool = False,
         logging_level: LogLevel = LogLevel.INFO,
+        output_dir: t.Optional[Path] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -215,6 +215,10 @@ class ComposioToolSet(WithLogger):
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.base_url = base_url or get_api_url_base()
+        self.output_dir = (
+            output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+        )
+        self._ensure_output_dir_exists()
 
         try:
             self.api_key = (
@@ -381,6 +385,11 @@ class ComposioToolSet(WithLogger):
             success_response_model=success_response_model,
         )
 
+    def _ensure_output_dir_exists(self):
+        """Ensure the output directory exists."""
+        if not self.output_dir.exists():
+            self.output_dir.mkdir()
+
     def _save_var_files(
         self,
         file_name_prefix: str,
@@ -392,10 +401,10 @@ class ComposioToolSet(WithLogger):
         for key, val in resp_data.items():
             try:
                 file_model = FileType.model_validate(val)
-                _ensure_output_dir_exists()
+                self._ensure_output_dir_exists()
 
                 local_filepath = (
-                    output_dir
+                    self.output_dir
                     / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
                 )
 
@@ -425,8 +434,8 @@ class ComposioToolSet(WithLogger):
         filename = hashlib.sha256(
             f"{action.name}-{entity_id}-{time.time()}".encode()
         ).hexdigest()
-        _ensure_output_dir_exists()
-        outfile = output_dir / filename
+        self._ensure_output_dir_exists()
+        outfile = self.output_dir / filename
         self.logger.info(f"Writing output to: {outfile}")
         _write_file(outfile, json.dumps(output))
         return {
@@ -808,12 +817,6 @@ class ComposioToolSet(WithLogger):
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
-
-
-def _ensure_output_dir_exists():
-    """Ensure the output directory exists."""
-    if not output_dir.exists():
-        output_dir.mkdir()
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
