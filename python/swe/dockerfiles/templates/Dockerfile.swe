@@ -53,5 +53,8 @@ RUN {{ cmd }}
 RUN /home/user/.dev/bin/python -m {{ install }} || echo "$?"
 
 ENV HOME=/home/user/
+
+WORKDIR /home/user/{{ reponame }}
+
 # Switch to root
 USER root

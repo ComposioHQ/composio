@@ -1,6 +1,7 @@
 from typing import Dict, List, Type
 
 from pydantic import BaseModel, Field
+from pathlib import Path
 
 from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
@@ -45,6 +46,7 @@ class GetClassInfo(
             repo_path = request.repo_name
             if "/" in repo_path:
                 repo_path = repo_path.split("/")[-1]
+            repo_path = Path.home() / repo_path
             
             self.load_fqdn_cache(repo_path)
             query_class_name = request.class_name

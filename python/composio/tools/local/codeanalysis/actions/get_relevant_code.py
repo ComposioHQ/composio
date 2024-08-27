@@ -1,5 +1,5 @@
 from typing import Dict, Type
-
+from pathlib import Path
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
@@ -46,6 +46,7 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
             repo_path = request.repo_name
             if "/" in repo_path:
                 repo_path = repo_path.split("/")[-1]
+            repo_path = Path.home() / repo_path
             vector_store = embedder.get_vector_store(repo_path, overwrite=False)
             query = request.query
             results = embedder.get_topn_chunks_from_query(vector_store, query, top_n=5)
