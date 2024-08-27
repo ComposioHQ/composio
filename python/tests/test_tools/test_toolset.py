@@ -9,6 +9,22 @@ from composio.exceptions import ComposioSDKError
 from composio.tools import ComposioToolSet
 
 
+def test_get_schemas() -> None:
+    """Test `ComposioToolSet.find_actions_by_tags` method."""
+    toolset = ComposioToolSet()
+    assert (
+        len(
+            toolset.get_action_schemas(
+                actions=[
+                    Action.SHELLTOOL_EXEC_COMMAND,
+                    Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION,
+                ]
+            )
+        )
+        > 0
+    )
+
+
 def test_find_actions_by_tags() -> None:
     """Test `ComposioToolSet.find_actions_by_tags` method."""
     toolset = ComposioToolSet()

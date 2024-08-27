@@ -43,7 +43,7 @@ class LocalClient(WithLogger):
 
         for action in actions:
             action_schemas.append(
-                tools[action.app]  # pylint: disable=protected-access
+                tools[action.app.upper()]  # pylint: disable=protected-access
                 ._actions[action.name]
                 .schema()
             )

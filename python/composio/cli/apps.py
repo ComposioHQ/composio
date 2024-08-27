@@ -18,7 +18,7 @@ from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.tools.local.handler import LocalClient
+from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 
 
@@ -138,7 +138,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
             is_local=False,
         ).store()
 
-    for tool in LocalClient.tools().values():
+    for tool in load_local_tools()["local"].values():
         if tool.enum in app_names:
             continue
 
@@ -185,7 +185,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             ).store()
 
     processed = []
-    for tool in LocalClient.tools().values():
+    for tool in load_local_tools()["local"].values():
         if tool.name in processed:
             continue
 
