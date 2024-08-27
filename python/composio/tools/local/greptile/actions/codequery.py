@@ -41,7 +41,7 @@ class CodeQueryRequest(BaseModel):
     timeout: int = Field(
         default=60,
         description="The timeout for the Greptile API request. Default is 20 seconds",
-        examples=[60,120,180],
+        examples=[60, 120, 180],
     )
     branch: str = Field(
         default=None,
