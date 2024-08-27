@@ -49,7 +49,7 @@ class EditFileResponse(BaseFileResponse):
         default=None,
         description="Error message if any",
     )
-    updated_text: str = Field(
+    updated_text: Dict[int, str] = Field(
         default=None,
         description="The updated text. If the file was not edited, this will be empty.",
     )

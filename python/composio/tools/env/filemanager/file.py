@@ -46,7 +46,7 @@ class Match(te.TypedDict):
 class TextReplacement(te.TypedDict):
     """Text replacement response."""
 
-    replaced_with: str
+    replaced_with: t.Dict[int, str]
     replaced_text: str
     error: te.NotRequired[str]
 
@@ -239,7 +239,7 @@ class File(WithLogger):
         """Total number of lines in the file."""
         return sum(1 for _ in self._iter_file())
 
-    def edit(
+    def  edit(
         self,
         text: str,
         start: int,
@@ -308,12 +308,14 @@ class File(WithLogger):
             self.path.write_text(data=original_content, encoding="utf-8")
             return {
                 "replaced_text": "",
-                "replaced_with": "",
+                "replaced_with": {},
+                "replaced_with": {},
                 "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
             }
+    
         return {
             "replaced_text": replaced,
-            "replaced_with": text,
+            "replaced_with": {start + i: line for i, line in enumerate(text.splitlines())},
             "error": "",
         }
 
