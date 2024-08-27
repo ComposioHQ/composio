@@ -6,6 +6,8 @@ from phi.assistant import Assistant
 from phi.llm.openai import OpenAIChat
 from composio_phidata import ComposioToolSet, App
 import agentops
+from phi.llm.ollama import Ollama
+
 # Load environment variables
 load_dotenv()
 
@@ -14,11 +16,12 @@ agentops.init(os.environ["AGENTOPS_API_KEY"])
 def initialize_assistant():
     """Initialize and return the AI assistant with necessary tools."""
     toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
-    tools = toolset.get_tools(apps=[App.IMAGE_ANALYSER, App.SERPAPI, App.FIRECRAWL])
+    tools = toolset.get_tools(apps=[App.IMAGE_ANALYSER, App.SERPAPI, App.FIRECRAWL, App.BROWSERBASE_TOOL])
     
     return Assistant(
         tools=tools,
         llm=OpenAIChat(model="gpt-4"),
+        #llm = Ollama(model="llama3")
         show_tool_calls=True
     )
 
@@ -46,6 +49,7 @@ def main():
 
     # Analyze the website and generate a roast
     analysis_prompt = f"""
+    Take a screenshot of the website using Browserbase and save it as website1.png at the {screenshot_path}
     Analyze the image {screenshot_path}:
     1. Describe the website you see.
     2. Analyze the website text after scraping.
