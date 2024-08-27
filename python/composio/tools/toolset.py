@@ -10,6 +10,7 @@ import json
 import os
 import time
 import typing as t
+import warnings
 from functools import wraps
 from importlib.util import find_spec
 
@@ -103,9 +104,22 @@ class ComposioToolSet(WithLogger):
     _runtime: str = "composio"
     _description_char_limit: int = 1024
 
-    def __init_subclass__(cls, runtime: str, description_char_limit: int) -> None:
-        cls._runtime = runtime
-        cls._description_char_limit = description_char_limit
+    def __init_subclass__(
+        cls,
+        runtime: t.Optional[str] = None,
+        description_char_limit: t.Optional[int] = None,
+    ) -> None:
+        if runtime is None:
+            warnings.warn(
+                f"runtime is not set on {cls.__name__}, using 'composio' as default"
+            )
+        cls._runtime = runtime or "composio"
+
+        if description_char_limit is None:
+            warnings.warn(
+                f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
+            )
+        cls._description_char_limit = description_char_limit or 1024
 
     def __init__(
         self,
