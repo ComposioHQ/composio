@@ -4,12 +4,13 @@ CrewAI demo.
 
 import os
 
+import agentops
 import dotenv
 from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
 from composio_crewai import App, ComposioToolSet
-import agentops
+
 
 agentops.init()
 

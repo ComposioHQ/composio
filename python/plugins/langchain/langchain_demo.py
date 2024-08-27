@@ -9,13 +9,10 @@ from composio_langchain import Action, ComposioToolSet
 from langchain import hub  # type: ignore
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-import agentops
 
 
 # Load environment variables from .env
 dotenv.load_dotenv()
-
-agentops.init()
 
 # Pull relevant agent model.
 prompt = hub.pull("hwchase17/openai-functions-agent")

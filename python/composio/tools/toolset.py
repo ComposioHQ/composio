@@ -4,14 +4,13 @@ Composio SDK tools.
 
 import base64
 import binascii
-from functools import wraps
 import hashlib
-import importlib
 import itertools
 import json
 import os
 import time
 import typing as t
+from functools import wraps
 from importlib.util import find_spec
 
 import typing_extensions as te
@@ -49,7 +48,7 @@ from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
-from composio.utils.logging import LogLevel, WithLogger, get_logger
+from composio.utils.logging import LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
 
@@ -74,25 +73,23 @@ class ProcessorsType(te.TypedDict):
 
 def _check_agentops() -> bool:
     """Check if AgentOps is installed and initialized."""
-    logger = get_logger()
-    logger.info("Checking if AgentOps is installed and initialized")
     if find_spec("agentops") is None:
-        logger.info("AgentOps is not installed")
         return False
-    logger.info("AgentOps is installed")
-    import agentops
-    logger.info("AgentOps is initialized")
+    import agentops  # pylint: disable=import-outside-toplevel
+
     return agentops.get_api_key() is not None
+
 
 def _record_action_if_available(func: t.Callable) -> t.Callable:
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if _check_agentops():
-            import agentops
-            action_name = str(kwargs.get('action', 'unknown_action'))
+            import agentops  # pylint: disable=import-outside-toplevel
+
+            action_name = str(kwargs.get("action", "unknown_action"))
             return agentops.record_action(action_name)(func)(self, *args, **kwargs)
-        else:
-            return func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
+
     return wrapper
 
 
