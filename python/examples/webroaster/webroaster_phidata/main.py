@@ -1,35 +1,58 @@
-from composio_phidata import ComposioToolSet, App, Action
-from phi.assistant import Assistant
-from phi.llm.openai import OpenAIChat
-from selenium import webdriver
+import os
 from time import sleep
 from dotenv import load_dotenv
-import os
+from selenium import webdriver
+from phi.assistant import Assistant
+from phi.llm.openai import OpenAIChat
+from composio_phidata import ComposioToolSet, App
 
+# Load environment variables
 load_dotenv()
-toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
-tools = toolset.get_tools(apps = [App.IMAGE_ANALYSER, App.SERPAPI, App.FIRECRAWL])
 
-assistant = Assistant(tools=tools,               
-                      llm=OpenAIChat(model="gpt-4o"),
-                      show_tool_calls=True)
+def initialize_assistant():
+    """Initialize and return the AI assistant with necessary tools."""
+    toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+    tools = toolset.get_tools(apps=[App.IMAGE_ANALYSER, App.SERPAPI, App.FIRECRAWL])
+    
+    return Assistant(
+        tools=tools,
+        llm=OpenAIChat(model="gpt-4"),
+        show_tool_calls=True
+    )
 
-inpu1 = input("Enter website url:")
+def capture_website_screenshot(url, filename):
+    """Capture a screenshot of the given website URL."""
+    driver = webdriver.Chrome()
+    try:
+        driver.get(url)
+        sleep(5)  # Wait for the page to load
+        driver.get_screenshot_as_file(filename)
+    finally:
+        driver.quit()
 
+def main():
+    # Initialize the AI assistant
+    assistant = initialize_assistant()
+    
+    # Get website URL from user
+    website_url = input("Enter website URL: ")
+    
+    # Capture website screenshot
+    screenshot_path = "python/examples/webroaster/website1.png"
+    capture_website_screenshot(website_url, screenshot_path)
+    print("Screenshot captured successfully.")
 
-driver = webdriver.Chrome()
-driver.get(inpu1)
-sleep(5)
+    # Analyze the website and generate a roast
+    analysis_prompt = f"""
+    Analyze the image {screenshot_path}:
+    1. Describe the website you see.
+    2. Analyze the website text after scraping.
+    3. Roast the website based on the image and text analysis. Be creative and very funny.
 
-driver.get_screenshot_as_file("python/examples/webroaster/website1.png") #to take screenshot
-driver.quit()
-print("end...")
+    Media path: [{screenshot_path}]
+    """
+    
+    assistant.print_response(analysis_prompt, markdown=True)
 
-assistant.print_response("""
-The input website from the user is, Analyse the image website1.png,
-        Media path is python/examples/webroaster/website1.png
-        and prompt is Describe the website you see. 
-        Pass the media path as a list and prompt as a str
-        Analyse the website text after scraping.
-        Then roast the website based on the image and text analysis. Be creative and very funny.
-""", markdown=True)
+if __name__ == "__main__":
+    main()
