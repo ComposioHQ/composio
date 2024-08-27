@@ -61,10 +61,10 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request: CreateCodeMapRequest, metadata: Dict) -> CreateCodeMapResponse:
-        self.REPO_DIR = os.path.normpath(
-            os.path.abspath(request.dir_to_index_path)
-        )
+    def execute(
+        self, request: CreateCodeMapRequest, metadata: Dict
+    ) -> CreateCodeMapResponse:
+        self.REPO_DIR = os.path.normpath(os.path.abspath(request.dir_to_index_path))
         self.failed_files = []
 
         try:

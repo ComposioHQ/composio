@@ -38,7 +38,9 @@ class GetClassInfo(
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request: GetClassInfoRequest, metadata: Dict) -> GetClassInfoResponse:
+    def execute(
+        self, request: GetClassInfoRequest, metadata: Dict
+    ) -> GetClassInfoResponse:
         try:
             repo_path = request.repo_dir
             self.load_fqdn_cache(repo_path)

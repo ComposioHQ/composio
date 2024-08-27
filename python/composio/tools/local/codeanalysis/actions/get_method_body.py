@@ -1,4 +1,4 @@
-from typing import Optional, Type, Dict
+from typing import Dict, Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -46,7 +46,9 @@ class GetMethodBody(
     _tags = ["index"]
     _tool_name = "codeanalysis"
 
-    def execute(self, request: GetMethodBodyRequest, metadata: Dict) -> GetMethodBodyResponse:
+    def execute(
+        self, request: GetMethodBodyRequest, metadata: Dict
+    ) -> GetMethodBodyResponse:
         try:
             self.load_fqdn_cache(request.repo_path)
             method_artefacts = self.get_method_artefacts(

@@ -1,4 +1,4 @@
-from typing import Type, Dict
+from typing import Dict, Type
 
 from pydantic import BaseModel, Field
 
@@ -39,11 +39,11 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     _request_schema: Type[GetRelevantCodeRequest] = GetRelevantCodeRequest
     _response_schema: Type[GetRelevantCodeResponse] = GetRelevantCodeResponse
 
-    def execute(self, request: GetRelevantCodeRequest, metadata: Dict) -> GetRelevantCodeResponse:
+    def execute(
+        self, request: GetRelevantCodeRequest, metadata: Dict
+    ) -> GetRelevantCodeResponse:
         try:
-            vector_store = embedder.get_vector_store(
-                request.repo_path, overwrite=False
-            )
+            vector_store = embedder.get_vector_store(request.repo_path, overwrite=False)
             query = request.query
             results = embedder.get_topn_chunks_from_query(vector_store, query, top_n=5)
             sep = "\n" + "=" * 100 + "\n"

@@ -220,7 +220,7 @@ def build_image_and_container(
             and not index_resp["success"]
         ):
             raise Exception(index_resp["error"])
-        
+
         index_time = datetime.datetime.now() - start_time
         logger.info("index completed, time taken: %s", index_time)
 
