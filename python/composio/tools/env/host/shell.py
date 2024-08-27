@@ -33,6 +33,7 @@ _ANSI_ESCAPE = re.compile(
 
 
 _DEV_SOURCE = Path("/home/user/.dev/bin/activate")
+_NOWAIT_CMDS = ("cd", "ls", "pwd")
 
 
 class Shell(Sessionable):
@@ -88,6 +89,11 @@ class HostShell(Shell):
 
     def _has_command_exited(self, cmd: str) -> bool:
         """Waif for command to exit."""
+        _cmd, *_ = cmd.split(" ")
+        if _cmd in _NOWAIT_CMDS:
+            time.sleep(0.3)
+            return True
+
         output = subprocess.run(  # pylint: disable=subprocess-run-check
             ["ps", "-e"],
             stdout=subprocess.PIPE,
@@ -100,7 +106,6 @@ class HostShell(Shell):
         self._write(ECHO_EXIT_CODE)
         *_, exit_code = self._read(wait=False).get(STDOUT).strip().split("\n")  # type: ignore
         if len(exit_code) == 0:
-            # `edit` command sometimes does not work as expected
             return 0
         return int(exit_code)
 
@@ -136,11 +141,13 @@ class HostShell(Shell):
             raise RuntimeError(
                 f"Subprocess exited unexpectedly.\nCurrent buffer: {buffer}"
             )
+
         if time.time() >= end_time:
             raise TimeoutError(
                 "Timeout reached while reading from subprocess.\nCurrent "
                 f"buffer: {buffer}"
             )
+
         return {
             STDOUT: buffer[stdout].decode(),
             STDERR: buffer[stderr].decode(),
@@ -158,28 +165,9 @@ class HostShell(Shell):
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
         self._write(cmd=cmd)
-
-        # Add a small delay to allow the command to start executing
-        time.sleep(0.1)
-
-        # Attempt to read multiple times with a short delay
-        max_attempts = 3
-        output = None
-        for _ in range(max_attempts):
-            output = self._read(cmd=cmd, wait=True)
-            if output[STDOUT] or output[STDERR]:
-                break
-            time.sleep(0.5)
-
-        if output is None:
-            raise TimeoutError(
-                f"Command '{cmd}' did not produce any output within the timeout period."
-            )
-
-        exit_code = self._get_exit_code()
         return {
-            **output,
-            EXIT_CODE: exit_code,
+            **self._read(cmd=cmd, wait=True),
+            EXIT_CODE: self._get_exit_code(),
         }
 
     def teardown(self) -> None:
@@ -241,7 +229,7 @@ class SSHShell(Shell):
     def _wait(self, cmd: str) -> None:
         """Wait for the command to execute."""
         _cmd, *_rest = cmd.split(" ")
-        if _cmd in ("ls", "cd") or len(_rest) == 0:
+        if _cmd in _NOWAIT_CMDS or len(_rest) == 0:
             time.sleep(0.3)
             return
 
