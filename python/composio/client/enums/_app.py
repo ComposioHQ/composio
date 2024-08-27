@@ -97,6 +97,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     ZENDESK: "App"
     ZEPTOOL: "App"
     ZOOM: "App"
+    POSTGRES: "App"
 
     @property
     def is_local(self) -> bool:

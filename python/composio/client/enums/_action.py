@@ -5946,6 +5946,9 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     ZOOM_UPLOAD_A_WEBINAR_S_BRANDING_WALLPAPER: "Action"
     ZOOM_USE_IN_MEETING_CONTROLS: "Action"
 
+    POSTGRES_CONNECTION: "Action"
+    POTGRES_CREATE_TABLE: "Action"
+
     @classmethod  # type: ignore
     @property
     @te.deprecated("Use CLICKUP_CREATE_TASK_ATTACHMENT instead.")
