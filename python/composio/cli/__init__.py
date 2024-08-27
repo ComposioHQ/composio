@@ -65,9 +65,9 @@ class HelpDYMGroup(DYMGroup):
     "-v",
     "level",
     help="Specify logging verbosity level.",
-    type=EnumParam(cls=logging.Level),
+    type=EnumParam(cls=logging.LogLevel),
 )
-def composio(level: t.Optional[logging.Level] = None) -> None:
+def composio(level: t.Optional[logging.LogLevel] = None) -> None:
     """
     🔗 Composio CLI Tool.
     """
