@@ -16,5 +16,4 @@ def load_local_tools() -> ToolRegistry:
             + ".".join(tooldef.relative_to(TOOLS_PATH).parent.parts)
             + ".tool"
         )
-
     return tool_registry
