@@ -9,6 +9,9 @@ from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
 from composio_crewai import App, ComposioToolSet
+import agentops
+
+agentops.init()
 
 
 # Load environment variables from .env
