@@ -3,7 +3,7 @@
 This guide provides detailed steps to create a Web Roaster agent that leverages Composio, Phidata and ChatGPT to roast a website on its design and copy. Ensure you have Python 3.8 or higher installed.
 
 ## How it works
-![alt text](https://github.com/ComposioHQ/composio/blob/master/python/examples/webroaster_phidata/webroast.gif)
+![alt text](https://github.com/ComposioHQ/composio/blob/master/python/examples/webroaster_phidata/webroast.gif?raw=true)
 
 ## Steps to Run
 
