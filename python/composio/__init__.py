@@ -1,3 +1,5 @@
+import atexit
+
 from composio.client import Composio
 from composio.client.enums import (
     Action,
@@ -18,6 +20,7 @@ from composio.tools.env.factory import (
 )
 from composio.tools.env.host.shell import Shell
 from composio.utils.logging import LogLevel
+from composio.utils.warnings import create_latest_version_warning_hook
 
 
 __all__ = (
@@ -40,3 +43,5 @@ __all__ = (
 )
 
 __version__ = "0.5.8"
+
+atexit.register(create_latest_version_warning_hook(version=__version__))

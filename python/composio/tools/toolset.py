@@ -563,7 +563,7 @@ class ComposioToolSet(WithLogger):
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
 
-        self.logger.info(f"Executing {action=} with {params=} and {metadata=}")
+        self.logger.info(f"Executing `{action.slug}` with {params=} and {metadata=}")
         response = (
             self._execute_local(
                 action=action,

@@ -47,7 +47,7 @@ To run each of these individually use `tox`
 
 ## Unit tests
 
-Run unit tests using `tox -e unittests` to verify the changes you made and check the code coverage.
+Run unit tests using `tox -e test` to verify the changes you made and check the code coverage.
 
 ## Environment variables
 
