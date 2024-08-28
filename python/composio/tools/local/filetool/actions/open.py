@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -46,6 +47,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
     - IsADirectoryError: If the provided path is a directory.
     """
 
+    @include_cwd
     def execute(self, request: OpenFileRequest, metadata: t.Dict) -> OpenFileResponse:
         """Open a file."""
         try:

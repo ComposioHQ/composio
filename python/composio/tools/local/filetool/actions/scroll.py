@@ -7,6 +7,7 @@ from composio.tools.env.filemanager.file import ScrollDirection
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -58,6 +59,7 @@ class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
     - FileNotFoundError: If the file is not found.
     """
 
+    @include_cwd
     def execute(self, request: ScrollRequest, metadata: t.Dict) -> ScrollResponse:
         try:
             recent_file = self.filemanagers.get(id=request.file_manager_id).recent

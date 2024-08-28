@@ -8,6 +8,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -100,6 +101,7 @@ class GitClone(LocalAction[GitCloneRequest, GitCloneResponse]):
         RuntimeError: If there's an issue with the command execution or GitHub token.
     """
 
+    @include_cwd
     def execute(self, request: GitCloneRequest, metadata: t.Dict) -> GitCloneResponse:
         filemanager = self.filemanagers.get(request.file_manager_id)
         repo_dir = request.repo_name.split("/")[-1]

@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -82,6 +83,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
 
     display_name = "Edit a file"
 
+    @include_cwd
     def execute(self, request: EditFileRequest, metadata: Dict) -> EditFileResponse:
         file_manager = self.filemanagers.get(request.file_manager_id)
         try:
