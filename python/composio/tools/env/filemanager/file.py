@@ -243,6 +243,8 @@ class File(WithLogger):
         """Format the text to be written to the file."""
         total_lines = self.total_lines()
         code = ""
+        if len(lines) == 0:
+            return code
         code += f"[File: {self.path}] ({total_lines} lines total)]\n"
         code += f"({list(lines.keys())[0]-1} line above)\n"
         max_line_num_width = len(str(max(lines.keys())))
