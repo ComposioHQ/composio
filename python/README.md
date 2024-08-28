@@ -16,13 +16,11 @@
   <a href="https://pypi.org/project/composio-core/">
   <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
   </a>
-  
+  <img alt="Downloads" src="https://codecov.io/gh/ComposioHQ/composio/graph/badge.svg?token=33H5QHUF7S">
 </p>
-
 <h2 align="center"><i>
   Production Ready Toolset for AI Agents
-</i></h2>
-
+</i></h2>  
 <h4 align="center">Equip your agent with high-quality tools & integrations without worrying about authentication, accuracy, and reliability in a single line of code!
 </h4>
 <div align="center">

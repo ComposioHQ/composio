@@ -14,6 +14,8 @@ from composio.tools.env.factory import (
     WorkspaceType,
 )
 
+from tests.conftest import E2E
+
 
 @action(toolname="cow")
 def say(message: str) -> str:
@@ -26,6 +28,7 @@ def say(message: str) -> str:
     return f"Cow says: {message}"
 
 
+@E2E
 class BaseFactoryTest:
     type: t.Type[Workspace]
     config: WorkspaceConfigType
