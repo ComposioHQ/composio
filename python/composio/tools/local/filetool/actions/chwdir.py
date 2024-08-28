@@ -36,8 +36,9 @@ class ChangeWorkingDirectory(LocalAction[ChwdirRequest, ChwdirResponse]):
 
     def execute(self, request: ChwdirRequest, metadata: Dict) -> ChwdirResponse:
         try:
-            self.filemanagers.get(request.file_manager_id).chdir(request.path)
-            return ChwdirResponse()
+            fm = self.filemanagers.get(request.file_manager_id)
+            fm.chdir(request.path)
+            return ChwdirResponse(current_working_directory=str(fm.working_dir))
         except PermissionError as e:
             return ChwdirResponse(error=f"Permission denied: {str(e)}")
         except FileNotFoundError as e:
