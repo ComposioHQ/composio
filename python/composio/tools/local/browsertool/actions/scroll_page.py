@@ -49,7 +49,7 @@ class ScrollPageResponse(BaseBrowserResponse):
     )
 
 
-class ScrollPage(BaseBrowserAction):
+class ScrollPage(BaseBrowserAction[ScrollPageRequest, ScrollPageResponse]):
     """
     Scroll the page in the browser.
 
@@ -70,34 +70,30 @@ class ScrollPage(BaseBrowserAction):
     _response_schema = ScrollPageResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: ScrollPageRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: ScrollPageRequest  # type: ignore
     ) -> ScrollPageResponse:
         """Execute the scroll page action."""
-        if request_data.scroll_type == "pixels":
-            return self._scroll_by_pixels(browser_manager, request_data)
-        if request_data.scroll_type == "element":
-            return self._scroll_to_element(browser_manager, request_data)
-        raise ValueError(f"Invalid scroll type: {request_data.scroll_type}")
+        if request.scroll_type == "pixels":
+            return self._scroll_by_pixels(browser_manager, request)
+        if request.scroll_type == "element":
+            return self._scroll_to_element(browser_manager, request)
+        raise ValueError(f"Invalid scroll type: {request.scroll_type}")
 
     def _scroll_by_pixels(
-        self, browser_manager: BrowserManager, request_data: ScrollPageRequest
+        self, browser_manager: BrowserManager, request: ScrollPageRequest
     ) -> ScrollPageResponse:
-        if request_data.amount is None:
+        if request.amount is None:
             raise ValueError("Amount must be specified for 'pixels' scroll type")
-        browser_manager.scroll(request_data.direction, request_data.amount)
-        return ScrollPageResponse(success=True, scrolled_amount=request_data.amount)
+        browser_manager.scroll(request.direction, request.amount)
+        return ScrollPageResponse(success=True, scrolled_amount=request.amount)
 
     def _scroll_to_element(
-        self, browser_manager: BrowserManager, request_data: ScrollPageRequest
+        self, browser_manager: BrowserManager, request: ScrollPageRequest
     ) -> ScrollPageResponse:
-        if request_data.selector is None:
+        if request.selector is None:
             raise ValueError("Selector must be specified for 'element' scroll type")
-        element = browser_manager.find_element(
-            request_data.selector, request_data.selector_type
-        )
+        element = browser_manager.find_element(request.selector, request.selector_type)
         if element:
-            browser_manager.scroll_to_element(
-                request_data.selector, request_data.selector_type
-            )
+            browser_manager.scroll_to_element(request.selector, request.selector_type)
             return ScrollPageResponse(success=True, element_found=True)
         return ScrollPageResponse(success=False, element_found=False)

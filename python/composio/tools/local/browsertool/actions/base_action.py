@@ -7,8 +7,7 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from composio.exceptions import ComposioSDKError
-from composio.tools.base.local import LocalAction
+from composio.tools.base.local import ActionRequest, ActionResponse, LocalAction
 from composio.tools.env.browsermanager.manager import BrowserManager
 
 
@@ -79,38 +78,28 @@ class BaseBrowserResponse(BaseModel):
     )
 
 
-class BaseBrowserAction(LocalAction[BaseBrowserRequest, BaseBrowserResponse], abs=True):
+class BaseBrowserAction(LocalAction[ActionRequest, ActionResponse], abs=True):
     _tool_name: str = "browsertool"
 
     @abstractmethod
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: BaseBrowserRequest
+        self,
+        browser_manager: BrowserManager,
+        request: ActionRequest,
     ) -> BaseBrowserResponse:
         pass
 
-    def execute(
-        self, request_data: BaseBrowserRequest, metadata: dict
-    ) -> BaseBrowserResponse:
-        workspace = metadata.get("workspace")
-        if not workspace:
-            raise ComposioSDKError("Workspace not found in authorisation data")
-
-        browser_managers = workspace.browser_managers
-        browser_manager = browser_managers.get(request_data.browser_manager_id)
-        if not browser_manager:
-            if not browser_managers:
-                raise ComposioSDKError("No browser managers available")
-            browser_manager = next(iter(browser_managers.values()))
-
+    def execute(self, request: ActionRequest, metadata: dict) -> ActionResponse:
+        browser_manager = self.browsers.get(request.browser_manager_id)  # type: ignore
         try:
             before_screenshot = None
             after_screenshot = None
-
-            if request_data.capture_screenshot:
+            if request.capture_screenshot:  # type: ignore
                 before_screenshot = self._take_screenshot(browser_manager, "before")
 
             resp = self.execute_on_browser_manager(
-                browser_manager=browser_manager, request_data=request_data
+                browser_manager=browser_manager,
+                request=request,
             )
             resp.current_url = browser_manager.get_current_url()
 
@@ -163,27 +152,25 @@ class BaseBrowserAction(LocalAction[BaseBrowserRequest, BaseBrowserResponse], ab
                 if page_dimensions
                 else None
             )
-
-            if request_data.capture_screenshot:
+            if request.capture_screenshot:  # type: ignore
                 after_screenshot = self._take_screenshot(browser_manager, "after")
 
             resp.before_screenshot = before_screenshot
             resp.after_screenshot = after_screenshot
-
-            return resp
+            return resp  # type: ignore
         except Exception as e:
             error_message = (
                 f"An error occurred while executing the browser action: {str(e)}"
             )
             self.logger.error(error_message, exc_info=True)
             return self.response.model(
-                error=error_message,
-                current_url=browser_manager.get_current_url(),
-                viewport=None,
-                scroll_position=None,
-                page_dimensions=None,
-                before_screenshot=None,
-                after_screenshot=None,
+                error=error_message,  # type: ignore
+                current_url=browser_manager.get_current_url(),  # type: ignore
+                viewport=None,  # type: ignore
+                scroll_position=None,  # type: ignore
+                page_dimensions=None,  # type: ignore
+                before_screenshot=None,  # type: ignore
+                after_screenshot=None,  # type: ignore
             )
 
     def _take_screenshot(self, browser_manager: BrowserManager, prefix: str) -> str:

@@ -44,7 +44,7 @@ class TypeTextResponse(BaseBrowserResponse):
     )
 
 
-class TypeText(BaseBrowserAction):
+class TypeText(BaseBrowserAction[TypeTextRequest, TypeTextResponse]):
     """Type text into an element on the current webpage.
 
     This action allows typing text into a specified element on the webpage.
@@ -64,14 +64,12 @@ class TypeText(BaseBrowserAction):
     _response_schema = TypeTextResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: TypeTextRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: TypeTextRequest  # type: ignore
     ) -> TypeTextResponse:
         """Execute the type text action."""
 
         # First, check if the element exists
-        element = browser_manager.find_element(
-            request_data.selector, request_data.selector_type
-        )
+        element = browser_manager.find_element(request.selector, request.selector_type)
 
         if element is None:
             return TypeTextResponse(
@@ -79,9 +77,7 @@ class TypeText(BaseBrowserAction):
             )
 
         # Scroll the element into view
-        browser_manager.scroll_to_element(
-            request_data.selector, request_data.selector_type
-        )
+        browser_manager.scroll_to_element(request.selector, request.selector_type)
 
         is_visible = browser_manager.execute_script(
             """
@@ -114,27 +110,25 @@ class TypeText(BaseBrowserAction):
             )
 
         # Clear existing text if requested
-        if request_data.clear_existing:
-            browser_manager.clear(request_data.selector, request_data.selector_type)
+        if request.clear_existing:
+            browser_manager.clear(request.selector, request.selector_type)
 
         # Attempt to type text into the element
-        browser_manager.type(
-            request_data.selector, request_data.text, request_data.selector_type
-        )
+        browser_manager.type(request.selector, request.text, request.selector_type)
 
         # Verify the text was typed correctly
         final_value = browser_manager.get_element_attribute(
-            request_data.selector, "value", request_data.selector_type
+            request.selector, "value", request.selector_type
         )
         if final_value is None:
             final_value = browser_manager.get_element_text(
-                request_data.selector, request_data.selector_type
+                request.selector, request.selector_type
             )
 
         return TypeTextResponse(
             success=True,
             element_found=True,
-            text_typed=request_data.text,
+            text_typed=request.text,
             final_element_value=final_value,
             is_visible=is_visible,
             is_enabled=is_enabled,
