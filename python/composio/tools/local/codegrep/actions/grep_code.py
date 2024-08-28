@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -72,30 +72,19 @@ class SearchCodebase(LocalAction[CodeSearchRequest, CodeSearchResponse]):
     """
 
     display_name = "Advanced Codebase Search"
-    _request_schema: Type[CodeSearchRequest] = CodeSearchRequest
-    _response_schema: Type[CodeSearchResponse] = CodeSearchResponse
     _tags = ["search", "code-analysis"]
-    _tool_name = "codegrep"
 
-    def execute(
-        self, request_data: CodeSearchRequest, metadata: dict = {}
-    ) -> CodeSearchResponse:
-        try:
-            search_paths = request_data.file_paths or [request_data.code_directory]
-
-            grep_results = grep_util(
-                pattern=request_data.query, filenames=search_paths, no_gitignore=False
+    def execute(self, request: CodeSearchRequest, metadata: dict) -> CodeSearchResponse:
+        search_paths = request.file_paths or [request.code_directory]
+        grep_results = grep_util(
+            pattern=request.query,
+            filenames=search_paths,
+            no_gitignore=False,
+        )
+        formatted_results = [
+            SearchResult(
+                file_path=result["filename"], matched_content=result["matches"]
             )
-            print("Grep results: ", grep_results)
-            formatted_results = [
-                SearchResult(
-                    file_path=result["filename"], matched_content=result["matches"]
-                )
-                for result in grep_results
-            ]
-
-            return CodeSearchResponse(matches=formatted_results)
-        except Exception as e:
-            error_message = f"An error occurred during the codebase search: {str(e)}"
-            print(error_message)
-            return CodeSearchResponse(matches=[], error=error_message)
+            for result in grep_results
+        ]
+        return CodeSearchResponse(matches=formatted_results)

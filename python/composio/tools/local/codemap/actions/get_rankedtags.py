@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -70,57 +70,48 @@ class GenerateRankedTags(
     """
 
     display_name = "Generate Ranked Tags"
-    _request_schema: Type[GenerateRankedTagsRequest] = GenerateRankedTagsRequest
-    _response_schema: Type[GenerateRankedTagsResponse] = GenerateRankedTagsResponse
     _tags = ["repo", "tags", "code-analysis"]
-    _tool_name = "codemap"
 
     def execute(
-        self, request_data: GenerateRankedTagsRequest, metadata: dict = {}
+        self,
+        request: GenerateRankedTagsRequest,
+        metadata: dict,
     ) -> GenerateRankedTagsResponse:
-        repo_root = Path(request_data.code_directory).resolve()
-
+        repo_root = Path(request.code_directory).resolve()
         if not repo_root.exists():
             print(f"Error: Repository root path {repo_root} does not exist")
             return GenerateRankedTagsResponse(
                 ranked_tags="", error=f"Repository root path {repo_root} does not exist"
             )
 
-        try:
-            # Get all files in the repository, excluding those in .gitignore
-            all_files = get_files_excluding_gitignore(
-                root_path=repo_root, no_gitignore=False
-            )
+        # Get all files in the repository, excluding those in .gitignore
+        all_files = get_files_excluding_gitignore(
+            root_path=repo_root, no_gitignore=False
+        )
 
-            # Convert absolute paths to relative paths, only for .py files
-            all_files = [
-                str(Path(file).relative_to(repo_root))
-                for file in all_files
-                if file.endswith(".py")
-            ]
+        # Convert absolute paths to relative paths, only for .py files
+        all_files = [
+            str(Path(file).relative_to(repo_root))
+            for file in all_files
+            if file.endswith(".py")
+        ]
 
-            # Generate ranked tags map
-            repo_map = RepoMap(root=repo_root)
-            ranked_tags_map = repo_map.get_ranked_tags_map(
-                chat_fnames=[],
-                other_fnames=all_files,
-                mentioned_fnames=set(request_data.files_of_interest),
-                mentioned_idents=set(),
-            )
+        # Generate ranked tags map
+        repo_map = RepoMap(root=repo_root)
+        ranked_tags_map = repo_map.get_ranked_tags_map(
+            chat_fnames=[],
+            other_fnames=all_files,
+            mentioned_fnames=set(request.files_of_interest),
+            mentioned_idents=set(),
+        )
 
-            # Parse the ranked_tags_map string to extract RankedTag objects
-            if ranked_tags_map is None:
-                print("Error: No ranked tags map generated")
-                return GenerateRankedTagsResponse(
-                    ranked_tags="",
-                    error="No ranked tags map generated",
-                )
-            return GenerateRankedTagsResponse(
-                ranked_tags=ranked_tags_map,
-            )
-
-        except Exception as e:
+        # Parse the ranked_tags_map string to extract RankedTag objects
+        if ranked_tags_map is None:
+            print("Error: No ranked tags map generated")
             return GenerateRankedTagsResponse(
                 ranked_tags="",
-                error=f"An error occurred while generating ranked tags: {str(e)}",
+                error="No ranked tags map generated",
             )
+        return GenerateRankedTagsResponse(
+            ranked_tags=ranked_tags_map,
+        )
