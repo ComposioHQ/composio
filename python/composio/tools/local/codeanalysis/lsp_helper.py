@@ -510,7 +510,7 @@ class EntityObj:
         )
         self.global_path = os.path.normpath(os.path.abspath(self.goto_obj.module_path))
 
-        self.definition_body = fetch_node_definition_body(self.goto_obj)
+        self.definition_body, self.start_line = fetch_node_definition_body(self.goto_obj)
         entity_breakup = tree_sitter_related.fetch_entity_artifacts(
             self.definition_body, self.entity_type
         )
@@ -695,7 +695,7 @@ class ClassObj(EntityObj):
                 parent_module_path = str(x.parent().module_path)
                 inferred_names = [y.name for y in x.infer()]
                 node_body = (
-                    fetch_node_definition_body(x, one_liner=True)
+                    fetch_node_definition_body(x, one_liner=True)[0]
                     if fetch_node_body
                     else None
                 )
@@ -1128,8 +1128,8 @@ def fetch_node_definition_body(
             lines = file.readlines()
 
         extracted_content_lines = lines[start_line : end_line + 1]
-        extracted_content_lines[0] = extracted_content_lines[0][start_col:]
-        extracted_content_lines[-1] = extracted_content_lines[-1][:end_col]
+        # extracted_content_lines[0] = extracted_content_lines[0][start_col:]
+        # extracted_content_lines[-1] = extracted_content_lines[-1][:end_col]
 
         extracted_content = "".join(extracted_content_lines)
 
@@ -1138,7 +1138,7 @@ def fetch_node_definition_body(
                 line.strip() for line in extracted_content_lines
             )
 
-        return extracted_content
+        return extracted_content, start_line
 
     except Exception as e:
         raise RuntimeError(f"Error in fetch_node_definition_body: {e}")

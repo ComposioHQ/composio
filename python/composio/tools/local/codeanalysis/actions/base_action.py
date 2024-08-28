@@ -172,7 +172,10 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
         for idx, func in enumerate(method_results):
             result_header = f"## Details about shortlisted result ID {idx}:\n"
             function_details = func["res_fetch_function_stuff"]
-            function_body = f"\n```python\n{func['definition_body']}\n```"
+            function_body = "\n```python\n"
+            for line_num, line in enumerate(func['definition_body'].splitlines(), start=func['start_line'] + 1):
+                function_body += f"{line_num}: {line}\n"
+            function_body += "```"
 
             signature_ans.append(result_header + function_details)
             body_ans.append(result_header + function_details + function_body)
