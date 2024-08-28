@@ -40,3 +40,4 @@ python/dockerfiles/composio
 python/swe/dockerfiles/generated
 python/swe/dockerfiles/logs
 python/swe/logs
+indexed
