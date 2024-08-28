@@ -42,7 +42,7 @@ class GetScreenshotResponse(BaseBrowserResponse):
     )
 
 
-class GetScreenshot(BaseBrowserAction):
+class GetScreenshot(BaseBrowserAction[GetScreenshotRequest, GetScreenshotResponse]):
     """
     Get a screenshot of a webpage.
 
@@ -60,21 +60,19 @@ class GetScreenshot(BaseBrowserAction):
     _response_schema = GetScreenshotResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GetScreenshotRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: GetScreenshotRequest  # type: ignore
     ) -> GetScreenshotResponse:
         """Execute the screenshot action."""
         try:
-            if not request_data.output_path or request_data.output_path == "":
+            if not request.output_path or request.output_path == "":
                 home_dir = Path.home()
                 browser_media_dir = home_dir / ".browser_media"
                 browser_media_dir.mkdir(parents=True, exist_ok=True)
                 random_string = "".join(random.choices(string.ascii_lowercase, k=6))
                 output_path = browser_media_dir / f"screenshot_{random_string}.png"
             else:
-                output_path = Path(request_data.output_path)
-            browser_manager.take_screenshot(
-                output_path, full_page=request_data.full_page
-            )
+                output_path = Path(request.output_path)
+            browser_manager.take_screenshot(output_path, full_page=request.full_page)
             return GetScreenshotResponse(screenshot_path=str(output_path), success=True)
         except Exception as e:
             return GetScreenshotResponse(

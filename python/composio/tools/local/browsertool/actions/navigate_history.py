@@ -41,7 +41,9 @@ class NavigateHistoryResponse(BaseBrowserResponse):
     )
 
 
-class NavigateHistory(BaseBrowserAction):
+class NavigateHistory(
+    BaseBrowserAction[NavigateHistoryRequest, NavigateHistoryRequest]
+):
     """
     Navigate browser history.
 
@@ -55,24 +57,24 @@ class NavigateHistory(BaseBrowserAction):
     _response_schema = NavigateHistoryResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: NavigateHistoryRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: NavigateHistoryRequest  # type: ignore
     ) -> NavigateHistoryResponse:
         """Execute the navigate history action."""
         previous_url = browser_manager.get_current_url()
         navigation_method = browser_manager.back
-        if request_data.direction == "forward":
+        if request.direction == "forward":
             navigation_method = browser_manager.forward
         steps_taken = 0
         message = None
 
-        for _ in range(request_data.steps):
+        for _ in range(request.steps):
             try:
                 navigation_method()
                 steps_taken += 1
             except Exception:
                 # Reached the limit of history
                 method_direction = "backs"
-                if request_data.direction == "forward":
+                if request.direction == "forward":
                     method_direction = "forwards"
                 message = f"Maximum {method_direction} reached after {steps_taken} steps. Can't go any further."
                 break

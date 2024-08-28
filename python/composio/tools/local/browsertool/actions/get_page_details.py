@@ -33,7 +33,7 @@ class GetPageDetailsResponse(BaseBrowserResponse):
     )
 
 
-class GetPageDetails(BaseBrowserAction):
+class GetPageDetails(BaseBrowserAction[GetPageDetailsRequest, GetPageDetailsResponse]):
     """
     Get details of the current webpage.
 
@@ -47,10 +47,10 @@ class GetPageDetails(BaseBrowserAction):
     _response_schema = GetPageDetailsResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GetPageDetailsRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: GetPageDetailsRequest  # type: ignore
     ) -> GetPageDetailsResponse:
         """Execute the get page details action."""
         page_details = browser_manager.get_page_details()
-        if not request_data.include_accessibility:
+        if not request.include_accessibility:
             page_details.pop("page_details", None)
         return GetPageDetailsResponse(success=True, details=page_details)

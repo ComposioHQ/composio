@@ -53,38 +53,28 @@ class FormatAndLintCodebase(LocalAction[CodeFormatRequest, CodeFormatResponse]):
     _tags = ["formatting"]
     _tool_name = "codeformat"
 
-    def execute(
-        self, request_data: CodeFormatRequest, metadata: dict = {}
-    ) -> CodeFormatResponse:
-        try:
-            path = Path(request_data.path)
-            results = []
-
-            if not path.exists():
-                return CodeFormatResponse(
-                    results=[],
-                    error=f"The specified path '{request_data.path}' does not exist or is not accessible.",
-                )
-
-            files_to_process = [path] if path.is_file() else list(path.rglob("*.py"))
-
-            for file in files_to_process:
-                format_changes = self._run_ruff_format(file)
-                errors = self._run_ruff_check(file)
-                results.append(
-                    FormatResult(
-                        file_path=str(file),
-                        format_changes=format_changes,
-                        errors=errors,
-                    )
-                )
-
-            return CodeFormatResponse(results=results)
-        except Exception as e:
-            error_message = (
-                f"An error occurred during the formatting and linting process: {str(e)}"
+    def execute(self, request: CodeFormatRequest, metadata: dict) -> CodeFormatResponse:
+        results = []
+        path = Path(request.path)
+        if not path.exists():
+            return CodeFormatResponse(
+                results=[],
+                error=f"The specified path '{request.path}' does not exist or is not accessible.",
             )
-            return CodeFormatResponse(results=[], error=error_message)
+
+        files_to_process = [path] if path.is_file() else list(path.rglob("*.py"))
+        for file in files_to_process:
+            format_changes = self._run_ruff_format(file)
+            errors = self._run_ruff_check(file)
+            results.append(
+                FormatResult(
+                    file_path=str(file),
+                    format_changes=format_changes,
+                    errors=errors,
+                )
+            )
+
+        return CodeFormatResponse(results=results)
 
     def _run_ruff_format(self, file_path: Path) -> List[str]:
         return self._run_ruff_command(file_path, "format")
