@@ -54,6 +54,7 @@ core_requires = [
     "docker>=7.1.0",  # Docker workspace
     "e2b-code-interpreter",  # E2B workspace
     "gql",  # FlyIO workspace
+    "requests",  # FlyIO workspace
     "requests_toolbelt",  # FlyIO workspace
     "uvicorn",
 ]

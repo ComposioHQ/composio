@@ -235,7 +235,7 @@ class RemoteWorkspace(Workspace):
                 f"Request: {method.upper()} {endpoint} @ {self.url}\n"
                 f"Response: {response.status_code} -> {response.text}"
             )
-        if response.status_code == 500:
+        if response.status_code in (500, 503):
             raise ComposioSDKError(
                 message=(
                     f"Error requesting data from {self}, "

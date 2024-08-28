@@ -2,6 +2,8 @@
 
 import typing as t
 
+import pytest
+
 from composio import Action
 from composio.tools.base.runtime import action
 from composio.tools.env.base import Workspace, WorkspaceConfigType
@@ -38,6 +40,11 @@ class BaseFactoryTest:
     def setup_class(cls) -> None:
         cls.workspace = WorkspaceFactory.new(config=cls.config)
 
+    @classmethod
+    def teardown_class(cls) -> None:
+        if hasattr(cls, "workspace"):
+            cls.workspace.teardown()
+
     def test_init(self) -> None:
         assert isinstance(self.workspace, self.type)
 
@@ -73,6 +80,7 @@ class TestDocker(BaseFactoryTest):
     config = WorkspaceType.Docker(image="composio/composio:dev")
 
 
+@pytest.mark.skip(reason="E2B is not working")
 class TestE2B(BaseFactoryTest):
     type = E2BWorkspace
     config = WorkspaceType.E2B(template="bg8v5hkbhq1w09i5h65u")
