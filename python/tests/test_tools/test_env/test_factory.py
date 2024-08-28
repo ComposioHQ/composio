@@ -5,7 +5,6 @@ import typing as t
 import pytest
 
 from composio import Action
-from composio.tools.base.runtime import action
 from composio.tools.env.base import Workspace, WorkspaceConfigType
 from composio.tools.env.factory import (
     DockerWorkspace,
@@ -17,17 +16,7 @@ from composio.tools.env.factory import (
 )
 
 from tests.conftest import E2E
-
-
-@action(toolname="cow")
-def say(message: str) -> str:
-    """
-    Make cow say.
-
-    :param message: Message string
-    :return output: Output string
-    """
-    return f"Cow says: {message}"
+from tests.data.custom_tools import say
 
 
 @E2E
@@ -39,11 +28,6 @@ class BaseFactoryTest:
     @classmethod
     def setup_class(cls) -> None:
         cls.workspace = WorkspaceFactory.new(config=cls.config)
-
-    @classmethod
-    def teardown_class(cls) -> None:
-        if hasattr(cls, "workspace"):
-            cls.workspace.teardown()
 
     def test_init(self) -> None:
         assert isinstance(self.workspace, self.type)
