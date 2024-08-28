@@ -30,10 +30,10 @@ class GitRepoResponse(BaseModel):
 
 
 @action(toolname="git", runs_on_shell=True)
-def get_git_repo(request_data: GitRepoRequest, metadata: dict) -> GitRepoResponse:
+def get_git_repo(request: GitRepoRequest, metadata: dict) -> GitRepoResponse:
     """Get git repo for working directory."""
     shell = metadata["workspace"].shells.recent
-    shell.exec(f"cd {request_data.working_directory}")
+    shell.exec(f"cd {request.working_directory}")
     output = (
         shell.exec("git config --get remote.origin.url").get("stdout").lstrip().rstrip()
     )
