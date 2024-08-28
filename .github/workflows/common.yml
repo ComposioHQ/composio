@@ -82,6 +82,48 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - uses: actions/setup-python@master
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+          pip install --user --upgrade setuptools
+          pip install tox==4.6.3
+      - name: Unittests
+        run: |
+          export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
+          export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+
+          tox -e test -- -m 'not e2e'
+      - if: matrix.python-version == '3.10'
+        name: Upload test results to Codecov
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  e2e:
+    defaults:
+      run:
+        working-directory: ./python
+    continue-on-error: True
+    needs:
+      - lock_check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Install Docker Engine without containerd
         run: |
@@ -110,44 +152,9 @@ jobs:
           make ci
       - name: Unittests
         run: |
-          COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }} COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }} FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }} E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }} tox -e unittests
-      - if: matrix.python-version == '3.10'
-        name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: SamparkAI/composio_sdk
-  
-  # Needs fixing
-  # integration_tests:
-  #   needs:
-  #     - lock_check
-  #     - linter_checks
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: [ubuntu-latest, macos-latest]
-  #       python-version: ['3.9', '3.10', '3.11', '3.12']
-  #   runs-on: ${{ matrix.os }}
+          export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
+          export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
 
-  #   steps:
-  #   - uses: actions/checkout@v2
-
-  #   - name: Set up Node.js
-  #     uses: actions/setup-node@v2
-  #     with:
-  #       node-version: '20'
-
-  #   - name: Set up Python
-  #     uses: actions/setup-python@v2
-  #     with:
-  #       python-version: ${{ matrix.python-version }}
-    
-  #   - name: Go core and run pip install
-  #     run: pip3 install -e .
-
-  #   - name: Install dependencies
-  #     run: npm install -g pnpm && pnpm install && pnpm exec playwright install
-
-  #   - name: Run tests
-  #     run: pnpm test
+          tox -e test -- -m 'e2e'
