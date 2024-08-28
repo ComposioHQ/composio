@@ -155,12 +155,14 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
             action_registry,
             tool_registry,
+            trigger_registry,
         )
         from composio.tools.local import (  # pylint: disable=import-outside-toplevel
             load_local_tools,
         )
 
         load_local_tools()
+
         for gid, actions in action_registry.items():
             if self._slug in actions:
                 action = actions[self._slug]
@@ -183,13 +185,26 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 )
                 return _model_cache[self._slug]  # type: ignore
 
+        for gid, triggers in trigger_registry.items():
+            if self._slug in triggers:
+                _model_cache[self._slug] = TriggerData(
+                    name=triggers[self._slug].name,
+                    app=triggers[self._slug].tool,
+                    path=self._path / self._slug,
+                )
+                return _model_cache[self._slug]  # type: ignore
+
         return None
 
     def _cache_from_remote(self) -> EntityType:
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
+        from composio.client.endpoints import (  # pylint: disable=import-outside-toplevel
+            v2,
+        )
 
         client = Composio.get_latest()
         data: t.Union[AppData, TriggerData, ActionData]
+
         if self._model is AppData:
             response = client.http.get(
                 url=str(client.apps.endpoint / self.slug),
@@ -215,6 +230,14 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 is_local=False,
                 is_runtime=False,
                 shell=False,
+                path=self._path / self._slug,
+            )
+
+        if self._model is TriggerData:
+            response = client.http.get(url=str(v2.triggers / self.slug)).json()
+            data = TriggerData(
+                name=response["enum"],
+                app=response["appName"],
                 path=self._path / self._slug,
             )
 

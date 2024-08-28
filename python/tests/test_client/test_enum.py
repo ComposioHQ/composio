@@ -75,6 +75,11 @@ class TestBase:
         assert enum.slug == Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug
         assert not enum.is_local
 
+    @mock.patch("pathlib.Path.exists", return_value=False)
+    def test_load_remote_trigger(self, _patch) -> None:
+        enum = Trigger(value=Trigger.GITHUB_COMMIT_EVENT.slug)
+        assert enum.slug == Trigger.GITHUB_COMMIT_EVENT.slug
+
 
 def test_tag_enum() -> None:
     """Test `Tag` enum."""
