@@ -45,6 +45,7 @@ core_requires = [
     "pyperclip>=1.8.2,<2",
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
+    "semver>=3.0.0",
     # TODO: Extract as workspace dependencies
     "fastapi",  # Tool API
     "uvicorn",  # Tool server
@@ -53,6 +54,7 @@ core_requires = [
     "docker>=7.1.0",  # Docker workspace
     "e2b-code-interpreter",  # E2B workspace
     "gql",  # FlyIO workspace
+    "requests",  # FlyIO workspace
     "requests_toolbelt",  # FlyIO workspace
     "uvicorn",
 ]

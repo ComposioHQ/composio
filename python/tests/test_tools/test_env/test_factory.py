@@ -2,8 +2,9 @@
 
 import typing as t
 
+import pytest
+
 from composio import Action
-from composio.tools.base.runtime import action
 from composio.tools.env.base import Workspace, WorkspaceConfigType
 from composio.tools.env.factory import (
     DockerWorkspace,
@@ -14,18 +15,11 @@ from composio.tools.env.factory import (
     WorkspaceType,
 )
 
-
-@action(toolname="cow")
-def say(message: str) -> str:
-    """
-    Make cow say.
-
-    :param message: Message string
-    :return output: Output string
-    """
-    return f"Cow says: {message}"
+from tests.conftest import E2E
+from tests.data.custom_tools import say
 
 
+@E2E
 class BaseFactoryTest:
     type: t.Type[Workspace]
     config: WorkspaceConfigType
@@ -70,6 +64,7 @@ class TestDocker(BaseFactoryTest):
     config = WorkspaceType.Docker(image="composio/composio:dev")
 
 
+@pytest.mark.skip(reason="E2B is not working")
 class TestE2B(BaseFactoryTest):
     type = E2BWorkspace
     config = WorkspaceType.E2B(template="bg8v5hkbhq1w09i5h65u")

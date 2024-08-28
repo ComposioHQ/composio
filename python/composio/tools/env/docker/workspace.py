@@ -136,7 +136,7 @@ class DockerWorkspace(RemoteWorkspace):
                 ):
                     return
             except requests.ConnectionError:
-                time.sleep(0.1)
+                time.sleep(1)
 
         self.logger.error(
             "Timed out while waiting for docker workspace to start\n"
