@@ -37,13 +37,9 @@ class ScrollResponse(BaseFileResponse):
         default="",
         description="Message to display to the user",
     )
-    lines: t.Dict[int, str] = Field(
-        default={},
+    lines: str = Field(
+        default="",
         description="File content with their line numbers",
-    )
-    total_lines: int = Field(
-        default=0,
-        description="Total number of lines in the file",
     )
     error: str = Field(
         default="",
@@ -74,8 +70,7 @@ class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
             )
             return ScrollResponse(
                 message="Scroll successful.",
-                lines=recent_file.read(),
-                total_lines=recent_file.total_lines(),
+                lines=recent_file.format_text(recent_file.read()),
             )
         except FileNotFoundError as e:
             return ScrollResponse(error=f"File not found: {str(e)}")

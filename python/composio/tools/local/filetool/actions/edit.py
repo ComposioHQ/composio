@@ -49,7 +49,7 @@ class EditFileResponse(BaseFileResponse):
         default=None,
         description="Error message if any",
     )
-    updated_text: Dict[int, str] = Field(
+    updated_text: str = Field(
         default=None,
         description="The updated text. If the file was not edited, this will be empty.",
     )
@@ -101,6 +101,8 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
             )
             if response.get("error") and len(response["error"]) > 0:  # type: ignore
                 return EditFileResponse(
+                    old_text=response["replaced_text"],
+                    updated_text=response["replaced_with"],
                     error="No Update, found error: " + response["error"]  # type: ignore
                 )
             return EditFileResponse(

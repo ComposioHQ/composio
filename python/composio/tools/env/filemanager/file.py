@@ -47,7 +47,7 @@ class TextReplacement(te.TypedDict):
     """Text replacement response."""
 
     replaced_with: t.Dict[int, str]
-    replaced_text: str
+    replaced_text: t.Dict[int, str]
     error: te.NotRequired[str]
 
 
@@ -238,8 +238,19 @@ class File(WithLogger):
     def total_lines(self) -> int:
         """Total number of lines in the file."""
         return sum(1 for _ in self._iter_file())
+    
+    def format_text(self, lines: t.Dict[int, str]) -> str:
+        """Format the text to be written to the file."""
+        total_lines = self.total_lines()
+        code = ""
+        code += f"[File: {self.path}] ({total_lines} lines total)]\n"
+        code += f"({list(lines.keys())[0]-1} line above)\n"
+        max_line_num_width = len(str(max(lines.keys())))
+        code += "\n".join(f"{line_num:<{max_line_num_width}}:{line_content.rstrip()}" for line_num, line_content in lines.items())
+        code += f"\n({total_lines - list(lines.keys())[-1]} line below)\n"
+        return code
 
-    def  edit(
+    def edit(
         self,
         text: str,
         start: int,
@@ -307,14 +318,13 @@ class File(WithLogger):
             )
             self.path.write_text(data=original_content, encoding="utf-8")
             return {
-                "replaced_text": "",
-                "replaced_with": {},
-                "replaced_with": {},
+                "replaced_text": {start + i: line for i, line in enumerate(replaced.splitlines())},
+                "replaced_with": {start + i: line for i, line in enumerate(text.splitlines())},
                 "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
             }
     
         return {
-            "replaced_text": replaced,
+            "replaced_text": {start + i: line for i, line in enumerate(replaced.splitlines())},
             "replaced_with": {start + i: line for i, line in enumerate(text.splitlines())},
             "error": "",
         }
@@ -480,6 +490,8 @@ class File(WithLogger):
         """Write and run lint on the file. If linting fails, revert the changes."""
         older_file_text = self.path.read_text(encoding="utf-8")
         write_response = self.edit(text=text, start=start, end=end)
+        write_response["replaced_text"] = self.format_text(write_response["replaced_text"])
+        write_response["replaced_with"] = self.format_text(write_response["replaced_with"])
         if write_response.get("error"):
             self.path.write_text(data=older_file_text, encoding="utf-8")
             return write_response
