@@ -46,8 +46,8 @@ class Match(te.TypedDict):
 class TextReplacement(te.TypedDict):
     """Text replacement response."""
 
-    replaced_with: t.Dict[int, str]
-    replaced_text: t.Dict[int, str]
+    replaced_with: str
+    replaced_text: str
     error: te.NotRequired[str]
 
 
@@ -293,9 +293,10 @@ class File(WithLogger):
                 cursor += 1
 
             # Read lines to be replaced
-            while cursor < end:
-                replaced += fp.readline()
-                cursor += 1
+            if end > 0:
+                while cursor <= end:
+                    replaced += fp.readline()
+                    cursor += 1
 
             # Add the new text
             buffer += text
@@ -322,16 +323,16 @@ class File(WithLogger):
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
             formatted_errors = self._format_lint_errors(
-                new_lint_errors, start, end, text
+                new_lint_errors, start, end, original_content, buffer, text
             )
             return {
-                "replaced_text": {x+1: original_content.splitlines()[x] for x in range(start_original, end_original)},
-                "replaced_with": {x+1: buffer.splitlines()[x] for x in range(start_new, end_new)},
+                "replaced_text": "",
+                "replaced_with": "",
                 "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
             }
         return {
-            "replaced_text": {x+1: original_content.splitlines()[x] for x in range(start_original, end_original)},
-            "replaced_with": {x+1: buffer.splitlines()[x] for x in range(start_new, end_new)},
+            "replaced_text": self.format_text({x+1: original_content.splitlines()[x] for x in range(start_original, end_original)}),
+            "replaced_with": self.format_text({x+1: buffer.splitlines()[x] for x in range(start_new, end_new)}),
             "error": "",
         }
 
@@ -399,7 +400,7 @@ class File(WithLogger):
         ]
 
     def _format_lint_errors(
-        self, errors: t.List[str], start: int, end: int, text: str
+        self, errors: t.List[str], start: int, end: int, original_content: str, buffer: str, text: str
     ) -> str:
         """Format lint errors with descriptions and next actions."""
         formatted_output = ""
@@ -420,18 +421,19 @@ class File(WithLogger):
             else:
                 formatted_output += f"- {error}\n"
 
-        # Add information about the overall change
-        # formatted_output += "\nThis is how the change would have looked if applied:\n"
-        # for i in range(max(1, start - 3), start):
-        #     formatted_output += f"{file_lines[i - 1]}\n"
-        # if start > 1:
-        #     formatted_output += f"{file_lines[start - 2]}\n"
-        # formatted_output += f"{text}\n"
-        # if end < len(file_lines):
-        #     formatted_output += f"{file_lines[end]}\n"
-        # for i in range(end + 1, min(end + 4, len(file_lines) + 1)):
-        #     formatted_output += f"{file_lines[i - 1]}\n"
-        # formatted_output += "\n"
+        start_original = max(0, start-5)
+        end_original = min(self.total_lines(), end+5)
+
+        start_new = max(0, start-5)
+        end_new = min(self.total_lines(), start + len(text.splitlines()) +5)
+
+        replaced_text = self.format_text({x+1: original_content.splitlines()[x] for x in range(start_original, end_original)})
+        replaced_with = self.format_text({x+1: buffer.splitlines()[x] for x in range(start_new, end_new)})
+
+        formatted_output += f"How your edit would have looked...\n{replaced_with}\n"
+        formatted_output += f"The original code before your edit...\n{replaced_text}\n"
+
+        formatted_output += f"Your changes have not been applied. Fix your edit command and try again.\n"
 
         return formatted_output.rstrip()
 
@@ -496,8 +498,6 @@ class File(WithLogger):
         """Write and run lint on the file. If linting fails, revert the changes."""
         older_file_text = self.path.read_text(encoding="utf-8")
         write_response = self.edit(text=text, start=start, end=end)
-        write_response["replaced_text"] = self.format_text(write_response["replaced_text"])
-        write_response["replaced_with"] = self.format_text(write_response["replaced_with"])
         if write_response.get("error"):
             self.path.write_text(data=older_file_text, encoding="utf-8")
             return write_response

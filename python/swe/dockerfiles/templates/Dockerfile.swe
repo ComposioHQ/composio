@@ -23,7 +23,10 @@ RUN git checkout {{ basecommit}}
 
 WORKDIR /home/user
 COPY index.py _index.py
-RUN python _index.py --repo {{ reponame }}
+
+RUN mkdir -p /home/user/.composio/tmp
+COPY deeplake /home/user/.composio/tmp/deeplake
+COPY FQDN_CACHE /home/user/.composio/tmp/FQDN_CACHE
 
 {% if dependencies -%}
 # Install dependecies

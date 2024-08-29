@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from pydantic import Field
 
@@ -28,11 +28,11 @@ class EditFileRequest(BaseFileRequest):
     )
     start_line: int = Field(
         ...,
-        description="The line number at which the file edit will start (REQUIRED). Inclusive - the start line will be included in the edit.",
+        description="The line number at which the file edit will start (REQUIRED). Inclusive - the start line will be included in the edit. If you just want to add code and not replace any line, don't provide end_line field.",
     )
-    end_line: int = Field(
-        ...,
-        description="The line number at which the file edit will end (REQUIRED). Inclusive - the end line will be included in the edit.",
+    end_line: Optional[int] = Field(
+        default=None,
+        description="The line number at which the file edit will end (REQUIRED). Inclusive - the end line will be included in the edit. If you just want to add code and not replace any line, don't provide this field.",
     )
 
 
@@ -76,7 +76,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     Result: Adds "print(x)" as first line, rest unchanged.
 
     Ex B: Start=1, End=3, Text: "print(x)"
-    Result: Replaces lines 1 and 2 with "print(x)", rest unchanged.
+    Result: Replaces lines 1,2 and 3 with "print(x)", rest unchanged.
 
     This action edits a specific part of the file, if you want to rewrite the
     complete file, use `write` tool instead."""
@@ -95,6 +95,9 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
 
             if file is None:
                 raise FileNotFoundError(f"File not found: {request.file_path}")
+            
+            if request.end_line is None:
+                request.end_line = -1
 
             response = file.write_and_run_lint(
                 text=request.text,

@@ -207,6 +207,10 @@ def build_image_and_container(
         git_clone_time = datetime.datetime.now() - start_time
         logger.info("git clone completed, time taken: %s", git_clone_time)
     else:
+        cwd = composio_toolset.execute_action(
+            action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+            params={"path": repo.split("/")[-1]},
+        )
         reset_resp = composio_toolset.execute_action(
             action=Action.FILETOOL_GIT_CLONE,
             params={
