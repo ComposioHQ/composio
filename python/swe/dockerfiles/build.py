@@ -122,9 +122,9 @@ def build(generated: Path, multi: bool = False) -> None:
         print("\n".join(errors))
         return
 
-    # _swes(generated=generated, multi=multi)
-    # print("==== Errors ====")
-    # print("\n".join(errors))
+    _swes(generated=generated, multi=multi)
+    print("==== Errors ====")
+    print("\n".join(errors))
 
 
 if __name__ == "__main__":
