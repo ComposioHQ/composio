@@ -1,5 +1,6 @@
-from typing import Dict, Type
 from pathlib import Path
+from typing import Dict, Type
+
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction

@@ -1,10 +1,10 @@
 import json
 import os
+import shutil
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Type
 
-import shutil
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
 
@@ -87,7 +87,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             os.makedirs(TREE_SITTER_CACHE, exist_ok=True)
             repo_name = os.path.basename(self.REPO_DIR)
             self.fqdn_cache_file = os.path.join(
-                DIR_FOR_FQDN_CACHE, f"{repo_name}-{request.repo_version.replace('.', '-')}_fqdn_cache.json"
+                DIR_FOR_FQDN_CACHE,
+                f"{repo_name}-{request.repo_version.replace('.', '-')}_fqdn_cache.json",
             )
 
             self._process(status)
@@ -176,7 +177,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
 
             print(f"Successfully created index for {len(python_files)} files.")
             shutil.rmtree(TREE_SITTER_CACHE)
-            
+
         except Exception as e:
             print(f"Failed to create index: {e}")
             raise

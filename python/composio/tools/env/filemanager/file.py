@@ -238,7 +238,7 @@ class File(WithLogger):
     def total_lines(self) -> int:
         """Total number of lines in the file."""
         return sum(1 for _ in self._iter_file())
-    
+
     def format_text(self, lines: t.Dict[int, str]) -> str:
         """Format the text to be written to the file."""
         total_lines = self.total_lines()
@@ -248,7 +248,10 @@ class File(WithLogger):
         code += f"[File: {self.path}] ({total_lines} lines total)]\n"
         code += f"({list(lines.keys())[0]-1} line above)\n"
         max_line_num_width = len(str(max(lines.keys())))
-        code += "\n".join(f"{line_num:<{max_line_num_width}}:{line_content.rstrip()}" for line_num, line_content in lines.items())
+        code += "\n".join(
+            f"{line_num:<{max_line_num_width}}:{line_content.rstrip()}"
+            for line_num, line_content in lines.items()
+        )
         code += f"\n({total_lines - list(lines.keys())[-1]} line below)\n"
         return code
 
@@ -314,11 +317,11 @@ class File(WithLogger):
         # Compare lint results
         new_lint_errors = self._compare_lint_results(before_lint, after_lint)
 
-        start_original = max(0, start-5)
-        end_original = min(self.total_lines(), end+5)
+        start_original = max(0, start - 5)
+        end_original = min(self.total_lines(), end + 5)
 
-        start_new = max(0, start-5)
-        end_new = min(self.total_lines(), start + len(text.splitlines()) +5)
+        start_new = max(0, start - 5)
+        end_new = min(self.total_lines(), start + len(text.splitlines()) + 5)
 
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
@@ -331,8 +334,15 @@ class File(WithLogger):
                 "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
             }
         return {
-            "replaced_text": self.format_text({x+1: original_content.splitlines()[x] for x in range(start_original, end_original)}),
-            "replaced_with": self.format_text({x+1: buffer.splitlines()[x] for x in range(start_new, end_new)}),
+            "replaced_text": self.format_text(
+                {
+                    x + 1: original_content.splitlines()[x]
+                    for x in range(start_original, end_original)
+                }
+            ),
+            "replaced_with": self.format_text(
+                {x + 1: buffer.splitlines()[x] for x in range(start_new, end_new)}
+            ),
             "error": "",
         }
 
@@ -400,7 +410,13 @@ class File(WithLogger):
         ]
 
     def _format_lint_errors(
-        self, errors: t.List[str], start: int, end: int, original_content: str, buffer: str, text: str
+        self,
+        errors: t.List[str],
+        start: int,
+        end: int,
+        original_content: str,
+        buffer: str,
+        text: str,
     ) -> str:
         """Format lint errors with descriptions and next actions."""
         formatted_output = ""
@@ -421,14 +437,21 @@ class File(WithLogger):
             else:
                 formatted_output += f"- {error}\n"
 
-        start_original = max(0, start-5)
-        end_original = min(self.total_lines(), end+5)
+        start_original = max(0, start - 5)
+        end_original = min(self.total_lines(), end + 5)
 
-        start_new = max(0, start-5)
-        end_new = min(self.total_lines(), start + len(text.splitlines()) +5)
+        start_new = max(0, start - 5)
+        end_new = min(self.total_lines(), start + len(text.splitlines()) + 5)
 
-        replaced_text = self.format_text({x+1: original_content.splitlines()[x] for x in range(start_original, end_original)})
-        replaced_with = self.format_text({x+1: buffer.splitlines()[x] for x in range(start_new, end_new)})
+        replaced_text = self.format_text(
+            {
+                x + 1: original_content.splitlines()[x]
+                for x in range(start_original, end_original)
+            }
+        )
+        replaced_with = self.format_text(
+            {x + 1: buffer.splitlines()[x] for x in range(start_new, end_new)}
+        )
 
         formatted_output += f"How your edit would have looked...\n{replaced_with}\n"
         formatted_output += f"The original code before your edit...\n{replaced_text}\n"

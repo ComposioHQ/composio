@@ -510,7 +510,9 @@ class EntityObj:
         )
         self.global_path = os.path.normpath(os.path.abspath(self.goto_obj.module_path))
 
-        self.definition_body, self.start_line = fetch_node_definition_body(self.goto_obj)
+        self.definition_body, self.start_line = fetch_node_definition_body(
+            self.goto_obj
+        )
         entity_breakup = tree_sitter_related.fetch_entity_artifacts(
             self.definition_body, self.entity_type
         )

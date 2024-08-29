@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import TypeVar, Callable, Dict
 from functools import wraps
+from typing import Callable, Dict, TypeVar
+
+from pydantic import BaseModel, Field
 
 
 class BaseFileRequest(BaseModel):
@@ -21,8 +22,10 @@ class BaseFileResponse(BaseModel):
         description="Current working directory of the file manager.",
     )
 
-T = TypeVar('T', bound=BaseFileRequest)
-R = TypeVar('R', bound=BaseFileResponse)
+
+T = TypeVar("T", bound=BaseFileRequest)
+R = TypeVar("R", bound=BaseFileResponse)
+
 
 def include_cwd(func: Callable[[T, Dict], R]) -> Callable[[T, Dict], R]:
     @wraps(func)
@@ -32,4 +35,5 @@ def include_cwd(func: Callable[[T, Dict], R]) -> Callable[[T, Dict], R]:
             self.filemanagers.get(request.file_manager_id).working_dir
         )
         return response
+
     return wrapper

@@ -95,7 +95,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
 
             if file is None:
                 raise FileNotFoundError(f"File not found: {request.file_path}")
-            
+
             if request.end_line is None:
                 request.end_line = -1
 
@@ -108,7 +108,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
                 return EditFileResponse(
                     old_text=response["replaced_text"],
                     updated_text=response["replaced_with"],
-                    error="No Update, found error: " + response["error"]  # type: ignore
+                    error="No Update, found error: " + response["error"],  # type: ignore
                 )
             return EditFileResponse(
                 old_text=response["replaced_text"],

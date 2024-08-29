@@ -1,7 +1,7 @@
+from pathlib import Path
 from typing import Dict, List, Type
 
 from pydantic import BaseModel, Field
-from pathlib import Path
 
 from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
@@ -9,7 +9,8 @@ from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalys
 
 class GetClassInfoRequest(BaseModel):
     repo_name: str = Field(
-        ..., description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'."
+        ...,
+        description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'.",
     )
     class_name: str = Field(
         ..., description="Name of the class for which information is requested"
@@ -47,7 +48,7 @@ class GetClassInfo(
             if "/" in repo_path:
                 repo_path = repo_path.split("/")[-1]
             repo_path = Path.home() / repo_path
-            
+
             self.load_fqdn_cache(repo_path)
             query_class_name = request.class_name
 

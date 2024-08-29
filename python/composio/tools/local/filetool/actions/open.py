@@ -27,9 +27,7 @@ class OpenFileResponse(BaseFileResponse):
     """Response to open a file."""
 
     message: str = Field(default="", description="Message to display to the user")
-    lines: str = Field(
-        default="", description="File content with their line numbers"
-    )
+    lines: str = Field(default="", description="File content with their line numbers")
     # total_lines: int = Field(default=0, description="Total number of lines in the file")
     error: str = Field(default="", description="Error message if any")
 
@@ -64,7 +62,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
 
             return OpenFileResponse(
                 message="File opened successfully. 100 lines after the cursor displayed.",
-                lines=content
+                lines=content,
             )
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")

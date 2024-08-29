@@ -1,14 +1,16 @@
-import typing as t
-from pathlib import Path
+import json
 import shutil
 import subprocess
+import typing as t
+from pathlib import Path
+
 import click
 from jinja2 import Environment, FileSystemLoader
-from composio.utils.logging import WithLogger
-from composio import Action, ComposioToolSet
 from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
-import json
-from pathlib import Path
+
+from composio import Action, ComposioToolSet
+from composio.utils.logging import WithLogger
+
 
 filtered_repos = ["pallets/flask", "django/django"]
 

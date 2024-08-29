@@ -1,6 +1,6 @@
+import shutil
 import typing as t
 from pathlib import Path
-import shutil
 
 import click
 from jinja2 import Environment, FileSystemLoader
@@ -182,6 +182,7 @@ class DockerfileGenerator(WithLogger):
         index_file = SCRIPTS_DIR / "index.py"
         target_file = outdir / "index.py"
         shutil.copy(index_file, target_file)
+
 
 def _repo_name(repo: str) -> str:
     return repo.replace("/", "__")

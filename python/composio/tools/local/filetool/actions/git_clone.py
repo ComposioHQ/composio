@@ -120,7 +120,10 @@ class GitClone(LocalAction[GitCloneRequest, GitCloneResponse]):
                 message=f"The directory '{current_dir}' is already a git repository.",
             )
 
-        if pathlib.Path(current_dir, repo_dir, ".git").is_dir() and not request.just_reset:
+        if (
+            pathlib.Path(current_dir, repo_dir, ".git").is_dir()
+            and not request.just_reset
+        ):
             filemanager.chdir(os.path.join(filemanager.current_dir(), repo_dir))
             return GitCloneResponse(
                 success=False,
@@ -133,7 +136,7 @@ class GitClone(LocalAction[GitCloneRequest, GitCloneResponse]):
                 success=False,
                 message=f"The directory '{repo_dir}' already exists. Clone failed.",
             )
-        
+
         if not pathlib.Path(current_dir, ".git").exists() and request.just_reset:
             return GitCloneResponse(
                 success=False,
@@ -146,7 +149,7 @@ class GitClone(LocalAction[GitCloneRequest, GitCloneResponse]):
         if pathlib.Path(current_dir, repo_dir).exists() and not request.just_reset:
             filemanager.chdir(os.path.join(filemanager.current_dir(), repo_dir))
             return GitCloneResponse(success=True, message=output)
-        
+
         if pathlib.Path(current_dir, ".git").exists() and request.just_reset:
             return GitCloneResponse(success=True, message=output)
 

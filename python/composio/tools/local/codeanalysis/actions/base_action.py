@@ -4,9 +4,7 @@ from abc import abstractmethod
 from typing import Dict, List, Optional
 
 from composio.tools.local.codeanalysis import lsp_helper, tool_utils
-from composio.tools.local.codeanalysis.constants import (
-    DIR_FOR_FQDN_CACHE,
-)
+from composio.tools.local.codeanalysis.constants import DIR_FOR_FQDN_CACHE
 
 
 class BaseCodeAnalysisAction:
@@ -157,7 +155,9 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
             result_header = f"## Details about shortlisted result ID {idx}:\n"
             function_details = func["res_fetch_function_stuff"]
             function_body = "\n```python\n"
-            for line_num, line in enumerate(func['definition_body'].splitlines(), start=func['start_line'] + 1):
+            for line_num, line in enumerate(
+                func["definition_body"].splitlines(), start=func["start_line"] + 1
+            ):
                 function_body += f"{line_num}: {line}\n"
             function_body += "```"
 
