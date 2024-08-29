@@ -54,7 +54,7 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
             sep = "\n" + "=" * 100 + "\n"
             result_string = "Query: " + query + sep
             for i, metadata in enumerate(results["metadata"]):
-                result_string += f"Chunk {i+1}: \n" + str(metadata["chunk"]) + sep
+                result_string += f"Chunk {i + 1}: \n" + str(metadata["chunk"]) + sep
             return GetRelevantCodeResponse(result=result_string)
         except Exception as e:
             raise RuntimeError(f"Failed to execute GetRelevantCode: {e}")

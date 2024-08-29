@@ -85,10 +85,6 @@ def get_line_number(index: int, source_code: str) -> int:
     return len(lines) - 1
 
 
-import re
-from typing import Union
-
-
 def count_length_without_whitespace(s: Union[str, bytes]) -> int:
     """
     Count the length of a string or bytes object after removing all whitespace.
@@ -287,7 +283,7 @@ def construct_chunks(
 
         # Add line numbers to each line in the chunk
         numbered_chunk = "\n".join(
-            f"{start+i+1}| {line}" for i, line in enumerate(chunk.splitlines())
+            f"{start + i + 1}| {line}" for i, line in enumerate(chunk.splitlines())
         )
 
         # Construct the formatted chunk with file information and context

@@ -246,7 +246,7 @@ class File(WithLogger):
         if len(lines) == 0:
             return code
         code += f"[File: {self.path}] ({total_lines} lines total)]\n"
-        code += f"({list(lines.keys())[0]-1} line above)\n"
+        code += f"({list(lines.keys())[0] - 1} line above)\n"
         max_line_num_width = len(str(max(lines.keys())))
         code += "\n".join(
             f"{line_num:<{max_line_num_width}}:{line_content.rstrip()}"
@@ -456,7 +456,9 @@ class File(WithLogger):
         formatted_output += f"How your edit would have looked...\n{replaced_with}\n"
         formatted_output += f"The original code before your edit...\n{replaced_text}\n"
 
-        formatted_output += f"Your changes have not been applied. Fix your edit command and try again.\n"
+        formatted_output += (
+            "Your changes have not been applied. Fix your edit command and try again.\n"
+        )
 
         return formatted_output.rstrip()
 

@@ -3,7 +3,7 @@ import os
 from abc import abstractmethod
 from typing import Dict, List, Optional
 
-from composio.tools.local.codeanalysis import lsp_helper, tool_utils
+from composio.tools.local.codeanalysis import lsp_helper
 from composio.tools.local.codeanalysis.constants import DIR_FOR_FQDN_CACHE
 
 
@@ -18,7 +18,6 @@ class BaseCodeAnalysisAction:
         pass
 
     def load_fqdn_cache(self, repo_path: str):
-        repo_name = os.path.basename(repo_path)
         self.fqdn_cache_file = os.path.join(
             DIR_FOR_FQDN_CACHE, os.listdir(DIR_FOR_FQDN_CACHE)[0]
         )
@@ -69,9 +68,6 @@ class BaseCodeAnalysisAction:
             data[relevant_fqdn] = [x.__dict__ for x in elem]
         else:
             raise ValueError("Expected a list of elements")
-
-        if relevant_fqdn not in data:
-            raise KeyError(f"FQDN {relevant_fqdn} not found in cache")
 
         return data[relevant_fqdn]
 

@@ -28,11 +28,21 @@ class EditFileRequest(BaseFileRequest):
     )
     start_line: int = Field(
         ...,
-        description="The line number at which the file edit will start (REQUIRED). Inclusive - the start line will be included in the edit. If you just want to add code and not replace any line, don't provide end_line field.",
+        description=(
+            "The line number at which the file edit will start (REQUIRED). "
+            "Inclusive - the start line will be included in the edit. "
+            "If you just want to add code and not replace any line, "
+            "don't provide end_line field."
+        ),
     )
     end_line: Optional[int] = Field(
         default=None,
-        description="The line number at which the file edit will end (REQUIRED). Inclusive - the end line will be included in the edit. If you just want to add code and not replace any line, don't provide this field.",
+        description=(
+            "The line number at which the file edit will end (REQUIRED). "
+            "Inclusive - the end line will be included in the edit. "
+            "If you just want to add code and not replace any line, "
+            "don't provide this field."
+        ),
     )
 
 

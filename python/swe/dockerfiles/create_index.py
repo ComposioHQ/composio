@@ -5,8 +5,7 @@ import typing as t
 from pathlib import Path
 
 import click
-from jinja2 import Environment, FileSystemLoader
-from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
+from swebench import get_eval_refs
 
 from composio import Action, ComposioToolSet
 from composio.utils.logging import WithLogger

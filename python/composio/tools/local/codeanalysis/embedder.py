@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 from deeplake.core.vectorstore.deeplake_vectorstore import DeepLakeVectorStore
 from sentence_transformers import SentenceTransformer

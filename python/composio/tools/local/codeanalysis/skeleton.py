@@ -52,7 +52,8 @@ class CompressTransformer(cst.CSTTransformer):
 def get_skeleton(raw_code, keep_constant: bool = True):
     try:
         tree = cst.parse_module(raw_code)
-    except:
+    except Exception as e:
+        print(f"Error parsing code: {e}")
         return raw_code
 
     transformer = CompressTransformer(keep_constant=keep_constant)
