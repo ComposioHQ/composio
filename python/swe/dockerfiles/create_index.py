@@ -76,7 +76,7 @@ class IndexGenerator(WithLogger):
             action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
             params={"dir_to_index_path": str(outdir / outname), "repo_version": version},
         )
-        with open(f"/Users/shrey/.composio/tmp/FQDN_CACHE/{outname}-{version.replace(".", "-")}_fqdn_cache.json") as f:
+        with open(f"/Users/shrey/.composio/tmp/FQDN_CACHE/{outname}-{version.replace('.', '-')}_fqdn_cache.json") as f:
             fqdn_index = json.load(f)
             for k, v in fqdn_index.items():
                 if len(v) > 1:
