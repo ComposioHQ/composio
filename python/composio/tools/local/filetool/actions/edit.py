@@ -76,7 +76,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     Result: Adds "print(x)" as first line, rest unchanged.
 
     Ex B: Start=1, End=3, Text: "print(x)"
-    Result: Replaces lines 1-3 with "print(x)", rest unchanged.
+    Result: Replaces lines 1 and 2 with "print(x)", rest unchanged.
 
     This action edits a specific part of the file, if you want to rewrite the
     complete file, use `write` tool instead."""

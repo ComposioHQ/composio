@@ -7,7 +7,7 @@ from sentence_transformers import SentenceTransformer
 from composio.tools.local.codeanalysis.constants import DEEPLAKE_FOLDER, EMBEDDER
 
 
-def get_vector_store(repo_path: str, overwrite: bool = True) -> DeepLakeVectorStore:
+def get_vector_store(repo_path: str, repo_version: str = None, overwrite: bool = True) -> DeepLakeVectorStore:
     """
     Get or create a DeepLakeVectorStore for the given repository.
 
@@ -27,7 +27,10 @@ def get_vector_store(repo_path: str, overwrite: bool = True) -> DeepLakeVectorSt
 
     try:
         repo_name = os.path.basename(repo_path)
-        deeplake_repo_path = os.path.join(DEEPLAKE_FOLDER, repo_name)
+        if repo_version:
+            deeplake_repo_path = os.path.join(DEEPLAKE_FOLDER, f"{repo_name}-{repo_version}")
+        else:
+            deeplake_repo_path = os.path.join(DEEPLAKE_FOLDER, os.listdir(DEEPLAKE_FOLDER)[0])
 
         deeplake_vector_store = DeepLakeVectorStore(
             path=deeplake_repo_path,
@@ -73,6 +76,7 @@ class Embedding:
 
 def get_vector_store_from_chunks(
     repo_path: str,
+    repo_version: str,
     documents: List[str],
     ids: List[str],
     metadatas: List[Dict[str, Any]],
@@ -97,7 +101,7 @@ def get_vector_store_from_chunks(
         raise ValueError("Input lists must have the same length")
 
     try:
-        vector_store = get_vector_store(repo_path)
+        vector_store = get_vector_store(repo_path, repo_version)
         embed_model = Embedding()
         embeddings = embed_model.compute(documents)
 

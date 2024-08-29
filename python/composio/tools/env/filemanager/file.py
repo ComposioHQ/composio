@@ -313,21 +313,25 @@ class File(WithLogger):
         # Compare lint results
         new_lint_errors = self._compare_lint_results(before_lint, after_lint)
 
+        start_original = max(0, start-5)
+        end_original = min(self.total_lines(), end+5)
+
+        start_new = max(0, start-5)
+        end_new = min(self.total_lines(), start + len(text.splitlines()) +5)
+
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
             formatted_errors = self._format_lint_errors(
                 new_lint_errors, start, end, text
             )
-            self.path.write_text(data=original_content, encoding="utf-8")
             return {
-                "replaced_text": {start + i: line for i, line in enumerate(replaced.splitlines())},
-                "replaced_with": {start + i: line for i, line in enumerate(text.splitlines())},
+                "replaced_text": {x+1: original_content.splitlines()[x] for x in range(start_original, end_original)},
+                "replaced_with": {x+1: buffer.splitlines()[x] for x in range(start_new, end_new)},
                 "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
             }
-    
         return {
-            "replaced_text": {start + i: line for i, line in enumerate(replaced.splitlines())},
-            "replaced_with": {start + i: line for i, line in enumerate(text.splitlines())},
+            "replaced_text": {x+1: original_content.splitlines()[x] for x in range(start_original, end_original)},
+            "replaced_with": {x+1: buffer.splitlines()[x] for x in range(start_new, end_new)},
             "error": "",
         }
 
@@ -417,17 +421,17 @@ class File(WithLogger):
                 formatted_output += f"- {error}\n"
 
         # Add information about the overall change
-        formatted_output += "\nThis is how the change would have looked if applied:\n"
-        for i in range(max(1, start - 3), start):
-            formatted_output += f"{file_lines[i - 1]}\n"
-        if start > 1:
-            formatted_output += f"{file_lines[start - 2]}\n"
-        formatted_output += f"{text}\n"
-        if end < len(file_lines):
-            formatted_output += f"{file_lines[end]}\n"
-        for i in range(end + 1, min(end + 4, len(file_lines) + 1)):
-            formatted_output += f"{file_lines[i - 1]}\n"
-        formatted_output += "\n"
+        # formatted_output += "\nThis is how the change would have looked if applied:\n"
+        # for i in range(max(1, start - 3), start):
+        #     formatted_output += f"{file_lines[i - 1]}\n"
+        # if start > 1:
+        #     formatted_output += f"{file_lines[start - 2]}\n"
+        # formatted_output += f"{text}\n"
+        # if end < len(file_lines):
+        #     formatted_output += f"{file_lines[end]}\n"
+        # for i in range(end + 1, min(end + 4, len(file_lines) + 1)):
+        #     formatted_output += f"{file_lines[i - 1]}\n"
+        # formatted_output += "\n"
 
         return formatted_output.rstrip()
 
