@@ -29,5 +29,6 @@ def load_local_tools() -> (
     from composio.tools.local.sqltool import Sqltool
     from composio.tools.local.webtool import Webtool
     from composio.tools.local.zep import Zeptool
+    from composio.tools.local.airtable import AirtableLocal
 
     return tool_registry

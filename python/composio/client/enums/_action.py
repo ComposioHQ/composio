@@ -15,6 +15,8 @@ from composio.client.enums.base import ACTIONS_CACHE, ActionData, _AnnotatedEnum
 class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     """Class to represent `Action` entity."""
 
+    AIRTABLE_GET_RECORD: "Action"
+    AIRTABLE_LIST_RECORD: "Action"
     APALEO_ARCHIVE_A_PROPERTY: "Action"
     APALEO_CHECK_IF_A_PROPERTY_EXISTS: "Action"
     APALEO_CHECK_IF_A_UNIT_ATTRIBUTE_EXISTS: "Action"
