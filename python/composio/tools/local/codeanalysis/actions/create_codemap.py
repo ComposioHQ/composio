@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Type
 
+import shutil
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
 
@@ -34,6 +35,10 @@ class CreateCodeMapRequest(BaseModel):
     dir_to_index_path: str = Field(
         ...,
         description="Absolute path to the directory that needs to be indexed for code analysis",
+    )
+    repo_version: str = Field(
+        ...,
+        description="Version of the repository to be indexed for code analysis",
     )
 
 
@@ -66,10 +71,10 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     ) -> CreateCodeMapResponse:
         self.REPO_DIR = os.path.normpath(os.path.abspath(request.dir_to_index_path))
         self.failed_files = []
+        self.repo_version = request.repo_version.replace(".", "-")
 
         try:
             status = self.check_status(self.REPO_DIR)
-
             if status["status"] == Status.COMPLETED:
                 return CreateCodeMapResponse(
                     result=f"Indexing already exists for {request.dir_to_index_path}"
@@ -82,7 +87,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             os.makedirs(TREE_SITTER_CACHE, exist_ok=True)
             repo_name = os.path.basename(self.REPO_DIR)
             self.fqdn_cache_file = os.path.join(
-                DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json"
+                DIR_FOR_FQDN_CACHE, f"{repo_name}-{request.repo_version.replace('.', '-')}_fqdn_cache.json"
             )
 
             self._process(status)
@@ -164,12 +169,14 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
 
             try:
                 embedder.get_vector_store_from_chunks(
-                    self.REPO_DIR, documents, ids, metadatas
+                    self.REPO_DIR, self.repo_version, documents, ids, metadatas
                 )
             except Exception as e:
                 raise ValueError(f"Failed to create vector store: {e}")
 
             print(f"Successfully created index for {len(python_files)} files.")
+            shutil.rmtree(TREE_SITTER_CACHE)
+            
         except Exception as e:
             print(f"Failed to create index: {e}")
             raise

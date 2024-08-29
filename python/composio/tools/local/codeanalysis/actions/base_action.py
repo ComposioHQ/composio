@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 from composio.tools.local.codeanalysis import lsp_helper, tool_utils
 from composio.tools.local.codeanalysis.constants import (
     DIR_FOR_FQDN_CACHE,
-    DIR_FOR_TOOL_INFO_CACHE,
 )
 
 
@@ -23,7 +22,7 @@ class BaseCodeAnalysisAction:
     def load_fqdn_cache(self, repo_path: str):
         repo_name = os.path.basename(repo_path)
         self.fqdn_cache_file = os.path.join(
-            DIR_FOR_FQDN_CACHE, f"{repo_name}_fqdn_cache.json"
+            DIR_FOR_FQDN_CACHE, os.listdir(DIR_FOR_FQDN_CACHE)[0]
         )
         if not os.path.exists(self.fqdn_cache_file):
             raise FileNotFoundError(
@@ -58,35 +57,20 @@ class BaseCodeAnalysisAction:
         return matching_fqdns
 
     def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> Dict:
-        repo_name = os.path.basename(repo_path)
-        hash_id = tool_utils.fetch_hash(relevant_fqdn)
-        os.makedirs(DIR_FOR_TOOL_INFO_CACHE, exist_ok=True)
-        os.makedirs(os.path.join(DIR_FOR_TOOL_INFO_CACHE, repo_name), exist_ok=True)
-        possible_path = os.path.join(
-            DIR_FOR_TOOL_INFO_CACHE, repo_name, f"{hash_id}.json"
+        if self.fqdn_index is None:
+            raise ValueError("FQDN index not loaded")
+        elem_fqdn = self.fqdn_index[relevant_fqdn]
+        elem = lsp_helper.fetch_relevant_elem(
+            elem_fqdn["global_module"],
+            repo_path,
+            elem_fqdn["global_fqdn"],
+            elem_fqdn["global_type"],
         )
-
-        if not os.path.exists(possible_path):
-            if self.fqdn_index is None:
-                raise ValueError("FQDN index not loaded")
-            elem_fqdn = self.fqdn_index[relevant_fqdn]
-            elem = lsp_helper.fetch_relevant_elem(
-                elem_fqdn["global_module"],
-                repo_path,
-                elem_fqdn["global_fqdn"],
-                elem_fqdn["global_type"],
-            )
-            data = {}
-            if isinstance(elem, list):
-                data[relevant_fqdn] = [x.__dict__ for x in elem]
-            else:
-                raise ValueError("Expected a list of elements")
-
-            with open(possible_path, "w") as fd:
-                json.dump(data, fd, indent=1)
+        data = {}
+        if isinstance(elem, list):
+            data[relevant_fqdn] = [x.__dict__ for x in elem]
         else:
-            with open(possible_path, "r") as f:
-                data = json.load(f)
+            raise ValueError("Expected a list of elements")
 
         if relevant_fqdn not in data:
             raise KeyError(f"FQDN {relevant_fqdn} not found in cache")
