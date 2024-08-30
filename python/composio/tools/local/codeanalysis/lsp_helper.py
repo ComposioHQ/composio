@@ -467,9 +467,18 @@ def fetch_relevant_elem(
     if expected_type not in entity_class_map:
         raise ValueError(f"Unsupported expected type '{expected_type}'")
 
+    original_contents = {}
+    for name in all_names:
+        file_path = os.path.normpath(os.path.abspath(name.module_path))
+        original_contents[file_path] = open(file_path).read()
+
     entity_objs = [
         entity_class_map[expected_type](name, file_name, repo_dir) for name in all_names
     ]
+
+    for file_path, original_content in original_contents.items():
+        with open(file_path, "w") as fd:
+            fd.write(original_content)
 
     return entity_objs
 
