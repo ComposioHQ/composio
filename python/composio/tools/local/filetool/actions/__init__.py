@@ -1,3 +1,4 @@
+from .apply_patch import ApplyPatch
 from .chwdir import ChangeWorkingDirectory
 from .create import CreateFile
 from .edit import EditFile
@@ -10,4 +11,3 @@ from .list import ListFiles
 from .open import OpenFile
 from .scroll import Scroll
 from .write import Write
-from .apply_patch import ApplyPatch

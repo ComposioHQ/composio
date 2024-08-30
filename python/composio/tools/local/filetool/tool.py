@@ -7,6 +7,7 @@ import typing as t
 from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import (
+    ApplyPatch,
     ChangeWorkingDirectory,
     CreateFile,
     EditFile,
@@ -19,7 +20,6 @@ from .actions import (
     Scroll,
     SearchWord,
     Write,
-    ApplyPatch,
 )
 
 

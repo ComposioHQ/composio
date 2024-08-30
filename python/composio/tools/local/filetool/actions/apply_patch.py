@@ -10,9 +10,11 @@ from composio.tools.local.filetool.actions.base_action import (
     include_cwd,
 )
 
+
 def git_apply_cmd(patch_path: str) -> str:
     """Commands to apply a patch."""
     return f"git apply {patch_path}"
+
 
 class ApplyPatchRequest(BaseFileRequest):
     """Request to get a Git patch."""
@@ -56,7 +58,9 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
     _response_schema = ApplyPatchResponse
 
     @include_cwd
-    def execute(self, request: ApplyPatchRequest, metadata: t.Dict) -> ApplyPatchResponse:
+    def execute(
+        self, request: ApplyPatchRequest, metadata: t.Dict
+    ) -> ApplyPatchResponse:
         # Check if we're in a git repository or in a subdirectory of one
         file_manager = self.filemanagers.get(request.file_manager_id)
         git_root = self._find_git_root(file_manager.current_dir())
@@ -67,15 +71,18 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
         with open(git_root / "patch.patch", "w") as f:
             f.write(request.patch)
 
-        output, error = file_manager.execute_command(git_apply_cmd(git_root / "patch.patch"))
+        output, error = file_manager.execute_command(
+            git_apply_cmd(git_root / "patch.patch")
+        )
 
         if error:
             return ApplyPatchResponse(
-                error= "No Update, found error during applying patch: " + error,
+                error="No Update, found error during applying patch: " + error,
             )
-        
+
         return ApplyPatchResponse(
-            message=output, error="",
+            message=output,
+            error="",
         )
 
     def _find_git_root(self, path: str) -> t.Optional[Path]:
@@ -86,4 +93,3 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
                 return current
             current = current.parent
         return None
-
