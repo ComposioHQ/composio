@@ -18,6 +18,7 @@ simple-parsing = ">=0.1.5"
 docker = ">=7.1.0"
 gymnasium = ">=0.29.1"
 pyyaml = ">=6.0.1"
+pyairtable = "*"
 
 [dev-packages]
 black = ">=24.1.1"
