@@ -38,16 +38,9 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
     patch = "diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py\n--- a/astropy/modeling/separable.py\n+++ b/astropy/modeling/separable.py\n@@ -242,7 +242,7 @@ def _cstack(left, right):\n         cright = _coord_matrix(right, 'right', noutp)\n     else:\n         cright = np.zeros((noutp, right.shape[1]))\n-        cright[-right.shape[0]:, -right.shape[1]:] = 1\n+        cright[-right.shape[0]:, -right.shape[1]:] = right\n \n     return np.hstack([cleft, cright])\n \n"
 
     This class is responsible for:
-    1. Writing the provided patch to a file.
+    1. Applying the patch using Git.
     2. Running lint checks on the affected files before and after applying the patch.
-    3. Applying the patch using Git.
-    4. Reverting changes if new lint errors are introduced.
-
-    The class ensures that patches are only applied if they don't introduce new linting errors,
-    maintaining code quality standards. If errors are found, it provides detailed feedback
-    about the lint issues and reverts the changes.
-
-    
+    3. Reverting changes if new lint errors are introduced.
     """
 
     display_name = "Apply Patch"
