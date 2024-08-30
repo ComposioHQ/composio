@@ -28,17 +28,22 @@ class GetClassInfo(
     LocalAction[GetClassInfoRequest, GetClassInfoResponse], BaseCodeAnalysisAction
 ):
     """
-    Retrieves and formats information about a specified class.
+    This tool retrieves and formats detailed information about a specified class in a given repository.
 
-    This action searches for class information based on the provided class name,
-    fetches relevant details, and returns a formatted string with the results.
+    Use this action when you need to:
+    1. Obtain comprehensive details about all instances of a specific class in the codebase.
+    2. Understand the structure, methods, and attributes of a class.
+    3. Gather information for code analysis.
+
+    Usage example:
+    repo_name: django
+    class_name: Signal
+
+    Note: If multiple classes match the provided name, information for all matching classes will be returned.
     """
 
-    _display_name = "Get Class Info"
-    _request_schema: Type[GetClassInfoRequest] = GetClassInfoRequest
-    _response_schema: Type[GetClassInfoResponse] = GetClassInfoResponse
+    display_name = "Get Class Info"
     _tags = ["index"]
-    _tool_name = "codeanalysis"
 
     def execute(
         self, request: GetClassInfoRequest, metadata: Dict

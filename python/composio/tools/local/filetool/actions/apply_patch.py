@@ -13,7 +13,7 @@ from composio.tools.local.filetool.actions.base_action import (
 
 def git_apply_cmd(patch_path: str) -> str:
     """Commands to apply a patch."""
-    return f"git apply {patch_path}"
+    return f"git apply --verbose {patch_path}"
 
 
 class ApplyPatchRequest(BaseFileRequest):
@@ -31,26 +31,23 @@ class ApplyPatchResponse(BaseFileResponse):
 
 class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
     """
-    Apply a patch to the current working directory.
-
-    This action generates a Git patch that includes all changes in the current working directory,
-    including newly created files specified in the request.
-
-    The patch is in the format of a proper diff and includes deleted files by default.
+    Apply a Git patch to the current working directory and perform lint checks.
+    The patch should be in the format of a proper diff.
 
     Usage example:
-    new_file_paths: ["path/to/new/file1.txt", "path/to/new/file2.py"]
+    patch = "diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py\n--- a/astropy/modeling/separable.py\n+++ b/astropy/modeling/separable.py\n@@ -242,7 +242,7 @@ def _cstack(left, right):\n         cright = _coord_matrix(right, 'right', noutp)\n     else:\n         cright = np.zeros((noutp, right.shape[1]))\n-        cright[-right.shape[0]:, -right.shape[1]:] = 1\n+        cright[-right.shape[0]:, -right.shape[1]:] = right\n \n     return np.hstack([cleft, cright])\n \n"
 
-    The resulting patch will be in the format:
-    diff --git a/repo/example.py b/repo/example.py
-    index 1234567..89abcde 100644
-    --- a/repo/example.py
-    +++ b/repo/example.py
-    @@ -1 +1 @@
-    -Hello, World!
-    +Hello, Composio!
+    This class is responsible for:
+    1. Writing the provided patch to a file.
+    2. Running lint checks on the affected files before and after applying the patch.
+    3. Applying the patch using Git.
+    4. Reverting changes if new lint errors are introduced.
 
-    Note: This action should be run after all changes are made to add and check the result.
+    The class ensures that patches are only applied if they don't introduce new linting errors,
+    maintaining code quality standards. If errors are found, it provides detailed feedback
+    about the lint issues and reverts the changes.
+
+    
     """
 
     display_name = "Apply Patch"
@@ -71,6 +68,8 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
         with open(git_root / "patch.patch", "w") as f:
             f.write(request.patch)
 
+        files_to_be_modified,line_ranges = self._get_files_from_patch(request.patch)
+        before_lint, before_file_contents = self._run_lint_on_files(file_manager, files_to_be_modified)
         output, error = file_manager.execute_command(
             git_apply_cmd(git_root / "patch.patch")
         )
@@ -79,9 +78,20 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
             return ApplyPatchResponse(
                 error="No Update, found error during applying patch: " + error,
             )
+        after_lint, _ = self._run_lint_on_files(file_manager, files_to_be_modified)
+
+        for key, value in before_lint.items():
+            file =file_manager.open(path=key)
+            new_lint_errors = file._compare_lint_results(value, after_lint[key])
+            if len(new_lint_errors) > 0:
+                formatted_errors = file._format_lint_errors(new_lint_errors)
+                file.path.write_text(before_file_contents[key], encoding="utf-8")
+                return ApplyPatchResponse(
+                    error="No Update, found error during applying patch, no update made in the file: " + formatted_errors,
+                )
 
         return ApplyPatchResponse(
-            message=output,
+            message="Successfully applied patch, lint checks passed",
             error="",
         )
 
@@ -93,3 +103,38 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
                 return current
             current = current.parent
         return None
+    
+    def _get_files_from_patch(self, patch_content: str) -> t.Tuple[t.List[str], t.Dict[str, t.Tuple[int, int]]]:
+        """Extract the list of files that will be modified by the patch and their line ranges."""
+        files = []
+        line_ranges = {}
+        current_file = None
+        start_line = None
+        for line in patch_content.splitlines():
+            if line.startswith("+++") or line.startswith("---"):
+                file_path = line.split()[1]
+                if file_path != "/dev/null":
+                    if file_path.startswith(('a/', 'b/')):
+                        file_path = file_path[2:]
+                    files.append(file_path)
+                    current_file = file_path
+            elif line.startswith("@@"):
+                if current_file:
+                    line_info = line.split()[1].split(',')[0]
+                    start_line = int(line_info.split('-')[1])
+                    if current_file not in line_ranges:
+                        line_ranges[current_file] = (start_line, start_line)
+                    else:
+                        line_ranges[current_file] = (min(line_ranges[current_file][0], start_line), max(line_ranges[current_file][1], start_line))
+        return list(set(files)), line_ranges
+    
+    def _run_lint_on_files(self, file_manager, files: t.List[str]) -> t.Tuple[t.Dict[str, t.List[str]], t.Dict[str, str]]:
+        """Run lint on the given files."""
+        lint_results = {}
+        file_contents = {}
+        for file_path in files:
+            if file_path.endswith('.py'):
+                file = file_manager.open(path=file_path)
+                lint_results[file_path] = file.lint()
+                file_contents[file_path] = file.path.read_text(encoding="utf-8")
+        return lint_results, file_contents

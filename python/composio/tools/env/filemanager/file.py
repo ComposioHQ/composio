@@ -325,13 +325,14 @@ class File(WithLogger):
 
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
-            formatted_errors = self._format_lint_errors(
-                new_lint_errors, start, end, original_content, buffer, text
+            formatted_errors = self._format_lint_errors(new_lint_errors)
+            formatted_output = formatted_errors + self._show_file_modifications(
+                start, end, original_content, buffer, text
             )
             return {
                 "replaced_text": "",
                 "replaced_with": "",
-                "error": f"Edit reverted due to new lint errors:\n{formatted_errors}",
+                "error": f"Edit reverted due to new lint errors:\n{formatted_output}",
             }
         return {
             "replaced_text": self.format_text(
@@ -408,17 +409,12 @@ class File(WithLogger):
             )
             if (code, message) in new_errors
         ]
-
+    
     def _format_lint_errors(
         self,
         errors: t.List[str],
-        start: int,
-        end: int,
-        original_content: str,
-        buffer: str,
-        text: str,
     ) -> str:
-        """Format lint errors with descriptions and next actions."""
+        """Format a single lint error."""
         formatted_output = ""
         file_lines = self.path.read_text(encoding="utf-8").splitlines()
         for error in errors:
@@ -436,7 +432,18 @@ class File(WithLogger):
                 formatted_output += f"  Next Action: {next_action}\n"
             else:
                 formatted_output += f"- {error}\n"
-
+        return formatted_output.rstrip()
+    
+    def _show_file_modifications(
+        self,
+        start: int,
+        end: int,
+        original_content: str,
+        buffer: str,
+        text: str,
+    ) -> str:
+        """Show file modifications."""
+        formatted_output = ""
         start_original = max(0, start - 5)
         end_original = min(self.total_lines(), end + 5)
 

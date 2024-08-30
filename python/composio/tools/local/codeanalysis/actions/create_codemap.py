@@ -51,20 +51,29 @@ class CreateCodeMapResponse(BaseModel):
 
 class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     """
-    Creates a code map for a repository by indexing and analyzing its contents.
+    Use this to create a code map for a repository by indexing and analyzing its contents.
 
-    This class is responsible for:
-    1. Creating a Fully Qualified Domain Name (FQDN) cache for various code entities
-       such as classes, functions, and variables.
-    2. Generating an index of the repository's Python files.
-    3. Creating a vector store from chunked file contents for efficient searching.
+    This action returns the full information about all the instances of the class queried.
+    1. Generates a Fully Qualified Domain Name (FQDN) cache for code entities
+       (classes, functions, variables).
+    2. Creates an index of the repository's Python files.
+    3. Builds a vector store from chunked file contents for efficient searching.
+
+    Use this action when you need to analyze or search through a codebase efficiently.
+    The resulting index can be used for various code analysis tasks.
+
+    Input:
+    - dir_to_index_path: Absolute path to the directory to be indexed
+    - repo_version: Version of the repository to be indexed
+
+    Output:
+    - result: Status message indicating success or failure of the indexing process
+
+    Note: This action may take some time to complete for large codebases.
     """
 
-    _display_name = "Create index"
-    _request_schema: Type[CreateCodeMapRequest] = CreateCodeMapRequest
-    _response_schema: Type[CreateCodeMapResponse] = CreateCodeMapResponse
+    display_name = "Create index"
     _tags = ["index"]
-    _tool_name = "codeanalysis"
 
     def execute(
         self, request: CreateCodeMapRequest, metadata: Dict

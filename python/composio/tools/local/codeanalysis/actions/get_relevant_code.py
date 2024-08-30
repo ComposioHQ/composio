@@ -27,18 +27,22 @@ class GetRelevantCodeResponse(BaseModel):
 
 class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeResponse]):
     """
-    Retrieves the body of a specified method.
+    Retrieves relevant code snippets from a repository based on a given query.
 
-    This action can retrieve the method body in two scenarios:
-    1. If a class name is provided, it retrieves the method from within that class.
-    2. If no class name is provided, it retrieves the method from the global scope.
+    Use this action when you need to:
+    1. Find code snippets related to a specific topic or functionality.
+    2. Search for implementations of particular features across the codebase.
+    3. Gather context-specific code examples for analysis or reference.
 
-    The retrieved body includes any decorators and comments associated with the method.
+    Usage example:
+    repo_name: django
+    query: "database connection pooling"
+
+    The relevance of retrieved code snippets depends on the quality and specificity of the provided query.
     """
 
-    _display_name = "Get Relevant Code"
-    _request_schema: Type[GetRelevantCodeRequest] = GetRelevantCodeRequest
-    _response_schema: Type[GetRelevantCodeResponse] = GetRelevantCodeResponse
+    display_name = "Get Relevant Code"
+    _tags = ["index"]
 
     def execute(
         self, request: GetRelevantCodeRequest, metadata: Dict

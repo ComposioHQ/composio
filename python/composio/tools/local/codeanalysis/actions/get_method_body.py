@@ -14,7 +14,7 @@ class GetMethodBodyRequest(BaseModel):
     )
     class_name: Optional[str] = Field(
         None,
-        description="Fully qualified name of the class containing the target method",
+        description="Name of the class containing the target method",
     )
     method_name: str = Field(
         ..., description="Name of the method whose body is to be retrieved"
@@ -32,20 +32,24 @@ class GetMethodBody(
     LocalAction[GetMethodBodyRequest, GetMethodBodyResponse], MethodAnalysisAction
 ):
     """
-    Retrieves the body of a specified method.
+    This tool retrieves the body of a specified method from a given repository.
+
+    Use this action when you need to:
+    1. Obtain the complete implementation of a specific method.
+    2. Extract method details for documentation or code review purposes.
 
     This action can retrieve the method body in two scenarios:
     1. If a class name is provided, it retrieves the method from within that class.
     2. If no class name is provided, it retrieves the method from the global scope.
 
-    The retrieved body includes any decorators and comments associated with the method.
+    Usage example:
+    repo_name: django
+    class_name: Field
+    method_name: run_validators
     """
 
-    _display_name = "Get Method Body"
-    _request_schema: Type[GetMethodBodyRequest] = GetMethodBodyRequest
-    _response_schema: Type[GetMethodBodyResponse] = GetMethodBodyResponse
+    display_name = "Get Method Body"
     _tags = ["index"]
-    _tool_name = "codeanalysis"
 
     def execute(
         self, request: GetMethodBodyRequest, metadata: Dict

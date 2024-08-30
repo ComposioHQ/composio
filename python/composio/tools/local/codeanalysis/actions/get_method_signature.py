@@ -14,7 +14,7 @@ class GetMethodSignatureRequest(BaseModel):
     )
     class_name: Optional[str] = Field(
         None,
-        description="Fully qualified name of the class containing the target method",
+        description="Name of the class containing the target method",
     )
     method_name: str = Field(
         ..., description="Name of the method whose signature is to be retrieved"
@@ -33,20 +33,24 @@ class GetMethodSignature(
     MethodAnalysisAction,
 ):
     """
-    Retrieves the signature of a specified method.
+    This tool retrieves the signature of a specified method from a given repository.
+
+    Use this action when you need to:
+    1. Obtain the signature of a specific method without its implementation.
+    2. Extract method signature details for documentation or API analysis.
 
     This action can retrieve the method signature in two scenarios:
     1. If a class name is provided, it retrieves the method from within that class.
     2. If no class name is provided, it retrieves the method from the global scope.
 
-    The retrieved signature includes any decorators and comments associated with the method.
+    Usage example:
+    repo_name: django
+    class_name: Field
+    method_name: run_validators
     """
 
-    _display_name = "Get Method Signature"
-    _request_schema: Type[GetMethodSignatureRequest] = GetMethodSignatureRequest
-    _response_schema: Type[GetMethodSignatureResponse] = GetMethodSignatureResponse
+    display_name = "Get Method Signature"
     _tags = ["index"]
-    _tool_name = "codeanalysis"
 
     def execute(
         self, request: GetMethodSignatureRequest, metadata: Dict
