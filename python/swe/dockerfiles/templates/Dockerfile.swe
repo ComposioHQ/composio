@@ -1,8 +1,5 @@
 FROM {{ baseimage }}
 
-ENV COMPOSIO_API_KEY=d1mpj0r66jfsxelfofskad
-ENV COMPOSIO_LOGGING_LEVEL=DEBUG
-
 # Switch user
 USER user
 

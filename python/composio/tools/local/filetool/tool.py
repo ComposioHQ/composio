@@ -19,6 +19,7 @@ from .actions import (
     Scroll,
     SearchWord,
     Write,
+    ApplyPatch,
 )
 
 
@@ -41,4 +42,5 @@ class Filetool(LocalTool, autoload=True):
             GitClone,
             GitRepoTree,
             GitPatch,
+            ApplyPatch,
         ]
