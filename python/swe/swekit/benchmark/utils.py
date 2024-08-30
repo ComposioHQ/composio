@@ -165,6 +165,7 @@ def build_image_and_container(
         workspace = WorkspaceFactory.new(
             WorkspaceType.Docker(
                 image=image_name,
+                persistent=True,
                 composio_api_key=composio_toolset.api_key,
                 composio_base_url=composio_toolset.base_url or get_api_url_base(),
                 github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),

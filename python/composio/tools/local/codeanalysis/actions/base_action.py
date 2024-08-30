@@ -144,6 +144,12 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
 
     @staticmethod
     def format_method_results(method_results: List[Dict]) -> Dict:
+        if not method_results:
+            return {
+                "signature_ans": "No matching methods found.",
+                "body_ans": "No matching methods found."
+            }
+
         signature_ans = []
         body_ans = []
 
