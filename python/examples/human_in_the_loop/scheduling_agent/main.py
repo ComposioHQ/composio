@@ -3,6 +3,7 @@ import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
+import json
 from datetime import datetime
 from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
@@ -49,12 +50,16 @@ slack_tools = composio_toolset.get_actions(
         ]
 )
 
+#two listeners one for gmail and one for slack
 gmail_listener = composio_toolset.create_trigger_listener()
 slack_listener = composio_toolset.create_trigger_listener()
 
 
 
 
+# preprocessor function that listens to the slack messages
+# after it sends a message to the user asking if the
+# message should be added to google calendar
 
 def proc():
     print("listener")
@@ -68,6 +73,8 @@ def proc():
     slack_listener.listen()
 
 
+#listens to user response on Slack
+#based on the user response adds the gmail message to the calendar
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
 def review_new_pr(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
@@ -119,19 +126,21 @@ def review_new_pr(event: TriggerEventData) -> None:
     analyze_email_task = f"""
         1. Analyze the email content and decide if an event should be created. 
                 a. The email was received from {sender_mail} 
-                b. The content of the email is: {message} 
+                b. The content of the email is: {mail_message} 
         2. If you decide to create an event, try to find a free slot 
             using Google Calendar Find Free Slots action.
         3. Once you find a free slot, use Google Calendar Create Event 
             action to create the event at a free slot and send the invite to {sender_mail}.
 
         If an event was created, draft a confirmation email for the created event. 
-        The receiver of the mail is: {sender_mail}, the subject should be meeting scheduled and body
+        The receiver of the mail is: {mail_message}, the subject should be meeting scheduled and body
         should describe what the meeting is about
         """
     response = agent.chat(analyze_email_task)
     print(response)
 
+#Gmail listener Function, 
+#We initialise mail content variable mail_message and sender mail here
 @gmail_listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:
     print("MESSAGE RECEIVED")
