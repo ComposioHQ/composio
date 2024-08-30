@@ -99,7 +99,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     from openai import OpenAI
 
                     openai_client = OpenAI()
-                    composio_toolset = ComposioToolSet(entity_id="Jessica")
+                    composio_toolset = ComposioToolSet()
                     ```
                 </CodeGroup>
             </Tab>
@@ -115,7 +115,6 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
                     const composio_toolset = new OpenAIToolSet({
                     apiKey: process.env.COMPOSIO_API_KEY,
-                    entityId: "Jessica",
                 });
                     ```
                 </CodeGroup>
@@ -188,7 +187,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         <Tabs>
             <Tab title="Python">
                 <CodeGroup>
-                    ```python Execute Function calls for Jessica
+                    ```python Execute Function calls
                     result = composio_toolset.handle_tool_calls(response)
                     print(result)
                     ```
@@ -196,7 +195,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             </Tab>
             <Tab title="JavaScript">
                 <CodeGroup>
-                    ```javascript Execute Function calls for Jessica
+                    ```javascript Execute Function calls
                     const result = await composio_toolset.handleToolCall(response);
                     console.log(result);
                     ```
@@ -211,7 +210,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
               --header 'Content-Type: application/json' \
               --header 'X-API-Key: ADD YOUR API KEY HERE' \
               --data '{
-              "entityId": "Jessica",
+              "entityId": "default",
               "input": {
                   "repo": "composio",
                   "owner": "composiohq"
@@ -231,8 +230,8 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
 Congratulations! You've just:
 
-1. 🔐 Authenticated Jessica's GitHub account with Composio
-2. 🛠 Fetched GitHub actions Jessica can perform
+1. 🔐 Authenticated your GitHub account with Composio
+2. 🛠 Fetched GitHub actions 
 3. 🧠 Passed these actions to an AI language model
 4. ⭐ Instructed the AI to star the `composiohq/composio` repository
 5. ✅ Successfully executed the action on GitHub
