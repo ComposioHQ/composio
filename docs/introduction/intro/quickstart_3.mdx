@@ -2,15 +2,15 @@
 title: "🚀 Quick Start - 3"
 sidebarTitle: "Quick Start - Part 3"
 icon: "rocket"
-description: "Learn how to create and use Triggers with GitHub using Composio in just 5 minutes."
+description: "Learn how to create and use Triggers with Gmail using Composio in just 5 minutes."
 ---
 
 ## Composio Quick Start
 
-Turn natural language into GitHub actions in minutes. Follow these 5 steps to star a repo using AI:
+Setup Triggers that automatically execute Actions. Follow these 5 steps to list your emails as soon you receive them:
 
 <Info>
-    **What you'll achieve:** By the end of this guide, you'll have an AI agent capable of starring GitHub repositories using natural language commands.
+    **What you'll achieve:** By the end of this guide, you'll have an AI agent capable of listing all the emails you receive as soon as you receive them.
 </Info>
 
 <Steps>
@@ -40,14 +40,15 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         </Tabs>
     </Step>
 
+
     <Step title="Authenticate GitHub Account">
         We'll use **`Jessica`** as our example user. Choose your method:
 
         <Tabs>
             <Tab title="CLI (Quickest)">
                 <CodeGroup>
-                    ```bash Authenticate Jessica's GitHub Account
-                    composio add github -e "Jessica" # Launches GitHub login
+                    ```bash Authenticate Jessica's Gmail Account
+                    composio add gmail -e "Jessica" # Launches GitHub login
                     ```
                 </CodeGroup>
             </Tab>
@@ -86,6 +87,85 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             Ensure you complete the authentication process by following the URL provided in your console.
         </Warning>
 
+    </Step>
+
+    <Step title="Enable Triggers">
+    <Tabs>
+    <Tab title="Using CLI">
+    <CodeGroup>
+    ```Bash Enable Trigger from CLI
+    # In CLI
+    composio triggers enable gmail_new_gmail_message
+    # trigger_name is the name of the trigger - gmail_new_gmail_message
+
+    ## To disable a trigger
+    composio triggers disable <trigger_name>
+    ```
+    </CodeGroup>
+    </Tab>
+    <Tab title="Using Python Code">
+    <CodeGroup>
+    ```python Enable Trigger using python code
+    from composio import Composio, Action
+
+    client = Composio() 
+    entity = client.get_entity(id="Jessica")
+
+    # config is optional, it can be used to pass additional parameters for the trigger
+    entity.enable_trigger(app=App.GMAIL, trigger_name="gmail_new_gmail_message", config={}) # Enable trigger
+
+    #entity.disable_trigger("gmail_new_gmail_message") # Disable trigger via ID
+    ```
+    </CodeGroup>
+    </Tab>
+
+    <Tab title="Using Javascript Code">
+    <CodeGroup>
+    ```javascript Enable Trigger using javascript code
+    Coming soon!
+    ```
+    </CodeGroup>
+    </Tab>
+    <Tab title="Using API">
+    When you Initiate a Connection, you receive the connectionAccountID
+    <CodeGroup>
+    ```API curl
+    curl --request POST \
+    --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/GMAIL_NEW_GMAIL_MESSAGE \
+    --header 'Content-Type: application/json' \
+    --header 'X-API-Key: <x-api-key>' \
+    --data '{
+    "triggerConfig": {
+    }
+    }'
+
+    ```
+    </CodeGroup>
+    </Tab>
+    <Tab title="Using Dashboard">
+    <div
+    style={{
+        width: '100%',
+        position: 'relative',
+        paddingTop: '56.25%',
+    }}>
+    <iframe
+        src="https://app.supademo.com/embed/cly4qu1q001istgvzirl1sj8y"
+        frameBorder="0"
+        title="Direct Action Execution"
+        allow="clipboard-write"
+        webkitallowfullscreen="true"
+        mozallowfullscreen="true"
+        allowfullscreen
+        style={{
+        position: 'absolute',
+        top: 0,left: 0, width: '100%', height: '100%',
+        border: '3px solid #5E43CE',
+        borderRadius: '10px',
+        }}/>
+    </div>
+    </Tab>
+    </Tabs>
     </Step>
 
     <Step title="Initialize Composio and OpenAI">
@@ -127,100 +207,53 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
     </Step>
 
-    <Step title="Fetch GitHub Actions & Interact with LLM">
-        Now, let's star a repository using natural language:
+    <Step title="Creating a trigger and setting up ">
+    <Tabs>
+    <Tab title="Using Python Code">
+    <CodeGroup>
+    ```python Create a trigger listener
+    listener = composio_toolset.create_trigger_listener() 
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Star a repo using LLM
-                    tools = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+    ## Triggers when a new event has taken place
+    @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"}) 
+    def callback_function(event):
+        ## Your Code Here ##
+        ## Parse event data and do something with it
+        payload = event.payload
+        thread_id = payload.get("threadId")
+        message = payload.get("snippet")
+        sender_mail = extract_sender_email(payload["payload"])
+        print(sender_mail+":"+message)
 
-                    task = "Star the repo composiohq/composio on GitHub"
+    listener.listen()
+    ```
+    </CodeGroup>
 
-                    response = openai_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
-                    tools=tools,
-                    messages=
-                        [
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {"role": "user", "content": task},
-                        ],
-                    )
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```javascript Star a repo using LLM
-                    const tools = await composio_toolset.getActions({
-                    actions: ["github_star_a_repository_for_the_authenticated_user"]
-                });
+    </Tab>
+    <Tab title="Using Javascript Code">
+    <CodeGroup>
+    ```Javascript Create a trigger listener
+    import { LangchainToolSet } from "composio-core"; // or any other toolset
 
-                    const instruction = "Star the repo composiohq/composio on GitHub";
+    const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY }); /
+    const composio_client = toolset.client
 
-                    const response = await openai_client.chat.completions.create({
-                    model: "gpt-4-turbo-preview",
-                    messages: [{ role: "user", content: instruction }],
-                    tools: tools,
-                    tool_choice: "auto",
-                });
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="API">
-            You can get a list of Actions for a particular App like this. In this case we obtain all the Github Actions
-            <CodeGroup>
-              ```curl curl
-              curl --request GET \
-              --url 'https://backend.composio.dev/api/v2/actions?appNames=GITHUB' \
-              --header 'X-API-Key: ADD YOUR API KEY HERE'
-              ```
-            </CodeGroup>
-            </Tab>
-        </Tabs>
-    </Step>
+    // If not using LangchainToolSet
+    // import {Composio} from "composio-core";  
+    //const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
 
-    <Step title="Execute Tool Calls">
-        Finally, let's execute the action determined by the LLM:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Execute Function calls
-                    result = composio_toolset.handle_tool_calls(response)
-                    print(result)
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```javascript Execute Function calls
-                    const result = await composio_toolset.handleToolCall(response);
-                    console.log(result);
-                    ```
-                </CodeGroup>
-            </Tab>
-
-            <Tab title="API">
-            <CodeGroup>
-            ```curl curl
-              curl --request POST \
-              --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
-              --header 'Content-Type: application/json' \
-              --header 'X-API-Key: ADD YOUR API KEY HERE' \
-              --data '{
-              "entityId": "default",
-              "input": {
-                  "repo": "composio",
-                  "owner": "composiohq"
-              }
-              }'
-             ```
-            </CodeGroup>
-            </Tab>
-
-        </Tabs>
+    // Subscribe to triggers and perform actions
+    composio_client.triggers.subscribe((data) => {
+        console.log("trigger received", data);
+    });
+    ```
+    </CodeGroup>
+    </Tab>
+    <Tab title="Using Webhook">
+    Coming soon!
+    </Tab>
+    </Tabs>
     </Step>
 
 </Steps>
@@ -230,11 +263,11 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
 Congratulations! You've just:
 
-1. 🔐 Authenticated your GitHub account with Composio
-2. 🛠 Fetched GitHub actions 
-3. 🧠 Passed these actions to an AI language model
-4. ⭐ Instructed the AI to star the `composiohq/composio` repository
-5. ✅ Successfully executed the action on GitHub
+1. 🔐 Authenticated your Gmail account with Composio
+2. 🛠 Enabled Triggers 
+3. 🧠 Passed these triggers to an AI language model
+4. ⭐ Instructed the AI to list all emails received
+5. ✅ Successfully executed the trigger and actions on Gmail
 
 <Frame caption="Explore Advanced Composio Features">
     <Card title="Level Up Your Composio Skills" icon="rocket" iconType="duotone">

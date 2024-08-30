@@ -5,7 +5,6 @@ icon: "rocket"
 description: "Learn about Entities and Connections"
 ---
 
-
 ### Introduction to Entities
 
 - Each unique user is represented by a unique entity id.
@@ -15,10 +14,10 @@ description: "Learn about Entities and Connections"
 
 - When a user connects their account, a connected_account object is created.
 - This object securely stores authentication data such as access tokens and refresh tokens.
-- Turn natural language into Gmail actions in minutes. Follow these 5 steps to connect your user to gmail and send an email:
+- Turn natural language into Google Calendar actions in minutes. Follow these 5 steps to connect your user to Google Calendar and send an email:
 
 <Info>
-    **What you'll achieve:** By the end of this guide, you'll connect your user to their Gmail and Send an Email through Natural Language.
+    **What you'll achieve:** By the end of this guide, you'll connect your user to their Google Calendar.
 </Info>
 
 <Steps>
@@ -48,25 +47,25 @@ description: "Learn about Entities and Connections"
         </Tabs>
     </Step>
 
-    <Step title="Authenticate Gmail Account">
+    <Step title="Authenticate Google Calendar Account">
         We'll use **`Jessica`** as our example user. Choose your method:
 
         <Tabs>
             <Tab title="CLI (Quickest)">
                 <CodeGroup>
-                    ```bash Authenticate Jessica's Gmail Account
-                    composio add gmail -e "Jessica" # Launches Gmail login
+                    ```bash Authenticate Jessica's Google Calendar Account
+                    composio add googlecalendar -e "Jessica" # Launches Google Calendar login
                     ```
                 </CodeGroup>
             </Tab>
             <Tab title="Python">
                 <CodeGroup>
-                    ```python Authenticate Jessica's Gmail Account
+                    ```python Authenticate Jessica's Google Calendar Account
                     from composio import ComposioToolSet, App
 
                     toolset = ComposioToolSet(entity_id="Jessica")
                     entity = toolset.get_entity()
-                    request = entity.initiate_connection(App.GMAIL)
+                    request = entity.initiate_connection(App.GOOGLECALENDAR)
 
                     print(f"Open this URL to authenticate: {request.redirectUrl}")
                     ```
@@ -74,7 +73,7 @@ description: "Learn about Entities and Connections"
             </Tab>
             <Tab title="JavaScript">
                 <CodeGroup>
-                    ```javascript Authenticate Jessica's Gmail Account
+                    ```javascript Authenticate Jessica's Google Calendar Account
                     import { Composio } from "composio-core";
 
                     const client = new Composio(
@@ -82,7 +81,7 @@ description: "Learn about Entities and Connections"
                     );
 
                     const entity = await client.getEntity("Jessica");
-                    const connection = await entity.initiateConnection('gmail');
+                    const connection = await entity.initiateConnection('googlecalendar');
 
                     console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
                     ```
@@ -136,16 +135,16 @@ description: "Learn about Entities and Connections"
 
     </Step>
 
-    <Step title="Fetch Gmail Actions & Interact with LLM">
+    <Step title="Fetch Google Calendar Actions & Interact with LLM">
         Now, let's star a repository using natural language:
 
         <Tabs>
             <Tab title="Python">
                 <CodeGroup>
                     ```python Star a repo using LLM
-                    tools = composio_toolset.get_actions(actions=[Action.GMAIL_SEND_EMAIL])
+                    tools = composio_toolset.get_actions(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
 
-                    task = "Send an email to [ENTER ANY EMAIL ID] saying hi"
+                    task = "Create a 1 hour meeting event at 5:30PM tomorrow"
 
                     response = openai_client.chat.completions.create(
                     model="gpt-4-turbo-preview",
@@ -163,10 +162,10 @@ description: "Learn about Entities and Connections"
                 <CodeGroup>
                     ```javascript Star a repo using LLM
                     const tools = await composio_toolset.getActions({
-                    actions: ["gmail_send_email"]
+                    actions: ["googlecalendar_create_event"]
                 });
 
-                    const instruction = "Send an email to [ENTER ANY EMAIL ID] saying hi";
+                    const instruction = "Create a 1 hour meeting event at 5:30PM tomorrow";
 
                     const response = await openai_client.chat.completions.create({
                     model: "gpt-4-turbo-preview",
@@ -182,7 +181,7 @@ description: "Learn about Entities and Connections"
             <CodeGroup>
               ```curl curl
               curl --request GET \
-              --url 'https://backend.composio.dev/api/v2/actions?appNames=GMAIL' \
+              --url 'https://backend.composio.dev/api/v2/actions?appNames=GOOGLECALENDAR' \
               --header 'X-API-Key: ADD YOUR API KEY HERE'
               ```
             </CodeGroup>
@@ -215,14 +214,14 @@ description: "Learn about Entities and Connections"
             <CodeGroup>
             ```curl curl
               curl --request POST \
-              --url https://backend.composio.dev/api/v2/actions/GMAIL_SEND_EMAIL/execute \
+              --url https://backend.composio.dev/api/v2/actions/GOOGLECALENDAR_CREATE_EVENT/execute \
               --header 'Content-Type: application/json' \
               --header 'X-API-Key: ADD YOUR API KEY HERE' \
               --data '{
               "entityId": "Jessica",
               "input": {
-                  "name": "prathit3.14@gmail.com",
-                  "content": "Hi!"
+                  "start_datetime": "11:15 PM, 1 December 2024",
+                  "event_duration": "2h"
               }
               }'
              ```
@@ -239,11 +238,11 @@ description: "Learn about Entities and Connections"
 
 Congratulations! You've just:
 
-1. 🔐 Authenticated Jessica's Gmail account with Composio
-2. 🛠 Fetched Gmail actions Jessica can perform
+1. 🔐 Authenticated Jessica's Google Calendar account with Composio
+2. 🛠 Fetched Google Calendar actions Jessica can perform
 3. 🧠 Passed these actions to an AI language model
-4. ⭐ Instructed the AI to send an email saying Hi! 
-5. ✅ Successfully executed the action on Gmail
+4. ⭐ Instructed the AI to schedule a event on Jessica's Calendar 
+5. ✅ Successfully executed the action on Google Calendar
 
 <Frame caption="Explore Advanced Composio Features">
     <Card title="Level Up Your Composio Skills" icon="rocket" iconType="duotone">
