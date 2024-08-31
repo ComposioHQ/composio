@@ -179,6 +179,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     optional_fields = {}
     if "title" not in param_schema:
         raise ValueError(f"Missing 'title' in param_schema: {param_schema}")
+
     param_title = str(param_schema["title"]).replace(" ", "")
     required_props = param_schema.get("required", [])
 
