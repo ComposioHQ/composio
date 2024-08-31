@@ -12,7 +12,7 @@ from agents import agent
 BOT_ID = os.environ["BOT_ID"]
 
 toolset = ComposioToolSet()
-listner = toolset.create_trigger_listener()
+listener = toolset.create_trigger_listener()
 
 composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
 entity = composio_client.get_entity("default")
@@ -72,7 +72,7 @@ def run_agent(text: str, channel: str) -> Tuple[str, int]:
     return "Agent run completed", 200
 
 
-@listner.callback(filters={"trigger_name": "slackbot_receive_message"})
+@listener.callback(filters={"trigger_name": "slackbot_receive_message"})
 def event_handler(event: TriggerEventData) -> Tuple:
     message = event.payload['event']['text']
     channel = event.payload['event']['channel']
@@ -81,5 +81,5 @@ def event_handler(event: TriggerEventData) -> Tuple:
 
     return run_agent(message, channel)
 
-print("Subcription created!")
-listner.listen()
+print("Subscription created!")
+listener.listen()

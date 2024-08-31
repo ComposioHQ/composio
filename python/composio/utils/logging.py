@@ -44,7 +44,7 @@ _LEVELS: t.Dict[LogLevel, int] = {
 
 
 def _parse_log_level_from_env(default: int) -> int:
-    """Parse log level from environent."""
+    """Parse log level from environment."""
     level = os.environ.get(ENV_COMPOSIO_LOGGING_LEVEL)
     if level is None:
         return default

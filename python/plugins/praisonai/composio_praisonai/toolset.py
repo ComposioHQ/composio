@@ -115,7 +115,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
     ) -> str:
         """
-        Generats PraisonAI tools from Composio Actions
+        Generates PraisonAI tools from Composio Actions
 
         :param action_name: Identifier for the tool action.
         :param tool_name: Name of the tool class.

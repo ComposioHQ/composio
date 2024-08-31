@@ -188,16 +188,16 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
             )
             return self.model(**response.json())
 
-        quries = {}
+        queries = {}
         if len(entity_ids) > 0:
-            quries["user_uuid"] = ",".join(entity_ids)
+            queries["user_uuid"] = ",".join(entity_ids)
 
         if active:
-            quries["showActiveOnly"] = "true"
+            queries["showActiveOnly"] = "true"
 
         response = self._raise_if_required(
             self.client.http.get(
-                url=str(self.endpoint(queries=quries)),
+                url=str(self.endpoint(queries=queries)),
             )
         )
         return [self.model(**account) for account in response.json().get("items", [])]
@@ -209,7 +209,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         params: t.Optional[t.Dict] = None,
         redirect_url: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
-        """Initiate a new connected accont."""
+        """Initiate a new connected account."""
         response = self._raise_if_required(
             response=self.client.http.post(
                 url=str(self.endpoint),
@@ -401,7 +401,7 @@ class TriggerModel(BaseModel):
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
-    successfull: bool
+    successful: bool
     data: t.Dict
     error: t.Optional[str] = None
 
@@ -517,7 +517,7 @@ class TriggerSubscription(logging.WithLogger):
             return callback(data)
         except BaseException:
             self.logger.info(
-                f"Erorr executing `{callback.__name__}` for "
+                f"Error executing `{callback.__name__}` for "
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
             )
@@ -854,7 +854,7 @@ class Actions(Collection[ActionModel]):
         :param actions: Filter by the list of Actions.
         :param apps: Filter by the list of Apps.
         :param tags: Filter by the list of given Tags.
-        :param limit: Limit the numnber of actions to a specific number.
+        :param limit: Limit the number of actions to a specific number.
         :param use_case: Filter by use case.
         :param allow_all: Allow querying all of the actions for a specific
                         app

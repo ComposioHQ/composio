@@ -19,14 +19,14 @@ RUN git fetch --depth 1 origin {{ basecommit}}
 RUN git checkout {{ basecommit}}
 
 {% if dependencies -%}
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install {{ dependencies }} || echo "$?"
 
 {% endif -%}
 
 
 {% if requirements -%}
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt

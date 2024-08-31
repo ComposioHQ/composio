@@ -395,7 +395,7 @@ class ComposioToolSet(WithLogger):
         file_name_prefix: str,
         success_response_model: SuccessExecuteActionResponseModel,
     ) -> dict:
-        execution_status = success_response_model.successfull
+        execution_status = success_response_model.successful
         resp_data = success_response_model.data
 
         for key, val in resp_data.items():

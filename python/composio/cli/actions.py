@@ -102,7 +102,7 @@ def _actions(
 
     if use_case is not None and len(apps) == 0:
         raise click.ClickException(
-            "To search by a use case you need to specify atleast one app name."
+            "To search by a use case you need to specify at least one app name."
         )
 
     context.console.print("[green]Showing all actions[/green]")

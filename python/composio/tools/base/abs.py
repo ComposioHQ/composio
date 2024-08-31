@@ -68,7 +68,7 @@ class ExecuteResponse(BaseModel):
 
 class _Attributes:
     name: str
-    """Name represenation."""
+    """Name representation."""
 
     enum: str
     """Enum key."""
@@ -162,7 +162,7 @@ class _Response(t.Generic[ModelType]):
             )
             error: t.Optional[str] = Field(
                 None,
-                description="Error if any occured during the execution of the action",
+                description="Error if any occurred during the execution of the action",
             )
 
         return t.cast(t.Type[BaseModel], wrapper)
