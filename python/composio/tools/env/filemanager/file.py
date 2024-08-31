@@ -317,12 +317,6 @@ class File(WithLogger):
         # Compare lint results
         new_lint_errors = self._compare_lint_results(before_lint, after_lint)
 
-        start_original = max(0, start - 5)
-        end_original = min(self.total_lines(), end + 5)
-
-        start_new = max(0, start - 5)
-        end_new = min(self.total_lines(), start + len(text.splitlines()) + 5)
-
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
             formatted_errors = self._format_lint_errors(new_lint_errors)
@@ -334,6 +328,13 @@ class File(WithLogger):
                 "replaced_with": "",
                 "error": f"Edit reverted due to new lint errors:\n{formatted_output}",
             }
+        
+        start_original = max(0, start - 5)
+        end_original = min(len(original_content.splitlines()), end + 5)
+
+        start_new = max(0, start - 5)
+        end_new = min(self.total_lines(), start + len(text.splitlines()) + 5)
+
         return {
             "replaced_text": self.format_text(
                 {
@@ -443,24 +444,24 @@ class File(WithLogger):
         text: str,
     ) -> str:
         """Show file modifications."""
-        formatted_output = ""
-        start_original = max(0, start - 5)
-        end_original = min(self.total_lines(), end + 5)
-
+        formatted_output = "\n"
+        
         start_new = max(0, start - 5)
         end_new = min(self.total_lines(), start + len(text.splitlines()) + 5)
+        replaced_with = self.format_text(
+            {x + 1: buffer.splitlines()[x] for x in range(start_new, end_new)}
+        )
+        formatted_output += f"How your edit would have looked...\n{replaced_with}\n"
 
+        self.path.write_text(data=original_content, encoding="utf-8")
+        start_original = max(0, start - 5)
+        end_original = min(self.total_lines(), end + 5)
         replaced_text = self.format_text(
             {
                 x + 1: original_content.splitlines()[x]
                 for x in range(start_original, end_original)
             }
         )
-        replaced_with = self.format_text(
-            {x + 1: buffer.splitlines()[x] for x in range(start_new, end_new)}
-        )
-
-        formatted_output += f"How your edit would have looked...\n{replaced_with}\n"
         formatted_output += f"The original code before your edit...\n{replaced_text}\n"
 
         formatted_output += (
