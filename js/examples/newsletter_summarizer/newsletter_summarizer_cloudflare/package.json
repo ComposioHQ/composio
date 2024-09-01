@@ -1,0 +1,19 @@
+{
+  "name": "ai-playground",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler publish",
+    "start": "wrangler dev"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230419.0",
+    "miniflare": "^3.20240821.0",
+    "typescript": "^5.0.4",
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "composio-core": "0.1.8",
+    "hono": "^4.2.5"
+  }
+}
