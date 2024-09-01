@@ -10,10 +10,10 @@ description: "How to enable triggers & listen to them?"
 **Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
 Triggers are predefined conditions that, when met, initiate webhooks to your agents. 
-These webhooks usually contain payload which cn be used to our advantage.
+These webhooks usually contain payloads which can be used to our advantage.
 
 * **Github Commit Event**: Triggers a webhook whenever there is a new commit made to a particular repository.
-* **New email in inbox (Gmail)**: Triggers a webhook whenever a new video has been added to a youtube playlist.
+* **New email in inbox (Gmail)**: Triggers a webhook whenever a new email has been received.
 
 ## Enabling Triggers
 
@@ -143,6 +143,32 @@ Coming soon!
 </Tab>
 </Tabs>
 
+## Obtaining config parameters
+
+You can find the list of triggers and the config parameters that need to be passed to each trigger to enable them with this APi call.
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://backend.composio.dev/api/v1/triggers"
+
+headers = {"X-API-Key": "<x-api-key>"}
+
+response = requests.request("GET", url, headers=headers)
+
+print(response.text)
+```
+
+```javascript JS 
+const options = {method: 'GET', headers: {'X-API-Key': '<x-api-key>'}};
+
+fetch('https://backend.composio.dev/api/v1/triggers', options)
+  .then(response => response.json())
+  .then(response => console.log(response))
+  .catch(err => console.error(err));
+
+```
+</CodeGroup>
 
 
 ## Handling Triggers 

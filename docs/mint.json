@@ -79,7 +79,9 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-        "introduction/intro/quickstart"
+        "introduction/intro/quickstart",
+        "introduction/intro/quickstart_2",
+        "introduction/intro/quickstart_3"
       ]
     },
     {
