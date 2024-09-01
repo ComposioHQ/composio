@@ -59,3 +59,8 @@ jobs:
           composio apps update
 
           CI=false COMPOSIO_BASE_URL=https://backend.composio.dev/api PLUGIN_TO_TEST=${{matrix.package}} pytest -vv tests/test_example.py
+      - name: Slack Notification on Failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}

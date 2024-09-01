@@ -175,13 +175,14 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 ).upper()
             else:
                 action_names.append(get_enum_key(name=action.name))
+
             enums.base.ActionData(
                 name=action.name,
                 app=app.key,
                 tags=action.tags,
                 no_auth=app.no_auth,
                 is_local=False,
-                path=enums.base.ACTIONS_CACHE / action_names[-1],
+                path=enums.base.ACTIONS_CACHE / get_enum_key(name=action.name),
             ).store()
 
     processed = []
