@@ -6,5 +6,5 @@ compatibility_date="2024-08-21"
 binding = "AI"
 
 [vars]
-COMPOSIO_API_KEY = "kj8gowob8yrxsrm0ga559c"
+COMPOSIO_API_KEY = ""
 

@@ -9,7 +9,7 @@ description: "Learn about Entities and Connections"
 
 - Each unique user is represented by a unique entity id.
 - If you have two users, Jessica and Melissa, they will have unique entity ids.
-​
+
 ### Introduction to Connected Accounts
 
 - When a user connects their account, a connected_account object is created.
@@ -22,217 +22,211 @@ description: "Learn about Entities and Connections"
 
 <Steps>
 
-    <Step title="Install Composio">
-        Choose your preferred language:
+<Step title="Install Composio">
+    Choose your preferred language:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```bash Install Packages
-                    pip install composio_core composio_openai
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```bash Install Packages
-                    npm install composio-core openai
-                    pip install composio_core  # for CLI (optional)
-                    ```
-                </CodeGroup>
-                <Note>
-                    CLI binary package coming soon. Skip `pip install` if not using CLI.
-                </Note>
-            </Tab>
-        </Tabs>
-    </Step>
+    <Tabs>
+        <Tab title="Python">
+            <CodeGroup>
+                ```bash
+                pip install composio_core composio_openai
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```bash
+                npm install composio-core openai
+                pip install composio_core  # for CLI (optional)
+                ```
+            </CodeGroup>
+            <Note>
+                CLI binary package coming soon. Skip `pip install` if not using CLI.
+            </Note>
+        </Tab>
+    </Tabs>
+</Step>
 
-    <Step title="Authenticate Google Calendar Account">
-        We'll use **`Jessica`** as our example user. Choose your method:
+<Step title="Authenticate Google Calendar Account">
+    We'll use **`Jessica`** as our example user. Choose your method:
 
-        <Tabs>
-            <Tab title="CLI (Quickest)">
-                <CodeGroup>
-                    ```bash Authenticate Jessica's Google Calendar Account
-                    composio add googlecalendar -e "Jessica" # Launches Google Calendar login
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Authenticate Jessica's Google Calendar Account
-                    from composio import ComposioToolSet, App
+    <Tabs>
+        <Tab title="CLI (Quickest)">
+            <CodeGroup>
+                ```bash
+                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Python">
+            <CodeGroup>
+                ```python
+                from composio import ComposioToolSet, App
 
-                    toolset = ComposioToolSet(entity_id="Jessica")
-                    entity = toolset.get_entity()
-                    request = entity.initiate_connection(App.GOOGLECALENDAR)
+                toolset = ComposioToolSet(entity_id="Jessica")
+                entity = toolset.get_entity()
+                request = entity.initiate_connection(App.GOOGLECALENDAR)
 
-                    print(f"Open this URL to authenticate: {request.redirectUrl}")
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```javascript Authenticate Jessica's Google Calendar Account
-                    import { Composio } from "composio-core";
+                print(f"Open this URL to authenticate: {request.redirectUrl}")
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript
+                import { Composio } from "composio-core";
 
-                    const client = new Composio(
-                    process.env.COMPOSIO_API_KEY
-                    );
+                const client = new Composio(process.env.COMPOSIO_API_KEY);
 
-                    const entity = await client.getEntity("Jessica");
-                    const connection = await entity.initiateConnection('googlecalendar');
+                const entity = await client.getEntity("Jessica");
+                const connection = await entity.initiateConnection('googlecalendar');
 
-                    console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
-                    ```
-                </CodeGroup>
-            </Tab>
-        </Tabs>
+                console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+                ```
+            </CodeGroup>
+        </Tab>
+    </Tabs>
 
-        <Warning>
-            Ensure you complete the authentication process by following the URL provided in your console.
-        </Warning>
+    <Warning>
+        Ensure you complete the authentication process by following the URL provided in your console.
+    </Warning>
 
-    </Step>
+</Step>
 
-    <Step title="Initialize Composio and OpenAI">
-        Set up your development environment:
+<Step title="Initialize Composio and OpenAI">
+    Set up your development environment:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Initialize Clients
-                    from composio_openai import ComposioToolSet, Action
-                    from openai import OpenAI
+    <Tabs>
+        <Tab title="Python">
+            <CodeGroup>
+                ```python
+                from composio_openai import ComposioToolSet, Action
+                from openai import OpenAI
 
-                    openai_client = OpenAI()
-                    composio_toolset = ComposioToolSet(entity_id="Jessica")
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```javascript Initialize Clients
-                    import { OpenAI } from "openai";
-                    import { OpenAIToolSet } from "composio-core";
+                openai_client = OpenAI()
+                composio_toolset = ComposioToolSet(entity_id="Jessica")
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript
+                import { OpenAI } from "openai";
+                import { OpenAIToolSet } from "composio-core";
 
-                    const openai_client = new OpenAI({
+                const openai_client = new OpenAI({
                     apiKey: process.env.OPENAI_API_KEY
                 });
 
-                    const composio_toolset = new OpenAIToolSet({
+                const composio_toolset = new OpenAIToolSet({
                     apiKey: process.env.COMPOSIO_API_KEY,
                     entityId: "Jessica",
                 });
-                    ```
-                </CodeGroup>
-            </Tab>
-        </Tabs>
+                ```
+            </CodeGroup>
+        </Tab>
+    </Tabs>
 
-        <Tip>
-            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
-        </Tip>
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+    </Tip>
 
-    </Step>
+</Step>
 
-    <Step title="Fetch Google Calendar Actions & Interact with LLM">
-        Now, let's star a repository using natural language:
+<Step title="Fetch Google Calendar Actions & Interact with LLM">
+    Now, let's create a Google Calendar event using natural language:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Star a repo using LLM
-                    tools = composio_toolset.get_actions(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
+    <Tabs>
+        <Tab title="Python">
+            <CodeGroup>
+                ```python
+                tools = composio_toolset.get_actions(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
 
-                    task = "Create a 1 hour meeting event at 5:30PM tomorrow"
+                task = "Create a 1 hour meeting event at 5:30PM tomorrow"
 
-                    response = openai_client.chat.completions.create(
+                response = openai_client.chat.completions.create(
                     model="gpt-4-turbo-preview",
                     tools=tools,
-                    messages=
-                        [
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {"role": "user", "content": task},
-                        ],
-                    )
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```javascript Star a repo using LLM
-                    const tools = await composio_toolset.getActions({
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": task},
+                    ],
+                )
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript
+                const tools = await composio_toolset.getActions({
                     actions: ["googlecalendar_create_event"]
                 });
 
-                    const instruction = "Create a 1 hour meeting event at 5:30PM tomorrow";
+                const instruction = "Create a 1 hour meeting event at 5:30PM tomorrow";
 
-                    const response = await openai_client.chat.completions.create({
+                const response = await openai_client.chat.completions.create({
                     model: "gpt-4-turbo-preview",
                     messages: [{ role: "user", content: instruction }],
                     tools: tools,
                     tool_choice: "auto",
                 });
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="API">
-            You can get a list of Actions for a particular App like this. In this case we obtain all the Github Actions
-            <CodeGroup>
-              ```curl curl
-              curl --request GET \
-              --url 'https://backend.composio.dev/api/v2/actions?appNames=GOOGLECALENDAR' \
-              --header 'X-API-Key: ADD YOUR API KEY HERE'
-              ```
+                ```
             </CodeGroup>
-            </Tab>
-        </Tabs>
-    </Step>
-
-    <Step title="Execute Tool Calls">
-        Finally, let's execute the action determined by the LLM:
-
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Execute Function calls for Jessica
-                    result = composio_toolset.handle_tool_calls(response)
-                    print(result)
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```javascript Execute Function calls for Jessica
-                    const result = await composio_toolset.handleToolCall(response);
-                    console.log(result);
-                    ```
-                </CodeGroup>
-            </Tab>
-
-            <Tab title="API">
+        </Tab>
+        <Tab title="API">
+            You can get a list of Actions for a particular App like this. In this case, we obtain all the Google Calendar Actions:
             <CodeGroup>
-            ```curl curl
-              curl --request POST \
-              --url https://backend.composio.dev/api/v2/actions/GOOGLECALENDAR_CREATE_EVENT/execute \
-              --header 'Content-Type: application/json' \
-              --header 'X-API-Key: ADD YOUR API KEY HERE' \
-              --data '{
-              "entityId": "Jessica",
-              "input": {
-                  "start_datetime": "11:15 PM, 1 December 2024",
-                  "event_duration": "2h"
-              }
-              }'
-             ```
+                ```curl
+                curl --request GET \
+                --url 'https://backend.composio.dev/api/v2/actions?appNames=GOOGLECALENDAR' \
+                --header 'X-API-Key: ADD YOUR API KEY HERE'
+                ```
             </CodeGroup>
-            </Tab>
+        </Tab>
+    </Tabs>
+</Step>
 
-        </Tabs>
-    </Step>
+<Step title="Execute Tool Calls">
+    Finally, let's execute the action determined by the LLM:
+
+    <Tabs>
+        <Tab title="Python">
+            <CodeGroup>
+                ```python
+                result = composio_toolset.handle_tool_calls(response)
+                print(result)
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript
+                const result = await composio_toolset.handleToolCall(response);
+                console.log(result);
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="API">
+            <CodeGroup>
+                ```curl
+                curl --request POST \
+                --url https://backend.composio.dev/api/v2/actions/GOOGLECALENDAR_CREATE_EVENT/execute \
+                --header 'Content-Type: application/json' \
+                --header 'X-API-Key: ADD YOUR API KEY HERE' \
+                --data '{
+                    "entityId": "Jessica",
+                    "input": {
+                        "start_datetime": "11:15 PM, 1 December 2024",
+                        "event_duration": "2h"
+                    }
+                }'
+                ```
+            </CodeGroup>
+        </Tab>
+    </Tabs>
+</Step>
 
 </Steps>
-
 
 ## What Just Happened? 🎉
 
@@ -241,7 +235,7 @@ Congratulations! You've just:
 1. 🔐 Authenticated Jessica's Google Calendar account with Composio
 2. 🛠 Fetched Google Calendar actions Jessica can perform
 3. 🧠 Passed these actions to an AI language model
-4. ⭐ Instructed the AI to schedule a event on Jessica's Calendar 
+4. ⭐ Instructed the AI to schedule an event on Jessica's Calendar
 5. ✅ Successfully executed the action on Google Calendar
 
 <Frame caption="Explore Advanced Composio Features">
@@ -250,8 +244,8 @@ Congratulations! You've just:
             <Card title="Compatible Agentic Frameworks" icon="brain" href="/framework/langchain">
                 Integrate with popular agentic frameworks
             </Card>
-            <Card title="Authorise a user's Account" icon="brain" href="/introduction/foundations/components/entity/entity-guide">
-                Authorise a user's account to perform actions and subscribe to triggers
+            <Card title="Authorize a User's Account" icon="brain" href="/introduction/foundations/components/entity/entity-guide">
+                Authorize a user's account to perform actions and subscribe to triggers
             </Card>
             <Card title="Execute Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide">
                 Execute actions on behalf of a user
