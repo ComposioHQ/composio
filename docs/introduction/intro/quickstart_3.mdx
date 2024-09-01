@@ -2,12 +2,14 @@
 title: "🚀 Quick Start - 3"
 sidebarTitle: "Quick Start - Part 3"
 icon: "rocket"
-description: "Learn how to create and use Triggers with Gmail using Composio in just 5 minutes."
+description: "Quickstart-3: Learn how to use Triggers with Composio."
 ---
 
 ## Composio Quick Start
 
-Set up Triggers that automatically execute Actions. Follow these 5 steps to list your emails as soon as you receive them:
+Set up Triggers that automatically execute Actions. 
+
+Follow these 5 steps to list your emails as soon as you receive them:
 
 <Info>
     **What you'll achieve:** By the end of this guide, you'll have an AI agent capable of listing all the emails you receive as soon as you receive them.
@@ -21,14 +23,14 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
     <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```bash
+                ```bash Install Composio
                 pip install composio_core composio_openai
                 ```
             </CodeGroup>
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```bash
+                ```bash Install Composio
                 npm install composio-core openai
                 pip install composio_core  # for CLI (optional)
                 ```
@@ -46,14 +48,14 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
     <Tabs>
         <Tab title="CLI (Quickest)">
             <CodeGroup>
-                ```bash
+                ```bash Authenticate Gmail Account
                 composio add gmail -e "Jessica" # Launches Gmail login
                 ```
             </CodeGroup>
         </Tab>
         <Tab title="Python">
             <CodeGroup>
-                ```python
+                ```python Authenticate Gmail Account
                 from composio import ComposioToolSet, App
 
                 toolset = ComposioToolSet(entity_id="Jessica")
@@ -66,7 +68,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript
+                ```javascript Authenticate Gmail Account
                 import { Composio } from "composio-core";
 
                 const client = new Composio(process.env.COMPOSIO_API_KEY);
@@ -90,7 +92,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
     <Tabs>
         <Tab title="Using CLI">
             <CodeGroup>
-                ```bash
+                ```bash Enable Triggers
                 # In CLI
                 composio triggers enable gmail_new_gmail_message
                 # trigger_name is the name of the trigger - gmail_new_gmail_message
@@ -102,7 +104,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
         </Tab>
         <Tab title="Using Python Code">
             <CodeGroup>
-                ```python
+                ```python Enable Triggers
                 from composio import Composio, Action
 
                 client = Composio()
@@ -117,7 +119,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
         </Tab>
         <Tab title="Using JavaScript Code">
             <CodeGroup>
-                ```javascript
+                ```javascript Enable Triggers
                 // Coming soon!
                 ```
             </CodeGroup>
@@ -125,7 +127,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
         <Tab title="Using API">
             When you initiate a connection, you receive the connectionAccountID:
             <CodeGroup>
-                ```bash
+                ```bash Enable Triggers
                 curl --request POST \
                 --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/GMAIL_NEW_GMAIL_MESSAGE \
                 --header 'Content-Type: application/json' \
@@ -172,7 +174,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
     <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```python
+                ```python Initialize Composio and OpenAI
                 from composio_openai import ComposioToolSet, Action
                 from openai import OpenAI
 
@@ -183,7 +185,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript
+                ```javascript Initialize Composio and OpenAI
                 import { OpenAI } from "openai";
                 import { OpenAIToolSet } from "composio-core";
 
@@ -209,7 +211,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
     <Tabs>
         <Tab title="Using Python Code">
             <CodeGroup>
-                ```python
+                ```python Create a Trigger Listener
                 listener = composio_toolset.create_trigger_listener()
 
                 ## Triggers when a new event has taken place
@@ -229,7 +231,7 @@ Set up Triggers that automatically execute Actions. Follow these 5 steps to list
         </Tab>
         <Tab title="Using JavaScript Code">
             <CodeGroup>
-                ```javascript
+                ```javascript Create a Trigger Listener
                 import { LangchainToolSet } from "composio-core"; // or any other toolset
 
                 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
