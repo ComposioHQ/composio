@@ -26,7 +26,7 @@ from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
 
 
-DATASET_NAME = "princeton-nlp/SWE-bench_Verified"
+DATASET_NAME = os.environ.get("DATASET_NAME", "composio/swe-bench_Verified")
 PATH_TESTBED = "testbed/"
 
 

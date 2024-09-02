@@ -90,7 +90,7 @@ class IndexGenerator(WithLogger):
             },
         )
         with open(
-            f"/Users/shrey/.composio/tmp/FQDN_CACHE/{outname}-{version.replace('.', '-')}_fqdn_cache.json"
+            f"{Path.home()}/.composio/tmp/FQDN_CACHE/{outname}-{version.replace('.', '-')}_fqdn_cache.json"
         ) as f:
             fqdn_index = json.load(f)
             for k, v in fqdn_index.items():
@@ -113,7 +113,7 @@ class IndexGenerator(WithLogger):
         DEEPLAKE_PATH = docker_outdir / "deeplake"
         DEEPLAKE_PATH.mkdir(exist_ok=True, parents=True)
         shutil.copytree(
-            f"/Users/shrey/.composio/tmp/deeplake/{outname}-{version.replace('.', '-')}",
+            f"{Path.home()}/.composio/tmp/deeplake/{outname}-{version.replace('.', '-')}",
             DEEPLAKE_PATH / f"{outname}-{version.replace('.', '-')}",
         )
 

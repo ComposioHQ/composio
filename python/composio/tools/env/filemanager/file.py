@@ -315,13 +315,19 @@ class File(WithLogger):
         self.logger.debug(f"Before lint: {before_lint}")
         self.logger.debug(f"After lint: {after_lint}")
         # Compare lint results
-        new_lint_errors = self._compare_lint_results(before_lint, after_lint)
+        new_lint_errors = self._compare_lint_results(
+            before=before_lint, after=after_lint
+        )
 
         if len(new_lint_errors) > 0:
             # Revert changes if new lint errors are found
-            formatted_errors = self._format_lint_errors(new_lint_errors)
+            formatted_errors = self._format_lint_errors(errors=new_lint_errors)
             formatted_output = formatted_errors + self._show_file_modifications(
-                start, end, original_content, buffer, text
+                start=start,
+                end=end,
+                original_content=original_content,
+                buffer=buffer,
+                text=text,
             )
             return {
                 "replaced_text": "",
