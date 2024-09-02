@@ -56,16 +56,13 @@ class GetMethodSignature(
     def execute(
         self, request: GetMethodSignatureRequest, metadata: Dict
     ) -> GetMethodSignatureResponse:
-        try:
-            repo_name = os.path.basename(request.repo_name)
-            repo_path = Path.home() / repo_name
+        repo_name = os.path.basename(request.repo_name)
+        repo_path = Path.home() / repo_name
 
-            self.load_fqdn_cache(repo_name)
-            method_artefacts = self.get_method_artefacts(
-                request.class_name,
-                request.method_name,
-                repo_path,
-            )
-            return GetMethodSignatureResponse(result=method_artefacts["signature_ans"])
-        except Exception as e:
-            raise RuntimeError(f"Failed to execute {self.__class__.__name__}: {e}")
+        self.load_fqdn_cache(repo_name)
+        method_artefacts = self.get_method_artefacts(
+            request.class_name,
+            request.method_name,
+            repo_path,
+        )
+        return GetMethodSignatureResponse(result=method_artefacts["signature_ans"])

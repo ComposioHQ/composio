@@ -55,16 +55,13 @@ class GetMethodBody(
     def execute(
         self, request: GetMethodBodyRequest, metadata: Dict
     ) -> GetMethodBodyResponse:
-        try:
-            repo_name = os.path.basename(request.repo_name)
-            repo_path = Path.home() / repo_name
+        repo_name = os.path.basename(request.repo_name)
+        repo_path = Path.home() / repo_name
 
-            self.load_fqdn_cache(repo_name)
-            method_artefacts = self.get_method_artefacts(
-                request.class_name,
-                request.method_name,
-                repo_path,
-            )
-            return GetMethodBodyResponse(result=method_artefacts["body_ans"])
-        except Exception as e:
-            raise RuntimeError(f"Failed to execute GetMethodBody: {e}")
+        self.load_fqdn_cache(repo_name)
+        method_artefacts = self.get_method_artefacts(
+            request.class_name,
+            request.method_name,
+            repo_path,
+        )
+        return GetMethodBodyResponse(result=method_artefacts["body_ans"])

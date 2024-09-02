@@ -49,27 +49,20 @@ class GetClassInfo(
     def execute(
         self, request: GetClassInfoRequest, metadata: Dict
     ) -> GetClassInfoResponse:
-        try:
-            repo_name = os.path.basename(request.repo_name)
-            repo_path = Path.home() / repo_name
-            self.load_fqdn_cache(repo_name)
-            query_class_name = request.class_name
+        repo_name = os.path.basename(request.repo_name)
+        repo_path = Path.home() / repo_name
 
-            if not isinstance(query_class_name, str):
-                raise ValueError(
-                    "Invalid argument provided. Argument type must be string"
-                )
+        self.load_fqdn_cache(repo_name)
+        query_class_name = request.class_name
 
-            matching_fqdns = self.get_matching_items(query_class_name, "class")
-            class_results = self.get_item_results(matching_fqdns, repo_path)
+        matching_fqdns = self.get_matching_items(query_class_name, "class")
+        class_results = self.get_item_results(matching_fqdns, repo_path)
 
-            if not class_results:
-                return GetClassInfoResponse(result="No matching results found!")
+        if not class_results:
+            return GetClassInfoResponse(result="No matching results found!")
 
-            result_str = self.format_class_results(class_results)
-            return GetClassInfoResponse(result=result_str)
-        except Exception as e:
-            raise RuntimeError(f"Failed to execute GetClassInfo: {e}")
+        result_str = self.format_class_results(class_results)
+        return GetClassInfoResponse(result=result_str)
 
     def format_class_results(self, class_results: List[Dict]) -> str:
         result_str = f"<Total {len(class_results)} result(s) found:>\n"
