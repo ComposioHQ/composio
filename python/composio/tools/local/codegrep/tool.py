@@ -12,7 +12,7 @@ from .actions import SearchCodebase
 class CodeGrepTool(LocalTool, autoload=True):
     """Code Grep tool."""
 
-    logo = "https://github.com/ComposioHQ/composio/blob/master/python/docs/imgs/logos/codegrep.png"
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/codegrep.png"
 
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
