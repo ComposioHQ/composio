@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from tree_sitter import Language, Parser
 
-from composio.tools.local.codeanalysis.constants import TREE_SITTER_CACHE
+from composio.tools.local.codeanalysis.constants import TREE_SITTER_FOLDER
 
 
 class Span:
@@ -204,7 +204,7 @@ class Chunking:
         self.repo_dir = repo_dir
 
     def _setup_tree_sitter(self):
-        python_repo = f"{TREE_SITTER_CACHE}/python"
+        python_repo = f"{TREE_SITTER_FOLDER}/python"
         if not os.path.exists(python_repo):
             subprocess.run(
                 [
@@ -216,13 +216,13 @@ class Chunking:
                 check=True,
             )
 
-        build_path = f"{TREE_SITTER_CACHE}/build/python.so"
+        build_path = f"{TREE_SITTER_FOLDER}/build/python.so"
         if not os.path.exists(build_path):
             os.makedirs(os.path.dirname(build_path), exist_ok=True)
             Language.build_library(build_path, [python_repo])
 
     def _load_language(self) -> Language:
-        return Language(f"{TREE_SITTER_CACHE}/build/python.so", "python")
+        return Language(f"{TREE_SITTER_FOLDER}/build/python.so", "python")
 
     def chunk(
         self,

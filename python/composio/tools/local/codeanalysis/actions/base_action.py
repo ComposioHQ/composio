@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Dict, List, Optional
 
 from composio.tools.local.codeanalysis import lsp_helper
-from composio.tools.local.codeanalysis.constants import DIR_FOR_FQDN_CACHE
+from composio.tools.local.codeanalysis.constants import CODE_MAP_CACHE, FQDN_FILE
 
 
 class BaseCodeAnalysisAction:
@@ -17,10 +17,8 @@ class BaseCodeAnalysisAction:
     def execute(self, request_data):
         pass
 
-    def load_fqdn_cache(self, repo_path: str):
-        self.fqdn_cache_file = os.path.join(
-            DIR_FOR_FQDN_CACHE, os.listdir(DIR_FOR_FQDN_CACHE)[0]
-        )
+    def load_fqdn_cache(self, repo_name: str):
+        self.fqdn_cache_file = os.path.join(CODE_MAP_CACHE, repo_name, FQDN_FILE)
         if not os.path.exists(self.fqdn_cache_file):
             raise FileNotFoundError(
                 f"FQDN cache file not found: {self.fqdn_cache_file}"

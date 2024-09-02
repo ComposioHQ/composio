@@ -17,8 +17,9 @@ from composio.tools.local.codeanalysis import (
     tree_sitter_related,
 )
 from composio.tools.local.codeanalysis.constants import (
-    DIR_FOR_FQDN_CACHE,
-    TREE_SITTER_CACHE,
+    CODE_MAP_CACHE,
+    FQDN_FILE,
+    TREE_SITTER_FOLDER,
 )
 from composio.tools.local.codeanalysis.tool_utils import retry_handler
 from composio.utils.logging import get as get_logger
@@ -39,10 +40,6 @@ class CreateCodeMapRequest(BaseModel):
     dir_to_index_path: str = Field(
         ...,
         description="Absolute path to the directory that needs to be indexed for code analysis",
-    )
-    repo_version: str = Field(
-        ...,
-        description="Tag of the repository to be indexed for code analysis. Example 3.1.",
     )
 
 
@@ -84,7 +81,6 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     ) -> CreateCodeMapResponse:
         self.REPO_DIR = os.path.normpath(os.path.abspath(request.dir_to_index_path))
         self.failed_files = []
-        self.repo_version = request.repo_version.replace(".", "-")
 
         try:
             status = self.check_status(self.REPO_DIR)
@@ -96,13 +92,11 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             if status["status"] in [Status.NOT_STARTED, Status.FAILED]:
                 status = self._update_status(self.REPO_DIR, Status.LOADING_FQDNS)
 
-            os.makedirs(DIR_FOR_FQDN_CACHE, exist_ok=True)
-            os.makedirs(TREE_SITTER_CACHE, exist_ok=True)
             repo_name = os.path.basename(self.REPO_DIR)
-            self.fqdn_cache_file = os.path.join(
-                DIR_FOR_FQDN_CACHE,
-                f"{repo_name}-{request.repo_version.replace('.', '-')}_fqdn_cache.json",
-            )
+            self.save_dir = f"{CODE_MAP_CACHE}/{repo_name}"
+            os.makedirs(self.save_dir, exist_ok=True)
+            os.makedirs(TREE_SITTER_FOLDER, exist_ok=True)
+            self.fqdn_cache_file = os.path.join(self.save_dir, FQDN_FILE)
 
             self._process(status)
 
@@ -183,15 +177,13 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
 
             try:
                 embedder.get_vector_store_from_chunks(
-                    self.REPO_DIR, self.repo_version, documents, ids, metadatas
+                    self.REPO_DIR, documents, ids, metadatas
                 )
             except Exception as e:
                 raise ValueError(f"Failed to create vector store: {e}")
 
-            logger.info(
-                f"Successfully created index for {len(python_files)} files."
-            )
-            shutil.rmtree(TREE_SITTER_CACHE)
+            logger.info(f"Successfully created index for {len(python_files)} files.")
+            shutil.rmtree(TREE_SITTER_FOLDER)
 
         except Exception as e:
             logger.error(f"Failed to create index: {e}")
@@ -225,9 +217,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
                         file_path
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Failed to process FQDNs for file {file_path}: {e}"
-                    )
+                    logger.error(f"Failed to process FQDNs for file {file_path}: {e}")
                     lsp_helper.clear_cache()
 
             with open(self.fqdn_cache_file, "w") as f:

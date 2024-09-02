@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Dict, Type
 
@@ -48,11 +49,8 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
         self, request: GetRelevantCodeRequest, metadata: Dict
     ) -> GetRelevantCodeResponse:
         try:
-            repo_path = request.repo_name
-            if "/" in repo_path:
-                repo_path = repo_path.split("/")[-1]
-            repo_path = Path.home() / repo_path
-            vector_store = embedder.get_vector_store(repo_path, overwrite=False)
+            repo_name = os.path.basename(request.repo_name)
+            vector_store = embedder.get_vector_store(repo_name, overwrite=False)
             query = request.query
             results = embedder.get_topn_chunks_from_query(vector_store, query, top_n=5)
             sep = "\n" + "=" * 100 + "\n"

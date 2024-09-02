@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Dict, Optional, Type
 
@@ -55,12 +56,10 @@ class GetMethodBody(
         self, request: GetMethodBodyRequest, metadata: Dict
     ) -> GetMethodBodyResponse:
         try:
-            repo_path = request.repo_name
-            if "/" in repo_path:
-                repo_path = repo_path.split("/")[-1]
-            repo_path = Path.home() / repo_path
+            repo_name = os.path.basename(request.repo_name)
+            repo_path = Path.home() / repo_name
 
-            self.load_fqdn_cache(repo_path)
+            self.load_fqdn_cache(repo_name)
             method_artefacts = self.get_method_artefacts(
                 request.class_name,
                 request.method_name,
