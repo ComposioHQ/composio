@@ -328,7 +328,7 @@ class File(WithLogger):
                 "replaced_with": "",
                 "error": f"Edit reverted due to new lint errors:\n{formatted_output}",
             }
-        
+
         start_original = max(0, start - 5)
         end_original = min(len(original_content.splitlines()), end + 5)
 
@@ -410,7 +410,7 @@ class File(WithLogger):
             )
             if (code, message) in new_errors
         ]
-    
+
     def _format_lint_errors(
         self,
         errors: t.List[str],
@@ -434,7 +434,7 @@ class File(WithLogger):
             else:
                 formatted_output += f"- {error}\n"
         return formatted_output.rstrip()
-    
+
     def _show_file_modifications(
         self,
         start: int,
@@ -445,7 +445,7 @@ class File(WithLogger):
     ) -> str:
         """Show file modifications."""
         formatted_output = "\n"
-        
+
         start_new = max(0, start - 5)
         end_new = min(self.total_lines(), start + len(text.splitlines()) + 5)
         replaced_with = self.format_text(

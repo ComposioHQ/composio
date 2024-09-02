@@ -147,7 +147,7 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
         if not method_results:
             return {
                 "signature_ans": "No matching methods found.",
-                "body_ans": "No matching methods found."
+                "body_ans": "No matching methods found.",
             }
 
         signature_ans = []

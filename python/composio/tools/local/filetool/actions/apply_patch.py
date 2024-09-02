@@ -61,8 +61,10 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
         with open(git_root / "patch.patch", "w") as f:
             f.write(request.patch)
 
-        files_to_be_modified,line_ranges = self._get_files_from_patch(request.patch)
-        before_lint, before_file_contents = self._run_lint_on_files(file_manager, files_to_be_modified)
+        files_to_be_modified, line_ranges = self._get_files_from_patch(request.patch)
+        before_lint, before_file_contents = self._run_lint_on_files(
+            file_manager, files_to_be_modified
+        )
         output, error = file_manager.execute_command(
             git_apply_cmd(git_root / "patch.patch")
         )
@@ -74,13 +76,14 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
         after_lint, _ = self._run_lint_on_files(file_manager, files_to_be_modified)
 
         for key, value in before_lint.items():
-            file =file_manager.open(path=key)
+            file = file_manager.open(path=key)
             new_lint_errors = file._compare_lint_results(value, after_lint[key])
             if len(new_lint_errors) > 0:
                 formatted_errors = file._format_lint_errors(new_lint_errors)
                 file.path.write_text(before_file_contents[key], encoding="utf-8")
                 return ApplyPatchResponse(
-                    error="No Update, found error during applying patch, no update made in the file: " + formatted_errors,
+                    error="No Update, found error during applying patch, no update made in the file: "
+                    + formatted_errors,
                 )
 
         return ApplyPatchResponse(
@@ -96,8 +99,10 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
                 return current
             current = current.parent
         return None
-    
-    def _get_files_from_patch(self, patch_content: str) -> t.Tuple[t.List[str], t.Dict[str, t.Tuple[int, int]]]:
+
+    def _get_files_from_patch(
+        self, patch_content: str
+    ) -> t.Tuple[t.List[str], t.Dict[str, t.Tuple[int, int]]]:
         """Extract the list of files that will be modified by the patch and their line ranges."""
         files = []
         line_ranges = {}
@@ -107,26 +112,31 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
             if line.startswith("+++") or line.startswith("---"):
                 file_path = line.split()[1]
                 if file_path != "/dev/null":
-                    if file_path.startswith(('a/', 'b/')):
+                    if file_path.startswith(("a/", "b/")):
                         file_path = file_path[2:]
                     files.append(file_path)
                     current_file = file_path
             elif line.startswith("@@"):
                 if current_file:
-                    line_info = line.split()[1].split(',')[0]
-                    start_line = int(line_info.split('-')[1])
+                    line_info = line.split()[1].split(",")[0]
+                    start_line = int(line_info.split("-")[1])
                     if current_file not in line_ranges:
                         line_ranges[current_file] = (start_line, start_line)
                     else:
-                        line_ranges[current_file] = (min(line_ranges[current_file][0], start_line), max(line_ranges[current_file][1], start_line))
+                        line_ranges[current_file] = (
+                            min(line_ranges[current_file][0], start_line),
+                            max(line_ranges[current_file][1], start_line),
+                        )
         return list(set(files)), line_ranges
-    
-    def _run_lint_on_files(self, file_manager, files: t.List[str]) -> t.Tuple[t.Dict[str, t.List[str]], t.Dict[str, str]]:
+
+    def _run_lint_on_files(
+        self, file_manager, files: t.List[str]
+    ) -> t.Tuple[t.Dict[str, t.List[str]], t.Dict[str, str]]:
         """Run lint on the given files."""
         lint_results = {}
         file_contents = {}
         for file_path in files:
-            if file_path.endswith('.py'):
+            if file_path.endswith(".py"):
                 file = file_manager.open(path=file_path)
                 lint_results[file_path] = file.lint()
                 file_contents[file_path] = file.path.read_text(encoding="utf-8")
