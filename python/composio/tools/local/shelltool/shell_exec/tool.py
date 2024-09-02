@@ -11,6 +11,8 @@ from composio.tools.local.shelltool.shell_exec.actions.spawn import SpawnProcess
 class Shelltool(LocalTool, autoload=True):
     """Tool for executing shell commands."""
 
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/shelltool.png"
+
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Returns list of actions."""

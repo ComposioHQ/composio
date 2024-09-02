@@ -16,6 +16,8 @@ from composio.tools.local.zep.actions.search_memory import SearchMemory
 class Zeptool(LocalTool, autoload=True):
     """Tool definition for zep"""
 
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/zep.png"
+
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Get zep actions."""
