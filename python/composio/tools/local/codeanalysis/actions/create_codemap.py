@@ -85,7 +85,6 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         self.REPO_DIR = os.path.normpath(os.path.abspath(request.dir_to_index_path))
         self.failed_files = []
         self.repo_version = request.repo_version.replace(".", "-")
-        self.logger = logger
 
         try:
             status = self.check_status(self.REPO_DIR)
@@ -111,7 +110,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
                 result=f"Indexing completed for {request.dir_to_index_path}"
             )
         except Exception as e:
-            self.logger.error(f"Failed to execute indexing: {e}")
+            logger.error(f"Failed to execute indexing: {e}")
             self._update_status(self.REPO_DIR, Status.FAILED, str(e))
             return CreateCodeMapResponse(
                 result=f"Indexing failed for {request.dir_to_index_path}: {e}"
@@ -189,13 +188,13 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             except Exception as e:
                 raise ValueError(f"Failed to create vector store: {e}")
 
-            self.logger.info(
+            logger.info(
                 f"Successfully created index for {len(python_files)} files."
             )
             shutil.rmtree(TREE_SITTER_CACHE)
 
         except Exception as e:
-            self.logger.error(f"Failed to create index: {e}")
+            logger.error(f"Failed to create index: {e}")
             raise
 
     def load_all_fqdns(self):
@@ -226,7 +225,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
                         file_path
                     )
                 except Exception as e:
-                    self.logger.error(
+                    logger.error(
                         f"Failed to process FQDNs for file {file_path}: {e}"
                     )
                     lsp_helper.clear_cache()
@@ -234,7 +233,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             with open(self.fqdn_cache_file, "w") as f:
                 json.dump(self.all_fqdns_df, f, indent=4)
         except Exception as e:
-            self.logger.error(f"Failed to load all FQDNs: {e}")
+            logger.error(f"Failed to load all FQDNs: {e}")
 
     @retry_handler(max_attempts=2, delay=1)
     def process_python_file_fqdns(self, file_absolute_path: str) -> list:
