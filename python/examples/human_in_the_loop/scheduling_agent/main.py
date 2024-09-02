@@ -1,31 +1,25 @@
-# Import necessary libraries
 import os  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
-# Import modules from Composio and LlamaIndex
 import re
 import json
 from datetime import datetime
+from typing import Optional, Dict, Any
+
 from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
-from llama_index.core.llms import ChatMessage
+from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai import OpenAI
-from llama_index.llms.cerebras import Cerebras
 from composio.client.collections import TriggerEventData
-
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
-BOT_USER_ID=os.environ["BOT_USER_ID"]
-RESPOND_ONLY_IF_TAGGED = (
-    True  # Set to True to have the bot respond only when tagged in a message
-)
-
+BOT_USER_ID: str = os.environ["BOT_USER_ID"]
+RESPOND_ONLY_IF_TAGGED: bool = True
 
 # Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+composio_toolset: ComposioToolSet = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 
-# Retrieve tools from Composio, specifically the EMBEDTOOL app
 # Define the tools
 schedule_tool = composio_toolset.get_actions(
     actions=[
@@ -36,97 +30,93 @@ schedule_tool = composio_toolset.get_actions(
 )
 
 # Initialize an OpenAI instance with the GPT-4o model
-#llm = OpenAI(model="gpt-4o")
-llm = Cerebras(model="llama3.1-70b", api_key=os.environ['CEREBRAS_API_KEY'])
+llm: OpenAI = OpenAI(model="gpt-4o")
 
-
-date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-timezone = datetime.now().astimezone().tzinfo
+date_time: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+timezone: Optional[Any] = datetime.now().astimezone().tzinfo
 
 # Define the tools
 slack_tools = composio_toolset.get_actions(
-        actions=[
+    actions=[
         Action.SLACKBOT_CHAT_POST_MESSAGE,
-        ]
+    ]
 )
 
-#two listeners one for gmail and one for slack
+# Two listeners, one for Gmail and one for Slack
 gmail_listener = composio_toolset.create_trigger_listener()
 slack_listener = composio_toolset.create_trigger_listener()
 
-
-
-
-# preprocessor function that listens to the slack messages
-# after it sends a message to the user asking if the
-# message should be added to google calendar
-
-def proc():
-    print("listener")
+# Preprocessor function that listens to the Slack messages
+def proc() -> None:
+    print("Preprocessing: Waiting for user confirmation on Slack...")
     composio_toolset.execute_action(
         action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
         params={
             "channel": "general",
-            "text": f"Are you sure you want to add message:{mail_message} from sender email:{sender_mail} to your Calendar? If yes, tag test_app and tell it YES",
+            "text": f"Are you sure you want to add message: '{mail_message}' from sender email: '{sender_mail}' to your Calendar? If yes, tag test_app and tell it YES",
         },
     )
+    print("Message sent to Slack channel. Waiting for user response...")
     slack_listener.listen()
 
-
-#listens to user response on Slack
-#based on the user response adds the gmail message to the calendar
+# Listens to user response on Slack
+# Based on the user response, adds the Gmail message to the calendar
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
 def review_new_pr(event: TriggerEventData) -> None:
-    # Using the information from Trigger, execute the agent
-    print("Recieved new messsage")
-    payload = event.payload
-    user_id = payload.get("user", "")
+    print("Received a new message from Slack.")
+    payload: Dict[str, Any] = event.payload
+    user_id: str = payload.get("user", "")
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return "Bot ignored"
+        print("Bot ignored: Message from itself.")
+        return
 
-    message = payload.get("text", "")
+    message: str = payload.get("text", "")
+    print(f"Message content: {message}")
 
     # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
-        return (
-            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
-        )
+        print(f"Payload ignored: {json.dumps(payload)} - {BOT_USER_ID}")
+        return
 
     # Extract channel and timestamp information from the event payload
-    channel_id = payload.get("channel", "")
-    ts = payload.get("ts", "")
-    thread_ts = payload.get("thread_ts", ts)
+    channel_id: str = payload.get("channel", "")
+    ts: str = payload.get("ts", "")
+    thread_ts: str = payload.get("thread_ts", ts)
 
-    prefix_messages = [
-    ChatMessage(
-        role="system",
-        content=(
-            f"""
-                You are an AI assistant specialized in creating calendar events based on email information. 
-                Current DateTime: {date_time}. All the conversations happen in IST timezone.
-                Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
-                Analyze email, and create event on calendar depending on the email content. 
-                You should also draft an email in response to the sender of the previous email  
-            """
+    print(f"Channel ID: {channel_id}, Timestamp: {ts}, Thread Timestamp: {thread_ts}")
 
-        ),
+    prefix_messages: list[ChatMessage] = [
+        ChatMessage(
+            role=MessageRole.SYSTEM,
+            content=(
+                f"""
+                    You are an AI assistant specialized in creating calendar events based on email information. 
+                    Current DateTime: {date_time}. All the conversations happen in IST timezone.
+                    Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
+                    Analyze email, and create event on calendar depending on the email content. 
+                    You should also draft an email in response to the sender of the previous email  
+                """
+            ),
         )
     ]
+    
+    print("Creating agent for analyzing email...")
     agent = FunctionCallingAgentWorker(
-    tools=tools,  # Tools available for the agent to use
-    llm=llm,  # Language model for processing requests
-    prefix_messages=prefix_messages,  # Initial system messages for context
-    max_function_calls=10,  # Maximum number of function calls allowed
-    allow_parallel_tool_calls=False,  # Disallow parallel tool calls
-    verbose=True,  # Enable verbose output
+        tools=schedule_tool,  # Tools available for the agent to use
+        llm=llm,  # Language model for processing requests
+        prefix_messages=prefix_messages,  # Initial system messages for context
+        max_function_calls=10,  # Maximum number of function calls allowed
+        allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+        verbose=True,  # Enable verbose output
     ).as_agent()
-    analyze_email_task = f"""
+    
+    analyze_email_task: str = f"""
         1. Analyze the email content and decide if an event should be created. 
-                a. The email was received from {sender_mail} 
-                b. The content of the email is: {mail_message} 
+            a. The email was received from {sender_mail} 
+            b. The content of the email is: {mail_message} 
         2. If you decide to create an event, try to find a free slot 
             using Google Calendar Find Free Slots action.
         3. Once you find a free slot, use Google Calendar Create Event 
@@ -135,39 +125,33 @@ def review_new_pr(event: TriggerEventData) -> None:
         If an event was created, draft a confirmation email for the created event. 
         The receiver of the mail is: {mail_message}, the subject should be meeting scheduled and body
         should describe what the meeting is about
-        """
+    """
+    
+    print("Analyzing email content...")
     response = agent.chat(analyze_email_task)
+    print("Response from agent received:")
     print(response)
 
-#Gmail listener Function, 
-#We initialise mail content variable mail_message and sender mail here
+# Gmail listener Function
+# We initialize mail content variable mail_message and sender mail here
 @gmail_listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:
-    print("MESSAGE RECEIVED")
-    print("here in the function")
-    payload = event.payload
+    print("New Gmail message received.")
+    payload: Dict[str, Any] = event.payload
     global mail_message
     global sender_mail
-    thread_id = payload.get("threadId")
+    thread_id: Optional[str] = payload.get("threadId")
+    
     mail_message = payload.get("messageText")
-    print(payload)
     sender_mail = payload.get("sender")
+    
     if sender_mail is None:
-        print("No sender email found")
+        print("No sender email found. Exiting...")
         return
-    print(sender_mail)
-    print("WAITING FOR SLACK CONFIRMATION")
-    composio_toolset_1 = ComposioToolSet(
-        processors={
-        "pre": {
-            Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL: proc()
-            },
-        }
-    )
+    
+    print(f"Sender Email: {sender_mail}")
+    print("Waiting for Slack confirmation...")
+    proc()
 
-
-print("GMAIL LISTENING")
-
+print("GMAIL LISTENING... Waiting for new messages.")
 gmail_listener.listen()
-
-
