@@ -2,38 +2,37 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/human_in_the_loop
+python3 -m venv ~/.venvs/human_in_the_loop || { echo "Failed to create virtual environment"; exit 1; }
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/human_in_the_loop/bin/activate
+source ~/.venvs/human_in_the_loop/bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
-pip install -r requirements.txt
+pip install -r requirements.txt || { echo "Failed to install libraries"; exit 1; }
 
 # Login to your account
-echo "Login to your Composio acount"
-composio login
+echo "Login to your Composio account"
+composio login || { echo "Failed to login to Composio"; exit 1; }
 
-# Add trello tool
-
+# Add slackbot tool
 echo "Add slackbot tool. Finish the flow"
-composio add slackbot
-composio add gmail
+composio add slackbot || { echo "Failed to add slackbot"; exit 1; }
+composio add gmail || { echo "Failed to add gmail"; exit 1; }
 
 echo "Enable Slackbot triggers"
-composio triggers enable slackbot_receive_message
-composio triggers enable slackbot_receive_thread_reply
-composio triggers enable new_gmail_message
+composio triggers enable slackbot_receive_message || { echo "Failed to enable slackbot_receive_message trigger"; exit 1; }
+composio triggers enable slackbot_receive_thread_reply || { echo "Failed to enable slackbot_receive_thread_reply trigger"; exit 1; }
+composio triggers enable new_gmail_message || { echo "Failed to enable new_gmail_message trigger"; exit 1; }
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
     echo "Copying .env.example to .env..."
-    cp .env.example .env
+    cp .env.example .env || { echo "Failed to copy .env.example to .env"; exit 1; }
 else
     echo "No .env.example file found. Creating a new .env file..."
-    touch .env
+    touch .env || { echo "Failed to create .env file"; exit 1; }
 fi
 
 # Prompt user to fill the .env file

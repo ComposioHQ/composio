@@ -3,24 +3,30 @@ import dotenv  # For loading environment variables from a .env file
 import re
 import json
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai import OpenAI
 from composio.client.collections import TriggerEventData
-
+from llama_index.llms.cerebras import Cerebras
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
+# Constants
 BOT_USER_ID: str = os.environ["BOT_USER_ID"]
 RESPOND_ONLY_IF_TAGGED: bool = True
+COMPOSIO_API_KEY: str = os.environ["COMPOSIO_API_KEY"]
+DATE_TIME: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+TIMEZONE: Optional[Any] = datetime.now().astimezone().tzinfo
 
-# Initialize a ComposioToolSet with the API key from environment variables
-composio_toolset: ComposioToolSet = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
+# Initialize ComposioToolSet and OpenAI
+composio_toolset: ComposioToolSet = ComposioToolSet(api_key=COMPOSIO_API_KEY)
+#llm: OpenAI = OpenAI(model="gpt-4o")
+llm = Cerebras(model="llama3.1-70b", api_key=os.environ["CEREBRAS_API_KEY"])
 
-# Define the tools
+# Define tools
 schedule_tool = composio_toolset.get_actions(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
@@ -29,22 +35,15 @@ schedule_tool = composio_toolset.get_actions(
     ]
 )
 
-# Initialize an OpenAI instance with the GPT-4o model
-llm: OpenAI = OpenAI(model="gpt-4o")
-
-date_time: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-timezone: Optional[Any] = datetime.now().astimezone().tzinfo
-
-# Define the tools
 slack_tools = composio_toolset.get_actions(
     actions=[
         Action.SLACKBOT_CHAT_POST_MESSAGE,
     ]
 )
 
-# Two listeners, one for Gmail and one for Slack
-gmail_listener = composio_toolset.create_trigger_listener()
+# Create listeners
 slack_listener = composio_toolset.create_trigger_listener()
+gmail_listener = composio_toolset.create_trigger_listener()
 
 # Preprocessor function that listens to the Slack messages
 def proc() -> None:
@@ -60,7 +59,6 @@ def proc() -> None:
     slack_listener.listen()
 
 # Listens to user response on Slack
-# Based on the user response, adds the Gmail message to the calendar
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
 def review_new_pr(event: TriggerEventData) -> None:
     print("Received a new message from Slack.")
@@ -88,14 +86,13 @@ def review_new_pr(event: TriggerEventData) -> None:
 
     print(f"Channel ID: {channel_id}, Timestamp: {ts}, Thread Timestamp: {thread_ts}")
 
-    prefix_messages: list[ChatMessage] = [
+    prefix_messages: List[ChatMessage] = [
         ChatMessage(
             role=MessageRole.SYSTEM,
             content=(
                 f"""
                     You are an AI assistant specialized in creating calendar events based on email information. 
-                    Current DateTime: {date_time}. All the conversations happen in IST timezone.
-                    Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
+                    Current DateTime: {DATE_TIME}. All the conversations happen in IST timezone.
                     Analyze email, and create event on calendar depending on the email content. 
                     You should also draft an email in response to the sender of the previous email  
                 """
@@ -105,7 +102,7 @@ def review_new_pr(event: TriggerEventData) -> None:
     
     print("Creating agent for analyzing email...")
     agent = FunctionCallingAgentWorker(
-        tools=schedule_tool,  # Tools available for the agent to use
+        tools=list(schedule_tool),  # Tools available for the agent to use
         llm=llm,  # Language model for processing requests
         prefix_messages=prefix_messages,  # Initial system messages for context
         max_function_calls=10,  # Maximum number of function calls allowed
@@ -121,7 +118,8 @@ def review_new_pr(event: TriggerEventData) -> None:
             using Google Calendar Find Free Slots action.
         3. Once you find a free slot, use Google Calendar Create Event 
             action to create the event at a free slot and send the invite to {sender_mail}.
-
+        4. While creating the event note the following things: Timezone should be Asia/Kolkata
+        event duration should be of the format similar to 1h or 2h30m.
         If an event was created, draft a confirmation email for the created event. 
         The receiver of the mail is: {mail_message}, the subject should be meeting scheduled and body
         should describe what the meeting is about
@@ -132,9 +130,15 @@ def review_new_pr(event: TriggerEventData) -> None:
     print("Response from agent received:")
     print(response)
 
+    # Check if the response indicates a failure
+    if not response.get('successfull', True):
+        print(f"Error: {response.get('error', 'Unknown error')}")
+    else:
+        print("Event created successfully.")
+
 # Gmail listener Function
 # We initialize mail content variable mail_message and sender mail here
-@gmail_listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
+@gmail_listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
 def callback_new_message(event: TriggerEventData) -> None:
     print("New Gmail message received.")
     payload: Dict[str, Any] = event.payload
