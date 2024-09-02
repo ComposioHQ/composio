@@ -1,10 +1,10 @@
 <p align="center">
-  <a href="https://x.com/GanatraSoham//#gh-dark-mode-only">
+  <a href="https://x.com/GanatraSoham/">
     <img src="./python/docs/imgs/follow_x.png" width="318px" alt="Composio logo" />
   </a>
 </p>
 <p align="center">
-  <a href="https://app.composio.dev//#gh-dark-mode-only">
+  <a href="https://app.composio.dev/">
     <img src="./python/docs/imgs/try_hosted.png" width="318px" alt="Composio logo" />
   </a>
 </p>
