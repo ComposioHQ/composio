@@ -5,7 +5,6 @@ from typing import Dict, Type
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
-from composio.tools.local.codeanalysis import embedder
 
 
 class GetRelevantCodeRequest(BaseModel):
@@ -48,6 +47,8 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     def execute(
         self, request: GetRelevantCodeRequest, metadata: Dict
     ) -> GetRelevantCodeResponse:
+        from composio.tools.local.codeanalysis import embedder
+
         try:
             repo_name = os.path.basename(request.repo_name)
             vector_store = embedder.get_vector_store(repo_name, overwrite=False)

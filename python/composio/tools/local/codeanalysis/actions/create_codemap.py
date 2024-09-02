@@ -9,13 +9,6 @@ from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
 
 from composio.tools.base.local import LocalAction
-from composio.tools.local.codeanalysis import (
-    chunker,
-    embedder,
-    lsp_helper,
-    tool_utils,
-    tree_sitter_related,
-)
 from composio.tools.local.codeanalysis.constants import (
     CODE_MAP_CACHE,
     FQDN_FILE,
@@ -152,6 +145,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             IOError: If there's an error reading any of the Python files.
             ValueError: If chunking or vector store creation fails.
         """
+        from composio.tools.local.codeanalysis import chunker, embedder, tool_utils
+
         try:
             python_files = tool_utils.find_python_files(self.REPO_DIR)
             chunking = chunker.Chunking(self.REPO_DIR)
@@ -200,6 +195,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             IOError: If there's an error reading or writing files.
             ValueError: If processing of FQDNs fails.
         """
+        from composio.tools.local.codeanalysis import lsp_helper, tool_utils
+
         try:
             python_file_paths = sorted(
                 tool_utils.find_python_files(
@@ -242,6 +239,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         Returns:
             list: A list of dictionaries containing FQDN information for each entity.
         """
+        from composio.tools.local.codeanalysis import lsp_helper, tree_sitter_related
+
         try:
             # Fetch the script object for the file
             script_obj = lsp_helper.fetch_script_obj_for_file_in_repo(

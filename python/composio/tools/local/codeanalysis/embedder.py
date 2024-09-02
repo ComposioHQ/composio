@@ -31,6 +31,7 @@ def get_vector_store(repo_name: str, overwrite: bool = True) -> DeepLakeVectorSt
 
     try:
         repo_name = os.path.basename(repo_name)
+
         deeplake_repo_path = os.path.join(CODE_MAP_CACHE, repo_name, DEEPLAKE_FOLDER)
 
         deeplake_vector_store = DeepLakeVectorStore(

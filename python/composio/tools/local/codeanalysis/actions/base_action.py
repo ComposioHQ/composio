@@ -3,7 +3,6 @@ import os
 from abc import abstractmethod
 from typing import Dict, List, Optional
 
-from composio.tools.local.codeanalysis import lsp_helper
 from composio.tools.local.codeanalysis.constants import CODE_MAP_CACHE, FQDN_FILE
 
 
@@ -52,6 +51,8 @@ class BaseCodeAnalysisAction:
         return matching_fqdns
 
     def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> Dict:
+        from composio.tools.local.codeanalysis import lsp_helper
+
         if self.fqdn_index is None:
             raise ValueError("FQDN index not loaded")
         elem_fqdn = self.fqdn_index[relevant_fqdn]
