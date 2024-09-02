@@ -198,6 +198,7 @@ class ComposioToolSet(
 
         :return: Name of the tools written
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),

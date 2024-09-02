@@ -595,8 +595,9 @@ class ComposioToolSet(WithLogger):
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
     ) -> None:
-        # NOTE: This an experimental
+        # NOTE: This an experimental, can convert to decorator for more convinience
         missing: t.Dict[str, t.Set[str]] = {}
         apps = apps or []
         for app in map(App, apps):
@@ -612,6 +613,22 @@ class ComposioToolSet(WithLogger):
         actions = actions or []
         for action in map(Action, actions):
             if not action.is_local:
+                continue
+
+            for dependency in action_registry["local"][action.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if action.slug not in missing:
+                    missing[action.slug] = set()
+                missing[action.slug].add(dependency)
+
+        # TODO: Create CRUD object
+        tags = tags or []
+        for action in Action.all():
+            if not action.is_local:
+                continue
+
+            if not any(tag in action.tags for tag in tags):
                 continue
 
             for dependency in action_registry["local"][action.slug].requires or []:

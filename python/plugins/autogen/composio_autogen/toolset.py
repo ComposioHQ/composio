@@ -41,6 +41,7 @@ class ComposioToolSet(
         :param entity_id: Entity ID for the function wrapper
         :param entity_id: Entity ID to use for executing function calls.
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         schemas = self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         for schema in schemas:
             self._register_schema_to_autogen(
