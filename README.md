@@ -1,3 +1,13 @@
+<p align="center">
+  <a href="https://x.com/GanatraSoham//#gh-dark-mode-only">
+    <img src="./python/docs/imgs/follow_x.png" width="318px" alt="Composio logo" />
+  </a>
+</p>
+<p align="center">
+  <a href="https://app.composio.dev//#gh-dark-mode-only">
+    <img src="./python/docs/imgs/try_hosted.png" width="318px" alt="Composio logo" />
+  </a>
+</p>
 <p>
   <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
 </p>
