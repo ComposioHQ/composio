@@ -1,7 +1,8 @@
 <p align="center">
-  <a href="https://x.com/GanatraSoham/">
-    <img src="./python/docs/imgs/follow_x.png" width="318px" alt="Composio logo" />
+  <a href="https://x.com/GanatraSoham/" target="_blank">
+    <img src="./python/docs/imgs/follow_x.png" width="100%" alt="Composio logo" />
   </a>
+  <br /> <br />
 </p>
 <p align="center">
   <a href="https://app.composio.dev/">
