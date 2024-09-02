@@ -21,6 +21,8 @@ class SomeAction(LocalAction[Request, Response]):
 
 
 class SomeTool(LocalTool, autoload=True):
+    logo = ""
+
     @classmethod
     def actions(cls) -> List[type[LocalAction]]:
         return [SomeAction]
