@@ -19,11 +19,10 @@ RUN git fetch --depth 1 origin {{ basecommit}}
 RUN git checkout {{ basecommit}}
 
 WORKDIR /home/user
-COPY index.py _index.py
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/deeplake
-COPY FQDN_CACHE /home/user/.composio/tmp/FQDN_CACHE
+COPY deeplake /home/user/.composio/tmp/{{ reponame }}
+COPY fqdn_cache.json /home/user/.composio/tmp/{{ reponame }}
 
 {% if dependencies -%}
 # Install dependecies

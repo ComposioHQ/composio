@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import typing as t
 from pathlib import Path
+import os
 
 import click
 from swebench import get_eval_refs
@@ -11,7 +12,7 @@ from composio import Action, ComposioToolSet
 from composio.utils.logging import WithLogger
 
 
-filtered_repos = ["pallets/flask", "django/django"]
+filtered_repos = ["django/django"]
 
 
 def group_task_instances(task_instances):
@@ -63,7 +64,9 @@ class IndexGenerator(WithLogger):
     ):
         outname = _repo_name(repository)
         outdir = self.outdir / outname / version
-        outdir.mkdir(exist_ok=True, parents=True)
+        # print(outdir)
+        # return
+        # outdir.mkdir(exist_ok=True, parents=True)
         repo_url = f"https://github.com/{repository}.git"
         base_commit = setup_ref_instance["base_commit"]
         if not (outdir / outname).exists():
@@ -79,20 +82,20 @@ class IndexGenerator(WithLogger):
             subprocess.run(
                 ["git", "checkout", base_commit], cwd=outdir / outname, check=True
             )
+        
         composio_toolset = ComposioToolSet()
         composio_toolset.execute_action(
             action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
             params={
-                "dir_to_index_path": str(outdir / outname),
-                "repo_version": version,
+                "dir_to_index_path": str(outdir / outname)
             },
         )
         with open(
-            f"{Path.home()}/.composio/tmp/FQDN_CACHE/{outname}-{version.replace('.', '-')}_fqdn_cache.json"
+            f"{Path.home()}/.composio/tmp/{outname}/fqdn_cache.json"
         ) as f:
             fqdn_index = json.load(f)
             for k, v in fqdn_index.items():
-                if len(v) > 1:
+                if len(v) >= 1:
                     for x in v:
                         x[
                             "global_module"
@@ -100,20 +103,21 @@ class IndexGenerator(WithLogger):
                     fqdn_index[k] = v
 
         docker_outdir = Path("generated") / outname / version
-        FQDN_CACHE_PATH = docker_outdir / "FQDN_CACHE"
-        FQDN_CACHE_PATH.mkdir(exist_ok=True, parents=True)
+        # docker_outdir.mkdir(exist_ok=True, parents=True)
         with open(
-            FQDN_CACHE_PATH / f"{outname}-{version.replace('.', '-')}_fqdn_cache.json",
+            docker_outdir / "fqdn_cache.json",
             "w",
         ) as f:
             json.dump(fqdn_index, f, indent=4)
 
         DEEPLAKE_PATH = docker_outdir / "deeplake"
-        DEEPLAKE_PATH.mkdir(exist_ok=True, parents=True)
-        shutil.copytree(
-            f"{Path.home()}/.composio/tmp/deeplake/{outname}-{version.replace('.', '-')}",
-            DEEPLAKE_PATH / f"{outname}-{version.replace('.', '-')}",
-        )
+        # DEEPLAKE_PATH.mkdir(exist_ok=True, parents=True)
+        if not DEEPLAKE_PATH.exists():
+            shutil.copytree(
+                f"{Path.home()}/.composio/tmp/{outname}/deeplake",
+                DEEPLAKE_PATH,
+            )
+        
 
 
 @click.command(name="create_index")

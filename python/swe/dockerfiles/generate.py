@@ -179,10 +179,6 @@ class DockerfileGenerator(WithLogger):
                 )
             )
 
-        index_file = SCRIPTS_DIR / "index.py"
-        target_file = outdir / "index.py"
-        shutil.copy(index_file, target_file)
-
 
 def _repo_name(repo: str) -> str:
     return repo.replace("/", "__")
