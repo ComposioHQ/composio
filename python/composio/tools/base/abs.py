@@ -408,7 +408,7 @@ class ToolBuilder:
             trigger_registry[obj.gid][trigger.enum] = trigger  # type: ignore
 
             if hasattr(obj, "logo"):
-                setattr(action, "logo", getattr(obj, "logo"))
+                setattr(trigger, "logo", getattr(obj, "logo"))
 
 
 class Tool(WithLogger, _Attributes):
