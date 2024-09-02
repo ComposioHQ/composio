@@ -14,6 +14,12 @@ from .actions import (
 class CodeAnalysisTool(LocalTool, autoload=True):
     """Code index tool."""
 
+    requires = [
+        "deeplake",
+        "sentence-transformers",
+        "git+https://github.com/DataDog/jedi.git@92d0c807b0dcd115b1ffd0a4ed21e44db127c2fb#egg=jedi",
+    ]
+
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
