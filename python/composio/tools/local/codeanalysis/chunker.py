@@ -32,7 +32,7 @@ class Span:
         self.end = end
 
     def extract(self, s: str) -> str:
-        return "\n".join(s.splitlines()[self.start : self.end])
+        return "\n".join(s.splitlines()[self.start : self.end])  # noqa: E203
 
     def __add__(self, other: Union[int, "Span"]) -> "Span":
         if isinstance(other, int):
@@ -160,7 +160,7 @@ def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
     for chunk in chunks:
         current_chunk += chunk
         chunk_content = source_code_bytes[
-            current_chunk.start : current_chunk.end
+            current_chunk.start : current_chunk.end  # noqa: E203
         ].decode("utf-8")
         if (
             count_length_without_whitespace(chunk_content) > coalesce

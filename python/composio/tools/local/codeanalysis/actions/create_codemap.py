@@ -3,7 +3,7 @@ import os
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Type
+from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
@@ -124,7 +124,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             if status["status"] == Status.LOADING_INDEX:
                 self.create_index()
                 status = self._update_status(self.REPO_DIR, Status.COMPLETED)
-        except Exception as e:
+        except Exception:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise ExecutionFailed(
                 message=f"Failed to create index, error encountered while {str(status['status'])}"

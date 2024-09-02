@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Type
+from typing import Dict, List
 
 from pydantic import BaseModel, Field
 

@@ -1138,7 +1138,7 @@ def fetch_node_definition_body(
         with open(file_path, "r") as file:
             lines = file.readlines()
 
-        extracted_content_lines = lines[start_line : end_line + 1]
+        extracted_content_lines = lines[start_line : end_line + 1]  # noqa: E203
         # extracted_content_lines[0] = extracted_content_lines[0][start_col:]
         # extracted_content_lines[-1] = extracted_content_lines[-1][:end_col]
 

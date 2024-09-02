@@ -92,7 +92,7 @@ def fetch_relevant_body(node: Node, test_code_str: str) -> str:
         return all_lines[start_line][start_col:end_col]
 
     relevant_body = [all_lines[start_line][start_col:]]
-    relevant_body.extend(all_lines[start_line + 1 : end_line])
+    relevant_body.extend(all_lines[start_line + 1 : end_line])  # noqa: E203
     relevant_body.append(all_lines[end_line][:end_col])
     return "\n".join(relevant_body)
 

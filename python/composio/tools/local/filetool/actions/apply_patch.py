@@ -41,7 +41,7 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
     1. Applying the patch using Git.
     2. Running lint checks on the affected files before and after applying the patch.
     3. Reverting changes if new lint errors are introduced.
-    """
+    """  # noqa: E501
 
     display_name = "Apply Patch"
     _request_schema = ApplyPatchRequest
@@ -49,7 +49,9 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
 
     @include_cwd
     def execute(
-        self, request: ApplyPatchRequest, metadata: t.Dict
+        self,
+        request: ApplyPatchRequest,
+        metadata: t.Dict,
     ) -> ApplyPatchResponse:
         # Check if we're in a git repository or in a subdirectory of one
         file_manager = self.filemanagers.get(request.file_manager_id)
@@ -61,13 +63,11 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
         with open(git_root / "patch.patch", "w") as f:
             f.write(request.patch)
 
-        files_to_be_modified, line_ranges = self._get_files_from_patch(request.patch)
+        files_to_be_modified, _ = self._get_files_from_patch(request.patch)
         before_lint, before_file_contents = self._run_lint_on_files(
             file_manager, files_to_be_modified
         )
-        output, error = file_manager.execute_command(
-            git_apply_cmd(git_root / "patch.patch")
-        )
+        _, error = file_manager.execute_command(git_apply_cmd(git_root / "patch.patch"))
 
         if error:
             return ApplyPatchResponse(
