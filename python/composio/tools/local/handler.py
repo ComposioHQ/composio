@@ -3,6 +3,7 @@ import typing as t
 from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
 from composio.tools.base.abs import Action as LocalActionType
 from composio.tools.base.abs import Tool as LocalToolType
+from composio.tools.base.abs import action_registry
 from composio.utils.logging import WithLogger
 
 
@@ -42,11 +43,7 @@ class LocalClient(WithLogger):
             action_schemas += [action.schema() for action in tools[app.slug].actions()]
 
         for action in actions:
-            action_schemas.append(
-                tools[action.app.upper()]  # pylint: disable=protected-access
-                ._actions[action.name]
-                .schema()
-            )
+            action_schemas.append(action_registry["local"][action.slug].schema())
 
         if tags:
             tags = t.cast(t.List[str], [Tag(tag).value for tag in tags or []])

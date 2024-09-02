@@ -386,6 +386,8 @@ class ToolBuilder:
         for action in obj.actions():
             action.tool = obj.name
             action.enum = f"{obj.enum}_{action.name.upper()}"
+            if obj.requires is not None:
+                action.requires = list(set(obj.requires + (action.requires or [])))
             obj._actions[action.enum] = action  # pylint: disable=protected-access
             action_registry[obj.gid][action.enum] = action  # type: ignore
 
@@ -413,6 +415,9 @@ class Tool(WithLogger, _Attributes):
 
     name: str
     """Tool name."""
+
+    requires: t.Optional[t.List[str]] = None
+    """List of dependencies required for running this tool."""
 
     _schema: t.Optional[t.Dict] = None
     """Schema for the app."""

@@ -22,6 +22,8 @@ from .actions import (
 class BrowserTool(LocalTool, autoload=True):
     """Browser tool for local usage."""
 
+    requires = ["playwright"]
+
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
