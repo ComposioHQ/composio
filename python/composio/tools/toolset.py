@@ -405,7 +405,6 @@ class ComposioToolSet(WithLogger):
         file_name_prefix: str,
         success_response_model: SuccessExecuteActionResponseModel,
     ) -> dict:
-        execution_status = success_response_model.successfull
         error = success_response_model.error
         resp_data = success_response_model.data
         is_invalid_file = False
