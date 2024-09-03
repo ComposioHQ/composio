@@ -110,13 +110,26 @@ class EvaluationManager(WithLogger):
             action=Action.FILETOOL_GIT_PATCH,
             params={},
         )
-        if (
-            isinstance(get_patch_resp, dict)
-            and len(get_patch_resp.get("error", "")) > 0
-        ):
-            raise Exception(get_patch_resp)
         self.logger.info(f"Get patch response: {get_patch_resp}")
-        patch = get_patch_resp.get("patch")  # type: ignore
+        if not get_patch_resp.get("successfull", False):
+            error_message = get_patch_resp.get("error")
+            if error_message:
+                raise Exception(f"Error in get_patch: {error_message}")
+            else:
+                raise Exception("Unknown error occurred in get_patch")
+
+        patch_data = get_patch_resp.get("data", {})
+        if not patch_data:
+            raise Exception("No data found in the patch response")
+
+        patch = patch_data.get("patch")
+        if not patch:
+            error = patch_data.get("error")
+            if error:
+                raise Exception(f"Error in patch data: {error}")
+            else:
+                raise Exception("No patch found in the response data")
+
         self.logger.info(f"Final Patch: {patch}")
         return patch
 

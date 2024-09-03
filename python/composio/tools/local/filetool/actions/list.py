@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -31,6 +32,7 @@ class ListFiles(LocalAction[ListRequest, ListResponse]):
     - OSError: If there's an issue reading the directory.
     """
 
+    @include_cwd  # type: ignore
     def execute(self, request: ListRequest, metadata: t.Dict) -> ListResponse:
         try:
             return ListResponse(

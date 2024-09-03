@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -57,6 +58,7 @@ class CreateFile(LocalAction[CreateFileRequest, CreateFileResponse]):
         - OSError: If an OS-specific error occurs.
     """
 
+    @include_cwd  # type: ignore
     def execute(self, request: CreateFileRequest, metadata: Dict) -> CreateFileResponse:
         if request.is_directory:
             return CreateFileResponse(

@@ -9,6 +9,7 @@ from composio_crewai import App, ComposioToolSet, WorkspaceType
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_anthropic import ChatAnthropic
+from langchain_community.chat_models import BedrockChat
 from langchain_google_vertexai import ChatVertexAI
 from prompts import BACKSTORY, DESCRIPTION, EXPECTED_OUTPUT, GOAL, ROLE
 
@@ -62,6 +63,14 @@ def get_langchain_llm() -> (
             )
         print("Using OpenAI without Helicone")
         return ChatOpenAI(model="gpt-4-turbo")
+    if os.path.exists(os.path.expanduser("~/.aws/credentials")):
+        print("Using Amazon Bedrock")
+        return BedrockChat(
+            credentials_profile_name="default",
+            model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
+            streaming=True,
+            region_name="us-east-1",
+        )
     if os.environ.get("AZURE_OPENAI_API_KEY"):
         print("Using Azure OpenAI")
         return AzureChatOpenAI(model="test")
