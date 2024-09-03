@@ -12,7 +12,10 @@ _remove-composio:
 
 .PHONY: e2b
 e2b:
+# 	E2B adds a default user so we don't have to
+	@sed -i.bck 's/RUN useradd/# RUN useradd/g' Dockerfile
 	@cd e2b/ && bash build.sh
+	@rm Dockerfile && mv Dockerfile.bck Dockerfile
 
 .PHONY: e2b-dev
 e2b-dev:
