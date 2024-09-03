@@ -139,6 +139,7 @@ class ComposioToolSet(WithLogger):
         output_in_file: bool = False,
         logging_level: LogLevel = LogLevel.INFO,
         output_dir: t.Optional[Path] = None,
+        verbosity_level: t.Optional[int] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -208,9 +209,14 @@ class ComposioToolSet(WithLogger):
                 }
             )
             ```
+        :param verbosity_level: This defines the size of the log object that will
+            be printed on the console.
 
         """
-        super().__init__(logging_level=logging_level)
+        super().__init__(
+            logging_level=logging_level,
+            verbosity_level=verbosity_level,
+        )
         self.logger.info(
             f"Logging is set to {self._logging_level}, "
             "use `logging_level` argument or "
