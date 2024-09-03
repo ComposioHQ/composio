@@ -1,3 +1,4 @@
+from .apply_patch import ApplyPatch
 from .chwdir import ChangeWorkingDirectory
 from .create import CreateFile
 from .edit import EditFile

@@ -7,6 +7,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -53,6 +54,7 @@ class GitPatch(LocalAction[GitPatchRequest, GitPatchResponse]):
     _request_schema = GitPatchRequest
     _response_schema = GitPatchResponse
 
+    @include_cwd  # type: ignore
     def execute(self, request: GitPatchRequest, metadata: t.Dict) -> GitPatchResponse:
         # Check if we're in a git repository or in a subdirectory of one
         file_manager = self.filemanagers.get(request.file_manager_id)
@@ -91,7 +93,7 @@ class GitPatch(LocalAction[GitPatchRequest, GitPatchResponse]):
         file_manager.chdir(original_dir)
         if error:
             return GitPatchResponse(error=f"Error generating patch: {error}", patch="")
-        return GitPatchResponse(patch=patch.lstrip().rstrip())
+        return GitPatchResponse(patch=patch)
 
     def _find_git_root(self, path: str) -> t.Optional[Path]:
         """Find the root of the git repository."""

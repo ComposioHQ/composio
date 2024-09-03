@@ -7,6 +7,7 @@ from composio.tools.env.filemanager.file import ScrollDirection
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -37,13 +38,9 @@ class ScrollResponse(BaseFileResponse):
         default="",
         description="Message to display to the user",
     )
-    lines: t.Dict[int, str] = Field(
-        default={},
+    lines: str = Field(
+        default="",
         description="File content with their line numbers",
-    )
-    total_lines: int = Field(
-        default=0,
-        description="Total number of lines in the file",
     )
     error: str = Field(
         default="",
@@ -62,6 +59,7 @@ class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
     - FileNotFoundError: If the file is not found.
     """
 
+    @include_cwd  # type: ignore
     def execute(self, request: ScrollRequest, metadata: t.Dict) -> ScrollResponse:
         try:
             recent_file = self.filemanagers.get(id=request.file_manager_id).recent
@@ -74,8 +72,7 @@ class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
             )
             return ScrollResponse(
                 message="Scroll successful.",
-                lines=recent_file.read(),
-                total_lines=recent_file.total_lines(),
+                lines=recent_file.format_text(recent_file.read()),
             )
         except FileNotFoundError as e:
             return ScrollResponse(error=f"File not found: {str(e)}")

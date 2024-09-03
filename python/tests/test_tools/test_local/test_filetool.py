@@ -86,7 +86,7 @@ class TestFiletool:
 
         # Open file
         open_response = open_action.execute(OpenFileRequest(file_path="file2.py"), {})
-        assert "def test_function():" in open_response.lines[1]
+        assert "def test_function():" in open_response.lines
 
         # Edit file
         edit_response = edit_action.execute(
@@ -99,7 +99,7 @@ class TestFiletool:
 
         # Verify changes
         open_response = open_action.execute(OpenFileRequest(file_path="file2.py"), {})
-        assert "Hello, Edited World!" in open_response.lines[2]
+        assert "Hello, Edited World!" in open_response.lines
 
     def test_create_and_write_file(self, file_manager, temp_dir):
         create_action = CreateFile()
@@ -175,7 +175,7 @@ class TestFiletool:
 
         # Verify changes
         open_response = open_action.execute(OpenFileRequest(file_path="file1.txt"), {})
-        assert "New content line" in open_response.lines[1]
+        assert "New content line" in open_response.lines
 
         # Search again, should find the new content
         grep_response = grep_action.execute(SearchWordRequest(word="New content"), {})
@@ -319,7 +319,7 @@ class TestFiletool:
         open_response = toolset.execute_action(
             Action.FILETOOL_OPEN_FILE, {"file_path": "file1.txt"}
         )
-        assert "New content line" in open_response["data"]["lines"][1]
+        assert "New content line" in open_response["data"]["lines"]
 
         # Change directory
         chdir_response = toolset.execute_action(
@@ -349,4 +349,4 @@ class TestFiletool:
         open_response = toolset.execute_action(
             Action.FILETOOL_OPEN_FILE, {"file_path": "new_file.txt"}
         )
-        assert "This is a new file" in open_response["data"]["lines"][1]
+        assert "This is a new file" in open_response["data"]["lines"]

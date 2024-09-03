@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -26,10 +27,7 @@ class OpenFileResponse(BaseFileResponse):
     """Response to open a file."""
 
     message: str = Field(default="", description="Message to display to the user")
-    lines: t.Dict[int, str] = Field(
-        default={}, description="File content with their line numbers"
-    )
-    total_lines: int = Field(default=0, description="Total number of lines in the file")
+    lines: str = Field(default="", description="File content with their line numbers")
     error: str = Field(default="", description="Error message if any")
 
 
@@ -46,6 +44,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
     - IsADirectoryError: If the provided path is a directory.
     """
 
+    @include_cwd  # type: ignore
     def execute(self, request: OpenFileRequest, metadata: t.Dict) -> OpenFileResponse:
         """Open a file."""
         try:
@@ -55,14 +54,13 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
             if request.line_number > 0:
                 file.goto(request.line_number)
 
-            content = file.read()
-            if content == {}:
+            content = file.format_text(lines=file.read())
+            if len(content) == 0:
                 return OpenFileResponse(error="File is empty")
 
             return OpenFileResponse(
                 message="File opened successfully. 100 lines after the cursor displayed.",
                 lines=content,
-                total_lines=file.total_lines(),
             )
         except FileNotFoundError as e:
             return OpenFileResponse(error=f"File not found: {str(e)}")
