@@ -3,7 +3,6 @@ import shutil
 import subprocess
 import typing as t
 from pathlib import Path
-import os
 
 import click
 from swebench import get_eval_refs
@@ -59,7 +58,8 @@ class IndexGenerator(WithLogger):
     ):
         outname = _repo_name(repository)
         outdir = self.outdir / outname / version
-        if outdir.exists(): return
+        if outdir.exists():
+            return
         repo_url = f"https://github.com/{repository}.git"
         base_commit = setup_ref_instance["base_commit"]
         if not (outdir / outname).exists():
@@ -75,17 +75,13 @@ class IndexGenerator(WithLogger):
             subprocess.run(
                 ["git", "checkout", base_commit], cwd=outdir / outname, check=True
             )
-        
+
         composio_toolset = ComposioToolSet()
         composio_toolset.execute_action(
             action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
-            params={
-                "dir_to_index_path": str(outdir / outname)
-            },
+            params={"dir_to_index_path": str(outdir / outname)},
         )
-        with open(
-            f"{Path.home()}/.composio/tmp/{outname}/fqdn_cache.json"
-        ) as f:
+        with open(f"{Path.home()}/.composio/tmp/{outname}/fqdn_cache.json") as f:
             fqdn_index = json.load(f)
             for k, v in fqdn_index.items():
                 if len(v) >= 1:
@@ -110,7 +106,6 @@ class IndexGenerator(WithLogger):
                 f"{Path.home()}/.composio/tmp/{outname}/deeplake",
                 DEEPLAKE_PATH,
             )
-        
 
 
 @click.command(name="create_index")

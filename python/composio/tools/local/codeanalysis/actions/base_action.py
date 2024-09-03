@@ -68,8 +68,6 @@ class BaseCodeAnalysisAction:
             return [x.__dict__ for x in elem]
         raise ValueError("Expected a list of elements")
 
-        
-
     def get_item_results(self, matching_fqdns: List[str], repo_path: str) -> List[Dict]:
         matching_fqdn_elems_df = {
             k: self.fetch_relevant_details(k, repo_path) for k in matching_fqdns
