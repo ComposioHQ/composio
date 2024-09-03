@@ -28,7 +28,6 @@ class OpenFileResponse(BaseFileResponse):
 
     message: str = Field(default="", description="Message to display to the user")
     lines: str = Field(default="", description="File content with their line numbers")
-    # total_lines: int = Field(default=0, description="Total number of lines in the file")
     error: str = Field(default="", description="Error message if any")
 
 
