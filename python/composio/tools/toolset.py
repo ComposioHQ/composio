@@ -651,17 +651,21 @@ class ComposioToolSet(WithLogger):
             for dependency in dependencies:
                 if dependency in installed:
                     continue
-                output = subprocess.check_output(
-                    args=[
-                        sys.executable,
-                        "-m",
-                        "pip",
-                        "install",
-                        "--disable-pip-version-check",
-                        dependency,
-                    ],
-                ).decode("utf-8")
-                if "Successfully installed" not in output:
+                args = [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--disable-pip-version-check",
+                    dependency,
+                ]
+                if "git+https" in dependency:
+                    args.append("--force-reinstall")
+                output = subprocess.check_output(args=args).decode("utf-8")
+                if (
+                    "Successfully installed" not in output
+                    and "Requirement already satisfied" not in output
+                ):
                     raise ComposioSDKError(message=f"Error installing {dependency}")
                 installed.add(dependency)
                 self.logger.info(f"Installed {dependency}")
