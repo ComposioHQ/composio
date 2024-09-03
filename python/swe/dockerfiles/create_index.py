@@ -47,8 +47,6 @@ class IndexGenerator(WithLogger):
 
     def generate(self):
         task_instances = get_eval_refs(data_path_or_name=self.dataset)
-        # print(len(task_instances))
-        # exit()
         task_instance_groups = group_task_instances(task_instances.values())
         for repo, versions in task_instance_groups.items():
             self.logger.info(f"Repo {repo} with {set(versions.keys())} versions")
