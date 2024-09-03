@@ -334,7 +334,7 @@ def _build_executable_from_args(
         if isinstance(response, BaseModel):
             return response
 
-        rname = returns[0] if returns is not None else "return"
+        rname = returns[0] if returns is not None else "result"
         return ResponseSchema(**{rname: response})
 
     execute.__doc__ = header

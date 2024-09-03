@@ -13,6 +13,7 @@ from composio.tools.base.abs import (
     Action,
     ActionRequest,
     ActionResponse,
+    InvalidClassDefinition,
     Tool,
     ToolBuilder,
 )
@@ -79,8 +80,15 @@ class LocalToolMeta(type):
         ToolBuilder.setup_children(
             obj=cls,  # type: ignore
         )
+
         if autoload:
             t.cast(t.Type["Tool"], cls).register()  # type: ignore
+
+        if not hasattr(cls, "logo"):
+            raise InvalidClassDefinition(f"Please provide logo URL for {name}")
+
+        if "local" not in cls.tags:  # type: ignore
+            cls.tags.append("local")  # type: ignore
 
 
 class LocalToolMixin(Tool):
@@ -195,6 +203,9 @@ class LocalTool(LocalToolMixin, metaclass=LocalToolMeta):
 
     gid = "local"
     """Group ID for this tool."""
+
+    tags: t.List[str] = ["local"]
+    """Tags for this app."""
 
     @classmethod
     @abstractmethod

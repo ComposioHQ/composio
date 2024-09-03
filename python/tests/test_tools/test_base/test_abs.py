@@ -69,6 +69,8 @@ class TestToolBuilder:
         ):
 
             class SomeTool(Tool):
+                logo = ""
+
                 def execute(self, request: dict, metadata: Dict) -> dict:  # type: ignore
                     return {}
 
@@ -81,6 +83,8 @@ class TestToolBuilder:
         ):
 
             class SomeTool(Tool):
+                logo = ""
+
                 def actions(self) -> list:  # type: ignore
                     return []
 
@@ -88,6 +92,8 @@ class TestToolBuilder:
 
     def test_metadata(self) -> None:
         class SomeTool(Tool):
+            logo = ""
+
             @classmethod
             def actions(cls) -> list:
                 return []
@@ -112,6 +118,8 @@ class TestToolBuilder:
                 return Response()
 
         class SomeTool(Tool):
+            logo = ""
+
             @classmethod
             def actions(cls) -> list:
                 return [SomeAction]
