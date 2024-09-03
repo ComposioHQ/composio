@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 from pydantic import BaseModel, Field
-from tqdm.auto import tqdm
 
 from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.base.local import LocalAction
@@ -144,6 +143,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             IOError: If there's an error reading any of the Python files.
             ValueError: If chunking or vector store creation fails.
         """
+        from tqdm.auto import tqdm
+
         from composio.tools.local.codeanalysis import chunker, embedder, tool_utils
 
         python_files = tool_utils.find_python_files(self.REPO_DIR)
@@ -180,6 +181,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             IOError: If there's an error reading or writing files.
             ValueError: If processing of FQDNs fails.
         """
+        from tqdm.auto import tqdm
+
         from composio.tools.local.codeanalysis import lsp_helper, tool_utils
 
         python_file_paths = sorted(
