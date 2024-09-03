@@ -405,9 +405,9 @@ class ComposioToolSet(WithLogger):
         file_name_prefix: str,
         success_response_model: SuccessExecuteActionResponseModel,
     ) -> dict:
-        execution_status = success_response_model.successfull
+        error = success_response_model.error
         resp_data = success_response_model.data
-
+        is_invalid_file = False
         for key, val in resp_data.items():
             try:
                 file_model = FileType.model_validate(val)
@@ -424,12 +424,12 @@ class ComposioToolSet(WithLogger):
 
                 resp_data[key] = str(local_filepath)
             except binascii.Error:
-                execution_status = False
+                is_invalid_file = True
                 resp_data[key] = "Invalid File! Unable to decode."
             except Exception:
                 pass
 
-        if execution_status is False:
+        if is_invalid_file is True and error is None:
             success_response_model.error = "Execution failed"
         success_response_model.data = resp_data
         return success_response_model.model_dump()
