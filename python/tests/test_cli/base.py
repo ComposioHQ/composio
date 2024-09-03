@@ -16,7 +16,7 @@ class BaseCliTest:
     """Utility class for writing CLI tests."""
 
     result: Result
-    logger: Logger = logging.get(name="tests")
+    logger: Logger = logging.get(name="tests").logger
 
     def run(
         self,
