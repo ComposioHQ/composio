@@ -50,7 +50,7 @@ class BaseCodeAnalysisAction:
         ]
         return matching_fqdns
 
-    def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> Dict:
+    def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> List[Dict]:
         from composio.tools.local.codeanalysis import (  # pylint: disable=import-outside-toplevel
             lsp_helper,
         )
@@ -64,13 +64,11 @@ class BaseCodeAnalysisAction:
             elem_fqdn["global_fqdn"],
             elem_fqdn["global_type"],
         )
-        data = {}
         if isinstance(elem, list):
-            data[relevant_fqdn] = [x.__dict__ for x in elem]
-        else:
-            raise ValueError("Expected a list of elements")
+            return [x.__dict__ for x in elem]
+        raise ValueError("Expected a list of elements")
 
-        return data[relevant_fqdn]  # type: ignore  # TOFIX(shrey): Inconsistent type
+        
 
     def get_item_results(self, matching_fqdns: List[str], repo_path: str) -> List[Dict]:
         matching_fqdn_elems_df = {

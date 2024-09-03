@@ -490,6 +490,8 @@ def fetch_relevant_elem(
 
 
 class EntityObj:
+    entity_type: str
+
     def __init__(
         self,
         fqdn_goto_elem: Name,
@@ -529,7 +531,7 @@ class EntityObj:
         )
         entity_breakup = tree_sitter_related.fetch_entity_artifacts(
             entity_body=self.definition_body,
-            entity_type=self.entity_type,  # type: ignore # TOFIX(shrey): `EntityObj` does not have attribute `entity_type`
+            entity_type=self.entity_type,
         )
         self.comprehensive_str = entity_breakup["signature"]
         self.pure_docstring = entity_breakup["docstring"]
@@ -1039,7 +1041,7 @@ class FunctionObj(EntityObj):
         )
         func_str = (
             f"Signature: {_func.comprehensive_str} | "
-            f"Defined in `{_func.global_path.replace(_func.repo_dir_where_used, '')}` | "
+            f"Defined in `{_func.global_path.replace(_func.repo_dir_where_used, '').lstrip('/')}` | "
             f"{class_ownership_str}"
         )
         if _func.func_decorators:

@@ -20,7 +20,7 @@ from composio.utils.logging import get as get_logger
 
 logger = get_logger("workspace")
 
-# TOFIX(shrey): Address these issues
+# 'TOFIX(sh'rey): Address these issues
 # pylint: disable=attribute-defined-outside-init,import-outside-toplevel,import-outside-toplevel
 
 
@@ -71,6 +71,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
 
     display_name = "Create index"
     _tags = ["index"]
+    requires = ["tqdm"]
 
     def execute(
         self, request: CreateCodeMapRequest, metadata: Dict

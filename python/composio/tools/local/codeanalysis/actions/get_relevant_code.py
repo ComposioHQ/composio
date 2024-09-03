@@ -31,7 +31,6 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     Use this action when you need to:
     1. Find code snippets related to a specific topic or functionality.
     2. Search for implementations of particular features across the codebase.
-    3. Gather context-specific code examples for analysis or reference.
 
     Usage example:
     repo_name: django

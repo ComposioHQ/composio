@@ -35,17 +35,18 @@ class GetMethodBody(
     """
     This tool retrieves the body of a specified method from a given repository.
 
-    Use this action when you need to:
-    1. Obtain the complete implementation of a specific method.
-    2. Extract method details for documentation or code review purposes.
+    Use this action when you need to Obtain the complete implementation of a specific method.
 
     This action can retrieve the method body in two scenarios:
     1. If a class name is provided, it retrieves the method from within that class.
-    2. If no class name is provided, it retrieves the method from the global scope.
-
     Usage example:
     repo_name: django
     class_name: Field
+    method_name: run_validators
+
+    2. If no class name is provided, it retrieves the method from the global scope.
+    Usage example:
+    repo_name: django
     method_name: run_validators
     """
 

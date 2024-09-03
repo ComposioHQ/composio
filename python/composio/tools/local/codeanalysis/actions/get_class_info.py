@@ -32,9 +32,8 @@ class GetClassInfo(
     This tool retrieves and formats detailed information about a specified class in a given repository.
 
     Use this action when you need to:
-    1. Obtain comprehensive details about all instances of a specific class in the codebase.
-    2. Understand the structure, methods, and attributes of a class.
-    3. Gather information for code analysis.
+    1. Obtain details about structure, methods and attributes of a specific class in the codebase.
+    2. Get the class summary, class variables, instance variables, member functions, and property variables.
 
     Usage example:
     repo_name: django

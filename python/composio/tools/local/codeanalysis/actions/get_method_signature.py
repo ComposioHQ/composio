@@ -36,17 +36,17 @@ class GetMethodSignature(
     """
     This tool retrieves the signature of a specified method from a given repository.
 
-    Use this action when you need to:
-    1. Obtain the signature of a specific method without its implementation.
-    2. Extract method signature details for documentation or API analysis.
+    Use this action when you need to Obtain the signature of a specific method without its implementation.
 
     This action can retrieve the method signature in two scenarios:
     1. If a class name is provided, it retrieves the method from within that class.
-    2. If no class name is provided, it retrieves the method from the global scope.
-
     Usage example:
     repo_name: django
     class_name: Field
+    method_name: run_validators
+    2. If no class name is provided, it retrieves the method from the global scope.
+    Usage example:
+    repo_name: django
     method_name: run_validators
     """
 

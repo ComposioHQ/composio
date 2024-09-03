@@ -12,9 +12,6 @@ from composio import Action, ComposioToolSet
 from composio.utils.logging import WithLogger
 
 
-filtered_repos = ["django/django"]
-
-
 def group_task_instances(task_instances):
     groups = {}
     for instance in task_instances:
@@ -51,8 +48,6 @@ class IndexGenerator(WithLogger):
         task_instance_groups = group_task_instances(task_instances.values())
         for repo, versions in task_instance_groups.items():
             self.logger.info(f"Repo {repo} with {set(versions.keys())} versions")
-            # if repo.split("-")[0] not in filtered_repos:
-            #     continue
             for version, instances in versions.items():
                 self.logger.info(f"\tGenerating for version - {version}")
                 self.create_index(
@@ -65,9 +60,6 @@ class IndexGenerator(WithLogger):
         outname = _repo_name(repository)
         outdir = self.outdir / outname / version
         if outdir.exists(): return
-        # print(outdir)
-        # return
-        # outdir.mkdir(exist_ok=True, parents=True)
         repo_url = f"https://github.com/{repository}.git"
         base_commit = setup_ref_instance["base_commit"]
         if not (outdir / outname).exists():
