@@ -22,5 +22,8 @@
     "**/.cache": true,
     "**/build/**": true,
     "**/dist/**": true
-  }
+  },
+  "python.analysis.extraPaths": [
+    "./python/plugins/openai"
+  ]
 }
