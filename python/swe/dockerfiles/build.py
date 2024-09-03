@@ -78,7 +78,6 @@ def _swes(generated: Path, multi: bool = False) -> None:
                 continue
 
             repo = child.name.replace("__", "-")
-            print(repo)
             if "django" not in repo:
                 continue
             for version in child.iterdir():
