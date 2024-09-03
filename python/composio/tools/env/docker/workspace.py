@@ -48,6 +48,18 @@ def _get_free_port() -> int:
         sock.close()
 
 
+def _kill_docker_container(container: str, client: DockerClient):
+    try:
+        client.api.kill(container)
+    except DockerException:
+        pass
+
+    try:
+        client.api.remove_container(container)
+    except DockerException:
+        pass
+
+
 @dataclass
 class Config(WorkspaceConfigType):
     """Docker configuration type."""
@@ -87,7 +99,6 @@ class DockerWorkspace(RemoteWorkspace):
         """Setup docker workspace."""
         self.logger.debug(f"Creating docker workspace with image: {self.image}")
         self._port = _get_free_port()
-        self.url = f"http://localhost:{self._port}/api"
 
         container_kwargs: t.Dict[str, t.Any] = {
             "tty": True,
@@ -108,13 +119,22 @@ class DockerWorkspace(RemoteWorkspace):
             container_kwargs["volumes"].update(CONTAINER_DEV_VOLUMES)  # type: ignore
             container_kwargs["environment"][ENV_COMPOSIO_DEV_MODE] = "1"
 
-        try:
-            self._container = self.client.containers.run(**container_kwargs)
-            self._container.start()
-            self._container.reload()
-        except DockerException as e:
-            raise ComposioSDKError("Error starting workspace: ", e) from e
+        while True:
+            try:
+                self._container = self.client.containers.run(**container_kwargs)
+                self._container.start()
+                self._container.reload()
+                break
+            except DockerException as e:
+                if "Ports are not available" not in str(e):
+                    raise ComposioSDKError("Error starting workspace: ", e) from e
 
+                _kill_docker_container(container=self.id, client=self.client)
+                self._port = _get_free_port()
+                container_kwargs["ports"][8000] = self._port
+
+        # Wait for tooling server to start
+        self.url = f"http://localhost:{self._port}/api"
         self._wait()
 
         # Setup network config
