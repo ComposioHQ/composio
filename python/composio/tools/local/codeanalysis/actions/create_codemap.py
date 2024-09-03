@@ -35,6 +35,7 @@ class Status(str, Enum):
 class CreateCodeMapRequest(BaseModel):
     pass
 
+
 class CreateCodeMapResponse(BaseModel):
     result: str = Field(
         ...,
@@ -68,7 +69,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     def execute(
         self, request: CreateCodeMapRequest, metadata: Dict
     ) -> CreateCodeMapResponse:
-        self.REPO_DIR = os.path.normpath(os.path.abspath(metadata['dir_to_index_path']))
+        self.REPO_DIR = os.path.normpath(os.path.abspath(metadata["dir_to_index_path"]))
         self.failed_files: list[str] = []
 
         status = self.check_status(self.REPO_DIR)
