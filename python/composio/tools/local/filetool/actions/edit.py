@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from pydantic import Field
 
@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -27,11 +28,21 @@ class EditFileRequest(BaseFileRequest):
     )
     start_line: int = Field(
         ...,
-        description="The line number at which the file edit will start (REQUIRED). Inclusive - the start line will be included in the edit.",
+        description=(
+            "The line number at which the file edit will start (REQUIRED). "
+            "Inclusive - the start line will be included in the edit. "
+            "If you just want to add code and not replace any line, "
+            "don't provide end_line field."
+        ),
     )
-    end_line: int = Field(
-        ...,
-        description="The line number at which the file edit will end (REQUIRED). Inclusive - the end line will be included in the edit.",
+    end_line: Optional[int] = Field(
+        default=None,
+        description=(
+            "The line number at which the file edit will end (REQUIRED). "
+            "Inclusive - the end line will be included in the edit. "
+            "If you just want to add code and not replace any line, "
+            "don't provide this field."
+        ),
     )
 
 
@@ -75,13 +86,14 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     Result: Adds "print(x)" as first line, rest unchanged.
 
     Ex B: Start=1, End=3, Text: "print(x)"
-    Result: Replaces lines 1-3 with "print(x)", rest unchanged.
+    Result: Replaces lines 1,2 and 3 with "print(x)", rest unchanged.
 
     This action edits a specific part of the file, if you want to rewrite the
     complete file, use `write` tool instead."""
 
     display_name = "Edit a file"
 
+    @include_cwd  # type: ignore
     def execute(self, request: EditFileRequest, metadata: Dict) -> EditFileResponse:
         file_manager = self.filemanagers.get(request.file_manager_id)
         try:
@@ -94,6 +106,9 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
             if file is None:
                 raise FileNotFoundError(f"File not found: {request.file_path}")
 
+            if request.end_line is None:
+                request.end_line = -1
+
             response = file.write_and_run_lint(
                 text=request.text,
                 start=request.start_line,
@@ -101,7 +116,9 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
             )
             if response.get("error") and len(response["error"]) > 0:  # type: ignore
                 return EditFileResponse(
-                    error="No Update, found error: " + response["error"]  # type: ignore
+                    old_text=response["replaced_text"],
+                    updated_text=response["replaced_with"],
+                    error="No Update, found error: " + response["error"],  # type: ignore
                 )
             return EditFileResponse(
                 old_text=response["replaced_text"],

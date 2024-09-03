@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -76,6 +77,7 @@ class FindFile(LocalAction[FindFileRequest, FindFileResponse]):
     - A list of file paths relative to the working directory that match the search pattern.
     """
 
+    @include_cwd  # type: ignore
     def execute(self, request: FindFileRequest, metadata: t.Dict) -> FindFileResponse:
         try:
             results = self.filemanagers.get(request.file_manager_id).find(

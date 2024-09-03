@@ -26,7 +26,7 @@ from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
 
 
-DATASET_NAME = "princeton-nlp/SWE-bench_Lite"
+DATASET_NAME = os.environ.get("DATASET_NAME", "composio/swe-bench_Verified")
 PATH_TESTBED = "testbed/"
 
 
@@ -206,6 +206,28 @@ def build_image_and_container(
 
         git_clone_time = datetime.datetime.now() - start_time
         logger.info("git clone completed, time taken: %s", git_clone_time)
+    else:
+        composio_toolset.execute_action(
+            action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+            params={"path": repo.split("/")[-1]},
+        )
+        reset_resp = composio_toolset.execute_action(
+            action=Action.FILETOOL_GIT_CLONE,
+            params={
+                "repo_name": repo,
+                "commit_id": base_commit,
+                "just_reset": True,
+            },
+        )
+        if (
+            isinstance(reset_resp, dict)
+            and "success" in reset_resp
+            and not reset_resp["success"]
+        ):
+            raise Exception(reset_resp["error"])
+
+        git_clone_time = datetime.datetime.now() - start_time
+        logger.info("git reset completed, time taken: %s", git_clone_time)
 
     return workspace.id
 
@@ -282,4 +304,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/karanvaidya/.composio_coder/logs/1722863773")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1724766390")

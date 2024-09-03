@@ -149,6 +149,7 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `StructuredTool` objects
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._wrap_tool(
                 schema=tool.model_dump(

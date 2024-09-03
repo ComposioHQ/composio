@@ -162,6 +162,7 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `OpenAIFunction` objects
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._wrap_tool(  # type: ignore
                 t.cast(

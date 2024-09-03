@@ -189,7 +189,7 @@ def _repo_name(repo: str) -> str:
     "--dataset",
     type=str,
     help="Name of the dataset.",
-    default="princeton-nlp/SWE-bench_Lite",
+    default="princeton-nlp/SWE-bench_Verified",
 )
 @click.option(
     "-a",

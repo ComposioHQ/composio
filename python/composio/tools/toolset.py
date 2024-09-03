@@ -8,6 +8,8 @@ import hashlib
 import itertools
 import json
 import os
+import subprocess
+import sys
 import time
 import typing as t
 import warnings
@@ -40,6 +42,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
@@ -51,6 +54,7 @@ from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogLevel, WithLogger
+from composio.utils.pypi import check_if_package_is_intalled
 from composio.utils.url import get_api_url_base
 
 
@@ -78,7 +82,7 @@ def _check_agentops() -> bool:
     """Check if AgentOps is installed and initialized."""
     if find_spec("agentops") is None:
         return False
-    import agentops  # pylint: disable=import-outside-toplevel
+    import agentops  # pylint: disable=import-outside-toplevel # type: ignore
 
     return agentops.get_api_key() is not None
 
@@ -87,7 +91,7 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if _check_agentops():
-            import agentops  # pylint: disable=import-outside-toplevel
+            import agentops  # pylint: disable=import-outside-toplevel # type: ignore
 
             action_name = str(kwargs.get("action", "unknown_action"))
             return agentops.record_action(action_name)(func)(self, *args, **kwargs)
@@ -586,6 +590,85 @@ class ComposioToolSet(WithLogger):
         )
         self.logger.info(f"Got {response=} from {action=} with {params=}")
         return response
+
+    def validate_tools(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
+    ) -> None:
+        # NOTE: This an experimental, can convert to decorator for more convinience
+        missing: t.Dict[str, t.Set[str]] = {}
+        apps = apps or []
+        for app in map(App, apps):
+            if not app.is_local:
+                continue
+            for dependency in tool_registry["local"][app.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if app.slug not in missing:
+                    missing[app.slug] = set()
+                missing[app.slug].add(dependency)
+
+        actions = actions or []
+        for action in map(Action, actions):
+            if not action.is_local:
+                continue
+
+            for dependency in action_registry["local"][action.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if action.slug not in missing:
+                    missing[action.slug] = set()
+                missing[action.slug].add(dependency)
+
+        # TODO: Create CRUD object
+        tags = tags or []
+        for action in Action.all():
+            if not action.is_local:
+                continue
+
+            if not any(tag in action.tags for tag in tags):
+                continue
+
+            for dependency in action_registry["local"][action.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if action.slug not in missing:
+                    missing[action.slug] = set()
+                missing[action.slug].add(dependency)
+
+        if len(missing) == 0:
+            return
+
+        self.logger.info("Following apps/actions have missing dependencies")
+        for enum, dependencies in missing.items():
+            self.logger.info(f"• {enum}: {dependencies}")
+
+        installed = set()
+        self.logger.info("Installing dependencies...")
+        for dependencies in missing.values():
+            for dependency in dependencies:
+                if dependency in installed:
+                    continue
+                args = [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--disable-pip-version-check",
+                    dependency,
+                ]
+                if "git+https" in dependency:
+                    args.append("--force-reinstall")
+                output = subprocess.check_output(args=args).decode("utf-8")
+                if (
+                    "Successfully installed" not in output
+                    and "Requirement already satisfied" not in output
+                ):
+                    raise ComposioSDKError(message=f"Error installing {dependency}")
+                installed.add(dependency)
+                self.logger.info(f"Installed {dependency}")
 
     def get_action_schemas(
         self,
