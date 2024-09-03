@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -34,6 +35,7 @@ class ChangeWorkingDirectory(LocalAction[ChwdirRequest, ChwdirResponse]):
     - RuntimeError: If the path cannot be resolved due to a loop or other issues.
     """
 
+    @include_cwd  # type: ignore
     def execute(self, request: ChwdirRequest, metadata: Dict) -> ChwdirResponse:
         try:
             self.filemanagers.get(request.file_manager_id).chdir(request.path)

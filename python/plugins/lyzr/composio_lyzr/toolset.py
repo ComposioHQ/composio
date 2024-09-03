@@ -103,6 +103,7 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `Tool` objects
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._wrap_tool(
                 schema=schema.model_dump(exclude_none=True),

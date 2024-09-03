@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -69,6 +70,7 @@ class SearchWord(LocalAction[SearchWordRequest, SearchWordResponse]):
         - FileNotFoundError: If the specified pattern doesn't match any files.
     """
 
+    @include_cwd  # type: ignore
     def execute(
         self, request: SearchWordRequest, metadata: t.Dict
     ) -> SearchWordResponse:
