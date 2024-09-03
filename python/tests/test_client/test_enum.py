@@ -28,6 +28,8 @@ class SomeLocalAction(LocalAction[SomeLocalToolRequest, SomeLocalToolResponse]):
 
 
 class SomeLocalTool(LocalTool, autoload=True):
+    logo = ""
+
     @classmethod
     def actions(cls) -> List[type[LocalAction]]:
         return [SomeLocalAction]

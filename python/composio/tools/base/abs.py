@@ -79,6 +79,9 @@ class _Attributes:
     description: str
     """Description string."""
 
+    logo: str
+    """URL for the resource logo."""
+
 
 class _Request(t.Generic[ModelType]):
     """Request util."""
@@ -389,6 +392,9 @@ class ToolBuilder:
             obj._actions[action.enum] = action  # pylint: disable=protected-access
             action_registry[obj.gid][action.enum] = action  # type: ignore
 
+            if hasattr(obj, "logo"):
+                setattr(action, "logo", getattr(obj, "logo"))
+
         if not hasattr(obj, "triggers"):
             return
 
@@ -401,6 +407,9 @@ class ToolBuilder:
             obj._triggers[trigger.enum] = trigger  # type: ignore  # pylint: disable=protected-access
             trigger_registry[obj.gid][trigger.enum] = trigger  # type: ignore
 
+            if hasattr(obj, "logo"):
+                setattr(trigger, "logo", getattr(obj, "logo"))
+
 
 class Tool(WithLogger, _Attributes):
     """Tool abstraction."""
@@ -410,9 +419,6 @@ class Tool(WithLogger, _Attributes):
 
     file: Path
     """Path to module file."""
-
-    name: str
-    """Tool name."""
 
     _schema: t.Optional[t.Dict] = None
     """Schema for the app."""
