@@ -62,11 +62,13 @@ class _VerbosityWrapper:
         self.logger = logger
         self.level = logger.level
         self.setup(verbosity_level=verbosity_level)
+        self.verbosity = min(verbosity_level or _LOG_VERBOSITY, 3)
+        self.size = _LOG_LINE_SIZE_BY_VERBOSITY[self.verbosity]
 
     def setup(self, verbosity_level: t.Optional[int] = None) -> None:
         if verbosity_level is None:
             return
-        self.verbosity = min(verbosity_level or _LOG_VERBOSITY, 3)
+        self.verbosity = verbosity_level
         self.size = _LOG_LINE_SIZE_BY_VERBOSITY[self.verbosity]
 
     def _trim(self, msg) -> str:
