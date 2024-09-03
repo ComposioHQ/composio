@@ -12,7 +12,6 @@ export const getTestConfig = (): BACKEND_CONFIG => {
         return JSON.parse(JSON.stringify(require(path))) as unknown as BACKEND_CONFIG;
     } catch (error) {
         console.error("Error loading test config file:", error);
-        
         throw new Error("Error loading test config file. You  can create test.{{env}}.json file in the config folder.");
     }
 }
