@@ -603,6 +603,7 @@ class ComposioToolSet(WithLogger):
         for app in map(App, apps):
             if not app.is_local:
                 continue
+
             for dependency in tool_registry["local"][app.slug].requires or []:
                 if check_if_package_is_intalled(dependency):
                     continue
@@ -612,7 +613,7 @@ class ComposioToolSet(WithLogger):
 
         actions = actions or []
         for action in map(Action, actions):
-            if not action.is_local:
+            if not action.is_local or action.is_runtime:
                 continue
 
             for dependency in action_registry["local"][action.slug].requires or []:
