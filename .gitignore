@@ -17,6 +17,7 @@ venv*
 
 .coverage
 coverage.xml
+junit.xml
 
 core/build/lib/*
 
