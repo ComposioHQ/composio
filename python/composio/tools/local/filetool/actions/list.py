@@ -32,7 +32,7 @@ class ListFiles(LocalAction[ListRequest, ListResponse]):
     - OSError: If there's an issue reading the directory.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: ListRequest, metadata: t.Dict) -> ListResponse:
         try:
             return ListResponse(

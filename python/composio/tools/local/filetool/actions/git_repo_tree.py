@@ -47,7 +47,7 @@ class GitRepoTree(LocalAction[GitRepoTreeRequest, GitRepoTreeResponse]):
         RuntimeError: If there's an issue with the Git command execution or if not in a Git repository.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(
         self, request: GitRepoTreeRequest, metadata: Dict
     ) -> GitRepoTreeResponse:

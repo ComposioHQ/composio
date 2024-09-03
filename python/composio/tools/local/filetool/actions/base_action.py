@@ -27,13 +27,14 @@ T = TypeVar("T", bound=BaseFileRequest)
 R = TypeVar("R", bound=BaseFileResponse)
 
 
+# TOFIX: Override `Filetool.execute` and get rid of this decorator
 def include_cwd(func: Callable[[T, Dict], R]) -> Callable[[T, Dict], R]:
     @wraps(func)
     def wrapper(self, request: T, metadata: Dict) -> R:
-        response = func(self, request, metadata)
+        response = func(self, request, metadata)  # type: ignore
         response.current_working_directory = str(
             self.filemanagers.get(request.file_manager_id).working_dir
         )
         return response
 
-    return wrapper
+    return wrapper  # type: ignore

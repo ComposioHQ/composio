@@ -21,6 +21,9 @@ from composio.utils.logging import get as get_logger
 
 logger = get_logger("workspace")
 
+# TOFIX(shrey): Address these issues
+# pylint: disable=attribute-defined-outside-init,import-outside-toplevel,import-outside-toplevel
+
 
 class Status(str, Enum):
     NOT_STARTED = "not_started"
@@ -74,7 +77,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         self, request: CreateCodeMapRequest, metadata: Dict
     ) -> CreateCodeMapResponse:
         self.REPO_DIR = os.path.normpath(os.path.abspath(request.dir_to_index_path))
-        self.failed_files = []
+        self.failed_files: list[str] = []
 
         status = self.check_status(self.REPO_DIR)
         if status["status"] == Status.COMPLETED:
@@ -124,11 +127,11 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             if status["status"] == Status.LOADING_INDEX:
                 self.create_index()
                 status = self._update_status(self.REPO_DIR, Status.COMPLETED)
-        except Exception:
+        except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise ExecutionFailed(
                 message=f"Failed to create index, error encountered while {str(status['status'])}"
-            )
+            ) from e
 
     def create_index(self):
         """
@@ -198,7 +201,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
                 lsp_helper.clear_cache()
                 logger.error(f"Failed to process FQDNs for file {file_path}: {e}")
 
-        with open(self.fqdn_cache_file, "w") as f:
+        with open(self.fqdn_cache_file, "w", encoding="utf-8") as f:
             json.dump(self.all_fqdns_df, f, indent=4)
 
     @retry_handler(max_attempts=2, delay=1)

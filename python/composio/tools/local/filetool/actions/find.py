@@ -77,7 +77,7 @@ class FindFile(LocalAction[FindFileRequest, FindFileResponse]):
     - A list of file paths relative to the working directory that match the search pattern.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: FindFileRequest, metadata: t.Dict) -> FindFileResponse:
         try:
             results = self.filemanagers.get(request.file_manager_id).find(

@@ -93,7 +93,7 @@ class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
 
     display_name = "Edit a file"
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: EditFileRequest, metadata: Dict) -> EditFileResponse:
         file_manager = self.filemanagers.get(request.file_manager_id)
         try:

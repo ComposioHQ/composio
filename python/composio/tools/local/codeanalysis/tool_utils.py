@@ -71,7 +71,7 @@ def find_python_files(
         readable_files = []
         for file in python_files:
             try:
-                with open(file, "r") as f:
+                with open(file, "r", encoding="utf-8") as f:
                     f.read()
                 readable_files.append(file)
             except Exception:
@@ -133,8 +133,11 @@ def retry_handler(max_attempts=3, delay=1):
                 except Exception as e:
                     attempts += 1
                     if attempts == max_attempts:
-                        raise RuntimeError(f"Failed after {max_attempts} attempts: {e}")
+                        raise RuntimeError(
+                            f"Failed after {max_attempts} attempts: {e}"
+                        ) from e
                     time.sleep(delay)
+            raise RuntimeError(f"Failed after {max_attempts} attempts")
 
         return wrapper
 

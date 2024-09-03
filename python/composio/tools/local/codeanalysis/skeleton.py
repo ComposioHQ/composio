@@ -2,6 +2,9 @@ import libcst as cst
 import libcst.matchers as m
 
 
+# pylint: disable=unused-argument
+
+
 class CompressTransformer(cst.CSTTransformer):
     DESCRIPTION = str = "Replaces function body with ..."
     replacement_string = '"$$FUNC_BODY_REPLACEMENT_STRING$$"'

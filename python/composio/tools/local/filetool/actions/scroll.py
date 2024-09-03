@@ -59,7 +59,7 @@ class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
     - FileNotFoundError: If the file is not found.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: ScrollRequest, metadata: t.Dict) -> ScrollResponse:
         try:
             recent_file = self.filemanagers.get(id=request.file_manager_id).recent

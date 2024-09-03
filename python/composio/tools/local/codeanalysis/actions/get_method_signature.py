@@ -57,12 +57,11 @@ class GetMethodSignature(
         self, request: GetMethodSignatureRequest, metadata: Dict
     ) -> GetMethodSignatureResponse:
         repo_name = os.path.basename(request.repo_name)
-        repo_path = Path.home() / repo_name
 
         self.load_fqdn_cache(repo_name)
         method_artefacts = self.get_method_artefacts(
-            request.class_name,
-            request.method_name,
-            repo_path,
+            query_class_name=request.class_name,
+            query_method_name=request.method_name,
+            repo_path=str(Path.home() / repo_name),
         )
         return GetMethodSignatureResponse(result=method_artefacts["signature_ans"])

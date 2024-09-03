@@ -13,7 +13,7 @@ class BaseCodeAnalysisAction:
         self.fqdn_index = None
 
     @abstractmethod
-    def execute(self, request_data):
+    def execute(self, request, metadata):
         pass
 
     def load_fqdn_cache(self, repo_name: str):
@@ -23,7 +23,7 @@ class BaseCodeAnalysisAction:
                 f"FQDN cache file not found: {self.fqdn_cache_file}"
             )
 
-        with open(self.fqdn_cache_file, "r") as f:
+        with open(self.fqdn_cache_file, "r", encoding="utf-8") as f:
             self.all_fqdns_df = json.load(f)
 
         self.fqdn_index = {
@@ -51,7 +51,9 @@ class BaseCodeAnalysisAction:
         return matching_fqdns
 
     def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> Dict:
-        from composio.tools.local.codeanalysis import lsp_helper
+        from composio.tools.local.codeanalysis import (  # pylint: disable=import-outside-toplevel
+            lsp_helper,
+        )
 
         if self.fqdn_index is None:
             raise ValueError("FQDN index not loaded")
@@ -68,7 +70,7 @@ class BaseCodeAnalysisAction:
         else:
             raise ValueError("Expected a list of elements")
 
-        return data[relevant_fqdn]
+        return data[relevant_fqdn]  # type: ignore  # TOFIX(shrey): Inconsistent type
 
     def get_item_results(self, matching_fqdns: List[str], repo_path: str) -> List[Dict]:
         matching_fqdn_elems_df = {
@@ -85,7 +87,7 @@ class BaseCodeAnalysisAction:
 
 class MethodAnalysisAction(BaseCodeAnalysisAction):
     @abstractmethod
-    def execute(self, request_data):
+    def execute(self, request, metadata):
         pass
 
     def get_method_artefacts(

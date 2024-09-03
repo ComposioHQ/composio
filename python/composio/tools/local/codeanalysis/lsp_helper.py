@@ -9,6 +9,10 @@ from jedi.api.classes import Completion, Name
 from composio.tools.local.codeanalysis import tree_sitter_related
 
 
+# TOFIX(Shrey): Address these issues
+# pylint: disable=unused-argument,unspecified-encoding,unused-variable
+
+
 def clear_cache():
     jedi.cache.clear_time_caches()
 
@@ -34,18 +38,19 @@ def fetch_script_obj_for_file_in_repo(file_path: str, repo_path: str) -> jedi.Sc
 
         _project_obj_path = os.path.normpath(os.path.abspath(str(project_obj.path)))
         _file_path = os.path.normpath(os.path.abspath(file_path))
-
         if not _file_path.startswith(_project_obj_path):
             raise ValueError(
                 f"The file '{file_path}' is not within the project directory '{repo_path}'"
             )
 
         script = jedi.Script(
-            path=file_path, project=project_obj, environment=environment_obj
+            path=file_path,
+            project=project_obj,
+            environment=environment_obj,
         )
         return script
     except Exception as e:
-        raise RuntimeError(f"Error in fetch_script_obj_for_file_in_repo: {e}")
+        raise RuntimeError(f"Error in fetch_script_obj_for_file_in_repo: {e}") from e
 
 
 def fetch_external_names(
@@ -68,7 +73,7 @@ def fetch_external_names(
         )
         return possible_external_references
     except Exception as e:
-        raise RuntimeError(f"Failed to fetch external references: {e}")
+        raise RuntimeError(f"Failed to fetch external references: {e}") from e
 
 
 def check_overlap(reference: Name, spans: List[Tuple[int, int]]) -> bool:
@@ -87,7 +92,7 @@ def check_overlap(reference: Name, spans: List[Tuple[int, int]]) -> bool:
         reference.get_definition_end_position(),
     )
     return any(
-        tree_sitter_related.SpanRelated.has_span_overlap(span, reference_span)
+        tree_sitter_related.SpanRelated.has_span_overlap(span, reference_span)  # type: ignore
         for span in spans
     )
 
@@ -184,7 +189,7 @@ def find_dsu_parent(ref: Name, max_retries: int = 2) -> Name:
 
 
 def fetch_global_and_nested_fqdns(
-    all_references: List[Dict], global_scope_candidate_references: List[Dict]
+    all_references: List[Dict[str, str]], global_scope_candidate_references: List[Dict]
 ) -> List[Dict]:
     """
     Fetches Fully Qualified Domain Names (FQDNs) for global and nested entities.
@@ -216,10 +221,10 @@ def fetch_global_and_nested_fqdns(
     ]
 
     # Handle non-global entities
-    potential_parent_fqdns = set(
-        deepcopy(global_functions_fqdns + global_classes_fqdns)
+    potential_parent_fqdns = sorted(
+        set(deepcopy(global_functions_fqdns + global_classes_fqdns)),
+        key=lambda x: -len(x),
     )
-    potential_parent_fqdns = sorted(potential_parent_fqdns, key=lambda x: -len(x))
 
     for ref in all_references:
         if ref["global_type"] != "function":
@@ -310,7 +315,7 @@ def fetch_and_filter(
 def fetch_variables_in_script(
     script_obj: jedi.Script,
     only_global_scope: bool = True,
-    restrict_local_spans: List[Tuple[int, int]] = None,
+    restrict_local_spans: Optional[List[Tuple[int, int]]] = None,
 ) -> List[Dict]:
     """
     Fetches variables in the script.
@@ -352,14 +357,14 @@ def fetch_variables_in_script(
             global_variables_fqdns.append(obj)
         return global_variables_fqdns
     except Exception as e:
-        raise RuntimeError(f"Error in fetch_variables_in_script: {e}")
+        raise RuntimeError(f"Error in fetch_variables_in_script: {e}") from e
 
 
 def fetch_references_in_script(
     script_obj: jedi.Script,
     fetch_goto_obj: bool = False,
     only_global_scope: bool = False,
-    restrict_local_spans: List[Tuple[int, int]] = None,
+    restrict_local_spans: Optional[List[Tuple[int, int]]] = None,
 ) -> List[Dict]:
     """
     Takes a script object and fetches symbols in the file.
@@ -421,7 +426,7 @@ def fetch_references_in_script(
         return candidate_references
 
     except Exception as e:
-        raise RuntimeError(f"Error in fetch_references_in_script: {e}")
+        raise RuntimeError(f"Error in fetch_references_in_script: {e}") from e
 
 
 def fetch_relevant_elem(
@@ -470,14 +475,15 @@ def fetch_relevant_elem(
     original_contents = {}
     for name in all_names:
         file_path = os.path.normpath(os.path.abspath(name.module_path))
-        original_contents[file_path] = open(file_path).read()
+        with open(file_path, "r", encoding="utf-8") as fp:
+            original_contents[file_path] = fp.read()
 
     entity_objs = [
         entity_class_map[expected_type](name, file_name, repo_dir) for name in all_names
     ]
 
     for file_path, original_content in original_contents.items():
-        with open(file_path, "w") as fd:
+        with open(file_path, "w", encoding="utf-8") as fd:
             fd.write(original_content)
 
     return entity_objs
@@ -517,13 +523,13 @@ class EntityObj:
         self.repo_dir_where_used = os.path.normpath(
             os.path.abspath(repo_dir_where_used)
         )
-        self.global_path = os.path.normpath(os.path.abspath(self.goto_obj.module_path))
-
+        self.global_path = os.path.normpath(os.path.abspath(self.goto_obj.module_path))  # type: ignore
         self.definition_body, self.start_line = fetch_node_definition_body(
-            self.goto_obj
+            self.goto_obj  # type: ignore
         )
         entity_breakup = tree_sitter_related.fetch_entity_artifacts(
-            self.definition_body, self.entity_type
+            entity_body=self.definition_body,
+            entity_type=self.entity_type,  # type: ignore # TOFIX(shrey): `EntityObj` does not have attribute `entity_type`
         )
         self.comprehensive_str = entity_breakup["signature"]
         self.pure_docstring = entity_breakup["docstring"]
@@ -639,8 +645,7 @@ class ClassObj(EntityObj):
                 f"Failed to get completions for file {global_path}"
             ) from e
 
-        all_types = list(set([x.type for x in initial_completions]))
-
+        all_types = list({x.type for x in initial_completions})
         valid_types = ["statement", "function", "property", "class", "instance"]
         if any(y not in valid_types for y in all_types):
             raise ValueError(f"Unexpected completion types found: {all_types}")
@@ -670,7 +675,8 @@ class ClassObj(EntityObj):
             _class_obj.goto_obj
         )
 
-        _original_file_content = open(_class_obj.global_path).read()
+        with open(_class_obj.global_path, "r", encoding="utf-8") as fp:
+            _original_file_content = fp.read()
 
         _class_completion_file_new_content = (
             _original_file_content + class_completion_str
@@ -1116,7 +1122,7 @@ class FunctionObj(EntityObj):
 
 def fetch_node_definition_body(
     node_get_obj: Completion, file_path: Optional[str] = None, one_liner: bool = False
-) -> str:
+) -> tuple[str, str]:
     """
     Fetches the body of the node.
 
@@ -1152,4 +1158,4 @@ def fetch_node_definition_body(
         return extracted_content, start_line
 
     except Exception as e:
-        raise RuntimeError(f"Error in fetch_node_definition_body: {e}")
+        raise RuntimeError(f"Error in fetch_node_definition_body: {e}") from e

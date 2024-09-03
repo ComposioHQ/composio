@@ -54,7 +54,7 @@ class GitPatch(LocalAction[GitPatchRequest, GitPatchResponse]):
     _request_schema = GitPatchRequest
     _response_schema = GitPatchResponse
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: GitPatchRequest, metadata: t.Dict) -> GitPatchResponse:
         # Check if we're in a git repository or in a subdirectory of one
         file_manager = self.filemanagers.get(request.file_manager_id)

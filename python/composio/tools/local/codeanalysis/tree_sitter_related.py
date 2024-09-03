@@ -46,7 +46,7 @@ class SpanRelated:
         Returns:
             bool: True if the spans overlap, else False.
         """
-        span1, span2 = map(SpanRelated.convert_to_tuple_format, (span1, span2))
+        span1, span2 = map(SpanRelated.convert_to_tuple_format, (span1, span2))  # type: ignore
         return not (span1[1] < span2[0] or span1[0] > span2[1])
 
     @staticmethod
@@ -62,7 +62,7 @@ class SpanRelated:
             bool: True if parent_span contains child_span, else False.
         """
         parent_span, child_span = map(
-            SpanRelated.convert_to_tuple_format, (parent_span, child_span)
+            SpanRelated.convert_to_tuple_format, (parent_span, child_span)  # type: ignore
         )
         return (parent_span[0] <= child_span[0]) and (parent_span[1] >= child_span[1])
 
@@ -167,7 +167,7 @@ def format_node_list(nodes: List[Node], file_body: str) -> List[Dict]:
             node["end_point"][1],
         )
         node["span"] = SpanRelated.convert_to_tuple_format(
-            (node["start_point"], node["end_point"])
+            (node["start_point"], node["end_point"])  # type: ignore
         )
         del node["start_point"]
         del node["end_point"]
@@ -203,9 +203,7 @@ def fetch_class_and_function_nodes_defn_identifiers(file_path: str) -> List[Dict
         ]
         if len(curr_identifier_nodes) != 1:
             raise ValueError(
-                "Expected exactly one identifier node, found: {}".format(
-                    len(curr_identifier_nodes)
-                )
+                f"Expected exactly one identifier node, found: {len(curr_identifier_nodes)}"
             )
         identifier_nodes.append(curr_identifier_nodes[0])
 

@@ -46,7 +46,9 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     def execute(
         self, request: GetRelevantCodeRequest, metadata: Dict
     ) -> GetRelevantCodeResponse:
-        from composio.tools.local.codeanalysis import embedder
+        from composio.tools.local.codeanalysis import (  # pylint: disable=import-outside-toplevel
+            embedder,
+        )
 
         repo_name = os.path.basename(request.repo_name)
         vector_store = embedder.get_vector_store(repo_name, overwrite=False)
@@ -54,6 +56,6 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
         results = embedder.get_topn_chunks_from_query(vector_store, query, top_n=5)
         sep = "\n" + "=" * 100 + "\n"
         result_string = "Query: " + query + sep
-        for i, metadata in enumerate(results["metadata"]):
-            result_string += f"Chunk {i + 1}: \n" + str(metadata["chunk"]) + sep
+        for i, _metadata in enumerate(results["metadata"]):
+            result_string += f"Chunk {i + 1}: \n" + str(_metadata["chunk"]) + sep
         return GetRelevantCodeResponse(result=result_string)

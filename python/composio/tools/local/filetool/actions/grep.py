@@ -70,7 +70,7 @@ class SearchWord(LocalAction[SearchWordRequest, SearchWordResponse]):
         - FileNotFoundError: If the specified pattern doesn't match any files.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(
         self, request: SearchWordRequest, metadata: t.Dict
     ) -> SearchWordResponse:

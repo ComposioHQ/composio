@@ -47,7 +47,7 @@ class Write(LocalAction[WriteRequest, WriteResponse]):
     of the file use `edit` tool instead.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: WriteRequest, metadata: Dict) -> WriteResponse:
         try:
             filemanager = self.filemanagers.get(request.file_manager_id)

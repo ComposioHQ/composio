@@ -37,14 +37,13 @@ class Span:
     def __add__(self, other: Union[int, "Span"]) -> "Span":
         if isinstance(other, int):
             return Span(self.start + other, self.end + other)
-        elif isinstance(other, Span):
+
+        if isinstance(other, Span):
             return Span(self.start, other.end)
-        else:
-            raise TypeError(
-                "Unsupported operand type for +: '{}' and '{}'".format(
-                    type(self).__name__, type(other).__name__
-                )
-            )
+
+        raise TypeError(
+            f"Unsupported operand type for +: '{type(self).__name__}' and '{type(other).__name__}'"
+        )
 
     def __len__(self) -> int:
         return self.end - self.start
@@ -100,10 +99,11 @@ def count_length_without_whitespace(s: Union[str, bytes]) -> int:
     """
     if isinstance(s, str):
         return len(re.sub(r"\s", "", s))
-    elif isinstance(s, bytes):
+
+    if isinstance(s, bytes):
         return len(re.sub(rb"\s", b"", s))
-    else:
-        raise TypeError(f"Input must be str or bytes, not {type(s).__name__}")
+
+    raise TypeError(f"Input must be str or bytes, not {type(s).__name__}")
 
 
 def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
@@ -256,7 +256,7 @@ class Chunking:
         return chunks, metadatas, ids
 
 
-def construct_chunks(
+def construct_chunks(  # pylint: disable=unused-argument
     chunks: List[str],
     metadatas: List[Dict[str, Any]],
     ids: List[str],

@@ -44,7 +44,7 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
     - IsADirectoryError: If the provided path is a directory.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: OpenFileRequest, metadata: t.Dict) -> OpenFileResponse:
         """Open a file."""
         try:
@@ -54,9 +54,8 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
             if request.line_number > 0:
                 file.goto(request.line_number)
 
-            content = file.read()
-            content = file.format_text(content)
-            if content == {}:
+            content = file.format_text(lines=file.read())
+            if len(content) == 0:
                 return OpenFileResponse(error="File is empty")
 
             return OpenFileResponse(

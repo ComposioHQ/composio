@@ -35,7 +35,7 @@ class ChangeWorkingDirectory(LocalAction[ChwdirRequest, ChwdirResponse]):
     - RuntimeError: If the path cannot be resolved due to a loop or other issues.
     """
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(self, request: ChwdirRequest, metadata: Dict) -> ChwdirResponse:
         try:
             self.filemanagers.get(request.file_manager_id).chdir(request.path)

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import Field
 
+from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
@@ -26,7 +27,6 @@ class ApplyPatchResponse(BaseFileResponse):
     """Response to applying a patch."""
 
     message: str = Field("", description="The message from applying the patch")
-    error: str = Field("", description="The error from applying the patch")
 
 
 class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
@@ -47,7 +47,7 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
     _request_schema = ApplyPatchRequest
     _response_schema = ApplyPatchResponse
 
-    @include_cwd
+    @include_cwd  # type: ignore
     def execute(
         self,
         request: ApplyPatchRequest,
@@ -57,38 +57,49 @@ class ApplyPatch(LocalAction[ApplyPatchRequest, ApplyPatchResponse]):
         file_manager = self.filemanagers.get(request.file_manager_id)
         git_root = self._find_git_root(file_manager.current_dir())
         if not git_root:
-            return ApplyPatchResponse(
-                error="Not in a git repository or its subdirectories"
-            )
-        with open(git_root / "patch.patch", "w") as f:
+            raise ExecutionFailed("Not in a git repository or its subdirectories")
+
+        with open(git_root / "patch.patch", "w", encoding="utf-8") as f:
             f.write(request.patch)
 
         files_to_be_modified, _ = self._get_files_from_patch(request.patch)
         before_lint, before_file_contents = self._run_lint_on_files(
-            file_manager, files_to_be_modified
+            file_manager=file_manager,
+            files=files_to_be_modified,
         )
-        _, error = file_manager.execute_command(git_apply_cmd(git_root / "patch.patch"))
+        _, error = file_manager.execute_command(
+            command=git_apply_cmd(
+                patch_path=str(git_root / "patch.patch"),
+            )
+        )
 
         if error:
-            return ApplyPatchResponse(
-                error="No Update, found error during applying patch: " + error,
+            raise ExecutionFailed(
+                f"No Update, found error during applying patch: {error}"
             )
-        after_lint, _ = self._run_lint_on_files(file_manager, files_to_be_modified)
 
+        after_lint, _ = self._run_lint_on_files(file_manager, files_to_be_modified)
         for key, value in before_lint.items():
             file = file_manager.open(path=key)
-            new_lint_errors = file._compare_lint_results(value, after_lint[key])
+            new_lint_errors = (
+                file._compare_lint_results(  # pylint: disable=protected-access
+                    value,
+                    after_lint[key],
+                )
+            )
             if len(new_lint_errors) > 0:
-                formatted_errors = file._format_lint_errors(new_lint_errors)
+                formatted_errors = (
+                    file._format_lint_errors(  # pylint: disable=protected-access
+                        new_lint_errors,
+                    )
+                )
                 file.path.write_text(before_file_contents[key], encoding="utf-8")
-                return ApplyPatchResponse(
-                    error="No Update, found error during applying patch, no update made in the file: "
-                    + formatted_errors,
+                raise ExecutionFailed(
+                    f"No Update, found error during applying patch, no update made in the file: {formatted_errors}"
                 )
 
         return ApplyPatchResponse(
-            message="Successfully applied patch, lint checks passed",
-            error="",
+            message="Successfully applied patch, lint checks passed"
         )
 
     def _find_git_root(self, path: str) -> t.Optional[Path]:

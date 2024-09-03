@@ -50,13 +50,15 @@ class GetClassInfo(
         self, request: GetClassInfoRequest, metadata: Dict
     ) -> GetClassInfoResponse:
         repo_name = os.path.basename(request.repo_name)
-        repo_path = Path.home() / repo_name
 
         self.load_fqdn_cache(repo_name)
         query_class_name = request.class_name
 
         matching_fqdns = self.get_matching_items(query_class_name, "class")
-        class_results = self.get_item_results(matching_fqdns, repo_path)
+        class_results = self.get_item_results(
+            matching_fqdns=matching_fqdns,
+            repo_path=str(Path.home() / repo_name),
+        )
 
         if not class_results:
             return GetClassInfoResponse(result="No matching results found!")
