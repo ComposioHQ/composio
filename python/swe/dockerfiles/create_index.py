@@ -51,8 +51,8 @@ class IndexGenerator(WithLogger):
         task_instance_groups = group_task_instances(task_instances.values())
         for repo, versions in task_instance_groups.items():
             self.logger.info(f"Repo {repo} with {set(versions.keys())} versions")
-            if repo.split("-")[0] not in filtered_repos:
-                continue
+            # if repo.split("-")[0] not in filtered_repos:
+            #     continue
             for version, instances in versions.items():
                 self.logger.info(f"\tGenerating for version - {version}")
                 self.create_index(
@@ -64,6 +64,7 @@ class IndexGenerator(WithLogger):
     ):
         outname = _repo_name(repository)
         outdir = self.outdir / outname / version
+        if outdir.exists(): return
         # print(outdir)
         # return
         # outdir.mkdir(exist_ok=True, parents=True)
