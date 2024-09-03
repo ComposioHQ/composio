@@ -52,6 +52,7 @@ core_requires = [
     "paramiko>=3.4.1",  # Host workspace
     "docker>=7.1.0",  # Docker workspace
     "docker>=7.1.0",  # Docker workspace
+    "e2b>=0.17.2a37",  # E2B Workspace
     "e2b-code-interpreter",  # E2B workspace
     "gql",  # FlyIO workspace
     "requests",  # FlyIO workspace
