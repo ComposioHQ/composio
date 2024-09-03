@@ -19,7 +19,6 @@ from composio.constants import (
     LOCAL_CACHE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
-from composio.core.cls.catch_all_exceptions import init_sentry
 from composio.storage.user import UserData
 from composio.tools.env.factory import WorkspaceType
 from composio.tools.toolset import ComposioToolSet
@@ -91,7 +90,6 @@ class Context(logging.WithLogger):
     def client(self) -> Composio:
         """Composio client."""
         if self._client is None:
-            init_sentry()
             self._client = Composio(api_key=self.user_data.api_key)
         return self._client
 
