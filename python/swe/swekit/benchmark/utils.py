@@ -26,7 +26,7 @@ from swekit.benchmark.get_score_card import generate_scorecard
 from swekit.benchmark.setup_test_bed import create_patches_file
 
 
-DATASET_NAME = os.environ.get("DATASET_NAME", "composio/swe-bench_Verified")
+DATASET_NAME = os.environ.get("DATASET_NAME", "princeton-nlp/SWE-bench_Verified")
 PATH_TESTBED = "testbed/"
 
 
@@ -304,4 +304,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1724766390")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725363770/")

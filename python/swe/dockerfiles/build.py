@@ -61,6 +61,8 @@ def _base(generated: Path, multi: bool = False) -> None:
         futures = []
         for file in base.iterdir():
             _, tag = file.name.split(".", maxsplit=1)
+            if "3.5" in tag:
+                continue
             futures.append(executor.submit(_build, file, tag, multi))
         _ = [fut.result() for fut in futures]
 
