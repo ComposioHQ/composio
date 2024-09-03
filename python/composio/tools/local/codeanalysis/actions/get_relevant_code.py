@@ -7,10 +7,6 @@ from composio.tools.base.local import LocalAction
 
 
 class GetRelevantCodeRequest(BaseModel):
-    repo_name: str = Field(
-        ...,
-        description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'.",
-    )
     query: str = Field(
         ...,
         description="Query to retrieve relevant code from the repository",
@@ -33,7 +29,6 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     2. Search for implementations of particular features across the codebase.
 
     Usage example:
-    repo_name: django
     query: "database connection pooling"
 
     The relevance of retrieved code snippets depends on the quality and specificity of the provided query.
@@ -49,7 +44,7 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
             embedder,
         )
 
-        repo_name = os.path.basename(request.repo_name)
+        repo_name = os.path.basename(metadata["dir_to_index_path"])
         vector_store = embedder.get_vector_store(repo_name, overwrite=False)
         query = request.query
         results = embedder.get_topn_chunks_from_query(vector_store, query, top_n=5)

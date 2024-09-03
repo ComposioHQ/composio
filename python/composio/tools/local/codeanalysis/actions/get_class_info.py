@@ -9,10 +9,6 @@ from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalys
 
 
 class GetClassInfoRequest(BaseModel):
-    repo_name: str = Field(
-        ...,
-        description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'.",
-    )
     class_name: str = Field(
         ..., description="Name of the class for which information is requested"
     )
@@ -36,7 +32,6 @@ class GetClassInfo(
     2. Get the class summary, class variables, instance variables, member functions, and property variables.
 
     Usage example:
-    repo_name: django
     class_name: Signal
 
     Note: If multiple classes match the provided name, information for all matching classes will be returned.
@@ -48,7 +43,7 @@ class GetClassInfo(
     def execute(
         self, request: GetClassInfoRequest, metadata: Dict
     ) -> GetClassInfoResponse:
-        repo_name = os.path.basename(request.repo_name)
+        repo_name = os.path.basename(metadata["dir_to_index_path"])
 
         self.load_fqdn_cache(repo_name)
         query_class_name = request.class_name
@@ -56,7 +51,7 @@ class GetClassInfo(
         matching_fqdns = self.get_matching_items(query_class_name, "class")
         class_results = self.get_item_results(
             matching_fqdns=matching_fqdns,
-            repo_path=str(Path.home() / repo_name),
+            repo_path=metadata["dir_to_index_path"],
         )
 
         if not class_results:

@@ -33,11 +33,7 @@ class Status(str, Enum):
 
 
 class CreateCodeMapRequest(BaseModel):
-    dir_to_index_path: str = Field(
-        ...,
-        description="Absolute path to the directory that needs to be indexed for code analysis",
-    )
-
+    pass
 
 class CreateCodeMapResponse(BaseModel):
     result: str = Field(
@@ -59,10 +55,6 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     Use this action when you need to analyze or search through a codebase efficiently.
     The resulting index can be used for various code analysis tasks.
 
-    Input:
-    - dir_to_index_path: Absolute path to the directory to be indexed
-    - repo_version: Version of the repository to be indexed
-
     Output:
     - result: Status message indicating success or failure of the indexing process
 
@@ -76,13 +68,13 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     def execute(
         self, request: CreateCodeMapRequest, metadata: Dict
     ) -> CreateCodeMapResponse:
-        self.REPO_DIR = os.path.normpath(os.path.abspath(request.dir_to_index_path))
+        self.REPO_DIR = os.path.normpath(os.path.abspath(metadata['dir_to_index_path']))
         self.failed_files: list[str] = []
 
         status = self.check_status(self.REPO_DIR)
         if status["status"] == Status.COMPLETED:
             return CreateCodeMapResponse(
-                result=f"Indexing already exists for {request.dir_to_index_path}"
+                result=f"Indexing already exists for {metadata['dir_to_index_path']}"
             )
 
         if status["status"] in [Status.NOT_STARTED, Status.FAILED]:
@@ -97,7 +89,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         self._process(status)
 
         return CreateCodeMapResponse(
-            result=f"Indexing completed for {request.dir_to_index_path}"
+            result=f"Indexing completed for {metadata['dir_to_index_path']}"
         )
 
     def _process(self, status: Dict[str, Any]) -> None:

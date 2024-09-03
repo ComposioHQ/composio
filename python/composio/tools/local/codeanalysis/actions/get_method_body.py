@@ -9,10 +9,6 @@ from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysis
 
 
 class GetMethodBodyRequest(BaseModel):
-    repo_name: str = Field(
-        ...,
-        description="Name of the repository. It should be the last part of valid github repository name. It should not contain any '/'.",
-    )
     class_name: Optional[str] = Field(
         None,
         description="Name of the class containing the target method",
@@ -40,13 +36,11 @@ class GetMethodBody(
     This action can retrieve the method body in two scenarios:
     1. If a class name is provided, it retrieves the method from within that class.
     Usage example:
-    repo_name: django
     class_name: Field
     method_name: run_validators
 
     2. If no class name is provided, it retrieves the method from the global scope.
     Usage example:
-    repo_name: django
     method_name: run_validators
     """
 
@@ -56,12 +50,12 @@ class GetMethodBody(
     def execute(
         self, request: GetMethodBodyRequest, metadata: Dict
     ) -> GetMethodBodyResponse:
-        repo_name = os.path.basename(request.repo_name)
+        repo_name = os.path.basename(metadata["dir_to_index_path"])
 
         self.load_fqdn_cache(repo_name)
         method_artefacts = self.get_method_artefacts(
             query_class_name=request.class_name,
             query_method_name=request.method_name,
-            repo_path=str(Path.home() / repo_name),
+            repo_path=metadata["dir_to_index_path"],
         )
         return GetMethodBodyResponse(result=method_artefacts["body_ans"])
