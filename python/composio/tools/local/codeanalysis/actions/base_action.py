@@ -130,13 +130,10 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
         return False
 
     @staticmethod
-    def get_all_members(class_elem: Dict) -> List[str]:
+    def get_all_members(class_elem: List[Dict]) -> List[str]:
         all_members = []
-        if isinstance(class_elem, list):
-            for elem in class_elem:
-                all_members.extend(elem["member_functions"])
-        else:
-            all_members.extend(class_elem["member_functions"])
+        for elem in class_elem:
+            all_members.extend(elem["member_functions"])
         return all_members
 
     @staticmethod
