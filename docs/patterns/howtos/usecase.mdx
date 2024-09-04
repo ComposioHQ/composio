@@ -21,7 +21,7 @@ This method ensures your AI agents have the most appropriate tools for each spec
   use_case="Star a repo on github"
 
   action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
-  tools = toolset.get_actions(actions=action_enums)
+  tools = toolset.get_tools(actions=action_enums)
 
   # use tools as per your framework
   ```
