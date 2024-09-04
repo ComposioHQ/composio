@@ -97,7 +97,11 @@ class WorkspaceFactory:
         """Teardown the workspace with given ID."""
         if id not in cls._workspaces:
             return
-        cls._workspaces[id].teardown()
+        workspace = cls._workspaces[id]
+        if workspace.persistent:
+            return
+        
+        workspace.teardown()
 
     @classmethod
     def teardown(cls) -> None:
