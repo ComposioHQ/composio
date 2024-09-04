@@ -9,5 +9,6 @@ from .git_repo_tree import GitRepoTree
 from .grep import SearchWord
 from .list import ListFiles
 from .open import OpenFile
+from .rename import RenameFile
 from .scroll import Scroll
 from .write import Write
