@@ -1,10 +1,10 @@
-import typing as t
+from typing import Dict
 
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.exceptions import ExecutionFailed
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
 )
@@ -30,7 +30,7 @@ class RenameFileResponse(BaseFileResponse):
     error: str = Field(default="", description="Error message if any")
 
 
-class RenameFile(BaseFileAction):
+class RenameFile(LocalAction[RenameFileRequest, RenameFileResponse]):
     """
     Renames a file based on the provided file path,
 
@@ -45,22 +45,15 @@ class RenameFile(BaseFileAction):
     _request_schema = RenameFileRequest
     _response_schema = RenameFileResponse
 
-    def execute_on_file_manager(
-        self, file_manager: FileManager, request_data: RenameFileRequest  # type: ignore
-    ) -> RenameFileResponse:
-        try:
-            is_success = file_manager.rename(
-                request_data.old_file_path, request_data.new_file_path
-            )
-            if not is_success:
-                return RenameFileResponse(error="Failed to rename the file.")
-            return RenameFileResponse(
-                message="File renamed successfully.",
-            )
-        except FileNotFoundError as e:
-            return RenameFileResponse(error=f"File not found: {str(e)}")
-        except PermissionError as e:
-            return RenameFileResponse(error=f"Permission denied: {str(e)}")
-        except IOError as e:
-            return RenameFileResponse(error=f"Error reading file: {str(e)}")
-
+    def execute(self, request: RenameFileRequest, metadata: Dict) -> RenameFileResponse:
+        is_success = self.filemanagers.get(
+            request.file_manager_id,
+        ).rename(
+            request.old_file_path,
+            request.new_file_path,
+        )
+        if not is_success:
+            raise ExecutionFailed("Failed to rename the file.")
+        return RenameFileResponse(
+            message="File renamed successfully.",
+        )
