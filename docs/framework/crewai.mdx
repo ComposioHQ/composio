@@ -18,10 +18,9 @@ description: "Integrate Composio with Crewai agents to let them seamlessly inter
 These commands prepare your environment for seamless interaction between CrewAI and Github.
 
 <CodeGroup>
-    ```bash Run Command
-    pip install composio_crewai
-    ```
-
+```bash Run Command
+pip install composio_crewai
+```
 </CodeGroup>
 
 
@@ -62,14 +61,13 @@ print(
 <Step title="Import Base Packages">
 
 <CodeGroup>
-    ```python Default Imports
-    from crewai import Agent, Task, Crew
-    from langchain_openai import ChatOpenAI
+```python Default Imports
+from crewai import Agent, Task, Crew
+from langchain_openai import ChatOpenAI
 
-    # add OPENAI_API_KEY to env variables.
-    llm = ChatOpenAI()
-    ```
-
+# add OPENAI_API_KEY to env variables.
+llm = ChatOpenAI()
+```
 </CodeGroup>
 
 </Step>
@@ -77,16 +75,15 @@ print(
 <Step title="Fetch all Tools via Composio">
 
 <CodeGroup>
-    ```python Tools For Github
+```python Tools For Github
 
-    from composio_crewai import ComposioToolSet, Action, App
+from composio_crewai import ComposioToolSet, Action, App
 
-    # Get All the tools
+# Get All the tools
 
-    composio_toolset = ComposioToolSet(entity_id="Jessica")
-    tools = composio_toolset.get_tools(apps=[App.GITHUB])
-    ```
-
+composio_toolset = ComposioToolSet(entity_id="Jessica")
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
+```
 </CodeGroup>
 
 </Step>
@@ -94,7 +91,7 @@ print(
 <Step title="Execute the Agent">
 
 <CodeGroup>
-    ```python CrewAI Agent Executes Task
+```python CrewAI Agent Executes Task
 # Define agent
 crewai_agent = Agent(
     role="Github Agent",
@@ -124,26 +121,25 @@ print(result)
 <Step title="Check Response">
 
 <CodeGroup>
-    ```bash Executing Agents
-    > Entering new CrewAgentExecutor chain...[0m
-    I need to star a repository on GitHub, specifically the repo "composiohq/composio".
+```bash Executing Agents
+> Entering new CrewAgentExecutor chain...[0m
+I need to star a repository on GitHub, specifically the repo "composiohq/composio".
 
-    Action:
-    github_star_repo
+Action:
+github_star_repo
 
-    Action Input:
-    {
-    "owner": "composiohq",
-    "repo": "composio"
-    }
+Action Input:
+{
+"owner": "composiohq",
+"repo": "composio"
+}
 
-    {'execution_details': {'executed': True}, 'response_data': ''}
-    Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
+{'execution_details': {'executed': True}, 'response_data': ''}
+Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 
-    > Finished chain.[0m
-    > {'execution_details': {'executed': True}, 'response_data': ''}
-    ```
-
+> Finished chain.[0m
+> {'execution_details': {'executed': True}, 'response_data': ''}
+```
 </CodeGroup>
 
 </Step>
@@ -153,7 +149,7 @@ print(result)
     ```bash Filter Specific Action
     # To restrict agents from using all the actions, filter specific actions
     composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+    tools = composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
     ```
 </CodeGroup>
 

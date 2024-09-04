@@ -87,7 +87,7 @@ To optimize LLM performance, it's crucial to select a **focused set of actions**
   # can pass multiple apps
   action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
 
-  tools = tool_set.get_actions(actions=action_enums)
+  tools = tool_set.get_tools(actions=action_enums)
 
   # use tools as per your framework
   ```
@@ -149,7 +149,7 @@ action_enums = toolset.find_actions_by_tags(
     tags=[tag], 
 )
 
-tools = tool_set.get_actions(actions=action_enums)
+tools = tool_set.get_tools(actions=action_enums)
 ```
 </CodeGroup>
 </Tab>
