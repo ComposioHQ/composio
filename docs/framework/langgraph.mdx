@@ -83,7 +83,7 @@ from composio_langgraph import Action, ComposioToolSet
 
 # Initialize the toolset for GitHub
 composio_toolset = ComposioToolSet(entity_id="Jessica")
-tools = composio_toolset.get_actions(
+tools = composio_toolset.get_tools(
     actions=[
         Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER,
         Action.GITHUB_USERS_GET_AUTHENTICATED,
