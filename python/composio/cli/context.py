@@ -149,7 +149,7 @@ def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
     if _context is None:
         _context = Context()
 
-    def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         if (
             not t.cast(Context, _context).is_logged_in()
             and not t.cast(Context, _context).using_api_key_from_env()
@@ -159,7 +159,7 @@ def login_required(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
             )
         return f(*args, **kwargs)
 
-    return update_wrapper(wapper, f)
+    return update_wrapper(wrapper, f)
 
 
 def ensure_login(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
@@ -168,7 +168,7 @@ def ensure_login(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
     if _context is None:
         _context = Context()
 
-    def wapper(*args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         if (
             not t.cast(Context, _context).is_logged_in()
             and not t.cast(Context, _context).using_api_key_from_env()
@@ -176,7 +176,7 @@ def ensure_login(f: t.Callable[te.Concatenate[P], R]) -> t.Callable[P, R]:
             login(context=_context)
         return f(*args, **kwargs)
 
-    return update_wrapper(wapper, f)
+    return update_wrapper(wrapper, f)
 
 
 def login(

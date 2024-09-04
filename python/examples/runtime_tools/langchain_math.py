@@ -25,7 +25,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Get All the tools
 tools = ComposioToolSet().get_actions(actions=[multiply])
-task = "Calculate the forumula 445*669*8886"
+task = "Calculate the formula 445*669*8886"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)

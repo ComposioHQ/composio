@@ -315,7 +315,7 @@ class FileManager(Sessionable):
         depth: int,
         exclude: t.List[Path],
     ) -> str:
-        """Auxialiary method for creating working directory tree recursively."""
+        """Auxiliary method for creating working directory tree recursively."""
         if (depth != -1 and level > depth) or directory in exclude:
             return ""
 

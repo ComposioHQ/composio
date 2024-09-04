@@ -53,7 +53,7 @@ class AddIntegrationExamples(HelpfulCmd):
     "-i",
     "--integration-id",
     type=str,
-    help="Specify intgration ID to use existing integration",
+    help="Specify integration ID to use existing integration",
 )
 @click.option(
     "-a",

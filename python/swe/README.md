@@ -212,7 +212,7 @@ The workspace environment contains following environment variables by default
 - `GITHUB_ACCESS_TOKEN`: Github access token for the agent.
 - `ACCESS_TOKEN`: Access token for composio tooling server.
 
-If you want to provide addional environment configuration you can use `environment` argument when creating a workspace configuration.
+If you want to provide additional environment configuration you can use `environment` argument when creating a workspace configuration.
 
 ```python
 composio_toolset = ComposioToolSet(

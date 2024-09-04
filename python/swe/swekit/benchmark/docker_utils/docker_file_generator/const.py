@@ -576,7 +576,7 @@ MAP_VERSION_TO_INSTALL_PYLINT.update(
     {
         k: {
             **MAP_VERSION_TO_INSTALL_PYLINT[k],
-            "pip_packages": ["astroid==3.0.0a6", "pytest"],
+            "pip_packages": ["asteroid==3.0.0a6", "pytest"],
         }
         for k in ["3.0"]
     }
@@ -751,7 +751,7 @@ MAP_VERSION_TO_INSTALL_PYDICOM.update(
 
 MAP_VERSION_TO_INSTALL_HUMANEVAL = {k: {"python": "3.9"} for k in ["1.0"]}
 
-# Constants - Task Instance Instllation Environment
+# Constants - Task Instance Installation Environment
 MAP_VERSION_TO_INSTALL = {
     "astropy/astropy": MAP_VERSION_TO_INSTALL_ASTROPY,
     "django/django": MAP_VERSION_TO_INSTALL_DJANGO,
@@ -763,7 +763,7 @@ MAP_VERSION_TO_INSTALL = {
     "pvlib/pvlib-python": MAP_VERSION_TO_INSTALL_PVLIB,
     "pydata/xarray": MAP_VERSION_TO_INSTALL_XARRAY,
     "pydicom/pydicom": MAP_VERSION_TO_INSTALL_PYDICOM,
-    "pylint-dev/astroid": MAP_VERSION_TO_INSTALL_ASTROID,
+    "pylint-dev/asteroid": MAP_VERSION_TO_INSTALL_ASTROID,
     "pylint-dev/pylint": MAP_VERSION_TO_INSTALL_PYLINT,
     "pytest-dev/pytest": MAP_VERSION_TO_INSTALL_PYTEST,
     "pyvista/pyvista": MAP_VERSION_TO_INSTALL_PYVISTA,
@@ -791,7 +791,7 @@ MAP_REPO_TO_TEST_FRAMEWORK = {
     "pvlib/pvlib-python": TEST_PYTEST,
     "pydata/xarray": TEST_PYTEST,
     "pydicom/pydicom": TEST_PYTEST_SKIP_NO_HEADER,
-    "pylint-dev/astroid": TEST_PYTEST,
+    "pylint-dev/asteroid": TEST_PYTEST,
     "pylint-dev/pylint": TEST_PYTEST,
     "pytest-dev/pytest": "pytest -rA",
     "pyvista/pyvista": TEST_PYTEST,
