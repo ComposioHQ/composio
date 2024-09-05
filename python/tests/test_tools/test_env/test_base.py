@@ -1,11 +1,12 @@
 """Test workspace abstractions."""
 
+import typing as t
 from typing import Dict
 from unittest import mock
 
 import pytest
 
-from composio.client.enums._action import Action
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import (
     SessionFactory,
@@ -18,6 +19,14 @@ from composio.tools.env.id import generate_id
 
 def test_workspace() -> None:
     class TestWorkspace(Workspace):
+        def check_for_missing_dependencies(
+            self,
+            apps: t.Optional[t.Sequence[AppType]] = None,
+            actions: t.Optional[t.Sequence[ActionType]] = None,
+            tags: t.Optional[t.Sequence[TagType]] = None,
+        ) -> None:
+            pass
+
         def setup(self) -> None:
             pass
 
