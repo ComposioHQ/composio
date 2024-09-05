@@ -1,0 +1,4 @@
+llama-index
+llama-index-llms-openai
+composio-llamaindex
+python-dotenv
