@@ -44,21 +44,6 @@ tools = composio_toolset.get_actions(
         ]
 )
 
-def extract_sender_email(payload):
-    delivered_to_header_found = False
-    for header in payload["headers"]:
-        if header.get("name", "") == "Delivered-To" and header.get("value", "") != "":
-            delivered_to_header_found = True
-    print("delivered_to_header_found: ", delivered_to_header_found)
-    if not delivered_to_header_found:
-        return None
-    for header in payload["headers"]:
-        if header["name"] == "From":
-            # Regular expression to extract email from the 'From' header value
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
 
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
@@ -68,8 +53,8 @@ def review_new_pr(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return
