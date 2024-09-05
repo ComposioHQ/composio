@@ -516,7 +516,7 @@ class TriggerSubscription(logging.WithLogger):
         try:
             return callback(data)
         except BaseException:
-            self.logger.info(
+            self.logger.error(
                 f"Erorr executing `{callback.__name__}` for "
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
