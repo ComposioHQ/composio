@@ -631,10 +631,7 @@ class ComposioToolSet(WithLogger):
 
         # TODO: Create CRUD object
         tags = tags or []
-        for action in Action.all():
-            if not action.is_local:
-                continue
-
+        for action in map(Action, action_registry["local"]):
             if not any(tag in action.tags for tag in tags):
                 continue
 
