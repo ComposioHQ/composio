@@ -1,0 +1,5 @@
+composio-core
+composio-crewai
+python-dotenv
+langchain-openai
+crewai
