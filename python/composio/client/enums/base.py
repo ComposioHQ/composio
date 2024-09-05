@@ -218,6 +218,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._model is ActionData:
             request = client.http.get(url=str(client.actions.endpoint / self.slug))
             response = request.json()
+            if isinstance(response, list):
+                response, *_ = response
+
             if request.status_code == 404 or "Not Found" in response.get("message", ""):
                 raise ComposioSDKError(
                     message=(
@@ -227,9 +230,6 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                         "and try again"
                     )
                 )
-
-            if isinstance(response, list):
-                response, *_ = response
 
             data = ActionData(
                 name=response["name"],
