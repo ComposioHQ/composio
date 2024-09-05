@@ -46,7 +46,7 @@ def get_issues_dataset(test_split, test_instance_ids=[]) -> Dataset:
     return test_dataset
 
 
-def get_score(logs_dir):
+def get_score(logs_dir, run_id):
     temp = []
     for files in glob.glob(f"{logs_dir}/agent_logs_*.json"):
         pred = json.load(open(files, 'r'))
@@ -58,7 +58,6 @@ def get_score(logs_dir):
             })
     with open(f"{logs_dir}/predictions.json", "w") as f:
         json.dump(temp, f, indent=4)
-    
     run_evaluation(
         dataset_name=DATASET_NAME,
         split="test",
@@ -70,7 +69,7 @@ def get_score(logs_dir):
         force_rebuild=False,
         cache_level="env",
         clean=False,
-        run_id="temp"
+        run_id=run_id
     )
 
 
@@ -286,4 +285,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725454492/")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725527673/")

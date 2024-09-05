@@ -21,7 +21,7 @@ RUN git checkout {{ basecommit}}
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/{{ reponame }}
+COPY deeplake /home/user/.composio/tmp/{{ reponame }}/deeplake
 COPY fqdn_cache.json /home/user/.composio/tmp/{{ reponame }}
 
 {% if dependencies -%}

@@ -234,8 +234,8 @@ class EvaluationManager(WithLogger):
                 self.logger.error(f"Error processing issue {issue['instance_id']}: {e}")
                 raise e
 
-    def score_evaluation(self):
-        get_score(self.logs_dir)
+    def score_evaluation(self, run_id: str):
+        get_score(self.logs_dir, run_id)
 
 
 def evaluate(
@@ -248,6 +248,7 @@ def evaluate(
     generate_report: bool = True,
     test_instance_ids: t.List[str] = [],
     image_name: t.Optional[str] = None,
+    run_id: str = "temp",
 ) -> None:
     """Evaluate a callable."""
     if not os.path.exists(logs_dir):
@@ -266,4 +267,4 @@ def evaluate(
         )
     )
     manager.run(runnable)
-    manager.score_evaluation()
+    manager.score_evaluation(run_id)
