@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "llama_index>=0.10.43",
-        "composio-core==0.5.14",
+        "composio_core==0.5.15",
     ],
     include_package_data=True,
 )
