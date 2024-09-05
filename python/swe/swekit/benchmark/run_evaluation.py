@@ -135,7 +135,7 @@ class EvaluationManager(WithLogger):
 
     def save_agent_run(self, issue_config, issue_patch):
         Path(str(self.logs_dir)).mkdir(parents=True, exist_ok=True)
-        task_output_log = f"{self.logs_dir}/agent_logs_{datetime.datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
+        task_output_log = f"{self.logs_dir}/agent_logs_{issue_config.issue_id}.json"
         with open(task_output_log, "w", encoding="utf-8") as f:
             f.write(
                 json.dumps(
@@ -206,14 +206,18 @@ class EvaluationManager(WithLogger):
                 image_name = self.image_name or f"composio/swe:{tag}"
                 self.logger.info(f"Using image: {image_name}")
 
-                workspace_id = setup_workspace(
-                    repo,
-                    self.repo_to_workspace_map,
-                    self.repo_to_image_id_map,
-                    issue["base_commit"],
-                    self.workspace_env,
-                    image_name,
-                )
+                try:
+                    workspace_id = setup_workspace(
+                        repo,
+                        self.repo_to_workspace_map,
+                        self.repo_to_image_id_map,
+                        issue["base_commit"],
+                        self.workspace_env,
+                        image_name,
+                    )
+                except Exception as e:
+                    self.logger.error(f"Error setting up workspace: {e}")
+                    continue
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(
                     "found patch-id: %s and install_commit_id: %s",

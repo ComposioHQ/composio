@@ -3,8 +3,9 @@
 import asyncio
 import datetime
 import os
+import glob
+import json
 import typing as t
-from pathlib import Path
 
 import docker
 from datasets import Dataset, load_dataset
@@ -14,17 +15,8 @@ from composio import Action, WorkspaceFactory, WorkspaceType
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
-
+from swebench.harness.run_evaluation import main as run_evaluation
 from composio_crewai import ComposioToolSet
-
-from swekit.benchmark.constants import MODEL_GPT4
-from swekit.benchmark.docker_utils.evaulate_on_docker import (
-    EvaluateOnDockerArgs,
-    evaluate,
-)
-from swekit.benchmark.get_score_card import generate_scorecard
-from swekit.benchmark.setup_test_bed import create_patches_file
-
 
 DATASET_NAME = os.environ.get("DATASET_NAME", "princeton-nlp/SWE-bench_Verified")
 PATH_TESTBED = "testbed/"
@@ -55,27 +47,30 @@ def get_issues_dataset(test_split, test_instance_ids=[]) -> Dataset:
 
 
 def get_score(logs_dir):
-    prediction_patches_path, dataset_on_disk_path = create_patches_file(
-        logs_dir, DATASET_NAME
-    )
-    logger.info(
-        f"logs dir: {logs_dir}, prediction_patches_path: {prediction_patches_path}"
-    )
-    evaluate_args = EvaluateOnDockerArgs(
-        predictions_path=str(prediction_patches_path),
-        swe_bench_tasks=os.path.expanduser(dataset_on_disk_path),
-        log_dir=str(logs_dir),
-    )
-    asyncio.run(evaluate(**evaluate_args.model_dump()))
-    prediction_path_dir = Path(prediction_patches_path).parent
-    testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
-    if not os.path.exists(testbed_dir):
-        os.makedirs(testbed_dir)
-    generate_scorecard(
-        predictions_dir=prediction_path_dir,
-        log_dir=str(logs_dir),
-        swe_bench_path=DATASET_NAME,
-        model=MODEL_GPT4,
+    temp = []
+    for files in glob.glob(f"{logs_dir}/agent_logs_*.json"):
+        pred = json.load(open(files, 'r'))
+        for key, value in pred.items():
+            temp.append({
+                "instance_id": key,
+                "model_patch": value[0]['agent_output'],
+                "model_name_or_path": "composio",
+            })
+    with open(f"{logs_dir}/predictions.json", "w") as f:
+        json.dump(temp, f, indent=4)
+    
+    run_evaluation(
+        dataset_name=DATASET_NAME,
+        split="test",
+        instance_ids=[],
+        predictions_path=f"{logs_dir}/predictions.json",
+        max_workers=4,
+        open_file_limit=4096,
+        timeout=1800,
+        force_rebuild=False,
+        cache_level="env",
+        clean=False,
+        run_id="temp"
     )
 
 
@@ -240,19 +235,6 @@ def setup_workspace(
     workspace_env=WorkspaceType.Docker,
     image_name=DEFAULT_IMAGE,
 ):
-    # workspace_id = get_workspace_from_repo_map(
-    #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
-    # )
-    # if workspace_id:
-    #     return workspace_id
-    # if workspace_env == ExecEnv.DOCKER:
-    #     workspace_id = create_workspace_from_image(
-    #         repo=repo,
-    #         repo_to_image_id_map=repo_to_image_id_map,
-    #         base_commit=base_commit,
-    #     )
-    #     if workspace_id:
-    #         return workspace_id
     workspace_id = build_image_and_container(
         repo=repo,
         base_commit=base_commit,
@@ -304,4 +286,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725363770/")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725454492/")
