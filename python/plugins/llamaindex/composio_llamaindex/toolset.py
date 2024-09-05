@@ -5,9 +5,7 @@ from inspect import Signature
 import typing_extensions as te
 from llama_index.core.tools import FunctionTool
 
-from composio import Action, ActionType, AppType
-from composio import ComposioToolSet as BaseComposioToolSet
-from composio import TagType
+from composio import Action, ActionType, AppType, TagType, ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
 
