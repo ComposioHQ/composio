@@ -13,10 +13,10 @@ llm = ChatOpenAI(model='gpt-4o', openai_api_key=os.environ['OPENAI_API_KEY'])
 #llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
 composio_toolset = ComposioToolSet(api_key=os.getenv('COMPOSIO_API_KEY'))
-email_tool = composio_toolset.get_actions(
+email_tool = composio_toolset.get_tools(
     actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
 
-schedule_tool = composio_toolset.get_actions(actions=[
+schedule_tool = composio_toolset.get_tools(actions=[
     Action.GOOGLECALENDAR_FIND_FREE_SLOTS, Action.GOOGLECALENDAR_CREATE_EVENT
 ])
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
