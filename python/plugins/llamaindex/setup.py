@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio Langchain plugin
+Setup configuration for Composio LlamaIndex plugin
 """
 
 from pathlib import Path
@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "llama_index>=0.10.43",
-        "composio_langchain==0.5.14",
+        "composio-core==0.5.14",
     ],
     include_package_data=True,
 )
