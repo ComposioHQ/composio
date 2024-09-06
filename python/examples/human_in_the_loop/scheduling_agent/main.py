@@ -4,7 +4,7 @@ import re
 import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-
+from llama_index.core.agent import ReActAgent
 from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage, MessageRole
@@ -51,7 +51,7 @@ def proc() -> None:
     composio_toolset.execute_action(
         action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
         params={
-            "channel": "general",
+            "channel": "test-channel",
             "text": f"Are you sure you want to add message: '{mail_message}' from sender email: '{sender_mail}' to your Calendar? If yes, tag test_app and tell it YES",
         },
     )
@@ -101,14 +101,14 @@ def review_new_pr(event: TriggerEventData) -> None:
     ]
     
     print("Creating agent for analyzing email...")
-    agent = FunctionCallingAgentWorker(
+    agent = ReActAgent.from_tools(
         tools=list(schedule_tool),  # Tools available for the agent to use
         llm=llm,  # Language model for processing requests
         prefix_messages=prefix_messages,  # Initial system messages for context
         max_function_calls=10,  # Maximum number of function calls allowed
         allow_parallel_tool_calls=False,  # Disallow parallel tool calls
         verbose=True,  # Enable verbose output
-    ).as_agent()
+    )
     
     analyze_email_task: str = f"""
         1. Analyze the email content and decide if an event should be created. 
@@ -128,7 +128,7 @@ def review_new_pr(event: TriggerEventData) -> None:
     print("Analyzing email content...")
     response = agent.chat(analyze_email_task)
     print("Response from agent received:")
-    print(response)
+    print(response.response)
 
     # Check if the response indicates a failure
     if not response.get('successfull', True):
