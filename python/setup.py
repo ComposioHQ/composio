@@ -52,6 +52,7 @@ core_requires = [
     "paramiko>=3.4.1",  # Host workspace
     "docker>=7.1.0",  # Docker workspace
     "docker>=7.1.0",  # Docker workspace
+    "e2b>=0.17.2a37",  # E2B Workspace
     "e2b-code-interpreter",  # E2B workspace
     "gql",  # FlyIO workspace
     "requests",  # FlyIO workspace
@@ -75,7 +76,7 @@ all_requirements = core_requires + tools_require
 
 setup(
     name="composio_core",
-    version="0.5.11",
+    version="0.5.15",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

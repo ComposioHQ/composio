@@ -78,7 +78,7 @@ def _check_agentops() -> bool:
     """Check if AgentOps is installed and initialized."""
     if find_spec("agentops") is None:
         return False
-    import agentops  # pylint: disable=import-outside-toplevel
+    import agentops  # pylint: disable=import-outside-toplevel # type: ignore
 
     return agentops.get_api_key() is not None
 
@@ -87,7 +87,7 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if _check_agentops():
-            import agentops  # pylint: disable=import-outside-toplevel
+            import agentops  # pylint: disable=import-outside-toplevel # type: ignore
 
             action_name = str(kwargs.get("action", "unknown_action"))
             return agentops.record_action(action_name)(func)(self, *args, **kwargs)
@@ -135,6 +135,7 @@ class ComposioToolSet(WithLogger):
         output_in_file: bool = False,
         logging_level: LogLevel = LogLevel.INFO,
         output_dir: t.Optional[Path] = None,
+        verbosity_level: t.Optional[int] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -204,9 +205,14 @@ class ComposioToolSet(WithLogger):
                 }
             )
             ```
+        :param verbosity_level: This defines the size of the log object that will
+            be printed on the console.
 
         """
-        super().__init__(logging_level=logging_level)
+        super().__init__(
+            logging_level=logging_level,
+            verbosity_level=verbosity_level,
+        )
         self.logger.info(
             f"Logging is set to {self._logging_level}, "
             "use `logging_level` argument or "
@@ -214,19 +220,20 @@ class ComposioToolSet(WithLogger):
         )
         self.entity_id = entity_id
         self.output_in_file = output_in_file
-        self.base_url = base_url or get_api_url_base()
         self.output_dir = (
             output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         )
         self._ensure_output_dir_exists()
 
+        self._base_url = base_url or get_api_url_base()
         try:
-            self.api_key = (
+            self._api_key = (
                 api_key
                 or os.environ.get(ENV_COMPOSIO_API_KEY)
                 or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
             )
         except FileNotFoundError:
+            self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
@@ -268,6 +275,23 @@ class ComposioToolSet(WithLogger):
             return None
 
     @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        return self._api_key
+
+    @property
+    def client(self) -> Composio:
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                runtime=self._runtime,
+            )
+        self._remote_client.local = self._local_client
+        return self._remote_client
+
+    @property
     def workspace(self) -> Workspace:
         """Workspace for this toolset instance."""
         if self._workspace is not None:
@@ -282,7 +306,7 @@ class ComposioToolSet(WithLogger):
             workspace_config.composio_api_key = self.api_key
 
         if workspace_config.composio_base_url is None:
-            workspace_config.composio_base_url = self.base_url
+            workspace_config.composio_base_url = self._base_url
 
         if workspace_config.github_access_token is None:
             workspace_config.github_access_token = (
@@ -296,21 +320,6 @@ class ComposioToolSet(WithLogger):
         self._workspace_id = workspace_id
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
-
-    @property
-    def client(self) -> Composio:
-        if self.api_key is None:
-            raise ApiKeyNotProvidedError()
-
-        if self._remote_client is None:
-            self._remote_client = Composio(
-                api_key=self.api_key,
-                base_url=self.base_url,
-                runtime=self._runtime,
-            )
-            self._remote_client.local = self._local_client
-
-        return self._remote_client
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -395,9 +404,9 @@ class ComposioToolSet(WithLogger):
         file_name_prefix: str,
         success_response_model: SuccessExecuteActionResponseModel,
     ) -> dict:
-        execution_status = success_response_model.successfull
+        error = success_response_model.error
         resp_data = success_response_model.data
-
+        is_invalid_file = False
         for key, val in resp_data.items():
             try:
                 file_model = FileType.model_validate(val)
@@ -414,12 +423,12 @@ class ComposioToolSet(WithLogger):
 
                 resp_data[key] = str(local_filepath)
             except binascii.Error:
-                execution_status = False
+                is_invalid_file = True
                 resp_data[key] = "Invalid File! Unable to decode."
             except Exception:
                 pass
 
-        if execution_status is False:
+        if is_invalid_file is True and error is None:
             success_response_model.error = "Execution failed"
         success_response_model.data = resp_data
         return success_response_model.model_dump()
@@ -586,6 +595,21 @@ class ComposioToolSet(WithLogger):
         )
         self.logger.info(f"Got {response=} from {action=} with {params=}")
         return response
+
+    def validate_tools(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> None:
+        # NOTE: This an experimental, can convert to decorator for more convinience
+        if not apps and not actions and not tags:
+            return
+        self.workspace.check_for_missing_dependencies(
+            apps=apps,
+            actions=actions,
+            tags=tags,
+        )
 
     def get_action_schemas(
         self,

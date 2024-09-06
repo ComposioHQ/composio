@@ -11,41 +11,28 @@ from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
 
+load_dotenv()
+
 llm = ChatOpenAI(model="gpt-4-turbo")
 # llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
-composio_toolset = ComposioToolSet()
+composio_toolset = ComposioToolSet(api_key=os.environ["COMPOSIO_API_KEY"])
 
-schedule_tool = composio_toolset.get_actions(
-    actions=[
-        Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
-        Action.GOOGLECALENDAR_CREATE_EVENT,
-        Action.GMAIL_CREATE_EMAIL_DRAFT,
-    ]
-)
-email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
+schedule_tool = composio_toolset.get_tools(actions=[
+    Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
+    Action.GOOGLECALENDAR_CREATE_EVENT,
+    Action.GMAIL_CREATE_EMAIL_DRAFT,
+])
+email_tool = composio_toolset.get_tools(
+    actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 query_agent = create_openai_functions_agent(llm, schedule_tool, prompt)
-agent_executor = AgentExecutor(agent=query_agent, tools=schedule_tool, verbose=True)
-
-def extract_sender_email(payload):
-    delivered_to_header_found = False
-    for header in payload["headers"]:
-        if header.get("name", "") == "Delivered-To" and header.get("value", "") != "":
-            delivered_to_header_found = True
-    print("delivered_to_header_found: ", delivered_to_header_found)
-    if not delivered_to_header_found:
-        return None
-    for header in payload["headers"]:
-        if header["name"] == "From":
-            # Regular expression to extract email from the 'From' header value
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
+agent_executor = AgentExecutor(agent=query_agent,
+                               tools=schedule_tool,
+                               verbose=True)
 
 
 listener = composio_toolset.create_trigger_listener()
@@ -56,8 +43,8 @@ def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return

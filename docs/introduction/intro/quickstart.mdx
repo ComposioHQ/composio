@@ -41,13 +41,13 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
     </Step>
 
     <Step title="Authenticate GitHub Account">
-        We'll use **`Jessica`** as our example user. Choose your method:
+        Choose your method:
 
         <Tabs>
             <Tab title="CLI (Quickest)">
                 <CodeGroup>
-                    ```bash Authenticate Jessica's GitHub Account
-                    composio add github -e "Jessica" # Launches GitHub login
+                    ```bash Authenticate GitHub Account
+                    composio add github # Launches GitHub login
                     ```
                 </CodeGroup>
             </Tab>
@@ -99,7 +99,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     from openai import OpenAI
 
                     openai_client = OpenAI()
-                    composio_toolset = ComposioToolSet(entity_id="Jessica")
+                    composio_toolset = ComposioToolSet()
                     ```
                 </CodeGroup>
             </Tab>
@@ -115,7 +115,6 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
                     const composio_toolset = new OpenAIToolSet({
                     apiKey: process.env.COMPOSIO_API_KEY,
-                    entityId: "Jessica",
                 });
                     ```
                 </CodeGroup>
@@ -135,7 +134,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             <Tab title="Python">
                 <CodeGroup>
                     ```python Star a repo using LLM
-                    tools = composio_toolset.get_actions(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+                    tools = composio_toolset.get_tools(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 
                     task = "Star the repo composiohq/composio on GitHub"
 
@@ -188,7 +187,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         <Tabs>
             <Tab title="Python">
                 <CodeGroup>
-                    ```python Execute Function calls for Jessica
+                    ```python Execute Function calls
                     result = composio_toolset.handle_tool_calls(response)
                     print(result)
                     ```
@@ -196,7 +195,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             </Tab>
             <Tab title="JavaScript">
                 <CodeGroup>
-                    ```javascript Execute Function calls for Jessica
+                    ```javascript Execute Function calls
                     const result = await composio_toolset.handleToolCall(response);
                     console.log(result);
                     ```
@@ -211,7 +210,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
               --header 'Content-Type: application/json' \
               --header 'X-API-Key: ADD YOUR API KEY HERE' \
               --data '{
-              "entityId": "Jessica",
+              "entityId": "default",
               "input": {
                   "repo": "composio",
                   "owner": "composiohq"
@@ -231,27 +230,17 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
 Congratulations! You've just:
 
-1. 🔐 Authenticated Jessica's GitHub account with Composio
-2. 🛠 Fetched GitHub actions Jessica can perform
+1. 🔐 Authenticated your GitHub account with Composio
+2. 🛠 Fetched GitHub actions 
 3. 🧠 Passed these actions to an AI language model
 4. ⭐ Instructed the AI to star the `composiohq/composio` repository
 5. ✅ Successfully executed the action on GitHub
 
-<Frame caption="Explore Advanced Composio Features">
-    <Card title="Level Up Your Composio Skills" icon="rocket" iconType="duotone">
-        <CardGroup cols={2}>
-            <Card title="Compatible Agentic Frameworks" icon="brain" href="/framework/langchain">
-                Integrate with popular agentic frameworks
-            </Card>
-            <Card title="Authorise a user's Account" icon="brain" href="/introduction/foundations/components/entity/entity-guide">
-                Authorise a user's account to perform actions and subscribe to triggers
-            </Card>
-            <Card title="Execute Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide">
-                Execute actions on behalf of a user
-            </Card>
-            <Card title="Triggers" icon="bolt" href="/introduction/foundations/components/triggers/trigger-guide">
-                Subscribe to triggers to execute actions automatically
-            </Card>
-        </CardGroup>
-    </Card>
-</Frame>
+<br/>
+
+## Next Steps
+<CardGroup cols={1}>
+<Card title="QuickStart - II" icon="user" href="/introduction/intro/quickstart_2">
+    Let's authenticate your user account to perform actions.
+</Card>
+</CardGroup>

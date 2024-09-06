@@ -216,11 +216,20 @@ class _AnnotatedEnum(t.Generic[EntityType]):
             )
 
         if self._model is ActionData:
-            response = client.http.get(
-                url=str(client.actions.endpoint / self.slug),
-            ).json()
+            request = client.http.get(url=str(client.actions.endpoint / self.slug))
+            response = request.json()
             if isinstance(response, list):
                 response, *_ = response
+
+            if request.status_code == 404 or "Not Found" in response.get("message", ""):
+                raise ComposioSDKError(
+                    message=(
+                        f"No metadata found for enum `{self.slug}`, "
+                        "You might be trying to use an app or action "
+                        "that is deprecated, run `composio apps update` "
+                        "and try again"
+                    )
+                )
 
             data = ActionData(
                 name=response["name"],

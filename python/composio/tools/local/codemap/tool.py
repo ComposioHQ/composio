@@ -18,6 +18,8 @@ from .actions import (
 class CodeMapTool(LocalTool, autoload=True):
     """Code Map tool."""
 
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/codemap.png"
+
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""

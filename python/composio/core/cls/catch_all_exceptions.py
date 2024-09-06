@@ -1,23 +1,6 @@
 import traceback
 
-import requests
 import sentry_sdk
-
-from composio.utils.url import get_api_url_base
-
-
-def init_sentry():
-    url = f"{get_api_url_base()}/v1/cli/sentry-dns"
-    response = requests.get(url=url, timeout=20)
-    if response.status_code != 200:
-        return
-
-    config = response.json()
-    sentry_sdk.init(
-        dsn=config.get("dns"),
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-    )
 
 
 def CatchAllExceptions(cls, handler):

@@ -40,7 +40,7 @@ from composio_phidata import Action, ComposioToolSet
 <CodeGroup>
   ```python Tools For Github
 toolset = ComposioToolSet()
-composio_tools = toolset.get_actions(
+composio_tools = toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
   ```
@@ -74,7 +74,7 @@ assistant.print_response("Can you star composiohq/composio repo?")
 <CodeGroup>
   ```bash Filter Specific Action
 # To restrict agents from using all the actions, filter specific actions 
-composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
   ```
 </CodeGroup>
 

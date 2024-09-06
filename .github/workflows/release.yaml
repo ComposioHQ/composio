@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: 'Skip running tests'
+        description: "Skip running tests"
         required: false
         type: boolean
         default: false
@@ -34,11 +34,14 @@ jobs:
           sudo apt-get update --fix-missing
           sudo apt-get autoremove
           sudo apt-get autoclean
-          
+
           # Setup release
           python -m pip install --upgrade pip
           python -m pip install .
           python -m composio.cli apps update
+
+          rm README.md
+          cp ../README.md .
 
           # Build dist
           pip install twine build
@@ -247,10 +250,15 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install all
           docker buildx create --use --name multibuild
           docker buildx inspect --bootstrap
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
       - name: Publishing tool server images
         run: |
-          cd python/dockerfiles/
-          VERSION=$(cat ../composio/__init__.py | grep version | cut -b 16- | rev | cut -b 2- | rev) make publish
+          cd python/
+          pip3 install .
+          cd dockerfiles/
+          VERSION=$(python -c "from composio import __version__; print(__version__)") make publish
 
   publish-e2b:
     name: Publish E2B template

@@ -111,6 +111,7 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             ChatCompletionToolParam(  # type: ignore
                 **t.cast(

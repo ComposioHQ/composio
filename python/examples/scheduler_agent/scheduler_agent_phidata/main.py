@@ -32,27 +32,21 @@ email_assistant = Assistant(
     tools=schedule_tool
 )
 
-def extract_sender_email(payload):
-    for header in payload["payload"]["headers"]:
-        if header["name"] == "From":
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
 
 
 listener = composio_toolset.create_trigger_listener()
 
 @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:
-    print("New message received")
+    print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload)
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return
+    print(sender_mail)
 
     result = email_assistant.print_response(f"""
     1. Analyze the email content and decide if an event should be created. 

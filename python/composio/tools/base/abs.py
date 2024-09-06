@@ -79,6 +79,9 @@ class _Attributes:
     description: str
     """Description string."""
 
+    logo: str
+    """URL for the resource logo."""
+
 
 class _Request(t.Generic[ModelType]):
     """Request util."""
@@ -203,10 +206,17 @@ class _Response(t.Generic[ModelType]):
 
 class ActionBuilder:
     @staticmethod
-    def set_generics(name: str, obj: t.Type["Action"]) -> None:
+    def get_generics(obj: t.Type["Action"]) -> t.Tuple[t.Any, t.Any]:
+        for base in getattr(obj, "__orig_bases__"):
+            args = t.get_args(base)
+            if len(args) == 2:
+                return args  # type: ignore
+        raise ValueError("No type generics found")
+
+    @classmethod
+    def set_generics(cls, name: str, obj: t.Type["Action"]) -> None:
         try:
-            (generic,) = getattr(obj, "__orig_bases__")
-            request, response = t.get_args(generic)
+            request, response = cls.get_generics(obj=obj)
             if request == ActionRequest or response == ActionResponse:
                 raise ValueError(f"Invalid type generics, ({request}, {response})")
         except ValueError as e:
@@ -386,8 +396,13 @@ class ToolBuilder:
         for action in obj.actions():
             action.tool = obj.name
             action.enum = f"{obj.enum}_{action.name.upper()}"
+            if obj.requires is not None:
+                action.requires = list(set(obj.requires + (action.requires or [])))
             obj._actions[action.enum] = action  # pylint: disable=protected-access
             action_registry[obj.gid][action.enum] = action  # type: ignore
+
+            if hasattr(obj, "logo"):
+                setattr(action, "logo", getattr(obj, "logo"))
 
         if not hasattr(obj, "triggers"):
             return
@@ -401,6 +416,9 @@ class ToolBuilder:
             obj._triggers[trigger.enum] = trigger  # type: ignore  # pylint: disable=protected-access
             trigger_registry[obj.gid][trigger.enum] = trigger  # type: ignore
 
+            if hasattr(obj, "logo"):
+                setattr(trigger, "logo", getattr(obj, "logo"))
+
 
 class Tool(WithLogger, _Attributes):
     """Tool abstraction."""
@@ -413,6 +431,9 @@ class Tool(WithLogger, _Attributes):
 
     name: str
     """Tool name."""
+
+    requires: t.Optional[t.List[str]] = None
+    """List of dependencies required for running this tool."""
 
     _schema: t.Optional[t.Dict] = None
     """Schema for the app."""
