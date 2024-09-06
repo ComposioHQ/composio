@@ -220,19 +220,20 @@ class ComposioToolSet(WithLogger):
         )
         self.entity_id = entity_id
         self.output_in_file = output_in_file
-        self.base_url = base_url or get_api_url_base()
         self.output_dir = (
             output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         )
         self._ensure_output_dir_exists()
 
+        self._base_url = base_url or get_api_url_base()
         try:
-            self.api_key = (
+            self._api_key = (
                 api_key
                 or os.environ.get(ENV_COMPOSIO_API_KEY)
                 or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
             )
         except FileNotFoundError:
+            self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
@@ -274,6 +275,23 @@ class ComposioToolSet(WithLogger):
             return None
 
     @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        return self._api_key
+
+    @property
+    def client(self) -> Composio:
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                runtime=self._runtime,
+            )
+        self._remote_client.local = self._local_client
+        return self._remote_client
+
+    @property
     def workspace(self) -> Workspace:
         """Workspace for this toolset instance."""
         if self._workspace is not None:
@@ -288,7 +306,7 @@ class ComposioToolSet(WithLogger):
             workspace_config.composio_api_key = self.api_key
 
         if workspace_config.composio_base_url is None:
-            workspace_config.composio_base_url = self.base_url
+            workspace_config.composio_base_url = self._base_url
 
         if workspace_config.github_access_token is None:
             workspace_config.github_access_token = (
@@ -302,21 +320,6 @@ class ComposioToolSet(WithLogger):
         self._workspace_id = workspace_id
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
-
-    @property
-    def client(self) -> Composio:
-        if self.api_key is None:
-            raise ApiKeyNotProvidedError()
-
-        if self._remote_client is None:
-            self._remote_client = Composio(
-                api_key=self.api_key,
-                base_url=self.base_url,
-                runtime=self._runtime,
-            )
-            self._remote_client.local = self._local_client
-
-        return self._remote_client
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
