@@ -11,3 +11,4 @@ class AirtableTool(LocalTool,autoload=True):
     @classmethod
     def actions(cls) -> list[t.Type[LocalAction]]:
         return [AirTableListRecord,AirTableCreateTable]
+ 

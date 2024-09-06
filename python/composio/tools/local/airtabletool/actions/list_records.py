@@ -39,5 +39,3 @@ class AirTableListRecord(LocalAction[ListRecordRequest,AirTableListRecordRespons
         records = table.all()
 
         return AirTableListRecordResponse(records=records)
-
-        

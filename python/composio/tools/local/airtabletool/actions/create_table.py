@@ -15,7 +15,7 @@ from python.composio.tools.base.local import LocalAction
 
 
 class AirthableCreateTableRequest(BaseModel):
-    name: str = Field(...,description="Name of the new tabl")
+    name: str = Field(...,description="Name of the new table")
     description: str = Field(...,description="Description of new table to be created")
     fields: Sequence[dict[str, object]] = Field(...,description="all the fields for new created table")
 
@@ -39,5 +39,3 @@ class AirTableCreateTable(LocalAction[AirthableCreateTableRequest,AirthableCreat
         new_table = base.create_table(description=request.description,fields=request.fields, name=request.name)
         
         return AirthableCreateTableReponse(table=new_table)
-    
-    
