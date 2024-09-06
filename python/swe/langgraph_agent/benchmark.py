@@ -10,6 +10,7 @@ from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
 
 from agent import get_agent_graph
+import random
 
 
 def bench(workspace_id: str, issue_config: IssueConfig) -> str:
@@ -67,18 +68,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run benchmark on the agent.",
     )
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    # group = parser.add_mutually_exclusive_group()
+    parser.add_argument(
         "--test-split",
         type=str,
         default="1:2",
-        help="Test split ratio (e.g. 1:2, 1:300) Maximum 300 tests per project.",
+        help="Test split ratio (e.g. 1:2, 1:300) Maximum 500 tests per project.",
     )
-    group.add_argument(
+    parser.add_argument(
         "--test-instance-ids",
         type=str,
         default="",
         help="Test instance ids (comma-separated)",
+    )
+    parser.add_argument(
+        "--run-id",
+        type=str,
+        default="temp",
+        help="Run id",
     )
     args = parser.parse_args()
 
@@ -91,21 +98,12 @@ if __name__ == "__main__":
         test_instance_ids_list = []
         test_range = args.test_split
     
-    # with ThreadPoolExecutor(max_workers=3) as executor:
-    #     futures = []
-    #     for test_id in test_instance_ids_list:
-    #         futures.append(executor.submit(run_evaluate, test_id))
-        
-    #     for future in as_completed(futures):
-    #         result = future.result()
-    #         print(f"Completed evaluation for test instance: {result}")
-
     evaluate(
         bench,
         dry_run=False,
         test_range=test_range,
         include_hints=False,
         test_instance_ids=test_instance_ids_list,
-        run_id=f"langgraph_agent",
+        run_id=args.run_id,
         #image_name="composio/composio:dev", # if you are doing local dev
     )

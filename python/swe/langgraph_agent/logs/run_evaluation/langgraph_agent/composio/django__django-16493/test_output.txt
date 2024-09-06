@@ -136,9 +136,7 @@ Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
 	modified:   django/db/models/fields/files.py
-	modified:   django/forms/fields.py
 	modified:   docs/ref/models/fields.txt
-	modified:   docs/releases/5.0.txt
 	modified:   tests/model_fields/test_filefield.py
 
 no changes added to commit (use "git add" and/or "git commit -a")
@@ -170,10 +168,78 @@ index 5189107aeb..9a4e0a3a91 100644
              }
 + git diff e3a4cee081cf60650b8824f0646383b79cb110e7
 diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
-index 7a99b12691..652a1147a4 100644
+index 7a99b12691..8d55f03153 100644
 --- a/django/db/models/fields/files.py
 +++ b/django/db/models/fields/files.py
-@@ -295,8 +295,10 @@ class FileField(Field):
+@@ -222,14 +222,11 @@ class FileDescriptor(DeferredAttribute):
+ 
+ 
+ class FileField(Field):
+-
+     # The class to wrap instance attributes in. Accessing the file object off
+     # the instance will always return an instance of attr_class.
+     attr_class = FieldFile
+-
+     # The descriptor to use for accessing the attribute off of the class.
+     descriptor_class = FileDescriptor
+-
+     description = _("File")
+ 
+     def __init__(
+@@ -237,24 +234,16 @@ class FileField(Field):
+     ):
+         self._primary_key_set_explicitly = "primary_key" in kwargs
+ 
+-        self.storage = storage or default_storage
+-        if callable(self.storage):
+-            # Hold a reference to the callable for deconstruct().
+-            self._storage_callable = self.storage
+-            self.storage = self.storage()
+-            if not isinstance(self.storage, Storage):
+-                raise TypeError(
+-                    "%s.storage must be a subclass/instance of %s.%s"
+-                    % (
+-                        self.__class__.__qualname__,
+-                        Storage.__module__,
+-                        Storage.__qualname__,
+-                    )
+-                )
+-        self.upload_to = upload_to
+-
+         kwargs.setdefault("max_length", 100)
+         super().__init__(verbose_name, name, **kwargs)
++        self.upload_to = upload_to
++        if callable(storage):
++            self._storage_callable = storage
++            self.storage = storage()
++        elif storage:
++            self.storage = storage
++        else:
++            self.storage = default_storage
+ 
+     def check(self, **kwargs):
+         return [
+@@ -267,8 +256,7 @@ class FileField(Field):
+         if self._primary_key_set_explicitly:
+             return [
+                 checks.Error(
+-                    "'primary_key' is not a valid argument for a %s."
+-                    % self.__class__.__name__,
++                    "Primary keys are not allowed on FileFields.",
+                     obj=self,
+                     id="fields.E201",
+                 )
+@@ -280,8 +268,7 @@ class FileField(Field):
+         if isinstance(self.upload_to, str) and self.upload_to.startswith("/"):
+             return [
+                 checks.Error(
+-                    "%s's 'upload_to' argument must be a relative path, not an "
+-                    "absolute path." % self.__class__.__name__,
++                    "upload_to value must be a relative path, not an absolute path.",
+                     obj=self,
+                     id="fields.E202",
+                     hint="Remove the leading slash.",
+@@ -295,8 +282,10 @@ class FileField(Field):
          if kwargs.get("max_length") == 100:
              del kwargs["max_length"]
          kwargs["upload_to"] = self.upload_to
@@ -186,108 +252,92 @@ index 7a99b12691..652a1147a4 100644
          return name, path, args, kwargs
  
      def get_internal_type(self):
-diff --git a/django/forms/fields.py b/django/forms/fields.py
-index 46de2f53a0..b59a3ac625 100644
---- a/django/forms/fields.py
-+++ b/django/forms/fields.py
-@@ -1386,3 +1386,7 @@ class JSONField(CharField):
-         return json.dumps(initial, sort_keys=True, cls=self.encoder) != json.dumps(
-             self.to_python(data), sort_keys=True, cls=self.encoder
-         )
-+
-+
-+class_obj:FileField = cal()
-+class_obj.
-\ No newline at end of file
 diff --git a/docs/ref/models/fields.txt b/docs/ref/models/fields.txt
-index 8d75280a54..0658eb96ad 100644
+index 8d75280a54..970070e6d2 100644
 --- a/docs/ref/models/fields.txt
 +++ b/docs/ref/models/fields.txt
-@@ -861,6 +861,15 @@ Has the following optional arguments:
-     handles the storage and retrieval of your files. See :doc:`/topics/files`
-     for details on how to provide this object.
+@@ -855,6 +855,24 @@ Has the following optional arguments:
+         class MyModel(models.Model):
+             upload = models.FileField(upload_to=user_directory_path)
  
-+    If a callable is used, it's called with the instance as its only argument.
++.. attribute:: FileField.storage
 +
-+    .. note::
-+        The callable storage will be properly handled in the field's
-+        ``deconstruct()`` method, ensuring consistent migration behavior.
++Optional. A storage object, or a callable that returns a storage object. This
++handles the storage and retrieval of your files. See :doc:`/topics/files` for
++details on how to provide this object.
 +
-+The default form widget for this field is a
-+    for details on how to provide this object.
++The default value is ``None``, meaning that the default file storage will be used.
 +
- The default form widget for this field is a
- :class:`~django.forms.ClearableFileInput`.
++If a callable is used, it will be called with no arguments each time a
++``FileField`` instance needs to access the storage object.
++
++.. note::
++   When using a callable for ``storage``, be aware that the deconstruction
++   process will store the callable itself, not the storage instance. This means
++   that if your callable returns ``default_storage``, it will not be included
++   in the deconstructed form of the field, which may affect migrations.
++
++Using a :class:`FileField` or an :class:`ImageField` (see below) in a model
+ .. attribute:: FileField.storage
  
-diff --git a/docs/releases/5.0.txt b/docs/releases/5.0.txt
-index d1a4cba870..071a905886 100644
---- a/docs/releases/5.0.txt
-+++ b/docs/releases/5.0.txt
-@@ -97,6 +97,32 @@ Minor features
- :mod:`django.contrib.sites`
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
-+* ...
-+:mod:`django.contrib.staticfiles`
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+* ...
-+
-+:mod:`django.core`
-+~~~~~~~~~~~~~~~~~~
-+
-+* ...
-+
-+:mod:`django.db`
-+~~~~~~~~~~~~~~~~
-+
-+* ``FileField`` now correctly handles callable storage that returns ``default_storage``
-+  in its ``deconstruct()`` method. Previously, such callables were omitted from the
-+  deconstructed form, which could lead to inconsistent migration behavior.
-+
-+:mod:`django.db.migrations`
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+* ...
-+
-+:mod:`django.db.models`
-+~~~~~~~~~~~~~~~~~~~~~~~
-+
- * ...
- 
- :mod:`django.contrib.staticfiles`
+     A storage object, or a callable which returns a storage object. This
 diff --git a/tests/model_fields/test_filefield.py b/tests/model_fields/test_filefield.py
-index 2259c1e480..ebf2d45855 100644
+index 2259c1e480..e2c33ee52a 100644
 --- a/tests/model_fields/test_filefield.py
 +++ b/tests/model_fields/test_filefield.py
-@@ -188,4 +188,26 @@ class FileFieldTests(TestCase):
+@@ -174,12 +174,12 @@ class FileFieldTests(TestCase):
+     @isolate_apps("model_fields")
+     def test_abstract_filefield_model(self):
+         """
+-        FileField.model returns the concrete model for fields defined in an
+-        abstract model.
++        FileField and its get_X_display() and get_X_size() work correctly on
++        inherited abstract models.
+         """
+ 
+         class AbstractMyDocument(models.Model):
+-            myfile = models.FileField(upload_to="unused")
++            myfile = models.FileField(upload_to="test")
+ 
+             class Meta:
+                 abstract = True
+@@ -188,4 +188,35 @@ class FileFieldTests(TestCase):
              pass
  
          document = MyDocument(myfile="test_file.py")
 -        self.assertEqual(document.myfile.field.model, MyDocument)
-+    def test_deconstruct_with_callable_storage(self):
++
++    def test_callable_storage_deconstruction(self):
 +        """
-+        FileField deconstruction with callable storage should return the callable,
-+        not the storage instance.
++        FileField with callable storage that returns default_storage
++        can be deconstructed correctly.
 +        """
-+        from django.core.files.storage import default_storage
-+        
-+        def get_storage():
++        def get_default_storage():
++            from django.core.files.storage import default_storage
 +            return default_storage
 +
-+        field = models.FileField(storage=get_storage)
-+        name, path, args, kwargs = field.deconstruct()
-+        self.assertEqual(kwargs['storage'], get_storage)
++        class TestModel(models.Model):
++            file = models.FileField(storage=get_default_storage)
 +
-+    def test_deconstruct_with_custom_storage(self):
-+        """
-+        FileField deconstruction with custom storage should return the storage instance.
-+        """
-+        from django.core.files.storage import FileSystemStorage
-+        custom_storage = FileSystemStorage(location='/custom/location/')
-+        field = models.FileField(storage=custom_storage)
++        field = TestModel._meta.get_field('file')
 +        name, path, args, kwargs = field.deconstruct()
-+        self.assertEqual(kwargs['storage'], custom_storage)
++        self.assertEqual(kwargs['storage'], get_default_storage)
++
++    def test_callable_storage_deconstruction_default(self):
++        """
++        FileField with callable storage that returns default_storage
++        is not included in deconstruction if it's the default.
++        """
++        def get_default_storage():
++            from django.core.files.storage import default_storage
++            return default_storage
++
++        class TestModel(models.Model):
++            file = models.FileField(storage=get_default_storage)
++
++        field = TestModel._meta.get_field('file')
++        name, path, args, kwargs = field.deconstruct()
++        self.assertNotIn('storage', kwargs)
 + source /opt/miniconda3/bin/activate
 ++ _CONDA_ROOT=/opt/miniconda3
 ++ . /opt/miniconda3/etc/profile.d/conda.sh
@@ -427,8 +477,8 @@ Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/l
 Building wheels for collected packages: Django
   Building editable for Django (pyproject.toml): started
   Building editable for Django (pyproject.toml): finished with status 'done'
-  Created wheel for Django: filename=Django-5.0.dev20230123050841-0.editable-py3-none-any.whl size=27303 sha256=1fbb4ffa7ddf5a7187a260d1cd1be91a6a8cd5b934e15427bedd3529363dcd58
-  Stored in directory: /tmp/pip-ephem-wheel-cache-g8dqiigr/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+  Created wheel for Django: filename=Django-5.0.dev20230123050841-0.editable-py3-none-any.whl size=27303 sha256=efaa66df19c49c1ef0a1ad9c4c46bc433b9bcdfe57041c68e98163b635582948
+  Stored in directory: /tmp/pip-ephem-wheel-cache-la3m_1kj/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
 Successfully built Django
 Installing collected packages: Django
   Attempting uninstall: Django
@@ -445,46 +495,339 @@ Checking patch tests/file_storage/tests.py...
 Applied patch tests/file_storage/models.py cleanly.
 Applied patch tests/file_storage/tests.py cleanly.
 + ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 file_storage.models file_storage.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application file_storage
+Found 149 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, file_storage, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table file_storage_storage
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_custom_valid_name_callable_upload_to (file_storage.tests.FileFieldStorageTests.test_custom_valid_name_callable_upload_to)
+Storage.get_valid_name() should be called when upload_to is a callable. ... ok
+test_duplicate_filename (file_storage.tests.FileFieldStorageTests.test_duplicate_filename) ... ok
+test_empty_upload_to (file_storage.tests.FileFieldStorageTests.test_empty_upload_to) ... ok
+test_extended_length_storage (file_storage.tests.FileFieldStorageTests.test_extended_length_storage) ... ok
+test_file_object (file_storage.tests.FileFieldStorageTests.test_file_object) ... ok
+test_file_truncation (file_storage.tests.FileFieldStorageTests.test_file_truncation) ... ok
+test_filefield_default (file_storage.tests.FileFieldStorageTests.test_filefield_default) ... ok
+test_filefield_pickling (file_storage.tests.FileFieldStorageTests.test_filefield_pickling) ... ok
+test_filefield_read (file_storage.tests.FileFieldStorageTests.test_filefield_read) ... ok
+test_filefield_reopen (file_storage.tests.FileFieldStorageTests.test_filefield_reopen) ... ok
+test_filefield_write (file_storage.tests.FileFieldStorageTests.test_filefield_write) ... ok
+test_files (file_storage.tests.FileFieldStorageTests.test_files) ... ok
+test_pathlib_upload_to (file_storage.tests.FileFieldStorageTests.test_pathlib_upload_to) ... ok
+test_random_upload_to (file_storage.tests.FileFieldStorageTests.test_random_upload_to) ... ok
+test_stringio (file_storage.tests.FileFieldStorageTests.test_stringio) ... ok
+test_base_url (file_storage.tests.CustomStorageTests.test_base_url)
+File storage returns a url even when its base_url is unset or modified. ... ok
+test_custom_get_available_name (file_storage.tests.CustomStorageTests.test_custom_get_available_name) ... ok
+test_delete_deletes_directories (file_storage.tests.CustomStorageTests.test_delete_deletes_directories) ... ok
+test_delete_no_name (file_storage.tests.CustomStorageTests.test_delete_no_name)
+Calling delete with an empty name should not try to remove the base ... ok
+test_empty_location (file_storage.tests.CustomStorageTests.test_empty_location)
+Makes sure an exception is raised if the location is empty ... ok
+test_file_access_options (file_storage.tests.CustomStorageTests.test_file_access_options)
+Standard file access options are available, and work as expected. ... ok
+test_file_chunks_error (file_storage.tests.CustomStorageTests.test_file_chunks_error)
+Test behavior when file.chunks() is raising an error ... ok
+test_file_get_accessed_time (file_storage.tests.CustomStorageTests.test_file_get_accessed_time)
+File storage returns a Datetime object for the last accessed time of ... ok
+test_file_get_accessed_time_timezone (file_storage.tests.CustomStorageTests.test_file_get_accessed_time_timezone) ... ok
+test_file_get_created_time (file_storage.tests.CustomStorageTests.test_file_get_created_time)
+File storage returns a datetime for the creation time of a file. ... ok
+test_file_get_created_time_timezone (file_storage.tests.CustomStorageTests.test_file_get_created_time_timezone) ... ok
+test_file_get_modified_time (file_storage.tests.CustomStorageTests.test_file_get_modified_time)
+File storage returns a datetime for the last modified time of a file. ... ok
+test_file_get_modified_time_timezone (file_storage.tests.CustomStorageTests.test_file_get_modified_time_timezone) ... ok
+test_file_methods_pathlib_path (file_storage.tests.CustomStorageTests.test_file_methods_pathlib_path) ... ok
+test_file_path (file_storage.tests.CustomStorageTests.test_file_path)
+File storage returns the full path of a file ... ok
+test_file_save_abs_path (file_storage.tests.CustomStorageTests.test_file_save_abs_path) ... ok
+test_file_save_broken_symlink (file_storage.tests.CustomStorageTests.test_file_save_broken_symlink)
+A new path is created on save when a broken symlink is supplied. ... ok
+test_file_save_with_path (file_storage.tests.CustomStorageTests.test_file_save_with_path)
+Saving a pathname should create intermediate directories as necessary. ... ok
+test_file_save_without_name (file_storage.tests.CustomStorageTests.test_file_save_without_name)
+File storage extracts the filename from the content object if no ... ok
+test_file_storage_preserves_filename_case (file_storage.tests.CustomStorageTests.test_file_storage_preserves_filename_case)
+The storage backend should preserve case of filenames. ... ok
+test_file_storage_prevents_directory_traversal (file_storage.tests.CustomStorageTests.test_file_storage_prevents_directory_traversal)
+File storage prevents directory traversal (files can only be accessed if ... ok
+test_file_url (file_storage.tests.CustomStorageTests.test_file_url)
+File storage returns a url to access a given file from the web. ... ok
+test_listdir (file_storage.tests.CustomStorageTests.test_listdir)
+File storage returns a tuple containing directories and files. ... ok
+test_makedirs_race_handling (file_storage.tests.CustomStorageTests.test_makedirs_race_handling)
+File storage should be robust against directory creation race conditions. ... ok
+test_remove_race_handling (file_storage.tests.CustomStorageTests.test_remove_race_handling)
+File storage should be robust against file removal race conditions. ... ok
+test_save_doesnt_close (file_storage.tests.CustomStorageTests.test_save_doesnt_close) ... ok
+test_setting_changed (file_storage.tests.CustomStorageTests.test_setting_changed)
+Properties using settings values as defaults should be updated on ... ok
+test_base_url (file_storage.tests.DiscardingFalseContentStorageTests.test_base_url)
+File storage returns a url even when its base_url is unset or modified. ... ok
+test_custom_storage_discarding_empty_content (file_storage.tests.DiscardingFalseContentStorageTests.test_custom_storage_discarding_empty_content)
+When Storage.save() wraps a file-like object in File, it should include ... ok
+test_delete_deletes_directories (file_storage.tests.DiscardingFalseContentStorageTests.test_delete_deletes_directories) ... ok
+test_delete_no_name (file_storage.tests.DiscardingFalseContentStorageTests.test_delete_no_name)
+Calling delete with an empty name should not try to remove the base ... ok
+test_empty_location (file_storage.tests.DiscardingFalseContentStorageTests.test_empty_location)
+Makes sure an exception is raised if the location is empty ... ok
+test_file_access_options (file_storage.tests.DiscardingFalseContentStorageTests.test_file_access_options)
+Standard file access options are available, and work as expected. ... ok
+test_file_chunks_error (file_storage.tests.DiscardingFalseContentStorageTests.test_file_chunks_error)
+Test behavior when file.chunks() is raising an error ... ok
+test_file_get_accessed_time (file_storage.tests.DiscardingFalseContentStorageTests.test_file_get_accessed_time)
+File storage returns a Datetime object for the last accessed time of ... ok
+test_file_get_accessed_time_timezone (file_storage.tests.DiscardingFalseContentStorageTests.test_file_get_accessed_time_timezone) ... ok
+test_file_get_created_time (file_storage.tests.DiscardingFalseContentStorageTests.test_file_get_created_time)
+File storage returns a datetime for the creation time of a file. ... ok
+test_file_get_created_time_timezone (file_storage.tests.DiscardingFalseContentStorageTests.test_file_get_created_time_timezone) ... ok
+test_file_get_modified_time (file_storage.tests.DiscardingFalseContentStorageTests.test_file_get_modified_time)
+File storage returns a datetime for the last modified time of a file. ... ok
+test_file_get_modified_time_timezone (file_storage.tests.DiscardingFalseContentStorageTests.test_file_get_modified_time_timezone) ... ok
+test_file_methods_pathlib_path (file_storage.tests.DiscardingFalseContentStorageTests.test_file_methods_pathlib_path) ... ok
+test_file_path (file_storage.tests.DiscardingFalseContentStorageTests.test_file_path)
+File storage returns the full path of a file ... ok
+test_file_save_abs_path (file_storage.tests.DiscardingFalseContentStorageTests.test_file_save_abs_path) ... ok
+test_file_save_broken_symlink (file_storage.tests.DiscardingFalseContentStorageTests.test_file_save_broken_symlink)
+A new path is created on save when a broken symlink is supplied. ... ok
+test_file_save_with_path (file_storage.tests.DiscardingFalseContentStorageTests.test_file_save_with_path)
+Saving a pathname should create intermediate directories as necessary. ... ok
+test_file_save_without_name (file_storage.tests.DiscardingFalseContentStorageTests.test_file_save_without_name)
+File storage extracts the filename from the content object if no ... ok
+test_file_storage_preserves_filename_case (file_storage.tests.DiscardingFalseContentStorageTests.test_file_storage_preserves_filename_case)
+The storage backend should preserve case of filenames. ... ok
+test_file_storage_prevents_directory_traversal (file_storage.tests.DiscardingFalseContentStorageTests.test_file_storage_prevents_directory_traversal)
+File storage prevents directory traversal (files can only be accessed if ... ok
+test_file_url (file_storage.tests.DiscardingFalseContentStorageTests.test_file_url)
+File storage returns a url to access a given file from the web. ... ok
+test_listdir (file_storage.tests.DiscardingFalseContentStorageTests.test_listdir)
+File storage returns a tuple containing directories and files. ... ok
+test_makedirs_race_handling (file_storage.tests.DiscardingFalseContentStorageTests.test_makedirs_race_handling)
+File storage should be robust against directory creation race conditions. ... ok
+test_remove_race_handling (file_storage.tests.DiscardingFalseContentStorageTests.test_remove_race_handling)
+File storage should be robust against file removal race conditions. ... ok
+test_save_doesnt_close (file_storage.tests.DiscardingFalseContentStorageTests.test_save_doesnt_close) ... ok
+test_setting_changed (file_storage.tests.DiscardingFalseContentStorageTests.test_setting_changed)
+Properties using settings values as defaults should be updated on ... ok
+test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) ... 
+  test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises.<locals>.NotStorage'>) ... FAIL
+  test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'str'>) ... FAIL
+  test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'list'>) ... FAIL
+  test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'set'>) ... FAIL
+  test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'tuple'>) ... FAIL
+test_callable_class_storage_file_field (file_storage.tests.FieldCallableFileStorageTests.test_callable_class_storage_file_field) ... ok
+test_callable_function_storage_file_field (file_storage.tests.FieldCallableFileStorageTests.test_callable_function_storage_file_field) ... ok
+test_callable_storage_file_field_in_model (file_storage.tests.FieldCallableFileStorageTests.test_callable_storage_file_field_in_model) ... ok
+test_deconstruction (file_storage.tests.FieldCallableFileStorageTests.test_deconstruction)
+Deconstructing gives the original callable, not the evaluated value. ... ok
+test_deconstruction_storage_callable_default (file_storage.tests.FieldCallableFileStorageTests.test_deconstruction_storage_callable_default)
+A callable that returns default_storage is not omitted when ... ok
+test_file_field_storage_none_uses_default_storage (file_storage.tests.FieldCallableFileStorageTests.test_file_field_storage_none_uses_default_storage) ... ok
+test_urllib_request_urlopen (file_storage.tests.FileLikeObjectTestCase.test_urllib_request_urlopen)
+Test the File storage API with a file-like object coming from ... ok
+test_race_condition (file_storage.tests.FileSaveRaceConditionTest.test_race_condition) ... ok
+test_directory_with_dot (file_storage.tests.FileStoragePathParsing.test_directory_with_dot)
+Regression test for #9610. ... ok
+test_first_character_dot (file_storage.tests.FileStoragePathParsing.test_first_character_dot)
+File names with a dot as their first character don't have an extension, ... ok
+test_base_url (file_storage.tests.FileStorageTests.test_base_url)
+File storage returns a url even when its base_url is unset or modified. ... ok
+test_delete_deletes_directories (file_storage.tests.FileStorageTests.test_delete_deletes_directories) ... ok
+test_delete_no_name (file_storage.tests.FileStorageTests.test_delete_no_name)
+Calling delete with an empty name should not try to remove the base ... ok
+test_empty_location (file_storage.tests.FileStorageTests.test_empty_location)
+Makes sure an exception is raised if the location is empty ... ok
+test_file_access_options (file_storage.tests.FileStorageTests.test_file_access_options)
+Standard file access options are available, and work as expected. ... ok
+test_file_chunks_error (file_storage.tests.FileStorageTests.test_file_chunks_error)
+Test behavior when file.chunks() is raising an error ... ok
+test_file_get_accessed_time (file_storage.tests.FileStorageTests.test_file_get_accessed_time)
+File storage returns a Datetime object for the last accessed time of ... ok
+test_file_get_accessed_time_timezone (file_storage.tests.FileStorageTests.test_file_get_accessed_time_timezone) ... ok
+test_file_get_created_time (file_storage.tests.FileStorageTests.test_file_get_created_time)
+File storage returns a datetime for the creation time of a file. ... ok
+test_file_get_created_time_timezone (file_storage.tests.FileStorageTests.test_file_get_created_time_timezone) ... ok
+test_file_get_modified_time (file_storage.tests.FileStorageTests.test_file_get_modified_time)
+File storage returns a datetime for the last modified time of a file. ... ok
+test_file_get_modified_time_timezone (file_storage.tests.FileStorageTests.test_file_get_modified_time_timezone) ... ok
+test_file_methods_pathlib_path (file_storage.tests.FileStorageTests.test_file_methods_pathlib_path) ... ok
+test_file_path (file_storage.tests.FileStorageTests.test_file_path)
+File storage returns the full path of a file ... ok
+test_file_save_abs_path (file_storage.tests.FileStorageTests.test_file_save_abs_path) ... ok
+test_file_save_broken_symlink (file_storage.tests.FileStorageTests.test_file_save_broken_symlink)
+A new path is created on save when a broken symlink is supplied. ... ok
+test_file_save_with_path (file_storage.tests.FileStorageTests.test_file_save_with_path)
+Saving a pathname should create intermediate directories as necessary. ... ok
+test_file_save_without_name (file_storage.tests.FileStorageTests.test_file_save_without_name)
+File storage extracts the filename from the content object if no ... ok
+test_file_storage_preserves_filename_case (file_storage.tests.FileStorageTests.test_file_storage_preserves_filename_case)
+The storage backend should preserve case of filenames. ... ok
+test_file_storage_prevents_directory_traversal (file_storage.tests.FileStorageTests.test_file_storage_prevents_directory_traversal)
+File storage prevents directory traversal (files can only be accessed if ... ok
+test_file_url (file_storage.tests.FileStorageTests.test_file_url)
+File storage returns a url to access a given file from the web. ... ok
+test_listdir (file_storage.tests.FileStorageTests.test_listdir)
+File storage returns a tuple containing directories and files. ... ok
+test_makedirs_race_handling (file_storage.tests.FileStorageTests.test_makedirs_race_handling)
+File storage should be robust against directory creation race conditions. ... ok
+test_remove_race_handling (file_storage.tests.FileStorageTests.test_remove_race_handling)
+File storage should be robust against file removal race conditions. ... ok
+test_save_doesnt_close (file_storage.tests.FileStorageTests.test_save_doesnt_close) ... ok
+test_setting_changed (file_storage.tests.FileStorageTests.test_setting_changed)
+Properties using settings values as defaults should be updated on ... ok
+test_deprecation_warning (file_storage.tests.GetStorageClassTests.test_deprecation_warning) ... ok
+test_get_filesystem_storage (file_storage.tests.GetStorageClassTests.test_get_filesystem_storage)
+get_storage_class returns the class for a storage backend name/path. ... ok
+test_get_invalid_storage_module (file_storage.tests.GetStorageClassTests.test_get_invalid_storage_module)
+get_storage_class raises an error if the requested import don't exist. ... ok
+test_get_nonexistent_storage_class (file_storage.tests.GetStorageClassTests.test_get_nonexistent_storage_class)
+get_storage_class raises an error if the requested class don't exist. ... ok
+test_get_nonexistent_storage_module (file_storage.tests.GetStorageClassTests.test_get_nonexistent_storage_module)
+get_storage_class raises an error if the requested module don't exist. ... ok
+test_base_url (file_storage.tests.OverwritingStorageTests.test_base_url)
+File storage returns a url even when its base_url is unset or modified. ... ok
+test_delete_deletes_directories (file_storage.tests.OverwritingStorageTests.test_delete_deletes_directories) ... ok
+test_delete_no_name (file_storage.tests.OverwritingStorageTests.test_delete_no_name)
+Calling delete with an empty name should not try to remove the base ... ok
+test_empty_location (file_storage.tests.OverwritingStorageTests.test_empty_location)
+Makes sure an exception is raised if the location is empty ... ok
+test_file_access_options (file_storage.tests.OverwritingStorageTests.test_file_access_options)
+Standard file access options are available, and work as expected. ... ok
+test_file_chunks_error (file_storage.tests.OverwritingStorageTests.test_file_chunks_error)
+Test behavior when file.chunks() is raising an error ... ok
+test_file_get_accessed_time (file_storage.tests.OverwritingStorageTests.test_file_get_accessed_time)
+File storage returns a Datetime object for the last accessed time of ... ok
+test_file_get_accessed_time_timezone (file_storage.tests.OverwritingStorageTests.test_file_get_accessed_time_timezone) ... ok
+test_file_get_created_time (file_storage.tests.OverwritingStorageTests.test_file_get_created_time)
+File storage returns a datetime for the creation time of a file. ... ok
+test_file_get_created_time_timezone (file_storage.tests.OverwritingStorageTests.test_file_get_created_time_timezone) ... ok
+test_file_get_modified_time (file_storage.tests.OverwritingStorageTests.test_file_get_modified_time)
+File storage returns a datetime for the last modified time of a file. ... ok
+test_file_get_modified_time_timezone (file_storage.tests.OverwritingStorageTests.test_file_get_modified_time_timezone) ... ok
+test_file_methods_pathlib_path (file_storage.tests.OverwritingStorageTests.test_file_methods_pathlib_path) ... ok
+test_file_path (file_storage.tests.OverwritingStorageTests.test_file_path)
+File storage returns the full path of a file ... ok
+test_file_save_abs_path (file_storage.tests.OverwritingStorageTests.test_file_save_abs_path) ... ok
+test_file_save_broken_symlink (file_storage.tests.OverwritingStorageTests.test_file_save_broken_symlink)
+A new path is created on save when a broken symlink is supplied. ... ok
+test_file_save_with_path (file_storage.tests.OverwritingStorageTests.test_file_save_with_path)
+Saving a pathname should create intermediate directories as necessary. ... ok
+test_file_save_without_name (file_storage.tests.OverwritingStorageTests.test_file_save_without_name)
+File storage extracts the filename from the content object if no ... ok
+test_file_storage_preserves_filename_case (file_storage.tests.OverwritingStorageTests.test_file_storage_preserves_filename_case)
+The storage backend should preserve case of filenames. ... ok
+test_file_storage_prevents_directory_traversal (file_storage.tests.OverwritingStorageTests.test_file_storage_prevents_directory_traversal)
+File storage prevents directory traversal (files can only be accessed if ... ok
+test_file_url (file_storage.tests.OverwritingStorageTests.test_file_url)
+File storage returns a url to access a given file from the web. ... ok
+test_listdir (file_storage.tests.OverwritingStorageTests.test_listdir)
+File storage returns a tuple containing directories and files. ... ok
+test_makedirs_race_handling (file_storage.tests.OverwritingStorageTests.test_makedirs_race_handling)
+File storage should be robust against directory creation race conditions. ... ok
+test_remove_race_handling (file_storage.tests.OverwritingStorageTests.test_remove_race_handling)
+File storage should be robust against file removal race conditions. ... ok
+test_save_doesnt_close (file_storage.tests.OverwritingStorageTests.test_save_doesnt_close) ... ok
+test_save_overwrite_behavior (file_storage.tests.OverwritingStorageTests.test_save_overwrite_behavior)
+Saving to same file name twice overwrites the first file. ... ok
+test_setting_changed (file_storage.tests.OverwritingStorageTests.test_setting_changed)
+Properties using settings values as defaults should be updated on ... ok
+test_defaults (file_storage.tests.StorageHandlerTests.test_defaults) ... ok
+test_nonexistent_alias (file_storage.tests.StorageHandlerTests.test_nonexistent_alias) ... ok
+test_nonexistent_backend (file_storage.tests.StorageHandlerTests.test_nonexistent_backend) ... ok
+test_same_instance (file_storage.tests.StorageHandlerTests.test_same_instance) ... ok
+test_content_saving (file_storage.tests.ContentFileStorageTestCase.test_content_saving)
+ContentFile can be saved correctly with the filesystem storage, ... ok
+test_file_upload_default_permissions (file_storage.tests.FileStoragePermissions.test_file_upload_default_permissions) ... ok
+test_file_upload_directory_default_permissions (file_storage.tests.FileStoragePermissions.test_file_upload_directory_default_permissions) ... ok
+test_file_upload_directory_permissions (file_storage.tests.FileStoragePermissions.test_file_upload_directory_permissions) ... ok
+test_file_upload_permissions (file_storage.tests.FileStoragePermissions.test_file_upload_permissions) ... ok
+test_deconstruction (file_storage.tests.FileSystemStorageTests.test_deconstruction) ... ok
+test_lazy_base_url_init (file_storage.tests.FileSystemStorageTests.test_lazy_base_url_init)
+FileSystemStorage.__init__() shouldn't evaluate base_url. ... ok
+
+======================================================================
+FAIL: test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises.<locals>.NotStorage'>)
+----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/testbed/./tests/runtests.py", line 27, in <module>
-    from django.test import TestCase, TransactionTestCase
-  File "/testbed/django/test/__init__.py", line 3, in <module>
-    from django.test.client import AsyncClient, AsyncRequestFactory, Client, RequestFactory
-  File "/testbed/django/test/client.py", line 15, in <module>
-    from django.core.handlers.asgi import ASGIRequest
-  File "/testbed/django/core/handlers/asgi.py", line 12, in <module>
-    from django.core.handlers import base
-  File "/testbed/django/core/handlers/base.py", line 11, in <module>
-    from django.urls import get_resolver, set_urlconf
-  File "/testbed/django/urls/__init__.py", line 1, in <module>
-    from .base import (
-  File "/testbed/django/urls/base.py", line 8, in <module>
-    from .exceptions import NoReverseMatch, Resolver404
-  File "/testbed/django/urls/exceptions.py", line 1, in <module>
-    from django.http import Http404
-  File "/testbed/django/http/__init__.py", line 9, in <module>
-    from django.http.response import (
-  File "/testbed/django/http/response.py", line 19, in <module>
-    from django.core.serializers.json import DjangoJSONEncoder
-  File "/testbed/django/core/serializers/__init__.py", line 23, in <module>
-    from django.core.serializers.base import SerializerDoesNotExist
-  File "/testbed/django/core/serializers/base.py", line 7, in <module>
-    from django.db import models
-  File "/testbed/django/db/models/__init__.py", line 3, in <module>
-    from django.db.models.aggregates import *  # NOQA
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/testbed/django/db/models/aggregates.py", line 5, in <module>
-    from django.db.models.expressions import Case, Func, Star, Value, When
-  File "/testbed/django/db/models/expressions.py", line 12, in <module>
-    from django.db.models import fields
-  File "/testbed/django/db/models/fields/__init__.py", line 11, in <module>
-    from django import forms
-  File "/testbed/django/forms/__init__.py", line 7, in <module>
-    from django.forms.fields import *  # NOQA
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/testbed/django/forms/fields.py", line 1392
-    class_obj.
-              ^
-SyntaxError: invalid syntax
+  File "/testbed/tests/file_storage/tests.py", line 989, in test_callable_base_class_error_raises
+    with self.assertRaisesMessage(TypeError, msg):
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/testbed/django/test/testcases.py", line 741, in _assert_raises_or_warns_cm
+    with func(expected_exception) as cm:
+AssertionError: TypeError not raised
+
+======================================================================
+FAIL: test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'str'>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/file_storage/tests.py", line 989, in test_callable_base_class_error_raises
+    with self.assertRaisesMessage(TypeError, msg):
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/testbed/django/test/testcases.py", line 741, in _assert_raises_or_warns_cm
+    with func(expected_exception) as cm:
+AssertionError: TypeError not raised
+
+======================================================================
+FAIL: test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'list'>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/file_storage/tests.py", line 989, in test_callable_base_class_error_raises
+    with self.assertRaisesMessage(TypeError, msg):
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/testbed/django/test/testcases.py", line 741, in _assert_raises_or_warns_cm
+    with func(expected_exception) as cm:
+AssertionError: TypeError not raised
+
+======================================================================
+FAIL: test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'set'>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/file_storage/tests.py", line 989, in test_callable_base_class_error_raises
+    with self.assertRaisesMessage(TypeError, msg):
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/testbed/django/test/testcases.py", line 741, in _assert_raises_or_warns_cm
+    with func(expected_exception) as cm:
+AssertionError: TypeError not raised
+
+======================================================================
+FAIL: test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises) (invalid_type=<class 'tuple'>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/file_storage/tests.py", line 989, in test_callable_base_class_error_raises
+    with self.assertRaisesMessage(TypeError, msg):
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/testbed/django/test/testcases.py", line 741, in _assert_raises_or_warns_cm
+    with func(expected_exception) as cm:
+AssertionError: TypeError not raised
+
+----------------------------------------------------------------------
+Ran 149 tests in 1.594s
+
+FAILED (failures=5)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
 + git checkout e3a4cee081cf60650b8824f0646383b79cb110e7 tests/file_storage/models.py tests/file_storage/tests.py
 Updated 2 paths from 5d56057453

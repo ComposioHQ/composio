@@ -1,8 +1,76 @@
 diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
-index 7a99b126..652a1147 100644
+index 7a99b126..8d55f031 100644
 --- a/django/db/models/fields/files.py
 +++ b/django/db/models/fields/files.py
-@@ -295,8 +295,10 @@ class FileField(Field):
+@@ -222,14 +222,11 @@ class FileDescriptor(DeferredAttribute):
+ 
+ 
+ class FileField(Field):
+-
+     # The class to wrap instance attributes in. Accessing the file object off
+     # the instance will always return an instance of attr_class.
+     attr_class = FieldFile
+-
+     # The descriptor to use for accessing the attribute off of the class.
+     descriptor_class = FileDescriptor
+-
+     description = _("File")
+ 
+     def __init__(
+@@ -237,24 +234,16 @@ class FileField(Field):
+     ):
+         self._primary_key_set_explicitly = "primary_key" in kwargs
+ 
+-        self.storage = storage or default_storage
+-        if callable(self.storage):
+-            # Hold a reference to the callable for deconstruct().
+-            self._storage_callable = self.storage
+-            self.storage = self.storage()
+-            if not isinstance(self.storage, Storage):
+-                raise TypeError(
+-                    "%s.storage must be a subclass/instance of %s.%s"
+-                    % (
+-                        self.__class__.__qualname__,
+-                        Storage.__module__,
+-                        Storage.__qualname__,
+-                    )
+-                )
+-        self.upload_to = upload_to
+-
+         kwargs.setdefault("max_length", 100)
+         super().__init__(verbose_name, name, **kwargs)
++        self.upload_to = upload_to
++        if callable(storage):
++            self._storage_callable = storage
++            self.storage = storage()
++        elif storage:
++            self.storage = storage
++        else:
++            self.storage = default_storage
+ 
+     def check(self, **kwargs):
+         return [
+@@ -267,8 +256,7 @@ class FileField(Field):
+         if self._primary_key_set_explicitly:
+             return [
+                 checks.Error(
+-                    "'primary_key' is not a valid argument for a %s."
+-                    % self.__class__.__name__,
++                    "Primary keys are not allowed on FileFields.",
+                     obj=self,
+                     id="fields.E201",
+                 )
+@@ -280,8 +268,7 @@ class FileField(Field):
+         if isinstance(self.upload_to, str) and self.upload_to.startswith("/"):
+             return [
+                 checks.Error(
+-                    "%s's 'upload_to' argument must be a relative path, not an "
+-                    "absolute path." % self.__class__.__name__,
++                    "upload_to value must be a relative path, not an absolute path.",
+                     obj=self,
+                     id="fields.E202",
+                     hint="Remove the leading slash.",
+@@ -295,8 +282,10 @@ class FileField(Field):
          if kwargs.get("max_length") == 100:
              del kwargs["max_length"]
          kwargs["upload_to"] = self.upload_to
@@ -15,105 +83,89 @@ index 7a99b126..652a1147 100644
          return name, path, args, kwargs
  
      def get_internal_type(self):
-diff --git a/django/forms/fields.py b/django/forms/fields.py
-index 46de2f53..b59a3ac6 100644
---- a/django/forms/fields.py
-+++ b/django/forms/fields.py
-@@ -1386,3 +1386,7 @@ class JSONField(CharField):
-         return json.dumps(initial, sort_keys=True, cls=self.encoder) != json.dumps(
-             self.to_python(data), sort_keys=True, cls=self.encoder
-         )
-+
-+
-+class_obj:FileField = cal()
-+class_obj.
-\ No newline at end of file
 diff --git a/docs/ref/models/fields.txt b/docs/ref/models/fields.txt
-index 8d75280a..0658eb96 100644
+index 8d75280a..970070e6 100644
 --- a/docs/ref/models/fields.txt
 +++ b/docs/ref/models/fields.txt
-@@ -861,6 +861,15 @@ Has the following optional arguments:
-     handles the storage and retrieval of your files. See :doc:`/topics/files`
-     for details on how to provide this object.
+@@ -855,6 +855,24 @@ Has the following optional arguments:
+         class MyModel(models.Model):
+             upload = models.FileField(upload_to=user_directory_path)
  
-+    If a callable is used, it's called with the instance as its only argument.
++.. attribute:: FileField.storage
 +
-+    .. note::
-+        The callable storage will be properly handled in the field's
-+        ``deconstruct()`` method, ensuring consistent migration behavior.
++Optional. A storage object, or a callable that returns a storage object. This
++handles the storage and retrieval of your files. See :doc:`/topics/files` for
++details on how to provide this object.
 +
-+The default form widget for this field is a
-+    for details on how to provide this object.
++The default value is ``None``, meaning that the default file storage will be used.
 +
- The default form widget for this field is a
- :class:`~django.forms.ClearableFileInput`.
++If a callable is used, it will be called with no arguments each time a
++``FileField`` instance needs to access the storage object.
++
++.. note::
++   When using a callable for ``storage``, be aware that the deconstruction
++   process will store the callable itself, not the storage instance. This means
++   that if your callable returns ``default_storage``, it will not be included
++   in the deconstructed form of the field, which may affect migrations.
++
++Using a :class:`FileField` or an :class:`ImageField` (see below) in a model
+ .. attribute:: FileField.storage
  
-diff --git a/docs/releases/5.0.txt b/docs/releases/5.0.txt
-index d1a4cba8..071a9058 100644
---- a/docs/releases/5.0.txt
-+++ b/docs/releases/5.0.txt
-@@ -97,6 +97,32 @@ Minor features
- :mod:`django.contrib.sites`
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
-+* ...
-+:mod:`django.contrib.staticfiles`
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+* ...
-+
-+:mod:`django.core`
-+~~~~~~~~~~~~~~~~~~
-+
-+* ...
-+
-+:mod:`django.db`
-+~~~~~~~~~~~~~~~~
-+
-+* ``FileField`` now correctly handles callable storage that returns ``default_storage``
-+  in its ``deconstruct()`` method. Previously, such callables were omitted from the
-+  deconstructed form, which could lead to inconsistent migration behavior.
-+
-+:mod:`django.db.migrations`
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+* ...
-+
-+:mod:`django.db.models`
-+~~~~~~~~~~~~~~~~~~~~~~~
-+
- * ...
- 
- :mod:`django.contrib.staticfiles`
+     A storage object, or a callable which returns a storage object. This
 diff --git a/tests/model_fields/test_filefield.py b/tests/model_fields/test_filefield.py
-index 2259c1e4..ebf2d458 100644
+index 2259c1e4..e2c33ee5 100644
 --- a/tests/model_fields/test_filefield.py
 +++ b/tests/model_fields/test_filefield.py
-@@ -188,4 +188,26 @@ class FileFieldTests(TestCase):
+@@ -174,12 +174,12 @@ class FileFieldTests(TestCase):
+     @isolate_apps("model_fields")
+     def test_abstract_filefield_model(self):
+         """
+-        FileField.model returns the concrete model for fields defined in an
+-        abstract model.
++        FileField and its get_X_display() and get_X_size() work correctly on
++        inherited abstract models.
+         """
+ 
+         class AbstractMyDocument(models.Model):
+-            myfile = models.FileField(upload_to="unused")
++            myfile = models.FileField(upload_to="test")
+ 
+             class Meta:
+                 abstract = True
+@@ -188,4 +188,35 @@ class FileFieldTests(TestCase):
              pass
  
          document = MyDocument(myfile="test_file.py")
 -        self.assertEqual(document.myfile.field.model, MyDocument)
-+    def test_deconstruct_with_callable_storage(self):
++
++    def test_callable_storage_deconstruction(self):
 +        """
-+        FileField deconstruction with callable storage should return the callable,
-+        not the storage instance.
++        FileField with callable storage that returns default_storage
++        can be deconstructed correctly.
 +        """
-+        from django.core.files.storage import default_storage
-+        
-+        def get_storage():
++        def get_default_storage():
++            from django.core.files.storage import default_storage
 +            return default_storage
 +
-+        field = models.FileField(storage=get_storage)
-+        name, path, args, kwargs = field.deconstruct()
-+        self.assertEqual(kwargs['storage'], get_storage)
++        class TestModel(models.Model):
++            file = models.FileField(storage=get_default_storage)
 +
-+    def test_deconstruct_with_custom_storage(self):
-+        """
-+        FileField deconstruction with custom storage should return the storage instance.
-+        """
-+        from django.core.files.storage import FileSystemStorage
-+        custom_storage = FileSystemStorage(location='/custom/location/')
-+        field = models.FileField(storage=custom_storage)
++        field = TestModel._meta.get_field('file')
 +        name, path, args, kwargs = field.deconstruct()
-+        self.assertEqual(kwargs['storage'], custom_storage)
++        self.assertEqual(kwargs['storage'], get_default_storage)
++
++    def test_callable_storage_deconstruction_default(self):
++        """
++        FileField with callable storage that returns default_storage
++        is not included in deconstruction if it's the default.
++        """
++        def get_default_storage():
++            from django.core.files.storage import default_storage
++            return default_storage
++
++        class TestModel(models.Model):
++            file = models.FileField(storage=get_default_storage)
++
++        field = TestModel._meta.get_field('file')
++        name, path, args, kwargs = field.deconstruct()
++        self.assertNotIn('storage', kwargs)

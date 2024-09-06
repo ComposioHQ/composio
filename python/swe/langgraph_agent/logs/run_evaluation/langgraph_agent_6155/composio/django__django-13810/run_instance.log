@@ -1,0 +1,304 @@
+2024-09-06 19:45:18,385 - INFO - Environment image sweb.env.arm64.e83e37f52c09532c62acfb:latest found for django__django-13810
+Building instance image sweb.eval.arm64.django__django-13810:latest for django__django-13810
+2024-09-06 19:45:41,589 - INFO - Creating container for django__django-13810...
+2024-09-06 19:45:41,610 - INFO - Container for django__django-13810 created: d5347a33df3b3f0c72f7ca3b88f91b8ddd0dd458dd9d9f37354cb0605f721122
+2024-09-06 19:45:41,717 - INFO - Container for django__django-13810 started: d5347a33df3b3f0c72f7ca3b88f91b8ddd0dd458dd9d9f37354cb0605f721122
+2024-09-06 19:45:41,718 - INFO - Intermediate patch for django__django-13810 written to logs/run_evaluation/langgraph_agent_6155/composio/django__django-13810/patch.diff, now applying to container...
+2024-09-06 19:45:41,920 - INFO - Failed to apply patch to container, trying again...
+2024-09-06 19:45:41,959 - INFO - >>>>> Applied Patch:
+patching file django/core/handlers/base.py
+patching file docs/releases/3.2.txt
+patching file docs/topics/http/middleware.txt
+patching file tests/auth_tests/test_middleware.py
+
+2024-09-06 19:45:42,338 - INFO - Git diff before:
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da06a..8d10a77f5f 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -49,6 +49,9 @@ class BaseHandler:
+                 middleware_is_async = False
+             else:
+                 middleware_is_async = middleware_can_async
++            # Store the current state of handler and handler_is_async
++            previous_handler = handler
++            previous_handler_is_async = handler_is_async
+             try:
+                 # Adapt handler, if needed.
+                 handler = self.adapt_method_mode(
+@@ -57,6 +60,9 @@ class BaseHandler:
+                 )
+                 mw_instance = middleware(handler)
+             except MiddlewareNotUsed as exc:
++                # Reset handler and handler_is_async to their previous state
++                handler = previous_handler
++                handler_is_async = previous_handler_is_async
+                 if settings.DEBUG:
+                     if str(exc):
+                         logger.debug('MiddlewareNotUsed(%r): %s', middleware_path, exc)
+diff --git a/docs/releases/3.2.txt b/docs/releases/3.2.txt
+index 8cd77ffad0..dabb38ba9f 100644
+--- a/docs/releases/3.2.txt
++++ b/docs/releases/3.2.txt
+@@ -97,7 +97,21 @@ if you do not have an explicit setting for :setting:`DEFAULT_AUTO_FIELD`.
+ 
+ ``pymemcache`` support
+ ----------------------
++Middleware behavior in ASGI applications
++----------------------------------------
+ 
++Fixed an issue where unused middleware in ASGI applications could affect the
++handler chain, potentially causing unexpected behavior. Now, when a middleware
++raises a ``MiddlewareNotUsed`` exception, the handler and its asynchronous
++state are properly reset to their previous values.
++
++Additionally, the documentation has been updated to clarify that when running
++Django as an ASGI application, all middleware in the chain should be capable
++of handling asynchronous requests, even if they are marked as ``sync_capable``.
++This is because the entire middleware chain may be executed in an asynchronous
++context.
++
++``pymemcache`` support
+ The new ``django.core.cache.backends.memcached.PyMemcacheCache`` cache backend
+ allows using the pymemcache_ library for memcached. ``pymemcache`` 3.4.0 or
+ higher is required. For more details, see the :doc:`documentation on caching in
+diff --git a/docs/topics/http/middleware.txt b/docs/topics/http/middleware.txt
+index 1626d16992..844929a2e6 100644
+--- a/docs/topics/http/middleware.txt
++++ b/docs/topics/http/middleware.txt
+@@ -75,6 +75,16 @@ Middleware can either support only synchronous Python (the default), only
+ asynchronous Python, or both. See :ref:`async-middleware` for details of how to
+ advertise what you support, and know what kind of request you are getting.
+ 
++.. note::
++   When running Django as an ASGI application, it's important to note that
++   all middleware in the chain should be capable of handling asynchronous
++   requests, even if they are marked as `sync_capable`. This is because the
++   entire middleware chain may be executed in an asynchronous context. If a
++   middleware is not async-capable and is used in an ASGI context, it may
++   lead to unexpected behavior or errors.
++
++Middleware can live anywhere on your Python path.
++
+ Middleware can live anywhere on your Python path.
+ 
+ ``__init__(get_response)``
+diff --git a/tests/auth_tests/test_middleware.py b/tests/auth_tests/test_middleware.py
+index b6151acb19..a0067a59bf 100644
+--- a/tests/auth_tests/test_middleware.py
++++ b/tests/auth_tests/test_middleware.py
+@@ -59,3 +59,63 @@ class TestAuthenticationMiddleware(TestCase):
+         )
+         with self.assertRaisesMessage(AssertionError, msg):
+             self.middleware(HttpRequest())
++
++class TestMiddlewareNotUsedASGI(TestCase):
++    @classmethod
++    def setUpTestData(cls):
++        cls.user = User.objects.create_user('test_user', 'test@example.com', 'test_password')
++
++    def setUp(self):
++        self.client.force_login(self.user)
++        self.request = HttpRequest()
++        self.request.session = self.client.session
++
++    async def test_middleware_not_used_asgi(self):
++        from django.core.handlers.asgi import ASGIHandler
++        from django.core.exceptions import MiddlewareNotUsed
++
++        class UnusedMiddleware:
++            def __init__(self, get_response):
++                raise MiddlewareNotUsed()
++
++        class TestMiddleware:
++            def __init__(self, get_response):
++                self.get_response = get_response
++
++            async def __call__(self, request):
++                response = await self.get_response(request)
++                response.headers['X-Test-Middleware'] = 'Processed'
++                return response
++
++        handler = ASGIHandler()
++        handler.load_middleware(is_async=True)
++        original_middleware = handler.middleware
++
++        # Add our test middlewares
++        handler.middleware = [UnusedMiddleware, TestMiddleware] + handler.middleware
++
++        scope = {
++            'type': 'http',
++            'method': 'GET',
++            'path': '/',
++        }
++
++        async def receive():
++            return {'type': 'http.request'}
++
++        response_status = None
++        response_headers = None
++
++        async def send(response):
++            nonlocal response_status, response_headers
++            if response['type'] == 'http.response.start':
++                response_status = response['status']
++                response_headers = response['headers']
++
++        await handler(scope, receive, send)
++
++        # Ensure that the TestMiddleware was processed and UnusedMiddleware was skipped
++        self.assertEqual(len(handler.middleware), len(original_middleware) + 1)
++        self.assertIsInstance(handler.middleware[0], TestMiddleware)
++        self.assertEqual(response_status, 200)
++        self.assertIn((b'X-Test-Middleware', b'Processed'), response_headers)
+2024-09-06 19:45:42,339 - INFO - Eval script for django__django-13810 written to logs/run_evaluation/langgraph_agent_6155/composio/django__django-13810/eval.sh; copying to container...
+2024-09-06 19:45:44,972 - INFO - Test runtime: 2.52 seconds
+2024-09-06 19:45:44,972 - INFO - Test output for django__django-13810 written to logs/run_evaluation/langgraph_agent_6155/composio/django__django-13810/test_output.txt
+2024-09-06 19:45:45,009 - INFO - Git diff after:
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da06a..8d10a77f5f 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -49,6 +49,9 @@ class BaseHandler:
+                 middleware_is_async = False
+             else:
+                 middleware_is_async = middleware_can_async
++            # Store the current state of handler and handler_is_async
++            previous_handler = handler
++            previous_handler_is_async = handler_is_async
+             try:
+                 # Adapt handler, if needed.
+                 handler = self.adapt_method_mode(
+@@ -57,6 +60,9 @@ class BaseHandler:
+                 )
+                 mw_instance = middleware(handler)
+             except MiddlewareNotUsed as exc:
++                # Reset handler and handler_is_async to their previous state
++                handler = previous_handler
++                handler_is_async = previous_handler_is_async
+                 if settings.DEBUG:
+                     if str(exc):
+                         logger.debug('MiddlewareNotUsed(%r): %s', middleware_path, exc)
+diff --git a/docs/releases/3.2.txt b/docs/releases/3.2.txt
+index 8cd77ffad0..dabb38ba9f 100644
+--- a/docs/releases/3.2.txt
++++ b/docs/releases/3.2.txt
+@@ -97,7 +97,21 @@ if you do not have an explicit setting for :setting:`DEFAULT_AUTO_FIELD`.
+ 
+ ``pymemcache`` support
+ ----------------------
++Middleware behavior in ASGI applications
++----------------------------------------
+ 
++Fixed an issue where unused middleware in ASGI applications could affect the
++handler chain, potentially causing unexpected behavior. Now, when a middleware
++raises a ``MiddlewareNotUsed`` exception, the handler and its asynchronous
++state are properly reset to their previous values.
++
++Additionally, the documentation has been updated to clarify that when running
++Django as an ASGI application, all middleware in the chain should be capable
++of handling asynchronous requests, even if they are marked as ``sync_capable``.
++This is because the entire middleware chain may be executed in an asynchronous
++context.
++
++``pymemcache`` support
+ The new ``django.core.cache.backends.memcached.PyMemcacheCache`` cache backend
+ allows using the pymemcache_ library for memcached. ``pymemcache`` 3.4.0 or
+ higher is required. For more details, see the :doc:`documentation on caching in
+diff --git a/docs/topics/http/middleware.txt b/docs/topics/http/middleware.txt
+index 1626d16992..844929a2e6 100644
+--- a/docs/topics/http/middleware.txt
++++ b/docs/topics/http/middleware.txt
+@@ -75,6 +75,16 @@ Middleware can either support only synchronous Python (the default), only
+ asynchronous Python, or both. See :ref:`async-middleware` for details of how to
+ advertise what you support, and know what kind of request you are getting.
+ 
++.. note::
++   When running Django as an ASGI application, it's important to note that
++   all middleware in the chain should be capable of handling asynchronous
++   requests, even if they are marked as `sync_capable`. This is because the
++   entire middleware chain may be executed in an asynchronous context. If a
++   middleware is not async-capable and is used in an ASGI context, it may
++   lead to unexpected behavior or errors.
++
++Middleware can live anywhere on your Python path.
++
+ Middleware can live anywhere on your Python path.
+ 
+ ``__init__(get_response)``
+diff --git a/tests/auth_tests/test_middleware.py b/tests/auth_tests/test_middleware.py
+index b6151acb19..a0067a59bf 100644
+--- a/tests/auth_tests/test_middleware.py
++++ b/tests/auth_tests/test_middleware.py
+@@ -59,3 +59,63 @@ class TestAuthenticationMiddleware(TestCase):
+         )
+         with self.assertRaisesMessage(AssertionError, msg):
+             self.middleware(HttpRequest())
++
++class TestMiddlewareNotUsedASGI(TestCase):
++    @classmethod
++    def setUpTestData(cls):
++        cls.user = User.objects.create_user('test_user', 'test@example.com', 'test_password')
++
++    def setUp(self):
++        self.client.force_login(self.user)
++        self.request = HttpRequest()
++        self.request.session = self.client.session
++
++    async def test_middleware_not_used_asgi(self):
++        from django.core.handlers.asgi import ASGIHandler
++        from django.core.exceptions import MiddlewareNotUsed
++
++        class UnusedMiddleware:
++            def __init__(self, get_response):
++                raise MiddlewareNotUsed()
++
++        class TestMiddleware:
++            def __init__(self, get_response):
++                self.get_response = get_response
++
++            async def __call__(self, request):
++                response = await self.get_response(request)
++                response.headers['X-Test-Middleware'] = 'Processed'
++                return response
++
++        handler = ASGIHandler()
++        handler.load_middleware(is_async=True)
++        original_middleware = handler.middleware
++
++        # Add our test middlewares
++        handler.middleware = [UnusedMiddleware, TestMiddleware] + handler.middleware
++
++        scope = {
++            'type': 'http',
++            'method': 'GET',
++            'path': '/',
++        }
++
++        async def receive():
++            return {'type': 'http.request'}
++
++        response_status = None
++        response_headers = None
++
++        async def send(response):
++            nonlocal response_status, response_headers
++            if response['type'] == 'http.response.start':
++                response_status = response['status']
++                response_headers = response['headers']
++
++        await handler(scope, receive, send)
++
++        # Ensure that the TestMiddleware was processed and UnusedMiddleware was skipped
++        self.assertEqual(len(handler.middleware), len(original_middleware) + 1)
++        self.assertIsInstance(handler.middleware[0], TestMiddleware)
++        self.assertEqual(response_status, 200)
++        self.assertIn((b'X-Test-Middleware', b'Processed'), response_headers)
+2024-09-06 19:45:45,009 - INFO - Grading answer for django__django-13810...
+2024-09-06 19:45:45,016 - INFO - report: {'django__django-13810': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_async_and_sync_middleware_chain_async_call (middleware_exceptions.tests.MiddlewareNotUsedTests)'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_missing_root_urlconf (middleware_exceptions.tests.RootUrlconfTests)', 'test_do_not_log_when_debug_is_false (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_log (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_log_custom_message (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_raise_exception (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_exception_in_middleware_converted_before_prior_middleware (middleware_exceptions.tests.MiddlewareTests)', 'test_exception_in_render_passed_to_process_exception (middleware_exceptions.tests.MiddlewareTests)', 'test_process_template_response (middleware_exceptions.tests.MiddlewareTests)', 'test_process_template_response_returns_none (middleware_exceptions.tests.MiddlewareTests)', 'test_process_view_return_none (middleware_exceptions.tests.MiddlewareTests)', 'test_process_view_return_response (middleware_exceptions.tests.MiddlewareTests)', 'test_response_from_process_exception_short_circuits_remainder (middleware_exceptions.tests.MiddlewareTests)', 'test_response_from_process_exception_when_return_response (middleware_exceptions.tests.MiddlewareTests)', 'test_templateresponse_from_process_view_passed_to_process_template_response (middleware_exceptions.tests.MiddlewareTests)', 'test_templateresponse_from_process_view_rendered (middleware_exceptions.tests.MiddlewareTests)', 'test_view_exception_converted_before_middleware (middleware_exceptions.tests.MiddlewareTests)', 'test_view_exception_handled_by_process_exception (middleware_exceptions.tests.MiddlewareTests)', 'test_async_and_sync_middleware_async_call (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_and_sync_middleware_sync_call (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_middleware_async (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_not_sync_or_async_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_decorated_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_middleware_async (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_exception_in_async_render_passed_to_process_exception (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_exception_in_render_passed_to_process_exception (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_template_response (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_template_response_returns_none (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_view_return_response (middleware_exceptions.tests.AsyncMiddlewareTests)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-13810: resolved: True
+2024-09-06 19:45:45,017 - INFO - Attempting to stop container sweb.eval.django__django-13810.langgraph_agent_6155...
+2024-09-06 19:46:00,245 - INFO - Attempting to remove container sweb.eval.django__django-13810.langgraph_agent_6155...
+2024-09-06 19:46:00,261 - INFO - Container sweb.eval.django__django-13810.langgraph_agent_6155 removed.
+2024-09-06 19:46:00,261 - INFO - Attempting to remove image sweb.eval.arm64.django__django-13810:latest...
+2024-09-06 19:46:00,500 - INFO - Image sweb.eval.arm64.django__django-13810:latest removed.

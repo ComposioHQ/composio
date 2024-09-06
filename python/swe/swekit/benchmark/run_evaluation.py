@@ -20,7 +20,7 @@ from swekit.benchmark.utils import (
 )
 from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
 from swekit.config.store import IssueConfig
-
+import random
 
 def _get_logs_dir() -> Path:
     """Logs dir factory."""
@@ -28,7 +28,7 @@ def _get_logs_dir() -> Path:
         Path.home()
         / LOCAL_CACHE_DIRECTORY_NAME
         / LOGS_DIR
-        / str(int(datetime.datetime.now().timestamp()))
+        / (str(int(datetime.datetime.now().timestamp())) + str(random.randint(1000, 9999)))
     )
 
 

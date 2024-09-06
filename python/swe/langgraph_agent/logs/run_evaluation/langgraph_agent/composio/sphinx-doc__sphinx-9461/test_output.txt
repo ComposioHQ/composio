@@ -1,0 +1,1678 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   setup.py
+	modified:   sphinx/ext/autodoc/__init__.py
+	modified:   tox.ini
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 939c7bb7ff7c53a4d27df067cea637540f0e1dad
+Merge: 5559e5af1 9a2c3c4a1
+Author: Takeshi KOMIYA <i.tkomiya@gmail.com>
+Date:   Thu Jul 15 02:24:14 2021 +0900
+
+    Merge branch '4.1.x' into 4.x
+
+diff --cc CHANGES
+index c44a34fb7,0f221e081..5658cc43f
+--- a/CHANGES
++++ b/CHANGES
+@@@ -1,25 -1,4 +1,25 @@@
+ +Release 4.2.0 (in development)
+ +==============================
+ +
+ +Dependencies
+ +------------
+ +
+ +Incompatible changes
+ +--------------------
+ +
+ +Deprecated
+ +----------
+ +
+ +Features added
+ +--------------
+ +
+ +Bugs fixed
+ +----------
+ +
+ +Testing
+ +--------
+ +
+- Release 4.1.1 (in development)
++ Release 4.1.2 (in development)
+  ==============================
+  
+  Dependencies
++ git diff 939c7bb7ff7c53a4d27df067cea637540f0e1dad
+diff --git a/setup.py b/setup.py
+index 4a1d5aeed..3faa58e79 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 6):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp>=2.0.0',
+-    'sphinxcontrib-serializinghtml>=1.1.5',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp>=2.0.0,<=2.0.4',
++    'sphinxcontrib-serializinghtml>=1.1.5,<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.14,<0.18',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/sphinx/ext/autodoc/__init__.py b/sphinx/ext/autodoc/__init__.py
+index 1cecb1f79..c8cc34b65 100644
+--- a/sphinx/ext/autodoc/__init__.py
++++ b/sphinx/ext/autodoc/__init__.py
+@@ -2066,23 +2066,28 @@ class MethodDocumenter(DocstringSignatureMixin, ClassLevelDocumenter):  # type:
+     member_order = 50
+     priority = 1  # must be more than FunctionDocumenter
+ 
++    @classmethod
+     @classmethod
+     def can_document_member(cls, member: Any, membername: str, isattr: bool, parent: Any
+                             ) -> bool:
+-        return inspect.isroutine(member) and not isinstance(parent, ModuleDocumenter)
++        return (inspect.isroutine(member) or
++                isinstance(member, (classmethod, property)) or
++                (inspect.isdatadescriptor(member) and not isinstance(parent, ModuleDocumenter)))
+ 
+     def import_object(self, raiseerror: bool = False) -> bool:
+         ret = super().import_object(raiseerror)
+         if not ret:
+             return ret
+ 
++        # Handle classmethods and properties
++        if isinstance(self.object, (classmethod, property)):
++            self.object = self.object.__func__
++            # Update other attributes as needed
++
+         # to distinguish classmethod/staticmethod
+         obj = self.parent.__dict__.get(self.object_name)
+         if obj is None:
+             obj = self.object
+-
+-        if (inspect.isclassmethod(obj) or
+-                inspect.isstaticmethod(obj, cls=self.parent, name=self.object_name)):
+             # document class and static members before ordinary ones
+             self.member_order = self.member_order - 1
+ 
+diff --git a/tox.ini b/tox.ini
+index a363e187f..3b8bc12d0 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -27,7 +27,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils,ignore::DeprecationWarning:pip._vendor.packaging.version
+     PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:} --color yes
+ commands=
+-    python -X dev -m pytest --durations 25 {posargs}
++    python -X dev -m pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e '.[test]'
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: sphinxcontrib-applehelp<=1.0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.0.4)
+Requirement already satisfied: sphinxcontrib-devhelp<=1.0.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.0.2)
+Requirement already satisfied: sphinxcontrib-jsmath in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.0.1)
+Requirement already satisfied: sphinxcontrib-htmlhelp<=2.0.4,>=2.0.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.0.1)
+Requirement already satisfied: sphinxcontrib-serializinghtml<=1.1.9,>=1.1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.1.5)
+Requirement already satisfied: sphinxcontrib-qthelp<=1.0.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.0.3)
+Requirement already satisfied: Jinja2<3.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.11.3)
+Requirement already satisfied: Pygments>=2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.18.0)
+Requirement already satisfied: docutils<0.18,>=0.14 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (0.17.1)
+Requirement already satisfied: snowballstemmer>=1.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.2.0)
+Requirement already satisfied: babel>=1.3 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.16.0)
+Requirement already satisfied: alabaster<0.7.12,>=0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (0.7.11)
+Requirement already satisfied: imagesize in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.4.1)
+Requirement already satisfied: requests>=2.5.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.32.3)
+Requirement already satisfied: setuptools in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (72.1.0)
+Requirement already satisfied: packaging in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (24.1)
+Requirement already satisfied: markupsafe<=2.0.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (2.0.1)
+Requirement already satisfied: pytest in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (8.3.2)
+Requirement already satisfied: pytest-cov in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (5.0.0)
+Requirement already satisfied: html5lib in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (1.1)
+Requirement already satisfied: cython in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.2.0.dev20240906) (3.0.11)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.2.0.dev20240906) (3.3.2)
+Requirement already satisfied: idna<4,>=2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.2.0.dev20240906) (3.8)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.2.0.dev20240906) (2.2.2)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.2.0.dev20240906) (2024.8.30)
+Requirement already satisfied: six>=1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==4.2.0.dev20240906) (1.16.0)
+Requirement already satisfied: webencodings in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==4.2.0.dev20240906) (0.5.1)
+Requirement already satisfied: iniconfig in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.2.0.dev20240906) (2.0.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.2.0.dev20240906) (1.5.0)
+Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.2.0.dev20240906) (1.2.2)
+Requirement already satisfied: tomli>=1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.2.0.dev20240906) (2.0.1)
+Requirement already satisfied: coverage>=5.2.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from coverage[toml]>=5.2.1->pytest-cov->Sphinx==4.2.0.dev20240906) (7.6.1)
+Installing collected packages: Sphinx
+  Attempting uninstall: Sphinx
+    Found existing installation: Sphinx 4.2.0.dev20240906
+    Uninstalling Sphinx-4.2.0.dev20240906:
+      Successfully uninstalled Sphinx-4.2.0.dev20240906
+  DEPRECATION: Legacy editable install of Sphinx[test]==4.2.0.dev20240906 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for Sphinx
+Successfully installed Sphinx
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 939c7bb7ff7c53a4d27df067cea637540f0e1dad tests/roots/test-ext-autodoc/target/properties.py tests/test_domain_py.py tests/test_ext_autodoc_autoclass.py tests/test_ext_autodoc_autoproperty.py
+Updated 0 paths from 91864e513
++ git apply -v -
+Checking patch tests/roots/test-ext-autodoc/target/properties.py...
+Checking patch tests/test_domain_py.py...
+Checking patch tests/test_ext_autodoc_autoclass.py...
+Checking patch tests/test_ext_autodoc_autoproperty.py...
+Applied patch tests/roots/test-ext-autodoc/target/properties.py cleanly.
+Applied patch tests/test_domain_py.py cleanly.
+Applied patch tests/test_ext_autodoc_autoclass.py cleanly.
+Applied patch tests/test_ext_autodoc_autoproperty.py cleanly.
++ tox --current-env -epy39 -v -- tests/roots/test-ext-autodoc/target/properties.py tests/test_domain_py.py tests/test_ext_autodoc_autoclass.py tests/test_ext_autodoc_autoproperty.py
+py39: commands[0]> python -X dev -m pytest -rA --durations 25 tests/roots/test-ext-autodoc/target/properties.py tests/test_domain_py.py tests/test_ext_autodoc_autoclass.py tests/test_ext_autodoc_autoproperty.py
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.9.19, pytest-8.3.2, pluggy-1.5.0
+cachedir: .tox/py39/.pytest_cache
+libraries: Sphinx-4.2.0+/939c7bb7f, docutils-0.17.1
+base tempdir: /tmp/pytest-of-root/pytest-0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0
+collected 62 items
+
+tests/test_domain_py.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m    [ 72%][0m
+tests/test_ext_autodoc_autoclass.py [32m.[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                      [ 96%][0m
+tests/test_ext_autodoc_autoproperty.py [32m.[0m[31mF[0m[31m                                [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_______________________________ test_pyproperty ________________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[94mdef[39;49;00m [92mtest_pyproperty[39;49;00m(app):[90m[39;49;00m
+        text = ([33m"[39;49;00m[33m.. py:class:: Class[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m   .. py:property:: prop1[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m      :abstractmethod:[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m      :type: str[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m   .. py:property:: prop2[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m      :classmethod:[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m      :type: str[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        domain = app.env.get_domain([33m'[39;49;00m[33mpy[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+        doctree = restructuredtext.parse(app, text)[90m[39;49;00m
+>       assert_node(doctree, (addnodes.index,[90m[39;49;00m
+                              [desc, ([desc_signature, ([desc_annotation, [33m"[39;49;00m[33mclass [39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+                                                        [desc_name, [33m"[39;49;00m[33mClass[39;49;00m[33m"[39;49;00m])],[90m[39;49;00m
+                                      [desc_content, (addnodes.index,[90m[39;49;00m
+                                                      desc,[90m[39;49;00m
+                                                      addnodes.index,[90m[39;49;00m
+                                                      desc)])]))[90m[39;49;00m
+
+[1m[31mtests/test_domain_py.py[0m:825: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31msphinx/testing/util.py[0m:68: in assert_node
+    [0massert_node(node[i], nodecls, xpath=path, **kwargs)[90m[39;49;00m
+[1m[31msphinx/testing/util.py[0m:54: in assert_node
+    [0massert_node(node, [96mcls[39;49;00m[[94m1[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
+[1m[31msphinx/testing/util.py[0m:68: in assert_node
+    [0massert_node(node[i], nodecls, xpath=path, **kwargs)[90m[39;49;00m
+[1m[31msphinx/testing/util.py[0m:54: in assert_node
+    [0massert_node(node, [96mcls[39;49;00m[[94m1[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = <desc_content: <index...><desc...><system_message...>>
+cls = (<class 'sphinx.addnodes.index'>, <class 'sphinx.addnodes.desc'>, <class 'sphinx.addnodes.index'>, <class 'sphinx.addnodes.desc'>)
+xpath = '[1][1]', kwargs = {}
+
+    [0m[94mdef[39;49;00m [92massert_node[39;49;00m(node: Node, [96mcls[39;49;00m: Any = [94mNone[39;49;00m, xpath: [96mstr[39;49;00m = [33m"[39;49;00m[33m"[39;49;00m, **kwargs: Any) -> [94mNone[39;49;00m:[90m[39;49;00m
+        [94mif[39;49;00m [96mcls[39;49;00m:[90m[39;49;00m
+            [94mif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mlist[39;49;00m):[90m[39;49;00m
+                assert_node(node, [96mcls[39;49;00m[[94m0[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
+                [94mif[39;49;00m [96mcls[39;49;00m[[94m1[39;49;00m:]:[90m[39;49;00m
+                    [94mif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m[[94m1[39;49;00m], [96mtuple[39;49;00m):[90m[39;49;00m
+                        assert_node(node, [96mcls[39;49;00m[[94m1[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
+                    [94melse[39;49;00m:[90m[39;49;00m
+                        [94massert[39;49;00m [96misinstance[39;49;00m(node, nodes.Element), \
+                            [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any children[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
+                        [94massert[39;49;00m [96mlen[39;49;00m(node) == [94m1[39;49;00m, \
+                            [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m has [39;49;00m[33m%d[39;49;00m[33m child nodes, not one[39;49;00m[33m'[39;49;00m % (xpath, [96mlen[39;49;00m(node))[90m[39;49;00m
+                        assert_node(node[[94m0[39;49;00m], [96mcls[39;49;00m[[94m1[39;49;00m:], xpath=xpath + [33m"[39;49;00m[33m[0][39;49;00m[33m"[39;49;00m, **kwargs)[90m[39;49;00m
+            [94melif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mtuple[39;49;00m):[90m[39;49;00m
+                [94massert[39;49;00m [96misinstance[39;49;00m(node, ([96mlist[39;49;00m, nodes.Element)), \
+                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any items[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
+>               [94massert[39;49;00m [96mlen[39;49;00m(node) == [96mlen[39;49;00m([96mcls[39;49;00m), \
+                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m has [39;49;00m[33m%d[39;49;00m[33m child nodes, not [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mlen[39;49;00m(node), [96mlen[39;49;00m([96mcls[39;49;00m))[90m[39;49;00m
+[1m[31mE               AssertionError: The node[1][1] has 3 child nodes, not 4[0m
+
+[1m[31msphinx/testing/util.py[0m:64: AssertionError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+[31m/tmp/pytest-of-root/pytest-0/root/index.rst:7: WARNING: Error in "py:property" directive:
+unknown option: "classmethod".
+
+.. py:property:: prop2
+   :classmethod:
+   :type: str[39;49;00m
+
+[31m[1m____________________________ test_instance_variable ____________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_instance_variable[39;49;00m(app):[90m[39;49;00m
+        options = {[33m'[39;49;00m[33mmembers[39;49;00m[33m'[39;49;00m: [94mNone[39;49;00m}[90m[39;49;00m
+>       actual = do_autodoc(app, [33m'[39;49;00m[33mclass[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.instance_variable.Bar[39;49;00m[33m'[39;49;00m, options)[90m[39;49;00m
+
+[1m[31mtests/test_ext_autodoc_autoclass.py[0m:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/test_ext_autodoc.py[0m:43: in do_autodoc
+    [0mdocumenter.generate()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1764: in generate
+    [0m[94mreturn[39;49;00m [96msuper[39;49;00m().generate(more_content=more_content,[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:976: in generate
+    [0m[96mself[39;49;00m.document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1755: in document_members
+    [0m[96msuper[39;49;00m().document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:840: in document_members
+    [0mclasses = [[96mcls[39;49;00m [94mfor[39;49;00m [96mcls[39;49;00m [95min[39;49;00m [96mself[39;49;00m.documenters.values()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:841: in <listcomp>
+    [0m[94mif[39;49;00m [96mcls[39;49;00m.can_document_member(member, mname, isattr, [96mself[39;49;00m)][90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'type'>, member = <object object at 0xffff83696a00>
+membername = 'attr2', isattr = True
+parent = <sphinx.ext.autodoc.ClassDocumenter object at 0xffff82190280>
+
+    [0m[37m@classmethod[39;49;00m[90m[39;49;00m
+    [37m@classmethod[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m [92mcan_document_member[39;49;00m([96mcls[39;49;00m, member: Any, membername: [96mstr[39;49;00m, isattr: [96mbool[39;49;00m, parent: Any[90m[39;49;00m
+                            ) -> [96mbool[39;49;00m:[90m[39;49;00m
+        [94mreturn[39;49;00m (inspect.isroutine(member) [95mor[39;49;00m[90m[39;49;00m
+                [96misinstance[39;49;00m(member, ([96mclassmethod[39;49;00m, [96mproperty[39;49;00m)) [95mor[39;49;00m[90m[39;49;00m
+>               (inspect.isdatadescriptor(member) [95mand[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(parent, ModuleDocumenter)))[90m[39;49;00m
+[1m[31mE       AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescriptor'[0m
+
+[1m[31msphinx/ext/autodoc/__init__.py[0m:2075: AttributeError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[31m[1m_______________________ test_inherited_instance_variable _______________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_inherited_instance_variable[39;49;00m(app):[90m[39;49;00m
+        options = {[33m'[39;49;00m[33mmembers[39;49;00m[33m'[39;49;00m: [94mNone[39;49;00m,[90m[39;49;00m
+                   [33m'[39;49;00m[33minherited-members[39;49;00m[33m'[39;49;00m: [94mNone[39;49;00m}[90m[39;49;00m
+>       actual = do_autodoc(app, [33m'[39;49;00m[33mclass[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.instance_variable.Bar[39;49;00m[33m'[39;49;00m, options)[90m[39;49;00m
+
+[1m[31mtests/test_ext_autodoc_autoclass.py[0m:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/test_ext_autodoc.py[0m:43: in do_autodoc
+    [0mdocumenter.generate()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1764: in generate
+    [0m[94mreturn[39;49;00m [96msuper[39;49;00m().generate(more_content=more_content,[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:976: in generate
+    [0m[96mself[39;49;00m.document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1755: in document_members
+    [0m[96msuper[39;49;00m().document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:840: in document_members
+    [0mclasses = [[96mcls[39;49;00m [94mfor[39;49;00m [96mcls[39;49;00m [95min[39;49;00m [96mself[39;49;00m.documenters.values()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:841: in <listcomp>
+    [0m[94mif[39;49;00m [96mcls[39;49;00m.can_document_member(member, mname, isattr, [96mself[39;49;00m)][90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'type'>, member = <object object at 0xffff83696a00>
+membername = 'attr2', isattr = True
+parent = <sphinx.ext.autodoc.ClassDocumenter object at 0xffff8461a3c0>
+
+    [0m[37m@classmethod[39;49;00m[90m[39;49;00m
+    [37m@classmethod[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m [92mcan_document_member[39;49;00m([96mcls[39;49;00m, member: Any, membername: [96mstr[39;49;00m, isattr: [96mbool[39;49;00m, parent: Any[90m[39;49;00m
+                            ) -> [96mbool[39;49;00m:[90m[39;49;00m
+        [94mreturn[39;49;00m (inspect.isroutine(member) [95mor[39;49;00m[90m[39;49;00m
+                [96misinstance[39;49;00m(member, ([96mclassmethod[39;49;00m, [96mproperty[39;49;00m)) [95mor[39;49;00m[90m[39;49;00m
+>               (inspect.isdatadescriptor(member) [95mand[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(parent, ModuleDocumenter)))[90m[39;49;00m
+[1m[31mE       AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescriptor'[0m
+
+[1m[31msphinx/ext/autodoc/__init__.py[0m:2075: AttributeError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[31m[1m________________________ test_uninitialized_attributes _________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.skipif(sys.version_info < ([94m3[39;49;00m, [94m6[39;49;00m), reason=[33m'[39;49;00m[33mpy36+ is available since python3.6.[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_uninitialized_attributes[39;49;00m(app):[90m[39;49;00m
+        options = {[33m"[39;49;00m[33mmembers[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m,[90m[39;49;00m
+                   [33m"[39;49;00m[33minherited-members[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m}[90m[39;49;00m
+>       actual = do_autodoc(app, [33m'[39;49;00m[33mclass[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.uninitialized_attributes.Derived[39;49;00m[33m'[39;49;00m, options)[90m[39;49;00m
+
+[1m[31mtests/test_ext_autodoc_autoclass.py[0m:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/test_ext_autodoc.py[0m:43: in do_autodoc
+    [0mdocumenter.generate()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1764: in generate
+    [0m[94mreturn[39;49;00m [96msuper[39;49;00m().generate(more_content=more_content,[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:976: in generate
+    [0m[96mself[39;49;00m.document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1755: in document_members
+    [0m[96msuper[39;49;00m().document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:840: in document_members
+    [0mclasses = [[96mcls[39;49;00m [94mfor[39;49;00m [96mcls[39;49;00m [95min[39;49;00m [96mself[39;49;00m.documenters.values()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:841: in <listcomp>
+    [0m[94mif[39;49;00m [96mcls[39;49;00m.can_document_member(member, mname, isattr, [96mself[39;49;00m)][90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'type'>, member = <object object at 0xffff83696a00>
+membername = 'attr3', isattr = True
+parent = <sphinx.ext.autodoc.ClassDocumenter object at 0xffff826b1aa0>
+
+    [0m[37m@classmethod[39;49;00m[90m[39;49;00m
+    [37m@classmethod[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m [92mcan_document_member[39;49;00m([96mcls[39;49;00m, member: Any, membername: [96mstr[39;49;00m, isattr: [96mbool[39;49;00m, parent: Any[90m[39;49;00m
+                            ) -> [96mbool[39;49;00m:[90m[39;49;00m
+        [94mreturn[39;49;00m (inspect.isroutine(member) [95mor[39;49;00m[90m[39;49;00m
+                [96misinstance[39;49;00m(member, ([96mclassmethod[39;49;00m, [96mproperty[39;49;00m)) [95mor[39;49;00m[90m[39;49;00m
+>               (inspect.isdatadescriptor(member) [95mand[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(parent, ModuleDocumenter)))[90m[39;49;00m
+[1m[31mE       AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescriptor'[0m
+
+[1m[31msphinx/ext/autodoc/__init__.py[0m:2075: AttributeError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[31m[1m__________________ test_undocumented_uninitialized_attributes __________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.skipif(sys.version_info < ([94m3[39;49;00m, [94m6[39;49;00m), reason=[33m'[39;49;00m[33mpy36+ is available since python3.6.[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_undocumented_uninitialized_attributes[39;49;00m(app):[90m[39;49;00m
+        options = {[33m"[39;49;00m[33mmembers[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m,[90m[39;49;00m
+                   [33m"[39;49;00m[33minherited-members[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m,[90m[39;49;00m
+                   [33m"[39;49;00m[33mundoc-members[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m}[90m[39;49;00m
+>       actual = do_autodoc(app, [33m'[39;49;00m[33mclass[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.uninitialized_attributes.Derived[39;49;00m[33m'[39;49;00m, options)[90m[39;49;00m
+
+[1m[31mtests/test_ext_autodoc_autoclass.py[0m:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/test_ext_autodoc.py[0m:43: in do_autodoc
+    [0mdocumenter.generate()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1764: in generate
+    [0m[94mreturn[39;49;00m [96msuper[39;49;00m().generate(more_content=more_content,[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:976: in generate
+    [0m[96mself[39;49;00m.document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1755: in document_members
+    [0m[96msuper[39;49;00m().document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:840: in document_members
+    [0mclasses = [[96mcls[39;49;00m [94mfor[39;49;00m [96mcls[39;49;00m [95min[39;49;00m [96mself[39;49;00m.documenters.values()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:841: in <listcomp>
+    [0m[94mif[39;49;00m [96mcls[39;49;00m.can_document_member(member, mname, isattr, [96mself[39;49;00m)][90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'type'>, member = <object object at 0xffff83696a00>
+membername = 'attr3', isattr = True
+parent = <sphinx.ext.autodoc.ClassDocumenter object at 0xffff81bcc8c0>
+
+    [0m[37m@classmethod[39;49;00m[90m[39;49;00m
+    [37m@classmethod[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m [92mcan_document_member[39;49;00m([96mcls[39;49;00m, member: Any, membername: [96mstr[39;49;00m, isattr: [96mbool[39;49;00m, parent: Any[90m[39;49;00m
+                            ) -> [96mbool[39;49;00m:[90m[39;49;00m
+        [94mreturn[39;49;00m (inspect.isroutine(member) [95mor[39;49;00m[90m[39;49;00m
+                [96misinstance[39;49;00m(member, ([96mclassmethod[39;49;00m, [96mproperty[39;49;00m)) [95mor[39;49;00m[90m[39;49;00m
+>               (inspect.isdatadescriptor(member) [95mand[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(parent, ModuleDocumenter)))[90m[39;49;00m
+[1m[31mE       AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescriptor'[0m
+
+[1m[31msphinx/ext/autodoc/__init__.py[0m:2075: AttributeError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[31m[1m_______________________________ test_properties ________________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_properties[39;49;00m(app):[90m[39;49;00m
+        options = {[33m"[39;49;00m[33mmembers[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m}[90m[39;49;00m
+        actual = do_autodoc(app, [33m'[39;49;00m[33mclass[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.properties.Foo[39;49;00m[33m'[39;49;00m, options)[90m[39;49;00m
+>       [94massert[39;49;00m [96mlist[39;49;00m(actual) == [[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m.. py:class:: Foo()[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   :module: target.properties[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   docstring[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   .. py:property:: Foo.prop1[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      :module: target.properties[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      :type: int[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      docstring[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   .. py:property:: Foo.prop2[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      :module: target.properties[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      :classmethod:[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      :type: int[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m      docstring[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+        ][90m[39;49;00m
+[1m[31mE       AssertionError: assert ['', '.. py:c...ing', '', ...] == ['', '.. py:c...ing', '', ...][0m
+[1m[31mE         [0m
+[1m[31mE         Right contains 8 more items, first extra item: [0m[33m'[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         Use -v to get more diff[0m
+
+[1m[31mtests/test_ext_autodoc_autoclass.py[0m:207: AssertionError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[31m[1m_____________________________ test_slots_attribute _____________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_slots_attribute[39;49;00m(app):[90m[39;49;00m
+        options = {[33m"[39;49;00m[33mmembers[39;49;00m[33m"[39;49;00m: [94mNone[39;49;00m}[90m[39;49;00m
+>       actual = do_autodoc(app, [33m'[39;49;00m[33mclass[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.slots.Bar[39;49;00m[33m'[39;49;00m, options)[90m[39;49;00m
+
+[1m[31mtests/test_ext_autodoc_autoclass.py[0m:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31mtests/test_ext_autodoc.py[0m:43: in do_autodoc
+    [0mdocumenter.generate()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1764: in generate
+    [0m[94mreturn[39;49;00m [96msuper[39;49;00m().generate(more_content=more_content,[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:976: in generate
+    [0m[96mself[39;49;00m.document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:1755: in document_members
+    [0m[96msuper[39;49;00m().document_members(all_members)[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:840: in document_members
+    [0mclasses = [[96mcls[39;49;00m [94mfor[39;49;00m [96mcls[39;49;00m [95min[39;49;00m [96mself[39;49;00m.documenters.values()[90m[39;49;00m
+[1m[31msphinx/ext/autodoc/__init__.py[0m:841: in <listcomp>
+    [0m[94mif[39;49;00m [96mcls[39;49;00m.can_document_member(member, mname, isattr, [96mself[39;49;00m)][90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'type'>, member = <object object at 0xffff83696850>
+membername = 'attr1', isattr = False
+parent = <sphinx.ext.autodoc.ClassDocumenter object at 0xffff81f5f730>
+
+    [0m[37m@classmethod[39;49;00m[90m[39;49;00m
+    [37m@classmethod[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m [92mcan_document_member[39;49;00m([96mcls[39;49;00m, member: Any, membername: [96mstr[39;49;00m, isattr: [96mbool[39;49;00m, parent: Any[90m[39;49;00m
+                            ) -> [96mbool[39;49;00m:[90m[39;49;00m
+        [94mreturn[39;49;00m (inspect.isroutine(member) [95mor[39;49;00m[90m[39;49;00m
+                [96misinstance[39;49;00m(member, ([96mclassmethod[39;49;00m, [96mproperty[39;49;00m)) [95mor[39;49;00m[90m[39;49;00m
+>               (inspect.isdatadescriptor(member) [95mand[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(parent, ModuleDocumenter)))[90m[39;49;00m
+[1m[31mE       AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescriptor'[0m
+
+[1m[31msphinx/ext/autodoc/__init__.py[0m:2075: AttributeError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[31m[1m____________________________ test_class_properties _____________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mhtml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mext-autodoc[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+    [94mdef[39;49;00m [92mtest_class_properties[39;49;00m(app):[90m[39;49;00m
+        actual = do_autodoc(app, [33m'[39;49;00m[33mproperty[39;49;00m[33m'[39;49;00m, [33m'[39;49;00m[33mtarget.properties.Foo.prop2[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
+>       [94massert[39;49;00m [96mlist[39;49;00m(actual) == [[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m.. py:property:: Foo.prop2[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   :module: target.properties[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   :classmethod:[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   :type: int[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m   docstring[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+            [33m'[39;49;00m[33m'[39;49;00m,[90m[39;49;00m
+        ][90m[39;49;00m
+[1m[31mE       AssertionError: assert ['', '.. py:p...operties', ''] == ['', '.. py:p...int', '', ...][0m
+[1m[31mE         [0m
+[1m[31mE         At index 3 diff: [0m[33m'[39;49;00m[33m'[39;49;00m[90m[39;49;00m != [0m[33m'[39;49;00m[33m   :classmethod:[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         Right contains 4 more items, first extra item: [0m[33m'[39;49;00m[33m   :type: int[39;49;00m[33m'[39;49;00m[90m[39;49;00m[0m
+[1m[31mE         Use -v to get more diff[0m
+
+[1m[31mtests/test_ext_autodoc_autoproperty.py[0m:34: AssertionError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+[33m=============================== warnings summary ===============================[0m
+sphinx/util/docutils.py:44
+  /testbed/sphinx/util/docutils.py:44: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    __version_info__ = tuple(LooseVersion(docutils.__version__).version)
+
+sphinx/highlighting.py:67
+  /testbed/sphinx/highlighting.py:67: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if tuple(LooseVersion(pygmentsversion).version) <= (2, 7, 4):
+
+sphinx/registry.py:24
+  /testbed/sphinx/registry.py:24: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    from pkg_resources import iter_entry_points
+
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+tests/test_domain_py.py: 33 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:114: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+    _gaq.push(['_setAllowLinker', true]);
+
+tests/test_domain_py.py: 33 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:70: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py: 33 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:99: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py: 33 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:215: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py: 33 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:238: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_domain_py_xrefs_abbreviations
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_domain_py_canonical
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names_disabled
+  <template>:33: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_domain_py_xrefs_abbreviations
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_domain_py_canonical
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names_disabled
+  <template>:224: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_domain_py_xrefs_abbreviations
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_domain_py_canonical
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names_disabled
+  <template>:386: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_domain_py_xrefs_abbreviations
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_domain_py_canonical
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names
+tests/test_domain_py.py::test_python_python_use_unqualified_type_names_disabled
+  <template>:401: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+[32m[1m_____________________________ test_domain_py_xrefs _____________________________[0m
+----------------------------- Captured stdout call -----------------------------
+[<pending_xref: <literal...>>, <pending_xref: <literal...>>]
+<pending_xref py:class="B" py:module="test.extra" refdoc="module_option" refdomain="py" refexplicit="False" reftarget="foo" reftype="meth" refwarn="False"><literal classes="xref py py-meth">foo()</literal></pending_xref>
+<pending_xref py:class="B" py:module="test.extra" refdoc="module_option" refdomain="py" refexplicit="False" reftarget="foo" reftype="meth" refwarn="False"><literal classes="xref py py-meth">foo()</literal></pending_xref>
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/dummy
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mbuilding [dummy]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m[new config] 6 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[ 16%] [35mabbr[39;49;00m                                                 [01mreading sources... [39;49;00m[ 33%] [35mcanonical[39;49;00m                                            [01mreading sources... [39;49;00m[ 50%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 66%] [35mmodule[39;49;00m                                               [01mreading sources... [39;49;00m[ 83%] [35mmodule_option[39;49;00m                                        [01mreading sources... [39;49;00m[100%] [35mroles[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 16%] [32mabbr[39;49;00m                                                  [01mwriting output... [39;49;00m[ 33%] [32mcanonical[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 66%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 83%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [html]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 16%] [32mabbr[39;49;00m                                                  [01mwriting output... [39;49;00m[ 33%] [32mcanonical[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 66%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 83%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+[01mgenerating indices... [39;49;00mgenindex py-modindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mcopying static files... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/dummy
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [dummy]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 16%] [32mabbr[39;49;00m                                                  [01mwriting output... [39;49;00m[ 33%] [32mcanonical[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 66%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 83%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [html]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 16%] [32mabbr[39;49;00m                                                  [01mwriting output... [39;49;00m[ 33%] [32mcanonical[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 66%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 83%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+[01mgenerating indices... [39;49;00mgenindex py-modindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mcopying static files... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/dummy
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [dummy]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 16%] [32mabbr[39;49;00m                                                  [01mwriting output... [39;49;00m[ 33%] [32mcanonical[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 66%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 83%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mbuilding [html]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m[new config] 6 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[ 16%] [35mabbr[39;49;00m                                                 [01mreading sources... [39;49;00m[ 33%] [35mcanonical[39;49;00m                                            [01mreading sources... [39;49;00m[ 50%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 66%] [35mmodule[39;49;00m                                               [01mreading sources... [39;49;00m[ 83%] [35mmodule_option[39;49;00m                                        [01mreading sources... [39;49;00m[100%] [35mroles[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 16%] [32mabbr[39;49;00m                                                  [01mwriting output... [39;49;00m[ 33%] [32mcanonical[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 66%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 83%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+[01mgenerating indices... [39;49;00mgenindex py-modindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mcopying static files... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of hello, other instance in index, use :noindex: for one of them[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of hello, other instance in index, use :noindex: for one of them[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of hello, other instance in index, use :noindex: for one of them[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:3: WARNING: duplicate object description of _io.StringIO, other instance in index, use :noindex: for one of them[39;49;00m
+
+[32m[1m_____________________________ test_info_field_list _____________________________[0m
+----------------------------- Captured stdout call -----------------------------
+<document source="/tmp/pytest-of-root/pytest-0/root/index.rst"><target ids="['module-example']" ismod="True"/><index entries="[('pair', 'module; example', 'module-example', '', None)]"/><index entries="[('single', 'Class (class in example)', 'example.Class', '', None)]"/><desc classes="py class" desctype="class" domain="py" noindex="False" objtype="class"><desc_signature class="" classes="sig sig-object" fullname="Class" ids="example.Class" module="example"><desc_annotation xml:space="preserve">class </desc_annotation><desc_addname classes="sig-prename descclassname" xml:space="preserve">example.</desc_addname><desc_name classes="sig-name descname" xml:space="preserve">Class</desc_name></desc_signature><desc_content><field_list><field><field_name>Parameters</field_name><field_body><bullet_list><list_item><paragraph><literal_strong py:class="Class" py:module="example" refspecific="True">name</literal_strong> (<pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="str" reftype="class"><literal_emphasis>str</literal_emphasis></pending_xref>) -- blah blah</paragraph></list_item><list_item><paragraph><literal_strong py:class="Class" py:module="example" refspecific="True">age</literal_strong> (<pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="int" reftype="class"><literal_emphasis>int</literal_emphasis></pending_xref>) -- blah blah</paragraph></list_item><list_item><paragraph><literal_strong py:class="Class" py:module="example" refspecific="True">items</literal_strong> (<pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="Tuple" reftype="class"><literal_emphasis>Tuple</literal_emphasis></pending_xref><literal_emphasis>[</literal_emphasis><pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="str" reftype="class"><literal_emphasis>str</literal_emphasis></pending_xref><literal_emphasis>, </literal_emphasis><literal_emphasis>...</literal_emphasis><literal_emphasis>]</literal_emphasis>) -- blah blah</paragraph></list_item><list_item><paragraph><literal_strong py:class="Class" py:module="example" refspecific="True">params</literal_strong> (<pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="Dict" reftype="class"><literal_emphasis>Dict</literal_emphasis></pending_xref><literal_emphasis>[</literal_emphasis><pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="str" reftype="class"><literal_emphasis>str</literal_emphasis></pending_xref><literal_emphasis>, </literal_emphasis><pending_xref py:class="Class" py:module="example" refdomain="py" refexplicit="False" refspecific="True" reftarget="str" reftype="class"><literal_emphasis>str</literal_emphasis></pending_xref><literal_emphasis>]</literal_emphasis>) -- blah blah</paragraph></list_item></bullet_list></field_body></field></field_list></desc_content></desc></document>
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of f, other instance in index, use :noindex: for one of them[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:2: WARNING: duplicate object description of g, other instance in index, use :noindex: for one of them[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py-python_use_unqualified_type_names
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py-python_use_unqualified_type_names/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
+[01mbuilding [html]: [39;49;00mtargets for 1 source files that are out of date
+[01mupdating environment: [39;49;00m[new config] 1 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[100%] [35mindex[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[100%] [32mindex[39;49;00m                                                 
+[01mgenerating indices... [39;49;00mgenindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mcopying static files... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+[01mbuild succeeded.[39;49;00m
+
+The HTML pages are in ../tmp/pytest-of-root/pytest-0/domain-py-python_use_unqualified_type_names/_build/html.
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py-python_use_unqualified_type_names
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py-python_use_unqualified_type_names/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
+[01mbuilding [html]: [39;49;00mtargets for 0 source files that are out of date
+[01mupdating environment: [39;49;00m[config changed ('python_use_unqualified_type_names')] 1 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[100%] [35mindex[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[100%] [32mindex[39;49;00m                                                 
+[01mgenerating indices... [39;49;00mgenindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mcopying static files... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+[01mbuild succeeded.[39;49;00m
+
+The HTML pages are in ../tmp/pytest-of-root/pytest-0/domain-py-python_use_unqualified_type_names/_build/html.
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py-xref-warning
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py-xref-warning/_build/dummy
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
+[01mbuilding [dummy]: [39;49;00mtargets for 1 source files that are out of date
+[01mupdating environment: [39;49;00m[new config] 1 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[100%] [35mindex[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[100%] [32mindex[39;49;00m                                                 
+[01mbuild succeeded, 2 warnings.[39;49;00m
+
+The dummy builder generates no files.
+
+# warning: 
+[91m/tmp/pytest-of-root/pytest-0/domain-py-xref-warning/index.rst:6: WARNING: undefined label: no-label[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py-xref-warning/index.rst:6: WARNING: Failed to create a cross reference. A title or caption not found: existing-label[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/ext-autodoc
+# outdir: /tmp/pytest-of-root/pytest-0/ext-autodoc/_build/html
+# status: 
+[01mRunning Sphinx v4.2.0+/939c7bb7f[39;49;00m
+
+# warning: 
+
+============================= slowest 25 durations =============================
+0.25s setup    tests/test_domain_py.py::test_domain_py_xrefs
+0.13s call     tests/test_domain_py.py::test_domain_py_xrefs_abbreviations
+0.12s call     tests/test_domain_py.py::test_domain_py_canonical
+0.12s call     tests/test_domain_py.py::test_resolve_xref_for_properties
+0.08s call     tests/test_domain_py.py::test_domain_py_xrefs
+0.06s call     tests/test_domain_py.py::test_python_python_use_unqualified_type_names
+0.06s call     tests/test_domain_py.py::test_python_python_use_unqualified_type_names_disabled
+0.05s call     tests/test_ext_autodoc_autoclass.py::test_show_inheritance_for_subclass_of_generic_type
+0.05s call     tests/test_ext_autodoc_autoclass.py::test_autodoc_process_bases
+0.03s call     tests/test_domain_py.py::test_noindexentry
+0.02s call     tests/test_domain_py.py::test_optional_pyfunction_signature
+0.02s setup    tests/test_domain_py.py::test_optional_pyfunction_signature
+0.02s setup    tests/test_ext_autodoc_autoclass.py::test_class_alias
+0.02s call     tests/test_ext_autodoc_autoclass.py::test_properties
+0.02s setup    tests/test_domain_py.py::test_parse_annotation
+0.01s setup    tests/test_domain_py.py::test_pyfunction_with_union_type_operator
+0.01s setup    tests/test_ext_autodoc_autoclass.py::test_classes
+0.01s setup    tests/test_domain_py.py::test_domain_py_objects
+0.01s call     tests/test_domain_py.py::test_domain_py_objects
+0.01s setup    tests/test_domain_py.py::test_domain_py_xrefs_abbreviations
+0.01s setup    tests/test_domain_py.py::test_resolve_xref_for_properties
+0.01s setup    tests/test_ext_autodoc_autoclass.py::test_inherited_instance_variable
+0.01s setup    tests/test_domain_py.py::test_pyexception_signature
+0.01s setup    tests/test_domain_py.py::test_pyattribute
+0.01s setup    tests/test_ext_autodoc_autoclass.py::test_decorators
+[36m[1m=========================== short test summary info ============================[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_function_signatures[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_xrefs[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_xrefs_abbreviations[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_objects[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_resolve_xref_for_properties[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_find_obj[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_canonical[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_get_full_qualified_name[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_parse_annotation[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_signature_full[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_signature_full_py38[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_with_number_literals[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_with_union_type_operator[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_optional_pyfunction_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyexception_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata_signature_old[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata_with_union_type_operator[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyobject_prefix[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyclass_options[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pymethod_options[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyclassmethod[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pystaticmethod[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyattribute[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydecorator_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydecoratormethod_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_canonical[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_canonical_definition_overrides[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_canonical_definition_skip[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_canonical_duplicated[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_info_field_list[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_info_field_list_piped_type[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_info_field_list_var[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_module_index[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_module_index_submodule[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_module_index_not_collapsed[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_modindex_common_prefix[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_noindexentry[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_python_python_use_unqualified_type_names[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_python_python_use_unqualified_type_names_disabled[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_warn_missing_reference[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_classes[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_decorators[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_show_inheritance_for_subclass_of_generic_type[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_autodoc_process_bases[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_class_doc_from_class[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_class_doc_from_init[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_class_doc_from_both[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_class_alias[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_class_alias_having_doccomment[0m
+[32mPASSED[0m tests/test_ext_autodoc_autoproperty.py::[1mtest_properties[0m
+[31mFAILED[0m tests/test_domain_py.py::[1mtest_pyproperty[0m - AssertionError: The node[1][1] has 3 child nodes, not 4
+[31mFAILED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_instance_variable[0m - AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescri...
+[31mFAILED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_inherited_instance_variable[0m - AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescri...
+[31mFAILED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_uninitialized_attributes[0m - AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescri...
+[31mFAILED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_undocumented_uninitialized_attributes[0m - AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescri...
+[31mFAILED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_properties[0m - AssertionError: assert ['', '.. py:c...ing', '', ...] == ['', '.. py:c...in...
+[31mFAILED[0m tests/test_ext_autodoc_autoclass.py::[1mtest_slots_attribute[0m - AttributeError: module 'sphinx.util.inspect' has no attribute 'isdatadescri...
+[31mFAILED[0m tests/test_ext_autodoc_autoproperty.py::[1mtest_class_properties[0m - AssertionError: assert ['', '.. py:p...operties', ''] == ['', '.. py:p...in...
+[31m================== [31m[1m8 failed[0m, [32m54 passed[0m, [33m192 warnings[0m[31m in 2.36s[0m[31m ==================[0m
+py39: exit 1 (2.74 seconds) /testbed> python -X dev -m pytest -rA --durations 25 tests/roots/test-ext-autodoc/target/properties.py tests/test_domain_py.py tests/test_ext_autodoc_autoclass.py tests/test_ext_autodoc_autoproperty.py pid=111
+  py39: FAIL code 1 (2.74=setup[0.01]+cmd[2.74] seconds)
+  evaluation failed :( (2.81 seconds)
++ git checkout 939c7bb7ff7c53a4d27df067cea637540f0e1dad tests/roots/test-ext-autodoc/target/properties.py tests/test_domain_py.py tests/test_ext_autodoc_autoclass.py tests/test_ext_autodoc_autoproperty.py
+Updated 4 paths from 91864e513

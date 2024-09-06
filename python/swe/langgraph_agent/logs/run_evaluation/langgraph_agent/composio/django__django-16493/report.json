@@ -6,14 +6,13 @@
         "resolved": false,
         "tests_status": {
             "FAIL_TO_PASS": {
-                "success": [],
-                "failure": [
+                "success": [
                     "A callable that returns default_storage is not omitted when"
-                ]
+                ],
+                "failure": []
             },
             "PASS_TO_PASS": {
-                "success": [],
-                "failure": [
+                "success": [
                     "test_deconstruction (file_storage.tests.FileSystemStorageTests.test_deconstruction)",
                     "FileSystemStorage.__init__() shouldn't evaluate base_url.",
                     "test_deprecation_warning (file_storage.tests.GetStorageClassTests.test_deprecation_warning)",
@@ -22,7 +21,6 @@
                     "get_storage_class raises an error if the requested class don't exist.",
                     "get_storage_class raises an error if the requested module don't exist.",
                     "ContentFile can be saved correctly with the filesystem storage,",
-                    "test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises)",
                     "test_callable_class_storage_file_field (file_storage.tests.FieldCallableFileStorageTests.test_callable_class_storage_file_field)",
                     "test_callable_function_storage_file_field (file_storage.tests.FieldCallableFileStorageTests.test_callable_function_storage_file_field)",
                     "test_callable_storage_file_field_in_model (file_storage.tests.FieldCallableFileStorageTests.test_callable_storage_file_field_in_model)",
@@ -105,6 +103,9 @@
                     "test_save_doesnt_close (file_storage.tests.FileStorageTests.test_save_doesnt_close)",
                     "Test the File storage API with a file-like object coming from",
                     "test_race_condition (file_storage.tests.FileSaveRaceConditionTest.test_race_condition)"
+                ],
+                "failure": [
+                    "test_callable_base_class_error_raises (file_storage.tests.FieldCallableFileStorageTests.test_callable_base_class_error_raises)"
                 ]
             },
             "FAIL_TO_FAIL": {
