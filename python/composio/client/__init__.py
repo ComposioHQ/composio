@@ -104,12 +104,15 @@ class Composio(BaseClient):
             )
             if env_api_key:
                 self._api_key = env_api_key
+
         if self._api_key is None:
             raise ApiKeyNotProvidedError()
+
         self._api_key = self.validate_api_key(
             key=t.cast(str, self._api_key),
             base_url=self.base_url,
         )
+
         return self._api_key
 
     @api_key.setter
