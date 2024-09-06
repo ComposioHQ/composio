@@ -1,0 +1,72 @@
+{
+    "django__django-14089": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_reversed (utils_tests.test_datastructures.OrderedSetTests)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_copy (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_create_with_invalid_key (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_create_with_invalid_values (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_del (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_dict (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_equal (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_getitem (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_in (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_items (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_list (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_repr (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_set (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_str (utils_tests.test_datastructures.CaseInsensitiveMappingTests)",
+                    "test_dictwrapper (utils_tests.test_datastructures.DictWrapperTests)",
+                    "test_custom_warning (utils_tests.test_datastructures.ImmutableListTests)",
+                    "test_sort (utils_tests.test_datastructures.ImmutableListTests)",
+                    "test_bool (utils_tests.test_datastructures.OrderedSetTests)",
+                    "test_contains (utils_tests.test_datastructures.OrderedSetTests)",
+                    "test_discard (utils_tests.test_datastructures.OrderedSetTests)",
+                    "test_init_with_iterable (utils_tests.test_datastructures.OrderedSetTests)",
+                    "test_len (utils_tests.test_datastructures.OrderedSetTests)",
+                    "test_remove (utils_tests.test_datastructures.OrderedSetTests)",
+                    "test_appendlist (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_copy (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_deepcopy (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_dict_translation (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_getlist_default (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_getlist_doesnt_mutate (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_getlist_none_empty_values (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_internal_getlist_does_mutate (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_multivaluedict (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_pickle (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_repr (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_setdefault (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_setitem (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_dict_arg (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_kwargs (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_multivaluedict_arg (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_no_args (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_raises_correct_exceptions (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_too_many_args (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_with_empty_iterable (utils_tests.test_datastructures.MultiValueDictTests)",
+                    "test_update_with_iterable_of_pairs (utils_tests.test_datastructures.MultiValueDictTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

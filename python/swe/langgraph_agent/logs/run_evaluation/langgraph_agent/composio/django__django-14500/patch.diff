@@ -1,0 +1,55 @@
+diff --git a/django/db/migrations/executor.py b/django/db/migrations/executor.py
+index 57042a86..d0a43a67 100644
+--- a/django/db/migrations/executor.py
++++ b/django/db/migrations/executor.py
+@@ -254,6 +254,8 @@ class MigrationExecutor:
+         if migration.replaces:
+             for app_label, name in migration.replaces:
+                 self.recorder.record_unapplied(app_label, name)
++            # Add this line to mark the squashed migration as unapplied
++            self.recorder.record_unapplied(migration.app_label, migration.name)
+         else:
+             self.recorder.record_unapplied(migration.app_label, migration.name)
+         # Report progress
+diff --git a/tests/migrations/test_executor.py b/tests/migrations/test_executor.py
+index e61d8f12..fc7ffe73 100644
+--- a/tests/migrations/test_executor.py
++++ b/tests/migrations/test_executor.py
+@@ -851,4 +851,36 @@ class ExecutorUnitTests(SimpleTestCase):
+ 
+         plan = executor.migration_plan({a1})
+ 
+-        self.assertEqual(plan, [])
++    @override_settings(MIGRATION_MODULES={"migrations": "migrations.test_migrations_squashed"})
++    def test_unapply_squashed_migration(self):
++        """
++        Tests unapplying a squashed migration marks both the squashed migration
++        and its replaced migrations as unapplied.
++        """
++        executor = MigrationExecutor(connection)
++        
++        # Apply the squashed migration
++        executor.migrate([("migrations", "0001_squashed_0002")])
++        
++        # Check that the squashed migration is applied
++        applied = executor.recorder.applied_migrations()
++        self.assertIn(("migrations", "0001_squashed_0002"), applied)
++        
++        # Unapply the squashed migration
++        executor.migrate([("migrations", None)])
++        
++        # Check that both the squashed migration and its replaced migrations are unapplied
++        applied = executor.recorder.applied_migrations()
++        self.assertNotIn(("migrations", "0001_squashed_0002"), applied)
++        self.assertNotIn(("migrations", "0001_initial"), applied)
++        self.assertNotIn(("migrations", "0002_second"), applied)
++        
++        # Check that the tables are gone
++        self.assertTableNotExists("migrations_author")
++        self.assertTableNotExists("migrations_book")
++
++
++
++
++
++

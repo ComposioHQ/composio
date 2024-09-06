@@ -1,0 +1,119 @@
+diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
+index 7a99b126..652a1147 100644
+--- a/django/db/models/fields/files.py
++++ b/django/db/models/fields/files.py
+@@ -295,8 +295,10 @@ class FileField(Field):
+         if kwargs.get("max_length") == 100:
+             del kwargs["max_length"]
+         kwargs["upload_to"] = self.upload_to
+-        if self.storage is not default_storage:
+-            kwargs["storage"] = getattr(self, "_storage_callable", self.storage)
++        if hasattr(self, "_storage_callable"):
++            kwargs["storage"] = self._storage_callable
++        elif self.storage is not default_storage:
++            kwargs["storage"] = self.storage
+         return name, path, args, kwargs
+ 
+     def get_internal_type(self):
+diff --git a/django/forms/fields.py b/django/forms/fields.py
+index 46de2f53..b59a3ac6 100644
+--- a/django/forms/fields.py
++++ b/django/forms/fields.py
+@@ -1386,3 +1386,7 @@ class JSONField(CharField):
+         return json.dumps(initial, sort_keys=True, cls=self.encoder) != json.dumps(
+             self.to_python(data), sort_keys=True, cls=self.encoder
+         )
++
++
++class_obj:FileField = cal()
++class_obj.
+\ No newline at end of file
+diff --git a/docs/ref/models/fields.txt b/docs/ref/models/fields.txt
+index 8d75280a..0658eb96 100644
+--- a/docs/ref/models/fields.txt
++++ b/docs/ref/models/fields.txt
+@@ -861,6 +861,15 @@ Has the following optional arguments:
+     handles the storage and retrieval of your files. See :doc:`/topics/files`
+     for details on how to provide this object.
+ 
++    If a callable is used, it's called with the instance as its only argument.
++
++    .. note::
++        The callable storage will be properly handled in the field's
++        ``deconstruct()`` method, ensuring consistent migration behavior.
++
++The default form widget for this field is a
++    for details on how to provide this object.
++
+ The default form widget for this field is a
+ :class:`~django.forms.ClearableFileInput`.
+ 
+diff --git a/docs/releases/5.0.txt b/docs/releases/5.0.txt
+index d1a4cba8..071a9058 100644
+--- a/docs/releases/5.0.txt
++++ b/docs/releases/5.0.txt
+@@ -97,6 +97,32 @@ Minor features
+ :mod:`django.contrib.sites`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
++* ...
++:mod:`django.contrib.staticfiles`
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++* ...
++
++:mod:`django.core`
++~~~~~~~~~~~~~~~~~~
++
++* ...
++
++:mod:`django.db`
++~~~~~~~~~~~~~~~~
++
++* ``FileField`` now correctly handles callable storage that returns ``default_storage``
++  in its ``deconstruct()`` method. Previously, such callables were omitted from the
++  deconstructed form, which could lead to inconsistent migration behavior.
++
++:mod:`django.db.migrations`
++~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++* ...
++
++:mod:`django.db.models`
++~~~~~~~~~~~~~~~~~~~~~~~
++
+ * ...
+ 
+ :mod:`django.contrib.staticfiles`
+diff --git a/tests/model_fields/test_filefield.py b/tests/model_fields/test_filefield.py
+index 2259c1e4..ebf2d458 100644
+--- a/tests/model_fields/test_filefield.py
++++ b/tests/model_fields/test_filefield.py
+@@ -188,4 +188,26 @@ class FileFieldTests(TestCase):
+             pass
+ 
+         document = MyDocument(myfile="test_file.py")
+-        self.assertEqual(document.myfile.field.model, MyDocument)
++    def test_deconstruct_with_callable_storage(self):
++        """
++        FileField deconstruction with callable storage should return the callable,
++        not the storage instance.
++        """
++        from django.core.files.storage import default_storage
++        
++        def get_storage():
++            return default_storage
++
++        field = models.FileField(storage=get_storage)
++        name, path, args, kwargs = field.deconstruct()
++        self.assertEqual(kwargs['storage'], get_storage)
++
++    def test_deconstruct_with_custom_storage(self):
++        """
++        FileField deconstruction with custom storage should return the storage instance.
++        """
++        from django.core.files.storage import FileSystemStorage
++        custom_storage = FileSystemStorage(location='/custom/location/')
++        field = models.FileField(storage=custom_storage)
++        name, path, args, kwargs = field.deconstruct()
++        self.assertEqual(kwargs['storage'], custom_storage)

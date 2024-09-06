@@ -1,0 +1,131 @@
+2024-09-05 18:25:04,811 - INFO - Environment image sweb.env.arm64.297af196949a2a635bce66:latest found for django__django-14089
+Building instance image sweb.eval.arm64.django__django-14089:latest for django__django-14089
+2024-09-05 18:25:57,517 - INFO - Creating container for django__django-14089...
+2024-09-05 18:25:57,547 - INFO - Container for django__django-14089 created: afbc6b141f25ed28f2f7b56e1d989be501875f8cfeaf29c743bd2672f51605fa
+2024-09-05 18:25:57,670 - INFO - Container for django__django-14089 started: afbc6b141f25ed28f2f7b56e1d989be501875f8cfeaf29c743bd2672f51605fa
+2024-09-05 18:25:57,671 - INFO - Intermediate patch for django__django-14089 written to logs/run_evaluation/langgraph_agent/composio/django__django-14089/patch.diff, now applying to container...
+2024-09-05 18:25:57,820 - INFO - Failed to apply patch to container, trying again...
+2024-09-05 18:25:57,853 - INFO - >>>>> Applied Patch:
+patching file django/utils/datastructures.py
+patching file docs/releases/4.0.txt
+patching file tests/utils_tests/test_datastructures.py
+
+2024-09-05 18:25:58,402 - INFO - Git diff before:
+diff --git a/django/utils/datastructures.py b/django/utils/datastructures.py
+index 871b016715..2beaf02d29 100644
+--- a/django/utils/datastructures.py
++++ b/django/utils/datastructures.py
+@@ -5,6 +5,7 @@ from collections.abc import Mapping
+ class OrderedSet:
+     """
+     A set which keeps the ordering of the inserted items.
++    Supports reversing using the reversed() built-in function.
+     """
+ 
+     def __init__(self, iterable=None):
+@@ -33,6 +34,8 @@ class OrderedSet:
+ 
+     def __len__(self):
+         return len(self.dict)
++    def __reversed__(self):
++        return reversed(self.dict)
+ 
+ 
+ class MultiValueDictKeyError(KeyError):
+diff --git a/docs/releases/4.0.txt b/docs/releases/4.0.txt
+index 27f19043a9..ce85ed7187 100644
+--- a/docs/releases/4.0.txt
++++ b/docs/releases/4.0.txt
+@@ -95,6 +95,17 @@ Minor features
+ 
+ * ...
+ 
++:mod:`django.contrib.gis`
++~~~~~~~~~~~~~~~~~~~~~~~~~
++
++* ...
++
++:mod:`django.utils`
++~~~~~~~~~~~~~~~~~~~
++
++* The :class:`~django.utils.datastructures.OrderedSet` class now supports reversing using the :func:`reversed` built-in function.
++
++
+ :mod:`django.contrib.gis`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/tests/utils_tests/test_datastructures.py b/tests/utils_tests/test_datastructures.py
+index 45d172f984..e3ca709727 100644
+--- a/tests/utils_tests/test_datastructures.py
++++ b/tests/utils_tests/test_datastructures.py
+@@ -54,6 +54,15 @@ class OrderedSetTests(SimpleTestCase):
+         s.add(2)
+         s.add(2)
+         self.assertEqual(len(s), 2)
++        self.assertEqual(len(s), 2)
++
++    def test_reversed(self):
++        s = OrderedSet([1, 2, 3, 4])
++        self.assertEqual(list(reversed(s)), [4, 3, 2, 1])
++        s.remove(3)
++        self.assertEqual(list(reversed(s)), [4, 2, 1])
++        s.add(5)
++        self.assertEqual(list(reversed(s)), [5, 4, 2, 1])
+ 
+ 
+ class MultiValueDictTests(SimpleTestCase):
+2024-09-05 18:25:58,403 - INFO - Eval script for django__django-14089 written to logs/run_evaluation/langgraph_agent/composio/django__django-14089/eval.sh; copying to container...
+2024-09-05 18:26:01,217 - INFO - Test runtime: 2.69 seconds
+2024-09-05 18:26:01,217 - INFO - Test output for django__django-14089 written to logs/run_evaluation/langgraph_agent/composio/django__django-14089/test_output.txt
+2024-09-05 18:26:01,257 - INFO - Git diff after:
+diff --git a/django/utils/datastructures.py b/django/utils/datastructures.py
+index 871b016715..2beaf02d29 100644
+--- a/django/utils/datastructures.py
++++ b/django/utils/datastructures.py
+@@ -5,6 +5,7 @@ from collections.abc import Mapping
+ class OrderedSet:
+     """
+     A set which keeps the ordering of the inserted items.
++    Supports reversing using the reversed() built-in function.
+     """
+ 
+     def __init__(self, iterable=None):
+@@ -33,6 +34,8 @@ class OrderedSet:
+ 
+     def __len__(self):
+         return len(self.dict)
++    def __reversed__(self):
++        return reversed(self.dict)
+ 
+ 
+ class MultiValueDictKeyError(KeyError):
+diff --git a/docs/releases/4.0.txt b/docs/releases/4.0.txt
+index 27f19043a9..ce85ed7187 100644
+--- a/docs/releases/4.0.txt
++++ b/docs/releases/4.0.txt
+@@ -95,6 +95,17 @@ Minor features
+ 
+ * ...
+ 
++:mod:`django.contrib.gis`
++~~~~~~~~~~~~~~~~~~~~~~~~~
++
++* ...
++
++:mod:`django.utils`
++~~~~~~~~~~~~~~~~~~~
++
++* The :class:`~django.utils.datastructures.OrderedSet` class now supports reversing using the :func:`reversed` built-in function.
++
++
+ :mod:`django.contrib.gis`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~
+2024-09-05 18:26:01,257 - INFO - Git diff changed after running eval script
+2024-09-05 18:26:01,257 - INFO - Grading answer for django__django-14089...
+2024-09-05 18:26:01,266 - INFO - report: {'django__django-14089': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_reversed (utils_tests.test_datastructures.OrderedSetTests)'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_copy (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_create_with_invalid_key (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_create_with_invalid_values (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_del (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_dict (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_equal (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_getitem (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_in (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_items (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_list (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_repr (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_set (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_str (utils_tests.test_datastructures.CaseInsensitiveMappingTests)', 'test_dictwrapper (utils_tests.test_datastructures.DictWrapperTests)', 'test_custom_warning (utils_tests.test_datastructures.ImmutableListTests)', 'test_sort (utils_tests.test_datastructures.ImmutableListTests)', 'test_bool (utils_tests.test_datastructures.OrderedSetTests)', 'test_contains (utils_tests.test_datastructures.OrderedSetTests)', 'test_discard (utils_tests.test_datastructures.OrderedSetTests)', 'test_init_with_iterable (utils_tests.test_datastructures.OrderedSetTests)', 'test_len (utils_tests.test_datastructures.OrderedSetTests)', 'test_remove (utils_tests.test_datastructures.OrderedSetTests)', 'test_appendlist (utils_tests.test_datastructures.MultiValueDictTests)', 'test_copy (utils_tests.test_datastructures.MultiValueDictTests)', 'test_deepcopy (utils_tests.test_datastructures.MultiValueDictTests)', 'test_dict_translation (utils_tests.test_datastructures.MultiValueDictTests)', 'test_getlist_default (utils_tests.test_datastructures.MultiValueDictTests)', 'test_getlist_doesnt_mutate (utils_tests.test_datastructures.MultiValueDictTests)', 'test_getlist_none_empty_values (utils_tests.test_datastructures.MultiValueDictTests)', 'test_internal_getlist_does_mutate (utils_tests.test_datastructures.MultiValueDictTests)', 'test_multivaluedict (utils_tests.test_datastructures.MultiValueDictTests)', 'test_pickle (utils_tests.test_datastructures.MultiValueDictTests)', 'test_repr (utils_tests.test_datastructures.MultiValueDictTests)', 'test_setdefault (utils_tests.test_datastructures.MultiValueDictTests)', 'test_setitem (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_dict_arg (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_kwargs (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_multivaluedict_arg (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_no_args (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_raises_correct_exceptions (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_too_many_args (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_with_empty_iterable (utils_tests.test_datastructures.MultiValueDictTests)', 'test_update_with_iterable_of_pairs (utils_tests.test_datastructures.MultiValueDictTests)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-14089: resolved: True
+2024-09-05 18:26:01,268 - INFO - Attempting to stop container sweb.eval.django__django-14089.langgraph_agent...
+2024-09-05 18:26:16,438 - INFO - Attempting to remove container sweb.eval.django__django-14089.langgraph_agent...
+2024-09-05 18:26:16,449 - INFO - Container sweb.eval.django__django-14089.langgraph_agent removed.
+2024-09-05 18:26:16,449 - INFO - Attempting to remove image sweb.eval.arm64.django__django-14089:latest...
+2024-09-05 18:26:16,593 - INFO - Image sweb.eval.arm64.django__django-14089:latest removed.

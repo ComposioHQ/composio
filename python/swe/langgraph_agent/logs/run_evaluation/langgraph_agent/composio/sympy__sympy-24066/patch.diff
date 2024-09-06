@@ -1,0 +1,56 @@
+diff --git a/sympy/physics/units/unitsystem.py b/sympy/physics/units/unitsystem.py
+index 3daf84c..502d4d4 100644
+--- a/sympy/physics/units/unitsystem.py
++++ b/sympy/physics/units/unitsystem.py
+@@ -4,6 +4,22 @@
+ 
+ from typing import Dict as tDict, Set as tSet
+ 
++from sympy.core.add import Add
++from sympy.core.function import (Derivative, Function)
++from sympy.core.mul import Mul
++from sympy.core.power import Pow
++from sympy.core.singleton import S
++from sympy.physics.units.dimensions import _QuantityMapper
++from sympy.physics.units.quantities import Quantity
++from sympy import exp
++
++from .dimensions import Dimension
++"""
++Unit system for physical quantities; include definition of constants.
++"""
++
++from typing import Dict as tDict, Set as tSet
++
+ from sympy.core.add import Add
+ from sympy.core.function import (Derivative, Function)
+ from sympy.core.mul import Mul
+@@ -148,7 +164,6 @@ def get_dimensional_expr(self, expr):
+         elif isinstance(expr, Quantity):
+             return self.get_quantity_dimension(expr).name
+         return S.One
+-
+     def _collect_factor_and_dimension(self, expr):
+         """
+         Return tuple with scale factor expression and dimension expression.
+@@ -189,6 +204,11 @@ def _collect_factor_and_dimension(self, expr):
+                 factor /= ifactor**count
+                 dim /= idim**count
+             return factor, dim
++        elif isinstance(expr, exp):
++            arg_factor, arg_dim = self._collect_factor_and_dimension(expr.args[0])
++            if not self.get_dimension_system().is_dimensionless(arg_dim):
++                raise ValueError(f"The argument of exp must be dimensionless, got {arg_dim}")
++            return expr.func(arg_factor), Dimension(1)
+         elif isinstance(expr, Function):
+             fds = [self._collect_factor_and_dimension(
+                 arg) for arg in expr.args]
+@@ -199,6 +219,8 @@ def _collect_factor_and_dimension(self, expr):
+         else:
+             return expr, Dimension(1)
+ 
++
++
+     def get_units_non_prefixed(self) -> tSet[Quantity]:
+         """
+         Return the units of the system that do not have a prefix.

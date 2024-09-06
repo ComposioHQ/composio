@@ -285,4 +285,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725527673/")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725604725/", run_id="langgraph_agent")

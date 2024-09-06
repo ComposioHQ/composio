@@ -1,0 +1,57 @@
+{
+    "scikit-learn__scikit-learn-10297": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_classifier_cv_store_cv_values"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge",
+                    "sklearn/linear_model/tests/test_ridge.py::test_primal_dual_relationship",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_singular",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_regression_sample_weights",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_sample_weights",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_shapes",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_intercept",
+                    "sklearn/linear_model/tests/test_ridge.py::test_toy_ridge_object",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_vs_lstsq",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_individual_penalties",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_cv_sparse_svd",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_sparse_svd",
+                    "sklearn/linear_model/tests/test_ridge.py::test_class_weights",
+                    "sklearn/linear_model/tests/test_ridge.py::test_class_weight_vs_sample_weight",
+                    "sklearn/linear_model/tests/test_ridge.py::test_class_weights_cv",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridgecv_store_cv_values",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridgecv_sample_weight",
+                    "sklearn/linear_model/tests/test_ridge.py::test_raises_value_error_if_sample_weights_greater_than_1d",
+                    "sklearn/linear_model/tests/test_ridge.py::test_sparse_design_with_sample_weights",
+                    "sklearn/linear_model/tests/test_ridge.py::test_raises_value_error_if_solver_not_supported",
+                    "sklearn/linear_model/tests/test_ridge.py::test_sparse_cg_max_iter",
+                    "sklearn/linear_model/tests/test_ridge.py::test_n_iter",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_fit_intercept_sparse",
+                    "sklearn/linear_model/tests/test_ridge.py::test_errors_and_values_helper",
+                    "sklearn/linear_model/tests/test_ridge.py::test_errors_and_values_svd_helper",
+                    "sklearn/linear_model/tests/test_ridge.py::test_ridge_classifier_no_support_multilabel",
+                    "sklearn/linear_model/tests/test_ridge.py::test_dtype_match",
+                    "sklearn/linear_model/tests/test_ridge.py::test_dtype_match_cholesky"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}
