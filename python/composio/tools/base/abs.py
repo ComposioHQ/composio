@@ -111,16 +111,13 @@ class _Request(t.Generic[ModelType]):
                 del prop["type"]  # Remove original type to avoid conflict in oneOf
                 continue
 
-            if (
-                "allOf" in prop
-                and len(prop["allOf"]) == 1
-                and "enum" in prop["allOf"][0]
-            ):
+            if "allOf" in prop and len(prop["allOf"]) == 1:
                 (schema,) = prop.pop("allOf")
                 prop.update(schema)
-                prop[
-                    "description"
-                ] += f" Note: choose value only from following options - {prop['enum']}"
+                if "enum" in schema:
+                    prop[
+                        "description"
+                    ] += f" Note: choose value only from following options - {prop['enum']}"
 
         request["properties"] = properties
         return request
@@ -170,6 +167,36 @@ class _Response(t.Generic[ModelType]):
     def schema(self) -> t.Dict:
         """Build request schema."""
         schema = self.wrapper.model_json_schema(by_alias=True)
+        schema = remove_json_ref(schema)
+        if "$defs" in schema:
+            del schema["$defs"]
+
+        properties = schema.get("properties", {})
+        for prop in properties.values():
+            if prop.get("file_readable", False):
+                prop["oneOf"] = [
+                    {
+                        "type": prop.get("type"),
+                        "description": prop.get("description", ""),
+                    },
+                    {
+                        "type": "string",
+                        "format": "file-path",
+                        "description": f"File path to {prop.get('description', '')}",
+                    },
+                ]
+                del prop["type"]  # Remove original type to avoid conflict in oneOf
+                continue
+
+            if "allOf" in prop and len(prop["allOf"]) == 1:
+                (schema,) = prop.pop("allOf")
+                prop.update(schema)
+                if "enum" in schema:
+                    prop[
+                        "description"
+                    ] += f" Note: choose value only from following options - {prop['enum']}"
+
+        schema["properties"] = properties
         schema["title"] = self.model.__name__
         return remove_json_ref(schema)
 

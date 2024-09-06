@@ -78,6 +78,24 @@ def _triggers(
         context.console.print(f"• {_trigger.name}")
 
 
+@_triggers.command(name="show")
+@click.argument("name", type=str)
+@handle_exceptions()
+@pass_context
+def _show(context: Context, name: str) -> None:
+    (trigger,) = context.client.triggers.get(triggers=[name])
+
+    context.console.print(f"• Showing: [green][bold]{name}[/bold][/green]")
+    context.console.print(
+        f"• Enable using: [green]composio triggers enable {name.lower()}[/green]"
+    )
+    context.console.print("• Config schema")
+    for prop, config in trigger.config.properties.items():
+        context.console.print(
+            f"    • [bold]{prop} ({config.type})[/bold]: {config.description}"
+        )
+
+
 class GetTriggerExamples(HelpfulCmdBase, click.Command):
     examples = [
         click.style("composio triggers get <trigger_id>", fg="green")
