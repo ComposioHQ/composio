@@ -88,7 +88,7 @@ describe("Apps class tests subscribe", () => {
         expect(trigger.status).toBe("success");
     });
 
-    it("should subscribe to a trigger", async () => {
+    it("should subscribe to a trigger and receive a trigger", async () => {
         function waitForTriggerReceived() {
             return new Promise((resolve) => {
                 triggers.subscribe((data) => {
@@ -100,6 +100,7 @@ describe("Apps class tests subscribe", () => {
 
                 setTimeout(async () => {
                     const actionName = "github_create_an_issue";
+                    // Not urgent
                     const connectedAccountsResult = await connectedAccounts.list({ integrationId: 'ca85b86b-1198-4e1a-8d84-b14640564c77' });
                     const connectionId = connectedAccountsResult.items[0].id;
 
