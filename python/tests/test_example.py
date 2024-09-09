@@ -127,6 +127,15 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
+    "file upload": {
+        "plugin": "langchain",
+        "file": EXAMPLES_PATH / "attachment" / "send_attachment.py",
+        "match": {
+            "type": "stdout",
+            "values": ["Action executed successfully"],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
     # "praisonai": {
     #     "plugin": "praisonai",
     #     "file": PLUGINS / "praisonai" / "praisonai_demo.py",
