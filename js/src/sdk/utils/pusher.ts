@@ -37,7 +37,7 @@ export class PusherUtils {
             PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
                 cluster: PUSHER_CLUSTER,
                 channelAuthorization: {
-                    endpoint: `${baseURL}/v1/client/auth/pusher_auth`,
+                    endpoint: `${baseURL}/api/v1/client/auth/pusher_auth`,
                     headers: {
                         "x-api-key": apiKey
                     },
