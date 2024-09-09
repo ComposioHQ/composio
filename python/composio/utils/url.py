@@ -26,7 +26,7 @@ def get_web_url(path: str) -> str:
     if web_url is None:
         raise ValueError(
             f"Incorrect format for base_url: {base_url}. "
-            "Format should be on of follwing {"
+            "Format should be on of following {"
             f"{BASE_URL_PROD}, "
             f"{BASE_URL_STAGING}, "
             f"{BASE_URL_LOCAL}"

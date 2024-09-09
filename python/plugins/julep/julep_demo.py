@@ -25,7 +25,7 @@ client = Client(
 # Retrieve tools
 composio_tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
-# Define assitant
+# Define assistant
 name = "Jessica"
 about = (
     "Jessica is a forward-thinking tech entrepreneur with a sharp "

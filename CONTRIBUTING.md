@@ -27,6 +27,8 @@ A team member will be assigned to review your pull requests. All tests are run a
 
 If you want to contribute, start working through the codebase, navigate to the Github `issues` tab and start looking through interesting issues. If you are not sure of where to start, then start by trying one of the smaller/easier issues here i.e. issues with the `good first issue` label and then take a look at the issues with the `contributions welcome` label. These are issues that we believe are particularly well suited for outside contributions, often because we probably won't get to them right now. If you decide to start on an issue, leave a comment so that other people know that you're working on it. If you want to help out, but not alone, use the issue comment thread to coordinate.
 
+*Note:* When openning a PR make sure you open the PR against `development` and not the `master` branch.
+
 ## Development setup
 
 - The simplest way to get setup for development on the framework is to install Python `>=3.8` and `pipenv`, then run the following:

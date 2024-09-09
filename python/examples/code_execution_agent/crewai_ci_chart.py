@@ -14,7 +14,7 @@ while True:
 
     code_interpreter_agent = Agent(
         role="Python Code Interpreter Agent",
-        goal=f"""Run I a code to get acheive a task given by the user""",
+        goal=f"""Run I a code to get achieve a task given by the user""",
         backstory="""You are an agent that helps users run Python code.""",
         verbose=True,
         tools=code_interpreter_tools,
@@ -23,7 +23,7 @@ while True:
     )
 
     code_interpreter_task = Task(
-        description=f"""Run Python code to get acheive a task - {main_task}""",
+        description=f"""Run Python code to get achieve a task - {main_task}""",
         expected_output=f"""Python code executed successfully. The result of the task is returned - {main_task}""",
         agent=code_interpreter_agent,
     )

@@ -18,7 +18,7 @@ composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_actions(actions=[Action.GOOGLECALENDAR_CREATE_EVENT,
 Action.GOOGLECALENDAR_DELETE_EVENT, Action.GOOGLECALENDAR_REMOVE_ATTENDEE])
 
-# Retreive the current date and time
+# Retrieve the current date and time
 date = datetime.today().strftime("%Y-%m-%d")
 timezone = datetime.now().astimezone().tzinfo
 
@@ -26,9 +26,9 @@ prefix_messages = [
   ChatMessage(
       role="system",
       content=(
-          f"You are now a calender integration agent. You will try to execute the given task utilizing Google Calendar toools.\
+          f"You are now a calendar integration agent. You will try to execute the given task utilizing Google Calendar toools.\
            Today's date is {date} (it's in YYYY-MM-DD format). Write start and end time in appropriate format for\
-            example 12pm as 'YYYY-MM-DDT12:00:00'. Infer date of event from the message. Fill the date part accordingly. Please remeber the current date to be {date}. Always add Google Meet event.\
+            example 12pm as 'YYYY-MM-DDT12:00:00'. Infer date of event from the message. Fill the date part accordingly. Please remember the current date to be {date}. Always add Google Meet event.\
             Always send the mail to attendees.\
             Always write correct time mentioned in the request. Always return the html link of the meeting after execution. Remember the time-zone is {timezone}."
       ),

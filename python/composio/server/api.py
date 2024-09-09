@@ -85,7 +85,7 @@ class ExecuteActionRequest(BaseModel):
     )
     entity_id: str = Field(
         None,
-        description="Entity ID assosiated with the account.",
+        description="Entity ID associated with the account.",
     )
     connected_account_id: str = Field(
         None,

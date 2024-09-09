@@ -145,6 +145,25 @@ class FileManager(Sessionable):
         self._recent = self._files[path]
         return self._recent
 
+    def rename(self, old_file_path: str, new_file_path: str) -> bool:
+        """
+        Renames a file or directory.
+        :param old_file_path: Path of the file, make sure the path is relative to
+            the working directory.
+        :param new_file_path: Path of the file, make sure the path is relative to
+            the working directory.
+        :return:
+        """
+
+        old_path = self.working_dir / old_file_path
+        new_path = self.working_dir / new_file_path
+        if not old_path.exists():
+            raise FileNotFoundError(f"File / Directory {old_path} does not exist!")
+        if new_path.exists():
+            raise FileExistsError(f"File / Directory {new_path} already exists!")
+        old_path.rename(new_path)
+        return True
+
     def create(self, path: t.Union[str, Path]) -> File:
         """
         Create a new file
@@ -315,7 +334,7 @@ class FileManager(Sessionable):
         depth: int,
         exclude: t.List[Path],
     ) -> str:
-        """Auxialiary method for creating working directory tree recursively."""
+        """Auxiliary method for creating working directory tree recursively."""
         if (depth != -1 and level > depth) or directory in exclude:
             return ""
 

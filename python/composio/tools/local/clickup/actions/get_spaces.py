@@ -28,7 +28,7 @@ class GetSpacesResponse(BaseModel):
 
 class GetSpaces(OpenAPIAction):
     """
-    View the Spaces avialable in a Workspace. You can only get member info in
+    View the Spaces available in a Workspace. You can only get member info in
     private Spaces.
     """
 
@@ -53,7 +53,7 @@ class GetSpaces(OpenAPIAction):
 
 class spaces_get_space_details(OpenAPIAction):
     """
-    View the Spaces avialable in a Workspace. You can only get member info in
+    View the Spaces available in a Workspace. You can only get member info in
     private Spaces.<<DEPRECATED use get_spaces>>
     """
 

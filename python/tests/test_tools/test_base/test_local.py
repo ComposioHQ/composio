@@ -50,5 +50,5 @@ class TestLocalTool:
             },
         )
 
-        assert not response["successfull"]
+        assert not response["successful"]
         assert "Following fields are missing: {'name'}" in response["error"]
