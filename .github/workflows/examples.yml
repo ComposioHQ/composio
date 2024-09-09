@@ -13,6 +13,16 @@ on:
         required: false
         type: string
   workflow_dispatch:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      api_key:
+        required: false
+        type: string
+      base_url:
+        required: false
+        type: string
 
 
 jobs:
