@@ -10,6 +10,7 @@ import { BackendClient } from './models/backendClient';
 import { Entity } from './models/Entity';
 import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
+import { isNewerVersion } from './utils/other';
 
 export class Composio {
     /**
@@ -56,6 +57,7 @@ export class Composio {
      * If a newer version is available, it logs a warning to the console.
      */
     async checkForLatestVersionFromNPM() {
+        console.log("Checking for latest version of Composio SDK from NPM...");
         try {
             const packageName = "composio-core";
             const packageJsonDir = getPackageJsonDir();
@@ -64,7 +66,8 @@ export class Composio {
             const response = await axios.get(`https://registry.npmjs.org/${packageName}/latest`);
             const latestVersion = response.data.version;
 
-            if (latestVersion !== currentVersionFromPackageJson) {
+            
+            if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
                 console.warn(`🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`);
             }
         } catch (error) {
