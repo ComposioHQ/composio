@@ -64,8 +64,8 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
-    "crewai": {
-        "plugin": "crewai",
+    "crew_ai": {
+        "plugin": "crew_ai",
         "file": PLUGINS / "crew_ai" / "crewai_demo.py",
         "match": {
             "type": "stdout",
@@ -128,7 +128,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "download_file": {
-        "plugin": "crewai",
+        "plugin": "crew_ai",
         "file": "run_issue.py",
         "match": {
             "type": "stdout",
