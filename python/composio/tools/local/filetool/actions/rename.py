@@ -41,9 +41,7 @@ class RenameFile(LocalAction[RenameFileRequest, RenameFileResponse]):
     - PermissionError: If the user doesn't have permission to rename the file/directory.
     """
 
-    _display_name = "Rename a file"
-    _request_schema = RenameFileRequest
-    _response_schema = RenameFileResponse
+    display_name = "Rename a file"
 
     def execute(self, request: RenameFileRequest, metadata: Dict) -> RenameFileResponse:
         is_success = self.filemanagers.get(
