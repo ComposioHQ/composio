@@ -57,7 +57,6 @@ export class Composio {
      * If a newer version is available, it logs a warning to the console.
      */
     async checkForLatestVersionFromNPM() {
-        console.log("Checking for latest version of Composio SDK from NPM...");
         try {
             const packageName = "composio-core";
             const packageJsonDir = getPackageJsonDir();
