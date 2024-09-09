@@ -7,6 +7,7 @@ import typing as t
 from abc import abstractmethod
 from pathlib import Path
 
+from composio.utils.pydantic import parse_pydantic_error
 import inflection
 import jsonref
 import pydantic
@@ -127,19 +128,7 @@ class _Request(t.Generic[ModelType]):
         try:
             return self.model(**request)
         except pydantic.ValidationError as e:
-            message = "Invalid request data provided"
-            missing = []
-            others = [""]
-            for error in e.errors():
-                param = ".".join(map(str, error["loc"]))
-                if error["type"] == "missing":
-                    missing.append(param)
-                    continue
-                others.append(error["msg"] + f" on parameter `{param}`")
-            if len(missing) > 0:
-                message += f"\n- Following fields are missing: {set(missing)}"
-            message += "\n- ".join(others)
-            raise ValueError(message) from e
+            raise ValueError(parse_pydantic_error(e)) from e
 
 
 class _Response(t.Generic[ModelType]):
