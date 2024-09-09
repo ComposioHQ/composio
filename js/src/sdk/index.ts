@@ -10,6 +10,7 @@ import { BackendClient } from './models/backendClient';
 import { Entity } from './models/Entity';
 import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
+
 export class Composio {
     /**
      * The Composio class serves as the main entry point for interacting with the Composio SDK.
