@@ -127,6 +127,16 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
+    "download_file": {
+        "plugin": "crewai",
+        "file": "run_issue.py",
+        "match": {
+            "type": "stdout",
+            "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+        "cwd": EXAMPLES_PATH / "sql_agent" / "sql_agent_plotter_crewai",
+    },
     # "praisonai": {
     #     "plugin": "praisonai",
     #     "file": PLUGINS / "praisonai" / "praisonai_demo.py",
@@ -160,16 +170,18 @@ def test_example(
             val is not None
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
+    cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         args=[sys.executable, example["file"]],
         # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        cwd=cwd,
     )
 
     # Wait for 2 minutes for example to run
-    proc.wait(timeout=120)
+    proc.wait(timeout=180)
 
     # Check if process exited with success
     assert proc.returncode == 0, (
