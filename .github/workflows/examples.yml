@@ -47,7 +47,6 @@ jobs:
             llamaindex,
             lyzr,
             openai,
-            praisonai,
             langgraph,
             phidata,
           ]
