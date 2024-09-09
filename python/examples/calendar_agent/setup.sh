@@ -14,7 +14,7 @@ echo "Installing libraries from requirements.txt..."
 pip install -r requirements.txt
 
 # Login to your account
-echo "Login to your Composio acount"
+echo "Login to your Composio account"
 composio login
 
 # Add calendar tool

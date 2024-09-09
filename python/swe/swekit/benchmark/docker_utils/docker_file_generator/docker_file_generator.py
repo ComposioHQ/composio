@@ -484,7 +484,7 @@ class DockerGeneratorArgs(BaseModel):
     prediction_path: str = Field(..., description="Path to predictions file")
     docker_dir: str = Field(..., description="Path to docker directory")
     is_testbed: bool = Field(
-        default=False, description="if dockerfile needs to be genrated for testbed"
+        default=False, description="if dockerfile needs to be generated for testbed"
     )
 
 

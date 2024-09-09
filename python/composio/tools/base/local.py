@@ -178,14 +178,14 @@ class LocalToolMixin(Tool):
             return {
                 "data": response.model_dump(),
                 "error": None,
-                "successfull": True,
+                "successful": True,
             }
         except ExecutionFailed as e:
             self.logger.error(f"Error executing `{action}`: {e}")
             return {
                 "data": None,
                 "error": e.message,
-                "successfull": False,
+                "successful": False,
                 **e.extra,
             }
         except Exception as e:
@@ -194,7 +194,7 @@ class LocalToolMixin(Tool):
             return {
                 "data": None,
                 "error": str(e),
-                "successfull": False,
+                "successful": False,
             }
 
 

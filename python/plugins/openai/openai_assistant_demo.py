@@ -52,7 +52,7 @@ message = openai_client.beta.threads.messages.create(
     content=my_task,
 )
 
-# Execute Agent with intergrations
+# Execute Agent with integrations
 run = openai_client.beta.threads.runs.create(
     thread_id=thread.id,
     assistant_id=assistant.id,

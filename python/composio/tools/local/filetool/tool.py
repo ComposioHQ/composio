@@ -17,6 +17,7 @@ from .actions import (
     GitRepoTree,
     ListFiles,
     OpenFile,
+    RenameFile,
     Scroll,
     SearchWord,
     Write,
@@ -33,6 +34,7 @@ class Filetool(LocalTool, autoload=True):
         """Return the list of actions."""
         return [
             OpenFile,
+            RenameFile,
             EditFile,
             CreateFile,
             Scroll,

@@ -32,7 +32,7 @@ class LocalStorage(BaseModel):
     ```
 
     Note:
-        When derriving from the `LocalStorage` class, `path` needs to be
+        When deriving from the `LocalStorage` class, `path` needs to be
         defined as a class variable.
     """
 

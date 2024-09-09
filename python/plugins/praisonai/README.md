@@ -55,7 +55,7 @@ This step involves configuring and executing the agent to carry out actions, suc
 ```python
 agent_yaml = """
 framework: "crewai"
-topic: "Github Mangement"
+topic: "Github Management"
 
 roles:
   developer:

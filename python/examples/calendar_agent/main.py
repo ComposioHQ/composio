@@ -19,7 +19,7 @@ llm = ChatOpenAI(model="gpt-4o")
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
 
-# Retreive the current date and time
+# Retrieve the current date and time
 date = datetime.today().strftime("%Y-%m-%d")
 timezone = datetime.now().astimezone().tzinfo
 

@@ -16,7 +16,7 @@ echo "Installing dependencies..."
 poetry install
 
 # Login to your account
-echo "Login to your Composio acount"
+echo "Login to your Composio account"
 poetry run composio login
 
 # Copy env backup to .env file

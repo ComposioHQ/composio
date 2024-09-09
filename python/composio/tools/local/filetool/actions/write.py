@@ -43,7 +43,7 @@ class Write(LocalAction[WriteRequest, WriteResponse]):
 
     Note:
         This action will replace the existing content in the the file,
-    and completetly rewrite the file, if you want to edit a specific portion
+    and completely rewrite the file, if you want to edit a specific portion
     of the file use `edit` tool instead.
     """
 
