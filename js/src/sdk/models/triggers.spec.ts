@@ -4,6 +4,7 @@ import { getBackendClient } from "../testUtils/getBackendClient";
 import { Triggers } from "./triggers";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { Entity } from "./Entity";
+import { Actions } from "./actions";
 
 describe("Apps class tests", () => {
     let backendClient;
@@ -12,12 +13,15 @@ describe("Apps class tests", () => {
     let entity: Entity;
 
     let triggerId: string;
+    let actions: Actions;
 
     beforeAll(() => {
         backendClient = getBackendClient();
         triggers = new Triggers(backendClient);
         connectedAccounts = new ConnectedAccounts(backendClient);
         entity = new Entity(backendClient, "default");
+        connectedAccounts = new ConnectedAccounts(backendClient);
+        actions = new Actions(backendClient);
     });
 
     it("should create an Apps instance and retrieve apps list", async () => {
@@ -42,6 +46,7 @@ describe("Apps class tests subscribe", () => {
     let backendClient;
     let triggers: Triggers;
     let connectedAccounts: ConnectedAccounts;
+    let actions: Actions;
     let entity: Entity;
 
     let triggerId: string;
@@ -51,6 +56,7 @@ describe("Apps class tests subscribe", () => {
         triggers = new Triggers(backendClient);
         connectedAccounts = new ConnectedAccounts(backendClient);
         entity = new Entity(backendClient, "default");
+        actions = new Actions(backendClient);
     });
 
 
@@ -82,16 +88,44 @@ describe("Apps class tests subscribe", () => {
         expect(trigger.status).toBe("success");
     });
 
-    it("should subscribe to a trigger", async () => {
-        await triggers.subscribe((data) => {
-            // Explicitly passing the data to an empty function body
-        }, {
-            appName: "gmail",
-            triggerId: triggerId
-        });
+    it("should subscribe to a trigger and receive a trigger", async () => {
+        function waitForTriggerReceived() {
+            return new Promise((resolve) => {
+                triggers.subscribe((data) => {
+                    resolve(data);
+                }, {
+                    appName: "github",
+                    triggerName: "GITHUB_ISSUE_ADDED_EVENT"
+                });
 
-        await triggers.unsubscribe();
+                setTimeout(async () => {
+                    const actionName = "github_create_an_issue";
+                    // Not urgent
+                    const connectedAccountsResult = await connectedAccounts.list({ integrationId: 'ca85b86b-1198-4e1a-8d84-b14640564c77' });
+                    const connectionId = connectedAccountsResult.items[0].id;
 
+                    await actions.execute({
+                        actionName,
+                        requestBody: {
+                            connectedAccountId: connectionId,
+                            input: {
+                                title: "test",
+                                owner: "ComposioHQ",
+                                repo: "test_repo",
+                            },
+                            appName: 'github'
+                        }
+                    });
+                }, 4000);
+            });
+        }
+
+        const data = await waitForTriggerReceived();
+
+        //@ts-ignore
+        expect(data.payload.triggerName).toBe("GITHUB_ISSUE_ADDED_EVENT");
+
+        triggers.unsubscribe();
     });
 
 });
