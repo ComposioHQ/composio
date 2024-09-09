@@ -37,7 +37,7 @@ class BaseFactoryTest:
             metadata={},
         )
 
-        assert response["successfull"]
+        assert response.get("successful", response.get("successfull"))
         assert "stdout" in response["data"]
         assert response["data"]["exit_code"] == 0
 
@@ -48,7 +48,7 @@ class BaseFactoryTest:
             metadata={},
         )
 
-        assert response["successfull"]
+        assert response.get("successful", response.get("successfull"))
         assert response["data"]["output"] == "Cow says: Hello, World!"
 
 

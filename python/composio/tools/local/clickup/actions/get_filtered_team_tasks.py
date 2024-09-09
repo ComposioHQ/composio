@@ -65,7 +65,7 @@ class GetFilteredTeamTasksRequest(BaseModel):
         default=None,
         alias="include_closed",
         description=(
-            "Include or excluse closed tasks. By default, they are excluded.   To include "
+            "Include or exclude closed tasks. By default, they are excluded.   To include "
             "closed tasks, use `include_closed: true`. "
         ),
     )
