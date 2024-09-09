@@ -401,7 +401,7 @@ class TriggerModel(BaseModel):
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
-    successful: bool
+    successfull: bool
     data: t.Dict
     error: t.Optional[str] = None
 
