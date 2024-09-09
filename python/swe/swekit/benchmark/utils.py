@@ -118,7 +118,7 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         config=WorkspaceType.Docker(
             image=repo_to_image_id_map[repo],
             composio_api_key=composio_toolset.api_key,
-            composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            composio_base_url=composio_toolset._base_url or get_api_url_base(),
             github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
         ),
     )
@@ -166,7 +166,7 @@ def build_image_and_container(
             WorkspaceType.Docker(
                 image=image_name,
                 composio_api_key=composio_toolset.api_key,
-                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+                composio_base_url=composio_toolset._base_url or get_api_url_base(),
                 github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
             ),
         )
@@ -174,7 +174,7 @@ def build_image_and_container(
         workspace = WorkspaceFactory.new(
             config=WorkspaceType.E2B(
                 composio_api_key=composio_toolset.api_key,
-                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+                composio_base_url=composio_toolset._base_url or get_api_url_base(),
             )
         )
     else:

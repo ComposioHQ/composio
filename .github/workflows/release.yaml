@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: 'Skip running tests'
+        description: "Skip running tests"
         required: false
         type: boolean
         default: false
@@ -34,11 +34,14 @@ jobs:
           sudo apt-get update --fix-missing
           sudo apt-get autoremove
           sudo apt-get autoclean
-          
+
           # Setup release
           python -m pip install --upgrade pip
           python -m pip install .
           python -m composio.cli apps update
+
+          rm README.md
+          cp ../README.md .
 
           # Build dist
           pip install twine build
