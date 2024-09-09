@@ -8,7 +8,8 @@ import { getEnvVariable } from '../utils/shared';
 import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
 import { BackendClient } from './models/backendClient';
 import { Entity } from './models/Entity';
-
+import axios from 'axios';
+import { getPackageJsonDir } from './utils/projectUtils';
 export class Composio {
     /**
      * The Composio class serves as the main entry point for interacting with the Composio SDK.
@@ -45,6 +46,29 @@ export class Composio {
         this.actions = new Actions(this.backendClient);
         this.integrations = new Integrations(this.backendClient);
         this.activeTriggers = new ActiveTriggers(this.backendClient);
+
+        this.checkForLatestVersionFromNPM();
+    }
+
+    /**
+     * Checks for the latest version of the Composio SDK from NPM.
+     * If a newer version is available, it logs a warning to the console.
+     */
+    async checkForLatestVersionFromNPM() {
+        try {
+            const packageName = "composio-core";
+            const packageJsonDir = getPackageJsonDir();
+            const currentVersionFromPackageJson = require(packageJsonDir + '/package.json').version;
+        
+            const response = await axios.get(`https://registry.npmjs.org/${packageName}/latest`);
+            const latestVersion = response.data.version;
+
+            if (latestVersion !== currentVersionFromPackageJson) {
+                console.warn(`ℹ️ A new version of composio-core is available. Current version: ${currentVersionFromPackageJson}, Latest version: ${latestVersion}`);
+            }
+        } catch (error) {
+            // Ignore and do nothing
+        }
     }
     
 
